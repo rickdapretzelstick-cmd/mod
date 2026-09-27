@@ -55,7 +55,8 @@ public class EnergyParticle extends SingleQuadParticle {
     }
 
     private static TextureAtlasSprite sprite(Sprite s) {
-        return Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.PARTICLES).getSprite(s.id);
+        TextureAtlasSprite sp = Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.PARTICLES).getSprite(s.id);
+        return sp;
     }
 
     public EnergyParticle friction(float f) {

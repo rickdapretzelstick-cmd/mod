@@ -43,6 +43,7 @@ public final class WorldEffectsRenderer {
         }
         for (ClientState.Domain d : ClientState.DOMAINS.values()) renderDomain(c, ps, cam, camRot, d, now, partial);
         renderInfinity(c, ps, cam, mc, partial);
+        Flashes.render(c, ps, cam, camRot, now, partial);
     }
 
     // --- Casting visuals ---
@@ -78,7 +79,7 @@ public final class WorldEffectsRenderer {
                 for (int i = 0; i < 3; i++) {
                     float t = (totalAge * 0.06f + i / 3f) % 1f;
                     push(ps, cam, base.add(0, t * 2.6, 0));
-                    ps.mulPose(Axis.YP.rotationDegrees(totalAge * 6 + i * 40));
+                    ps.rotate(Axis.YP.rotationDegrees(totalAge * 6 + i * 40));
                     Glow.ring(c, ps, 1.6f - t * 0.9f, 0.12f, 0.85f, 0.92f, 1f, 0.6f * (1 - t));
                     ps.popPose();
                 }
@@ -121,8 +122,8 @@ public final class WorldEffectsRenderer {
                 float pulse = 1f + 0.1f * Mth.sin(totalAge * 1.1f);
                 orbAt(c, ps, cam, camRot, front, (0.6f + 0.35f * g) * pulse, ClientFx.PURPLE, 1.4f);
                 push(ps, cam, front);
-                ps.mulPose(Axis.YP.rotationDegrees(totalAge * 20));
-                ps.mulPose(Axis.XP.rotationDegrees(70));
+                ps.rotate(Axis.YP.rotationDegrees(totalAge * 20));
+                ps.rotate(Axis.XP.rotationDegrees(70));
                 Glow.ring(c, ps, 1.3f + 0.4f * g, 0.2f, 0.8f, 0.55f, 1f, 0.6f);
                 ps.popPose();
             }
@@ -177,8 +178,8 @@ public final class WorldEffectsRenderer {
             float t = (now + partial) * 0.02f;
             for (int i = 0; i < 6; i++) {
                 ps.pushPose();
-                ps.mulPose(Axis.YP.rotation(t * (1 + i * 0.15f) + i));
-                ps.mulPose(Axis.XP.rotation(0.4f + i * 0.45f + Mth.sin(t + i) * 0.2f));
+                ps.rotate(Axis.YP.rotation(t * (1 + i * 0.15f) + i));
+                ps.rotate(Axis.XP.rotation(0.4f + i * 0.45f + Mth.sin(t + i) * 0.2f));
                 Glow.ring(c, ps, r * (0.55f + i * 0.07f), 0.25f, 0.8f, 0.9f, 1f, 0.22f);
                 ps.popPose();
             }

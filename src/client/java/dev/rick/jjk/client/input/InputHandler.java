@@ -18,7 +18,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -42,19 +41,19 @@ public final class InputHandler {
     private InputHandler() {}
 
     public static void init() {
-        bind(AbilitySlot.SKILL_1, "skill_1", GLFW.GLFW_KEY_Z);
-        bind(AbilitySlot.SKILL_2, "skill_2", GLFW.GLFW_KEY_X);
-        bind(AbilitySlot.SKILL_3, "skill_3", GLFW.GLFW_KEY_C);
-        bind(AbilitySlot.SKILL_4, "skill_4", GLFW.GLFW_KEY_V);
-        bind(AbilitySlot.SKILL_5, "skill_5", GLFW.GLFW_KEY_B);
-        bind(AbilitySlot.ULTIMATE, "ultimate", GLFW.GLFW_KEY_G);
-        bind(AbilitySlot.GUARD, "guard", GLFW.GLFW_KEY_R);
-        bind(AbilitySlot.DASH, "dash", GLFW.GLFW_KEY_LEFT_ALT);
-        stanceKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.stance", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_GRAVE_ACCENT, CATEGORY));
+        bind(AbilitySlot.SKILL_1, "skill_1", InputConstants.KEY_Z);
+        bind(AbilitySlot.SKILL_2, "skill_2", InputConstants.KEY_X);
+        bind(AbilitySlot.SKILL_3, "skill_3", InputConstants.KEY_C);
+        bind(AbilitySlot.SKILL_4, "skill_4", InputConstants.KEY_V);
+        bind(AbilitySlot.SKILL_5, "skill_5", InputConstants.KEY_B);
+        bind(AbilitySlot.ULTIMATE, "ultimate", InputConstants.KEY_G);
+        bind(AbilitySlot.GUARD, "guard", InputConstants.KEY_R);
+        bind(AbilitySlot.DASH, "dash", InputConstants.KEY_LALT);
+        stanceKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.stance", InputConstants.Type.KEYBOARD, InputConstants.KEY_GRAVE, CATEGORY));
     }
 
     private static void bind(AbilitySlot slot, String name, int key) {
-        KEYS.put(slot, KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk." + name, InputConstants.Type.KEYSYM, key, CATEGORY)));
+        KEYS.put(slot, KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk." + name, InputConstants.Type.KEYBOARD, key, CATEGORY)));
         DOWN.put(slot, false);
     }
 
@@ -63,17 +62,20 @@ public final class InputHandler {
         LocalPlayer player = mc.player;
         if (player == null) return;
         while (stanceKey.consumeClick()) ClientState.stanceEnabled = !ClientState.stanceEnabled;
-        boolean canAct = mc.screen == null && ClientState.hasCharacter() && player.isAlive();
+        boolean canAct = mc.gui.screen() == null && ClientState.hasCharacter() && player.isAlive();
         for (Map.Entry<AbilitySlot, KeyMapping> e : KEYS.entrySet()) {
             AbilitySlot slot = e.getKey();
             boolean down = canAct && e.getValue().isDown();
             boolean was = DOWN.get(slot);
+            boolean clicked = false;
+            while (e.getValue().consumeClick()) clicked = true;
             if (down != was) {
                 DOWN.put(slot, down);
                 sendAbility(player, slot, down);
-            }
-            // Drain queued clicks so vanilla doesn't also react to shared keys.
-            while (e.getValue().consumeClick()) {
+            } else if (clicked && !down && canAct) {
+                // A tap shorter than one tick: pressed and released between polls. Still counts.
+                sendAbility(player, slot, true);
+                sendAbility(player, slot, false);
             }
         }
         tickAttack(mc, player);
@@ -105,7 +107,7 @@ public final class InputHandler {
 
     private static void tickAttack(Minecraft mc, LocalPlayer p) {
         if (!attackHeld) return;
-        boolean down = mc.screen == null && mc.options.keyAttack.isDown() && inStance();
+        boolean down = mc.gui.screen() == null && mc.options.keyAttack.isDown() && inStance();
         if (down) {
             attackHeldTicks++;
             if (!heavyStarted && attackHeldTicks >= HEAVY_HOLD_TICKS) {

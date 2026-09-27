@@ -5,8 +5,20 @@
   "name": "Jujutsu tests",
   "environment": "*",
   "entrypoints": {
-    "fabric-gametest": ["dev.rick.jjk.test.GojoGameTests"],
-    "fabric-client-gametest": ["dev.rick.jjk.test.GojoClientGameTest"]
+    "fabric-gametest": [
+      "dev.rick.jjk.test.GojoGameTests"
+    ],
+    "fabric-client-gametest": [
+      "dev.rick.jjk.test.GojoClientGameTest"
+    ]
   },
-  "depends": { "jjk": "*" }
+  "depends": {
+    "jjk": "*"
+  },
+  "mixins": [
+    {
+      "config": "jjk-test.mixins.json",
+      "environment": "client"
+    }
+  ]
 }

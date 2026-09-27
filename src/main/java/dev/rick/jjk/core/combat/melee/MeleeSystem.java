@@ -329,3 +329,4 @@ public final class MeleeSystem {
         return caster.melee.current();
     }
 }
+

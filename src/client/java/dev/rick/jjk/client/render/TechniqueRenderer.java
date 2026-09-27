@@ -83,8 +83,8 @@ public class TechniqueRenderer<T extends TechniqueEntity> extends EntityRenderer
         // Accretion rings spinning around the core.
         for (int i = 0; i < 3; i++) {
             ps.pushPose();
-            ps.mulPose(Axis.YP.rotationDegrees(s.age * (14 + i * 9)));
-            ps.mulPose(Axis.XP.rotationDegrees(55 + i * 40));
+            ps.rotate(Axis.YP.rotationDegrees(s.age * (14 + i * 9)));
+            ps.rotate(Axis.XP.rotationDegrees(55 + i * 40));
             Glow.ring(c, ps, r * (2.2f + i * 0.7f), r * 0.35f, 0.5f, 0.75f, 1f, 0.55f - i * 0.12f);
             ps.popPose();
         }
@@ -103,8 +103,8 @@ public class TechniqueRenderer<T extends TechniqueEntity> extends EntityRenderer
             ps.pushPose();
             float yaw = (float) Math.atan2(back.x, back.z);
             float pitch = (float) Math.asin(Mth.clamp(-back.y, -1, 1));
-            ps.mulPose(Axis.YP.rotation(yaw));
-            ps.mulPose(Axis.XP.rotation(pitch));
+            ps.rotate(Axis.YP.rotation(yaw));
+            ps.rotate(Axis.XP.rotation(pitch));
             Glow.beam(c, ps, 3.5f * s.scale, r * 1.4f, 1f, 0.25f, 0.15f, 0.8f);
             ps.popPose();
         }
@@ -122,7 +122,7 @@ public class TechniqueRenderer<T extends TechniqueEntity> extends EntityRenderer
         // Blue and red still orbiting inside the imaginary mass.
         for (int i = 0; i < 2; i++) {
             ps.pushPose();
-            ps.mulPose(Axis.YP.rotationDegrees(s.age * 25 + i * 180));
+            ps.rotate(Axis.YP.rotationDegrees(s.age * 25 + i * 180));
             ps.translate(r * 0.6f, 0, 0);
             float[] col = i == 0 ? ClientFx.BLUE : ClientFx.RED;
             Glow.sphere(c, ps, r * 0.2f, col[0], col[1], col[2], 0.8f, toCam, false);
@@ -132,8 +132,8 @@ public class TechniqueRenderer<T extends TechniqueEntity> extends EntityRenderer
         if (v.lengthSqr() > 1e-4) {
             Vec3 back = v.normalize().reverse();
             ps.pushPose();
-            ps.mulPose(Axis.YP.rotation((float) Math.atan2(back.x, back.z)));
-            ps.mulPose(Axis.XP.rotation((float) Math.asin(Mth.clamp(-back.y, -1, 1))));
+            ps.rotate(Axis.YP.rotation((float) Math.atan2(back.x, back.z)));
+            ps.rotate(Axis.XP.rotation((float) Math.asin(Mth.clamp(-back.y, -1, 1))));
             Glow.beam(c, ps, 10f * r, r * 1.2f, 0.65f, 0.35f, 1f, 0.6f);
             ps.popPose();
         }

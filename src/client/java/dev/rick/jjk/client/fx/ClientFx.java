@@ -227,7 +227,7 @@ public final class ClientFx {
                 ringBurst(level, pos, 0.4f, 5f * s, RED, 0.9f, 8);
                 burst(level, pos, q(50), 1.1 * Math.sqrt(s), Sprite.SPARK, ORANGE, 0.22f, 10);
                 burst(level, pos, q(24), 0.6 * Math.sqrt(s), Sprite.GLOW, RED, 0.35f, 14);
-                burst(level, pos, q(16), 0.2, Sprite.SMOKE, GREY, 1.2f * s, 30);
+                burst(level, pos, q(16), 0.25, Sprite.SMOKE, GREY, Math.min(0.9f, 0.6f * s), 30);
                 ring3d(level, pos, new Vec3(0, 1, 0), 0.5, q(30), 0.9 * s, ORANGE, 0.25f, 12);
                 distanceShake(pos, 30 * s, 0.25f);
             }
@@ -271,7 +271,7 @@ public final class ClientFx {
                     add(level, pos.add(off), off.scale(0.04).subtract(dir.scale(0.05)), Sprite.GLOW, i % 3 == 0 ? PURPLE_LIGHT : PURPLE, 0.8f,
                             0.35f, 0.05f, 14);
                 }
-                burst(level, pos, q(3), 0.05, Sprite.SMOKE, DARK, s * 0.9f, 20);
+                burst(level, pos, q(3), 0.05, Sprite.SMOKE, DARK, Math.min(0.9f, s * 0.4f), 20);
             }
             case "purple_hit" -> {
                 flashAt(level, pos, 2.5f * s, PURPLE_LIGHT, 5);
@@ -283,8 +283,8 @@ public final class ClientFx {
                 flashAt(level, pos, 12f, PURPLE, 14);
                 ringBurst(level, pos, 1f, 18f, PURPLE, 0.9f, 16);
                 burst(level, pos, q(80), 1.5, Sprite.SPARK, PURPLE_LIGHT, 0.3f, 14);
-                burst(level, pos, q(40), 0.8, Sprite.GLOW, PURPLE, 0.6f, 20);
-                burst(level, pos, q(20), 0.25, Sprite.SMOKE, DARK, 2.5f, 40);
+                burst(level, pos, q(40), 0.8, Sprite.GLOW, PURPLE, 0.45f, 20);
+                burst(level, pos, q(20), 0.35, Sprite.SMOKE, DARK, 0.9f, 40);
                 distanceShake(pos, 60, 0.35f);
             }
             // --- Teleport ---
@@ -310,7 +310,6 @@ public final class ClientFx {
                 sound("domain_expand", pos, 6f, 1f);
                 ringBurst(level, pos, 1f, s * 2.2f, WHITE, 0.9f, 20);
                 ring3d(level, pos, new Vec3(0, 1, 0), 1, q(60), s / 14.0, WHITE, 0.4f, 16);
-                Minecraft mc = Minecraft.getInstance();
                 if (mc.player != null && mc.player.position().distanceTo(pos) < s + 20) {
                     ScreenEffects.flash(0xC0FFFFFF, 18);
                     ScreenEffects.shake(0.8f, 20);
@@ -368,17 +367,17 @@ public final class ClientFx {
 
     /** A bright flash billboard that shrinks away. */
     public static void flashAt(ClientLevel level, Vec3 pos, float size, float[] c, int life) {
-        add(level, pos, Vec3.ZERO, Sprite.CORE, c, 0.95f, size, size * 0.2f, life);
+        dev.rick.jjk.client.render.Flashes.flash(pos, size * 0.8f, c, life, level.getGameTime());
     }
 
     /** Expanding (camera-facing) shockwave ring. */
     public static void ringBurst(ClientLevel level, Vec3 pos, float from, float to, float[] c, float alpha, int life) {
-        add(level, pos, Vec3.ZERO, Sprite.RING, c, alpha, from, to, life);
+        dev.rick.jjk.client.render.Flashes.ring(pos, from, to, c, alpha, life, level.getGameTime());
     }
 
     /** Shrinking ring (implosion). */
     public static void ringCollapse(ClientLevel level, Vec3 pos, float from, float[] c, int life) {
-        add(level, pos, Vec3.ZERO, Sprite.RING, c, 0.7f, from, 0.1f, life).fadeIn();
+        dev.rick.jjk.client.render.Flashes.ring(pos, from, 0.1f, c, 0.7f, life, level.getGameTime());
     }
 
     /** Particles on a circle in the plane perpendicular to {@code normal}, flying outward. */

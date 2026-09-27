@@ -1,3 +1,165 @@
 package dev.rick.jjk.client;
+
+import dev.rick.jjk.JJK;
+import dev.rick.jjk.client.anim.ClientAnimations;
+import dev.rick.jjk.client.fx.ClientFx;
+import dev.rick.jjk.client.fx.ScreenEffects;
+import dev.rick.jjk.client.hud.CombatHud;
+import dev.rick.jjk.client.input.InputHandler;
+import dev.rick.jjk.client.particle.EnergyParticle;
+import dev.rick.jjk.client.render.DummyRenderer;
+import dev.rick.jjk.client.render.TechniqueRenderer;
+import dev.rick.jjk.client.render.WorldEffectsRenderer;
+import dev.rick.jjk.core.combat.Combat;
+import dev.rick.jjk.core.combat.CombatStatus;
+import dev.rick.jjk.core.net.AnimPayload;
+import dev.rick.jjk.core.net.CameraPayload;
+import dev.rick.jjk.core.net.CastPayload;
+import dev.rick.jjk.core.net.CasterSyncPayload;
+import dev.rick.jjk.core.net.ComboPayload;
+import dev.rick.jjk.core.net.DomainPayload;
+import dev.rick.jjk.core.net.FxPayload;
+import dev.rick.jjk.core.net.StatusPayload;
+import dev.rick.jjk.core.combat.HitResult;
+import dev.rick.jjk.entity.BlueEntity;
+import dev.rick.jjk.gojo.HollowPurpleAbility;
+import dev.rick.jjk.registry.ModEntities;
 import net.fabricmc.api.ClientModInitializer;
-public class JJKClient implements ClientModInitializer { public void onInitializeClient() {} }
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
+
+public class JJKClient implements ClientModInitializer {
+    @Override
+    public void onInitializeClient() {
+        EntityRendererRegistry.register(ModEntities.BLUE, TechniqueRenderer.blue());
+        EntityRendererRegistry.register(ModEntities.RED, TechniqueRenderer.red());
+        EntityRendererRegistry.register(ModEntities.HOLLOW_PURPLE, TechniqueRenderer.purple());
+        EntityRendererRegistry.register(ModEntities.TRAINING_DUMMY, DummyRenderer::new);
+
+        InputHandler.init();
+        HudElementRegistry.addLast(JJK.id("combat_hud"), CombatHud::render);
+        LevelRenderEvents.COLLECT_SUBMITS.register(WorldEffectsRenderer::render);
+        registerReceivers();
+
+        ClientTickEvents.END_CLIENT_TICK.register(JJKClient::tick);
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            InputHandler.releaseAll(null);
+            ClientState.reset();
+            ClientAnimations.clear();
+            ScreenEffects.reset();
+        });
+    }
+
+    private static void registerReceivers() {
+        ClientPlayNetworking.registerGlobalReceiver(FxPayload.TYPE, (p, ctx) -> ClientFx.handle(p));
+        ClientPlayNetworking.registerGlobalReceiver(CasterSyncPayload.TYPE, (p, ctx) -> ClientState.apply(p));
+        ClientPlayNetworking.registerGlobalReceiver(CameraPayload.TYPE, (p, ctx) -> {
+            switch (p.kind()) {
+                case CameraPayload.SHAKE -> ScreenEffects.shake(p.intensity(), p.duration());
+                case CameraPayload.FLASH -> ScreenEffects.flash(p.color(), p.duration());
+                case CameraPayload.FOV -> ScreenEffects.fovPunch(p.intensity());
+                default -> {}
+            }
+        });
+        ClientPlayNetworking.registerGlobalReceiver(AnimPayload.TYPE, (p, ctx) -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level != null) ClientAnimations.play(p.entityId(), p.anim(), p.speed(), mc.level.getGameTime());
+        });
+        ClientPlayNetworking.registerGlobalReceiver(StatusPayload.TYPE, (p, ctx) -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level != null && mc.level.getEntity(p.entityId()) instanceof LivingEntity le) {
+                Combat.state(le).load(p.ticks(), p.guarding());
+            }
+        });
+        ClientPlayNetworking.registerGlobalReceiver(CastPayload.TYPE, (p, ctx) -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level == null) return;
+            long now = mc.level.getGameTime();
+            if (p.ability().isEmpty()) {
+                ClientState.CASTS.remove(p.entityId());
+                if (mc.player != null && p.entityId() == mc.player.getId()) ScreenEffects.fovHold(0);
+                return;
+            }
+            ClientState.Cast old = ClientState.CASTS.get(p.entityId());
+            long start = old != null && old.ability().equals(p.ability()) ? old.startTick() : now;
+            ClientState.CASTS.put(p.entityId(), new ClientState.Cast(p.ability(), p.phase(), p.duration(), start, now));
+            if (mc.player != null && p.entityId() == mc.player.getId()) {
+                // Charging narrows the view; Purple and the domain sign pull it in hardest.
+                float hold = switch (p.ability()) {
+                    case "red" -> -0.05f;
+                    case HollowPurpleAbility.ID -> p.phase() >= HollowPurpleAbility.PHASE_FUSION ? -0.12f : -0.06f;
+                    case "unlimited_void" -> -0.1f;
+                    default -> 0f;
+                };
+                ScreenEffects.fovHold(p.phase() == HollowPurpleAbility.PHASE_FIRED && p.ability().equals(HollowPurpleAbility.ID) ? 0 : hold);
+            }
+        });
+        ClientPlayNetworking.registerGlobalReceiver(ComboPayload.TYPE, (p, ctx) -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level == null) return;
+            ClientState.comboCount = p.count();
+            ClientState.comboDamage = p.damage();
+            ClientState.comboTime = mc.level.getGameTime();
+            ClientState.lastHitOutcome = p.outcome();
+            // Hit confirm: a small kick so connecting feels different from whiffing.
+            if (p.outcome() == HitResult.Outcome.HIT.ordinal() || p.outcome() == HitResult.Outcome.GUARD_BROKEN.ordinal()) {
+                ScreenEffects.shake(0.12f, 3);
+                ScreenEffects.fovPunch(0.012f);
+            }
+        });
+        ClientPlayNetworking.registerGlobalReceiver(DomainPayload.TYPE, (p, ctx) -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level != null) ClientState.applyDomain(p, mc.level.getGameTime());
+        });
+    }
+
+    private static int ambientTicks;
+
+    private static void tick(Minecraft mc) {
+        ScreenEffects.tick();
+        if (mc.level == null || mc.player == null) return;
+        ClientState.tick();
+        InputHandler.tick(mc);
+        ambientTicks++;
+        ambient(mc);
+    }
+
+    /** Continuous effects around live techniques: Blue's inward spiral and hum, the domain's ambience. */
+    private static void ambient(Minecraft mc) {
+        for (Entity e : mc.level.entitiesForRendering()) {
+            if (e instanceof BlueEntity blue && !blue.isCollapsing()) {
+                Vec3 core = blue.position().add(0, 0.5, 0);
+                for (int i = 0; i < ClientFx.q(4); i++) {
+                    Vec3 from = core.add(ClientFx.randomUnit().scale(3 + mc.level.getRandom().nextDouble() * 4));
+                    Vec3 tangent = from.subtract(core).cross(new Vec3(0, 1, 0)).normalize().scale(0.12);
+                    ClientFx.add(mc.level, from, tangent, EnergyParticle.Sprite.GLOW, i % 3 == 0 ? ClientFx.WHITE : ClientFx.BLUE,
+                            0.7f, 0.12f, 0.03f, 20).attract(core, 0.05).fadeIn();
+                }
+                if ((blue.tickCount + blue.getId()) % 30 == 0) ClientFx.sound("blue_hum", core, 1.2f, 1f);
+            }
+        }
+        for (ClientState.Domain d : ClientState.DOMAINS.values()) {
+            if (d.center == null || d.phase != DomainPayload.ACTIVE) continue;
+            if (mc.player.position().distanceTo(d.center) < d.radius) {
+                if (ambientTicks % 60 == 0) ClientFx.sound("domain_ambient", mc.player.position(), 0.8f, 1f);
+                // Motes of information drifting through the void.
+                for (int i = 0; i < ClientFx.q(3); i++) {
+                    Vec3 at = d.center.add(ClientFx.randomUnit().scale(mc.level.getRandom().nextDouble() * d.radius));
+                    ClientFx.add(mc.level, at, ClientFx.randomUnit().scale(0.02), EnergyParticle.Sprite.STAR, ClientFx.WHITE, 0.6f, 0.08f, 0.02f, 40).fadeIn();
+                }
+            }
+        }
+        // Local player overloaded: keep the white noise in the ears.
+        if (Combat.has(mc.player, CombatStatus.OVERLOAD) && ambientTicks % 25 == 0) {
+            ClientFx.sound("domain_surehit", mc.player.position(), 0.35f, 0.8f + mc.level.getRandom().nextFloat() * 0.4f);
+        }
+    }
+}

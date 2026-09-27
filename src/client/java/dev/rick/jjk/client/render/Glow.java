@@ -51,7 +51,7 @@ public final class Glow {
     /** Camera-facing disc, bright in the middle and fading to nothing at {@code radius}. */
     public static void halo(SubmitNodeCollector c, PoseStack ps, Quaternionf cameraOrientation, float radius, float r, float g, float b, float a) {
         ps.pushPose();
-        ps.mulPose(cameraOrientation);
+        ps.rotate(cameraOrientation);
         final int seg = 24;
         c.submitCustomGeometry(ps, ADDITIVE, (pose, buf) -> {
             for (int i = 0; i < seg; i++) {

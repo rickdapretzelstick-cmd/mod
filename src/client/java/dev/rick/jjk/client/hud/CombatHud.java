@@ -37,7 +37,7 @@ public final class CombatHud {
 
     public static void render(GuiGraphicsExtractor g, DeltaTracker delta) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.options.hideGui) return;
+        if (mc.player == null) return;
         int w = g.guiWidth(), h = g.guiHeight();
         float partial = delta.getGameTimeDeltaPartialTick(false);
         CombatState state = Combat.stateOrNull(mc.player);
@@ -63,25 +63,25 @@ public final class CombatHud {
         g.text(font, String.format("CE %d / %d", Math.round(ClientState.energy), Math.round(ClientState.maxEnergy)), x, y - 10, 0xFFE0F0FF, true);
         String stance = InputHandler.inStance() ? "◆ COMBAT STANCE" : ClientState.stanceEnabled ? "◇ stance (empty hand)" : "◇ stance off";
         g.text(font, stance, x, y + 9, InputHandler.inStance() ? 0xFF9FE7FF : 0xFF808890, true);
-        if (ClientState.flag(CasterSyncPayload.FLAG_NO_COST)) g.text(font, "NO COOLDOWN", x + 70, y - 10, 0xFFFFD060, true);
+        if (ClientState.flag(CasterSyncPayload.FLAG_NO_COST)) g.text(font, "NO COOLDOWN", x, y - 20, 0xFFFFD060, true);
     }
 
     private static void abilityBar(GuiGraphicsExtractor g, Font font, Minecraft mc, CombatState state, int w, int h) {
-        int size = 24, gap = 3;
+        int size = 18, gap = 10;
         int total = SLOTS.length * (size + gap) - gap;
-        int x0 = w - total - 8, y = h - size - 22;
+        int x = w - size - 6, y0 = Math.max(4, h / 2 - total / 2);
         boolean techLocked = state != null && state.techniquesLocked();
         for (int i = 0; i < SLOTS.length; i++) {
             SlotInfo s = SLOTS[i];
-            int x = x0 + i * (size + gap);
+            int y = y0 + i * (size + gap);
             boolean toggledOn = s.slot == AbilitySlot.SKILL_5 && ClientState.flag(CasterSyncPayload.FLAG_INFINITY);
             boolean casting = isCastingSlot(s.slot);
             g.fill(x - 1, y - 1, x + size + 1, y + size + 1, toggledOn || casting ? s.color : 0xFF202428);
             g.fill(x, y, x + size, y + size, 0xE0101418);
             g.fill(x, y, x + size, y + 3, s.color);
-            g.centeredText(font, s.label.length() > 5 ? s.label.substring(0, 4) : s.label, x + size / 2, y + 7, 0xFFFFFFFF);
+            g.centeredText(font, s.label.length() > 4 ? s.label.substring(0, 3) : s.label, x + size / 2, y + 6, 0xFFFFFFFF);
             String key = InputHandler.keyLabel(s.slot);
-            g.centeredText(font, key, x + size / 2, y + size + 3, 0xFFB8C4D0);
+            g.centeredText(font, key, x + size / 2, y + size + 1, 0xFFB8C4D0);
 
             int cd = ClientState.cooldown(s.slot);
             int max = ClientState.maxCooldown(s.slot);
@@ -159,7 +159,7 @@ public final class CombatHud {
         if (age > window + 20) return;
         float alpha = age > window ? 1f - (age - window) / 20f : 1f;
         int a = Math.round(alpha * 255) << 24;
-        int x = w - 70, y = h / 2 - 30;
+        int x = 10, y = h / 2 - 30;
         var pose = g.pose();
         pose.pushMatrix();
         pose.translate(x, y);
