@@ -1,0 +1,305 @@
+package dev.rick.jjk.config;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import dev.rick.jjk.JJK;
+import net.fabricmc.loader.api.FabricLoader;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+/**
+ * All tunable values for the mod. Loaded from config/jjk.json; missing fields keep their defaults and
+ * the file is rewritten on load so new options appear automatically.
+ *
+ * Server-authoritative values live in every section except {@link Client}, which only affects the local game.
+ * Time values are in ticks (20 ticks = 1 second) unless the name says otherwise.
+ */
+public final class JJKConfig {
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+    private static JJKConfig instance = new JJKConfig();
+
+    public General general = new General();
+    public Resources resources = new Resources();
+    public Melee melee = new Melee();
+    public Guard guard = new Guard();
+    public Dash dash = new Dash();
+    public Infinity infinity = new Infinity();
+    public Blue blue = new Blue();
+    public Red red = new Red();
+    public Purple purple = new Purple();
+    public Teleport teleport = new Teleport();
+    public Domain domain = new Domain();
+    public Client client = new Client();
+
+    public static JJKConfig get() {
+        return instance;
+    }
+
+    public static class General {
+        /** Players joining for the first time become Gojo automatically (phase 1 playtest convenience). */
+        public boolean autoAssignGojo = true;
+        /** Whether players can hurt each other with techniques and melee (vanilla pvp setting still applies). */
+        public boolean playerVsPlayer = true;
+        /** Whether techniques can hit tamed pets owned by the caster. */
+        public boolean hitOwnPets = false;
+        /** Global damage multiplier for everything this mod deals. */
+        public float damageMultiplier = 1.0f;
+        /** Global multiplier on knockback dealt by this mod. */
+        public float knockbackMultiplier = 1.0f;
+        /** Extra reach tolerance (blocks) granted to hits the client confirmed, to absorb network latency. */
+        public double latencyTolerance = 0.75;
+        /** Hits within this many ticks of each other count as the same combo. */
+        public int comboWindow = 40;
+        /** After this many hits in one combo, hitstun is heavily reduced so the target can escape. */
+        public int comboHitstunDecayStart = 10;
+        /** Damage multiplier lost per hit in a combo, floored at comboMinDamageScale. */
+        public float comboDamageDecay = 0.035f;
+        public float comboMinDamageScale = 0.45f;
+        /** Invulnerability to melee after getting up from a knockdown. */
+        public int wakeupInvulnerability = 10;
+        /** Allow techniques to break blocks at all (also requires the mobGriefing gamerule). */
+        public boolean allowBlockDestruction = true;
+        /** Blocks with hardness above this are never destroyed by techniques (obsidian is 50). */
+        public float maxDestructibleHardness = 20f;
+        /** Hard cap on blocks destroyed per server tick across all techniques, to protect TPS. */
+        public int maxBlocksPerTick = 400;
+        /** Drop items for destroyed blocks. */
+        public boolean destroyedBlocksDropItems = false;
+    }
+
+    public static class Resources {
+        public float gojoMaxCursedEnergy = 1000f;
+        /** Cursed energy regained per second. */
+        public float gojoRegenPerSecond = 16f;
+        /** Delay (ticks) after spending cursed energy before regeneration resumes. */
+        public int regenDelay = 30;
+        /** Duration of technique burnout after a domain collapses (ticks). */
+        public int domainBurnout = 160;
+        /** Disable all cooldowns and costs (testing). Also toggled per player with /jjk nocooldown. */
+        public boolean creativeNoCost = false;
+    }
+
+    public static class Melee {
+        public float lightDamage = 3.0f;
+        public float lightFinisherDamage = 4.5f;
+        public int lightHitstun = 13;
+        public int lightInterval = 6;
+        public int chainResetTicks = 22;
+        public int chainEndlag = 16;
+        public double lightRange = 3.4;
+        public double lightWidth = 1.5;
+        public double finisherKnockback = 1.55;
+        public double uppercutLaunch = 1.05;
+        public double downslamSpeed = 1.6;
+        public int knockdownTicks = 26;
+        public float sprintAttackDamage = 4.0f;
+        public double sprintLunge = 1.25;
+        public float heavyMinDamage = 7.0f;
+        public float heavyMaxDamage = 11.0f;
+        public int heavyMinCharge = 7;
+        public int heavyMaxCharge = 22;
+        public int heavyCooldown = 80;
+        public double heavyKnockback = 2.1;
+        public float groundAttackDamage = 5.0f;
+        public float airHitHover = 0.25f;
+    }
+
+    public static class Guard {
+        public int maxGuardHits = 6;
+        public int guardRegenInterval = 30;
+        public int perfectBlockWindow = 4;
+        public int parryStun = 22;
+        public int guardBreakStun = 34;
+        public float blockedTechniqueDamageScale = 0.5f;
+        public float guardMoveSpeed = 0.35f;
+    }
+
+    public static class Dash {
+        public double speed = 1.35;
+        public double airSpeed = 1.05;
+        public int cooldown = 28;
+        public int invulnerabilityTicks = 4;
+    }
+
+    public static class Infinity {
+        public boolean enabled = true;
+        /** Radius (blocks) at which approaching things start slowing down. */
+        public double radius = 2.6;
+        /** Distance at which things are stopped entirely. */
+        public double stopDistance = 0.9;
+        /** Cursed energy drained per second while Infinity is active. */
+        public float upkeepPerSecond = 18f;
+        public float costPerBlockedMelee = 12f;
+        public float costPerBlockedProjectile = 5f;
+        /** Cursed energy spent per point of technique damage stopped. */
+        public float costPerTechniqueDamage = 6f;
+        /** Fraction of explosion damage that still gets through. */
+        public float explosionPassThrough = 0.25f;
+        /** How long projectiles hang in the air before dropping (ticks). */
+        public int projectileHangTicks = 30;
+        /** Cooldown after Infinity collapses from running out of cursed energy. */
+        public int collapseCooldown = 100;
+        public int toggleCooldown = 10;
+        /** Mobs that walk into Infinity are held back at the boundary. */
+        public boolean repelWalkingEntities = true;
+    }
+
+    public static class Blue {
+        public float cost = 120f;
+        public int cooldown = 150;
+        public double range = 16;
+        public double pullRadius = 7.5;
+        public double pullStrength = 0.34;
+        public int duration = 44;
+        /** Extra ticks the orb may be steered while the key is held. */
+        public int maxSteerTicks = 50;
+        public float steerCostPerSecond = 40f;
+        public float tickDamage = 0.6f;
+        public int tickDamageInterval = 5;
+        public float collapseDamage = 5f;
+        public int collapseStun = 20;
+        /** Radius around the core in which plants, leaves and loose blocks are torn up. */
+        public double blockPullRadius = 2.5;
+        public boolean pullsBlocks = true;
+    }
+
+    public static class Red {
+        public float cost = 150f;
+        public int cooldown = 180;
+        public int minCharge = 6;
+        public int maxCharge = 30;
+        public double speed = 2.6;
+        public double range = 28;
+        public float damage = 9f;
+        public float chargedDamage = 15f;
+        public double radius = 3.5;
+        public double chargedRadius = 5.5;
+        public double knockback = 2.6;
+        public double launch = 0.75;
+        public int hitstun = 24;
+        /** Red detonating inside an active Blue triggers a bigger, amplified blast. */
+        public float blueAmplifyMultiplier = 1.5f;
+        public int maxBlocksDestroyed = 60;
+    }
+
+    public static class Purple {
+        public float cost = 400f;
+        public int cooldown = 600;
+        public int blueFormTicks = 14;
+        public int redFormTicks = 14;
+        public int fusionTicks = 16;
+        /** Ticks after fusion that the fully charged Purple can be held before it fires by itself. */
+        public int maxHoldTicks = 60;
+        public double speed = 1.9;
+        public double range = 90;
+        public double radius = 2.4;
+        public double chargedRadius = 3.4;
+        public float damage = 38f;
+        public double knockback = 3.2;
+        public float impactDamage = 16f;
+        public double impactRadius = 6.0;
+        public boolean destroysBlocks = true;
+        public int maxBlocksDestroyed = 4000;
+        public float casterMoveSpeed = 0.25f;
+    }
+
+    public static class Teleport {
+        public float cost = 30f;
+        public int charges = 3;
+        public int rechargeTicks = 55;
+        public int minInterval = 5;
+        public double blinkDistance = 11;
+        public double targetRange = 32;
+        /** Degrees off the crosshair within which a target is picked for a targeted teleport. */
+        public double targetAssistAngle = 9;
+        public int airHoverTicks = 12;
+        public int invulnerabilityTicks = 3;
+    }
+
+    public static class Domain {
+        public float cost = 600f;
+        public int cooldown = 1800;
+        public int startup = 28;
+        public int duration = 240;
+        public double radius = 18;
+        public int sureHitDamageInterval = 20;
+        public float sureHitDamage = 1.0f;
+        /** Damage multiplier on the owner's hits against overloaded targets (information overload leaves them defenceless, not dead). */
+        public float overloadedDamageScale = 0.75f;
+        /** Ticks victims stay overloaded after leaving or the domain ending. */
+        public int lingeringOverload = 30;
+        public int clashDuration = 60;
+        /** The barrier prevents entities from leaving (and outsiders from entering). */
+        public boolean closedBarrier = true;
+        /** Draw a floor inside the domain so the battlefield visibly changes. */
+        public boolean voidFloor = true;
+    }
+
+    public static class Client {
+        /** 0 = minimal, 1 = reduced, 2 = full, 3 = extreme */
+        public int particleQuality = 2;
+        public boolean screenShake = true;
+        public float screenShakeScale = 1.0f;
+        public boolean screenFlashes = true;
+        public boolean fovEffects = true;
+        public boolean overloadOverlay = true;
+        public float soundVolume = 1.0f;
+        public boolean showHud = true;
+        public boolean showComboCounter = true;
+    }
+
+    public static Path path() {
+        return FabricLoader.getInstance().getConfigDir().resolve("jjk.json");
+    }
+
+    public static void load() {
+        Path p = path();
+        if (Files.exists(p)) {
+            try (Reader r = Files.newBufferedReader(p)) {
+                JJKConfig loaded = GSON.fromJson(r, JJKConfig.class);
+                if (loaded != null) instance = loaded;
+            } catch (Exception e) {
+                JJK.LOGGER.error("Failed to read {}, using defaults", p, e);
+                instance = new JJKConfig();
+            }
+        }
+        instance.fillNulls();
+        save();
+    }
+
+    public static void save() {
+        try {
+            Files.createDirectories(path().getParent());
+            try (Writer w = Files.newBufferedWriter(path())) {
+                GSON.toJson(instance, w);
+            }
+        } catch (IOException e) {
+            JJK.LOGGER.error("Failed to write {}", path(), e);
+        }
+    }
+
+    /** Test hook: replace the active config. */
+    public static void set(JJKConfig config) {
+        instance = config;
+        instance.fillNulls();
+    }
+
+    private void fillNulls() {
+        if (general == null) general = new General();
+        if (resources == null) resources = new Resources();
+        if (melee == null) melee = new Melee();
+        if (guard == null) guard = new Guard();
+        if (dash == null) dash = new Dash();
+        if (infinity == null) infinity = new Infinity();
+        if (blue == null) blue = new Blue();
+        if (red == null) red = new Red();
+        if (purple == null) purple = new Purple();
+        if (teleport == null) teleport = new Teleport();
+        if (domain == null) domain = new Domain();
+        if (client == null) client = new Client();
+    }
+}

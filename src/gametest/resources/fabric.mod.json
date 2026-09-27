@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "jjk-test",
+  "version": "1.0.0",
+  "name": "Jujutsu tests",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": ["dev.rick.jjk.test.GojoGameTests"],
+    "fabric-client-gametest": ["dev.rick.jjk.test.GojoClientGameTest"]
+  },
+  "depends": { "jjk": "*" }
+}

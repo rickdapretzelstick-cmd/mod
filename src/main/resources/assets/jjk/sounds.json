@@ -1,0 +1,218 @@
+{
+ "swing": {
+  "sounds": [
+   "jjk:swing"
+  ],
+  "subtitle": "subtitles.jjk.swing"
+ },
+ "swing_heavy": {
+  "sounds": [
+   "jjk:swing_heavy"
+  ],
+  "subtitle": "subtitles.jjk.swing_heavy"
+ },
+ "hit_light": {
+  "sounds": [
+   "jjk:hit_light"
+  ],
+  "subtitle": "subtitles.jjk.hit_light"
+ },
+ "hit_heavy": {
+  "sounds": [
+   "jjk:hit_heavy"
+  ],
+  "subtitle": "subtitles.jjk.hit_heavy"
+ },
+ "hit_slam": {
+  "sounds": [
+   "jjk:hit_slam"
+  ],
+  "subtitle": "subtitles.jjk.hit_slam"
+ },
+ "block": {
+  "sounds": [
+   "jjk:block"
+  ],
+  "subtitle": "subtitles.jjk.block"
+ },
+ "parry": {
+  "sounds": [
+   "jjk:parry"
+  ],
+  "subtitle": "subtitles.jjk.parry"
+ },
+ "guard_break": {
+  "sounds": [
+   "jjk:guard_break"
+  ],
+  "subtitle": "subtitles.jjk.guard_break"
+ },
+ "dash": {
+  "sounds": [
+   "jjk:dash"
+  ],
+  "subtitle": "subtitles.jjk.dash"
+ },
+ "ground_impact": {
+  "sounds": [
+   "jjk:ground_impact"
+  ],
+  "subtitle": "subtitles.jjk.ground_impact"
+ },
+ "heavy_charge": {
+  "sounds": [
+   "jjk:heavy_charge"
+  ],
+  "subtitle": "subtitles.jjk.heavy_charge"
+ },
+ "no_energy": {
+  "sounds": [
+   "jjk:no_energy"
+  ],
+  "subtitle": "subtitles.jjk.no_energy"
+ },
+ "infinity_on": {
+  "sounds": [
+   "jjk:infinity_on"
+  ],
+  "subtitle": "subtitles.jjk.infinity_on"
+ },
+ "infinity_off": {
+  "sounds": [
+   "jjk:infinity_off"
+  ],
+  "subtitle": "subtitles.jjk.infinity_off"
+ },
+ "infinity_ripple": {
+  "sounds": [
+   "jjk:infinity_ripple"
+  ],
+  "subtitle": "subtitles.jjk.infinity_ripple"
+ },
+ "infinity_hold": {
+  "sounds": [
+   "jjk:infinity_hold"
+  ],
+  "subtitle": "subtitles.jjk.infinity_hold"
+ },
+ "blue_cast": {
+  "sounds": [
+   "jjk:blue_cast"
+  ],
+  "subtitle": "subtitles.jjk.blue_cast"
+ },
+ "blue_spawn": {
+  "sounds": [
+   "jjk:blue_spawn"
+  ],
+  "subtitle": "subtitles.jjk.blue_spawn"
+ },
+ "blue_hum": {
+  "sounds": [
+   "jjk:blue_hum"
+  ],
+  "subtitle": "subtitles.jjk.blue_hum"
+ },
+ "blue_collapse": {
+  "sounds": [
+   "jjk:blue_collapse"
+  ],
+  "subtitle": "subtitles.jjk.blue_collapse"
+ },
+ "red_charge": {
+  "sounds": [
+   "jjk:red_charge"
+  ],
+  "subtitle": "subtitles.jjk.red_charge"
+ },
+ "red_fire": {
+  "sounds": [
+   "jjk:red_fire"
+  ],
+  "subtitle": "subtitles.jjk.red_fire"
+ },
+ "red_explosion": {
+  "sounds": [
+   "jjk:red_explosion"
+  ],
+  "subtitle": "subtitles.jjk.red_explosion"
+ },
+ "red_amplified": {
+  "sounds": [
+   "jjk:red_amplified"
+  ],
+  "subtitle": "subtitles.jjk.red_amplified"
+ },
+ "purple_form": {
+  "sounds": [
+   "jjk:purple_form"
+  ],
+  "subtitle": "subtitles.jjk.purple_form"
+ },
+ "purple_fusion": {
+  "sounds": [
+   "jjk:purple_fusion"
+  ],
+  "subtitle": "subtitles.jjk.purple_fusion"
+ },
+ "purple_fire": {
+  "sounds": [
+   "jjk:purple_fire"
+  ],
+  "subtitle": "subtitles.jjk.purple_fire"
+ },
+ "purple_travel": {
+  "sounds": [
+   "jjk:purple_travel"
+  ],
+  "subtitle": "subtitles.jjk.purple_travel"
+ },
+ "purple_end": {
+  "sounds": [
+   "jjk:purple_end"
+  ],
+  "subtitle": "subtitles.jjk.purple_end"
+ },
+ "teleport": {
+  "sounds": [
+   "jjk:teleport"
+  ],
+  "subtitle": "subtitles.jjk.teleport"
+ },
+ "domain_charge": {
+  "sounds": [
+   "jjk:domain_charge"
+  ],
+  "subtitle": "subtitles.jjk.domain_charge"
+ },
+ "domain_expand": {
+  "sounds": [
+   "jjk:domain_expand"
+  ],
+  "subtitle": "subtitles.jjk.domain_expand"
+ },
+ "domain_ambient": {
+  "sounds": [
+   "jjk:domain_ambient"
+  ],
+  "subtitle": "subtitles.jjk.domain_ambient"
+ },
+ "domain_collapse": {
+  "sounds": [
+   "jjk:domain_collapse"
+  ],
+  "subtitle": "subtitles.jjk.domain_collapse"
+ },
+ "domain_surehit": {
+  "sounds": [
+   "jjk:domain_surehit"
+  ],
+  "subtitle": "subtitles.jjk.domain_surehit"
+ },
+ "domain_clash": {
+  "sounds": [
+   "jjk:domain_clash"
+  ],
+  "subtitle": "subtitles.jjk.domain_clash"
+ }
+}

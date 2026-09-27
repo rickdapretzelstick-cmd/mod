@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "dev.rick.jjk.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LivingEntityMixin",
+    "MobMixin",
+    "PlayerMixin",
+    "ProjectileMixin"
+  ],
+  "injectors": { "defaultRequire": 1 }
+}
