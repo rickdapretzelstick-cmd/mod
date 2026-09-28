@@ -25,17 +25,17 @@ import java.util.Set;
  * {@code fabric-client-gametest} entrypoint at this class to record.
  */
 public class PresentationClientTest implements FabricClientGameTest {
-    private int frame;
-    private final Set<Integer> pressed = new HashSet<>();
-    private final StringBuilder log = new StringBuilder();
-    private String section = "";
-    private ClientGameTestContext ctx;
-    private TestServerContext server;
-    private TestInput in;
+    protected int frame;
+    protected final Set<Integer> pressed = new HashSet<>();
+    protected final StringBuilder log = new StringBuilder();
+    protected String section = "";
+    protected ClientGameTestContext ctx;
+    protected TestServerContext server;
+    protected TestInput in;
     /** Middle of the arena, where every segment starts. */
-    private double[] center;
+    protected double[] center;
     /** Facing for most segments: between two of the arena's pillars. */
-    private static final float YAW = -60;
+    protected static final float YAW = -60;
 
     @Override
     public void runTest(ClientGameTestContext context) {
@@ -342,16 +342,16 @@ public class PresentationClientTest implements FabricClientGameTest {
         }
     }
 
-    private void cmd(String command) {
+    protected void cmd(String command) {
         server.runCommand(command);
     }
 
-    private void section(String name) {
+    protected void section(String name) {
         section = name;
     }
 
     /** Puts the player back in the middle of the arena facing the same way, and clears any statuses from the last segment. */
-    private void resetPlayer() {
+    protected void resetPlayer() {
         if (center != null) cmd(String.format(java.util.Locale.ROOT, "tp @a %.2f %.2f %.2f %.1f 10", center[0], center[1], center[2], YAW));
         server.runOnServer(s -> {
             ServerPlayer p = s.getPlayerList().getPlayers().getFirst();
@@ -361,17 +361,17 @@ public class PresentationClientTest implements FabricClientGameTest {
         ctx.waitTicks(2);
     }
 
-    private void clearDummies() {
+    protected void clearDummies() {
         cmd("execute as @a at @s run kill @e[type=jjk:training_dummy,distance=..60]");
         cmd("execute as @a at @s run kill @e[type=item,distance=..60]");
     }
 
-    private KeyMapping key(String name) {
+    protected KeyMapping key(String name) {
         return ctx.computeOnClient(mc -> Arrays.stream(mc.options.keyMappings).filter(k -> k.getName().equals(name)).findFirst().orElseThrow());
     }
 
     /** Films {@code n} game ticks: a screenshot every client frame-step, pressing any clash prompts as they come due. */
-    private void film(int n) {
+    protected void film(int n) {
         int[] keys = {InputConstants.KEY_LEFT, InputConstants.KEY_DOWN, InputConstants.KEY_UP, InputConstants.KEY_RIGHT};
         long target = ctx.computeOnClient(mc -> mc.level.getGameTime()) + n;
         double now = 0;
@@ -381,9 +381,11 @@ public class PresentationClientTest implements FabricClientGameTest {
                 java.util.List<Double> out = new java.util.ArrayList<>();
                 out.add(mc.level.getGameTime() + (double) mc.getDeltaTracker().getGameTimeDeltaPartialTick(false));
                 if (cv != null) {
-                    double clock = mc.level.getGameTime() - cv.startTick;
+                    double clock = cv.clock();
                     for (int k = 0; k < cv.times.length; k++) {
-                        if (Math.abs(cv.times[k] - clock) <= 0.5 && pressed.add(cv.round * 1000 + k)) out.add((double) cv.lanes[k]);
+                        // Press each note once it comes due (a frame can span more than a tick, so a strict window would skip notes).
+                        double dt = cv.times[k] - clock;
+                        if (dt <= 0.5 && dt > -2.5 && pressed.add(cv.round * 1000 + k)) out.add((double) cv.lanes[k]);
                     }
                 }
                 return out.stream().mapToDouble(Double::doubleValue).toArray();
