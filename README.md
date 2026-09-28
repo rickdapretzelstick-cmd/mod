@@ -28,6 +28,22 @@ on, and the bar becomes a timer that drains; MAX moves also spend it. At zero he
 restored exactly afterwards. The barrier can't be mined, blown up or pushed. If the server stops or crashes mid-domain,
 the world is restored on the next start.
 
+## Visual tiers
+
+Every technique has its own look, and power reads at a glance:
+
+1. **Basic** — melee: thin swing arcs, sharp impact stars, small ripples.
+2. **Base techniques** — Blue (a compact core with light spiralling *in*), Red (a jittering core throwing spikes *out*,
+   compress → shockwave), Infinity (faint ripples where attacks stop), Teleport (space folds shut, snaps open).
+3. **Awakening** — the reveal pillar and ground waves; Max Blue (event horizon, accretion disk, huge lensing, battlefield
+   pull) and Max Red (catastrophic blast, triple shockwave) as inward/outward equals.
+4. **Hollow Purple and Infinite Void** — the only effects with impact frames; Purple is awakening-only.
+
+![Base vs Max](docs/screenshots/base_vs_max.png)
+
+Effects fade when the camera is inside them, spawn fewer particles past 48 blocks, and small ones are sound-only past
+96 blocks. `particleQuality` (0–3) in the client config scales every particle count.
+
 ## Commands (op)
 
 `/jjk arena` test arena with dummies · `/jjk dummy [stand|jump|fight] [n]` · `/jjk nocooldown true|false` ·

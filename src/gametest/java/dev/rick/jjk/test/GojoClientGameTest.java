@@ -94,6 +94,10 @@ public class GojoClientGameTest implements FabricClientGameTest {
             ctx.waitTicks(20);
 
             // --- Awakened kit ---
+            // One target straight ahead: Max Blue's reach would otherwise drag every dummy in the arena across the camera.
+            server.runCommand("execute as @a at @s run kill @e[type=jjk:training_dummy,distance=..40]");
+            server.runCommand("execute as @a at @s rotated ~ 0 run summon jjk:training_dummy ^ ^ ^7");
+            ctx.waitTicks(2);
             in.pressKey(z);
             ctx.waitTicks(8);
             ctx.takeScreenshot("11_max_blue_cast");
@@ -125,6 +129,9 @@ public class GojoClientGameTest implements FabricClientGameTest {
             // --- Infinite Void: record the world first, then check it comes back exactly. ---
             server.runCommand("execute as @a run jjk awakening 100");
             server.runCommand("execute as @a at @s run tp @s ~ ~ ~ 90 5");
+            // Opponents for the domain to trap.
+            server.runCommand("execute as @a at @s rotated ~ 0 run summon jjk:training_dummy ^2 ^ ^5");
+            server.runCommand("execute as @a at @s rotated ~ 0 run summon jjk:training_dummy ^-2 ^ ^5");
             ctx.waitTicks(10);
             Map<BlockPos, BlockState> before = server.computeOnServer(s -> {
                 ServerPlayer p = s.getPlayerList().getPlayers().getFirst();

@@ -155,7 +155,7 @@ public final class JJKConfig {
         public float cost = 120f;
         public int cooldown = 150;
         public double range = 16;
-        public double pullRadius = 7.5;
+        public double pullRadius = 6;
         public double pullStrength = 0.34;
         public int duration = 44;
         /** Extra ticks the orb may be steered while the key is held. */
@@ -249,26 +249,27 @@ public final class JJKConfig {
     }
 
     public static class MaxBlue {
-        public int startup = 12;
+        public int startup = 16;
         public double range = 22;
-        public double pullRadius = 13;
-        public double pullStrength = 0.5;
-        public int duration = 70;
-        public float power = 2.2f;
+        public double pullRadius = 18;
+        public double pullStrength = 0.6;
+        public int duration = 80;
+        /** Visual scale of the anomaly relative to base Blue. */
+        public float power = 5f;
         public float tickDamage = 1.2f;
         public float collapseDamage = 14f;
         public int collapseStun = 30;
-        public double blockPullRadius = 4.5;
+        public double blockPullRadius = 7;
         public int cooldown = 60;
     }
 
     public static class MaxRed {
-        public int minCharge = 14;
+        public int minCharge = 16;
         public int maxCharge = 40;
         public float damageMultiplier = 1.8f;
-        public float radiusMultiplier = 1.9f;
-        public float knockbackMultiplier = 1.6f;
-        public int maxBlocksDestroyed = 220;
+        public float radiusMultiplier = 3.0f;
+        public float knockbackMultiplier = 2.2f;
+        public int maxBlocksDestroyed = 400;
         public int cooldown = 60;
     }
 

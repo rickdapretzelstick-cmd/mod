@@ -19,7 +19,8 @@ public final class ModSounds {
             "purple_form", "purple_fusion", "purple_fire", "purple_travel", "purple_end",
             "teleport",
             "domain_charge", "domain_expand", "domain_ambient", "domain_collapse", "domain_surehit", "domain_clash",
-            "awaken", "awaken_end", "finisher", "domain_block", "max_charge"
+            "awaken", "awaken_end", "finisher", "domain_block", "max_charge",
+            "red_compress", "teleport_out", "teleport_in", "max_blue_hum", "max_blue_collapse", "max_red_explosion", "purple_collision"
     };
     private static final Map<String, SoundEvent> SOUNDS = new LinkedHashMap<>();
 

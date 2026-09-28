@@ -23,8 +23,9 @@ public final class Glow {
      * so stacked spheres read as a glowing orb rather than a solid ball.
      * @param rim when true the falloff is inverted: bright rim, clear middle (a shell/distortion look)
      */
-    public static void sphere(SubmitNodeCollector c, PoseStack ps, float radius, float r, float g, float b, float a, Vector3f toCamera, boolean rim) {
+    public static void sphere(SubmitNodeCollector c, PoseStack ps, float radius, float r, float g, float b, float alpha, Vector3f toCamera, boolean rim) {
         final int lat = 10, lon = 18;
+        float a = alpha * insideFade(ps, radius);
         Vector3f cam = new Vector3f(toCamera).normalize();
         c.submitCustomGeometry(ps, ADDITIVE, (pose, buf) -> {
             for (int i = 0; i < lat; i++) {
@@ -48,8 +49,19 @@ public final class Glow {
         buf.addVertex(pose, nx * radius, ny * radius, nz * radius).setColor(r, g, b, a * k);
     }
 
+    /**
+     * Additive light seen from inside covers the whole screen. Poses are camera-relative, so the translation is the
+     * distance to the camera: dim the effect as the camera gets inside it, down to a hint.
+     */
+    private static float insideFade(PoseStack ps, float radius) {
+        org.joml.Vector3f t = ps.last().pose().getTranslation(new org.joml.Vector3f());
+        float d = t.length();
+        return d >= radius ? 1f : Math.max(0.2f, d / radius);
+    }
+
     /** Camera-facing disc, bright in the middle and fading to nothing at {@code radius}. */
-    public static void halo(SubmitNodeCollector c, PoseStack ps, Quaternionf cameraOrientation, float radius, float r, float g, float b, float a) {
+    public static void halo(SubmitNodeCollector c, PoseStack ps, Quaternionf cameraOrientation, float radius, float r, float g, float b, float alpha) {
+        float a = alpha * insideFade(ps, radius);
         ps.pushPose();
         ps.rotate(cameraOrientation);
         final int seg = 24;
@@ -101,6 +113,50 @@ public final class Glow {
                 buf.addVertex(pose, 0, 0, length).setColor(r, g, b, 0f);
             }
         });
+    }
+
+    /**
+     * Spiral arms in the XZ plane winding from {@code rOuter} into {@code rInner}: the visual signature of pulling inward
+     * (Blue) when the phase advances, or of spraying outward (Red) when it runs backwards. Brighter toward the center.
+     */
+    public static void spiral(SubmitNodeCollector c, PoseStack ps, int arms, float rOuter, float rInner, float turns, float width,
+                              float r, float g, float b, float a, float phase) {
+        final int steps = 28;
+        c.submitCustomGeometry(ps, ADDITIVE, (pose, buf) -> {
+            for (int arm = 0; arm < arms; arm++) {
+                float base = phase + Mth.TWO_PI * arm / arms;
+                for (int i = 0; i < steps; i++) {
+                    float t0 = (float) i / steps, t1 = (float) (i + 1) / steps;
+                    float r0 = rOuter * (float) Math.pow(rInner / rOuter, t0), r1 = rOuter * (float) Math.pow(rInner / rOuter, t1);
+                    float a0 = base + t0 * turns * Mth.TWO_PI, a1 = base + t1 * turns * Mth.TWO_PI;
+                    float w0 = width * (1 - t0 * 0.6f), w1 = width * (1 - t1 * 0.6f);
+                    float al0 = a * (0.15f + 0.85f * t0), al1 = a * (0.15f + 0.85f * t1);
+                    float c0 = Mth.cos(a0), s0 = Mth.sin(a0), c1 = Mth.cos(a1), s1 = Mth.sin(a1);
+                    buf.addVertex(pose, c0 * (r0 - w0), 0, s0 * (r0 - w0)).setColor(r, g, b, 0f);
+                    buf.addVertex(pose, c1 * (r1 - w1), 0, s1 * (r1 - w1)).setColor(r, g, b, 0f);
+                    buf.addVertex(pose, c1 * r1, 0, s1 * r1).setColor(r, g, b, al1);
+                    buf.addVertex(pose, c0 * r0, 0, s0 * r0).setColor(r, g, b, al0);
+                    buf.addVertex(pose, c0 * r0, 0, s0 * r0).setColor(r, g, b, al0);
+                    buf.addVertex(pose, c1 * r1, 0, s1 * r1).setColor(r, g, b, al1);
+                    buf.addVertex(pose, c1 * (r1 + w1), 0, s1 * (r1 + w1)).setColor(r, g, b, 0f);
+                    buf.addVertex(pose, c0 * (r0 + w0), 0, s0 * (r0 + w0)).setColor(r, g, b, 0f);
+                }
+            }
+        });
+    }
+
+    /** Jagged radial spikes around the origin (unstable, violent energy: Red). {@code seed} changes every tick for flicker. */
+    public static void spikes(SubmitNodeCollector c, PoseStack ps, int count, float inner, float outer, float width, float r, float g, float b,
+                              float a, long seed) {
+        java.util.Random rnd = new java.util.Random(seed);
+        for (int i = 0; i < count; i++) {
+            ps.pushPose();
+            ps.rotate(com.mojang.math.Axis.YP.rotation(rnd.nextFloat() * Mth.TWO_PI));
+            ps.rotate(com.mojang.math.Axis.XP.rotation((rnd.nextFloat() - 0.5f) * Mth.PI));
+            ps.translate(0, 0, inner);
+            beam(c, ps, (outer - inner) * (0.4f + rnd.nextFloat() * 0.6f), width, r, g, b, a * (0.5f + rnd.nextFloat() * 0.5f));
+            ps.popPose();
+        }
     }
 
     /** Layered energy orb: white-hot core, colored body, soft outer glow, halo. */

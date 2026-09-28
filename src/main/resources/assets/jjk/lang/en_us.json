@@ -29,5 +29,12 @@
   "jjk.ability.unlimited_void": "Domain",
   "jjk.ability.heavy": "Heavy",
   "block.jjk.domain_barrier": "Domain Barrier",
-  "block.jjk.domain_floor": "Domain Floor"
+  "block.jjk.domain_floor": "Domain Floor",
+  "subtitles.jjk.red_compress": "Red compresses",
+  "subtitles.jjk.teleport_out": "Space folds",
+  "subtitles.jjk.teleport_in": "Space snaps open",
+  "subtitles.jjk.max_blue_hum": "Maximum Blue drones",
+  "subtitles.jjk.max_blue_collapse": "Maximum Blue implodes",
+  "subtitles.jjk.max_red_explosion": "Maximum Red detonates",
+  "subtitles.jjk.purple_collision": "Blue and Red collide"
 }

@@ -122,6 +122,26 @@ public class AwakeningDomainTests {
                 .thenSucceed();
     }
 
+    @GameTest(maxTicks = 5)
+    public void hollowPurpleIsAwakeningOnlyAndMaxIsATierAbove(GameTestHelper h) {
+        applyConfig();
+        var gojo = Characters.get(GojoCharacter.ID);
+        boolean awakenedHasPurple = false;
+        for (AbilitySlot slot : AbilitySlot.values()) {
+            var base = gojo.ability(slot, false);
+            h.assertTrue(base == null || !base.id.equals(HollowPurpleAbility.ID), "base kit must not contain Hollow Purple (" + slot + ")");
+            var awk = gojo.ability(slot, true);
+            if (awk != null && awk.id.equals(HollowPurpleAbility.ID)) awakenedHasPurple = true;
+        }
+        h.assertTrue(awakenedHasPurple, "Hollow Purple is in the awakened kit");
+        var normal = dev.rick.jjk.entity.BlueEntity.Params.normal();
+        var max = dev.rick.jjk.entity.BlueEntity.Params.max();
+        h.assertTrue(max.pullRadius() >= normal.pullRadius() * 2.5, "Max Blue reaches far further (" + max.pullRadius() + " vs " + normal.pullRadius() + ")");
+        h.assertTrue(max.power() >= 3 * normal.power(), "Max Blue is drawn at least three times the size");
+        h.assertTrue(JJKConfig.get().maxRed.radiusMultiplier >= 2.5, "Max Red's blast is a tier above Red's");
+        h.succeed();
+    }
+
     @GameTest(maxTicks = 60)
     public void awakenedMovesSpendTheMeter(GameTestHelper h) {
         floor(h);

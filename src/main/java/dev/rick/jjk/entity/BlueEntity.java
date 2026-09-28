@@ -205,6 +205,10 @@ public class BlueEntity extends TechniqueEntity {
         for (BlockPos p : BlockPos.betweenClosed(c.offset(-ri, -ri, -ri), c.offset(ri, ri, ri))) {
             if (torn >= (params.ultimate() ? 18 : 6)) break;
             if (p.distToCenterSqr(position()) > r * r) continue;
+            // Rip up the surface, not a mine shaft, and never the ground the caster is standing on.
+            if (p.getY() < c.getY() - 2) continue;
+            if (owner != null && p.getY() < owner.getY() + 0.5 && Math.abs(p.getX() + 0.5 - owner.getX()) < 2.5
+                    && Math.abs(p.getZ() + 0.5 - owner.getZ()) < 2.5) continue;
             BlockState s = level.getBlockState(p);
             if (s.isAir() || !loose(level, p, s)) continue;
             BlockPos at = p.immutable();

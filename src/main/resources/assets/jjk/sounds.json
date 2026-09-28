@@ -244,5 +244,47 @@
    "jjk:max_charge"
   ],
   "subtitle": "subtitles.jjk.max_charge"
+ },
+ "red_compress": {
+  "sounds": [
+   "jjk:red_compress"
+  ],
+  "subtitle": "subtitles.jjk.red_compress"
+ },
+ "teleport_out": {
+  "sounds": [
+   "jjk:teleport_out"
+  ],
+  "subtitle": "subtitles.jjk.teleport_out"
+ },
+ "teleport_in": {
+  "sounds": [
+   "jjk:teleport_in"
+  ],
+  "subtitle": "subtitles.jjk.teleport_in"
+ },
+ "max_blue_hum": {
+  "sounds": [
+   "jjk:max_blue_hum"
+  ],
+  "subtitle": "subtitles.jjk.max_blue_hum"
+ },
+ "max_blue_collapse": {
+  "sounds": [
+   "jjk:max_blue_collapse"
+  ],
+  "subtitle": "subtitles.jjk.max_blue_collapse"
+ },
+ "max_red_explosion": {
+  "sounds": [
+   "jjk:max_red_explosion"
+  ],
+  "subtitle": "subtitles.jjk.max_red_explosion"
+ },
+ "purple_collision": {
+  "sounds": [
+   "jjk:purple_collision"
+  ],
+  "subtitle": "subtitles.jjk.purple_collision"
  }
 }

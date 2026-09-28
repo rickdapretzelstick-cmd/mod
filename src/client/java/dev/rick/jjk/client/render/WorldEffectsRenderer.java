@@ -150,6 +150,18 @@ public final class WorldEffectsRenderer {
                 orbAt(c, ps, cam, camRot, lb.add(wob), 0.28f * (1 - 0.4f * ease), ClientFx.BLUE, 1f);
                 orbAt(c, ps, cam, camRot, rr.subtract(wob), 0.28f * (1 - 0.4f * ease), ClientFx.RED, 1f);
                 if (ease > 0.6f) orbAt(c, ps, cam, camRot, front, 0.6f * (ease - 0.6f) / 0.4f, ClientFx.PURPLE, 1.3f);
+                // The opposites repel as they meet: jagged arcs crackling between them, more violent the closer they get.
+                java.util.Random arc = new java.util.Random((long) (totalAge * 2));
+                for (int k = 0; k < 1 + (int) (ease * 3); k++) {
+                    Vec3 a = lb.add(wob), b = rr.subtract(wob);
+                    Vec3 prev = a;
+                    for (int i = 1; i <= 5; i++) {
+                        Vec3 next = a.lerp(b, i / 5.0);
+                        if (i < 5) next = next.add((arc.nextDouble() - 0.5) * 0.3, (arc.nextDouble() - 0.5) * 0.3, (arc.nextDouble() - 0.5) * 0.3);
+                        segment(c, ps, cam, prev, next, 0.03f + 0.03f * ease, k % 2 == 0 ? ClientFx.PURPLE_LIGHT : ClientFx.WHITE, 0.9f);
+                        prev = next;
+                    }
+                }
             }
             case HollowPurpleAbility.PHASE_CHARGED -> {
                 float g = Math.min(1f, phaseAge / Math.max(1, cfg.maxHoldTicks));
@@ -169,6 +181,18 @@ public final class WorldEffectsRenderer {
         push(ps, cam, at);
         Vector3f toCam = new Vector3f((float) (cam.x - at.x), (float) (cam.y - at.y), (float) (cam.z - at.z));
         Glow.orb(c, ps, camRot, toCam, radius, color, intensity);
+        ps.popPose();
+    }
+
+    private static void segment(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Vec3 a, Vec3 b, float width, float[] col, float alpha) {
+        Vec3 d = b.subtract(a);
+        float len = (float) d.length();
+        if (len < 1e-3) return;
+        Vec3 n = d.scale(1 / len);
+        push(ps, cam, a);
+        ps.rotate(Axis.YP.rotation((float) Math.atan2(n.x, n.z)));
+        ps.rotate(Axis.XP.rotation((float) Math.asin(Mth.clamp(-n.y, -1, 1))));
+        Glow.beam(c, ps, len, width, col[0], col[1], col[2], alpha);
         ps.popPose();
     }
 
@@ -208,6 +232,16 @@ public final class WorldEffectsRenderer {
         Vector3f toCam = new Vector3f((float) (cam.x - d.center.x), (float) (cam.y - d.center.y), (float) (cam.z - d.center.z));
         // Bright edge where the barrier meets the world.
         Glow.sphere(c, ps, r * 0.995f, 0.8f, 0.9f, 1f, 0.35f * edgeGlow, toCam, true);
+        if (d.phase == DomainPayload.FORMING) {
+            // The formation front: a white wall of light sweeping outward and erasing the world behind it.
+            float f = Mth.clamp(phaseAge / 20f, 0, 1);
+            Glow.sphere(c, ps, r, 1f, 1f, 1f, 1.2f * (1 - f * 0.6f), toCam, true);
+            Glow.sphere(c, ps, r * 0.96f, 0.5f, 0.7f, 1f, 0.8f * (1 - f), toCam, true);
+            ps.pushPose();
+            ps.translate(0, -0.9f, 0);
+            Glow.ring(c, ps, r, 2.5f, 1f, 1f, 1f, 1f - f * 0.5f);
+            ps.popPose();
+        }
         if (inside) {
             // Information flowing through the void: slow rings of light sweeping around the center.
             float t = (now + partial) * 0.02f;
@@ -219,10 +253,21 @@ public final class WorldEffectsRenderer {
                 ps.popPose();
             }
             // A black hole hanging over the battlefield, with a burning accretion disc, and distant galaxies on the walls.
-            Vec3 holeOffset = new Vec3(0, r * 0.5, 0);
+            // Nebula haze: vast, faint clouds of blue and violet so the void has depth rather than flat black.
+            java.util.Random neb = new java.util.Random(d.id * 17L);
+            for (int i = 0; i < 6; i++) {
+                double yaw = neb.nextDouble() * Math.PI * 2, pitch = 0.1 + neb.nextDouble() * 1.1;
+                Vec3 at = new Vec3(Math.cos(yaw) * Math.cos(pitch), Math.sin(pitch), Math.sin(yaw) * Math.cos(pitch)).scale(r * 0.85);
+                ps.pushPose();
+                ps.translate(at.x, at.y, at.z);
+                boolean violet = i % 2 == 1;
+                Glow.halo(c, ps, camRot, r * (0.35f + neb.nextFloat() * 0.25f), violet ? 0.45f : 0.2f, violet ? 0.25f : 0.35f, 1f, 0.1f);
+                ps.popPose();
+            }
+            Vec3 holeOffset = new Vec3(0, r * 0.42, 0);
             ps.pushPose();
             ps.translate(holeOffset.x, holeOffset.y, holeOffset.z);
-            float hr = Math.max(1.2f, r * 0.08f);
+            float hr = Math.max(1.8f, r * 0.11f);
             c.submitCustomGeometry(ps, RenderTypes.endGateway(), (pose, buf) -> sphereShell(pose, buf, hr, false));
             ps.rotate(com.mojang.math.Axis.XP.rotationDegrees(72));
             ps.rotate(com.mojang.math.Axis.YP.rotation(t * 3));

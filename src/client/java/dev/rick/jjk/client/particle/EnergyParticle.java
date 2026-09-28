@@ -110,7 +110,15 @@ public class EnergyParticle extends SingleQuadParticle {
         float life = (float) age / lifetime;
         quadSize = Mth.lerp(life, startSize, endSize);
         float fade = fadeIn ? Math.min(1f, life * 4f) * (1f - life) : 1f - life * life;
-        alpha = startAlpha * fade;
+        alpha = startAlpha * fade * nearCameraFade();
+    }
+
+    /** Particles drifting right past the lens would fill the screen with one flat smear, so they fade out up close. */
+    private float nearCameraFade() {
+        Vec3 cam = Minecraft.getInstance().gameRenderer.mainCamera().position();
+        double d = Math.sqrt(cam.distanceToSqr(x, y, z));
+        double near = 0.6 + quadSize * 2.5;
+        return (float) Mth.clamp((d - quadSize) / near, 0, 1);
     }
 
     @Override

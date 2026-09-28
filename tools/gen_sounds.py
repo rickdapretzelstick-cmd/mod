@@ -147,4 +147,22 @@ save('finisher', mix(boom(1.6, 90, 22, 1.4, 3), highpass(noise(0.08), 2500) * en
 save('domain_block', mix(chime(0.4, [180, 271, 405], 9) * 0.8, thump(0.2, 90, 50, 18)))
 save('max_charge', mix(pad_chord(1.6, [110, 164.8, 220], 0.3) * np.linspace(0.3, 1, int(SR * 1.6)), crackle(1.6, 2000) * np.linspace(0.1, 1, int(SR * 1.6)) * 0.6,
                       reverse(whoosh(1.6, 150, 7000)) * 0.5))
+
+# --- polish pass: every technique gets its own voice ---
+# Red: the charge squeezes down to a point before it releases.
+save('red_compress', mix(reverse(whoosh(0.35, 600, 7000)) * 0.8, sine_sweep(0.35, 300, 1800) * np.linspace(0, 1, int(SR * 0.35)) ** 2 * 0.5))
+# Teleport: space folding shut, then snapping open.
+save('teleport_out', mix(reverse(whoosh(0.18, 1500, 9000)), sine_sweep(0.18, 900, 2400) * env(int(SR * 0.18), 0.01, 10) * 0.3))
+save('teleport_in', mix(highpass(noise(0.03), 3000) * env(int(SR * 0.03), 0.001, 80), whoosh(0.2, 6000, 1200) * 0.6, chime(0.3, [1975, 2960], 14) * 0.3))
+# Max Blue: a sub-bass drone that feels like the ground is being pulled away.
+tt = t(2.0); sub = (np.sin(2 * np.pi * 32 * tt) + 0.8 * np.sin(2 * np.pi * 33.7 * tt) + 0.5 * np.sin(2 * np.pi * 64 * tt)) * (0.75 + 0.25 * np.sin(2 * np.pi * 1.2 * tt))
+save('max_blue_hum', mix(softclip(sub, 1.4), bandsweep(noise(2.0), 120, 600) * 0.4) * np.minimum(1, np.minimum(tt / 0.2, (2.0 - tt) / 0.3)))
+save('max_blue_collapse', mix(reverse(whoosh(0.9, 100, 8000)), np.concatenate([np.zeros(int(SR * 0.8)), boom(1.8, 70, 18, 1.2, 2.5)]),
+                               np.concatenate([np.zeros(int(SR * 0.8)), chime(1.2, [220, 330], 3) * 0.25])))
+# Max Red: a catastrophic blast with a long rolling tail.
+save('max_red_explosion', delay(mix(boom(2.6, 110, 16, 1.4, 2), crackle(2.4, 3000) * env(int(SR * 2.4), 0.001, 2.5) * 0.7,
+                                    highpass(noise(0.1), 2000) * env(int(SR * 0.1), 0.001, 30)), 0.19, 0.35, 3))
+# Purple: the two opposites grinding against each other before they fuse.
+tt = t(0.9); beat = np.sin(2 * np.pi * 180 * tt) * np.sin(2 * np.pi * 187 * tt) + 0.5 * np.sign(np.sin(2 * np.pi * 90 * tt))
+save('purple_collision', mix(lowpass(beat, 2500) * np.linspace(0.3, 1, len(tt)), crackle(0.9, 3000) * np.linspace(0.2, 1, len(tt)) * 0.6))
 print('generated', len(os.listdir(OUT)), 'sounds')

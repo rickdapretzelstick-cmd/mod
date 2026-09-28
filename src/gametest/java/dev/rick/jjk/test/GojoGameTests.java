@@ -317,12 +317,13 @@ public class GojoGameTests {
     @GameTest(maxTicks = 100, padding = 16, skyAccess = true, environment = "jjk-test:pull_a")
     public void bluePullsEnemiesTogether(GameTestHelper h) {
         floor(h, 6);
-        TrainingDummy a = dummy(h, 8, 1);
-        TrainingDummy b = dummy(h, 8, 7);
-        TrainingDummy c = dummy(h, 11, 4);
-        TrainingDummy center = dummy(h, 8, 4);
+        // Everyone stays inside the test's own 8x8 bounds: entities outside it can land in chunks that don't tick.
+        TrainingDummy a = dummy(h, 5, 1);
+        TrainingDummy b = dummy(h, 5, 7);
+        TrainingDummy c = dummy(h, 7.9, 4);
+        TrainingDummy center = dummy(h, 5, 4);
         for (TrainingDummy d : List.of(a, b, c, center)) infinityOff(d);
-        TrainingDummy g = gojo(h, 1, 4, center);
+        TrainingDummy g = gojo(h, 0.5, 4, center);
         h.startSequence()
                 .thenExecute(() -> press(g, AbilitySlot.SKILL_1))
                 .thenExecute(() -> release(g, AbilitySlot.SKILL_1))

@@ -53,7 +53,7 @@ public class RedEntity extends TechniqueEntity {
         e.direction = dir.normalize();
         e.charge = charge;
         e.max = max;
-        e.setScale((1f + charge) * (max ? 2.4f : 1f));
+        e.setScale((1f + charge) * (max ? 5f : 1f));
         e.setDeltaMovement(e.direction.scale(JJKConfig.get().red.speed));
         level.addFreshEntity(e);
         return e;
@@ -77,7 +77,7 @@ public class RedEntity extends TechniqueEntity {
             return;
         }
         // Entities along the swept path.
-        HitShape sweep = HitShape.capsule(from, to, (0.6 + 0.3 * charge) * (max ? 2.2 : 1));
+        HitShape sweep = HitShape.capsule(from, to, (0.6 + 0.3 * charge) * (max ? 4 : 1));
         List<LivingEntity> hits = HitboxQuery.targets(owner, sweep, 0.2, false);
         BlockHitResult block = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
         Vec3 impact = null;
@@ -133,8 +133,9 @@ public class RedEntity extends TechniqueEntity {
         }
         float scale = (float) (radius / cfg.radius);
         Fx.play(level, fx, pos, direct.getDeltaMovement().lengthSqr() > 1e-4 ? direct.getDeltaMovement().normalize() : owner.getLookAngle(), scale, owner.getId());
-        Fx.shake(level, pos, 24 + radius * 2, 0.9f * scale, 14);
-        Fx.flash(level, pos, 10 + radius * 2, 0x55FF2020, 5);
+        // Max Red's blast radius scales far past base Red; the camera kick is capped so it stays playable.
+        Fx.shake(level, pos, 24 + radius * 2, Math.min(1.6f, 0.9f * scale), 14);
+        Fx.flash(level, pos, 10 + radius * 2, max ? 0x40FF3020 : 0x55FF2020, 5);
 
         final double r = radius;
         Hit hit = Hit.builder(owner, "red").direct(direct).type(ModDamageTypes.RED).damage(damage)

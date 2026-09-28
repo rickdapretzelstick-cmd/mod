@@ -60,6 +60,7 @@ public class JJKClient implements ClientModInitializer {
             ClientState.reset();
             ClientAnimations.clear();
             ScreenEffects.reset();
+            dev.rick.jjk.client.render.Flashes.clear();
         });
     }
 
@@ -127,6 +128,48 @@ public class JJKClient implements ClientModInitializer {
         });
     }
 
+
+    /** Max Blue owns the battlefield: a wide field of light and dust pouring in, a sub-bass drone, the ground trembling. */
+    private static void maxBlueAmbient(Minecraft mc, BlueEntity blue, Vec3 core) {
+        var rnd = mc.level.getRandom();
+        for (int i = 0; i < ClientFx.q(10); i++) {
+            Vec3 from = core.add(ClientFx.randomUnit().multiply(1, 0.5, 1).scale(8 + rnd.nextDouble() * 10));
+            Vec3 tangent = from.subtract(core).cross(new Vec3(0, 1, 0)).normalize().scale(0.25);
+            float[] c = i % 4 == 0 ? ClientFx.WHITE : i % 2 == 0 ? ClientFx.BLUE_LIGHT : ClientFx.BLUE;
+            ClientFx.add(mc.level, from, tangent, EnergyParticle.Sprite.GLOW, c, 0.8f, 0.3f, 0.05f, 30).attract(core, 0.035).fadeIn();
+        }
+        // Grit torn off the ground and dragged toward the core.
+        if (blue.tickCount % 2 == 0) {
+            double a = rnd.nextDouble() * Math.PI * 2, r = 5 + rnd.nextDouble() * 12;
+            net.minecraft.core.BlockPos ground = net.minecraft.core.BlockPos.containing(core.x + Math.cos(a) * r, core.y - 1, core.z + Math.sin(a) * r);
+            var st = mc.level.getBlockState(ground);
+            if (!st.isAir()) {
+                Vec3 at = Vec3.atCenterOf(ground).add(0, 0.6, 0);
+                Vec3 v = core.subtract(at).normalize().scale(0.5).add(0, 0.25, 0);
+                for (int i = 0; i < ClientFx.q(3); i++) {
+                    mc.level.addParticle(new net.minecraft.core.particles.BlockParticleOption(net.minecraft.core.particles.ParticleTypes.BLOCK, st),
+                            at.x, at.y, at.z, v.x, v.y, v.z);
+                }
+            }
+        }
+        if ((blue.tickCount + blue.getId()) % 36 == 0) ClientFx.sound("max_blue_hum", core, 3f, 1f);
+        double d = mc.player.position().distanceTo(core);
+        if (d < 24 && blue.tickCount % 4 == 0) ScreenEffects.shake((float) (0.25 * (1 - d / 24)), 5);
+    }
+
+    /** Awakened: light rising off the body like heat, and a faint rim of blue around it. */
+    private static void awakenedAura(Minecraft mc, LivingEntity le) {
+        boolean self = le == mc.player && mc.options.getCameraType().isFirstPerson();
+        var rnd = mc.level.getRandom();
+        int n = self ? 1 : ClientFx.q(3);
+        for (int i = 0; i < n; i++) {
+            double a = rnd.nextDouble() * Math.PI * 2, r = 0.35 + rnd.nextDouble() * 0.3;
+            Vec3 at = le.position().add(Math.cos(a) * r, rnd.nextDouble() * le.getBbHeight(), Math.sin(a) * r);
+            ClientFx.add(mc.level, at, new Vec3(0, 0.05 + rnd.nextDouble() * 0.05, 0), EnergyParticle.Sprite.GLOW,
+                    i % 3 == 0 ? ClientFx.WHITE : ClientFx.BLUE_LIGHT, 0.6f, 0.12f, 0.02f, 14).fadeIn();
+        }
+    }
+
     private static int ambientTicks;
 
     private static void tick(Minecraft mc) {
@@ -143,13 +186,20 @@ public class JJKClient implements ClientModInitializer {
         for (Entity e : mc.level.entitiesForRendering()) {
             if (e instanceof BlueEntity blue && !blue.isCollapsing()) {
                 Vec3 core = blue.position().add(0, 0.5, 0);
-                for (int i = 0; i < ClientFx.q(4); i++) {
-                    Vec3 from = core.add(ClientFx.randomUnit().scale(3 + mc.level.getRandom().nextDouble() * 4));
-                    Vec3 tangent = from.subtract(core).cross(new Vec3(0, 1, 0)).normalize().scale(0.12);
-                    ClientFx.add(mc.level, from, tangent, EnergyParticle.Sprite.GLOW, i % 3 == 0 ? ClientFx.WHITE : ClientFx.BLUE,
-                            0.7f, 0.12f, 0.03f, 20).attract(core, 0.05).fadeIn();
+                boolean max = blue.scale() >= dev.rick.jjk.client.render.TechniqueRenderer.MAX_BLUE_SCALE;
+                if (max) {
+                    maxBlueAmbient(mc, blue, core);
+                } else {
+                    for (int i = 0; i < ClientFx.q(3); i++) {
+                        Vec3 from = core.add(ClientFx.randomUnit().scale(2 + mc.level.getRandom().nextDouble() * 3));
+                        Vec3 tangent = from.subtract(core).cross(new Vec3(0, 1, 0)).normalize().scale(0.1);
+                        ClientFx.add(mc.level, from, tangent, EnergyParticle.Sprite.GLOW, i % 3 == 0 ? ClientFx.WHITE : ClientFx.BLUE,
+                                0.7f, 0.1f, 0.03f, 18).attract(core, 0.05).fadeIn();
+                    }
+                    if ((blue.tickCount + blue.getId()) % 30 == 0) ClientFx.sound("blue_hum", core, 1.2f, 1f);
                 }
-                if ((blue.tickCount + blue.getId()) % 30 == 0) ClientFx.sound("blue_hum", core, 1.2f, 1f);
+            } else if (e instanceof LivingEntity le && Combat.has(le, CombatStatus.AWAKENED)) {
+                awakenedAura(mc, le);
             }
         }
         for (ClientState.Domain d : ClientState.DOMAINS.values()) {
