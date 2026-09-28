@@ -31,7 +31,9 @@
   },
   "block": {
     "sounds": [
-      "jjk:block"
+      "jjk:block",
+      "jjk:block_2",
+      "jjk:block_3"
     ],
     "subtitle": "subtitles.jjk.block"
   },
@@ -55,7 +57,9 @@
   },
   "ground_impact": {
     "sounds": [
-      "jjk:ground_impact"
+      "jjk:ground_impact",
+      "jjk:ground_impact_2",
+      "jjk:ground_impact_4"
     ],
     "subtitle": "subtitles.jjk.ground_impact"
   },
@@ -472,6 +476,118 @@
   "idg_ambient": {
     "sounds": [
       "jjk:idg_ambient"
+    ]
+  },
+  "side_dash": {
+    "sounds": [
+      "jjk:side_dash"
+    ]
+  },
+  "awaken_grab": {
+    "sounds": [
+      "jjk:awaken_grab"
+    ]
+  },
+  "max_blue_wind": {
+    "sounds": [
+      "jjk:max_charge"
+    ]
+  },
+  "max_blue_absorb": {
+    "sounds": [
+      "jjk:max_blue_absorb"
+    ]
+  },
+  "max_red_charge": {
+    "sounds": [
+      "jjk:max_charge"
+    ]
+  },
+  "max_red_fire": {
+    "sounds": [
+      "jjk:red_fire"
+    ]
+  },
+  "shutter_divide": {
+    "sounds": [
+      "jjk:hit_heavy"
+    ]
+  },
+  "rough_air": {
+    "sounds": [
+      "jjk:rough_impact"
+    ]
+  },
+  "fever_hit": {
+    "sounds": [
+      "jjk:hit_heavy"
+    ]
+  },
+  "fever_crush": {
+    "sounds": [
+      "jjk:fever_crush"
+    ]
+  },
+  "idg_voice": {
+    "sounds": [
+      "jjk:domain_charge"
+    ]
+  },
+  "idg_sealed": {
+    "sounds": [
+      "jjk:idg_sealed"
+    ]
+  },
+  "idg_music": {
+    "sounds": [
+      {
+        "name": "jjk:idg_music",
+        "stream": true
+      }
+    ]
+  },
+  "jackpot_music": {
+    "sounds": [
+      {
+        "name": "jjk:jackpot_music",
+        "stream": true
+      }
+    ]
+  },
+  "rushdown_rush": {
+    "sounds": [
+      "jjk:fever_rush"
+    ]
+  },
+  "rushdown_grab": {
+    "sounds": [
+      "jjk:hit_heavy"
+    ]
+  },
+  "overwhelm_fist": {
+    "sounds": [
+      "jjk:overwhelm_fist",
+      "jjk:overwhelm_fist_2"
+    ]
+  },
+  "overwhelm_swing": {
+    "sounds": [
+      "jjk:swing_heavy"
+    ]
+  },
+  "surge_dash": {
+    "sounds": [
+      "jjk:surge_dash"
+    ]
+  },
+  "surge_hit": {
+    "sounds": [
+      "jjk:lucky_hit"
+    ]
+  },
+  "surge_launch": {
+    "sounds": [
+      "jjk:surge_launch"
     ]
   }
 }

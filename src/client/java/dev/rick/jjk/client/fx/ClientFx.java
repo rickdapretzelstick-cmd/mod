@@ -153,7 +153,7 @@ public final class ClientFx {
                 if (mine) ScreenEffects.shake(0.6f, 10);
             }
             case "evade" -> {
-                sound("dash", pos, 0.4f, 1.6f);
+                sound("side_dash", pos, 0.8f, 1f);
                 if (drawn) burst(level, pos, q(6), 0.08, Sprite.SMOKE, GREY, 0.45f, 10);
             }
             case "dash" -> {
@@ -304,6 +304,7 @@ public final class ClientFx {
             // --- Hollow Purple: Blue, Red, collision, the core, the release, the impact. ---
             case "purple_blue" -> {
                 sound("purple_form", pos, 0.9f, 0.8f);
+                sound("purple_music", pos, 3f, 1f);
                 Flashes.ring(pos, 1.6f, 0.2f, BLUE_LIGHT, 0.8f, 10, now);
                 if (drawn) implode(level, pos, 1.6, q(14), BLUE, 0.12f, 12);
             }
@@ -433,7 +434,6 @@ public final class ClientFx {
             }
             case "domain_expand" -> {
                 // The domain starts at the sorcerer's feet: a burst of energy into the ground that the structure grows from.
-                sound("domain_charge", pos, 3f, 0.8f);
                 sound("max_charge", pos, 2f, 0.7f);
                 Vec3 feet = pos.add(0, -0.5, 0);
                 Flashes.flash(feet.add(0, 0.6, 0), 2.5f, 0.5f, WHITE, 1f, 8, now);
@@ -467,7 +467,10 @@ public final class ClientFx {
             case "domain_sealed" -> {
                 // The final seal: one pulse runs through the whole structure.
                 float r = Math.max(4f, s);
-                sound("domain_expand", pos, 6f, 1f);
+                ClientState.Domain sealed = ClientState.domainOwnedBy(p.entityId());
+                boolean idg = sealed != null && dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(sealed.definition);
+                sound(idg ? "idg_sealed" : "domain_expand", pos, 6f, 1f);
+                sound(idg ? "idg_music" : "uv_music", pos, 4f, 1f);
                 Flashes.lens(pos, r * 0.85f, r * 1.08f, WHITE, 0.9f, 12, now);
                 Flashes.ground(pos.add(0, -0.45, 0), r * 0.2f, r * 1.1f, BLUE_LIGHT, 0.8f, 14, now);
                 Flashes.ring(pos, r * 0.5f, r * 1.2f, WHITE, 0.6f, 12, now);
@@ -485,6 +488,8 @@ public final class ClientFx {
             }
             case "domain_collapse" -> {
                 sound("domain_collapse", pos, 5f, 1f);
+                ClientState.Domain ending = ClientState.domainOwnedBy(p.entityId());
+                if (ending != null) stopSound(dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(ending.definition) ? "idg_music" : "uv_music");
                 Flashes.lens(pos, s, 1f, WHITE, 0.7f, 20, now);
                 if (drawn) sphereShell(level, pos, s * 0.9, q(60), WHITE, 0.3f, 20, -0.08).forEach(x -> x.gravity(0.3f));
             }
@@ -501,7 +506,7 @@ public final class ClientFx {
             }
             // --- Awakening: the biggest non-ultimate moment in the kit. ---
             case "awaken_start" -> {
-                sound("max_charge", pos, 2f, 0.8f);
+                sound("awaken_grab", pos, 2f, 1f);
                 Flashes.lens(pos, 7f, 0.8f, BLUE_LIGHT, 0.6f, 17, now);
                 for (int i = 0; i < 3; i++) Flashes.ring(pos, 6f - i, 0.3f, i == 1 ? WHITE : BLUE_LIGHT, 0.6f, 12, now + i * 5L);
                 Flashes.ground(groundBelow(level, pos), 6f, 0.5f, BLUE_LIGHT, 0.6f, 17, now);
@@ -551,7 +556,7 @@ public final class ClientFx {
             }
             // --- Max techniques: the same identities, a whole tier above. ---
             case "max_blue_cast" -> {
-                sound("max_charge", pos, 1.6f, 1.2f);
+                sound("max_blue_wind", pos, 1.6f, 1f);
                 Vec3 at = pos.add(dir.scale(1.2));
                 Flashes.lens(at, 5f, 0.3f, BLUE, 0.7f, 16, now);
                 for (int i = 0; i < 3; i++) Flashes.ring(at, 4.5f, 0.2f, BLUE_LIGHT, 0.7f, 10, now + i * 5L);
@@ -559,7 +564,7 @@ public final class ClientFx {
                 if (mine) ScreenEffects.fovPunch(-0.06f);
             }
             case "max_blue_spawn" -> {
-                sound("max_blue_collapse", pos, 3f, 1.1f);
+                sound("max_blue_absorb", pos, 3f, 1f);
                 sound("max_blue_hum", pos, 3f, 1f);
                 Vec3 core = pos.add(0, 0.5, 0);
                 // The world caves toward a single point: huge collapsing lens, rings pouring in, the ground dragged along.
@@ -589,8 +594,7 @@ public final class ClientFx {
                 distanceShake(pos, 60, 0.8f);
             }
             case "max_red_charge" -> {
-                sound("max_charge", pos, 1.8f, 1.35f);
-                sound("red_charge", pos, 1.4f, 0.7f);
+                sound("max_red_charge", pos, 1.8f, 1f);
                 Flashes.lens(pos, 0.3f, 2.5f, RED, 0.6f, 14, now);
                 Flashes.ring(pos, 3f, 0.2f, ORANGE, 0.8f, 14, now);
                 if (drawn) {
@@ -599,9 +603,7 @@ public final class ClientFx {
                 }
             }
             case "max_red_fire" -> {
-                sound("red_compress", pos, 1.5f, 0.7f);
-                sound("red_fire", pos, 2.5f, 0.7f);
-                sound("purple_fire", pos, 1.2f, 1.6f);
+                sound("max_red_fire", pos, 2.5f, 1f);
                 Flashes.ring(pos, 4f, 0.2f, ORANGE, 1f, 3, now);
                 Flashes.flash(pos, 5f, 1f, RED, 1f, 6, now + 2);
                 for (int i = 0; i < 3; i++) Flashes.ripple(pos.add(dir.scale(1 + i * 1.8)), dir, 0.5f, 4f + i * 1.5f, ORANGE, 0.8f - i * 0.2f, 9, now + 2 + i);
@@ -902,11 +904,18 @@ public final class ClientFx {
         if (d < radius) ScreenEffects.shake((float) (max * (1 - d / radius)), 12);
     }
 
+    /** Cuts a playing sound short (domain music when the domain ends). */
+    public static void stopSound(String name) {
+        Minecraft.getInstance().getSoundManager().stop(dev.rick.jjk.JJK.id(name), SoundSource.PLAYERS);
+    }
+
     public static void sound(String name, Vec3 pos, float volume, float pitch) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
         float v = volume * JJKConfig.get().client.soundVolume;
         if (v <= 0) return;
+        // Events with no audio yet (music whose Roblox asset needs a login) stay silent instead of logging a warning.
+        if (mc.getSoundManager().getSoundEvent(ModSounds.get(name).location()) == null) return;
         mc.level.playLocalSound(pos.x, pos.y, pos.z, ModSounds.get(name), SoundSource.PLAYERS, v, pitch, false);
     }
 

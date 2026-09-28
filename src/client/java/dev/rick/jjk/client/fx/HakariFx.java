@@ -115,7 +115,7 @@ final class HakariFx {
                 if (drawn) swingTrail(pos, dir, 1.4f, 0.12f, now);
             }
             case "fever_kick" -> {
-                sound("hit_heavy", pos, 1f, 1.05f);
+                sound("fever_hit", pos, 1f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 1.4f, 0.3f, WHITE, 1f, 4, now);
                     impactStar(pos, dir, 6, 1.4f, 0.07f, HOT_PINK, now);
@@ -166,7 +166,7 @@ final class HakariFx {
             case "door_guard_down" -> sound("door_open", pos, 0.6f, 1.3f);
             // --- Idle Death Gamble ---
             case "idg_charge" -> {
-                sound("domain_charge", pos, 1.4f, 1.1f);
+                sound("idg_voice", pos, 1.4f, 1f);
                 sound("gamble_spin", pos, 1f, 1f);
                 // The hand sign: white smoke gathering, no neon (the cut-in carries the moment).
                 if (drawn) for (int i = 0; i < q(10); i++) {
@@ -218,6 +218,7 @@ final class HakariFx {
             // --- Jackpot ---
             case "jackpot" -> {
                 sound("jackpot", pos, 2.5f, 1f);
+                sound("jackpot_music", pos, 3f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 6f, 0.8f, WHITE, 1f, 12, now);
                     Flashes.lens(pos, 1f, 9f, JADE, 0.9f, 22, now);
@@ -254,6 +255,7 @@ final class HakariFx {
             }
             case "jackpot_end" -> {
                 sound("jackpot_end", pos, 1f, 1f);
+                ClientFx.stopSound("jackpot_music");
                 if (drawn) burst(level, pos, q(16), 0.1, Sprite.GLOW, JADE, 0.3f, 16);
             }
             // --- Jackpot moves ---
@@ -280,7 +282,7 @@ final class HakariFx {
                 if (isAttackerClose(mc, pos)) ScreenEffects.fovPunch(0.05f);
             }
             case "rushdown_start" -> {
-                sound("fever_rush", pos, 1f, 0.9f);
+                sound("rushdown_rush", pos, 1f, 1f);
                 if (drawn) Flashes.ground(groundBelow(level, pos), 0.3f, 2f, JADE, 0.7f, 8, now);
             }
             case "rushdown_step" -> {
@@ -290,7 +292,7 @@ final class HakariFx {
                 }
             }
             case "rushdown_grab" -> {
-                sound("hit_heavy", pos, 1.1f, 0.85f);
+                sound("rushdown_grab", pos, 1.1f, 1f);
                 victimFeedback(p, 0.6f);
             }
             case "rushdown_drag" -> {
@@ -305,7 +307,7 @@ final class HakariFx {
                 if (drawn) implode(level, pos, 1.8, q(16), JADE, 0.12f, 10);
             }
             case "overwhelm_punch" -> {
-                sound("swing_heavy", pos, 0.8f, 1.1f + RNG.nextFloat() * 0.2f);
+                sound("overwhelm_fist", pos, 0.9f, 0.95f + RNG.nextFloat() * 0.1f);
                 if (drawn) {
                     Flashes.ripple(pos, dir, 0.2f, 1.2f * s, JADE, 0.6f, 5, now);
                     swingTrail(pos, dir, 1.1f, 0.1f, now);
@@ -320,6 +322,7 @@ final class HakariFx {
                 victimFeedback(p, 0.3f);
             }
             case "overwhelm_final" -> {
+                sound("overwhelm_swing", pos, 1.4f, 1f);
                 sound("lucky_final", pos, 1.6f, 0.75f);
                 sound("rough_impact", pos, 1.2f, 1.1f);
                 if (drawn) {
@@ -337,7 +340,7 @@ final class HakariFx {
                 }
             }
             case "surge_dash", "surge_hit" -> {
-                sound(p.id().equals("surge_dash") ? "fever_rush" : "lucky_hit", pos, 1f, 1.2f);
+                sound(p.id().equals("surge_dash") ? "surge_dash" : "surge_hit", pos, 1f, 1f);
                 if (drawn) {
                     afterimage(level, pos);
                     Flashes.beam(pos, pos.add(dir.scale(5)), 0.3f, JADE, 0.8f, 6, now);
@@ -361,7 +364,7 @@ final class HakariFx {
                 }
             }
             case "surge_kick" -> {
-                sound("ground_impact", pos, 1.2f, 0.9f);
+                sound("surge_launch", pos, 1.2f, 1f);
                 if (drawn) {
                     Flashes.beam(pos.add(0, 2, 0), pos.add(0, -1.5, 0), 0.5f, JADE, 0.9f, 6, now);
                     Flashes.ground(groundBelow(level, pos), 0.4f, 3.5f, JADE, 0.8f, 10, now + 2);
@@ -419,8 +422,8 @@ final class HakariFx {
                 }
             }
             case "shutter_finisher" -> {
-                sound("shutter_slam", pos, 1.5f, 0.7f);
-                sound("hit_heavy", pos, 1.3f, 0.6f);
+                sound("shutter_slam", pos, 1.5f, 0.85f);
+                sound("shutter_divide", pos, 1.3f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 3.6f, 0.6f, WHITE, 1f, 6, now);
                     Flashes.ripple(pos, up, 0.3f, 4f, HOT_PINK, 1f, 10, now);
@@ -434,7 +437,7 @@ final class HakariFx {
                 victimFeedback(p, 0.7f);
             }
             case "rough_stomp" -> {
-                sound("rough_impact", pos, 1.4f, 0.8f);
+                sound("rough_air", pos, 1.4f, 1f);
                 if (drawn) {
                     Flashes.ground(groundBelow(level, pos), 0.3f, 3.8f * s, JADE, 0.8f, 12, now);
                     Flashes.ripple(pos.add(0, 0.2, 0), up, 0.3f, 3.6f * s, ROUGH, 0.9f, 10, now);
@@ -448,7 +451,7 @@ final class HakariFx {
                 if (drawn) Flashes.lens(pos, 0.2f, 1.8f, PINK, 0.7f, 8, now);
             }
             case "fever_crush" -> {
-                sound("fever_break", pos, 1.3f, 0.85f);
+                sound("fever_crush", pos, 1.3f, 1f);
                 if (drawn) {
                     Flashes.ground(groundBelow(level, pos), 0.3f, 3f * s, PINK, 0.8f, 10, now);
                     impactStar(pos.add(0, 0.5, 0), new Vec3(0, -1, 0), 10, 2.6f * s, 0.12f, WHITE, now);
