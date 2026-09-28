@@ -78,7 +78,7 @@ public class HollowPurpleEntity extends TechniqueEntity {
         }
 
         Hit base = Hit.builder(owner, "hollow_purple").direct(this).type(ModDamageTypes.HOLLOW_PURPLE).damage(cfg.damage)
-                .tag(AttackTag.TECHNIQUE, AttackTag.LIMITLESS, AttackTag.BYPASS_INFINITY, AttackTag.UNBLOCKABLE, AttackTag.OTG)
+                .tag(AttackTag.TECHNIQUE, AttackTag.LIMITLESS, AttackTag.BYPASS_INFINITY, AttackTag.UNBLOCKABLE, AttackTag.OTG, AttackTag.ULTIMATE)
                 .origin(from).hitstun(30).status(CombatStatus.LAUNCHED, 30).noComboScaling().fx("purple_hit", 1.5f).build();
         for (LivingEntity t : HitboxQuery.targets(owner, HitShape.capsule(from, to, radius), 0.3, false)) {
             if (!hit.add(t.getUUID())) continue;
@@ -111,7 +111,7 @@ public class HollowPurpleEntity extends TechniqueEntity {
         Fx.shake(level, pos, 40, 1.2f, 16);
         Fx.flash(level, pos, 30, 0x88B040FF, 8);
         Hit impact = Hit.builder(owner, "hollow_purple_impact").direct(this).type(ModDamageTypes.HOLLOW_PURPLE).damage(cfg.impactDamage)
-                .tag(AttackTag.TECHNIQUE, AttackTag.LIMITLESS, AttackTag.BYPASS_INFINITY, AttackTag.AREA, AttackTag.EXPLOSION, AttackTag.OTG)
+                .tag(AttackTag.TECHNIQUE, AttackTag.LIMITLESS, AttackTag.BYPASS_INFINITY, AttackTag.AREA, AttackTag.EXPLOSION, AttackTag.OTG, AttackTag.ULTIMATE)
                 .origin(pos).knockback(Knockback.radial(pos, cfg.knockback * 0.7, 0.8)).hitstun(24).status(CombatStatus.LAUNCHED, 24)
                 .noComboScaling().fx("purple_hit", 1.2f).build();
         for (LivingEntity t : HitboxQuery.targets(owner, HitShape.sphere(pos, cfg.impactRadius), 0.3, false)) {

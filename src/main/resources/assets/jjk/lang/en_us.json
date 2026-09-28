@@ -27,5 +27,7 @@
   "jjk.ability.teleport": "Teleport",
   "jjk.ability.infinity": "Infinity",
   "jjk.ability.unlimited_void": "Domain",
-  "jjk.ability.heavy": "Heavy"
+  "jjk.ability.heavy": "Heavy",
+  "block.jjk.domain_barrier": "Domain Barrier",
+  "block.jjk.domain_floor": "Domain Floor"
 }

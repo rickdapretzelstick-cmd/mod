@@ -48,20 +48,44 @@ public class BlueEntity extends TechniqueEntity {
     private int collapseAge = -1;
     @Nullable private Vec3 steerTarget;
     private float power = 1f;
+    private Params params = Params.normal();
+
+    /** Tuning for one Blue. Normal Blue and Max Blue are the same technique at different scales. */
+    public record Params(double pullRadius, double pullStrength, int duration, float tickDamage, int tickDamageInterval, float collapseDamage,
+                         int collapseStun, double blockPullRadius, boolean pullsBlocks, float power, boolean ultimate) {
+        public static Params normal() {
+            JJKConfig.Blue c = JJKConfig.get().blue;
+            return new Params(c.pullRadius, c.pullStrength, c.duration, c.tickDamage, c.tickDamageInterval, c.collapseDamage, c.collapseStun,
+                    c.blockPullRadius, c.pullsBlocks, 1f, false);
+        }
+
+        public static Params max() {
+            JJKConfig.MaxBlue c = JJKConfig.get().maxBlue;
+            JJKConfig.Blue b = JJKConfig.get().blue;
+            return new Params(c.pullRadius, c.pullStrength, c.duration, c.tickDamage, b.tickDamageInterval, c.collapseDamage, c.collapseStun,
+                    c.blockPullRadius, b.pullsBlocks, c.power, true);
+        }
+    }
 
     public BlueEntity(EntityType<? extends BlueEntity> type, Level level) {
         super(type, level);
     }
 
     public static BlueEntity spawn(ServerLevel level, LivingEntity owner, Vec3 pos, float power) {
+        return spawn(level, owner, pos, Params.normal());
+    }
+
+    public static BlueEntity spawn(ServerLevel level, LivingEntity owner, Vec3 pos, Params params) {
+        float power = params.power();
         BlueEntity e = new BlueEntity(ModEntities.BLUE, level);
         e.setOwner(owner);
         e.setPos(pos.x, pos.y, pos.z);
         e.power = power;
-        e.lifetime = JJKConfig.get().blue.duration;
+        e.params = params;
+        e.lifetime = params.duration();
         e.setScale(power);
         level.addFreshEntity(e);
-        Fx.play(level, "blue_spawn", pos, Vec3.ZERO, power, e.getId());
+        Fx.play(level, params.ultimate() ? "max_blue_spawn" : "blue_spawn", pos, Vec3.ZERO, power, e.getId());
         return e;
     }
 
@@ -127,15 +151,15 @@ public class BlueEntity extends TechniqueEntity {
             return;
         }
         pull(level, cfg);
-        if (cfg.pullsBlocks && tickCount % 3 == 0) tearBlocks(level, cfg);
+        if (params.pullsBlocks() && tickCount % 3 == 0) tearBlocks(level, cfg);
         if (tickCount >= lifetime) collapse(level, cfg);
     }
 
     private void pull(ServerLevel level, JJKConfig.Blue cfg) {
         Vec3 core = position();
-        double radius = cfg.pullRadius * power;
+        double radius = params.pullRadius();
         long now = level.getGameTime();
-        boolean damageTick = tickCount % Math.max(1, cfg.tickDamageInterval) == 0;
+        boolean damageTick = tickCount % Math.max(1, params.tickDamageInterval()) == 0;
         for (Entity e : level.getEntities(this, new AABB(core, core).inflate(radius), e -> e != owner && !(e instanceof TechniqueEntity))) {
             Vec3 c = e.getBoundingBox().getCenter();
             double d = c.distanceTo(core);
@@ -148,7 +172,7 @@ public class BlueEntity extends TechniqueEntity {
                 IncomingAttack atk = new IncomingAttack(living, owner, this, core, Set.of(AttackTag.TECHNIQUE, AttackTag.LIMITLESS, AttackTag.AREA),
                         0.2f, null, null);
                 if (Defenses.resolve(atk).kind() == DefenseResult.Kind.NEGATE) continue;
-                double speed = cfg.pullStrength * (0.35 + 0.9 * closeness) * power;
+                double speed = params.pullStrength() * (0.35 + 0.9 * closeness);
                 Vec3 v;
                 if (d < 1.1) {
                     // At the core: held in place, slowly orbiting.
@@ -160,8 +184,9 @@ public class BlueEntity extends TechniqueEntity {
                 Motion.set(living, v);
                 Statuses.apply(living, CombatStatus.PULLED, 4);
                 Combat.state(living).setPull(core, speed, now);
-                if (damageTick && cfg.tickDamage > 0) {
-                    HitResolver.resolve(Hit.builder(owner, "blue").direct(this).type(ModDamageTypes.BLUE).damage(cfg.tickDamage)
+                if (damageTick && params.tickDamage() > 0) {
+                    HitResolver.resolve(Hit.builder(owner, params.ultimate() ? "max_blue" : "blue").direct(this).type(ModDamageTypes.BLUE)
+                            .damage(params.tickDamage()).tag(params.ultimate() ? AttackTag.ULTIMATE : AttackTag.LIMITLESS)
                             .tag(AttackTag.TECHNIQUE, AttackTag.LIMITLESS, AttackTag.AREA).origin(core).hitstun(8)
                             .knockback(Knockback.NONE).noComboScaling().fx("blue_hit", 0.6f).build(), living);
                 }
@@ -173,12 +198,12 @@ public class BlueEntity extends TechniqueEntity {
 
     private void tearBlocks(ServerLevel level, JJKConfig.Blue cfg) {
         if (!Destruction.allowed(level)) return;
-        double r = cfg.blockPullRadius * power;
+        double r = params.blockPullRadius();
         int torn = 0;
         BlockPos c = blockPosition();
         int ri = (int) Math.ceil(r);
         for (BlockPos p : BlockPos.betweenClosed(c.offset(-ri, -ri, -ri), c.offset(ri, ri, ri))) {
-            if (torn >= 6) break;
+            if (torn >= (params.ultimate() ? 18 : 6)) break;
             if (p.distToCenterSqr(position()) > r * r) continue;
             BlockState s = level.getBlockState(p);
             if (s.isAir() || !loose(level, p, s)) continue;
@@ -205,11 +230,13 @@ public class BlueEntity extends TechniqueEntity {
         setPhase(COLLAPSING);
         collapseAge = 0;
         Vec3 core = position();
-        Fx.play(level, "blue_collapse", core, Vec3.ZERO, power, getId());
-        Fx.shake(level, core, 16, 0.5f * power, 8);
-        Hit hit = Hit.builder(owner, "blue_collapse").direct(this).type(ModDamageTypes.BLUE).damage(cfg.collapseDamage * power)
-                .tag(AttackTag.TECHNIQUE, AttackTag.LIMITLESS, AttackTag.AREA).origin(core).hitstun(cfg.collapseStun)
+        Fx.play(level, params.ultimate() ? "max_blue_collapse" : "blue_collapse", core, Vec3.ZERO, power, getId());
+        Fx.shake(level, core, 16 * power, 0.5f * power, 8);
+        Hit hit = Hit.builder(owner, "blue_collapse").direct(this).type(ModDamageTypes.BLUE).damage(params.collapseDamage())
+                .tag(AttackTag.TECHNIQUE, AttackTag.LIMITLESS, AttackTag.AREA).tag(params.ultimate() ? AttackTag.ULTIMATE : AttackTag.AREA)
+                .origin(core).hitstun(params.collapseStun())
                 .knockback(Knockback.toward(core, 0.4)).status(CombatStatus.LAUNCHED, 20).fx("blue_hit", 1.2f).build();
-        HitResolver.resolveAll(hit, HitboxQuery.targets(owner, HitShape.sphere(core, cfg.pullRadius * 0.55 * power), 0, false));
+        HitResolver.resolveAll(hit, HitboxQuery.targets(owner, HitShape.sphere(core, params.pullRadius() * 0.55), 0, false));
     }
 }
+

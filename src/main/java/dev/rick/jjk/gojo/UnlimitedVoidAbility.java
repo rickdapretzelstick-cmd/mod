@@ -35,6 +35,11 @@ public final class UnlimitedVoidAbility extends Ability {
     }
 
     @Override
+    public float awakeningCost(AbilityCaster caster) {
+        return JJKConfig.get().awakening.infiniteVoidCost;
+    }
+
+    @Override
     public int cooldown(AbilityCaster caster) {
         return JJKConfig.get().domain.cooldown;
     }
@@ -76,8 +81,9 @@ public final class UnlimitedVoidAbility extends Ability {
             public void interrupt(String reason) {
                 if (!expanded) {
                     caster.setEnergy(caster.energy() + JJKConfig.get().domain.cost * 0.75f);
+                    if (caster.isAwakened()) caster.setAwakening(caster.awakening() + JJKConfig.get().awakening.infiniteVoidCost * 0.75f);
                     caster.resetSlot(AbilitySlot.ULTIMATE);
-                    caster.startCooldown(AbilitySlot.ULTIMATE, 200);
+                    caster.startCooldown(AbilitySlot.ULTIMATE, 60);
                     Fx.play(level, "domain_fizzle", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
                 }
                 super.interrupt(reason);

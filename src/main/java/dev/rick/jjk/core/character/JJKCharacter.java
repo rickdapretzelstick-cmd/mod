@@ -13,6 +13,7 @@ import java.util.Map;
 public abstract class JJKCharacter {
     public final String id;
     private final Map<AbilitySlot, Ability> abilities = new EnumMap<>(AbilitySlot.class);
+    private final Map<AbilitySlot, Ability> awakenedAbilities = new EnumMap<>(AbilitySlot.class);
 
     protected JJKCharacter(String id) {
         this.id = id;
@@ -22,14 +23,34 @@ public abstract class JJKCharacter {
         abilities.put(slot, ability);
     }
 
+    /** Binds an ability in the awakened moveset. Slots not bound here are empty while awakened. */
+    protected void bindAwakened(AbilitySlot slot, Ability ability) {
+        awakenedAbilities.put(slot, ability);
+    }
+
     @Nullable
     public Ability ability(AbilitySlot slot) {
         return abilities.get(slot);
     }
 
+    @Nullable
+    public Ability ability(AbilitySlot slot, boolean awakened) {
+        return awakened ? awakenedAbilities.get(slot) : abilities.get(slot);
+    }
+
+    /** Every ability in either moveset (for cleanup of toggles etc.). */
+    public java.util.Collection<Ability> abilitiesAllModes() {
+        java.util.Set<Ability> all = new java.util.LinkedHashSet<>(abilities.values());
+        all.addAll(awakenedAbilities.values());
+        return all;
+    }
+
     public Map<AbilitySlot, Ability> abilities() {
         return abilities;
     }
+
+    /** Called when the caster enters or leaves its awakened state. */
+    public void onAwakeningChanged(AbilityCaster caster, boolean awakened) {}
 
     public abstract float maxEnergy();
 

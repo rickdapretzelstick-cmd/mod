@@ -20,10 +20,26 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class BlueAbility extends Ability {
     public static final String ID = "blue";
-    private static final int STARTUP = 5;
+    public static final String MAX_ID = "max_blue";
+    private final boolean max;
 
     public BlueAbility() {
-        super(ID);
+        this(false);
+    }
+
+    /** @param max Lapse Blue MAX: the awakened version (much bigger, longer startup, costs Awakening). */
+    public BlueAbility(boolean max) {
+        super(max ? MAX_ID : ID);
+        this.max = max;
+    }
+
+    int startup() {
+        return max ? JJKConfig.get().maxBlue.startup : 5;
+    }
+
+    @Override
+    public float awakeningCost(AbilityCaster caster) {
+        return max ? JJKConfig.get().awakening.maxBlueCost : 0;
     }
 
     @Override
@@ -33,51 +49,55 @@ public final class BlueAbility extends Ability {
 
     @Override
     public float cost(AbilityCaster caster) {
-        return JJKConfig.get().blue.cost;
+        return max ? 0 : JJKConfig.get().blue.cost;
     }
 
     @Override
     public int cooldown(AbilityCaster caster) {
-        return JJKConfig.get().blue.cooldown;
+        return max ? JJKConfig.get().maxBlue.cooldown : JJKConfig.get().blue.cooldown;
     }
 
     @Override
     public @Nullable AbilityInstance activate(AbilityContext ctx) {
-        return new Instance(this, ctx);
+        return new Instance(this, ctx, max);
     }
 
     private static final class Instance extends AbilityInstance {
         @Nullable private final Entity hint;
+        private final boolean max;
+        private final int startup;
         @Nullable private BlueEntity blue;
         private double steerDistance;
         private int steered;
 
-        Instance(Ability ability, AbilityContext ctx) {
+        Instance(BlueAbility ability, AbilityContext ctx, boolean max) {
             super(ability, ctx);
             this.hint = ctx.targetHint();
+            this.max = max;
+            this.startup = ability.startup();
         }
 
         @Override
         public void start() {
-            Anim.play(user, "blue_cast");
-            setPhase(0, STARTUP);
-            Fx.play(level, "blue_cast", user.getEyePosition(), user.getLookAngle(), 1f, user.getId());
+            Anim.play(user, max ? "max_blue_cast" : "blue_cast");
+            setPhase(0, startup);
+            Fx.play(level, max ? "max_blue_cast" : "blue_cast", user.getEyePosition(), user.getLookAngle(), 1f, user.getId());
         }
 
         @Override
         public void tick() {
             JJKConfig.Blue cfg = JJKConfig.get().blue;
-            if (age == STARTUP) {
-                Aim.Target t = Aim.point(user, cfg.range, 6, hint);
+            if (age == startup) {
+                Aim.Target t = Aim.point(user, max ? JJKConfig.get().maxBlue.range : cfg.range, 6, hint);
                 Vec3 pos = t.point();
                 if (t.entity() == null && !t.hitBlock()) pos = pos.add(0, -0.3, 0);
-                blue = BlueEntity.spawn(level, user, pos, 1f);
+                blue = BlueEntity.spawn(level, user, pos, max ? BlueEntity.Params.max() : BlueEntity.Params.normal());
                 steerDistance = pos.distanceTo(user.getEyePosition());
                 setPhase(1, cfg.maxSteerTicks);
                 if (!held) finish();
                 return;
             }
-            if (age < STARTUP) return;
+            if (age < startup) return;
             if (blue == null || blue.isRemoved() || blue.isCollapsing()) {
                 finish();
                 return;
@@ -94,12 +114,12 @@ public final class BlueAbility extends Ability {
         @Override
         public boolean exclusive() {
             // Only the hand sign is committed; steering leaves Gojo free to fight.
-            return age < STARTUP;
+            return age < startup;
         }
 
         @Override
         public float movementMultiplier() {
-            return age < STARTUP ? 0.5f : 1f;
+            return age < startup ? 0.5f : 1f;
         }
 
         @Override

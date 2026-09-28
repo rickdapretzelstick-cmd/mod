@@ -25,6 +25,11 @@ public interface DomainDefinition {
         return 20;
     }
 
+    /** The physical structure this domain builds, or null for a purely gameplay domain. */
+    default dev.rick.jjk.core.domain.structure.@org.jetbrains.annotations.Nullable StructureSpec structure(LivingEntity owner) {
+        return null;
+    }
+
     /** Whether people inside can leave. Closed barriers trap everyone but the owner. */
     boolean closedBarrier();
 

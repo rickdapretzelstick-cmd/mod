@@ -45,6 +45,11 @@ public final class HollowPurpleAbility extends Ability {
     }
 
     @Override
+    public float awakeningCost(AbilityCaster caster) {
+        return JJKConfig.get().awakening.hollowPurpleCost;
+    }
+
+    @Override
     public int cooldown(AbilityCaster caster) {
         return JJKConfig.get().purple.cooldown;
     }
@@ -139,6 +144,7 @@ public final class HollowPurpleAbility extends Ability {
                 Fx.play(level, "purple_fizzle", user.getEyePosition().add(user.getLookAngle()), Vec3.ZERO, 1f, user.getId());
                 // Unfinished technique: part of the energy comes back and the cooldown is shorter.
                 caster.setEnergy(caster.energy() + JJKConfig.get().purple.cost * 0.5f);
+                if (caster.isAwakened()) caster.setAwakening(caster.awakening() + JJKConfig.get().awakening.hollowPurpleCost * 0.5f);
                 for (AbilitySlot s : AbilitySlot.values()) {
                     if (caster.ability(s) == ability) {
                         caster.resetSlot(s);

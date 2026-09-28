@@ -39,10 +39,15 @@ public final class AbilityCaster {
     @Nullable private JJKCharacter character;
     private float energy;
     private int regenDelay;
-    private final int[] cooldowns = new int[SLOTS];
-    private final int[] maxCooldowns = new int[SLOTS];
-    private final int[] charges = new int[SLOTS];
-    private final int[] lockout = new int[SLOTS];
+    // Indexed by idx(): base-mode slots first, then awakened-mode slots (abilities shared by both use the base index).
+    private final int[] cooldowns = new int[SLOTS * 2];
+    private final int[] maxCooldowns = new int[SLOTS * 2];
+    private final int[] charges = new int[SLOTS * 2];
+    private final int[] lockout = new int[SLOTS * 2];
+    // Awakening.
+    private float awakening;
+    private boolean awakened;
+    private int refillDelay;
     @Nullable private AbilityInstance cast;
     private final List<AbilityInstance> overlays = new ArrayList<>();
     private final Set<String> toggles = new HashSet<>();
@@ -69,7 +74,7 @@ public final class AbilityCaster {
         interrupt("character_change");
         for (AbilityInstance o : List.copyOf(overlays)) o.interrupt("character_change");
         if (character != null) {
-            for (Ability a : character.abilities().values()) if (a.kind() == Ability.Kind.TOGGLE && a.isToggled(this)) a.toggleOff(this, "character_change");
+            for (Ability a : character.abilitiesAllModes()) if (a.kind() == Ability.Kind.TOGGLE && a.isToggled(this)) a.toggleOff(this, "character_change");
             character.onRemoved(this);
         }
         character = c;
@@ -79,10 +84,9 @@ public final class AbilityCaster {
         melee.reset();
         if (c != null) {
             energy = c.maxEnergy();
-            for (AbilitySlot s : AbilitySlot.values()) {
-                Ability a = c.ability(s);
-                charges[s.ordinal()] = a == null ? 0 : a.maxCharges(this);
-            }
+            awakened = false;
+            awakening = 0;
+            refillCharges();
             c.onAssigned(this);
         }
         dirty = true;
@@ -90,7 +94,81 @@ public final class AbilityCaster {
 
     @Nullable
     public Ability ability(AbilitySlot slot) {
-        return character == null ? null : character.ability(slot);
+        return character == null ? null : character.ability(slot, awakened);
+    }
+
+    /** Cooldown array index for a slot in the current mode. */
+    private int idx(AbilitySlot slot) {
+        return idx(slot, awakened);
+    }
+
+    private int idx(AbilitySlot slot, boolean awk) {
+        if (!awk || character == null) return slot.ordinal();
+        Ability a = character.ability(slot, true);
+        return a != null && a == character.ability(slot, false) ? slot.ordinal() : slot.ordinal() + SLOTS;
+    }
+
+    @Nullable
+    private Ability abilityAt(int index) {
+        if (character == null) return null;
+        return character.ability(AbilitySlot.values()[index % SLOTS], index >= SLOTS);
+    }
+
+    private void refillCharges() {
+        for (int i = 0; i < SLOTS * 2; i++) {
+            Ability a = abilityAt(i);
+            charges[i] = a == null ? 0 : a.maxCharges(this);
+        }
+    }
+
+    // --- Awakening ---
+
+    public float awakening() {
+        return awakening;
+    }
+
+    public float maxAwakening() {
+        return JJKConfig.get().awakening.max;
+    }
+
+    public boolean isAwakened() {
+        return awakened;
+    }
+
+    /** Builds the meter through combat (not while awakened or shortly after it ended). */
+    public void gainAwakening(float amount) {
+        if (character == null || awakened || refillDelay > 0 || amount <= 0) return;
+        float before = awakening;
+        awakening = Math.min(maxAwakening(), awakening + amount);
+        if ((int) before != (int) awakening || awakening >= maxAwakening()) dirty = true;
+    }
+
+    public void setAwakening(float value) {
+        awakening = Math.max(0, Math.min(maxAwakening(), value));
+        dirty = true;
+    }
+
+    public boolean canAffordAwakening(float cost) {
+        return noCost() || awakening >= cost;
+    }
+
+    /** Switches to the awakened moveset. The meter becomes the timer. */
+    public void enterAwakening() {
+        if (character == null || awakened) return;
+        awakened = true;
+        awakening = maxAwakening();
+        character.onAwakeningChanged(this, true);
+        dirty = true;
+    }
+
+    /** Back to the base moveset. */
+    public void endAwakening(String reason) {
+        if (!awakened) return;
+        awakened = false;
+        awakening = 0;
+        refillDelay = JJKConfig.get().awakening.refillDelay;
+        if (character != null) character.onAwakeningChanged(this, false);
+        dirty = true;
     }
 
     // --- Energy ---
@@ -141,17 +219,31 @@ public final class AbilityCaster {
     // --- Cooldowns ---
 
     public int cooldown(AbilitySlot slot) {
-        return cooldowns[slot.ordinal()];
+        return cooldowns[idx(slot)];
     }
 
     public int charges(AbilitySlot slot) {
-        return charges[slot.ordinal()];
+        return charges[idx(slot)];
+    }
+
+    /** Starts the cooldown of whichever slot (in either mode) holds this ability. */
+    public void startCooldown(Ability ability, int ticks) {
+        for (boolean awk : new boolean[]{awakened, !awakened}) {
+            for (AbilitySlot s : AbilitySlot.values()) {
+                if (character != null && character.ability(s, awk) == ability) {
+                    startCooldownAt(idx(s, awk), ability, ticks);
+                    return;
+                }
+            }
+        }
     }
 
     public void startCooldown(AbilitySlot slot, int ticks) {
+        startCooldownAt(idx(slot), ability(slot), ticks);
+    }
+
+    private void startCooldownAt(int i, @Nullable Ability a, int ticks) {
         if (noCost()) ticks = Math.min(ticks, 4);
-        int i = slot.ordinal();
-        Ability a = ability(slot);
         if (a != null && a.maxCharges(this) > 1) {
             if (cooldowns[i] <= 0) {
                 cooldowns[i] = ticks;
@@ -165,13 +257,13 @@ public final class AbilityCaster {
     }
 
     public void resetSlot(AbilitySlot slot) {
-        cooldowns[slot.ordinal()] = 0;
-        lockout[slot.ordinal()] = 0;
+        cooldowns[idx(slot)] = 0;
+        lockout[idx(slot)] = 0;
         dirty = true;
     }
 
     public boolean isReady(AbilitySlot slot) {
-        int i = slot.ordinal();
+        int i = idx(slot);
         if (lockout[i] > 0) return false;
         Ability a = ability(slot);
         if (a != null && a.maxCharges(this) > 1) return charges[i] > 0;
@@ -181,12 +273,7 @@ public final class AbilityCaster {
     public void resetCooldowns() {
         java.util.Arrays.fill(cooldowns, 0);
         java.util.Arrays.fill(lockout, 0);
-        if (character != null) {
-            for (AbilitySlot s : AbilitySlot.values()) {
-                Ability a = character.ability(s);
-                charges[s.ordinal()] = a == null ? 0 : a.maxCharges(this);
-            }
-        }
+        refillCharges();
         melee.reset();
         dirty = true;
     }
@@ -252,6 +339,11 @@ public final class AbilityCaster {
         }
         if (melee.isCommitted() && slot != AbilitySlot.GUARD) return refuse("attacking");
         if (!isReady(slot)) return refuse("cooldown");
+        float meterCost = ability.awakeningCost(this);
+        if (meterCost > 0 && !canAffordAwakening(meterCost)) {
+            Fx.play(level, "no_energy", owner.position().add(0, 1, 0), net.minecraft.world.phys.Vec3.ZERO, 1f, owner.getId());
+            return refuse("awakening");
+        }
         float cost = ability.cost(this);
         if (!canAfford(cost)) {
             Fx.play(level, "no_energy", owner.position().add(0, 1, 0), net.minecraft.world.phys.Vec3.ZERO, 1f, owner.getId());
@@ -262,7 +354,10 @@ public final class AbilityCaster {
         if (reason != null) return refuse(reason);
 
         spend(cost);
-        int i = slot.ordinal();
+        if (meterCost > 0 && !noCost()) {
+            awakening = Math.max(0, awakening - meterCost);
+        }
+        int i = idx(slot);
         if (ability.maxCharges(this) > 1) {
             charges[i]--;
             lockout[i] = noCost() ? 0 : ability.minInterval(this);
@@ -312,7 +407,7 @@ public final class AbilityCaster {
             removeInstance(o);
         }
         if (character != null) {
-            for (Ability a : character.abilities().values()) if (a.kind() == Ability.Kind.TOGGLE && a.isToggled(this)) a.toggleOff(this, reason);
+            for (Ability a : character.abilitiesAllModes()) if (a.kind() == Ability.Kind.TOGGLE && a.isToggled(this)) a.toggleOff(this, reason);
         }
         applySlow(1f);
     }
@@ -325,7 +420,7 @@ public final class AbilityCaster {
             Fx.toTrackers(owner, new CastPayload(owner.getId(), "", 0, 0), true);
         }
         if (inst.ability.cooldownOnEnd()) {
-            for (AbilitySlot s : AbilitySlot.values()) if (ability(s) == inst.ability) startCooldown(s, inst.ability.cooldown(this));
+            startCooldown(inst.ability, inst.ability.cooldown(this));
         }
         overlays.remove(inst);
         dirty = true;
@@ -342,10 +437,18 @@ public final class AbilityCaster {
             energy = Math.min(maxEnergy(), energy + character.regenPerSecond() / 20f);
         }
 
-        for (int i = 0; i < SLOTS; i++) {
+        if (refillDelay > 0 && --refillDelay == 0) dirty = true;
+        if (awakened) {
+            // Awakening is a timer: it drains, and when it's empty Gojo returns to his base kit.
+            if (!noCost()) awakening -= cfg.awakening.drainPerSecond / 20f;
+            if (awakening <= 0 && !isCasting()) endAwakening("expired");
+            else if (owner.tickCount % 5 == 0) dirty = true;
+        }
+
+        for (int i = 0; i < SLOTS * 2; i++) {
             if (lockout[i] > 0) lockout[i]--;
             if (cooldowns[i] > 0 && --cooldowns[i] == 0) {
-                Ability a = ability(AbilitySlot.values()[i]);
+                Ability a = abilityAt(i);
                 if (a != null && a.maxCharges(this) > 1 && charges[i] < a.maxCharges(this)) {
                     charges[i]++;
                     if (charges[i] < a.maxCharges(this)) {
@@ -408,8 +511,21 @@ public final class AbilityCaster {
         if (toggled("infinity")) flags |= CasterSyncPayload.FLAG_INFINITY;
         if (noCost()) flags |= CasterSyncPayload.FLAG_NO_COST;
         if (Combat.isGuarding(owner)) flags |= CasterSyncPayload.FLAG_GUARDING;
-        return new CasterSyncPayload(character == null ? "" : character.id, energy, maxEnergy(), cooldowns.clone(), maxCooldowns.clone(),
-                charges.clone(), flags, isCasting() ? cast.ability.id : "", isCasting() ? cast.age() : 0);
+        if (awakened) flags |= CasterSyncPayload.FLAG_AWAKENED;
+        if (refillDelay > 0) flags |= CasterSyncPayload.FLAG_REFILL_LOCKED;
+        int[] cd = new int[SLOTS], maxCd = new int[SLOTS], ch = new int[SLOTS];
+        StringBuilder ids = new StringBuilder();
+        for (AbilitySlot s : AbilitySlot.values()) {
+            int i = idx(s);
+            cd[s.ordinal()] = cooldowns[i];
+            maxCd[s.ordinal()] = maxCooldowns[i];
+            ch[s.ordinal()] = charges[i];
+            Ability a = ability(s);
+            if (s.ordinal() > 0) ids.append(',');
+            if (a != null) ids.append(a.id);
+        }
+        return new CasterSyncPayload(character == null ? "" : character.id, energy, maxEnergy(), cd, maxCd, ch, flags,
+                isCasting() ? cast.ability.id : "", isCasting() ? cast.age() : 0, awakening, maxAwakening(), ids.toString());
     }
 
     public boolean isPlayer() {

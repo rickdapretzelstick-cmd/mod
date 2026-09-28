@@ -29,6 +29,11 @@ public abstract class Ability {
         return 0;
     }
 
+    /** Awakening meter consumed on activation (awakened moves). */
+    public float awakeningCost(AbilityCaster caster) {
+        return 0;
+    }
+
     /** Cooldown in ticks, applied on activation unless {@link #cooldownOnEnd()}. */
     public int cooldown(AbilityCaster caster) {
         return 0;

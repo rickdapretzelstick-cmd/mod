@@ -40,6 +40,12 @@ public final class CombatStatus {
     public static final CombatStatus INFINITY = register(builder("infinity"));
     /** Inside an enemy domain. */
     public static final CombatStatus IN_DOMAIN = register(builder("in_domain"));
+    /** Mid-transformation (awakening): rooted, can't act, untouchable. */
+    public static final CombatStatus AWAKENING = register(builder("awakening").lockMovement().lockActions().evasive());
+    /** Awakened state (informational, drives visuals for everyone). */
+    public static final CombatStatus AWAKENED = register(builder("awakened"));
+    /** Wearing the blindfold (informational, drives the blindfold visual). */
+    public static final CombatStatus BLINDFOLD = register(builder("blindfold"));
     /** Slowed by pushing against Infinity. */
     public static final CombatStatus INFINITY_SLOWED = register(builder("infinity_slowed"));
 

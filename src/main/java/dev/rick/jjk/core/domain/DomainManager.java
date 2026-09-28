@@ -71,8 +71,14 @@ public final class DomainManager {
     @Nullable
     public static DomainInstance expand(LivingEntity owner, DomainDefinition def) {
         if (!(owner.level() instanceof ServerLevel level) || ownedBy(owner) != null) return null;
-        DomainInstance d = new DomainInstance(nextId++, def, owner, level, owner.position().add(0, 0.5, 0), def.radius(owner), def.duration(owner));
+        net.minecraft.core.BlockPos anchor = net.minecraft.core.BlockPos.containing(owner.position().add(0, 0.2, 0));
+        var spec = JJKConfig.get().domain.physicalStructure ? def.structure(owner) : null;
+        // Gameplay boundary sits just inside the physical shell so the two always agree.
+        double radius = spec != null ? spec.radius() - spec.thickness() : def.radius(owner);
+        Vec3 center = spec != null ? Vec3.atBottomCenterOf(anchor).add(0, 0.5, 0) : owner.position().add(0, 0.5, 0);
+        DomainInstance d = new DomainInstance(nextId++, def, owner, level, center, radius, def.duration(owner));
         DOMAINS.computeIfAbsent(level, l -> new ArrayList<>()).add(d);
+        if (spec != null) d.structure = dev.rick.jjk.core.domain.structure.DomainStructures.create(level, anchor, spec);
         Fx.play(level, "domain_expand", d.center, Vec3.ZERO, (float) d.radius, owner.getId());
         Fx.shake(level, d.center, d.radius * 2.5, 0.8f, 20);
         // Overlapping another live domain → clash.
@@ -118,6 +124,10 @@ public final class DomainManager {
             case ACTIVE -> tickActive(d);
             case CLASHING -> tickClash(d);
             case COLLAPSING -> {
+                // Gameplay is already off and victims released; now give the world back.
+                if (d.structure != null && d.phaseAge == Math.max(1, d.definition.collapseTicks() / 2)) {
+                    dev.rick.jjk.core.domain.structure.DomainStructures.beginRestore(d.structure);
+                }
                 if (d.phaseAge >= d.definition.collapseTicks()) {
                     d.phase = DomainInstance.Phase.ENDED;
                     sendRemoved(d);

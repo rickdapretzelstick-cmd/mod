@@ -36,18 +36,24 @@ public class RedEntity extends TechniqueEntity {
     private Vec3 direction = Vec3.ZERO;
     private float charge;
     private double travelled;
+    private boolean max;
 
     public RedEntity(EntityType<? extends RedEntity> type, Level level) {
         super(type, level);
     }
 
     public static RedEntity fire(ServerLevel level, LivingEntity owner, Vec3 from, Vec3 dir, float charge) {
+        return fire(level, owner, from, dir, charge, false);
+    }
+
+    public static RedEntity fire(ServerLevel level, LivingEntity owner, Vec3 from, Vec3 dir, float charge, boolean max) {
         RedEntity e = new RedEntity(ModEntities.RED, level);
         e.setOwner(owner);
         e.setPos(from.x, from.y, from.z);
         e.direction = dir.normalize();
         e.charge = charge;
-        e.setScale(1f + charge);
+        e.max = max;
+        e.setScale((1f + charge) * (max ? 2.4f : 1f));
         e.setDeltaMovement(e.direction.scale(JJKConfig.get().red.speed));
         level.addFreshEntity(e);
         return e;
@@ -66,12 +72,12 @@ public class RedEntity extends TechniqueEntity {
         Vec3 step = direction.scale(cfg.speed);
         Vec3 to = from.add(step);
         if (!level.isLoaded(net.minecraft.core.BlockPos.containing(to))) {
-            detonate(level, owner, from, charge, this);
+            detonate(level, owner, from, charge, this, max);
             discard();
             return;
         }
         // Entities along the swept path.
-        HitShape sweep = HitShape.capsule(from, to, 0.6 + 0.3 * charge);
+        HitShape sweep = HitShape.capsule(from, to, (0.6 + 0.3 * charge) * (max ? 2.2 : 1));
         List<LivingEntity> hits = HitboxQuery.targets(owner, sweep, 0.2, false);
         BlockHitResult block = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
         Vec3 impact = null;
@@ -85,7 +91,7 @@ public class RedEntity extends TechniqueEntity {
         BlueEntity blue = BlueEntity.findNear(level, to, 1.8);
         if (impact == null && blue != null && blue.owner() == owner) impact = blue.position();
         if (impact != null) {
-            detonate(level, owner, impact, charge, this);
+            detonate(level, owner, impact, charge, this, max);
             discard();
             return;
         }
@@ -93,7 +99,7 @@ public class RedEntity extends TechniqueEntity {
         setDeltaMovement(step);
         travelled += cfg.speed;
         if (travelled >= cfg.range) {
-            detonate(level, owner, to, charge, this);
+            detonate(level, owner, to, charge, this, max);
             discard();
         }
     }
@@ -103,11 +109,17 @@ public class RedEntity extends TechniqueEntity {
      * @param charge 0 = minimum charge, 1 = full charge
      */
     public static void detonate(ServerLevel level, LivingEntity owner, Vec3 pos, float charge, Entity direct) {
+        detonate(level, owner, pos, charge, direct, false);
+    }
+
+    public static void detonate(ServerLevel level, LivingEntity owner, Vec3 pos, float charge, Entity direct, boolean max) {
         JJKConfig.Red cfg = JJKConfig.get().red;
-        double radius = Mth.lerp(charge, cfg.radius, cfg.chargedRadius);
-        float damage = Mth.lerp(charge, cfg.damage, cfg.chargedDamage);
-        double knockback = cfg.knockback * (0.8 + 0.4 * charge);
-        String fx = "red_explosion";
+        JJKConfig.MaxRed mcfg = JJKConfig.get().maxRed;
+        double radius = Mth.lerp(charge, cfg.radius, cfg.chargedRadius) * (max ? mcfg.radiusMultiplier : 1);
+        float damage = Mth.lerp(charge, cfg.damage, cfg.chargedDamage) * (max ? mcfg.damageMultiplier : 1);
+        double knockback = cfg.knockback * (0.8 + 0.4 * charge) * (max ? mcfg.knockbackMultiplier : 1);
+        int maxBlocks = max ? mcfg.maxBlocksDestroyed : cfg.maxBlocksDestroyed;
+        String fx = max ? "max_red_explosion" : "red_explosion";
         BlueEntity blue = BlueEntity.findNear(level, pos, JJKConfig.get().blue.pullRadius * 0.6);
         if (blue != null && blue.owner() == owner) {
             // Lapse and Reversal collide: everything Blue gathered takes the full, amplified blast.
@@ -117,7 +129,7 @@ public class RedEntity extends TechniqueEntity {
             knockback *= 1.25;
             pos = blue.position();
             blue.consume();
-            fx = "red_amplified";
+            fx = max ? "max_red_explosion" : "red_amplified";
         }
         float scale = (float) (radius / cfg.radius);
         Fx.play(level, fx, pos, direct.getDeltaMovement().lengthSqr() > 1e-4 ? direct.getDeltaMovement().normalize() : owner.getLookAngle(), scale, owner.getId());
@@ -128,7 +140,7 @@ public class RedEntity extends TechniqueEntity {
         Hit hit = Hit.builder(owner, "red").direct(direct).type(ModDamageTypes.RED).damage(damage)
                 .tag(AttackTag.TECHNIQUE, AttackTag.LIMITLESS, AttackTag.AREA, AttackTag.EXPLOSION, AttackTag.OTG)
                 .origin(pos).knockback(Knockback.radial(pos, knockback, cfg.launch)).hitstun(cfg.hitstun)
-                .status(CombatStatus.LAUNCHED, 28).guardDamage(3).fx("red_hit", 1.2f).build();
+                .status(CombatStatus.LAUNCHED, 28).guardDamage(3).tag(max ? AttackTag.ULTIMATE : AttackTag.LIMITLESS).fx("red_hit", 1.2f).build();
         for (LivingEntity t : HitboxQuery.targets(owner, HitShape.sphere(pos, r), 0.2, false)) {
             // Falloff: full power in the core, 60% at the edge.
             double d = t.getBoundingBox().getCenter().distanceTo(pos);
@@ -141,7 +153,7 @@ public class RedEntity extends TechniqueEntity {
             if (away.lengthSqr() > 1e-4) Motion.set(e, away.normalize().scale(knockback * 0.6).add(0, 0.4, 0));
         }
         if (Destruction.allowed(level)) {
-            Destruction.sphere(level, pos, r * 0.55, 6f, cfg.maxBlocksDestroyed, owner, null);
+            Destruction.sphere(level, pos, r * 0.55, 6f, maxBlocks, owner, null);
         }
     }
 }

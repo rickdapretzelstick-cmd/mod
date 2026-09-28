@@ -58,9 +58,7 @@ public final class InfinityDefense implements DefenseLayer {
         float cost = cost(attack, cfg);
         if (!caster.canAfford(cost)) {
             caster.setEnergy(0);
-            if (caster.character() != null && caster.character().ability(dev.rick.jjk.core.ability.AbilitySlot.SKILL_5) instanceof InfinityAbility inf) {
-                inf.toggleOff(caster, "overwhelmed");
-            }
+            if (caster.character() instanceof GojoCharacter gojo) gojo.infinity.toggleOff(caster, "overwhelmed");
             return DefenseResult.PASS;
         }
         caster.spend(cost);

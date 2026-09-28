@@ -47,6 +47,19 @@ public final class UnlimitedVoid implements DomainDefinition {
     }
 
     @Override
+    public dev.rick.jjk.core.domain.structure.StructureSpec structure(LivingEntity owner) {
+        JJKConfig.Domain cfg = JJKConfig.get().domain;
+        return new dev.rick.jjk.core.domain.structure.StructureSpec(cfg.radius, Math.max(1, cfg.shellThickness),
+                dev.rick.jjk.registry.ModBlocks.DOMAIN_BARRIER.defaultBlockState(), dev.rick.jjk.registry.ModBlocks.DOMAIN_FLOOR.defaultBlockState(),
+                cfg.clearInterior);
+    }
+
+    @Override
+    public int formingTicks() {
+        return 16;
+    }
+
+    @Override
     public boolean closedBarrier() {
         return true;
     }
@@ -66,7 +79,7 @@ public final class UnlimitedVoid implements DomainDefinition {
         if (ticksInside % 4 == 0) Motion.set(target, target.getDeltaMovement().scale(0.4));
         if (cfg.sureHitDamage > 0 && ticksInside % Math.max(1, cfg.sureHitDamageInterval) == 0) {
             HitResolver.resolve(Hit.builder(domain.owner, "unlimited_void").type(ModDamageTypes.SURE_HIT).damage(cfg.sureHitDamage)
-                    .tag(AttackTag.SURE_HIT, AttackTag.TECHNIQUE, AttackTag.UNBLOCKABLE, AttackTag.BYPASS_INFINITY)
+                    .tag(AttackTag.SURE_HIT, AttackTag.TECHNIQUE, AttackTag.UNBLOCKABLE, AttackTag.BYPASS_INFINITY, AttackTag.ULTIMATE)
                     .origin(domain.center).knockback(Knockback.NONE).noComboScaling().fx("domain_surehit_tick", 0.6f).build(), target);
         }
     }

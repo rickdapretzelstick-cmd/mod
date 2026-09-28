@@ -107,7 +107,23 @@ public final class HitResolver {
         if (hit.attacker instanceof ServerPlayer sp) {
             ServerPlayNetworking.send(sp, new ComboPayload(target.getId(), count, state.comboDamage(), outcome.ordinal()));
         }
+        if (target.isDeadOrDying() && hit.has(AttackTag.ULTIMATE)) finisher(level, hit, target, hitPoint);
         return finish(new HitResult(hit, target, outcome, dealt, count));
+    }
+
+    /**
+     * Kill presentation reserved for ultimate-level attacks: an impact frame for everyone nearby, a burst at the body,
+     * and the body sent flying. Normal kills stay fast.
+     */
+    private static void finisher(ServerLevel level, Hit hit, LivingEntity target, Vec3 at) {
+        Vec3 dir = at.subtract(hit.origin);
+        dir = dir.lengthSqr() < 1e-4 ? hit.attacker.getLookAngle() : dir.normalize();
+        Fx.play(level, "finisher", at, dir, 1f, target.getId());
+        Fx.shake(level, at, 40, 1.2f, 18);
+        for (ServerPlayer p : level.players()) {
+            if (p.distanceToSqr(at) < 48 * 48) Fx.camera(p, dev.rick.jjk.core.net.CameraPayload.IMPACT, 1f, 6, 0);
+        }
+        Motion.set(target, dir.scale(2.2).add(0, 0.9, 0));
     }
 
     private static HitResult finish(HitResult result) {

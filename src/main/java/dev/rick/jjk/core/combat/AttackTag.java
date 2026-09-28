@@ -29,6 +29,8 @@ public final class AttackTag {
     public static final AttackTag NEUTRALIZES_TECHNIQUES = of("neutralizes_techniques");
     /** Ignores Infinity specifically. */
     public static final AttackTag BYPASS_INFINITY = of("bypass_infinity");
+    /** Ultimate/Awakening-level attack: eligible for finisher presentation. */
+    public static final AttackTag ULTIMATE = of("ultimate");
     /** Produced by the Limitless technique. */
     public static final AttackTag LIMITLESS = of("limitless");
 

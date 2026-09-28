@@ -29,6 +29,7 @@ public final class DomainInstance {
     @Nullable DomainInstance clashWith;
     float clashPressure;
     @Nullable EndReason endReason;
+    @Nullable dev.rick.jjk.core.domain.structure.DomainStructure structure;
     /** Victim UUID → ticks spent inside. */
     final Map<UUID, Integer> victims = new HashMap<>();
 
@@ -52,6 +53,11 @@ public final class DomainInstance {
 
     public int remaining() {
         return Math.max(0, duration - activeAge);
+    }
+
+    @Nullable
+    public dev.rick.jjk.core.domain.structure.DomainStructure structure() {
+        return structure;
     }
 
     public boolean contains(Vec3 pos) {

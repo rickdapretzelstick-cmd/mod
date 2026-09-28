@@ -91,7 +91,7 @@ public final class InfinityAbility extends Ability {
         Statuses.remove(caster.owner, CombatStatus.INFINITY);
         boolean collapse = reason.equals("energy") || reason.equals("burnout") || reason.equals("overwhelmed");
         JJKConfig.Infinity cfg = JJKConfig.get().infinity;
-        caster.startCooldown(AbilitySlot.SKILL_5, collapse ? cfg.collapseCooldown : cfg.toggleCooldown);
+        caster.startCooldown(this, collapse ? cfg.collapseCooldown : cfg.toggleCooldown);
         if (caster.owner.level() instanceof ServerLevel sl) {
             Fx.play(sl, collapse ? "infinity_collapse" : "infinity_off", caster.owner.position().add(0, 1, 0), Vec3.ZERO, 1f, caster.owner.getId());
         }
@@ -103,11 +103,13 @@ public final class InfinityAbility extends Ability {
         if (!caster.toggled(ID) || !(owner.level() instanceof ServerLevel level)) return;
         JJKConfig.Infinity cfg = JJKConfig.get().infinity;
         CombatState state = Combat.state(owner);
-        if (state.techniquesLocked()) {
+        // Burnout takes Infinity down. (Being stunned doesn't switch it off; it just can't protect while stunned.)
+        if (state.has(CombatStatus.BURNOUT)) {
             toggleOff(caster, "burnout");
             return;
         }
-        if (!caster.drain(cfg.upkeepPerSecond / 20f)) {
+        // Awakened Gojo's Infinity costs nothing to maintain.
+        if (!caster.isAwakened() && !caster.drain(cfg.upkeepPerSecond / 20f)) {
             toggleOff(caster, "energy");
             return;
         }

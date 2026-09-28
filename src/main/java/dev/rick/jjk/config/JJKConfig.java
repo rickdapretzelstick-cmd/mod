@@ -33,6 +33,9 @@ public final class JJKConfig {
     public Purple purple = new Purple();
     public Teleport teleport = new Teleport();
     public Domain domain = new Domain();
+    public Awakening awakening = new Awakening();
+    public MaxBlue maxBlue = new MaxBlue();
+    public MaxRed maxRed = new MaxRed();
     public Client client = new Client();
 
     public static JJKConfig get() {
@@ -187,8 +190,8 @@ public final class JJKConfig {
     }
 
     public static class Purple {
-        public float cost = 400f;
-        public int cooldown = 600;
+        public float cost = 150f;
+        public int cooldown = 100;
         public int blueFormTicks = 14;
         public int redFormTicks = 14;
         public int fusionTicks = 16;
@@ -196,12 +199,12 @@ public final class JJKConfig {
         public int maxHoldTicks = 60;
         public double speed = 1.9;
         public double range = 90;
-        public double radius = 2.4;
-        public double chargedRadius = 3.4;
+        public double radius = 3.2;
+        public double chargedRadius = 4.6;
         public float damage = 38f;
         public double knockback = 3.2;
         public float impactDamage = 16f;
-        public double impactRadius = 6.0;
+        public double impactRadius = 9.0;
         public boolean destroysBlocks = true;
         public int maxBlocksDestroyed = 4000;
         public float casterMoveSpeed = 0.25f;
@@ -220,11 +223,61 @@ public final class JJKConfig {
         public int invulnerabilityTicks = 3;
     }
 
+    public static class Awakening {
+        /** Size of the meter. Every other value here is in meter points. */
+        public float max = 100f;
+        public float gainPerDamageDealt = 0.55f;
+        public float gainPerHitLanded = 0.6f;
+        public float gainPerDamageTaken = 0.35f;
+        public float gainPerBlock = 0.8f;
+        public float gainPerParry = 4f;
+        /** Hits that connect on a guard-broken, knocked-down or launched target count extra (rewarding combos). */
+        public float comboBonusMultiplier = 1.5f;
+        /** Meter lost per second while awakened. 100 / 3 = about 33 seconds of Awakening if no moves are used. */
+        public float drainPerSecond = 3f;
+        /** Ticks of the transition (invulnerable, rooted) when awakening. */
+        public int transitionTicks = 34;
+        /** Meter consumed by each awakened move. */
+        public float maxBlueCost = 18f;
+        public float maxRedCost = 20f;
+        public float hollowPurpleCost = 35f;
+        public float infiniteVoidCost = 40f;
+        /** Cooldown before the meter starts filling again after Awakening ends (ticks). */
+        public int refillDelay = 200;
+        /** Keep the meter between deaths/relogs. */
+        public boolean keepOnDeath = false;
+    }
+
+    public static class MaxBlue {
+        public int startup = 12;
+        public double range = 22;
+        public double pullRadius = 13;
+        public double pullStrength = 0.5;
+        public int duration = 70;
+        public float power = 2.2f;
+        public float tickDamage = 1.2f;
+        public float collapseDamage = 14f;
+        public int collapseStun = 30;
+        public double blockPullRadius = 4.5;
+        public int cooldown = 60;
+    }
+
+    public static class MaxRed {
+        public int minCharge = 14;
+        public int maxCharge = 40;
+        public float damageMultiplier = 1.8f;
+        public float radiusMultiplier = 1.9f;
+        public float knockbackMultiplier = 1.6f;
+        public int maxBlocksDestroyed = 220;
+        public int cooldown = 60;
+    }
+
     public static class Domain {
-        public float cost = 600f;
-        public int cooldown = 1800;
+        public float cost = 0f;
+        public int cooldown = 200;
         public int startup = 28;
-        public int duration = 240;
+        /** About 14 seconds, like the reference game. */
+        public int duration = 280;
         public double radius = 18;
         public int sureHitDamageInterval = 20;
         public float sureHitDamage = 1.0f;
@@ -237,6 +290,14 @@ public final class JJKConfig {
         public boolean closedBarrier = true;
         /** Draw a floor inside the domain so the battlefield visibly changes. */
         public boolean voidFloor = true;
+        /** Build a physical block structure (sealed sphere + floor). Everything replaced is restored exactly afterwards. */
+        public boolean physicalStructure = true;
+        /** Clear the interior above the floor so the battlefield becomes the void. */
+        public boolean clearInterior = true;
+        /** Blocks placed per tick while the structure forms (and restored per tick while it collapses). */
+        public int blocksPerTick = 3000;
+        /** Thickness of the barrier shell in blocks. */
+        public int shellThickness = 2;
     }
 
     public static class Client {
@@ -300,6 +361,9 @@ public final class JJKConfig {
         if (purple == null) purple = new Purple();
         if (teleport == null) teleport = new Teleport();
         if (domain == null) domain = new Domain();
+        if (awakening == null) awakening = new Awakening();
+        if (maxBlue == null) maxBlue = new MaxBlue();
+        if (maxRed == null) maxRed = new MaxRed();
         if (client == null) client = new Client();
     }
 }

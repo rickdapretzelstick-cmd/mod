@@ -22,10 +22,31 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class RedAbility extends Ability {
     public static final String ID = "red";
+    public static final String MAX_ID = "max_red";
     private static final double POINT_BLANK = 2.8;
+    private final boolean max;
 
     public RedAbility() {
-        super(ID);
+        this(false);
+    }
+
+    /** @param max Reversal Red MAX: the awakened version (longer charge, far bigger blast, costs Awakening). */
+    public RedAbility(boolean max) {
+        super(max ? MAX_ID : ID);
+        this.max = max;
+    }
+
+    int minCharge() {
+        return max ? JJKConfig.get().maxRed.minCharge : JJKConfig.get().red.minCharge;
+    }
+
+    int maxCharge() {
+        return max ? JJKConfig.get().maxRed.maxCharge : JJKConfig.get().red.maxCharge;
+    }
+
+    @Override
+    public float awakeningCost(AbilityCaster caster) {
+        return max ? JJKConfig.get().awakening.maxRedCost : 0;
     }
 
     @Override
@@ -35,12 +56,12 @@ public final class RedAbility extends Ability {
 
     @Override
     public float cost(AbilityCaster caster) {
-        return JJKConfig.get().red.cost;
+        return max ? 0 : JJKConfig.get().red.cost;
     }
 
     @Override
     public int cooldown(AbilityCaster caster) {
-        return JJKConfig.get().red.cooldown;
+        return max ? JJKConfig.get().maxRed.cooldown : JJKConfig.get().red.cooldown;
     }
 
     @Override
@@ -55,18 +76,23 @@ public final class RedAbility extends Ability {
 
     private static final class Instance extends AbilityInstance {
         @Nullable private final Entity hint;
+        private final boolean max;
+        private final int minCharge, maxCharge;
         private boolean fired;
 
-        Instance(Ability ability, AbilityContext ctx) {
+        Instance(RedAbility ability, AbilityContext ctx) {
             super(ability, ctx);
             this.hint = ctx.targetHint();
+            this.max = ability.max;
+            this.minCharge = ability.minCharge();
+            this.maxCharge = ability.maxCharge();
         }
 
         @Override
         public void start() {
-            Anim.play(user, "red_charge");
-            setPhase(0, JJKConfig.get().red.maxCharge);
-            Fx.play(level, "red_charge", fingertip(), user.getLookAngle(), 1f, user.getId());
+            Anim.play(user, max ? "max_red_charge" : "red_charge");
+            setPhase(0, maxCharge);
+            Fx.play(level, max ? "max_red_charge" : "red_charge", fingertip(), user.getLookAngle(), 1f, user.getId());
         }
 
         private Vec3 fingertip() {
@@ -75,33 +101,32 @@ public final class RedAbility extends Ability {
 
         @Override
         public void tick() {
-            JJKConfig.Red cfg = JJKConfig.get().red;
-            if (age == cfg.maxCharge) {
+            if (age == maxCharge) {
                 setPhase(1, 0);
                 Fx.play(level, "red_full", fingertip(), user.getLookAngle(), 1f, user.getId());
             }
-            boolean ready = age >= cfg.minCharge;
+            boolean ready = age >= minCharge;
             // Released early: fires the moment minimum charge is reached. Held too long: fires by itself.
-            if (ready && (!held || age >= cfg.maxCharge + 40)) fire(cfg);
+            if (ready && (!held || age >= maxCharge + 40)) fire();
         }
 
-        private void fire(JJKConfig.Red cfg) {
+        private void fire() {
             if (fired) return;
             fired = true;
-            float charge = Mth.clamp((age - cfg.minCharge) / (float) Math.max(1, cfg.maxCharge - cfg.minCharge), 0f, 1f);
+            float charge = Mth.clamp((age - minCharge) / (float) Math.max(1, maxCharge - minCharge), 0f, 1f);
             Vec3 look = user.getLookAngle();
             Anim.play(user, "red_release");
             LivingEntity target = Aim.target(user, POINT_BLANK + 1, 25, hint);
             if (target != null && target.getBoundingBox().distanceToSqr(user.getEyePosition()) <= POINT_BLANK * POINT_BLANK) {
                 Vec3 at = user.getEyePosition().add(look.scale(1.6)).add(0, -0.3, 0);
                 Fx.play(level, "red_pointblank", at, look, 1f + charge, user.getId());
-                RedEntity.detonate(level, user, at, charge, user);
+                RedEntity.detonate(level, user, at, charge, user, max);
             } else {
-                Fx.play(level, "red_fire", fingertip(), look, 1f + charge, user.getId());
-                RedEntity.fire(level, user, fingertip(), look, charge);
+                Fx.play(level, max ? "max_red_fire" : "red_fire", fingertip(), look, (1f + charge) * (max ? 2 : 1), user.getId());
+                RedEntity.fire(level, user, fingertip(), look, charge, max);
             }
             // Recoil.
-            Motion.set(user, user.getDeltaMovement().add(look.scale(-0.35 - 0.3 * charge)).add(0, 0.05, 0));
+            Motion.set(user, user.getDeltaMovement().add(look.scale((-0.35 - 0.3 * charge) * (max ? 1.8 : 1))).add(0, 0.05, 0));
             finish();
         }
 

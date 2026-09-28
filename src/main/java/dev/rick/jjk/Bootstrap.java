@@ -33,6 +33,7 @@ public final class Bootstrap {
         done = true;
         JJKConfig.load();
         ModSounds.init();
+        dev.rick.jjk.registry.ModBlocks.init();
         ModEntities.init();
         ModAttachments.init();
         Network.init();
@@ -42,6 +43,7 @@ public final class Bootstrap {
         Defenses.register(new GuardDefense());
         VanillaDamageBridge.init();
         CharacterService.init();
+        dev.rick.jjk.core.domain.structure.DomainStructures.init();
 
         // Anything that locks casting interrupts whatever the entity was doing.
         CombatEvents.STATUS_APPLIED.add((entity, status, ticks) -> {
@@ -53,6 +55,8 @@ public final class Bootstrap {
             }
             if (status.locksActions) dev.rick.jjk.core.combat.Combat.state(entity).stopGuard();
         });
+
+        dev.rick.jjk.core.character.AwakeningGain.init();
 
         ServerTickEvents.END_LEVEL_TICK.register(level -> {
             HitboxManager.tick(level);

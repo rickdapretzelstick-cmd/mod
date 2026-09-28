@@ -44,6 +44,7 @@ import java.util.Locale;
  * /jjk nocooldown <true|false>         no cooldowns or energy costs for yourself
  * /jjk reset                           refill energy, clear cooldowns and statuses
  * /jjk energy <amount>                 set cursed energy
+ * /jjk awakening <amount>|end          set the Awakening meter / leave Awakening
  * /jjk dummy [stand|jump|fight] [n]    spawn training dummies in front of you
  * /jjk arena                           build a flat test arena with dummies around you
  * /jjk domain cancel                   collapse your domain (or all domains with "all")
@@ -84,6 +85,15 @@ public final class JJKCommand {
                 .then(Commands.literal("energy")
                         .then(Commands.argument("amount", FloatArgumentType.floatArg(0)).executes(c -> {
                             Casters.get(c.getSource().getPlayerOrException()).setEnergy(FloatArgumentType.getFloat(c, "amount"));
+                            return 1;
+                        })))
+                .then(Commands.literal("awakening")
+                        .then(Commands.argument("amount", FloatArgumentType.floatArg(0)).executes(c -> {
+                            Casters.get(c.getSource().getPlayerOrException()).setAwakening(FloatArgumentType.getFloat(c, "amount"));
+                            return 1;
+                        }))
+                        .then(Commands.literal("end").executes(c -> {
+                            Casters.get(c.getSource().getPlayerOrException()).endAwakening("command");
                             return 1;
                         })))
                 .then(Commands.literal("dummy")

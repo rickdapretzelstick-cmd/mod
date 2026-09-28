@@ -100,8 +100,12 @@ public class GojoGameTests {
 
     private static void infinityOff(LivingEntity e) {
         AbilityCaster c = Casters.get(e);
-        if (c.ability(AbilitySlot.SKILL_5) instanceof InfinityAbility inf) inf.toggleOff(c, "test");
+        if (c.character() instanceof GojoCharacter gojo) gojo.infinity.toggleOff(c, "test");
         c.resetCooldowns();
+    }
+
+    private static void awaken(LivingEntity e) {
+        Casters.get(e).enterAwakening();
     }
 
     private static void press(LivingEntity e, AbilitySlot slot) {
@@ -310,7 +314,7 @@ public class GojoGameTests {
 
     // --- Blue / Red ---
 
-    @GameTest(maxTicks = 100)
+    @GameTest(maxTicks = 100, padding = 16, skyAccess = true, environment = "jjk-test:pull_a")
     public void bluePullsEnemiesTogether(GameTestHelper h) {
         floor(h, 6);
         TrainingDummy a = dummy(h, 8, 1);
@@ -329,7 +333,8 @@ public class GojoGameTests {
                     Vec3 core = blues.getFirst().position();
                     for (TrainingDummy d : List.of(a, b, c)) {
                         double dist = d.getBoundingBox().getCenter().distanceTo(core);
-                        h.assertTrue(dist < 2.5, "dummy dragged to the core (distance " + dist + ")");
+                        h.assertTrue(dist < 2.5, "dummy dragged to the core (distance " + dist + ", core " + h.relativeVec(core) + ", dummy "
+                                + h.relativeVec(d.position()) + ", caster " + h.relativeVec(g.position()) + " yaw " + g.getYRot() + ")");
                         h.assertTrue(Combat.has(d, CombatStatus.PULLED), "pulled status");
                     }
                     h.assertTrue(g.position().distanceTo(core) > 4, "caster is not pulled");
@@ -337,7 +342,7 @@ public class GojoGameTests {
                 .thenSucceed();
     }
 
-    @GameTest(maxTicks = 80)
+    @GameTest(maxTicks = 80, padding = 16, skyAccess = true)
     public void redPointBlankLaunchesAway(GameTestHelper h) {
         floor(h, 6);
         TrainingDummy target = dummy(h, 5.5, 4);
@@ -357,7 +362,7 @@ public class GojoGameTests {
                 .thenSucceed();
     }
 
-    @GameTest(maxTicks = 100)
+    @GameTest(maxTicks = 100, padding = 16, skyAccess = true, environment = "jjk-test:pull_b")
     public void redInsideBlueIsAmplified(GameTestHelper h) {
         floor(h, 6);
         TrainingDummy target = dummy(h, 9, 4);
@@ -396,6 +401,7 @@ public class GojoGameTests {
         CharacterService.assign(victim, Characters.get(GojoCharacter.ID));
         face(g, h.absoluteVec(new Vec3(7.5, 2.0, 4.5)));
         float hp = victim.getHealth();
+        awaken(g);
         h.startSequence()
                 .thenExecute(() -> press(g, AbilitySlot.SKILL_3))
                 .thenExecute(() -> release(g, AbilitySlot.SKILL_3))
@@ -415,6 +421,8 @@ public class GojoGameTests {
         AbilityCaster c = Casters.get(g);
         c.setNoCost(false);
         infinityOff(g);
+        awaken(g);
+        g.setAutoHeal(false);
         h.startSequence()
                 .thenExecute(() -> press(g, AbilitySlot.SKILL_3))
                 .thenIdle(10).thenExecute(() -> {
@@ -474,6 +482,7 @@ public class GojoGameTests {
         CharacterService.assign(victim, Characters.get(GojoCharacter.ID));
         h.startSequence()
                 .thenExecute(() -> {
+                    awaken(g);
                     press(g, AbilitySlot.ULTIMATE);
                     // The victim tries to charge Red; the sure-hit will interrupt it.
                     press(victim, AbilitySlot.SKILL_2);
@@ -536,7 +545,7 @@ public class GojoGameTests {
 
     // --- Edge cases ---
 
-    @GameTest(maxTicks = 80)
+    @GameTest(maxTicks = 80, padding = 16, skyAccess = true, environment = "jjk-test:pull_c")
     public void targetDyingDuringBlueIsHandled(GameTestHelper h) {
         floor(h, 6);
         TrainingDummy target = dummy(h, 7, 4);
@@ -558,6 +567,7 @@ public class GojoGameTests {
         h.startSequence()
                 .thenExecute(() -> press(g, AbilitySlot.SKILL_1)).thenExecute(() -> release(g, AbilitySlot.SKILL_1))
                 .thenIdle(8)
+                .thenExecute(() -> awaken(g))
                 .thenExecute(() -> press(g, AbilitySlot.SKILL_3))
                 .thenIdle(3)
                 .thenExecute(() -> g.discard())
@@ -582,7 +592,7 @@ public class GojoGameTests {
         h.succeed();
     }
 
-    @GameTest(maxTicks = 100)
+    @GameTest(maxTicks = 100, padding = 16, skyAccess = true)
     public void simultaneousCastersDontInterfere(GameTestHelper h) {
         floor(h, 6);
         TrainingDummy a = gojo(h, 1.5, 4, null);
