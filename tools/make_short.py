@@ -2,8 +2,9 @@
 
 Usage: python3 tools/make_short.py build/run/clientGameTest/screenshots short.mp4
 
-Real speed (20 game ticks per second) with the unfilmed resets cut out; each segment gets a bold caption that pops in,
-cuts flash white, every shot slowly pushes in, and a hook line opens the video.
+Real speed (20 game ticks per second), cut to the EDIT list below: a hook line opens the video, each segment gets a
+bold caption that pops in, cuts between techniques flash white, technique shots slowly push in, and the domain, the
+counter, the clash and the win run as one continuous sequence.
 """
 import glob
 import os
@@ -49,67 +50,83 @@ def fit(d, text, size, max_w):
     return f
 
 
+# The edit: (segment, first tick, last tick, how it cuts in, push-in?, ticks to hold the last frame). Ticks are offsets
+# into each recorded segment. The order builds from the base techniques through Awakening and the MAX moves to Hollow
+# Purple, then the domain, and ends on the clash as the payoff. Clips marked None continue the previous clip's footage
+# (they were recorded back to back), so they cut without a flash.
+EDIT = [
+    ('LAPSE BLUE', 8, 28, None, True, 0),        # hook
+    ('REVERSAL RED', 8, 56, 'flash', True, 0),
+    ('AWAKENING', 7, 50, 'flash', True, 0),
+    ('MAX BLUE', 7, 50, 'flash', True, 0),
+    ('MAX RED', 9, 70, 'flash', True, 0),
+    ('HOLLOW PURPLE', 6, 88, 'flash', True, 0),
+    ('DOMAIN EXPANSION', 7, 87, 'black', False, 0),  # the final stage begins
+    ('RIVAL DOMAIN', 4, 16, 'flash', False, 0),
+    ('COUNTER', 0, 24, None, False, 0),
+    ('COUNTER', 36, 70, None, False, 0),         # jump cut through the held versus card
+    ('DOMAIN CLASH', 0, 999, None, False, 0),
+    ('WINNER', 0, 999, None, False, 12),         # let the win breathe
+]
+
+
 def main():
     shots, out = sys.argv[1], sys.argv[2]
-    rows = []
+    segs = {}
     with open(os.path.join(shots, 'frames.txt')) as fh:
         for line in fh:
             p = line.rstrip('\n').split(' ', 2)
-            rows.append((float(p[1]), p[0], p[2] if len(p) > 2 else ''))
+            segs.setdefault(p[2] if len(p) > 2 else '', []).append((float(p[1]), p[0]))
     files = {os.path.basename(p).split('_', 1)[1][:-4]: p for p in glob.glob(os.path.join(shots, '*_p*.png'))}
-    # Real-speed timeline with the resets between segments closed up.
-    timeline, offset, prev = [], 0.0, None
-    for t, name, sec in rows:
-        if prev is not None and t - prev > 3:
-            offset += (t - prev) - 1
-        timeline.append((t - offset, name, sec))
-        prev = t
-    times = np.array([t for t, _, _ in timeline])
-    seg_start, seg_end = {}, {}
-    for t, _, sec in timeline:
-        seg_start.setdefault(sec, t)
-        seg_end[sec] = t
-    start, end = timeline[0][0], timeline[-1][0]
-    n = int((end - start) / 20 * FPS)
 
     writer = imageio.get_writer(out, fps=FPS, codec='libx264', quality=9, macro_block_size=2, pixelformat='yuv420p')
     cache_name, base = None, None
-    for i in range(n):
-        t = start + i * 20 / FPS
-        k = int(np.argmin(np.abs(times - t)))
-        _, name, sec = timeline[k]
-        if name != cache_name:
-            base = Image.open(files[name]).convert('RGB').resize((W, H), Image.LANCZOS)
-            cache_name = name
-        age = t - seg_start.get(sec, t)  # ticks into this segment
-        seg_len = max(1.0, seg_end[sec] - seg_start[sec])
-        # A slow push-in across each shot.
-        z = 1 + 0.05 * min(1.0, age / seg_len)
-        cw, ch = int(W / z), int(H / z)
-        frame = base.crop(((W - cw) // 2, (H - ch) // 2, (W - cw) // 2 + cw, (H - ch) // 2 + ch)).resize((W, H), Image.BILINEAR)
-        d = ImageDraw.Draw(frame)
-        # White flash on each cut.
-        if age < 3 and i > 0:
-            a = int(200 * (1 - age / 3))
-            frame = Image.blend(frame, Image.new('RGB', (W, H), (255, 255, 255)), a / 255)
+    total = 0
+    for ci, (sec, t_in, t_out, cut, push, hold) in enumerate(EDIT):
+        frames = segs[sec]
+        s0 = frames[0][0]
+        times = np.array([t - s0 for t, _ in frames])
+        t_out = min(t_out, times[-1])
+        n = int((t_out - t_in) / 20 * FPS) + int(hold / 20 * FPS)
+        for j in range(n):
+            age = min(t_in + j * 20 / FPS, t_out)  # ticks into the recorded segment
+            clip_age = j * 20 / FPS               # ticks into this clip
+            name = frames[int(np.argmin(np.abs(times - age)))][1]
+            if name != cache_name:
+                base = Image.open(files[name]).convert('RGB').resize((W, H), Image.LANCZOS)
+                cache_name = name
+            frame = base
+            if push:
+                # A slow push-in across each technique shot (never on the domain, clash or UI shots).
+                z = 1 + 0.05 * min(1.0, (age - t_in) / max(1.0, t_out - t_in))
+                cw, ch = int(W / z), int(H / z)
+                frame = base.crop(((W - cw) // 2, (H - ch) // 2, (W - cw) // 2 + cw, (H - ch) // 2 + ch)).resize((W, H), Image.BILINEAR)
+            if cut == 'flash' and clip_age < 3:
+                frame = Image.blend(frame, Image.new('RGB', (W, H), (255, 255, 255)), 200 * (1 - clip_age / 3) / 255)
+            elif cut == 'black' and clip_age < 6:
+                frame = Image.blend(frame, Image.new('RGB', (W, H), (0, 0, 0)), 1 - clip_age / 6)
+            else:
+                frame = frame.copy()
             d = ImageDraw.Draw(frame)
-        cap = CAPTIONS.get(sec)
-        hooking = t - start < 30
-        if cap and cap[0] and not hooking and (cap[4] is None or age < cap[4]):
-            title, sub, color, y, _ = cap
-            pop = 1.0 + 0.35 * max(0.0, 1 - age / 4)
-            f = fit(d, title, int(104 * pop), W - 80)
-            cy = int(H * y)
-            outlined(d, (W // 2, cy), title, f, color, stroke=8)
-            if sub:
-                outlined(d, (W // 2, cy + 90), sub, fit(d, sub, 48, W - 100), (255, 255, 255), stroke=5)
-        # The hook over the opening shot.
-        if hooking:
-            outlined(d, (W // 2, int(H * 0.2)), HOOK[0], font(96), (255, 255, 255), stroke=8)
-            outlined(d, (W // 2, int(H * 0.2) + 110), HOOK[1], font(96), (120, 190, 255), stroke=8)
-        writer.append_data(np.asarray(frame))
+            hooking = ci == 0
+            cap = CAPTIONS.get(sec)
+            if cap and cap[0] and not hooking and (cap[4] is None or age < cap[4]):
+                title, sub, color, y, _ = cap
+                pop_age = clip_age if EDIT[ci - 1][0] != sec else age
+                pop = 1.0 + 0.35 * max(0.0, 1 - pop_age / 4)
+                f = fit(d, title, int(104 * pop), W - 80)
+                cy = int(H * y)
+                outlined(d, (W // 2, cy), title, f, color, stroke=8)
+                if sub:
+                    outlined(d, (W // 2, cy + 90), sub, fit(d, sub, 48, W - 100), (255, 255, 255), stroke=5)
+            if hooking:
+                outlined(d, (W // 2, int(H * 0.2)), HOOK[0], font(96), (255, 255, 255), stroke=8)
+                outlined(d, (W // 2, int(H * 0.2) + 110), HOOK[1], font(96), (120, 190, 255), stroke=8)
+            writer.append_data(np.asarray(frame))
+        total += n
+        print(f'{total / FPS:5.1f}s  {sec}')
     writer.close()
-    print('wrote', out, f'{n / FPS:.1f} s')
+    print('wrote', out, f'{total / FPS:.1f} s')
 
 
 if __name__ == '__main__':
