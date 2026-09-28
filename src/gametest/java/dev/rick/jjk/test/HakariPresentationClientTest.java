@@ -37,7 +37,10 @@ public class HakariPresentationClientTest extends PresentationClientTest {
             ctx.waitTicks(40);
             cmd("execute as @a at @s run jjk arena");
             cmd("execute as @a run jjk nocooldown true");
-            cmd("jjk character hakari");
+            cmd("jjk character hakari @a");
+            cmd("effect give @a minecraft:resistance infinite 4 true");
+            ctx.waitTicks(5);
+            if (!ctx.computeOnClient(mc -> "hakari".equals(ClientState.character))) throw new AssertionError("the player should be Hakari");
             center = server.computeOnServer(s -> {
                 ServerPlayer p = s.getPlayerList().getPlayers().getFirst();
                 return new double[] {p.getX(), p.getY(), p.getZ()};
