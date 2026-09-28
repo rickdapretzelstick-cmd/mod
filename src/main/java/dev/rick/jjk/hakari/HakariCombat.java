@@ -50,12 +50,28 @@ final class HakariCombat {
         return best;
     }
 
-    /** Resolves a hit, scaled up while Rhythm's Lucky Streak is running. */
     static HitResult hit(Hit hit, LivingEntity target) {
-        if (Combat.has(hit.attacker, CombatStatus.LUCKY_STREAK)) {
-            hit = hit.toBuilder().damage(hit.damage * dev.rick.jjk.config.JJKConfig.get().hakari.rhythmStreakDamage).build();
-        }
         return HitResolver.resolve(hit, target);
+    }
+
+    /** Hakari landed {@code count} visual moves inside his own domain (they drive the gamble toward a Riichi). */
+    static void visual(LivingEntity user, int count) {
+        Gamble g = IdleDeathGamble.gambleOf(user);
+        if (g != null) g.visualMove(count);
+    }
+
+    /** Low enough to be finished off by a finisher move. */
+    static boolean finishable(LivingEntity target) {
+        return target.isAlive() && target.getHealth() <= target.getMaxHealth() * dev.rick.jjk.config.JJKConfig.get().hakari.finisherThreshold;
+    }
+
+    /** A finisher: the target is killed outright, with the finisher presentation. */
+    static HitResult execute(LivingEntity user, LivingEntity target, String id, String fx) {
+        Hit kill = Hit.builder(user, id).type(dev.rick.jjk.registry.ModDamageTypes.TECHNIQUE).damage(target.getHealth() + target.getMaxHealth() * 4)
+                .tag(dev.rick.jjk.core.combat.AttackTag.ULTIMATE, dev.rick.jjk.core.combat.AttackTag.UNBLOCKABLE)
+                .origin(user.getEyePosition()).knockback(dev.rick.jjk.core.combat.Knockback.directional(flat(user), 1.2, 0.5))
+                .noComboScaling().fx(fx, 1.5f).build();
+        return HitResolver.resolve(kill, target);
     }
 
     static List<HitResult> hitAll(Hit hit, List<LivingEntity> targets) {

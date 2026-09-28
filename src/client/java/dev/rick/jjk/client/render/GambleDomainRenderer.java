@@ -110,7 +110,7 @@ final class GambleDomainRenderer {
         GamblePayload p = gamble != null ? gamble.p : null;
         boolean riichi = p != null && p.state() == GamblePayload.RIICHI;
         float stateAge = gamble != null ? now - gamble.stateStart + (time - now) : 0;
-        int reveal = dev.rick.jjk.config.JJKConfig.get().hakari.riichiTicks - dev.rick.jjk.hakari.Gamble.REVEAL_OFFSET;
+        int reveal = p != null ? GamblePayload.revealAt(p) : 1;
         boolean won = p != null && (p.state() == GamblePayload.JACKPOT || riichi && stateAge >= reveal && p.reel2() == p.reel0() && p.reel2() != 0);
         float height = Math.min(r * 0.62f, 5.5f), width = height * 0.52f;
         float dist = r * 0.5f, lift = height / 2 + 1.2f;

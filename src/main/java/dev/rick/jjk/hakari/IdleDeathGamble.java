@@ -17,9 +17,10 @@ import java.util.Map;
 
 /**
  * Domain Expansion: Idle Death Gamble. Built by the same domain framework as every other domain (feet-first physical
- * formation, snapshots and exact restoration, barrier, clashes, cinematics, counters) out of its own blocks: a neon
- * pachinko wall and a casino floor. Its sure-hit is harmless — the rules of the pachinko game are imparted to everyone
- * inside — and what it really does is run Hakari's gamble ({@link Gamble}) toward a Jackpot.
+ * formation, snapshots and exact restoration, barrier, clashes, cinematics, counters) out of its own blocks: the white
+ * room of the Jujutsu Shenanigans domain. Its sure-hit is harmless: everyone caught inside is frozen in place for the
+ * opening while the rules of the pachinko game are imparted, and what it really does is run Hakari's gamble
+ * ({@link Gamble}) toward a Jackpot. It lasts 80 seconds but breaks after its last scenario.
  */
 public final class IdleDeathGamble implements DomainDefinition {
     public static final IdleDeathGamble INSTANCE = new IdleDeathGamble();
@@ -102,6 +103,11 @@ public final class IdleDeathGamble implements DomainDefinition {
         // The rules of the game are imparted: harmless, but everyone inside knows exactly what is happening.
         if (ticksInside == 1) Fx.play(domain.level, "idg_rules", target.getBoundingBox().getCenter(), Vec3.ZERO, 1f, target.getId());
         Statuses.apply(target, CombatStatus.IN_DOMAIN, 5);
+        // The neutral stage: frozen in place while the rules are explained.
+        if (ticksInside <= JJKConfig.get().hakari.domainFreezeTicks) Statuses.apply(target, CombatStatus.HITSTUN, 2);
+        // Someone was caught: the pity jackpot is possible.
+        Gamble g = GAMBLES.get(domain.id);
+        if (g != null) g.caught();
     }
 
     @Override

@@ -70,7 +70,7 @@ public final class EnergySurgeAbility extends Ability {
                 JJKConfig.Hakari cfg = JJKConfig.get().hakari;
                 if (vanishAt < 0) {
                     HakariCombat.drive(user, dashDir, 1.2);
-                    Hit pass = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.surgeDashDamage).tag(AttackTag.MELEE, AttackTag.TECHNIQUE)
+                    Hit pass = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.surgeDashDamage).tag(AttackTag.MELEE, AttackTag.TECHNIQUE, AttackTag.UNBLOCKABLE)
                             .origin(user.getEyePosition()).knockback(Knockback.directional(new Vec3(0, 1, 0), 0.5, 0.55)).hitstun(26)
                             .status(CombatStatus.LAUNCHED, 20).fx("surge_hit", 1f).build();
                     for (LivingEntity t : HakariCombat.front(user, 1.6, 1.8, 2.2)) {
@@ -112,7 +112,7 @@ public final class EnergySurgeAbility extends Ability {
                 if (age == kickAt) {
                     // The aerial kick: straight down onto them.
                     Motion.set(user, new Vec3(0, -1.1, 0));
-                    Hit kick = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.surgeKickDamage).tag(AttackTag.MELEE, AttackTag.HEAVY, AttackTag.OTG)
+                    Hit kick = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.surgeKickDamage).tag(AttackTag.MELEE, AttackTag.HEAVY, AttackTag.OTG, AttackTag.UNBLOCKABLE)
                             .origin(user.getEyePosition()).knockback(Knockback.set(new Vec3(0, -1.2, 0))).hitstun(28).status(CombatStatus.SPIKED, 16)
                             .fx("surge_kick_hit", 1.3f).build();
                     Vec3 below = user.position().add(0, -1.2, 0);

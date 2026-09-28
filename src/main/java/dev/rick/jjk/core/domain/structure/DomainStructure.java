@@ -59,6 +59,11 @@ public final class DomainStructure {
     int formationTicks = 1;
     /** Originals taken over from another structure that collapsed while overlapping this one. */
     final Map<Long, Adopted> adopted = new HashMap<>();
+    /**
+     * Grass-type blocks just under the structure's blocks. Covered, they decay to dirt on a random tick (vanilla); they
+     * are not positions the structure changed, so they are remembered here and put back if that happened.
+     */
+    final Map<Long, BlockState> covered = new HashMap<>();
     /** What to build instead of the target at each position while a clash splits this structure (see {@link ClashTerritory}). */
     @Nullable BlockState[] paint;
     private State state;
@@ -135,6 +140,15 @@ public final class DomainStructure {
             times[i] = entries.get(i).time;
         }
         DomainStructure s = new DomainStructure(id, level, center, spec, pos, orig, tgt, bes, State.BUILDING, times);
+        java.util.Set<Long> mine = new java.util.HashSet<>();
+        for (long l : pos) mine.add(l);
+        for (int i = 0; i < pos.length; i++) {
+            if (tgt[i].isAir()) continue;
+            long below = BlockPos.of(pos[i]).below().asLong();
+            if (mine.contains(below) || skip.test(below)) continue;
+            BlockState under = level.getBlockState(BlockPos.of(below));
+            if (under.getBlock() instanceof net.minecraft.world.level.block.SpreadingSnowyBlock) s.covered.put(below, under);
+        }
         s.startTick = level.getGameTime();
         s.formationTicks = Math.max(1, formationTicks);
         return s;
@@ -284,6 +298,12 @@ public final class DomainStructure {
             }
         }
         if (leftovers > 0) JJK.LOGGER.warn("Domain structure {} had {} leftover blocks after restore; fixed", id, leftovers);
+        // Grass that died under the structure comes back.
+        for (Map.Entry<Long, BlockState> e : covered.entrySet()) {
+            p.set(e.getKey());
+            if (level.getBlockState(p).is(net.minecraft.world.level.block.Blocks.DIRT)) level.setBlock(p, e.getValue(), FLAGS);
+        }
+        covered.clear();
     }
 
     static void liftToFreeSpace(Entity e) {
@@ -372,6 +392,14 @@ public final class DomainStructure {
             ad.add(t);
         }
         tag.put("Adopted", ad);
+        ListTag cov = new ListTag();
+        for (Map.Entry<Long, BlockState> e : covered.entrySet()) {
+            CompoundTag t = new CompoundTag();
+            t.putLong("Pos", e.getKey());
+            t.put("State", NbtUtils.writeBlockState(e.getValue()));
+            cov.add(t);
+        }
+        tag.put("Covered", cov);
         ListTag hang = new ListTag();
         hang.addAll(hanging);
         tag.put("Hanging", hang);
@@ -396,6 +424,9 @@ public final class DomainStructure {
                 State.RESTORING);
         s.cursor = pos.length - 1;
         for (net.minecraft.nbt.Tag t : tag.getListOrEmpty("Hanging")) if (t instanceof CompoundTag c) s.hanging.add(c);
+        for (net.minecraft.nbt.Tag t : tag.getListOrEmpty("Covered")) {
+            if (t instanceof CompoundTag c) s.covered.put(c.getLongOr("Pos", 0L), NbtUtils.readBlockState(blocks, c.getCompoundOrEmpty("State")));
+        }
         for (net.minecraft.nbt.Tag t : tag.getListOrEmpty("Adopted")) {
             if (t instanceof CompoundTag c) {
                 s.adopted.put(c.getLongOr("Pos", 0L), new Adopted(NbtUtils.readBlockState(blocks, c.getCompoundOrEmpty("State")),

@@ -160,14 +160,49 @@ public class HakariGameTests {
     // --- Base moves ---
 
     @GameTest(maxTicks = 60)
-    public void reserveBallsFireAVolleyOfPachinkoBalls(GameTestHelper h) {
-        floor(h, 10);
-        TrainingDummy target = dummy(h, 8.5, 1.5);
-        TrainingDummy g = hakari(h, 1.5, 1.5, target);
-        float hp = target.getHealth();
+    public void aReserveBallStunsFromRangeAndRagdollsUpClose(GameTestHelper h) {
+        floor(h, 12);
+        TrainingDummy far = dummy(h, 7.5, 1.5);
+        TrainingDummy g = hakari(h, 1.5, 1.5, far);
+        TrainingDummy near = dummy(h, 3.5, 5.5);
+        TrainingDummy g2 = hakari(h, 1.5, 5.5, near);
+        float hpFar = far.getHealth(), hpNear = near.getHealth();
+        boolean[] nearLaunched = {false}, farLaunched = {false}, farStunned = {false};
         press(g, AbilitySlot.SKILL_1);
-        float min = JJKConfig.get().hakari.ballDamage * 2;
-        h.succeedWhen(() -> h.assertTrue(hp - target.getHealth() >= min * 0.7f, "most of the volley landed (" + (hp - target.getHealth()) + ")"));
+        press(g2, AbilitySlot.SKILL_1);
+        h.onEachTick(() -> {
+            if (Combat.has(near, CombatStatus.LAUNCHED)) nearLaunched[0] = true;
+            if (Combat.has(far, CombatStatus.LAUNCHED)) farLaunched[0] = true;
+            if (Combat.has(far, CombatStatus.HITSTUN)) farStunned[0] = true;
+        });
+        h.succeedWhen(() -> {
+            h.assertTrue(far.getHealth() < hpFar && near.getHealth() < hpNear, "both balls landed");
+            h.assertTrue(farStunned[0] && !farLaunched[0], "from range: a momentary stun, no ragdoll");
+            h.assertTrue(nearLaunched[0], "within 15 studs: ragdolled away");
+        });
+    }
+
+    @GameTest(maxTicks = 60)
+    public void reserveBallsAndShutterDoorsCombine(GameTestHelper h) {
+        floor(h, 12);
+        TrainingDummy target = dummy(h, 7.5, 2.5);
+        TrainingDummy g = hakari(h, 1.5, 2.5, target);
+        AbilityCaster c = Casters.get(g);
+        float hp = target.getHealth();
+        boolean[] sawDoors = {false};
+        press(g, AbilitySlot.SKILL_1);
+        press(g, AbilitySlot.SKILL_2);
+        h.assertTrue(c.isCasting("reserve_balls"), "the doors press joined the ball instead of casting on its own");
+        h.assertTrue(c.cooldown(AbilitySlot.SKILL_2) > 0, "Shutter Doors went on cooldown too");
+        h.onEachTick(() -> {
+            if (!h.getLevel().getEntitiesOfClass(HakariDoorEntity.class, new AABB(target.blockPosition()).inflate(3)).isEmpty()) sawDoors[0] = true;
+        });
+        JJKConfig.Hakari cfg = JJKConfig.get().hakari;
+        h.succeedWhen(() -> {
+            h.assertTrue(sawDoors[0], "the doors manifested where the ball landed");
+            h.assertTrue(hp - target.getHealth() >= cfg.ballDamage + cfg.comboDoorDamage + cfg.doorBounceDamage * 2,
+                    "ball, doors and bounces all landed (" + (hp - target.getHealth()) + ")");
+        });
     }
 
     @GameTest(maxTicks = 60)
@@ -186,6 +221,66 @@ public class HakariGameTests {
             h.assertTrue(target.getHealth() < hp - 4, "the doors crushed them");
             h.assertTrue(Combat.has(target, CombatStatus.HITSTUN), "pinned in hitstun");
         });
+    }
+
+    @GameTest(maxTicks = 200)
+    public void missedShutterDoorsLingerAndBounceHakari(GameTestHelper h) {
+        floor(h, 12);
+        TrainingDummy g = hakari(h, 1.5, 2.5, null);
+        face(g, h.absoluteVec(new Vec3(6.5, 1, 2.5)));
+        press(g, AbilitySlot.SKILL_2);
+        HakariDoorEntity[] door = new HakariDoorEntity[1];
+        double[] peak = {0};
+        h.startSequence()
+                .thenIdle(20)
+                .thenExecute(() -> {
+                    var doors = h.getLevel().getEntitiesOfClass(HakariDoorEntity.class, new AABB(g.blockPosition()).inflate(12));
+                    h.assertTrue(doors.size() == 2, "the doors caught nobody and stayed (" + doors.size() + ")");
+                    door[0] = doors.getFirst();
+                    // Drop Hakari onto them.
+                    Vec3 top = doors.getFirst().position().add(doors.get(1).position()).scale(0.5).add(0, 3.2, 0);
+                    g.teleportTo(top.x, top.y, top.z);
+                    g.setDeltaMovement(0, -0.2, 0);
+                })
+                .thenWaitUntil(() -> {
+                    peak[0] = Math.max(peak[0], g.getDeltaMovement().y);
+                    h.assertTrue(peak[0] > 1, "bounced high off the doors");
+                })
+                .thenWaitUntil(() -> h.assertTrue(door[0].isRemoved(), "and they shattered"))
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 60)
+    public void shutterDoorsFinishALowTarget(GameTestHelper h) {
+        floor(h, 12);
+        TrainingDummy target = dummy(h, 6.5, 2.5);
+        TrainingDummy g = hakari(h, 1.5, 2.5, target);
+        target.setHealth(target.getMaxHealth() * 0.1f);
+        press(g, AbilitySlot.SKILL_2);
+        h.succeedWhen(() -> h.assertTrue(!target.isAlive(), "shut in completely: the finisher"));
+    }
+
+    @GameTest(maxTicks = 80)
+    public void roughEnergyInTheAirIsAStompThatLaunches(GameTestHelper h) {
+        floor(h, 8);
+        TrainingDummy target = dummy(h, 4.5, 2.5);
+        TrainingDummy g = hakari(h, 2.5, 2.5, target);
+        float hp = target.getHealth();
+        boolean[] up = {false};
+        h.startSequence()
+                .thenExecute(() -> {
+                    g.teleportTo(g.getX(), g.getY() + 4.5, g.getZ());
+                    g.setDeltaMovement(0, 0, 0);
+                })
+                .thenIdle(1)
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_3))
+                .thenWaitUntil(() -> {
+                    if (target.getDeltaMovement().y > 0.3) up[0] = true;
+                    h.assertTrue(up[0] && target.getHealth() < hp, "the shockwave launched them upward");
+                })
+                .thenExecute(() -> h.assertTrue(hp - target.getHealth() >= JJKConfig.get().hakari.roughStompDamage * 1.5f,
+                        "from higher than a jump: double damage (" + (hp - target.getHealth()) + ")"))
+                .thenSucceed();
     }
 
     @GameTest(maxTicks = 60)
@@ -216,6 +311,38 @@ public class HakariGameTests {
         h.succeedWhen(() -> {
             h.assertTrue(afterKick[0] > 0, "the opening kick landed");
             h.assertTrue(target.getHealth() < afterKick[0] - cfg.feverFinishDamage * 0.5f, "then the second, heavier impact");
+        });
+    }
+
+    @GameTest(maxTicks = 80)
+    public void feverCrushClampsAndAxeKicks(GameTestHelper h) {
+        floor(h, 10);
+        TrainingDummy target = dummy(h, 3.8, 2.5);
+        TrainingDummy g = hakari(h, 1.5, 2.5, target);
+        AbilityCaster c = Casters.get(g);
+        float hp = target.getHealth();
+        press(g, AbilitySlot.SKILL_4);
+        press(g, AbilitySlot.SKILL_2);
+        h.assertTrue(c.cooldown(AbilitySlot.SKILL_2) > 0 && c.isCasting("fever_breaker"), "Shutter Doors joined the wind-up");
+        JJKConfig.Hakari cfg = JJKConfig.get().hakari;
+        h.succeedWhen(() -> {
+            h.assertTrue(!c.isCasting(), "finished");
+            h.assertTrue(hp - target.getHealth() >= cfg.crushDoorDamage + cfg.crushStompDamage * 0.9f, "doors and axe kick landed (" + (hp - target.getHealth()) + ")");
+        });
+    }
+
+    @GameTest(maxTicks = 40)
+    public void doorGuardPunchesBackThroughTheDoors(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy front = dummy(h, 4.5, 2.5);
+        TrainingDummy g = hakari(h, 2.5, 2.5, front);
+        press(g, AbilitySlot.SKILL_5);
+        h.runAfterDelay(3, () -> {
+            float hp = front.getHealth();
+            HitResolver.resolve(Hit.builder(front, "t").damage(5).tag(AttackTag.MELEE).origin(front.getEyePosition()).build(), g);
+            h.assertTrue(front.getHealth() <= hp - JJKConfig.get().hakari.doorGuardCounterDamage + 0.01f, "punched back through the doors");
+            h.assertTrue(Combat.has(front, CombatStatus.GUARD_BROKEN) || Combat.has(front, CombatStatus.HITSTUN), "and repelled");
+            h.succeed();
         });
     }
 
@@ -276,7 +403,7 @@ public class HakariGameTests {
             h.assertTrue(!Combat.has(g, CombatStatus.BURNOUT), "no burnout out of a jackpot");
             h.assertTrue(DomainManager.ownedBy(g) == null || !DomainManager.ownedBy(g).isLive(), "the domain closed on the jackpot");
             HakariState hs = HakariState.of(g);
-            h.assertTrue(hs.lastJackpot > 0 && (hs.lastJackpot % 2 == 1 ? hs.oddsBonus > 0 : hs.headStart > 0), "the jackpot's parity set the next bonus");
+            h.assertTrue(hs.lastJackpot > 0 && (hs.lastJackpot % 2 == 1 ? hs.oddsBonus > 0 : hs.fastRiichi), "the jackpot's parity set the next bonus");
         });
     }
 
@@ -327,17 +454,102 @@ public class HakariGameTests {
         });
     }
 
+    @GameTest(maxTicks = 400, padding = 10)
+    public void renewalRewindsToWhereTheBallLanded(GameTestHelper h) {
+        floor(h, 12);
+        TrainingDummy target = dummy(h, 7.5, 4.5);
+        TrainingDummy g = hakari(h, 4.5, 4.5, target);
+        Vec3[] spot = new Vec3[1];
+        float[] hp = new float[1];
+        h.startSequence()
+                .thenExecute(() -> DomainManager.expand(g, IdleDeathGamble.INSTANCE))
+                .thenWaitUntil(() -> h.assertTrue(IdleDeathGamble.gambleOf(g) != null, "the gamble is running"))
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_1))
+                .thenWaitUntil(() -> h.assertTrue(HakariState.of(g).renewal != null, "the ball landed inside the domain: a moment to go back to"))
+                .thenExecute(() -> {
+                    spot[0] = target.position();
+                    hp[0] = g.getHealth();
+                    target.teleportTo(target.getX() - 1.5, target.getY(), target.getZ() + 1.5);
+                    g.hurtServer(h.getLevel(), h.getLevel().damageSources().generic(), 6);
+                    h.assertTrue(g.getHealth() < hp[0], "Hakari took damage");
+                    Combat.state(g).clearAll();
+                    var r = HakariState.of(g).renewal;
+                    String info = r == null ? "no snapshot" : r.spots().size() + " spots " + r.spots().stream().map(sp -> sp.entity().getName().getString() + "@" + sp.pos()).toList();
+                    boolean used = Casters.get(g).input(AbilitySlot.SKILL_1, true, 0, 0, null);
+                    h.assertTrue(target.position().distanceTo(spot[0]) < 0.6, "Renewal put everyone back where they stood (" + info + ", pressed " + used
+                            + ", refusal " + Casters.get(g).lastRefusal + ", target " + target.position() + " vs " + spot[0] + ")");
+                    h.assertTrue(g.getHealth() >= hp[0] - 0.01f, "and undid the damage he took");
+                    h.assertTrue(HakariState.of(g).renewal == null, "used up");
+                    DomainManager.collapseOwnedBy(g, DomainInstance.EndReason.CANCELLED);
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 900, padding = 10)
+    public void theFourthScenarioIsAPityJackpot(GameTestHelper h) {
+        floor(h, 12);
+        TrainingDummy target = dummy(h, 7.5, 4.5);
+        TrainingDummy g = hakari(h, 4.5, 4.5, target);
+        AbilityCaster c = Casters.get(g);
+        HakariState.of(g).oddsBonus = -5f; // it can't win a normal scenario
+        c.setAwakening(c.maxAwakening());
+        boolean[] pity = {false};
+        int[] attempts = {0};
+        h.onEachTick(() -> {
+            Gamble gm = IdleDeathGamble.gambleOf(g);
+            if (gm == null) return;
+            if (gm.pity()) pity[0] = true;
+            if (gm.state() == Gamble.State.RIICHI) attempts[0] = Math.max(attempts[0], 1);
+            // Keep making visual moves.
+            if (gm.state() == Gamble.State.SPINNING && !c.isBusy() && g.tickCount % 3 == 0) press(g, AbilitySlot.SKILL_1);
+        });
+        h.startSequence()
+                .thenExecute(() -> h.assertTrue(c.input(AbilitySlot.ULTIMATE, true, 0, 0, null), "Idle Death Gamble opens"))
+                .thenWaitUntil(() -> h.assertTrue(c.isAwakened(), "Jackpot came in the end"))
+                .thenExecute(() -> {
+                    h.assertTrue(pity[0], "it was the pity jackpot of the last scenario");
+                    h.assertTrue(c.awakening() <= c.maxAwakening() * 0.5f + 0.01f, "with half the usual Jackpot time (" + c.awakening() + ")");
+                })
+                .thenSucceed();
+    }
+
     @GameTest(maxTicks = 20)
-    public void jackpotShrugsOffALethalBlowButNotTwiceInARow(GameTestHelper h) {
+    public void jackpotIsImmortalWhileItsMeterLasts(GameTestHelper h) {
         floor(h, 6);
         TrainingDummy attacker = dummy(h, 3.5, 1.5);
         TrainingDummy g = hakari(h, 1.5, 1.5, attacker);
-        Casters.get(g).enterAwakening();
-        HitResolver.resolve(Hit.builder(attacker, "t").type(ModDamageTypes.TECHNIQUE).damage(10000).tag(AttackTag.UNBLOCKABLE).build(), g);
-        h.assertTrue(g.isAlive() && g.getHealth() > 1, "Jackpot healed through a lethal blow");
+        AbilityCaster c = Casters.get(g);
+        c.setNoCost(false);
+        c.enterAwakening();
+        float full = c.awakening();
+        // A blow worth one max health drains about a third of the meter (it empties after 3.33 of them)...
+        HitResolver.resolve(Hit.builder(attacker, "t").type(ModDamageTypes.TECHNIQUE).damage(g.getMaxHealth()).tag(AttackTag.UNBLOCKABLE).build(), g);
+        h.assertTrue(g.isAlive(), "the Reverse Cursed Technique kept him up");
+        float drained = full - c.awakening();
+        h.assertTrue(drained > full * 0.2f && drained < full * 0.45f, "the blow drained the Jackpot meter (" + drained + " of " + full + ")");
         Combat.state(g).clearAll();
+        // ...and once it's empty he can be put down.
+        c.setAwakening(0.5f);
         HitResolver.resolve(Hit.builder(attacker, "t").type(ModDamageTypes.TECHNIQUE).damage(10000).tag(AttackTag.UNBLOCKABLE).build(), g);
-        h.assertTrue(!g.isAlive(), "but not a second one right away (not invulnerable)");
+        h.assertTrue(!g.isAlive(), "no meter left: not immortal any more");
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 20)
+    public void survivingAJackpotRefundsMoreEachTimeInARow(GameTestHelper h) {
+        floor(h, 4);
+        TrainingDummy g = hakari(h, 1.5, 1.5, null);
+        AbilityCaster c = Casters.get(g);
+        JJKConfig.Hakari cfg = JJKConfig.get().hakari;
+        HakariState hs = HakariState.of(g);
+        hs.jackpotChain = 1;
+        c.enterAwakening();
+        c.endAwakening("test");
+        h.assertTrue(Math.abs(c.awakening() - c.maxAwakening() * cfg.jackpotRefund) < 0.5f, "first Jackpot survived: 40% back (" + c.awakening() + ")");
+        hs.jackpotChain = 2;
+        c.enterAwakening();
+        c.endAwakening("test");
+        h.assertTrue(Math.abs(c.awakening() - c.maxAwakening() * (cfg.jackpotRefund + cfg.jackpotRefundChain)) < 0.5f, "second in a row: 65% back");
         h.succeed();
     }
 
@@ -377,18 +589,31 @@ public class HakariGameTests {
         });
     }
 
+    @GameTest(maxTicks = 80)
+    public void luckyVolleyFinishesALowTarget(GameTestHelper h) {
+        floor(h, 10);
+        TrainingDummy target = dummy(h, 3.5, 2.5);
+        TrainingDummy g = hakari(h, 1.5, 2.5, target);
+        Casters.get(g).enterAwakening();
+        target.setHealth(target.getMaxHealth() * 0.25f);
+        press(g, AbilitySlot.SKILL_1);
+        h.succeedWhen(() -> h.assertTrue(!target.isAlive(), "the flurry brought them low and the swipe finished them"));
+    }
+
     @GameTest(maxTicks = 80, padding = 12)
     public void luckyRushdownRunsThemDownAndThrowsThem(GameTestHelper h) {
         floor(h, 22);
-        TrainingDummy target = dummy(h, 8.5, 2.5);
-        TrainingDummy g = hakari(h, 1.5, 2.5, target);
+        // Inside the test area (it is walled at x = 8): the run, the drag and the throw all go toward that wall.
+        TrainingDummy target = dummy(h, 4.5, 2.5);
+        TrainingDummy g = hakari(h, 0.5, 2.5, target);
         Casters.get(g).enterAwakening();
         Vec3 start = target.position();
         float hp = target.getHealth();
         press(g, AbilitySlot.SKILL_2);
         h.succeedWhen(() -> {
             h.assertTrue(target.getHealth() < hp - 5, "grabbed and thrown");
-            h.assertTrue(target.position().distanceTo(start) > 4, "dragged and thrown well away");
+            h.assertTrue(target.position().distanceTo(start) > 2, "dragged and thrown away (target " + target.position() + " from " + start
+                    + ", hakari " + g.position() + ", hp " + target.getHealth() + "/" + hp + ")");
         });
     }
 
@@ -424,18 +649,24 @@ public class HakariGameTests {
     }
 
     @GameTest(maxTicks = 80)
-    public void rhythmStretchesTheJackpotAndStartsAStreak(GameTestHelper h) {
+    public void rhythmStacksSpeedAndCutsCooldowns(GameTestHelper h) {
         floor(h, 4);
         TrainingDummy g = hakari(h, 1.5, 1.5, null);
         AbilityCaster c = Casters.get(g);
-        c.enterAwakening();
         c.setNoCost(false);
-        c.setAwakening(50);
+        c.enterAwakening();
+        c.startCooldown(AbilitySlot.SKILL_1, 200);
         press(g, AbilitySlot.SKILL_5);
+        int[] cdAtStart = {-1};
+        h.onEachTick(() -> {
+            if (cdAtStart[0] < 0) cdAtStart[0] = c.cooldown(AbilitySlot.SKILL_1);
+        });
         h.succeedWhen(() -> {
             h.assertTrue(!c.isCasting(), "the dance finished");
-            h.assertTrue(Combat.has(g, CombatStatus.LUCKY_STREAK), "every beat landed: Lucky Streak");
-            h.assertTrue(c.awakening() > 50, "the Jackpot was stretched past where it started (" + c.awakening() + ")");
+            h.assertValueEqual(HakariState.of(g).rhythmStacks, 1, "a stack of speed");
+            h.assertTrue(c.character().castSpeed(c) > 1f, "his moves play out faster");
+            int elapsed = 200 - c.cooldown(AbilitySlot.SKILL_1);
+            h.assertTrue(elapsed >= JJKConfig.get().hakari.rhythmCooldownCut + 10, "cooldowns finished sooner (" + elapsed + " gone)");
         });
     }
 

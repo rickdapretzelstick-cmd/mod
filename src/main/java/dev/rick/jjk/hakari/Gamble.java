@@ -21,25 +21,31 @@ import net.minecraft.world.phys.Vec3;
  *      ▲                                   │
  *      └──────────(next attempt)─────── MISS ──(no attempts left)──▶ DONE
  * </pre>
- * Visual moves are Hakari's own techniques used inside his domain. When enough have been made, a Riichi scenario is
- * drawn (Transit Card, Seat Struggle or Potty Emergency) with a signal colour (green, red, gold or the certain rainbow),
- * and its odds are rolled — hidden until the third reel stops. The first two reels always match; the third decides.
- * As the domain runs out, a final attempt is forced with slightly better odds. Odd jackpot numbers change the probability
- * of the next domain; even ones give it a head start (see {@link HakariState}).
+ * As in Jujutsu Shenanigans: visual moves are specific techniques Hakari lands inside his domain (Reserve Balls, Shutter
+ * Doors, the combination of both counting twice, Fever Breaker's dropkick landing, Fever Crush, a successful Door Guard).
+ * Two of them start a Riichi scenario: Transit Card (one star) or Travel Emergency (two stars, better odds), rolled in
+ * secret until the third reel stops. There are four attempts; the fourth is a guaranteed "pity" jackpot (with half the
+ * usual Jackpot time) as long as someone was caught in the domain, and without one the domain breaks after it. Odd
+ * jackpot numbers raise the next domain's odds; even ones make its Riichi scenarios play twice as fast (see
+ * {@link HakariState}).
  */
 public final class Gamble {
     public enum State { SPINNING, RIICHI, MISS, JACKPOT, DONE }
 
     public enum Scenario {
-        TRANSIT_CARD("TRANSIT CARD RIICHI"), SEAT_STRUGGLE("SEAT STRUGGLE RIICHI"), POTTY_EMERGENCY("POTTY EMERGENCY RIICHI");
+        TRANSIT_CARD("TRANSIT CARD RIICHI", 1), TRAVEL_EMERGENCY("TRAVEL EMERGENCY RIICHI", 2);
 
         public final String title;
+        /** Out of three: more stars, better odds. */
+        public final int stars;
 
-        Scenario(String title) {
+        Scenario(String title, int stars) {
             this.title = title;
+            this.stars = stars;
         }
     }
 
+    /** The colour the Riichi plays in: green for one star, gold for two, rainbow for the pity jackpot. */
     public enum Signal { GREEN, RED, GOLD, RAINBOW }
 
     /** Ticks into a Riichi when the third reel stops. */
@@ -57,14 +63,32 @@ public final class Gamble {
     private float chance;
     private boolean jackpot;
     private boolean forced;
+    private boolean pity;
+    /** Someone was caught in the domain (the pity jackpot needs a witness). */
+    private boolean caughtSomeone;
+    /** Riichi scenarios play at double speed (the bonus of an even jackpot). */
+    private final boolean fast;
     private boolean dirty = true;
 
     Gamble(DomainInstance domain) {
         this.domain = domain;
         this.rng = RandomSource.create(domain.level.getGameTime() * 31 + domain.owner.getId());
         HakariState hs = HakariState.of(domain.owner);
-        progress = Math.min(required() - 1, hs.headStart);
+        fast = hs.fastRiichi;
         shuffle();
+    }
+
+    /** Length of a Riichi scenario in this domain (halved after an even jackpot). */
+    public int riichiTicks() {
+        return fast ? Math.max(Gamble.REVEAL_OFFSET + 8, cfg().riichiTicks / 2) : cfg().riichiTicks;
+    }
+
+    public boolean pity() {
+        return pity;
+    }
+
+    void caught() {
+        caughtSomeone = true;
     }
 
     public State state() {
@@ -83,10 +107,10 @@ public final class Gamble {
         return Math.max(1, cfg().visualMovesRequired);
     }
 
-    /** Hakari used one of his techniques inside the domain. */
-    void visualMove() {
+    /** Hakari landed a visual move inside the domain ({@code count} for a combination worth two). */
+    void visualMove(int count) {
         if (state != State.SPINNING) return;
-        progress++;
+        progress = Math.min(required(), progress + count);
         shuffle();
         Fx.play(domain.level, "gamble_visual", domain.owner.position().add(0, 1.2, 0), Vec3.ZERO, Math.min(1f, progress / (float) required()), domain.owner.getId());
         dirty = true;
@@ -101,7 +125,7 @@ public final class Gamble {
         JJKConfig.Hakari cfg = cfg();
         switch (state) {
             case SPINNING -> {
-                boolean timeRunningOut = domain.remaining() < cfg.riichiTicks + 30 && attempt < cfg.maxAttempts;
+                boolean timeRunningOut = domain.remaining() < riichiTicks() + 30 && attempt < cfg.maxAttempts;
                 boolean ready = progress >= required() || timeRunningOut;
                 // Wait for Hakari to finish what he's doing before the Riichi takes over.
                 AbilityCaster c = Casters.getOrNull(domain.owner);
@@ -110,15 +134,20 @@ public final class Gamble {
             }
             case RIICHI -> {
                 Statuses.apply(domain.owner, CombatStatus.GAMBLING, 3);
-                int reveal = cfg.riichiTicks - REVEAL_OFFSET;
+                int reveal = riichiTicks() - REVEAL_OFFSET;
                 if (stateAge == 16) Fx.play(domain.level, "gamble_signal", domain.owner.position().add(0, 2.4, 0), Vec3.ZERO, signal.ordinal(), domain.owner.getId());
                 if (stateAge == reveal) {
                     Fx.play(domain.level, jackpot ? "gamble_hit" : "gamble_miss", domain.owner.position().add(0, 2.4, 0), Vec3.ZERO, 1f, domain.owner.getId());
                     dirty = true;
                 }
-                if (stateAge >= cfg.riichiTicks) {
+                if (stateAge >= riichiTicks()) {
                     if (jackpot) enterJackpot();
-                    else set(attempt >= cfg.maxAttempts ? State.DONE : State.MISS);
+                    else if (attempt >= cfg.maxAttempts) {
+                        // Out of scenarios: the domain breaks.
+                        set(State.DONE);
+                        sync();
+                        DomainManager.cancel(domain, DomainInstance.EndReason.EXPIRED);
+                    } else set(State.MISS);
                 }
             }
             case MISS -> {
@@ -143,29 +172,17 @@ public final class Gamble {
         JJKConfig.Hakari cfg = cfg();
         attempt++;
         forced = forcedFinal || attempt == cfg.maxAttempts;
-        // Which scenario plays, and the colour of its signal.
-        int s = rng.nextInt(100);
-        scenario = s < 50 ? Scenario.TRANSIT_CARD : s < 85 ? Scenario.SEAT_STRUGGLE : Scenario.POTTY_EMERGENCY;
-        float base = switch (scenario) {
-            case TRANSIT_CARD -> cfg.transitCardOdds;
-            case SEAT_STRUGGLE -> cfg.seatStruggleOdds;
-            case POTTY_EMERGENCY -> cfg.pottyEmergencyOdds;
-        };
-        float roll = rng.nextFloat();
-        if (roll < cfg.rainbowChance) signal = Signal.RAINBOW;
-        else if (roll < cfg.rainbowChance + 0.12f) signal = Signal.GOLD;
-        else if (roll < cfg.rainbowChance + 0.45f) signal = Signal.RED;
-        else signal = Signal.GREEN;
-        float mul = switch (signal) {
-            case GREEN -> cfg.greenSignal;
-            case RED -> cfg.redSignal;
-            case GOLD -> cfg.goldSignal;
-            case RAINBOW -> 100f;
-        };
+        // The last scenario is the pity jackpot, if anyone was caught in the domain to see it.
+        pity = attempt >= cfg.maxAttempts && caughtSomeone;
+        scenario = rng.nextFloat() < cfg.travelEmergencyChance ? Scenario.TRAVEL_EMERGENCY : Scenario.TRANSIT_CARD;
+        float base = scenario == Scenario.TRAVEL_EMERGENCY ? cfg.travelEmergencyOdds : cfg.transitCardOdds;
+        // A rare rainbow is a certain win (off by default, as in JJS); the pity jackpot plays in rainbow too.
+        boolean rainbow = pity || rng.nextFloat() < cfg.rainbowChance;
+        signal = rainbow ? Signal.RAINBOW : scenario == Scenario.TRAVEL_EMERGENCY ? Signal.GOLD : Signal.GREEN;
         HakariState hs = HakariState.of(domain.owner);
-        chance = Math.min(1f, base * mul + hs.oddsBonus + (forced ? cfg.finalAttemptBonus : 0));
-        jackpot = signal == Signal.RAINBOW || rng.nextFloat() < chance;
-        if (signal == Signal.RAINBOW) chance = 1f;
+        chance = Math.min(1f, base + hs.oddsBonus + (forced && !pity ? cfg.finalAttemptBonus : 0));
+        jackpot = rainbow || rng.nextFloat() < chance;
+        if (rainbow) chance = 1f;
         // Two reels always line up (that's what makes it a Riichi); the third decides.
         int n = 1 + rng.nextInt(7);
         reels[0] = n;
@@ -183,9 +200,9 @@ public final class Gamble {
         hs.lastJackpot = n;
         // The bonus of this jackpot replaces the one it consumed.
         hs.oddsBonus = n % 2 == 1 ? cfg().oddJackpotBonus : 0;
-        hs.headStart = n % 2 == 0 ? cfg().evenJackpotHeadStart : 0;
+        hs.fastRiichi = n % 2 == 0;
         sync();
-        HakariCharacter.jackpot(domain.owner, n);
+        HakariCharacter.jackpot(domain.owner, n, pity);
         DomainManager.cancel(domain, DomainInstance.EndReason.CANCELLED);
     }
 
@@ -195,7 +212,9 @@ public final class Gamble {
         // A miss still spends the domain; part of the meter comes back, and any bonus it carried was used up.
         HakariState hs = HakariState.of(domain.owner);
         hs.oddsBonus = 0;
-        hs.headStart = 0;
+        hs.fastRiichi = false;
+        // No jackpot: the chain of consecutive jackpots is broken.
+        hs.jackpotChain = 0;
         AbilityCaster c = Casters.getOrNull(domain.owner);
         if (c != null && !c.isAwakened()) c.setAwakening(c.awakening() + c.maxAwakening() * cfg().missRefund);
     }
@@ -219,14 +238,14 @@ public final class Gamble {
             case DONE -> GamblePayload.DONE;
         };
         int dur = switch (state) {
-            case RIICHI -> cfg().riichiTicks;
+            case RIICHI -> riichiTicks();
             case MISS -> cfg().missTicks;
             default -> 0;
         };
         // The third reel's true number isn't sent until it stops.
-        boolean revealed = state != State.RIICHI || stateAge >= cfg().riichiTicks - REVEAL_OFFSET;
+        boolean revealed = state != State.RIICHI || stateAge >= riichiTicks() - REVEAL_OFFSET;
         String bonus = HakariState.of(domain.owner).bonusText();
-        if (forced && state == State.RIICHI) bonus = "FINAL ATTEMPT";
+        if (state == State.RIICHI) bonus = pity ? "PITY JACKPOT" : forced ? "FINAL ATTEMPT" : bonus;
         return new GamblePayload(domain.id, domain.owner.getId(), st, progress, required(), attempt, cfg().maxAttempts, scenario.ordinal(), signal.ordinal(),
                 reels[0], reels[1], revealed ? reels[2] : 0, stateAge, dur, forOwner ? chanceShown() : -1f, forOwner ? bonus : "");
     }
@@ -235,7 +254,7 @@ public final class Gamble {
     private float chanceShown() {
         if (state == State.RIICHI || state == State.JACKPOT) return chance;
         JJKConfig.Hakari cfg = cfg();
-        float avg = (cfg.transitCardOdds * 0.5f + cfg.seatStruggleOdds * 0.35f + cfg.pottyEmergencyOdds * 0.15f);
+        float avg = cfg.transitCardOdds * (1 - cfg.travelEmergencyChance) + cfg.travelEmergencyOdds * cfg.travelEmergencyChance;
         return Math.min(1f, avg + HakariState.of(domain.owner).oddsBonus);
     }
 

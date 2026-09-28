@@ -17,11 +17,12 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Jackpot special — Rhythm. Hakari dances to the beat of his Jackpot. A short bar of beats plays; press the Special key
- * on each one. Every beat you land stretches the Jackpot and patches him up; land them all at GREAT or better and he
- * rides a Lucky Streak (every Jackpot move hits harder for a while). Timing is judged with the same windows as a domain
- * clash ({@link ClashSession#rate}) against the client's own sub-tick clock, but it is its own mechanic.
- * Players press on their client ({@code RhythmInputPayload}); non-players (bots, tests) are judged as perfect.
+ * Jackpot special — Rhythm. Hakari dances to the music of his Jackpot. Finish the dance without being interrupted and
+ * he gains a stack of speed (his moves and special play out faster, stacking, for the rest of his life) and every move
+ * on cooldown finishes 0.6 seconds sooner. Interrupted, he gets nothing. A short bar of beats plays while he dances;
+ * pressing the Special key on them is judged (same windows as a domain clash, {@link ClashSession#rate}) for the feel of
+ * it, but the reward is the finished dance. Players press on their client ({@code RhythmInputPayload}); non-players are
+ * judged as perfect.
  */
 public final class RhythmAbility extends Ability {
     public static final String ID = "rhythm";
@@ -98,20 +99,7 @@ public final class RhythmAbility extends Ability {
         private void judge(int beat, ClashJudgement j) {
             results[beat] = j;
             judged++;
-            JJKConfig.Hakari cfg = JJKConfig.get().hakari;
-            float secs = switch (j) {
-                case PERFECT -> cfg.rhythmPerfectSeconds;
-                case GREAT -> cfg.rhythmGreatSeconds;
-                case GOOD -> cfg.rhythmGoodSeconds;
-                default -> 0;
-            };
             if (j == ClashJudgement.PERFECT || j == ClashJudgement.GREAT) great++;
-            if (secs > 0) {
-                // Stretch the Jackpot (the meter is its timer) and patch him up.
-                float perSecond = caster.character() != null ? caster.character().awakeningDrainPerSecond() : 1f;
-                caster.setAwakening(caster.awakening() + secs * perSecond);
-                user.heal(secs * 2f);
-            }
             Fx.play(level, "rhythm_beat", user.position().add(0, 2.2, 0), Vec3.ZERO, j.ordinal(), user.getId());
         }
 
@@ -128,10 +116,12 @@ public final class RhythmAbility extends Ability {
                 }
             }
             if (judged >= results.length || age > cfg.rhythmLeadIn + cfg.rhythmBeats * cfg.rhythmBeatTicks + 8) {
-                if (great >= results.length) {
-                    Statuses.apply(user, CombatStatus.LUCKY_STREAK, cfg.rhythmStreakTicks);
-                    Fx.play(level, "rhythm_streak", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
-                }
+                // The dance is finished: a stack of speed, and every cooldown comes back sooner.
+                HakariState hs = HakariState.of(user);
+                hs.rhythmStacks = Math.min(cfg.rhythmMaxStacks, hs.rhythmStacks + 1);
+                caster.reduceCooldowns(cfg.rhythmCooldownCut);
+                Statuses.apply(user, CombatStatus.LUCKY_STREAK, 60);
+                Fx.play(level, "rhythm_streak", user.position().add(0, 1.2, 0), Vec3.ZERO, hs.rhythmStacks, user.getId());
                 finish();
             }
         }

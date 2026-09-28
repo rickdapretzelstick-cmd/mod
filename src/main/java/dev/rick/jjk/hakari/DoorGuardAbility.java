@@ -50,6 +50,13 @@ public final class DoorGuardAbility extends Ability {
         return RAISED.containsKey(e);
     }
 
+    /** A bullet shattered the doors: the guard drops. */
+    static void shatter(LivingEntity user) {
+        RAISED.remove(user);
+        var c = dev.rick.jjk.core.ability.Casters.getOrNull(user);
+        if (c != null && c.cast() != null && c.cast().ability instanceof DoorGuardAbility) c.cast().release();
+    }
+
     static Vec3 doorSpot(LivingEntity user) {
         return user.position().add(HakariCombat.flat(user).scale(1.05));
     }
@@ -79,7 +86,7 @@ public final class DoorGuardAbility extends Ability {
                     if (swing >= 0) door.setOpen(Math.min(1f, ++swing / 4f));
                 }
                 if (swing < 0 && door != null && door.open() > 0) swing = 0;
-                if (!held || age >= JJKConfig.get().hakari.doorGuardMaxTicks || swing > 8) finish();
+                if (!held || !RAISED.containsKey(user) || age >= JJKConfig.get().hakari.doorGuardMaxTicks || swing > 8) finish();
             }
 
             @Override

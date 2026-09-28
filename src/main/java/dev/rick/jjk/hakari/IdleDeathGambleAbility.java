@@ -71,6 +71,8 @@ public final class IdleDeathGambleAbility extends Ability implements DomainAbili
                 }
                 if (!caster.noCost()) caster.setAwakening(0);
                 int startup = JJKConfig.get().hakari.domainStartup;
+                // Total invincibility through the hand sign.
+                dev.rick.jjk.core.combat.Statuses.apply(user, dev.rick.jjk.core.combat.CombatStatus.EVADING, startup + 2);
                 Anim.play(user, "idg_sign");
                 setPhase(0, startup);
                 Fx.play(level, "idg_charge", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
@@ -83,6 +85,7 @@ public final class IdleDeathGambleAbility extends Ability implements DomainAbili
                 Motion.set(user, new Vec3(0, Math.min(0, user.getDeltaMovement().y) * 0.3, 0));
                 if (age >= JJKConfig.get().hakari.domainStartup) {
                     expanded = DomainManager.expand(user, IdleDeathGamble.INSTANCE) != null;
+                    if (expanded) user.heal(user.getMaxHealth() * JJKConfig.get().hakari.domainHealShare);
                     Anim.play(user, "domain_release");
                     finish();
                 }

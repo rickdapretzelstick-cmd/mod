@@ -51,37 +51,53 @@ kit's techniques, toggles and states are cleared and the new moveset, HUD icons 
 
 ### Kinji Hakari — Restless Gambler
 
-Gambling → domain → Jackpot → sustain → pressure.
+Tuned after the [Jujutsu Shenanigans wiki](https://jujutsu-shenanigans.fandom.com/wiki/Restless_Gambler): the wiki's
+cooldowns and durations, its studs as blocks (about 3.6 studs to a block), all in the `hakari` section of the config.
 
-- **Reserve Balls**: a quick three-ball volley of steel pachinko balls. They bounce once off surfaces, and the last
-  one knocks back.
-- **Shutter Doors**: two steel shutters rise out of the ground on either side of the target and slam shut. They crush
-  the target and pin them in hitstun from range.
-- **Rough Energy**: a committed wind-up, then a guard-breaking straight at the very end of it that gouges the ground.
-- **Fever Breaker**: a spinning kick knocks them away, Hakari rushes them down, and a second, heavier kick breaks them.
-- **Door Guard** (Special, hold): a red lacquer door stops everything from the front. Melee caught in the first few
-  ticks makes the door swing open into the attacker.
-- **Idle Death Gamble** (full Awakening meter): a physical domain built by the shared framework, modelled on the domain
-  as Jujutsu Shenanigans shows it: a bright white room with a pale tiled floor and framed hatches in it, walls lined
-  with white bullet trains running in stacked rings, one more train winding through the air, and three giant red
-  seven-segment counters showing the reels. All of it is real block models and blocks (the room is self-lit). The
-  sure-hit only imparts the rules and deals no damage.
-  - **Visual moves**: Hakari's techniques used inside the domain count as visual moves, and enough of them start a
-    **Riichi**.
-  - **Riichi**: a scenario is drawn (Transit Card, Seat Struggle or Potty Emergency) with a green, red, gold or
-    rainbow signal. A cut-in plays, the first two reels lock and the third spins down.
-  - **Attempts**: a miss goes back to spinning for another attempt. A final attempt is forced as the domain runs out.
-  - **Bonuses**: odd jackpot numbers give the next domain better odds, and even ones give it a head start. Both are
-    kept for one life only.
-  - **Missing entirely**: if the domain ends without a jackpot, part of the meter is refunded.
-- **Jackpot**: full heal, unlimited cursed energy and heavy regeneration. A lethal blow is survived, but not twice in
-  quick succession. The timer is a big casino-lit bar at the top of the screen. The kit becomes:
-  - **Lucky Volley**: an opener, a flurry, then a final strike.
-  - **Lucky Rushdown**: run the target down, drag them, then throw them.
-  - **Overwhelming Luck**: a march of escalating punches ending in a blast.
-  - **Energy Surge**: a dash, then he vanishes, reappears above the target and axe-kicks down.
-  - **Rhythm**: press the Special key on each beat. Landed beats stretch the Jackpot, and all GREAT or better gives a
-    Lucky Streak damage buff.
+- **Reserve Balls** (12s): one steel ball flicked about 65 studs, ricocheting off surfaces while it has distance left
+  (much further inside his domain). It stuns whoever it hits, or ragdolls them if it hit within 15 studs.
+  *Shutter Doors during the wind-up*: the doors manifest where the ball lands and bounce a target it stunned.
+- **Shutter Doors** (15s): two shutters from the "Private Pure Love Train" pachinko game close on the target's torso
+  from up to 25 studs away. The target is stunned and Hakari's melee chain jumps to its 3rd hit. Doors that catch nobody
+  linger for 7 seconds: jump on them to bounce high (they shatter), and a ragdolled enemy falling on them bounces three
+  times, taking damage each time.
+- **Rough Energy** (14s): a long wind-up, then an unblockable punch that sends them flying. *In the air*: a short
+  hover, then a stomp whose shockwave launches everyone around upward. *From higher than a jump*: the stomp is
+  unblockable and does double damage.
+- **Fever Breaker** (23s): a reaching kick suspends the target in front of two shutter doors, then a dropkick launches
+  them wherever Hakari is facing. *Fever Crush* (Shutter Doors during the wind-up): the doors clamp them while he
+  raises his foot, and an unblockable axe kick crushes them. On a ragdolled target the axe kick does double damage and
+  shatters the doors, unless he looks slightly away from them to keep them standing.
+- **Door Guard** (Special, hold; 16s): a melee hit in the first 0.6s is answered with a punch through the doors that
+  repels the attacker. A bullet (projectile) only shatters the doors.
+- **Idle Death Gamble** (full Awakening meter; 80s, heals 15% on cast, invincible through the hand sign): a physical
+  domain built by the shared framework, modelled on the domain as Jujutsu Shenanigans shows it: a bright white room
+  with a pale tiled floor and framed hatches, walls lined with stacked rings of white bullet trains, one more train
+  winding through the air, and three giant red seven-segment counters showing the reels. Everyone caught is frozen in
+  place for the opening while the rules are imparted; the sure-hit does no damage.
+  - **Visual moves**: using Reserve Balls or Shutter Doors (the two combined count twice), landing Fever Breaker's
+    dropkick, Fever Crush, or a successful Door Guard. Two of them start a **Riichi**.
+  - **Riichi**: Transit Card (one star) or Travel Emergency (two stars, better odds). A cut-in plays, the first two
+    reels lock and the third spins down.
+  - **Four attempts**: a miss goes back to spinning. The fourth scenario is a guaranteed **pity jackpot** with half
+    the usual Jackpot time, as long as someone was caught in the domain; without one the domain breaks after it.
+  - **Bonuses**: an odd jackpot number gives the next domain better odds, and an even one makes its Riichi scenarios
+    play twice as fast. Both are lost on death.
+  - **Renewal**: inside the domain, pressing Reserve Balls again within 8 seconds of a ball landing rewinds to that
+    moment. Everyone goes back where they stood, and any damage Hakari took since is undone.
+- **Jackpot** (100s, or 50s after a pity jackpot): infinite cursed energy, and a Reverse Cursed Technique that runs on
+  its own. He heals fast and is effectively immortal, but damage drains the Jackpot meter (empty after 3.33 times his
+  max health). Surviving to the end refunds 40% of the Awakening meter, and 25% more for each Jackpot in a row. Missing
+  a jackpot or dying resets that. The kit becomes:
+  - **Lucky Volley** (10s): a flurry of punches he can walk forward, ending in an unblockable swipe that launches them.
+  - **Lucky Rushdown** (15s): a long run; whoever he meets is grabbed by the leg, dragged and thrown. Unblockable.
+  - **Overwhelming Luck** (20s): a rushing strike that tosses them, then he sprints after them, grabs everyone it
+    caught and finishes with a string of hits and a final punch. Unblockable.
+  - **Energy Surge** (25s): a dash punch launches them skyward, and he blinks up and kicks them down.
+  - **Rhythm** (8s): he dances to the beat. Finish the dance uninterrupted to get a stacking speed boost to his moves
+    and special, and every cooldown finishes 0.6s sooner.
+- **Finishers**: on a target at 20% health or less, Shutter Doors shut them in completely, Lucky Volley's swipe sends
+  them flying, and Lucky Rushdown drags them further, hurls them into the air and ends with a leaping punch.
 
 ## HUD and Vanilla Minecraft mode
 

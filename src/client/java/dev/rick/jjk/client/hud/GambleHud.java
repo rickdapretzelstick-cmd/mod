@@ -83,7 +83,7 @@ public final class GambleHud {
         int rw = 34, rh = 30, gap = 8, rx = w / 2 - (rw * 3 + gap * 2) / 2, ry = y + 14;
         boolean jolt = now - gamble.visualTick < 6;
         int[] reels = {p.reel0(), p.reel1(), p.reel2()};
-        int reveal = dev.rick.jjk.config.JJKConfig.get().hakari.riichiTicks - Gamble.REVEAL_OFFSET;
+        int reveal = GamblePayload.revealAt(p);
         for (int i = 0; i < 3; i++) {
             int x0 = rx + i * (rw + gap);
             boolean locked = riichi && i < 2 && age >= 8;
@@ -112,7 +112,7 @@ public final class GambleHud {
         int iy = y + ph - 12;
         StringBuilder pips = new StringBuilder();
         for (int i = 0; i < p.required(); i++) pips.append(i < p.progress() ? '●' : '○');
-        String left = riichi ? SIGNAL_NAME[Mth.clamp(p.signal(), 0, 3)] + " SIGNAL" : "VISUAL " + pips;
+        String left = riichi ? (p.signal() == 3 ? "PITY JACKPOT" : Gamble.Scenario.values()[Mth.clamp(p.scenario(), 0, Gamble.Scenario.values().length - 1)].stars + " STAR RIICHI") : "VISUAL " + pips;
         CinematicPanels.label(g, font, left, x + 6, iy, 0.7f, riichi && age >= 16 ? signal | 0xFF000000 : 0xFFFFFFFF, riichi && age < 16 ? 0 : 1f, false);
         String right = "ATTEMPT " + Math.max(1, Math.min(p.maxAttempts(), p.attempt() + (p.state() == GamblePayload.SPINNING ? 1 : 0))) + "/" + p.maxAttempts();
         CinematicPanels.label(g, font, right, x + pw - 6, iy, 0.7f, 0xFFE8D8F0, 1f, true);
@@ -150,14 +150,14 @@ public final class GambleHud {
         CinematicPanels.border(g, band.top(), w, 4);
         CinematicPanels.border(g, band.bottom(), w, 4);
         float a = Mth.clamp((age - 4) / 3f, 0, 1) * out;
-        String title = Gamble.Scenario.values()[Mth.clamp(p.scenario(), 0, 2)].title;
+        String title = Gamble.Scenario.values()[Mth.clamp(p.scenario(), 0, Gamble.Scenario.values().length - 1)].title;
         CinematicPanels.labelCentered(g, font, "RIICHI!", w * 0.58f + slide, band.topAt(w * 0.58f, w) + 10, 3f, 0xFFFFFFFF, a);
         CinematicPanels.labelCentered(g, font, title, w * 0.58f + slide, band.bottomAt(w * 0.58f, w) - 24, 1.5f, 0xFFF0C040, a);
     }
 
     /** JACKPOT, or the miss, in the middle of the screen. */
     private static void result(GuiGraphicsExtractor g, Font font, GamblePayload p, int w, int h, float age, float time) {
-        int reveal = dev.rick.jjk.config.JJKConfig.get().hakari.riichiTicks - Gamble.REVEAL_OFFSET;
+        int reveal = GamblePayload.revealAt(p);
         boolean jackpot = p.state() == GamblePayload.JACKPOT || p.state() == GamblePayload.RIICHI && age >= reveal && p.reel2() == p.reel0() && p.reel2() != 0;
         boolean miss = p.state() == GamblePayload.MISS || p.state() == GamblePayload.DONE && age < 30
                 || p.state() == GamblePayload.RIICHI && age >= reveal && p.reel2() != 0 && p.reel2() != p.reel0();

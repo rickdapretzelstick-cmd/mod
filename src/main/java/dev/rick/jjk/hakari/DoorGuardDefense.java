@@ -16,9 +16,10 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Door Guard as a defense layer. It sits outside the physical guard: anything from the front is stopped by the door
- * (melee, techniques, projectiles, explosions), each stop costing a little cursed energy; attacks from behind, sure-hits
- * and unblockables go around it. A melee hit caught in the counter window swings the door open into the attacker.
+ * Door Guard as a defense layer. It sits outside the physical guard: anything from the front is stopped by the doors,
+ * each stop costing a little cursed energy; attacks from behind, sure-hits and unblockables go around it. A melee hit
+ * caught in the counter window (0.6s) is answered by Hakari punching through the doors into the attacker, repelling
+ * them; a bullet (projectile) only shatters the doors.
  */
 public final class DoorGuardDefense implements DefenseLayer {
     @Override
@@ -46,6 +47,7 @@ public final class DoorGuardDefense implements DefenseLayer {
         if (attack.has(AttackTag.MELEE) && defender.level().getGameTime() - raised <= JJKConfig.get().hakari.doorGuardCounterWindow) {
             return new DefenseResult(DefenseResult.Kind.PARRY, 0f, "door_counter");
         }
+        if (attack.has(AttackTag.PROJECTILE)) return DefenseResult.negate("door_shatter");
         return DefenseResult.negate("door_guard");
     }
 
@@ -61,10 +63,21 @@ public final class DoorGuardDefense implements DefenseLayer {
             Fx.play(level, "door_guard_counter", at, HakariCombat.flat(defender), 1f, defender.getId());
             Fx.shake(level, at, 12, 0.6f, 8);
             if (attack.attacker instanceof LivingEntity a) {
-                Statuses.apply(a, CombatStatus.GUARD_BROKEN, cfg.doorGuardCounterStun);
+                // Punched back through the doors.
                 Vec3 push = a.position().subtract(defender.position());
-                Motion.set(a, new Vec3(push.x, 0, push.z).normalize().scale(1.1).add(0, 0.35, 0));
+                Vec3 dir = new Vec3(push.x, 0, push.z).normalize();
+                var hit = dev.rick.jjk.core.combat.Hit.builder(defender, DoorGuardAbility.ID).type(dev.rick.jjk.registry.ModDamageTypes.MELEE)
+                        .damage(cfg.doorGuardCounterDamage).tag(AttackTag.MELEE).origin(defender.getEyePosition())
+                        .knockback(dev.rick.jjk.core.combat.Knockback.directional(dir, 1.1, 0.35)).hitstun(cfg.doorGuardCounterStun)
+                        .fx("door_counter_punch", 1f).build();
+                HakariCombat.hit(hit, a);
+                Statuses.apply(a, CombatStatus.GUARD_BROKEN, cfg.doorGuardCounterStun);
             }
+            // A successful Door Guard is a visual move.
+            HakariCombat.visual(defender, 1);
+        } else if ("door_shatter".equals(result.reason())) {
+            Fx.play(level, "shutter_shatter", at, HakariCombat.flat(defender), 0.8f, defender.getId());
+            DoorGuardAbility.shatter(defender);
         } else {
             Fx.play(level, "door_guard_block", at, HakariCombat.flat(defender), 1f, defender.getId());
             if (caster != null) caster.drain(cfg.doorGuardBlockCost);

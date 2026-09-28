@@ -412,143 +412,175 @@ public final class JJKConfig {
     }
 
     /** Kinji Hakari / Restless Gambler. Every number here can be rebalanced without code changes. */
+    /**
+     * Hakari (Restless Gambler), tuned after the Jujutsu Shenanigans wiki. Cooldowns and durations are the wiki's seconds
+     * in ticks; distances are its studs in blocks (about 3.6 studs to a block).
+     */
     public static class Hakari {
         public float maxCursedEnergy = 900f;
         public float regenPerSecond = 20f;
+        /** A target at or under this share of max health is finished off by a finisher move. */
+        public float finisherThreshold = 0.2f;
 
-        // --- 1: Reserve Balls ---
+        // --- 1: Reserve Balls (12s) ---
         public float ballsCost = 45f;
-        public int ballsCooldown = 70;
-        public int ballsCount = 3;
-        public int ballsInterval = 3;
-        public double ballSpeed = 1.7;
-        public int ballLife = 26;
-        public float ballDamage = 3.5f;
-        public int ballHitstun = 9;
-        public double ballKnockback = 0.35;
-        /** The last ball of the volley hits harder. */
-        public float lastBallDamage = 5f;
-        public double lastBallKnockback = 0.75;
+        public int ballsCooldown = 240;
+        /** Wind-up before the flick: Shutter Doors pressed in this window sets up the doors combination. */
+        public int ballsWindup = 7;
+        public double ballSpeed = 1.8;
+        /** 65 studs; ricochets count toward it. Inside Hakari's domain it keeps going this many times longer. */
+        public double ballRange = 18;
+        public double ballDomainRangeMultiplier = 3;
+        /** Within 15 studs the ball ragdolls instead of stunning. */
+        public double ballRagdollRange = 4.2;
+        public float ballDamage = 7.5f;
+        public int ballHitstun = 16;
+        public double ballRagdollKnockback = 1.3;
+        /** The doors combination: the doors' hit and each bounce of a stunned target on them. */
+        public float comboDoorDamage = 3f;
+        public float doorBounceDamage = 2f;
+        public int doorBounces = 3;
 
-        // --- 2: Shutter Doors ---
+        // --- 2: Shutter Doors (15s) ---
         public float shutterCost = 70f;
-        public int shutterCooldown = 110;
-        public double shutterRange = 14;
+        public int shutterCooldown = 300;
+        /** 25 studs. */
+        public double shutterRange = 7;
         public int shutterRiseTicks = 5;
         public int shutterCloseTicks = 3;
         public int shutterHoldTicks = 12;
         public float shutterDamage = 8f;
         public int shutterHitstun = 24;
+        /** Missed doors linger this long (7s): jump on them to bounce high, or a ragdolled enemy bounces on them. */
+        public int shutterLingerTicks = 140;
+        public double shutterBounceLaunch = 1.35;
+        public float shutterMissDamage = 6f;
 
-        // --- 3: Rough Energy ---
+        // --- 3: Rough Energy (14s) ---
         public float roughCost = 80f;
-        public int roughCooldown = 130;
-        public int roughWindup = 12;
-        public float roughDamage = 12f;
+        public int roughCooldown = 280;
+        public int roughWindup = 16;
+        public float roughDamage = 12.5f;
         public double roughReach = 3.4;
-        public double roughKnockback = 1.6;
+        public double roughKnockback = 1.7;
         public int roughHitstun = 20;
+        /** In the air: a hover, then a stomp whose shockwave launches everyone around upward. */
+        public float roughStompDamage = 8f;
+        public double roughStompRadius = 3.6;
+        /** Stomping from higher than a jump: unblockable and double damage. */
+        public double roughHighAirHeight = 2.5;
 
-        // --- 4: Fever Breaker ---
+        // --- 4: Fever Breaker (23s) ---
         public float feverCost = 90f;
-        public int feverCooldown = 150;
-        public float feverKickDamage = 6f;
-        public double feverKickKnockback = 1.25;
-        public int feverRushTicks = 10;
-        public float feverFinishDamage = 11f;
-        public double feverFinishKnockback = 1.9;
+        public int feverCooldown = 460;
+        public int feverWindup = 5;
+        public float feverKickDamage = 5f;
+        /** Ticks the target hangs in front of the doors before the dropkick. */
+        public int feverSuspendTicks = 12;
+        public float feverFinishDamage = 10f;
+        public double feverFinishKnockback = 2.0;
+        /** Fever Crush (Shutter Doors during the wind-up): the doors' hold, the axe kick, and the axe kick on a ragdolled target. */
+        public float crushDoorDamage = 8f;
+        public float crushStompDamage = 12f;
+        public float crushRagdollStompDamage = 24f;
 
-        // --- Special: Door Guard ---
+        // --- Special: Door Guard (16s) ---
         public int doorGuardMaxTicks = 40;
-        public int doorGuardCooldown = 120;
-        /** Blocking a melee hit in the first ticks swings the door into the attacker. */
-        public int doorGuardCounterWindow = 6;
+        public int doorGuardCooldown = 320;
+        /** 0.6s: a melee hit in this window is punched back through the doors. */
+        public int doorGuardCounterWindow = 12;
+        public float doorGuardCounterDamage = 5f;
         public int doorGuardCounterStun = 30;
         public float doorGuardBlockCost = 10f;
 
         // --- Idle Death Gamble ---
         public double domainRadius = 14;
-        public int domainDuration = 900;
+        /** 80s, though it breaks after its last scenario. */
+        public int domainDuration = 1600;
         public int domainFormationTicks = 44;
         public int domainStartup = 26;
         public float domainCost = 200f;
         public int domainCooldown = 900;
-        /** Visual moves (Hakari's techniques used inside his domain) needed before a Riichi scenario. */
-        public int visualMovesRequired = 3;
-        /** Riichi attempts per domain. */
-        public int maxAttempts = 3;
+        /** Everyone caught is frozen in place this long while the rules are imparted. */
+        public int domainFreezeTicks = 30;
+        /** Healing on cast (15 of 100 HP in JJS), as a share of max health. */
+        public float domainHealShare = 0.15f;
+        /** Visual moves needed before a Riichi scenario. */
+        public int visualMovesRequired = 2;
+        /** Scenarios per domain; the last one is the pity jackpot if anyone was caught. */
+        public int maxAttempts = 4;
         public int riichiTicks = 76;
         public int missTicks = 24;
-        /** Base jackpot odds per scenario, and the signal colour multipliers. */
-        public float transitCardOdds = 0.22f;
-        public float seatStruggleOdds = 0.34f;
-        public float pottyEmergencyOdds = 0.5f;
-        public float greenSignal = 0.6f;
-        public float redSignal = 1.15f;
-        public float goldSignal = 1.8f;
-        /** Chance a Riichi rolls the rainbow signal (a certain jackpot). */
-        public float rainbowChance = 0.04f;
-        /** Extra odds on a forced final attempt as the domain runs out. */
-        public float finalAttemptBonus = 0.12f;
-        /** Share of the Awakening meter refunded when the domain ends without a jackpot. */
-        public float missRefund = 0.3f;
-        /** After an odd jackpot: extra odds on the next domain's Riichi (lost on death). */
+        /** Odds of each scenario (Transit Card one star, Travel Emergency two) and how often Travel Emergency is drawn. */
+        public float transitCardOdds = 0.3f;
+        public float travelEmergencyOdds = 0.5f;
+        public float travelEmergencyChance = 0.4f;
+        /** Chance a Riichi plays the rainbow (a certain jackpot). Not in JJS: off by default. */
+        public float rainbowChance = 0f;
+        /** Extra odds on a forced attempt as the domain runs out. */
+        public float finalAttemptBonus = 0.1f;
+        /** Share of the Awakening meter refunded when the domain ends without a jackpot (none in JJS). */
+        public float missRefund = 0f;
+        /** After an odd jackpot: extra odds on the next domain's Riichi. After an even one its Riichi play twice as fast. */
         public float oddJackpotBonus = 0.25f;
-        /** After an even jackpot: visual moves the next domain starts with (lost on death). */
-        public int evenJackpotHeadStart = 1;
+        /** Renewal: pressing Reserve Balls again within this long after a ball lands rewinds to that moment (8s). */
+        public int renewalWindow = 160;
 
         // --- Jackpot ---
-        public int jackpotSeconds = 45;
-        public float jackpotRegenPerSecond = 3f;
-        /** A lethal blow during Jackpot is survived with this share of max health... */
-        public float jackpotLethalHeal = 0.5f;
-        /** ...at most once per this many ticks. */
-        public int jackpotLethalCooldown = 80;
+        /** 100s (half after a pity jackpot). */
+        public int jackpotSeconds = 100;
+        /** Reverse Cursed Technique: share of max health healed per second. */
+        public float jackpotRegenShare = 0.08f;
+        /** Damage taken drains the Jackpot meter: it empties after this many times max health (333 of 100 HP). */
+        public float jackpotHitDrainHealths = 3.33f;
+        /** Surviving to the end of a Jackpot refunds this much Awakening, and this much more for each consecutive Jackpot. */
+        public float jackpotRefund = 0.4f;
+        public float jackpotRefundChain = 0.25f;
 
-        // --- Jackpot 1: Lucky Volley ---
-        public int volleyCooldown = 90;
-        public float volleyOpenerDamage = 4f;
+        // --- Jackpot 1: Lucky Volley (10s) ---
+        public int volleyCooldown = 200;
+        public float volleyOpenerDamage = 2.3f;
         public int volleyFlurryHits = 8;
-        public float volleyFlurryDamage = 1.5f;
-        public float volleyFinalDamage = 9f;
+        public float volleyFlurryDamage = 2.3f;
+        public float volleyFinalDamage = 8f;
         public double volleyFinalKnockback = 1.8;
 
-        // --- Jackpot 2: Lucky Rushdown ---
-        public int rushdownCooldown = 120;
+        // --- Jackpot 2: Lucky Rushdown (15s) ---
+        public int rushdownCooldown = 300;
         public int rushdownRunTicks = 22;
         public double rushdownSpeed = 1.05;
         public int rushdownDragTicks = 14;
-        public float rushdownGrabDamage = 5f;
+        public float rushdownGrabDamage = 14f;
         public float rushdownThrowDamage = 10f;
         public double rushdownThrowKnockback = 2.2;
+        /** Finisher: a longer drag, then the target is hurled up and Hakari leaps after them. */
+        public int rushdownFinisherDragTicks = 26;
 
-        // --- Jackpot 3: Overwhelming Luck ---
-        public int overwhelmCooldown = 150;
-        public int overwhelmPunches = 7;
+        // --- Jackpot 3: Overwhelming Luck (20s) ---
+        public int overwhelmCooldown = 400;
+        public float overwhelmOpenerDamage = 10f;
+        public int overwhelmPunches = 6;
         public int overwhelmInterval = 4;
         public float overwhelmPunchDamage = 3f;
-        public float overwhelmFinalDamage = 16f;
+        public float overwhelmFinalDamage = 12f;
         public double overwhelmFinalKnockback = 2.6;
 
-        // --- Jackpot 4: Energy Surge ---
-        public int surgeCooldown = 110;
+        // --- Jackpot 4: Energy Surge (25s) ---
+        public int surgeCooldown = 500;
         public int surgeDashTicks = 7;
-        public float surgeDashDamage = 5f;
+        public float surgeDashDamage = 10f;
         public float surgeKickDamage = 10f;
 
-        // --- Jackpot special: Rhythm ---
-        public int rhythmCooldown = 200;
+        // --- Jackpot special: Rhythm (8s) ---
+        public int rhythmCooldown = 160;
         public int rhythmBeats = 4;
         /** Ticks between beats (10 = 120 BPM). */
         public int rhythmBeatTicks = 10;
         public int rhythmLeadIn = 14;
-        /** Jackpot seconds added per PERFECT / GREAT / GOOD beat. */
-        public float rhythmPerfectSeconds = 1.5f;
-        public float rhythmGreatSeconds = 1f;
-        public float rhythmGoodSeconds = 0.5f;
-        /** All beats GREAT or better: Lucky Streak (more damage) for this long. */
-        public int rhythmStreakTicks = 200;
-        public float rhythmStreakDamage = 1.25f;
+        /** Each finished dance: a stack of speed (moves and special), and every cooldown finishes this much sooner. */
+        public int rhythmMaxStacks = 5;
+        public float rhythmSpeedPerStack = 0.08f;
+        public int rhythmCooldownCut = 12;
     }
 
     public static Path path() {

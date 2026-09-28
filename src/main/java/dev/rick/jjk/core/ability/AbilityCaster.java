@@ -58,6 +58,8 @@ public final class AbilityCaster {
     /** Last refusal reason, for tests and feedback. */
     @Nullable public String lastRefusal;
 
+    private float castSpeedCarry;
+
     public AbilityCaster(LivingEntity owner) {
         this.owner = owner;
     }
@@ -270,6 +272,14 @@ public final class AbilityCaster {
         return cooldowns[i] <= 0;
     }
 
+    /** Every running cooldown finishes {@code ticks} sooner. */
+    public void reduceCooldowns(int ticks) {
+        for (int i = 0; i < cooldowns.length; i++) {
+            if (cooldowns[i] > 0) cooldowns[i] = Math.max(1, cooldowns[i] - ticks);
+        }
+        dirty = true;
+    }
+
     public void resetCooldowns() {
         java.util.Arrays.fill(cooldowns, 0);
         java.util.Arrays.fill(lockout, 0);
@@ -333,6 +343,12 @@ public final class AbilityCaster {
         }
         if (state.actionsLocked()) return refuse("stunned");
         if (ability.isTechnique() && state.techniquesLocked()) return refuse("technique_locked");
+        // The character can take the press itself (a combination during another move's wind-up, a follow-up).
+        if (character.interceptInput(this, slot, ability, targetHint)) {
+            lastRefusal = null;
+            dirty = true;
+            return true;
+        }
         if (isBusy() && !ability.usableWhileCasting()) {
             // Pressing the same hold ability again is not an error, just ignored.
             return refuse(cast.ability == ability ? "already_casting" : "busy");
@@ -463,13 +479,23 @@ public final class AbilityCaster {
 
         CombatState state = Combat.state(owner);
         if (cast != null && !cast.isFinished() && state.shouldInterruptCasting()) interrupt("stunned");
-        if (cast != null) {
-            if (!cast.isFinished()) cast.tickInternal();
-            if (cast != null && cast.isFinished()) removeInstance(cast);
+        // Faster casting (a character's speed buff) runs the casts extra ticks now and then.
+        float speed = Math.max(1f, character.castSpeed(this));
+        castSpeedCarry += speed - 1f;
+        int steps = 1;
+        while (castSpeedCarry >= 1f) {
+            castSpeedCarry -= 1f;
+            steps++;
         }
-        for (AbilityInstance o : List.copyOf(overlays)) {
-            if (!o.isFinished()) o.tickInternal();
-            if (o.isFinished()) removeInstance(o);
+        for (int step = 0; step < steps; step++) {
+            if (cast != null) {
+                if (!cast.isFinished()) cast.tickInternal();
+                if (cast != null && cast.isFinished()) removeInstance(cast);
+            }
+            for (AbilityInstance o : List.copyOf(overlays)) {
+                if (!o.isFinished()) o.tickInternal();
+                if (o.isFinished()) removeInstance(o);
+            }
         }
 
         character.tick(this);

@@ -64,11 +64,13 @@ public final class Bootstrap {
         ServerTickEvents.END_LEVEL_TICK.register(level -> {
             HitboxManager.tick(level);
             DomainManager.tick(level);
+            dev.rick.jjk.hakari.ShutterTrap.tick(level);
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             HitboxManager.clearAll();
             DomainManager.clearAll();
             dev.rick.jjk.hakari.IdleDeathGamble.clearAll();
+            dev.rick.jjk.hakari.ShutterTrap.clearAll();
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> JJKCommand.register(dispatcher));
         JJK.LOGGER.info("Jujutsu loaded: {} character(s)", Characters.ids().spliterator().getExactSizeIfKnown());

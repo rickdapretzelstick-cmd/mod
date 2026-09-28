@@ -21,10 +21,11 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Kinji Hakari — Restless Gambler. A brawler with gambling-themed techniques whose real power is behind his domain:
- * Idle Death Gamble runs a pachinko gamble, and hitting the Jackpot turns him into something that is almost impossible to
- * put down (full heal, heavy regeneration, a lethal blow shrugged off now and then, unlimited cursed energy) with a
- * completely different moveset, until the Jackpot timer runs out.
+ * Kinji Hakari — Restless Gambler, after the Jujutsu Shenanigans character. A brawler with gambling-themed techniques
+ * whose real power is behind his domain: Idle Death Gamble runs a pachinko gamble, and hitting the Jackpot gives him
+ * infinite cursed energy, which his body turns into a reflexive Reverse Cursed Technique — effectively immortal, with
+ * a completely different moveset — for 100 seconds (50 after a pity jackpot). Damage he takes drains the Jackpot meter
+ * instead of killing him; surviving to the end of a Jackpot refunds Awakening, more for each Jackpot in a row.
  *
  * <p>Built entirely on the shared framework: the base kit is the normal moveset, the Jackpot kit is the awakened
  * moveset, the Jackpot timer is the Awakening meter (drained at Jackpot's own rate), and the domain is an ordinary
@@ -99,12 +100,15 @@ public final class HakariCharacter extends JJKCharacter {
         return false;
     }
 
-    /** The gamble hit: Jackpot begins. */
-    static void jackpot(LivingEntity owner, int number) {
+    /** The gamble hit: Jackpot begins (half as long after a pity jackpot). */
+    static void jackpot(LivingEntity owner, int number, boolean pity) {
         AbilityCaster c = Casters.getOrNull(owner);
         if (c == null || !(owner.level() instanceof ServerLevel level)) return;
+        HakariState hs = HakariState.of(owner);
+        hs.jackpotChain++;
         c.enterAwakening();
-        owner.setHealth(owner.getMaxHealth());
+        if (pity) c.setAwakening(c.maxAwakening() * 0.5f);
+        hs.lastHealth = owner.getHealth();
         c.setEnergy(c.maxEnergy());
         Statuses.remove(owner, CombatStatus.BURNOUT);
         Statuses.remove(owner, CombatStatus.GAMBLING);
@@ -116,21 +120,51 @@ public final class HakariCharacter extends JJKCharacter {
     }
 
     @Override
-    public void onAbilityUsed(AbilityCaster caster, Ability ability, AbilitySlot slot) {
-        // Inside his own domain, his techniques are the visual moves that drive the gamble.
-        if (caster.isAwakened() || slot == AbilitySlot.ULTIMATE || slot == AbilitySlot.DASH || slot == AbilitySlot.GUARD) return;
-        Gamble g = IdleDeathGamble.gambleOf(caster.owner);
-        if (g != null) g.visualMove();
+    public boolean interceptInput(AbilityCaster caster, AbilitySlot slot, Ability ability, net.minecraft.world.entity.Entity targetHint) {
+        if (caster.isAwakened()) return false;
+        // Renewal: Reserve Balls again inside the domain, within 8s of a ball landing, rewinds to that moment.
+        if (ability instanceof ReserveBallsAbility && ReserveBallsAbility.renew(caster.owner)) return true;
+        // Shutter Doors during Reserve Balls' or Fever Breaker's wind-up combines with it; both go on cooldown.
+        if (ability instanceof ShutterDoorsAbility && caster.cast() instanceof DoorCombo combo && !caster.cast().isFinished() && combo.acceptsDoors()) {
+            if (!caster.isReady(slot)) return false;
+            float cost = ability.cost(caster);
+            if (!caster.canAfford(cost)) return false;
+            caster.spend(cost);
+            caster.startCooldown(slot, ability.cooldown(caster));
+            combo.addDoors();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public float castSpeed(AbilityCaster caster) {
+        // Rhythm: each finished dance makes his moves and special faster.
+        return 1f + HakariState.of(caster.owner).rhythmStacks * JJKConfig.get().hakari.rhythmSpeedPerStack;
+    }
+
+    /** Damage taken during Jackpot drains its meter: it empties after a few times his max health. */
+    private static void drainJackpot(AbilityCaster caster, float damage) {
+        if (damage <= 0 || caster.noCost()) return;
+        JJKConfig.Hakari cfg = JJKConfig.get().hakari;
+        float perHealth = caster.maxAwakening() / Math.max(1f, caster.owner.getMaxHealth() * cfg.jackpotHitDrainHealths);
+        caster.setAwakening(Math.max(0, caster.awakening() - damage * perHealth));
     }
 
     @Override
     public void tick(AbilityCaster caster) {
         LivingEntity e = caster.owner;
-        if (!caster.isAwakened()) return;
-        // Jackpot: unlimited cursed energy and a body that keeps putting itself back together.
+        HakariState hs = HakariState.of(e);
+        if (!caster.isAwakened()) {
+            hs.lastHealth = e.getHealth();
+            return;
+        }
         JJKConfig.Hakari cfg = JJKConfig.get().hakari;
+        if (e.getHealth() < hs.lastHealth) drainJackpot(caster, hs.lastHealth - e.getHealth());
+        // Jackpot: infinite cursed energy, and the Reverse Cursed Technique running on its own.
         if (caster.energy() < caster.maxEnergy()) caster.setEnergy(caster.maxEnergy());
-        if (e.isAlive() && e.getHealth() < e.getMaxHealth()) e.heal(cfg.jackpotRegenPerSecond / 20f);
+        if (e.isAlive() && e.getHealth() < e.getMaxHealth()) e.heal(e.getMaxHealth() * cfg.jackpotRegenShare / 20f);
+        hs.lastHealth = e.getHealth();
         if (Combat.state(e).get(CombatStatus.JACKPOT) < 20) Statuses.apply(e, CombatStatus.JACKPOT, 40);
         if (e.tickCount % 12 == 0 && e.level() instanceof ServerLevel level) {
             Fx.play(level, "jackpot_aura", e.position().add(0, 1, 0), Vec3.ZERO, 1f, e.getId());
@@ -140,12 +174,11 @@ public final class HakariCharacter extends JJKCharacter {
     @Override
     public boolean preventDeath(AbilityCaster caster, DamageSource source, float amount) {
         if (!caster.isAwakened() || !(caster.owner.level() instanceof ServerLevel level)) return false;
-        HakariState hs = HakariState.of(caster.owner);
-        if (level.getGameTime() < hs.lethalReadyAt) return false;
-        // Jackpot: the lethal blow is healed through, but not again right away.
-        JJKConfig.Hakari cfg = JJKConfig.get().hakari;
-        hs.lethalReadyAt = level.getGameTime() + cfg.jackpotLethalCooldown;
-        caster.owner.setHealth(Math.max(1f, caster.owner.getMaxHealth() * cfg.jackpotLethalHeal));
+        // Effectively immortal: the blow drains the Jackpot meter instead, as long as there is meter to drain.
+        drainJackpot(caster, amount);
+        if (caster.awakening() <= 0) return false;
+        caster.owner.setHealth(Math.max(1f, caster.owner.getHealth()));
+        HakariState.of(caster.owner).lastHealth = caster.owner.getHealth();
         Fx.play(level, "jackpot_heal", caster.owner.position().add(0, 1.2, 0), Vec3.ZERO, 1f, caster.owner.getId());
         return true;
     }
@@ -153,9 +186,14 @@ public final class HakariCharacter extends JJKCharacter {
     @Override
     public void onAwakeningChanged(AbilityCaster caster, boolean awakened) {
         if (!awakened) {
-            // Jackpot over: back to the base kit.
+            // Jackpot over: back to the base kit. Surviving it refunds Awakening, more for each Jackpot in a row.
             Statuses.remove(caster.owner, CombatStatus.JACKPOT);
             Statuses.remove(caster.owner, CombatStatus.LUCKY_STREAK);
+            if (caster.owner.isAlive()) {
+                JJKConfig.Hakari cfg = JJKConfig.get().hakari;
+                int chain = Math.max(1, HakariState.of(caster.owner).jackpotChain);
+                caster.setAwakening(caster.maxAwakening() * Math.min(1f, cfg.jackpotRefund + cfg.jackpotRefundChain * (chain - 1)));
+            }
             if (caster.owner.level() instanceof ServerLevel level) {
                 Fx.play(level, "jackpot_end", caster.owner.position().add(0, 1.2, 0), Vec3.ZERO, 1f, caster.owner.getId());
             }

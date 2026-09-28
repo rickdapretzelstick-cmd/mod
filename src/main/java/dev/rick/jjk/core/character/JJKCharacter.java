@@ -102,6 +102,21 @@ public abstract class JJKCharacter {
         return true;
     }
 
+    /**
+     * A press of {@code slot} the character handles itself before the normal checks (busy, cooldown, cost): a combination
+     * pressed during another move's wind-up, or a follow-up that works while the move is on cooldown. Return true if
+     * the press was used.
+     */
+    public boolean interceptInput(AbilityCaster caster, AbilitySlot slot, dev.rick.jjk.core.ability.Ability ability,
+                                  @org.jetbrains.annotations.Nullable net.minecraft.world.entity.Entity targetHint) {
+        return false;
+    }
+
+    /** How fast this caster's abilities play out (1 = normal). */
+    public float castSpeed(AbilityCaster caster) {
+        return 1f;
+    }
+
     /** An ability was just used (after its costs were paid). */
     public void onAbilityUsed(AbilityCaster caster, dev.rick.jjk.core.ability.Ability ability, AbilitySlot slot) {}
 

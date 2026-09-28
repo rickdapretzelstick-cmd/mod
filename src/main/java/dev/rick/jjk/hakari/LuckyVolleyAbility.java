@@ -19,8 +19,9 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Jackpot 1 — Lucky Volley. An opening punch; if it connects, a blur of fists holds the target in place, and a last
- * straight right sends them flying. Fast → many hits → final impact.
+ * Jackpot 1 — Lucky Volley. A flurry of punches (Hakari can keep moving through it, carrying the target along) ending in
+ * a powerful unblockable swipe that launches them away. A target low enough is sent flying for good by the swipe (the
+ * finisher).
  */
 public final class LuckyVolleyAbility extends Ability {
     public static final String ID = "lucky_volley";
@@ -78,7 +79,6 @@ public final class LuckyVolleyAbility extends Ability {
                     }
                     Statuses.apply(target, CombatStatus.GRABBED, 4);
                     HakariCombat.carry(user, target, 1.5);
-                    Motion.set(user, new Vec3(0, user.getDeltaMovement().y, 0));
                     if ((age - FLURRY_START) % FLURRY_EVERY == 0) {
                         Hit jab = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.volleyFlurryDamage).tag(AttackTag.MELEE)
                                 .origin(user.getEyePosition()).knockback(Knockback.HOLD).hitstun(8).noComboScaling().fx("lucky_flurry", 0.8f).build();
@@ -92,7 +92,14 @@ public final class LuckyVolleyAbility extends Ability {
                         Anim.play(user, "volley_final");
                         setPhase(2, 8);
                         Statuses.remove(target, CombatStatus.GRABBED);
-                        Hit last = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.volleyFinalDamage).tag(AttackTag.MELEE, AttackTag.HEAVY)
+                        if (HakariCombat.finishable(target)) {
+                            HakariCombat.execute(user, target, ID, "lucky_finisher");
+                            Fx.shake(level, target.position(), 24, 1.1f, 12);
+                            finalAt = age;
+                            target = null;
+                            return;
+                        }
+                        Hit last = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.volleyFinalDamage).tag(AttackTag.MELEE, AttackTag.HEAVY, AttackTag.UNBLOCKABLE)
                                 .origin(user.getEyePosition()).knockback(Knockback.directional(f, cfg.volleyFinalKnockback, 0.4)).hitstun(24)
                                 .status(CombatStatus.LAUNCHED, 20).fx("lucky_final", 1.3f).build();
                         HakariCombat.hit(last, target);
@@ -110,7 +117,8 @@ public final class LuckyVolleyAbility extends Ability {
 
             @Override
             public float movementMultiplier() {
-                return 0.15f;
+                // He can walk the barrage forward.
+                return target != null ? 0.55f : 0.15f;
             }
         };
     }

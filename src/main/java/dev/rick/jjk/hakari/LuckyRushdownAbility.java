@@ -21,9 +21,9 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Jackpot 2 — Lucky Rushdown. Hakari breaks into a sprint and runs his target down (steering after them), smashes into
- * them, drags them along the ground ploughing through whatever is in the way, and hurls them. Approach → contact → drag
- * → throw.
+ * Jackpot 2 — Lucky Rushdown. Hakari breaks into a long forward run; whoever he meets is grabbed by the leg, dragged
+ * across the floor (ploughing through whatever is in the way) and thrown forward. Unblockable. On a target low enough
+ * (the finisher) the drag goes on longer, then he hurls them into the air, leaps after them and ends it with a punch.
  */
 public final class LuckyRushdownAbility extends Ability {
     public static final String ID = "lucky_rushdown";
@@ -49,6 +49,8 @@ public final class LuckyRushdownAbility extends Ability {
             private LivingEntity victim;
             private int grabbedAt = -1;
             private int endAt = -1;
+            private boolean finisher;
+            private int punchAt = -1;
 
             @Override
             public void start() {
@@ -60,6 +62,10 @@ public final class LuckyRushdownAbility extends Ability {
             @Override
             public void tick() {
                 JJKConfig.Hakari cfg = JJKConfig.get().hakari;
+                if (punchAt >= 0) {
+                    finisherAir(cfg);
+                    return;
+                }
                 if (endAt >= 0) {
                     if (age >= endAt) finish();
                     return;
@@ -72,11 +78,12 @@ public final class LuckyRushdownAbility extends Ability {
                     if (age % 3 == 0) Fx.play(level, "rushdown_step", user.position(), HakariCombat.flat(user), 1f, user.getId());
                     LivingEntity hit = HakariCombat.firstInFront(user, 1.8, 1.6, 2.2);
                     if (hit != null) {
-                        Hit grab = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.rushdownGrabDamage).tag(AttackTag.MELEE)
+                        Hit grab = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.rushdownGrabDamage).tag(AttackTag.MELEE, AttackTag.UNBLOCKABLE)
                                 .origin(user.getEyePosition()).knockback(Knockback.HOLD).hitstun(cfg.rushdownDragTicks + 6).fx("rushdown_grab", 1f).build();
                         if (HakariCombat.hit(grab, hit).connected()) {
                             victim = hit;
                             grabbedAt = age;
+                            finisher = HakariCombat.finishable(hit);
                             Anim.play(user, "rushdown_drag");
                             setPhase(1, cfg.rushdownDragTicks);
                             Fx.shake(level, user.position(), 14, 0.5f, 8);
@@ -106,7 +113,18 @@ public final class LuckyRushdownAbility extends Ability {
                         Destruction.destroy(level, under.above(), 2f, user, "jjk:lucky_rushdown");
                     }
                 }
-                if (age - grabbedAt >= cfg.rushdownDragTicks) {
+                if (finisher && age - grabbedAt >= cfg.rushdownFinisherDragTicks) {
+                    // The finisher: hurled into the air, and Hakari goes up after them.
+                    Statuses.remove(victim, CombatStatus.GRABBED);
+                    Anim.play(user, "rushdown_throw");
+                    setPhase(2, 16);
+                    Motion.set(victim, f.scale(0.2).add(0, 1.45, 0));
+                    Statuses.apply(victim, CombatStatus.LAUNCHED, 30);
+                    Fx.play(level, "rushdown_throw", victim.position(), new Vec3(0, 1, 0), 1.4f, user.getId());
+                    punchAt = age + 12;
+                    return;
+                }
+                if (!finisher && age - grabbedAt >= cfg.rushdownDragTicks) {
                     Statuses.remove(victim, CombatStatus.GRABBED);
                     Anim.play(user, "rushdown_throw");
                     setPhase(2, 10);
@@ -118,6 +136,28 @@ public final class LuckyRushdownAbility extends Ability {
                     Motion.set(user, f.scale(0.1));
                     victim = null;
                     endAt = age + 8;
+                }
+            }
+
+            /** Leaping after the hurled target, then the punch that finishes it. */
+            private void finisherAir(JJKConfig.Hakari cfg) {
+                if (victim == null || !victim.isAlive()) {
+                    finish();
+                    return;
+                }
+                if (age == punchAt - 7) {
+                    Anim.play(user, "energy_leap");
+                    Vec3 to = victim.position().subtract(user.position());
+                    Motion.set(user, new Vec3(to.x * 0.18, Math.max(0.9, to.y * 0.22 + 0.5), to.z * 0.18));
+                }
+                if (age == punchAt) {
+                    HakariCombat.faceTowards(user, victim.getBoundingBox().getCenter());
+                    Anim.play(user, "volley_final");
+                    if (user.distanceTo(victim) < 5) HakariCombat.execute(user, victim, ID, "rushdown_finisher");
+                    Fx.shake(level, victim.position(), 26, 1.2f, 14);
+                    victim = null;
+                    endAt = age + 10;
+                    punchAt = -1;
                 }
             }
 

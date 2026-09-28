@@ -29,6 +29,12 @@ public final class MeleeState {
         return chainIndex;
     }
 
+    /** Moves the light chain on, so the next light attack is hit {@code index + 1} of the chain (a technique that combos into melee). */
+    public void setChainIndex(int index, long now) {
+        chainIndex = Math.max(0, index);
+        lastAttackTime = now;
+    }
+
     public boolean isHeavyCharging() {
         return heavyCharging;
     }

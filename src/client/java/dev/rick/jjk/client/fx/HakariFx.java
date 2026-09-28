@@ -399,6 +399,98 @@ final class HakariFx {
                     sparks(level, pos, up, q(20), 0.8, COIN, 0.12f, 10);
                 }
             }
+            // --- Combinations, lingering doors, finishers, Renewal ---
+            case "combo_doors" -> {
+                sound("shutter_rise", pos, 0.8f, 1.3f);
+                if (drawn) Flashes.lens(pos, 0.2f, 1.6f, HOT_PINK, 0.8f, 6, now);
+            }
+            case "shutter_linger" -> {
+                sound("door_open", pos, 0.7f, 0.8f);
+                if (drawn) Flashes.ripple(pos, dir, 0.2f, 1.8f, PINK, 0.5f, 8, now);
+            }
+            case "door_bounce" -> {
+                sound("door_block", pos, 1f, 1.2f + RNG.nextFloat() * 0.2f);
+                if (drawn) {
+                    Flashes.ripple(pos, up, 0.2f, 2.2f * s, COIN, 0.8f, 7, now);
+                    sparks(level, pos, up, q(10), 0.55, CHROME, 0.08f, 6);
+                }
+            }
+            case "shutter_shatter" -> {
+                sound("shutter_slam", pos, 1f * s, 1.4f);
+                if (drawn) {
+                    Flashes.flash(pos, 1.8f * s, 0.3f, WHITE, 0.9f, 4, now);
+                    burst(level, pos, q(18), 0.35, Sprite.SHARD, CHROME, 0.9f, 16);
+                    burst(level, pos.add(0, -0.8, 0), q(6), 0.12, Sprite.SMOKE, GREY, 0.5f, 14);
+                }
+            }
+            case "shutter_finisher" -> {
+                sound("shutter_slam", pos, 1.5f, 0.7f);
+                sound("hit_heavy", pos, 1.3f, 0.6f);
+                if (drawn) {
+                    Flashes.flash(pos, 3.6f, 0.6f, WHITE, 1f, 6, now);
+                    Flashes.ripple(pos, up, 0.3f, 4f, HOT_PINK, 1f, 10, now);
+                    sparks(level, pos, up, q(26), 0.9, CHROME, 0.14f, 10);
+                }
+                victimFeedback(p, 1f);
+            }
+            case "door_counter_punch" -> {
+                sound("hit_heavy", pos, 1.2f, 0.9f);
+                if (drawn) impactStar(pos, dir, 8, 2f, 0.1f, WHITE, now);
+                victimFeedback(p, 0.7f);
+            }
+            case "rough_stomp" -> {
+                sound("rough_impact", pos, 1.4f, 0.8f);
+                if (drawn) {
+                    Flashes.ground(groundBelow(level, pos), 0.3f, 3.8f * s, JADE, 0.8f, 12, now);
+                    Flashes.ripple(pos.add(0, 0.2, 0), up, 0.3f, 3.6f * s, ROUGH, 0.9f, 10, now);
+                    sparks(level, pos, up, q(24), 0.9, ROUGH, 0.14f, 9);
+                    debris(level, groundBelow(level, pos), q(12), 0.7);
+                }
+                distanceShake(pos, 22, 0.7f);
+            }
+            case "fever_suspend" -> {
+                sound("shutter_rise", pos, 0.9f, 1.1f);
+                if (drawn) Flashes.lens(pos, 0.2f, 1.8f, PINK, 0.7f, 8, now);
+            }
+            case "fever_crush" -> {
+                sound("fever_break", pos, 1.3f, 0.85f);
+                if (drawn) {
+                    Flashes.ground(groundBelow(level, pos), 0.3f, 3f * s, PINK, 0.8f, 10, now);
+                    impactStar(pos.add(0, 0.5, 0), new Vec3(0, -1, 0), 10, 2.6f * s, 0.12f, WHITE, now);
+                    debris(level, groundBelow(level, pos), q(10), 0.6);
+                }
+                distanceShake(pos, 18, 0.7f);
+            }
+            case "lucky_finisher", "rushdown_finisher" -> {
+                sound("fever_break", pos, 1.5f, 1.1f);
+                sound("jackpot_heal", pos, 0.8f, 0.7f);
+                if (drawn) {
+                    Flashes.flash(pos, 4f, 0.6f, WHITE, 1f, 6, now);
+                    Flashes.flash(pos, 3f, 0.5f, JADE, 0.9f, 8, now + 1);
+                    impactStar(pos, dir, 14, 3.6f, 0.16f, JADE_LIGHT, now);
+                    sparks(level, pos, dir, q(30), 1.1, JADE, 0.16f, 10);
+                }
+                victimFeedback(p, 1f);
+                if (mine || isAttackerClose(mc, pos)) ScreenEffects.fovPunch(0.12f);
+            }
+            case "renewal_mark" -> {
+                if (drawn) Flashes.ground(groundBelow(level, pos), 0.2f, 1.2f, JADE, 0.5f, 10, now);
+            }
+            case "renewal_trail" -> {
+                if (drawn) for (int i = 0; i < q(10); i++) {
+                    Vec3 at = pos.add(dir.scale(i / 10.0));
+                    add(level, at, Vec3.ZERO, Sprite.CORE, JADE_LIGHT, 0.7f, 0.12f, 0.08f, 14);
+                }
+            }
+            case "renewal" -> {
+                sound("gamble_spin", pos, 1.2f, 0.7f);
+                sound("jackpot_heal", pos, 1f, 1.4f);
+                if (drawn) {
+                    Flashes.lens(pos, 0.4f, 4f, JADE, 0.9f, 14, now);
+                    Flashes.ripple(pos, up, 0.3f, 5f, JADE_LIGHT, 0.8f, 12, now);
+                }
+                if (mine) ScreenEffects.fovPunch(-0.08f);
+            }
             default -> {}
         }
     }
