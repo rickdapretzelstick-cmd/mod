@@ -103,6 +103,7 @@ public final class DomainManager {
         if (list == null || list.isEmpty()) return;
         for (DomainInstance d : List.copyOf(list)) tickDomain(d);
         ClashManager.tick(level);
+        tickFronts(list);
         list.removeIf(d -> d.phase == DomainInstance.Phase.ENDED);
     }
 
@@ -130,8 +131,12 @@ public final class DomainManager {
             case CLASHING -> tickClash(d);
             case COLLAPSING -> {
                 // Gameplay is already off and victims released; now give the world back.
-                if (d.structure != null && d.phaseAge == Math.max(1, d.definition.collapseTicks() / 2)) {
-                    dev.rick.jjk.core.domain.structure.DomainStructures.beginRestore(d.structure);
+                if (d.phaseAge == Math.max(1, d.definition.collapseTicks() / 2)) {
+                    if (d.structure != null) dev.rick.jjk.core.domain.structure.DomainStructures.beginRestore(d.structure);
+                    // Conquered territory goes back with the domain that took it.
+                    for (DomainInstance.Annex a : d.annexes) {
+                        if (a.structure() != null) dev.rick.jjk.core.domain.structure.DomainStructures.beginRestore(a.structure());
+                    }
                 }
                 if (d.phaseAge >= d.definition.collapseTicks()) {
                     d.phase = DomainInstance.Phase.ENDED;
@@ -153,22 +158,24 @@ public final class DomainManager {
             end(d, DomainInstance.EndReason.OWNER_LEFT);
             return;
         }
-        double r = d.radius;
-        AABB box = new AABB(d.center, d.center).inflate(r + 6);
+        AABB box = new AABB(d.center, d.center).inflate(d.radius + 6);
+        for (DomainInstance.Annex a : d.annexes) box = box.minmax(new AABB(a.center(), a.center()).inflate(a.radius() + 6));
         List<LivingEntity> nearby = d.level.getEntitiesOfClass(LivingEntity.class, box, e -> e != d.owner && e.isAlive());
         for (LivingEntity e : nearby) {
-            double dist = e.getBoundingBox().getCenter().distanceTo(d.center);
-            boolean inside = dist <= r;
+            Vec3 at = e.getBoundingBox().getCenter();
+            // How far inside the domain's space (its own sphere, or territory it conquered) the target is.
+            double depth = d.depth(at);
+            boolean inside = depth >= 0;
             boolean victim = d.victims.containsKey(e.getUUID());
             if (inside && Targeting.canTarget(d.owner, e) && !protectedByOwnDomain(d, e)) {
                 int t = d.victims.merge(e.getUUID(), 1, Integer::sum);
                 Statuses.apply(e, CombatStatus.IN_DOMAIN, 5);
                 d.definition.applySureHit(d, e, t);
-                if (d.definition.closedBarrier() && JJKConfig.get().domain.closedBarrier && dist > r - 1.5) push(e, d.center, true);
+                if (d.definition.closedBarrier() && JJKConfig.get().domain.closedBarrier && depth < 1.5) push(e, d.anchor(at), true);
             } else if (victim && !inside) {
-                if (d.definition.closedBarrier() && JJKConfig.get().domain.closedBarrier && dist < r + 4) {
+                if (d.definition.closedBarrier() && JJKConfig.get().domain.closedBarrier && depth > -4) {
                     // The barrier holds: dragged back in.
-                    push(e, d.center, true);
+                    push(e, d.anchor(at), true);
                 } else {
                     release(d, e);
                 }
@@ -178,7 +185,7 @@ public final class DomainManager {
         Iterator<Map.Entry<UUID, Integer>> it = d.victims.entrySet().iterator();
         while (it.hasNext()) {
             Entity e = d.level.getEntity(it.next().getKey());
-            if (!(e instanceof LivingEntity le) || !le.isAlive() || le.distanceToSqr(d.center) > (r + 6) * (r + 6)) {
+            if (!(e instanceof LivingEntity le) || !le.isAlive() || d.depth(le.getBoundingBox().getCenter()) < -6) {
                 if (e instanceof LivingEntity le2 && le2.isAlive()) d.definition.onRelease(d, le2);
                 it.remove();
             }
@@ -217,6 +224,13 @@ public final class DomainManager {
         ClashSession session = ClashManager.start(b, a, DomainManager::clashFinished);
         a.clash = session;
         b.clash = session;
+        // Both interiors, side by side: the space is split between the two owners (participant 0 is the meter's + side).
+        var territory = dev.rick.jjk.core.domain.structure.ClashTerritory.of(b.structure, a.structure);
+        if (territory != null) {
+            ClashFront front = new ClashFront(b, a, territory);
+            a.front = front;
+            b.front = front;
+        }
         Vec3 mid = a.center.add(b.center).scale(0.5);
         Fx.play(a.level, "domain_clash", mid, b.center.subtract(a.center), (float) Math.max(a.radius, b.radius), a.owner.getId());
     }
@@ -231,9 +245,63 @@ public final class DomainManager {
         }
     }
 
+    /** Moves every split boundary: with the duel's meter, or across the loser's space once the duel is decided. */
+    private static void tickFronts(List<DomainInstance> list) {
+        java.util.Set<ClashFront> seen = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+        for (DomainInstance d : List.copyOf(list)) {
+            ClashFront f = d.front;
+            if (f == null || !seen.add(f)) continue;
+            if (f.conquering()) {
+                if (f.conquer()) finishConquest(f, DomainInstance.EndReason.CLASH_LOST);
+            } else {
+                ClashSession session = f.a.clash != null ? f.a.clash : f.b.clash;
+                if (session != null) f.follow(session.meter());
+            }
+            if (f.a.front == f && f.a.age % 2 == 0) {
+                sync(f.a);
+                sync(f.b);
+            }
+        }
+    }
+
+    /**
+     * The winner has taken the whole space: the loser's domain ends, and its blocks (already in the winner's materials)
+     * become the winner's territory until the winner's own domain ends.
+     */
+    private static void finishConquest(ClashFront f, DomainInstance.EndReason reason) {
+        DomainInstance winner = f.winner, loser = f.other(winner);
+        if (f.territory.front() != f.t) f.territory.paint(f.t);
+        f.a.front = null;
+        f.b.front = null;
+        winner.annexes.add(new DomainInstance.Annex(loser.center, loser.radius, loser.structure));
+        loser.structure = null;
+        loser.consumedBy = winner;
+        end(loser, reason);
+        crown(winner);
+        sync(winner);
+    }
+
+    /** A split that is called off (someone left mid-duel): both sides go back to their own design. */
+    private static void releaseFront(ClashFront f) {
+        f.a.front = null;
+        f.b.front = null;
+        f.territory.release();
+    }
+
     /** The duel is over: the winner overwhelms the loser, whose domain collapses and gives its blocks back. */
     private static void clashFinished(ClashSession s) {
         DomainInstance winner = s.winnerDomain();
+        ClashFront front = winner != null ? winner.front : null;
+        if (front != null && front.other(winner).isLive()) {
+            // The winner's side now sweeps across and consumes the loser's (see tickFronts); the loser ends after.
+            for (var p : s.participants()) p.domain.clash = null;
+            front.beginConquest(winner);
+            Fx.play(winner.level, "clash_win", winner.owner.position().add(0, 1, 0), Vec3.ZERO, (float) winner.radius, winner.owner.getId());
+            return;
+        }
+        for (var p : s.participants()) {
+            if (p.domain.front != null) releaseFront(p.domain.front);
+        }
         for (var p : s.participants()) {
             DomainInstance d = p.domain;
             d.clash = null;
@@ -243,6 +311,12 @@ public final class DomainManager {
             else if (d.phase == DomainInstance.Phase.CLASHING) setPhase(d, DomainInstance.Phase.ACTIVE);
         }
         if (winner == null) return;
+        crown(winner);
+        Fx.play(winner.level, "clash_win", winner.owner.position().add(0, 1, 0), Vec3.ZERO, (float) winner.radius, winner.owner.getId());
+    }
+
+    /** The clash is won: the winner's domain takes over and runs by its normal rules. */
+    private static void crown(DomainInstance winner) {
         winner.clashWith = null;
         if (winner.phase == DomainInstance.Phase.CLASHING || winner.phase == DomainInstance.Phase.FORMING) {
             setPhase(winner, DomainInstance.Phase.ACTIVE);
@@ -253,7 +327,6 @@ public final class DomainManager {
             }
         }
         Fx.play(winner.level, "domain_clash_end", winner.center, Vec3.ZERO, (float) winner.radius, winner.owner.getId());
-        Fx.play(winner.level, "clash_win", winner.owner.position().add(0, 1, 0), Vec3.ZERO, (float) winner.radius, winner.owner.getId());
         Fx.shake(winner.level, winner.center, winner.radius * 3, 1.0f, 20);
     }
 
@@ -261,6 +334,16 @@ public final class DomainManager {
 
     private static void end(DomainInstance d, DomainInstance.EndReason reason) {
         if (d.phase == DomainInstance.Phase.COLLAPSING || d.phase == DomainInstance.Phase.ENDED) return;
+        if (d.front != null) {
+            ClashFront f = d.front;
+            // The loser dropping out mid-conquest just hands the winner the rest; anything else calls the split off.
+            if (f.conquering() && f.winner != d) {
+                f.t = f.winner == f.a ? Math.max(f.t, 1.5) : Math.min(f.t, -0.5);
+                finishConquest(f, reason);
+                return;
+            }
+            releaseFront(f);
+        }
         d.endReason = reason;
         DomainInstance partner = d.clashWith;
         d.clashWith = null;
@@ -300,15 +383,33 @@ public final class DomainManager {
     }
 
     private static void sync(DomainInstance d) {
+        // The split: how far toward the other domain this one's side reaches (CONSUMED: nothing of it is left).
+        float split = 0;
+        int splitWith = -1;
+        if (d.front != null) {
+            split = (float) d.front.splitFor(d);
+            splitWith = d.front.other(d).id;
+        } else if (d.consumedBy != null) {
+            split = DomainPayload.CONSUMED;
+            splitWith = d.consumedBy.id;
+        }
+        float[] annex = new float[d.annexes.size() * 4];
+        for (int i = 0; i < d.annexes.size(); i++) {
+            DomainInstance.Annex a = d.annexes.get(i);
+            annex[i * 4] = (float) a.center().x;
+            annex[i * 4 + 1] = (float) a.center().y;
+            annex[i * 4 + 2] = (float) a.center().z;
+            annex[i * 4 + 3] = (float) a.radius();
+        }
         DomainPayload p = new DomainPayload(d.id, d.owner.getId(), d.definition.id(), d.center, (float) d.radius, phaseCode(d),
                 d.phase == DomainInstance.Phase.ACTIVE ? d.activeAge : d.phaseAge, d.duration, d.clashWith != null ? d.clashWith.id : -1,
-                d.definition.formingTicks(), d.structure != null ? d.structure.spec.thickness() : 0);
+                d.definition.formingTicks(), d.structure != null ? d.structure.spec.thickness() : 0, split, splitWith, annex);
         double range = d.radius + 96;
         for (ServerPlayer p2 : d.level.players()) if (p2.distanceToSqr(d.center) < range * range) ServerPlayNetworking.send(p2, p);
     }
 
     private static void sendRemoved(DomainInstance d) {
-        DomainPayload p = new DomainPayload(d.id, d.owner.getId(), d.definition.id(), d.center, (float) d.radius, DomainPayload.REMOVED, 0, 0, -1, 1, 0);
+        DomainPayload p = new DomainPayload(d.id, d.owner.getId(), d.definition.id(), d.center, (float) d.radius, DomainPayload.REMOVED, 0, 0, -1, 1, 0, 0, -1, new float[0]);
         for (ServerPlayer p2 : d.level.players()) ServerPlayNetworking.send(p2, p);
     }
 

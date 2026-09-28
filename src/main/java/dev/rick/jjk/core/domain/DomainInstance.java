@@ -34,6 +34,15 @@ public final class DomainInstance {
     @Nullable dev.rick.jjk.core.domain.structure.DomainStructure structure;
     /** Victim UUID → ticks spent inside. */
     final Map<UUID, Integer> victims = new HashMap<>();
+    /** The split with the domain this one is clashing with, while the clash (and the winner's conquest) runs. */
+    @Nullable ClashFront front;
+    /** Territory taken from domains this one beat in a clash: their space is now part of this domain. */
+    final java.util.List<Annex> annexes = new java.util.ArrayList<>();
+    /** The domain that consumed this one in a clash (it has nothing of its own left to show). */
+    @Nullable DomainInstance consumedBy;
+
+    /** A conquered domain's sphere and its blocks, held (and eventually restored) by the winner. */
+    public record Annex(Vec3 center, double radius, @Nullable dev.rick.jjk.core.domain.structure.DomainStructure structure) {}
 
     DomainInstance(int id, DomainDefinition definition, LivingEntity owner, ServerLevel level, Vec3 center, double radius, int duration) {
         this.id = id;
@@ -68,7 +77,37 @@ public final class DomainInstance {
     }
 
     public boolean contains(Vec3 pos) {
-        return pos.distanceToSqr(center) <= radius * radius;
+        return depth(pos) >= 0;
+    }
+
+    /** How far inside this domain's space a point is, in blocks (negative outside). Conquered territory counts. */
+    public double depth(Vec3 pos) {
+        double best = radius - pos.distanceTo(center);
+        for (Annex a : annexes) best = Math.max(best, a.radius() - pos.distanceTo(a.center()));
+        return best;
+    }
+
+    /** The center of the part of this domain a point is deepest in (where the barrier pushes it back toward). */
+    public Vec3 anchor(Vec3 pos) {
+        Vec3 at = center;
+        double best = radius - pos.distanceTo(center);
+        for (Annex a : annexes) {
+            double d = a.radius() - pos.distanceTo(a.center());
+            if (d > best) {
+                best = d;
+                at = a.center();
+            }
+        }
+        return at;
+    }
+
+    public java.util.List<Annex> annexes() {
+        return java.util.Collections.unmodifiableList(annexes);
+    }
+
+    @Nullable
+    public ClashFront front() {
+        return front;
     }
 
     public boolean contains(LivingEntity e) {

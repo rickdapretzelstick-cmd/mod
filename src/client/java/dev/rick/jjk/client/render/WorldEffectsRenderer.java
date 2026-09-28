@@ -274,8 +274,9 @@ public final class WorldEffectsRenderer {
     }
 
     /**
-     * Where two clashing domains meet: a wall of colliding energy between their centres, shoved toward whoever is losing
-     * the clash and crackling harder the better both sides are playing.
+     * Where two clashing domains meet: the boundary between the two interiors (a real wall of blocks the server moves
+     * with the clash), crackling with colliding energy and harder the better both sides are playing. A PERFECT sends a
+     * pulse of the player's colour from their side across the floor into the boundary, shoving it.
      */
     private static void renderClashFront(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, long now, float partial) {
         dev.rick.jjk.client.clash.ClashClient.View v = dev.rick.jjk.client.clash.ClashClient.view();
@@ -286,7 +287,8 @@ public final class WorldEffectsRenderer {
         double dist = ab.length();
         if (dist < 0.1) return;
         Vec3 n = ab.scale(1 / dist);
-        float t = 0.5f + v.shownMeter * 0.35f;
+        // The boundary as the server has it (the blocks move with it); the meter if the split isn't known yet.
+        float t = a.splitWith == b.id ? a.splitShown : 0.5f + v.shownMeter * 0.35f;
         Vec3 front = a.center.add(ab.scale(t)).add(0, 1.5, 0);
         float size = Math.max(3f, Math.min(a.radius, b.radius) * 0.85f);
         float heat = Math.min(4f, v.heat[0] + v.heat[1]);
@@ -312,32 +314,30 @@ public final class WorldEffectsRenderer {
         push(ps, cam, front);
         Glow.halo(c, ps, camRot, 2.5f + heat, 1f, 1f, 1f, 0.5f + 0.1f * heat);
         ps.popPose();
-        // Each domain as a bubble of its own energy, the two pressing against each other at the front: whoever is winning
-        // swells, the other is pushed back. A PERFECT makes that side flare and sends a shell racing out to the front.
+        // PERFECT pulses: a ring of the side's colour races from its owner's side to the boundary and slams into it.
         ClientState.Domain[] ds = {a, b};
         float[][] cols = {ca, cb};
         for (int i = 0; i < 2; i++) {
             ClientState.Domain d = ds[i];
-            Vec3 ctr = d.center.add(0, 1.4, 0);
-            float rad = (float) ctr.distanceTo(front);
-            float flare = 0, wave = -1;
-            if (d.pulseTick != Long.MIN_VALUE) {
-                float pa = now - d.pulseTick + partial;
-                if (pa >= 0 && pa < 12) {
-                    flare = (1 - pa / 12f) * d.pulseStrength;
-                    wave = pa / 12f;
-                }
-            }
-            Vector3f tc = new Vector3f((float) (cam.x - ctr.x), (float) (cam.y - ctr.y), (float) (cam.z - ctr.z));
-            // Kept from filling the view (the clash camera can sit inside a bubble), so the lanes stay readable.
-            float focus = dev.rick.jjk.client.clash.ClashFocus.world(cam, ctr, rad);
-            push(ps, cam, ctr);
-            Glow.sphere(c, ps, rad * (1 + 0.05f * flare), cols[i][0], cols[i][1], cols[i][2], (0.3f + 0.06f * heat + 0.35f * flare) * focus, tc, true);
-            if (wave >= 0) {
-                float wr = Math.max(0.5f, rad * wave);
-                Glow.sphere(c, ps, wr, 1f, 1f, 1f, 0.7f * (1 - wave) * dev.rick.jjk.client.clash.ClashFocus.world(cam, ctr, wr), tc, true);
-            }
+            if (d.pulseTick == Long.MIN_VALUE) continue;
+            float pa = now - d.pulseTick + partial;
+            if (pa < 0 || pa >= 14) continue;
+            Vec3 from = d.center.add(0, 1.5, 0);
+            float travel = Mth.clamp(pa / 8f, 0, 1);
+            Vec3 at = from.add(front.subtract(from).scale(travel * travel * (3 - 2 * travel)));
+            float fade = pa < 8 ? 1 : 1 - (pa - 8) / 6f;
+            push(ps, cam, at);
+            Flashes.orientY(ps, i == 0 ? n : n.scale(-1));
+            float ring = size * (0.35f + 0.45f * travel);
+            Glow.ring(c, ps, ring, 0.6f + 0.4f * d.pulseStrength, cols[i][0], cols[i][1], cols[i][2], 0.8f * fade);
+            Glow.ring(c, ps, ring * 0.92f, 0.25f, 1f, 1f, 1f, 0.9f * fade);
             ps.popPose();
+            // The impact: the boundary flares on arrival.
+            if (pa >= 8) {
+                push(ps, cam, front);
+                Glow.halo(c, ps, camRot, size * 0.7f * (0.6f + 0.4f * d.pulseStrength), cols[i][0], cols[i][1], cols[i][2], 0.6f * fade);
+                ps.popPose();
+            }
         }
     }
 
@@ -365,6 +365,9 @@ public final class WorldEffectsRenderer {
     // --- Domains ---
 
     private static void renderDomain(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, ClientState.Domain d, long now, float partial) {
+        DomainSpace.ease(d);
+        // Consumed by the winner of a clash: its space is already the winner's.
+        if (DomainSpace.consumed(d)) return;
         float phaseAge = now - d.phaseStartTick + partial;
         float r = d.radius;
         float edgeGlow = 0.35f;
@@ -389,7 +392,9 @@ public final class WorldEffectsRenderer {
         }
         edgeGlow += pulse * 0.9f;
         if (now < d.unstableUntil) edgeGlow *= 0.35f + 0.65f * Math.abs(Mth.sin((now + partial) * 4.7f));
-        boolean inside = cam.distanceTo(d.center) < r;
+        // Split in a clash, or grown by conquered territory: the interior covers its part of more than one sphere.
+        boolean shared = d.phase != DomainPayload.COLLAPSING && (DomainSpace.split(d) || d.annex.length > 0);
+        boolean inside = shared ? DomainSpace.holds(d, cam) : cam.distanceTo(d.center) < r;
         push(ps, cam, d.center);
         Vector3f toCam = new Vector3f((float) (cam.x - d.center.x), (float) (cam.y - d.center.y), (float) (cam.z - d.center.z));
         if (progress < 1f) formationEdge(c, ps, d, progress, now + partial);
@@ -401,24 +406,39 @@ public final class WorldEffectsRenderer {
         // Every domain has its own interior: Idle Death Gamble is a casino, not a void.
         if (dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(d.definition)) {
             boolean sealed = progress >= DomainFormation.SEALED;
-            GambleDomainRenderer.render(c, ps, cam, camRot, d, r, edgeGlow, inside && sealed, now, partial);
+            GambleDomainRenderer.render(c, ps, cam, camRot, d, r, shared ? 0 : edgeGlow, inside && sealed, now, partial);
             ps.popPose();
             return;
         }
         // The barrier: an infinite starfield enclosing the battlefield. Drawn double-sided so it reads from both sides.
         // Just inside the physical barrier so block faces never poke through the starfield.
         float rr = Math.max(0.5f, r - 0.35f);
-        c.submitCustomGeometry(ps, RenderTypes.endPortal(), (pose, buf) -> sphereShell(pose, buf, rr, false));
-        c.submitCustomGeometry(ps, RenderTypes.endPortal(), (pose, buf) -> sphereShell(pose, buf, rr, true));
+        if (shared) {
+            // Only this domain's side, across every sphere of its space (its own, the rival's it is winning into, conquests).
+            var balls = DomainSpace.balls(d);
+            for (int k = 0; k < balls.size(); k++) {
+                int kk = k;
+                Vec3 bc = balls.get(k).center();
+                float br = Math.max(0.5f, balls.get(k).radius() - 0.35f);
+                ps.pushPose();
+                ps.translate(bc.x - d.center.x, bc.y - d.center.y, bc.z - d.center.z);
+                c.submitCustomGeometry(ps, RenderTypes.endPortal(), (pose, buf) -> DomainSpace.shell(pose, buf, d, balls, kk, br, false));
+                c.submitCustomGeometry(ps, RenderTypes.endPortal(), (pose, buf) -> DomainSpace.shell(pose, buf, d, balls, kk, br, true));
+                ps.popPose();
+            }
+        } else {
+            c.submitCustomGeometry(ps, RenderTypes.endPortal(), (pose, buf) -> sphereShell(pose, buf, rr, false));
+            c.submitCustomGeometry(ps, RenderTypes.endPortal(), (pose, buf) -> sphereShell(pose, buf, rr, true));
+        }
         // Mid-clash the void's wide washes of light are toned down, so they don't haze over the lanes.
         float calm = dev.rick.jjk.client.clash.ClashFocus.active() ? 0.35f : 1f;
-        // Bright edge where the barrier meets the world.
-        Glow.sphere(c, ps, r * 0.995f, 0.8f, 0.9f, 1f, 0.35f * edgeGlow * calm, toCam, true);
+        // Bright edge where the barrier meets the world (a whole sphere, so not while the space is shared).
+        if (!shared) Glow.sphere(c, ps, r * 0.995f, 0.8f, 0.9f, 1f, 0.35f * edgeGlow * calm, toCam, true);
         if (progress < DomainFormation.SEALED) inside = false;
         if (inside) {
             // Information flowing through the void: slow rings of light sweeping around the center.
             float t = (now + partial) * 0.02f;
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < (DomainSpace.split(d) ? 0 : 6); i++) {
                 ps.pushPose();
                 ps.rotate(Axis.YP.rotation(t * (1 + i * 0.15f) + i));
                 ps.rotate(Axis.XP.rotation(0.4f + i * 0.45f + Mth.sin(t + i) * 0.2f));
@@ -431,6 +451,7 @@ public final class WorldEffectsRenderer {
             for (int i = 0; i < 6; i++) {
                 double yaw = neb.nextDouble() * Math.PI * 2, pitch = 0.1 + neb.nextDouble() * 1.1;
                 Vec3 at = new Vec3(Math.cos(yaw) * Math.cos(pitch), Math.sin(pitch), Math.sin(yaw) * Math.cos(pitch)).scale(r * 0.85);
+                if (!DomainSpace.onSide(d, d.center.add(at))) continue;
                 ps.pushPose();
                 ps.translate(at.x, at.y, at.z);
                 boolean violet = i % 2 == 1;
@@ -438,6 +459,8 @@ public final class WorldEffectsRenderer {
                 ps.popPose();
             }
             Vec3 holeOffset = new Vec3(0, r * 0.42, 0);
+            boolean holeShown = DomainSpace.onSide(d, d.center.add(holeOffset));
+            if (holeShown) {
             ps.pushPose();
             ps.translate(holeOffset.x, holeOffset.y, holeOffset.z);
             float hr = Math.max(1.8f, r * 0.11f);
@@ -451,22 +474,24 @@ public final class WorldEffectsRenderer {
             ps.translate(0, holeOffset.y, 0);
             Glow.sphere(c, ps, hr * 1.3f, 0.6f, 0.75f, 1f, 0.4f, holeToCam, true);
             ps.popPose();
+            }
             java.util.Random rnd = new java.util.Random(d.id * 31L);
             for (int i = 0; i < 5; i++) {
                 double yaw = rnd.nextDouble() * Math.PI * 2, pitch = 0.15 + rnd.nextDouble() * 0.9;
                 Vec3 at = new Vec3(Math.cos(yaw) * Math.cos(pitch), Math.sin(pitch), Math.sin(yaw) * Math.cos(pitch)).scale(r * 0.9);
+                float gs = 1.5f + rnd.nextFloat() * 2.5f;
+                float[] col = rnd.nextBoolean() ? new float[]{0.6f, 0.75f, 1f} : new float[]{0.85f, 0.7f, 1f};
+                if (!DomainSpace.onSide(d, d.center.add(at))) continue;
                 ps.pushPose();
                 ps.translate(at.x, at.y, at.z);
                 ps.rotate(camRot);
-                float gs = 1.5f + rnd.nextFloat() * 2.5f;
-                float[] col = rnd.nextBoolean() ? new float[]{0.6f, 0.75f, 1f} : new float[]{0.85f, 0.7f, 1f};
                 Glow.halo(c, ps, new org.joml.Quaternionf(), gs, col[0], col[1], col[2], 0.35f);
                 ps.rotate(com.mojang.math.Axis.XP.rotationDegrees(90));
                 ps.rotate(com.mojang.math.Axis.YP.rotation(t * (0.5f + i * 0.2f)));
                 Glow.ring(c, ps, gs * 0.6f, gs * 0.25f, col[0], col[1], col[2], 0.35f);
                 ps.popPose();
             }
-            if (JJKConfig.get().domain.voidFloor) {
+            if (JJKConfig.get().domain.voidFloor && !DomainSpace.split(d)) {
                 // A reflective floor at the owner's feet so the ground reads as part of the void.
                 ps.pushPose();
                 ps.translate(0, -0.45f, 0);

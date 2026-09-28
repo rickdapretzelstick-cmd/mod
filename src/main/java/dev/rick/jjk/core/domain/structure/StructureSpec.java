@@ -14,8 +14,20 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Interior above the floor: optionally cleared to air, turning the battlefield into the domain's space.</li>
  *   <li>Everything below the floor inside the shell is left untouched (sealed off by the shell).</li>
  * </ul>
+ * An optional {@link FloorPattern} swaps some floor blocks for others (markings, hatches) without changing the shape.
  */
-public record StructureSpec(double radius, int thickness, BlockState shell, BlockState floor, boolean clearInterior) {
+public record StructureSpec(double radius, int thickness, BlockState shell, BlockState floor, boolean clearInterior,
+                            @Nullable FloorPattern pattern) {
+
+    /** Picks the floor block at a horizontal offset from the center. */
+    @FunctionalInterface
+    public interface FloorPattern {
+        BlockState at(int dx, int dz, BlockState floor);
+    }
+
+    public StructureSpec(double radius, int thickness, BlockState shell, BlockState floor, boolean clearInterior) {
+        this(radius, thickness, shell, floor, clearInterior, null);
+    }
 
     /** What this structure wants at an offset from its center, or null for "leave the world alone". */
     @Nullable
@@ -23,7 +35,7 @@ public record StructureSpec(double radius, int thickness, BlockState shell, Bloc
         double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (d > radius + 0.5) return null;
         if (d > radius + 0.5 - thickness) return shell;
-        if (dy == -1) return floor;
+        if (dy == -1) return pattern != null ? pattern.at(dx, dz, floor) : floor;
         if (dy > -1 && clearInterior) return Blocks.AIR.defaultBlockState();
         return null;
     }

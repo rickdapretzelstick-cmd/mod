@@ -190,7 +190,12 @@ public class HakariClientGameTest implements FabricClientGameTest {
             if (hit.size() < beats) throw new AssertionError("every beat should have been played (" + hit.size() + ")");
             if (!streak) System.out.println("[jjk-test] Rhythm: not every beat judged GREAT+ (no Lucky Streak) — timing on this machine");
 
+            // --- Domain clash, Gojo vs Hakari: the space splits, the winner consumes the loser. Once each way. ---
+            domainClash(ctx, server, in, ult, true, "h26");
+            domainClash(ctx, server, in, ult, false, "h27");
+
             // --- Back to Gojo through the same screen (once Jackpot is over and the fight has cooled). ---
+            server.runCommand("jjk domain cancel all");
             server.runCommand("execute as @a run jjk awakening end");
             server.runCommand("execute as @a at @s run kill @e[type=jjk:training_dummy,distance=..40]");
             ctx.waitTicks(80);
@@ -207,6 +212,91 @@ public class HakariClientGameTest implements FabricClientGameTest {
                 return Casters.get(p).ability(dev.rick.jjk.core.ability.AbilitySlot.SKILL_1).id;
             }).equals("reserve_balls")) throw new AssertionError("no Hakari abilities left after switching");
         }
+    }
+
+    /**
+     * A Gojo dummy opens Unlimited Void in front of the player, who answers with Idle Death Gamble. The player either
+     * plays the chart (Hakari wins and his side consumes the Void) or doesn't press anything (the Void consumes the
+     * casino). Screenshots: the split at the start, the duel with the lanes over it, the conquest, the result.
+     */
+    private static void domainClash(ClientGameTestContext ctx, TestServerContext server, TestInput in, KeyMapping ult, boolean play, String tag) {
+        server.runCommand("jjk domain cancel all");
+        server.runCommand("execute as @a run jjk awakening end");
+        server.runCommand("execute as @a at @s run kill @e[type=jjk:training_dummy,distance=..40]");
+        ctx.waitTicks(100);
+        server.runCommand("execute as @a run jjk reset");
+        server.runCommand("execute as @a run jjk restore now");
+        server.runCommand("execute as @a run jjk awakening 100");
+        ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        server.runCommand("execute as @a at @s run tp @s ~ ~ ~ 0 6");
+        ctx.waitTicks(5);
+        server.runOnServer(s -> {
+            ServerPlayer p = s.getPlayerList().getPlayers().getFirst();
+            var level = p.level();
+            var rival = new dev.rick.jjk.entity.TrainingDummy(dev.rick.jjk.registry.ModEntities.TRAINING_DUMMY, level);
+            var look = p.getLookAngle().multiply(1, 0, 1).normalize();
+            rival.setPos(p.getX() + look.x * 10, p.getY(), p.getZ() + look.z * 10);
+            rival.setYRot(p.getYRot() + 180);
+            rival.setCustomName(net.minecraft.network.chat.Component.literal("Gojo"));
+            level.addFreshEntity(rival);
+            dev.rick.jjk.core.character.CharacterService.assign(rival, dev.rick.jjk.core.character.Characters.get(dev.rick.jjk.gojo.GojoCharacter.ID));
+            dev.rick.jjk.core.domain.clash.ClashManager.setBotSkill(rival, play ? 0.3f : 0.9f);
+            var rc = Casters.get(rival);
+            rc.enterAwakening();
+            rc.setAwakening(rc.maxAwakening());
+            rc.setNoCost(true);
+            if (!rc.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null)) throw new AssertionError("Gojo should start opening a domain");
+        });
+        ctx.waitTicks(6);
+        in.pressKey(ult);
+        for (int i = 0; i < 60 && !ctx.computeOnClient(mc -> dev.rick.jjk.client.clash.ClashClient.playing()); i++) ctx.waitTick();
+        if (!ctx.computeOnClient(mc -> dev.rick.jjk.client.clash.ClashClient.playing())) throw new AssertionError("the two domains should clash");
+        ctx.waitTicks(24);
+        if (!ctx.computeOnClient(mc -> mc.player != null && ClientState.domainOwnedBy(mc.player.getId()) != null
+                && ClientState.domainOwnedBy(mc.player.getId()).splitWith >= 0)) throw new AssertionError("the clash should split the space");
+        int[] keys = {InputConstants.KEY_LEFT, InputConstants.KEY_DOWN, InputConstants.KEY_UP, InputConstants.KEY_RIGHT};
+        Set<Integer> pressed = new HashSet<>();
+        int shots = 0, ticks = 0;
+        for (int tick = 0; tick < 900 && ctx.computeOnClient(mc -> dev.rick.jjk.client.clash.ClashClient.view() != null); tick++, ticks++) {
+            if (play) {
+                int[] due = ctx.computeOnClient(mc -> {
+                    var cv = dev.rick.jjk.client.clash.ClashClient.view();
+                    if (cv == null) return new int[0];
+                    double clock = cv.clock();
+                    java.util.List<Integer> out = new java.util.ArrayList<>();
+                    for (int i = 0; i < cv.times.length; i++) if (Math.abs(cv.times[i] - clock) <= 0.5) out.add(cv.round * 1000 + i);
+                    return out.stream().mapToInt(Integer::intValue).toArray();
+                });
+                for (int id : due) {
+                    if (!pressed.add(id)) continue;
+                    int lane = ctx.computeOnClient(mc -> {
+                        var cv = dev.rick.jjk.client.clash.ClashClient.view();
+                        return cv == null || id % 1000 >= cv.lanes.length ? -1 : (int) cv.lanes[id % 1000];
+                    });
+                    if (lane >= 0) in.pressKey(keys[lane]);
+                }
+            }
+            if (shots < 3 && ticks >= 16 + shots * 30) {
+                ctx.takeScreenshot(tag + (shots == 0 ? "_clash_split" : "_clash_battle_" + shots));
+                shots++;
+            }
+            ctx.waitTick();
+        }
+        // The duel is decided: the winner's side sweeps across (about three seconds).
+        for (int i = 0; i < 4; i++) {
+            ctx.waitTicks(i == 0 ? 8 : 15);
+            ctx.takeScreenshot(tag + "_conquest_" + i);
+        }
+        ctx.waitTicks(30);
+        ctx.takeScreenshot(tag + "_conquered");
+        String result = server.computeOnServer(s -> {
+            ServerPlayer p = s.getPlayerList().getPlayers().getFirst();
+            var mine = dev.rick.jjk.core.domain.DomainManager.ownedBy(p);
+            if (play) return mine != null && mine.phase() == dev.rick.jjk.core.domain.DomainInstance.Phase.ACTIVE && mine.annexes().size() == 1
+                    ? "" : "Hakari should have won and taken the Void's space (" + (mine == null ? "none" : mine.phase() + ", " + mine.annexes().size()) + ")";
+            return mine == null ? "" : "Gojo should have won and consumed the casino";
+        });
+        if (!result.isEmpty()) throw new AssertionError(result);
     }
 
     private static boolean riichi(int ownerId) {

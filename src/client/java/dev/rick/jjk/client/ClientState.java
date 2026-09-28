@@ -53,6 +53,14 @@ public final class ClientState {
         public long pulseTick = Long.MIN_VALUE;
         public float pulseStrength;
         public long unstableUntil = Long.MIN_VALUE;
+        /**
+         * Clash split: how far toward domain {@code splitWith}'s center this domain's side reaches (splitWith -1: not split),
+         * and the value actually drawn (eased toward the server's so the boundary glides).
+         */
+        public float split, splitShown;
+        public int splitWith = -1;
+        /** Territory conquered in a clash: spheres as x,y,z,radius. */
+        public float[] annex = new float[0];
     }
 
     /** The live domain owned by this entity, if any. */
@@ -174,6 +182,11 @@ public final class ClientState {
         d.clashWith = p.clashWith();
         d.formationTicks = Math.max(1, p.formationTicks());
         d.thickness = p.thickness();
+        // A new split (or a domain just consumed) starts where the server says; after that the boundary glides.
+        if (p.splitWith() != d.splitWith || p.split() == DomainPayload.CONSUMED) d.splitShown = p.split();
+        d.split = p.split();
+        d.splitWith = p.splitWith();
+        d.annex = p.annex();
         // Late joiners see the formation where it actually is, not from the start.
         if (p.phase() == DomainPayload.FORMING) d.phaseStartTick = now - p.age();
         d.lastUpdateTick = now;

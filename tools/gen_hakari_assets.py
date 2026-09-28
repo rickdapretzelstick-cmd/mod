@@ -1,11 +1,11 @@
 """Generates Hakari's block textures, block models and blockstates. Run: python3 tools/gen_hakari_assets.py
 
-Everything is 16x16 pixel art in Hakari's casino palette (black, white, hot pink, red, gold, pachinko chrome):
-  - idg_barrier / idg_floor: Idle Death Gamble's neon pachinko wall and casino floor (domain blocks)
+Everything is 16x16 pixel art:
+  - idg_barrier / idg_floor / idg_panel: Idle Death Gamble's white room, pale floor and framed floor hatches (domain blocks)
   - shutter_panel: the steel shutter of Shutter Doors
   - gamble_door: Door Guard's red lacquer door
   - pachinko_ball: a Reserve Ball
-  - reel (digit 0-7): the slot reels hung over the domain (0 is a spinning blur)
+  - idg_prop (part 0-1): the bullet-train cars and red seven-segment LED pieces drawn inside the domain
 """
 import json
 import os
@@ -32,32 +32,72 @@ def save(img, name):
     img.save(os.path.join(TEX, name + '.png'))
 
 
-# --- Idle Death Gamble wall: dark casino lacquer, a grid of gold pachinko pins, a pink neon stripe. ---
-img = canvas(0x1A0710)
-for y in range(16):
-    for x in range(16):
-        if (x + y) % 7 == 0:
-            img.putpixel((x, y), rgb(0x24091A))
-for y in range(1, 16, 4):
-    for x in range(1 + (y // 4 % 2) * 2, 16, 4):
-        img.putpixel((x, y), rgb(0xF0C040))
-        if x + 1 < 16:
-            img.putpixel((x + 1, y), rgb(0x8A6420))
-for x in range(16):
-    img.putpixel((x, 7), rgb(0xFF3FA0))
-    img.putpixel((x, 8), rgb(0xB0206C))
+# --- Idle Death Gamble wall: the bright white room of the domain, soft panel seams. ---
+img = canvas(0xF4F4F6)
+for i in range(16):
+    for j in (0, 15):
+        img.putpixel((i, j), rgb(0xE6E6EA))
+        img.putpixel((j, i), rgb(0xE6E6EA))
+img.putpixel((0, 0), rgb(0xDCDCE0))
 save(img, 'idg_barrier')
 
-# --- Idle Death Gamble floor: a black and white casino checker with pink seams. ---
-img = canvas(0x101010)
+# --- Idle Death Gamble floor: pale grey tiles with faint seams. ---
+img = canvas(0xDDE0E6)
 for y in range(16):
     for x in range(16):
-        white = (x // 8 + y // 8) % 2 == 0
-        c = 0xE8E4EC if white else 0x141018
-        if x % 8 == 0 or y % 8 == 0:
-            c = 0xFF4FA8
-        img.putpixel((x, y), rgb(c))
+        if (x * 7 + y * 13) % 29 == 0:
+            img.putpixel((x, y), rgb(0xD4D7DE))
+for i in range(16):
+    img.putpixel((i, 15), rgb(0xC8CBD2))
+    img.putpixel((15, i), rgb(0xC8CBD2))
 save(img, 'idg_floor')
+
+# --- Idle Death Gamble floor panel: a beige hatch in a grey frame (the framed squares in the middle of the room). ---
+img = canvas(0x9C9EA2)
+for y in range(16):
+    for x in range(16):
+        if 2 <= x <= 13 and 2 <= y <= 13:
+            c = 0xDCCFA6
+            if x in (2, 13) or y in (2, 13):
+                c = 0xB9AC84
+            elif 5 <= x <= 10 and 5 <= y <= 10:
+                c = 0xB9AC84 if x in (5, 10) or y in (5, 10) else 0xEAE0C0
+            img.putpixel((x, y), rgb(c))
+        elif x in (0, 15) or y in (0, 15):
+            img.putpixel((x, y), rgb(0x86888C))
+save(img, 'idg_panel')
+
+# --- Bullet train: white body with a black window band, a dark skirt, and plain white / dark faces. ---
+img = canvas(0xF6F6F8)
+for x in range(16):
+    for y in (5, 6, 7):
+        img.putpixel((x, y), rgb(0x10141C))
+    img.putpixel((x, 4), rgb(0xE0E0E6))
+    img.putpixel((x, 13), rgb(0xDADAE0))
+    img.putpixel((x, 14), rgb(0x1A2130))
+    img.putpixel((x, 15), rgb(0x1A2130))
+save(img, 'train_side')
+img = canvas(0xF6F6F8)
+for i in range(16):
+    img.putpixel((i, 0), rgb(0xE4E4EA))
+save(img, 'train_white')
+save(canvas(0x1A2130), 'train_dark')
+img = canvas(0xF6F6F8)
+for x in range(3, 13):
+    for y in (4, 5, 6):
+        img.putpixel((x, y), rgb(0x10141C))
+for x in range(16):
+    img.putpixel((x, 14), rgb(0x1A2130))
+    img.putpixel((x, 15), rgb(0x1A2130))
+save(img, 'train_nose')
+
+# --- LED segment: the solid red of the giant seven-segment reel counters. ---
+img = canvas(0xE8162E)
+for i in range(16):
+    for j in (0, 15):
+        img.putpixel((i, j), rgb(0xC00E22))
+        img.putpixel((j, i), rgb(0xC00E22))
+save(img, 'led_segment')
 
 # --- Shutter panel: corrugated steel slats, a hazard-pink kick strip at the bottom. ---
 img = canvas(0x9098A4)
@@ -106,49 +146,17 @@ img.putpixel((11, 11), rgb(0xFF7FC0))
 img.putpixel((12, 11), rgb(0xFF3FA0))
 save(img, 'pachinko_ball')
 
-# --- Reels: a white face with a bold number (7 in red, the rest in black); 0 is a motion blur. ---
-DIGITS = {
-    1: ["..#..", ".##..", "..#..", "..#..", "..#..", ".###."],
-    2: [".##..", "#..#.", "...#.", "..#..", ".#...", "####."],
-    3: ["###..", "...#.", ".##..", "...#.", "...#.", "###.."],
-    4: ["#..#.", "#..#.", "####.", "...#.", "...#.", "...#."],
-    5: ["####.", "#....", "###..", "...#.", "...#.", "###.."],
-    6: [".##..", "#....", "###..", "#..#.", "#..#.", ".##.."],
-    7: ["#####", "....#", "...#.", "..#..", "..#..", "..#.."],
-}
-for n in range(8):
-    img = canvas(0xF4F0F6)
-    for y in range(16):
-        for x in range(16):
-            if y in (0, 15):
-                img.putpixel((x, y), rgb(0xE8B840))
-            elif x in (0, 15):
-                img.putpixel((x, y), rgb(0xB0206C))
-    if n == 0:
-        for y in range(2, 14):
-            for x in range(3, 13):
-                if (y + x // 3) % 3 == 0:
-                    img.putpixel((x, y), rgb(0x9A94A0))
-                elif y % 5 == 0:
-                    img.putpixel((x, y), rgb(0xE05060))
-    else:
-        col = 0xE0102A if n == 7 else 0x141018
-        for j, row in enumerate(DIGITS[n]):
-            for i, ch in enumerate(row):
-                if ch == '#':
-                    for dx in (0, 1):
-                        for dy in (0, 1):
-                            img.putpixel((3 + i * 2 + dx - (1 if n != 7 else 0), 2 + j * 2 + dy), rgb(col))
-    save(img, 'reel_%d' % n)
-
-
 def write(path, data):
     with open(path, 'w') as f:
         json.dump(data, f)
 
 
-for name in ('idg_barrier', 'idg_floor'):
-    write(os.path.join(MODELS, name + '.json'), {"parent": "minecraft:block/cube_all", "textures": {"all": "jjk:block/" + name}})
+# The room is lit by itself (full-bright faces), so it reads bright white like the reference instead of taking on the
+# warm tint of block light.
+for name in ('idg_barrier', 'idg_floor', 'idg_panel'):
+    faces = {d: {"texture": "#all", "cullface": d} for d in ("north", "south", "east", "west", "up", "down")}
+    write(os.path.join(MODELS, name + '.json'), {"textures": {"all": "jjk:block/" + name, "particle": "jjk:block/" + name},
+                                                 "elements": [{"from": [0, 0, 0], "to": [16, 16, 16], "light_emission": 15, "faces": faces}]})
     write(os.path.join(STATES, name + '.json'), {"variants": {"": {"model": "jjk:block/" + name}}})
 
 
@@ -162,7 +170,28 @@ write(os.path.join(MODELS, 'gamble_door.json'), panel('gamble_door', [0, 0, 7], 
 write(os.path.join(MODELS, 'pachinko_ball.json'), panel('pachinko_ball', [5, 5, 5], [11, 11, 11]))
 for name in ('shutter_panel', 'gamble_door', 'pachinko_ball'):
     write(os.path.join(STATES, name + '.json'), {"variants": {"": {"model": "jjk:block/" + name}}})
-for n in range(8):
-    write(os.path.join(MODELS, 'reel_%d.json' % n), {"parent": "minecraft:block/cube_all", "textures": {"all": "jjk:block/reel_%d" % n}})
-write(os.path.join(STATES, 'reel.json'), {"variants": {"digit=%d" % n: {"model": "jjk:block/reel_%d" % n} for n in range(8)}})
+
+
+def box(frm, to, tex, emit=15):
+    faces = {d: {"texture": "#" + tex(d)} for d in ("north", "south", "east", "west", "up", "down")}
+    return {"from": frm, "to": to, "light_emission": emit, "faces": faces}
+
+
+# A bullet-train car three blocks long (x from -16 to 32): body, roof, skirt and a nose at each end. Fully lit so the
+# cars stay bright white inside the domain no matter where they are drawn.
+side = lambda d: "side" if d in ("north", "south") else "white" if d in ("up", "east", "west") else "dark"
+write(os.path.join(MODELS, 'train_car.json'), {
+    "textures": {"side": "jjk:block/train_side", "white": "jjk:block/train_white", "dark": "jjk:block/train_dark",
+                 "nose": "jjk:block/train_nose", "particle": "jjk:block/train_white"},
+    "elements": [
+        box([-13, 1, 1], [29, 13, 15], side),
+        box([-12, 13, 3], [28, 15, 13], lambda d: "white"),
+        box([-12, 0, 3], [28, 1, 13], lambda d: "dark"),
+        box([29, 1, 3], [32, 10, 13], lambda d: "nose" if d == "east" else "white" if d != "down" else "dark"),
+        box([-16, 1, 3], [-13, 10, 13], lambda d: "nose" if d == "west" else "white" if d != "down" else "dark"),
+    ]})
+write(os.path.join(MODELS, 'led_segment.json'), {
+    "textures": {"led": "jjk:block/led_segment", "particle": "jjk:block/led_segment"},
+    "elements": [box([0, 0, 0], [16, 16, 16], lambda d: "led")]})
+write(os.path.join(STATES, 'idg_prop.json'), {"variants": {"part=0": {"model": "jjk:block/train_car"}, "part=1": {"model": "jjk:block/led_segment"}}})
 print('hakari assets written')

@@ -47,6 +47,7 @@ kit's techniques, toggles and states are cleared and the new moveset, HUD icons 
 | G | Awaken → Infinite Void | Idle Death Gamble | — |
 
 ![Hakari](docs/screenshots/hakari_showcase.png)
+![Idle Death Gamble](docs/screenshots/hakari_idg_interior.png)
 
 ### Kinji Hakari — Restless Gambler
 
@@ -60,9 +61,11 @@ Gambling → domain → Jackpot → sustain → pressure.
 - **Fever Breaker**: a spinning kick knocks them away, Hakari rushes them down, and a second, heavier kick breaks them.
 - **Door Guard** (Special, hold): a red lacquer door stops everything from the front. Melee caught in the first few
   ticks makes the door swing open into the attacker.
-- **Idle Death Gamble** (full Awakening meter): a physical domain built by the shared framework, with a neon pachinko
-  wall, a casino floor, sweeping spotlights and giant slot reels over the arena. The sure-hit only imparts the rules
-  and deals no damage.
+- **Idle Death Gamble** (full Awakening meter): a physical domain built by the shared framework, modelled on the domain
+  as Jujutsu Shenanigans shows it: a bright white room with a pale tiled floor and framed hatches in it, walls lined
+  with white bullet trains running in stacked rings, one more train winding through the air, and three giant red
+  seven-segment counters showing the reels. All of it is real block models and blocks (the room is self-lit). The
+  sure-hit only imparts the rules and deals no damage.
   - **Visual moves**: Hakari's techniques used inside the domain count as visual moves, and enough of them start a
     **Riichi**.
   - **Riichi**: a scenario is drawn (Transit Card, Seat Struggle or Potty Emergency) with a green, red, gold or
@@ -136,11 +139,24 @@ When two domains overlap they don't just fight on stats — the owners duel for 
 the same chart of prompts (← ↓ ↑ →, played with the arrow keys or A S W D). Each press is judged on timing
 (PERFECT / GREAT / GOOD / MISS, windows configurable) and pushes a shared tug-of-war meter; streaks push harder (capped,
 so consistency matters more than a lucky run). Every PERFECT sends an energy pulse out of the player through their
-domain; misses make it flicker. Whoever holds the meter at the end — or drives it all the way across — wins; the
-loser's domain collapses and gives its blocks back. Dead-even clashes go to sudden death. Domain strength, stats and
-who expanded first never decide it.
+domain; misses make it flicker. Whoever holds the meter at the end — or drives it all the way across — wins.
+Dead-even clashes go to sudden death. Domain strength, stats and who expanded first never decide it.
+
+**Split territory.** During the clash both interiors are really there, side by side. The space is split down the
+middle between the two centers: each side is built from its own domain's blocks and drawn with its own interior (the
+Infinite Void's starfield on one side, Idle Death Gamble's white room and trains on the other), and each owner stands
+on their side. Where the two spheres overlap their walls open up into one enclosed room. The boundary is driven by
+the clash meter, so the side that plays better pushes it back; every PERFECT sends a pulse from the player's side into
+the boundary. The rhythm lanes stay over the battle.
+
+**Conquest.** When the duel is decided nothing swaps instantly: the winner's side sweeps across the loser's space over
+about three seconds (50/50 → 60/40 → 75/25 → 90/10 → all of it), repainting it block by block. Then the loser's
+domain ends, its space becomes the winner's territory (the barrier holds across all of it), and the winner's domain
+carries on under its normal rules. When the winner's domain ends, the blocks of both are restored exactly.
 
 ![Domain clash](docs/screenshots/domain_clash.png)
+![Split territory](docs/screenshots/domain_clash_split.png)
+![Conquest](docs/screenshots/domain_clash_conquest.png)
 
 ## Temporary battle damage
 

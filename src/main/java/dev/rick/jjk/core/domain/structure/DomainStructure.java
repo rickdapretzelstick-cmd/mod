@@ -59,6 +59,8 @@ public final class DomainStructure {
     int formationTicks = 1;
     /** Originals taken over from another structure that collapsed while overlapping this one. */
     final Map<Long, Adopted> adopted = new HashMap<>();
+    /** What to build instead of the target at each position while a clash splits this structure (see {@link ClashTerritory}). */
+    @Nullable BlockState[] paint;
     private State state;
     private int cursor;
 
@@ -178,7 +180,8 @@ public final class DomainStructure {
         for (; cursor < end; cursor++) {
             if (times != null && times[cursor] > progress) break;
             p.set(positions[cursor]);
-            level.setBlock(p, targets[cursor], FLAGS);
+            BlockState painted = paint != null ? paint[cursor] : null;
+            level.setBlock(p, painted != null ? painted : targets[cursor], FLAGS);
         }
         if (cursor >= positions.length) {
             state = State.BUILT;
@@ -296,6 +299,11 @@ public final class DomainStructure {
 
     public boolean isActive() {
         return state == State.BUILDING || state == State.BUILT;
+    }
+
+    /** Whether the block at index {@code i} (placement order) is standing. */
+    boolean placed(int i) {
+        return state == State.BUILT || state == State.BUILDING && i < cursor;
     }
 
     /** Whether this structure currently holds its block at {@code packed}. */

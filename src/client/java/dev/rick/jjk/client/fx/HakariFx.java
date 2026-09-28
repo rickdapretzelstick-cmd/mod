@@ -175,10 +175,10 @@ final class HakariFx {
             }
             case "idg_ambient" -> {
                 sound("idg_ambient", pos, 0.8f, 1f);
-                if (drawn) for (int i = 0; i < q(24); i++) {
-                    // A shower of pachinko balls pouring from the dome's ceiling.
-                    Vec3 at = pos.add(gauss(s * 0.4), s * 0.75, gauss(s * 0.4));
-                    add(level, at, new Vec3(0, -0.35, 0), Sprite.CORE, i % 4 == 0 ? HOT_PINK : CHROME, 0.9f, 0.12f, 0.12f, 50).gravity(0.02f);
+                if (drawn) for (int i = 0; i < q(16); i++) {
+                    // Soft pink motes drifting through the bright room.
+                    Vec3 at = pos.add(gauss(s * 0.5), RNG.nextDouble() * s * 0.6, gauss(s * 0.5));
+                    add(level, at, new Vec3(gauss(0.01), 0.01, gauss(0.01)), Sprite.CORE, HOT_PINK, 0.35f, 0.08f, 0.05f, 60);
                 }
             }
             case "idg_rules" -> sound("gamble_signal", pos, 0.4f, 1.4f);

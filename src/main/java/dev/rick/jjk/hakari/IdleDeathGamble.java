@@ -62,7 +62,12 @@ public final class IdleDeathGamble implements DomainDefinition {
     public StructureSpec structure(LivingEntity owner) {
         JJKConfig.Domain dc = JJKConfig.get().domain;
         return new StructureSpec(JJKConfig.get().hakari.domainRadius, Math.max(1, dc.shellThickness), ModBlocks.IDG_BARRIER.defaultBlockState(),
-                ModBlocks.IDG_FLOOR.defaultBlockState(), dc.clearInterior);
+                ModBlocks.IDG_FLOOR.defaultBlockState(), dc.clearInterior, IdleDeathGamble::floorPanel);
+    }
+
+    /** Four framed hatches set into the floor around the middle of the room, two blocks from the center on each diagonal. */
+    private static net.minecraft.world.level.block.state.BlockState floorPanel(int dx, int dz, net.minecraft.world.level.block.state.BlockState floor) {
+        return (dx == 2 || dx == -2) && (dz == 2 || dz == -2) ? ModBlocks.IDG_PANEL.defaultBlockState() : floor;
     }
 
     @Override

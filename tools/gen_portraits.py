@@ -1,4 +1,9 @@
-"""Generates the 32x32 pixel-art character portraits for the character select screen. Run: python3 tools/gen_portraits.py"""
+"""Generates the 32x32 character emblems for the character select screen. Run: python3 tools/gen_portraits.py
+
+One simple symbol per character, readable at any size (the screen draws them at textures/gui/portrait/<id>.png):
+  - gojo: his blindfold
+  - hakari: a slot machine
+"""
 import os
 
 from PIL import Image
@@ -20,79 +25,70 @@ def draw(rows, palette, name):
     img.save(os.path.join(OUT, name + '.png'))
 
 
-# Legend: H hair, h hair shade, S skin, s skin shade, B blindfold, E eye, W white, K black, J jacket, j jacket shade,
-# C collar/shirt, G gold, M mouth, P pink.
-GOJO = [
-    "................................",
-    "...........HHH..HHH.............",
-    ".........HHHHHHHHHHHH..H........",
-    ".......HHHHHHHHHHHHHHHHH........",
-    "......HHHHHHHHHHHHHHHHHHH.......",
-    ".....HHHHhHHHHHhHHHHHhHHHH......",
-    ".....HHHhhHHHHhhHHHHhhHHHH......",
-    "....HHHHHHHHHHHHHHHHHHHHHHH.....",
-    "....HHHHHHHHHHHHHHHHHHHHHHH.....",
-    "....HHHSSSSSSSSSSSSSSSSSHHH.....",
-    "....HHSSSSSSSSSSSSSSSSSSSHH.....",
-    "....HBBBBBBBBBBBBBBBBBBBBBH.....",
-    "....HBBBBBBBBBBBBBBBBBBBBBH.....",
-    "....HBBBBBBBBBBBBBBBBBBBBBH.....",
-    ".....SSSSSSSSSSsSSSSSSSSSS......",
-    ".....SSSSSSSSSSsSSSSSSSSSS......",
-    ".....SSSSSSSSSsssSSSSSSSSS......",
-    "......SSSSSSSSSSSSSSSSSSS.......",
-    "......SSSSSSSMMMMSSSSSSSS.......",
-    ".......SSSSSSSSSSSSSSSSS........",
-    "........sSSSSSSSSSSSSSs.........",
-    "..........ssSSSSSSSss...........",
-    "...........KKsssssKK............",
-    ".........KKKKKKKKKKKKK..........",
-    ".......KKKKKKKKKKKKKKKKK........",
-    ".....KKKKKKKKKKKKKKKKKKKKK......",
-    "....KKKKKKKKKKKKKKKKKKKKKKK.....",
-    "...KKKKKKKKKKKjjjKKKKKKKKKKK....",
-    "..KKKKKKKKKKKKjjjKKKKKKKKKKKK...",
-    "..KKKKKKKKKKKKjjjKKKKKKKKKKKK...",
-    "..KKKKKKKKKKKKjjjKKKKKKKKKKKK...",
-    "..KKKKKKKKKKKKjjjKKKKKKKKKKKK...",
-]
-draw(GOJO, {'H': 0xF4F6FA, 'h': 0xC8D0DC, 'S': 0xF2D2B6, 's': 0xD8B496, 'B': 0x121218, 'M': 0xB07A6A, 'K': 0x1A1C26,
-             'j': 0x2C3040}, 'gojo')
+# Gojo: his blindfold — a curved black band (as if worn across the eyes), a knot at the side and two trailing tails.
+def gojo():
+    import math
+    img = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
+    px = {}
+    for x in range(1, 24):
+        cy = 12 + 0.008 * (x - 12) ** 2
+        for y in range(32):
+            d = y - cy
+            if -4 <= d <= 4:
+                px[(x, y)] = 0x5A5E70 if d < -3 else 0x0C0C12 if d > 3 else 0x17181F
+    # Knot at the side of the head.
+    for x in range(22, 29):
+        for y in range(8, 20):
+            if (x - 25) ** 2 / 9 + (y - 13.5) ** 2 / 25 <= 1:
+                px[(x, y)] = 0x2A2C36
+    # Two short tails fluttering out behind the knot.
+    for i in range(9):
+        for w in range(3):
+            px[(26 + i // 2 + w, 17 + i)] = 0x1C1D26
+            px[(23 + i // 3 + w, 18 + i)] = 0x131419
+    px = {k: v for k, v in px.items() if 0 <= k[0] < 32 and 0 <= k[1] < 32}
+    for (x, y), c in px.items():
+        img.putpixel((x, y), rgb(c))
+    # Dark outline for contrast on any background.
+    base = img.copy()
+    for (x, y) in list(px):
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            q = (x + dx, y + dy)
+            if 0 <= q[0] < 32 and 0 <= q[1] < 32 and q not in px:
+                base.putpixel(q, rgb(0x6A6E80))
+    base.save(os.path.join(OUT, 'gojo.png'))
 
+
+gojo()
+
+# Hakari: a slot machine — gold cabinet, three reels showing 7 7 7, a red lever and a pink marquee.
 HAKARI = [
     "................................",
-    "..........HHHHHHHHHH............",
-    "........HHHHHHHHHHHHHH..........",
-    ".......HHHHHHHHHHHHHHHHH........",
-    "......HHHhHHHHhHHHHhHHHHH.......",
-    "......HHhhHHHhhHHHhhHHHHH.......",
-    ".....hhHHHHHHHHHHHHHHHHHhh......",
-    ".....hhhSSSSSSSSSSSSSSShhh......",
-    ".....hhSSSSSSSSSSSSSSSSShh......",
-    ".....hSSSSSSSSSSSSSSSSSSSh......",
-    ".....SSSKKKKSSSSSSSKKKKSSS......",
-    ".....SSSSSSSSSSSSSSSSSSSSS......",
-    ".....SSSWEWSSSSSSSSSWEWSSS......",
-    ".....SSSSSSSSSSsSSSSSSSSSS......",
-    "......SSSSSSSSSsSSSSSSSSS.......",
-    "......SSSSSSSSsssSSSSSSSS.......",
-    "......SSSSSSSSSSSSSSSSSSS.......",
-    "......SSSSMWWWWWWWWMSSSSS.......",
-    ".......SSSSMMMMMMMMSSSSS........",
-    ".......sSSSSSSSSSSSSSSSs........",
-    "........ssSSSSSSSSSSSss.........",
-    "..........ssSSSSSSSss...........",
-    "...........JJsssssJJ............",
-    ".........JJJJCCCCCJJJJ..........",
-    ".......JJJJJJCCCCCJJJJJJ........",
-    ".....JJJJJJJjCGGGCjJJJJJJJ......",
-    "....JJJJJJJJjCCGCCjJJJJJJJJ.....",
-    "...JJJJJJJJJjCCCCCjJJJJJJJJJ....",
-    "..JJJJJJJJJJjCCCCCjJJJJJJJJJJ...",
-    "..JJJJJPJJJJjCCCCCjJJJJPJJJJJ...",
-    "..JJJJJJJJJJjCCCCCjJJJJJJJJJJ...",
-    "..JJJJJJJJJJjCCCCCjJJJJJJJJJJ...",
+    "................................",
+    "......OOOOOOOOOOOOOOOOOO........",
+    ".....OPPPPPPPPPPPPPPPPPPO.......",
+    ".....OPWPPWPPWPPWPPWPPWPO.......",
+    ".....OPPPPPPPPPPPPPPPPPPO.......",
+    "....OGGGGGGGGGGGGGGGGGGGGO......",
+    "....OGDDDDDDDDDDDDDDDDDDGO......",
+    "....OGDWWWWWDWWWWWDWWWWWGO.OO...",
+    "....OGDWRRRWDWRRRWDWRRRWGO.ORO..",
+    "....OGDWWWRWDWWWRWDWWWRWGO.ORO..",
+    "....OGDWWRWWDWWRWWDWWRWWGO..OO..",
+    "....OGDWWRWWDWWRWWDWWRWWGO..OO..",
+    "....OGDWWRWWDWWRWWDWWRWWGO..OO..",
+    "....OGDWWWWWDWWWWWDWWWWWGOOOOO..",
+    "....OGDDDDDDDDDDDDDDDDDDGGGGO...",
+    "....OGGGGGGGGGGGGGGGGGGGGOOO....",
+    "....OGgggggggggggggggggggO......",
+    "....OGgKKKKKKKKKKKKKKKKKgO......",
+    "....OGgggggggggggggggggggO......",
+    "....OGGGGGGGGGGGGGGGGGGGGO......",
+    "....OGgKKKKKKKKKKKKKKKKKgO......",
+    "....OGgggggggggggggggggggO......",
+    "...OGGGGGGGGGGGGGGGGGGGGGGO.....",
+    "...OOOOOOOOOOOOOOOOOOOOOOOO.....",
 ]
-draw(HAKARI, {'H': 0xD8C08A, 'h': 0x9A8458, 'S': 0xF0CCAE, 's': 0xD2A88A, 'K': 0x3A2A20, 'W': 0xFFFFFF, 'E': 0x2A6A48,
-              'M': 0x7A2A2A, 'J': 0xEDE6D6, 'j': 0xB8B0A0, 'C': 0x18181E, 'G': 0xF0C040, 'P': 0xFF3FA0}, 'hakari')
-print('portraits written to', os.path.normpath(OUT))
+draw(HAKARI, {'O': 0x140810, 'P': 0xFF3FA0, 'W': 0xF6F2F8, 'G': 0xF0C040, 'g': 0xB08820, 'D': 0x2A1420, 'R': 0xE0102A,
+              'K': 0x3A2A10}, 'hakari')
+print('emblems written to', os.path.normpath(OUT))

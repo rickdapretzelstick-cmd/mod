@@ -476,6 +476,83 @@ public class HakariGameTests {
                 .thenSucceed();
     }
 
+    /**
+     * Two domains in a clash share the space: each side of the split is built from its own domain's blocks, the two
+     * shells open into one room, the winner's side then consumes the loser's step by step, the winner keeps the whole
+     * space under its normal rules, and when it finally ends every block of both comes back exactly.
+     */
+    @GameTest(maxTicks = 700, padding = 24)
+    public void aClashSplitsTheSpaceAndTheWinnerConsumesTheLoser(GameTestHelper h) {
+        floor(h, 16);
+        TrainingDummy gojo = dummy(h, 4.5, 4.5);
+        CharacterService.assign(gojo, Characters.get(GojoCharacter.ID));
+        ClashManager.setBotSkill(gojo, 0.95f);
+        TrainingDummy g = hakari(h, 9.5, 4.5, gojo);
+        ClashManager.setBotSkill(g, 0.1f);
+        // The world before either domain, to check the restore against.
+        BlockPos lo = h.absolutePos(new BlockPos(-6, -8, -6)), hi = h.absolutePos(new BlockPos(20, 10, 16));
+        java.util.Map<BlockPos, net.minecraft.world.level.block.state.BlockState> before = new java.util.HashMap<>();
+        for (BlockPos p : BlockPos.betweenClosed(lo, hi)) before.put(p.immutable(), h.getLevel().getBlockState(p));
+        DomainInstance[] d = new DomainInstance[2];
+        DomainStructure[] st = new DomainStructure[2];
+        java.util.List<Double> shares = new java.util.ArrayList<>();
+        h.onEachTick(() -> {
+            if (d[0] != null && d[0].front() != null && d[0].front().conquering()) shares.add(d[0].front().shareOfFirst());
+        });
+        h.startSequence()
+                .thenExecute(() -> {
+                    d[0] = DomainManager.expand(gojo, dev.rick.jjk.gojo.UnlimitedVoid.INSTANCE);
+                    h.assertTrue(d[0] != null && d[0].structure() != null, "Gojo's domain is built");
+                    st[0] = d[0].structure();
+                })
+                .thenWaitUntil(() -> h.assertTrue(st[0].state() == DomainStructure.State.BUILT, "Gojo's structure stands"))
+                .thenExecute(() -> {
+                    d[1] = DomainManager.expand(g, IdleDeathGamble.INSTANCE);
+                    h.assertTrue(d[1] != null && d[1].structure() != null && d[1].clash() != null, "Hakari's domain clashes with it");
+                    st[1] = d[1].structure();
+                    h.assertTrue(d[0].front() != null && d[0].front() == d[1].front(), "the space is split between them");
+                })
+                .thenWaitUntil(() -> h.assertTrue(st[1].state() == DomainStructure.State.BUILT, "Hakari's structure stands"))
+                .thenExecute(() -> {
+                    BlockPos gc = st[0].center;
+                    var level = h.getLevel();
+                    h.assertTrue(level.getBlockState(gc.offset(1, -1, 0)).is(ModBlocks.DOMAIN_FLOOR), "Gojo's side of the floor is his");
+                    var far = level.getBlockState(gc.offset(4, -1, 0));
+                    h.assertTrue(far.is(ModBlocks.IDG_FLOOR) || far.is(ModBlocks.IDG_PANEL), "Hakari's side of the floor is his, even over Gojo's blocks");
+                    h.assertTrue(level.getBlockState(gc.offset(6, 0, 0)).isAir(), "Gojo's wall inside Hakari's room is opened up: one shared space");
+                    h.assertTrue(level.getBlockState(st[1].center.above(6)).is(ModBlocks.IDG_BARRIER), "Hakari's far ceiling is his own");
+                })
+                .thenWaitUntil(() -> h.assertTrue(!d[1].isLive(), "the clash was decided and Hakari's space consumed"))
+                .thenExecute(() -> {
+                    h.assertValueEqual(d[1].endReason(), DomainInstance.EndReason.CLASH_LOST, "Hakari lost the clash");
+                    h.assertTrue(d[0].phase() == DomainInstance.Phase.ACTIVE, "Gojo's domain runs by its normal rules");
+                    h.assertTrue(shares.size() >= dev.rick.jjk.core.domain.ClashFront.CONQUEST_TICKS - 1, "the conquest took time (" + shares.size() + " ticks)");
+                    for (double[] band : new double[][] {{0.55, 0.68}, {0.7, 0.8}, {0.85, 0.95}}) {
+                        h.assertTrue(shares.stream().anyMatch(v -> v >= band[0] && v <= band[1]),
+                                "the winner's share passed through " + band[0] + ".." + band[1] + " on the way (no instant swap)");
+                    }
+                    h.assertTrue(d[1].structure() == null && d[0].annexes().size() == 1, "Hakari's space became Gojo's territory");
+                    h.assertTrue(d[0].contains(Vec3.atCenterOf(st[1].center)), "Gojo's domain now covers it");
+                    h.assertTrue(st[1].state() == DomainStructure.State.BUILT, "the conquered blocks stay up with the winner");
+                    var level = h.getLevel();
+                    h.assertTrue(level.getBlockState(st[1].center.above(6)).is(ModBlocks.DOMAIN_BARRIER), "the far ceiling is Gojo's now");
+                    for (BlockPos p : BlockPos.betweenClosed(st[1].center.offset(-7, -7, -7), st[1].center.offset(7, 7, 7))) {
+                        var b = level.getBlockState(p);
+                        h.assertFalse(b.is(ModBlocks.IDG_BARRIER) || b.is(ModBlocks.IDG_FLOOR) || b.is(ModBlocks.IDG_PANEL), "nothing of Hakari's domain is left at " + p);
+                    }
+                    DomainManager.collapseOwnedBy(gojo, DomainInstance.EndReason.CANCELLED);
+                })
+                .thenWaitUntil(() -> h.assertTrue(st[0].state() == DomainStructure.State.DONE && st[1].state() == DomainStructure.State.DONE,
+                        "both structures are given back when the winner's domain ends"))
+                .thenExecute(() -> {
+                    for (var e : before.entrySet()) {
+                        h.assertTrue(h.getLevel().getBlockState(e.getKey()) == e.getValue(), "restored exactly at " + e.getKey()
+                                + " (" + h.getLevel().getBlockState(e.getKey()) + " vs " + e.getValue() + ")");
+                    }
+                })
+                .thenSucceed();
+    }
+
     @GameTest(maxTicks = 20)
     public void theJackpotBonusIsLostOnDeath(GameTestHelper h) {
         floor(h, 4);
