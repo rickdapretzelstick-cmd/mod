@@ -17,6 +17,8 @@ public abstract class EntityRendererMixin {
     /** Computes this frame's combat pose and stashes it on the render state for the model. */
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void jjk$pose(Entity entity, EntityRenderState state, float partialTicks, CallbackInfo ci) {
+        // Inside Idle Death Gamble nothing casts a shadow: nothing shows where the floor is.
+        if (!state.shadowPieces.isEmpty() && dev.rick.jjk.client.ClientState.inWhiteRoom(entity.position())) state.shadowPieces.clear();
         if (entity instanceof LivingEntity le) {
             float now = le.level().getGameTime() + partialTicks;
             PoseFrame f = ClientAnimations.compute(le, now);

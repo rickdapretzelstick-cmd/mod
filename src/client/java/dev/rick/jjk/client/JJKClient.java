@@ -65,6 +65,9 @@ public class JJKClient implements ClientModInitializer {
         HudElementRegistry.addLast(JJK.id("clash_hud"), (g, delta) -> {
             if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.clash.ClashHud.render(g);
         });
+        HudElementRegistry.addLast(JJK.id("idg_opening"), (g, delta) -> {
+            if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.hud.IdgOpening.render(g);
+        });
         HudElementRegistry.addLast(JJK.id("domain_cinematic"), (g, delta) -> {
             if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.cinematic.DomainCinematic.render(g, delta.getGameTimeDeltaPartialTick(false));
         });

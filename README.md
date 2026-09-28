@@ -47,6 +47,8 @@ kit's techniques, toggles and states are cleared and the new moveset, HUD icons 
 | G | Awaken → Infinite Void | Idle Death Gamble | — |
 
 ![Hakari](docs/screenshots/hakari_showcase.png)
+![Idle Death Gamble opening](docs/screenshots/hakari_idg_cutin.png)
+![The rush](docs/screenshots/hakari_idg_rush.png)
 ![Idle Death Gamble](docs/screenshots/hakari_idg_interior.png)
 
 ### Kinji Hakari — Restless Gambler
@@ -70,11 +72,20 @@ cooldowns and durations, its studs as blocks (about 3.6 studs to a block), all i
   shatters the doors, unless he looks slightly away from them to keep them standing.
 - **Door Guard** (Special, hold; 16s): a melee hit in the first 0.6s is answered with a punch through the doors that
   repels the attacker. A bullet (projectile) only shatters the doors.
-- **Idle Death Gamble** (full Awakening meter; 80s, heals 15% on cast, invincible through the hand sign): a physical
-  domain built by the shared framework, modelled on the domain as Jujutsu Shenanigans shows it: a bright white room
-  with a pale tiled floor and framed hatches, walls lined with stacked rings of white bullet trains, one more train
-  winding through the air, and three giant red seven-segment counters showing the reels. Everyone caught is frozen in
-  place for the opening while the rules are imparted; the sure-hit does no damage.
+- **Idle Death Gamble** (full Awakening meter; 80s, heals 15% on cast, invincible through the hand sign), presented
+  the way Jujutsu Shenanigans does it:
+  - **The opening**: a white slash cuts across the screen and opens into a teal band patterned with double helices,
+    Hakari's close-up in it and "DOMAIN" / "EXPANSION" on its edges. White smoke bursts off him, white floods out over
+    the ground from his feet with ink splashing along its edge (the real domain building), and everything goes white as
+    it seals. Everyone inside then rushes through a tunnel of train cars with black speed lines, until the cars
+    tumble away.
+  - **The room**: endless glowing white. Floor, walls and ceiling are the same flat, self-lit white, with no shading,
+    no ambient occlusion and no shadows, and the view blooms white at its edges, so there is no depth to judge by. Only
+    the train-car kiosks standing about the floor, and the people in it, stand out. The giant red seven-segment
+    counters and a winding train appear for each Riichi.
+  - **The rules** stay on screen for everyone inside, their colour cycling: how to reach a Riichi, the pity jackpot and
+    the odd/even bonuses top left, the scenarios top right. Everyone caught is frozen in place while they appear; the
+    sure-hit does no damage.
   - **Visual moves**: using Reserve Balls or Shutter Doors (the two combined count twice), landing Fever Breaker's
     dropkick, Fever Crush, or a successful Door Guard. Two of them start a **Riichi**.
   - **Riichi**: Transit Card (one star) or Travel Emergency (two stars, better odds). A cut-in plays, the first two

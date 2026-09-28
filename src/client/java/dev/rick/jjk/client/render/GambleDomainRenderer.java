@@ -23,7 +23,7 @@ import org.joml.Vector3f;
  * reels as it happens: counting while Hakari builds toward a Riichi, locking two numbers, stopping the third on the
  * reveal. Everything is real block models (train cars, LED segments) lit by the model itself, so the room stays bright.
  */
-final class GambleDomainRenderer {
+public final class GambleDomainRenderer {
     private static final float[] PINK = {1f, 0.25f, 0.63f}, GOLD = {1f, 0.8f, 0.25f}, JADE = {0.36f, 1f, 0.66f};
     /** Seven-segment masks (bits a..g from bit 0) for 0..9. */
     private static final int[] SEGMENTS = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F};
@@ -45,31 +45,127 @@ final class GambleDomainRenderer {
         if (mc.level == null) return;
         BlockPos at = BlockPos.containing(d.center);
         Blocks b = new Blocks(mc.level, at, mc.level.getBiome(at));
-        trainWalls(c, ps, d, b, r, time);
-        snakeTrain(c, ps, d, b, r, time);
+        float rush = rushAge(d, now, partial);
+        if (rush >= 0 && rush < RUSH) {
+            // Just sealed: a rush through a tunnel of trains before the room settles.
+            rushTunnel(c, ps, cam, camRot, d, b, rush);
+            return;
+        }
+        // The room glows: its walls bloom into a white haze, and so does everything standing in it.
+        Glow.sphere(c, ps, r * 0.97f, 1f, 1f, 1f, 0.45f * calm, toCam, true);
+        Glow.sphere(c, ps, r * 0.9f, 1f, 0.98f, 0.95f, 0.12f * calm, toCam, false);
+        standingCars(c, ps, camRot, d, b, r, calm);
         ClientState.Gamble gamble = ClientState.GAMBLES.get(d.id);
-        counters(c, ps, cam, d, b, gamble, r, now, time, calm);
+        GamblePayload p = gamble != null ? gamble.p : null;
+        // The giant counters and the winding train play the Riichi out.
+        if (p != null && (p.state() == GamblePayload.RIICHI || p.state() == GamblePayload.JACKPOT)) {
+            snakeTrain(c, ps, d, b, r, time);
+            counters(c, ps, cam, d, b, gamble, r, now, time, calm);
+        }
     }
 
-    /** Rings of white bullet trains stacked up the walls, each ring running the other way from the one below. */
-    private static void trainWalls(SubmitNodeCollector c, PoseStack ps, ClientState.Domain d, Blocks b, float r, float time) {
-        float carLen = CAR * CAR_SCALE + 0.35f;
-        for (int tier = 0; tier < 3; tier++) {
-            float h = 0.05f + tier * 1.55f;
-            // Stay clear of the curving shell: the room's radius at the top of this tier, less the shell and a margin.
-            float top = h + 1.5f;
-            float rw = (float) Math.sqrt(Math.max(1, r * r - top * top)) - 2.4f;
-            if (rw < 3) continue;
-            int n = Math.max(3, (int) (Mth.TWO_PI * rw / carLen));
-            float speed = 0.06f * (tier % 2 == 0 ? 1 : -1);
-            float offset = time * speed / rw;
+    private static final java.util.Map<Integer, Long> FLOOD_TICK = new java.util.HashMap<>();
+
+    /**
+     * While Idle Death Gamble forms: a burst of white smoke off the caster, then white spreading over the ground from
+     * their feet (the real floor blocks going down) with black ink splashing up along its edge, and white smoke rolling
+     * up the walls as they rise.
+     */
+    static void formation(ClientState.Domain d, float progress, long now) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || FLOOD_TICK.getOrDefault(d.id, Long.MIN_VALUE) == now) return;
+        FLOOD_TICK.put(d.id, now);
+        if (FLOOD_TICK.size() > 64) FLOOD_TICK.clear();
+        var level = mc.level;
+        java.util.Random rnd = new java.util.Random(now * 31 + d.id);
+        float R = d.radius + d.thickness;
+        Vec3 c0 = d.center;
+        double floorY = c0.y - 0.45;
+        if (progress < 0.18f) {
+            // The burst of white smoke.
+            for (int i = 0; i < 8; i++) {
+                double a = rnd.nextDouble() * Math.PI * 2;
+                double v = 0.08 + rnd.nextDouble() * 0.18;
+                level.addParticle(net.minecraft.core.particles.ParticleTypes.CLOUD, c0.x, c0.y + 0.4 + rnd.nextDouble(), c0.z,
+                        Math.cos(a) * v, 0.02 + rnd.nextDouble() * 0.05, Math.sin(a) * v);
+            }
+        }
+        float ground = dev.rick.jjk.core.domain.structure.DomainFormation.GROUND_END;
+        if (progress < ground) {
+            // Ink splashing up along the spreading white.
+            double rad = Math.max(0.5, R * progress / ground);
+            int n = (int) Math.min(24, 6 + rad * 1.5);
             for (int i = 0; i < n; i++) {
-                float a = offset + Mth.TWO_PI * i / n;
-                Vec3 at = new Vec3(Mth.cos(a) * rw, h, Mth.sin(a) * rw);
-                // Tangent to the ring, in the direction the ring runs.
-                Vec3 dir = new Vec3(-Mth.sin(a), 0, Mth.cos(a)).scale(speed >= 0 ? 1 : -1);
-                // Mid-clash only this side of the split is Hakari's.
-                if (DomainSpace.onSide(d, d.center.add(at))) car(c, ps, b, at, dir);
+                double a = rnd.nextDouble() * Math.PI * 2;
+                double x = c0.x + Math.cos(a) * rad, z = c0.z + Math.sin(a) * rad;
+                level.addParticle(net.minecraft.core.particles.ParticleTypes.SQUID_INK, x, floorY + 0.15, z,
+                        Math.cos(a) * 0.08, 0.06 + rnd.nextDouble() * 0.08, Math.sin(a) * 0.08);
+                if (i % 3 == 0) level.addParticle(net.minecraft.core.particles.ParticleTypes.CLOUD, x, floorY + 0.3, z, 0, 0.03, 0);
+            }
+        } else if (progress < dev.rick.jjk.core.domain.structure.DomainFormation.CEILING_END) {
+            // White smoke rolling up the rising walls.
+            for (int i = 0; i < 10; i++) {
+                double a = rnd.nextDouble() * Math.PI * 2;
+                double y = rnd.nextDouble() * R * 0.8;
+                double rr = Math.sqrt(Math.max(0, R * R - y * y)) - 1;
+                level.addParticle(net.minecraft.core.particles.ParticleTypes.CLOUD, c0.x + Math.cos(a) * rr, c0.y + y, c0.z + Math.sin(a) * rr,
+                        -Math.cos(a) * 0.05, 0.04, -Math.sin(a) * 0.05);
+            }
+        }
+    }
+
+    /** Ticks of the rush through the trains when the domain seals. */
+    public static final int RUSH = 46;
+
+    /** How long ago this domain sealed (straight out of its formation), or -1. */
+    public static float rushAge(ClientState.Domain d, long now, float partial) {
+        if (d.phase != dev.rick.jjk.core.net.DomainPayload.ACTIVE || d.prevPhase != dev.rick.jjk.core.net.DomainPayload.FORMING) return -1;
+        return now - d.phaseStartTick + partial;
+    }
+
+    /**
+     * The rush: two walls of train cars, stacked three high on either side of the camera, streaming past toward it; for
+     * the last third they tumble apart and fly off (the room settles behind them).
+     */
+    private static void rushTunnel(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, ClientState.Domain d, Blocks b, float age) {
+        Vector3f fw = new Vector3f(0, 0, -1).rotate(camRot);
+        Vec3 f = new Vec3(fw.x, 0, fw.z);
+        f = f.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : f.normalize();
+        Vec3 side = new Vec3(-f.z, 0, f.x);
+        Vec3 eye = cam.subtract(d.center);
+        float tumble = Mth.clamp((age - 28) / 18f, 0, 1);
+        float speed = 2.4f, spacing = 5.2f, length = 52f;
+        int k = 0;
+        for (int wall = -1; wall <= 1; wall += 2) {
+            for (int col = 0; col < 2; col++) {
+                for (int row = 0; row < 3; row++) {
+                    for (int n = 0; n < 10; n++, k++) {
+                        float z = length - 8 - ((n * spacing + col * 2.6f + row * 1.3f + age * speed) % length);
+                        double x = wall * (2.9 + col * 1.7 + tumble * tumble * (6 + (k % 5) * 2.5));
+                        double y = -1.5 + row * 1.45 + tumble * tumble * ((k % 7) - 2) * 1.6;
+                        Vec3 at = eye.add(f.scale(z)).add(side.scale(x)).add(0, y, 0);
+                        float roll = tumble * (k % 2 == 0 ? 1 : -1) * (2.5f + (k % 3));
+                        car(c, ps, b, at, f.scale(-1), roll, 1.1f);
+                    }
+                }
+            }
+        }
+    }
+
+    /** Cars standing about the white floor, facing in: the settled room. */
+    private static void standingCars(SubmitNodeCollector c, PoseStack ps, Quaternionf camRot, ClientState.Domain d, Blocks b, float r, float calm) {
+        for (int ring = 0; ring < 2; ring++) {
+            int n = ring == 0 ? 10 : 14;
+            float rr = r * (ring == 0 ? 0.5f : 0.74f);
+            for (int i = 0; i < n; i++) {
+                float a = Mth.TWO_PI * (i + ring * 0.5f) / n;
+                Vec3 at = new Vec3(Mth.cos(a) * rr, 0.02, Mth.sin(a) * rr);
+                if (!DomainSpace.onSide(d, d.center.add(at))) continue;
+                car(c, ps, b, at, at.scale(-1), 0, 0.9f);
+                ps.pushPose();
+                ps.translate(at.x, at.y + 0.6, at.z);
+                Glow.halo(c, ps, camRot, 1.9f, 1f, 1f, 1f, 0.3f * calm);
+                ps.popPose();
             }
         }
     }
@@ -92,12 +188,22 @@ final class GambleDomainRenderer {
 
     /** A car with its base centered at {@code at}, nose pointing along {@code dir}. */
     private static void car(SubmitNodeCollector c, PoseStack ps, Blocks b, Vec3 at, Vec3 dir) {
+        car(c, ps, b, at, dir, 0, CAR_SCALE);
+    }
+
+    /** ...rolled about its length by {@code roll} radians, at {@code scale}. */
+    private static void car(SubmitNodeCollector c, PoseStack ps, Blocks b, Vec3 at, Vec3 dir, float roll, float scale) {
         double horiz = Math.sqrt(dir.x * dir.x + dir.z * dir.z);
         ps.pushPose();
         ps.translate(at.x, at.y, at.z);
         ps.rotate(Axis.YP.rotation((float) Math.atan2(-dir.z, dir.x)));
         ps.rotate(Axis.ZP.rotation((float) Math.atan2(dir.y, horiz)));
-        ps.scale(CAR_SCALE, CAR_SCALE, CAR_SCALE);
+        if (roll != 0) {
+            ps.translate(0, 0.45 * scale, 0);
+            ps.rotate(Axis.XP.rotation(roll));
+            ps.translate(0, -0.45 * scale, 0);
+        }
+        ps.scale(scale, scale, scale);
         // The model runs from x=-1 to x=2; center it along its length and width, base on the path.
         ps.translate(-0.5, 0, -0.5);
         c.submitMovingBlock(ps, b.state(ModBlocks.PropBlock.TRAIN_CAR), 0);

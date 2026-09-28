@@ -234,7 +234,7 @@ public class HakariGameTests {
         h.startSequence()
                 .thenIdle(20)
                 .thenExecute(() -> {
-                    var doors = h.getLevel().getEntitiesOfClass(HakariDoorEntity.class, new AABB(g.blockPosition()).inflate(12));
+                    var doors = h.getLevel().getEntitiesOfClass(HakariDoorEntity.class, new AABB(g.blockPosition()).inflate(12), dd -> dd.owner() == g);
                     h.assertTrue(doors.size() == 2, "the doors caught nobody and stayed (" + doors.size() + ")");
                     door[0] = doors.getFirst();
                     // Drop Hakari onto them.
@@ -329,6 +329,96 @@ public class HakariGameTests {
             h.assertTrue(!c.isCasting(), "finished");
             h.assertTrue(hp - target.getHealth() >= cfg.crushDoorDamage + cfg.crushStompDamage * 0.9f, "doors and axe kick landed (" + (hp - target.getHealth()) + ")");
         });
+    }
+
+    @GameTest(maxTicks = 80)
+    public void feverCrushOnARagdolledTargetHitsTwiceAsHard(GameTestHelper h) {
+        floor(h, 10);
+        TrainingDummy target = dummy(h, 3.8, 2.5);
+        TrainingDummy g = hakari(h, 1.5, 2.5, target);
+        AbilityCaster c = Casters.get(g);
+        dev.rick.jjk.core.combat.Statuses.apply(target, CombatStatus.KNOCKDOWN, 40);
+        float hp = target.getHealth();
+        press(g, AbilitySlot.SKILL_4);
+        press(g, AbilitySlot.SKILL_2);
+        JJKConfig.Hakari cfg = JJKConfig.get().hakari;
+        h.succeedWhen(() -> {
+            h.assertTrue(!c.isCasting(), "finished");
+            h.assertTrue(hp - target.getHealth() >= cfg.crushDoorDamage + cfg.crushRagdollStompDamage * 0.9f,
+                    "the doors, then the heavy stomp on a ragdolled target (" + (hp - target.getHealth()) + ")");
+        });
+    }
+
+    @GameTest(maxTicks = 30)
+    public void shutterDoorsSetYouToYourThirdHit(GameTestHelper h) {
+        floor(h, 10);
+        TrainingDummy target = dummy(h, 5.5, 2.5);
+        TrainingDummy g = hakari(h, 1.5, 2.5, target);
+        press(g, AbilitySlot.SKILL_2);
+        h.assertValueEqual(Casters.get(g).melee.chainIndex(), 2, "the next light attack is the 3rd of the chain");
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 220)
+    public void bouncingOffTheDoorsIntoAHighAirStomp(GameTestHelper h) {
+        floor(h, 12);
+        TrainingDummy g = hakari(h, 1.5, 2.5, null);
+        face(g, h.absoluteVec(new Vec3(6.5, 1, 2.5)));
+        press(g, AbilitySlot.SKILL_2);
+        TrainingDummy[] victim = new TrainingDummy[1];
+        float[] hp = new float[1];
+        boolean[] stomped = {false};
+        h.startSequence()
+                .thenIdle(20)
+                .thenExecute(() -> {
+                    var doors = h.getLevel().getEntitiesOfClass(HakariDoorEntity.class, new AABB(g.blockPosition()).inflate(12), dd -> dd.owner() == g);
+                    h.assertTrue(doors.size() == 2, "the doors are lingering");
+                    Vec3 mid = doors.getFirst().position().add(doors.get(1).position()).scale(0.5);
+                    // Someone standing just past the doors, where Hakari will come down.
+                    victim[0] = dummy(h, 0, 0);
+                    victim[0].teleportTo(mid.x, mid.y, mid.z + 2);
+                    hp[0] = victim[0].getHealth();
+                    g.teleportTo(mid.x, mid.y + 3.2, mid.z);
+                    g.setDeltaMovement(0, -0.2, 0);
+                })
+                .thenWaitUntil(() -> h.assertTrue(g.getDeltaMovement().y > 1, "bounced high off the doors"))
+                .thenIdle(6)
+                .thenExecute(() -> {
+                    h.assertTrue(!g.onGround(), "still in the air");
+                    press(g, AbilitySlot.SKILL_3);
+                })
+                .thenWaitUntil(() -> {
+                    if (victim[0] != null && hp[0] - victim[0].getHealth() > 0) stomped[0] = true;
+                    h.assertTrue(stomped[0], "the stomp landed");
+                })
+                .thenExecute(() -> h.assertTrue(hp[0] - victim[0].getHealth() >= JJKConfig.get().hakari.roughStompDamage * 1.5f,
+                        "from that height it was the unblockable, double-damage stomp (" + (hp[0] - victim[0].getHealth()) + ")"))
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 200)
+    public void aRagdolledEnemyBouncesOnLingeringDoors(GameTestHelper h) {
+        floor(h, 12);
+        TrainingDummy g = hakari(h, 1.5, 2.5, null);
+        face(g, h.absoluteVec(new Vec3(6.5, 1, 2.5)));
+        press(g, AbilitySlot.SKILL_2);
+        TrainingDummy[] victim = new TrainingDummy[1];
+        float[] hp = new float[1];
+        h.startSequence()
+                .thenIdle(20)
+                .thenExecute(() -> {
+                    var doors = h.getLevel().getEntitiesOfClass(HakariDoorEntity.class, new AABB(g.blockPosition()).inflate(12), dd -> dd.owner() == g);
+                    h.assertTrue(doors.size() == 2, "the doors are lingering");
+                    Vec3 mid = doors.getFirst().position().add(doors.get(1).position()).scale(0.5);
+                    victim[0] = dummy(h, 0, 0);
+                    victim[0].teleportTo(mid.x, mid.y + 3.4, mid.z);
+                    victim[0].setDeltaMovement(0, -0.3, 0);
+                    dev.rick.jjk.core.combat.Statuses.apply(victim[0], CombatStatus.LAUNCHED, 100);
+                    hp[0] = victim[0].getHealth();
+                })
+                .thenWaitUntil(() -> h.assertTrue(victim[0] != null && hp[0] - victim[0].getHealth() >= JJKConfig.get().hakari.doorBounceDamage,
+                        "a ragdolled enemy falling on them bounced and took damage"))
+                .thenSucceed();
     }
 
     @GameTest(maxTicks = 40)
@@ -749,7 +839,7 @@ public class HakariGameTests {
                     var level = h.getLevel();
                     h.assertTrue(level.getBlockState(gc.offset(1, -1, 0)).is(ModBlocks.DOMAIN_FLOOR), "Gojo's side of the floor is his");
                     var far = level.getBlockState(gc.offset(4, -1, 0));
-                    h.assertTrue(far.is(ModBlocks.IDG_FLOOR) || far.is(ModBlocks.IDG_PANEL), "Hakari's side of the floor is his, even over Gojo's blocks");
+                    h.assertTrue(far.is(ModBlocks.IDG_FLOOR), "Hakari's side of the floor is his, even over Gojo's blocks");
                     h.assertTrue(level.getBlockState(gc.offset(6, 0, 0)).isAir(), "Gojo's wall inside Hakari's room is opened up: one shared space");
                     h.assertTrue(level.getBlockState(st[1].center.above(6)).is(ModBlocks.IDG_BARRIER), "Hakari's far ceiling is his own");
                 })
@@ -769,7 +859,7 @@ public class HakariGameTests {
                     h.assertTrue(level.getBlockState(st[1].center.above(6)).is(ModBlocks.DOMAIN_BARRIER), "the far ceiling is Gojo's now");
                     for (BlockPos p : BlockPos.betweenClosed(st[1].center.offset(-7, -7, -7), st[1].center.offset(7, 7, 7))) {
                         var b = level.getBlockState(p);
-                        h.assertFalse(b.is(ModBlocks.IDG_BARRIER) || b.is(ModBlocks.IDG_FLOOR) || b.is(ModBlocks.IDG_PANEL), "nothing of Hakari's domain is left at " + p);
+                        h.assertFalse(b.is(ModBlocks.IDG_BARRIER) || b.is(ModBlocks.IDG_FLOOR), "nothing of Hakari's domain is left at " + p);
                     }
                     DomainManager.collapseOwnedBy(gojo, DomainInstance.EndReason.CANCELLED);
                 })

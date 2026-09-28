@@ -61,6 +61,18 @@ public final class ClientState {
         public int splitWith = -1;
         /** Territory conquered in a clash: spheres as x,y,z,radius. */
         public float[] annex = new float[0];
+        /** The phase before the current one (-1 none): a domain that just sealed went FORMING → ACTIVE. */
+        public int prevPhase = -1;
+    }
+
+    /** Inside a sealed Idle Death Gamble (its endless white room). */
+    public static boolean inWhiteRoom(Vec3 pos) {
+        for (Domain d : DOMAINS.values()) {
+            if (d.phase != dev.rick.jjk.core.net.DomainPayload.ACTIVE || d.center == null) continue;
+            if (!dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(d.definition)) continue;
+            if (pos.distanceTo(d.center) < d.radius + d.thickness + 0.5) return true;
+        }
+        return false;
     }
 
     /** The live domain owned by this entity, if any. */
@@ -170,7 +182,10 @@ public final class ClientState {
             nd.phaseStartTick = now;
             return nd;
         });
-        if (d.phase != p.phase()) d.phaseStartTick = now;
+        if (d.phase != p.phase()) {
+            d.prevPhase = d.phase;
+            d.phaseStartTick = now;
+        }
         d.id = p.id();
         d.ownerId = p.ownerId();
         d.definition = p.definition();

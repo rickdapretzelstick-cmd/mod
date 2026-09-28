@@ -16,10 +16,9 @@ import net.minecraft.world.level.material.PushReaction;
 public final class ModBlocks {
     public static final Block DOMAIN_BARRIER = register("domain_barrier", 3);
     public static final Block DOMAIN_FLOOR = register("domain_floor", 7);
-    /** Idle Death Gamble: a bright white room, a pale tiled floor and framed hatches in the floor. */
+    /** Idle Death Gamble: an endless white room (floor and walls the same flat, self-lit white). */
     public static final Block IDG_BARRIER = register("idg_barrier", 15);
     public static final Block IDG_FLOOR = register("idg_floor", 12);
-    public static final Block IDG_PANEL = register("idg_panel", 12);
 
     // Model-only blocks: never placed in the world, only drawn by renderers (Hakari's doors and balls, and the trains and
     // seven-segment counters inside his domain),
@@ -44,7 +43,7 @@ public final class ModBlocks {
     }
 
     public static boolean isDomainBlock(net.minecraft.world.level.block.state.BlockState s) {
-        return s.is(DOMAIN_BARRIER) || s.is(DOMAIN_FLOOR) || s.is(IDG_BARRIER) || s.is(IDG_FLOOR) || s.is(IDG_PANEL);
+        return s.is(DOMAIN_BARRIER) || s.is(DOMAIN_FLOOR) || s.is(IDG_BARRIER) || s.is(IDG_FLOOR);
     }
 
     /** A prop drawn inside Idle Death Gamble: {@link #TRAIN_CAR} or {@link #LED_SEGMENT}. */

@@ -106,8 +106,13 @@ public class HakariClientGameTest implements FabricClientGameTest {
             ctx.waitTicks(20);
             ctx.takeScreenshot("h11_gamble_ready");
             in.pressKey(ult);
-            ctx.waitTicks(14);
-            ctx.takeScreenshot("h12_idg_opening");
+            // The opening, after Jujutsu Shenanigans: slash, helix band, the white flood, white-out, the rush of trains.
+            int[][] opening = {{2, 0}, {7, 1}, {10, 2}, {22, 3}, {18, 4}, {9, 5}, {6, 6}, {12, 7}, {14, 8}, {12, 9}, {30, 10}};
+            String[] names = {"slash", "band_open", "band", "band_close", "flood", "flood_walls", "white", "rush", "rush_trains", "tumble", "settled"};
+            for (int[] step : opening) {
+                ctx.waitTicks(step[0]);
+                ctx.takeScreenshot("h12_idg_" + step[1] + "_" + names[step[1]]);
+            }
             for (int i = 0; i < 200 && !ctx.computeOnClient(mc -> ClientState.gambleOf(mc.player.getId()) != null); i++) ctx.waitTick();
             if (!ctx.computeOnClient(mc -> ClientState.gambleOf(mc.player.getId()) != null)) throw new AssertionError("the gamble should be running");
             ctx.waitTicks(10);

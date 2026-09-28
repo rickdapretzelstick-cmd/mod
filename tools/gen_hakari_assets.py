@@ -1,7 +1,7 @@
 """Generates Hakari's block textures, block models and blockstates. Run: python3 tools/gen_hakari_assets.py
 
 Everything is 16x16 pixel art:
-  - idg_barrier / idg_floor / idg_panel: Idle Death Gamble's white room, pale floor and framed floor hatches (domain blocks)
+  - idg_barrier / idg_floor: Idle Death Gamble's endless white room (domain blocks)
   - shutter_panel: the steel shutter of Shutter Doors
   - gamble_door: Door Guard's red lacquer door
   - pachinko_ball: a Reserve Ball
@@ -32,40 +32,10 @@ def save(img, name):
     img.save(os.path.join(TEX, name + '.png'))
 
 
-# --- Idle Death Gamble wall: the bright white room of the domain, soft panel seams. ---
-img = canvas(0xF4F4F6)
-for i in range(16):
-    for j in (0, 15):
-        img.putpixel((i, j), rgb(0xE6E6EA))
-        img.putpixel((j, i), rgb(0xE6E6EA))
-img.putpixel((0, 0), rgb(0xDCDCE0))
-save(img, 'idg_barrier')
-
-# --- Idle Death Gamble floor: pale grey tiles with faint seams. ---
-img = canvas(0xDDE0E6)
-for y in range(16):
-    for x in range(16):
-        if (x * 7 + y * 13) % 29 == 0:
-            img.putpixel((x, y), rgb(0xD4D7DE))
-for i in range(16):
-    img.putpixel((i, 15), rgb(0xC8CBD2))
-    img.putpixel((15, i), rgb(0xC8CBD2))
-save(img, 'idg_floor')
-
-# --- Idle Death Gamble floor panel: a beige hatch in a grey frame (the framed squares in the middle of the room). ---
-img = canvas(0x9C9EA2)
-for y in range(16):
-    for x in range(16):
-        if 2 <= x <= 13 and 2 <= y <= 13:
-            c = 0xDCCFA6
-            if x in (2, 13) or y in (2, 13):
-                c = 0xB9AC84
-            elif 5 <= x <= 10 and 5 <= y <= 10:
-                c = 0xB9AC84 if x in (5, 10) or y in (5, 10) else 0xEAE0C0
-            img.putpixel((x, y), rgb(c))
-        elif x in (0, 15) or y in (0, 15):
-            img.putpixel((x, y), rgb(0x86888C))
-save(img, 'idg_panel')
+# --- Idle Death Gamble wall and floor: the same flat white, no seams at all. With the blocks self-lit, unshaded and
+# without ambient occlusion, floor, walls and ceiling melt into one another (no depth to judge by). ---
+save(canvas(0xFAFAFB), 'idg_barrier')
+save(canvas(0xFAFAFB), 'idg_floor')
 
 # --- Bullet train: white body with a black window band, a dark skirt, and plain white / dark faces. ---
 img = canvas(0xF6F6F8)
@@ -153,10 +123,12 @@ def write(path, data):
 
 # The room is lit by itself (full-bright faces), so it reads bright white like the reference instead of taking on the
 # warm tint of block light.
-for name in ('idg_barrier', 'idg_floor', 'idg_panel'):
+for name in ('idg_barrier', 'idg_floor'):
     faces = {d: {"texture": "#all", "cullface": d} for d in ("north", "south", "east", "west", "up", "down")}
-    write(os.path.join(MODELS, name + '.json'), {"textures": {"all": "jjk:block/" + name, "particle": "jjk:block/" + name},
-                                                 "elements": [{"from": [0, 0, 0], "to": [16, 16, 16], "light_emission": 15, "faces": faces}]})
+    # No directional shading either: every face the same flat white, like the Jujutsu Shenanigans room.
+    write(os.path.join(MODELS, name + '.json'), {"ambientocclusion": False, "textures": {"all": "jjk:block/" + name, "particle": "jjk:block/" + name},
+                                                 "elements": [{"from": [0, 0, 0], "to": [16, 16, 16], "light_emission": 15, "shade_direction_override": "up",
+                                                               "faces": faces}]})
     write(os.path.join(STATES, name + '.json'), {"variants": {"": {"model": "jjk:block/" + name}}})
 
 
@@ -195,3 +167,41 @@ write(os.path.join(MODELS, 'led_segment.json'), {
     "elements": [box([0, 0, 0], [16, 16, 16], lambda d: "led")]})
 write(os.path.join(STATES, 'idg_prop.json'), {"variants": {"part=0": {"model": "jjk:block/train_car"}, "part=1": {"model": "jjk:block/led_segment"}}})
 print('hakari assets written')
+
+# --- The Idle Death Gamble cut-in backdrop: dark teal double helices and cloud shadows (alpha only; the band is teal). ---
+import math
+GUI = os.path.join(ROOT, 'textures', 'gui')
+img = Image.new('RGBA', (256, 128), (0, 0, 0, 0))
+px = img.load()
+def dot(x, y, a):
+    x %= 256
+    if 0 <= y < 128:
+        r, g, b, old = px[x, y]
+        px[x, y] = (8, 40, 44, max(old, a))
+# Cloudy shadows.
+import random
+rnd = random.Random(7)
+for _ in range(26):
+    cx, cy, rr = rnd.randrange(256), rnd.randrange(128), rnd.randrange(10, 26)
+    for y in range(cy - rr, cy + rr):
+        for x in range(cx - rr, cx + rr):
+            d = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
+            if d < rr:
+                dot(x, y, int(60 * (1 - d / rr)))
+# Helices running diagonally: two strands and their rungs.
+for k in range(3):
+    ox, oy = k * 96 - 20, k * 36 - 30
+    for t in range(0, 900):
+        s = t / 900
+        x = ox + s * 180
+        y = oy + s * 150
+        for strand in (0, math.pi):
+            off = math.sin(s * 14 + strand) * 11
+            for w in range(-2, 3):
+                dot(int(x + off + w), int(y - off * 0.3), 150)
+        if t % 45 == 0:
+            a = math.sin(s * 14) * 11
+            for q in range(-int(abs(a)), int(abs(a)) + 1):
+                dot(int(x + q), int(y - q * 0.3), 120)
+img.save(os.path.join(GUI, 'cinematic_helix.png'))
+print('helix backdrop written')

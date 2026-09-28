@@ -174,6 +174,55 @@ public final class CinematicPanels {
         pose.popMatrix();
     }
 
+    private static final Identifier HELIX = JJK.id("textures/gui/cinematic_helix.png");
+    /** The Jujutsu Shenanigans cut-in is steeper than the house style. */
+    public static final float HELIX_SLOPE = -0.11f;
+
+    /**
+     * The Idle Death Gamble cut-in, after Jujutsu Shenanigans: a teal band patterned with dark double helices, slanted
+     * steeply across the screen, opening out of a thin slash ({@code open} 0 → 1) with the caster's close-up in it and
+     * white edges. {@code center} and {@code half} are the band's middle and half height at the screen's centre.
+     */
+    public static void helixBand(GuiGraphicsExtractor g, int w, float center, float half, float open, int entityId, float faceX, float time) {
+        float hh = half * open;
+        Matrix3x2fStack pose = g.pose();
+        if (hh >= 1) {
+            pose.pushMatrix();
+            skew(pose, w, HELIX_SLOPE);
+            int top = Math.round(center - hh), bot = Math.round(center + hh);
+            g.fillGradient(-60, top, w + 60, bot, 0xFF36AEB0, 0xFF22858A);
+            int ih = Math.max(1, bot - top), iw = ih * 2;
+            float drift = (time * 0.6f) % iw;
+            for (float x = -iw - drift; x < w + iw; x += iw) {
+                g.blit(RenderPipelines.GUI_TEXTURED, HELIX, Math.round(x), top, 0, 0, iw, ih, 256, 128, 256, 128, 0xFFFFFFFF);
+            }
+            pose.popMatrix();
+            // The caster, clipped to where the band is inside at both sides of the close-up.
+            int halfW = Math.round(half * 1.5f);
+            int px0 = Math.round(faceX) - halfW, px1 = Math.round(faceX) + halfW;
+            float cTop = Math.max(helixEdge(center - hh, px0, w), helixEdge(center - hh, px1, w));
+            float cBot = Math.min(helixEdge(center + hh, px0, w), helixEdge(center + hh, px1, w));
+            if (cBot - cTop > 8) closeUp(g, entityId, px0, (int) Math.ceil(cTop), px1, (int) Math.floor(cBot));
+        }
+        // The two white edges (at the start, the slash itself).
+        pose.pushMatrix();
+        skew(pose, w, HELIX_SLOPE);
+        for (float y : new float[] {center - hh - 1, center + hh + 1}) {
+            g.fill(-60, Math.round(y) - 2, w + 60, Math.round(y) + 2, 0xFF101418);
+            g.fill(-60, Math.round(y) - 1, w + 60, Math.round(y) + 1, 0xFFFFFFFF);
+        }
+        pose.popMatrix();
+    }
+
+    /** Where a helix band edge (at height {@code y} in the middle of the screen) is at column {@code x}. */
+    public static float helixEdge(float y, float x, int w) {
+        return y + HELIX_SLOPE * (x - w / 2f);
+    }
+
+    private static void skew(Matrix3x2fStack pose, int w, float slope) {
+        pose.mul(new Matrix3x2f(1, slope, 0, 1, 0, -slope * w / 2f));
+    }
+
     private static void skew(Matrix3x2fStack pose, int w) {
         // y' = y + SLOPE * (x - w/2): every horizontal edge becomes a slanted one pivoting on the screen's centre.
         pose.mul(new Matrix3x2f(1, SLOPE, 0, 1, 0, -SLOPE * w / 2f));

@@ -128,8 +128,8 @@ public final class WorldEffectsRenderer {
                     float t = (totalAge * 0.07f + i / 4f) % 1f;
                     push(ps, cam, base.add(0, t * 2.8, 0));
                     ps.rotate(Axis.YP.rotationDegrees(-totalAge * 9 + i * 45));
-                    float[] col = i % 2 == 0 ? new float[]{1f, 0.25f, 0.63f} : new float[]{1f, 0.8f, 0.25f};
-                    Glow.ring(c, ps, 1.7f - t * 0.9f, 0.13f, col[0], col[1], col[2], 0.65f * (1 - t));
+                    // Soft white, like the smoke gathering around the hand sign in Jujutsu Shenanigans.
+                    Glow.ring(c, ps, 1.7f - t * 0.9f, 0.13f, 1f, 1f, 1f, 0.45f * (1 - t));
                     ps.popPose();
                 }
             }
@@ -397,7 +397,11 @@ public final class WorldEffectsRenderer {
         boolean inside = shared ? DomainSpace.holds(d, cam) : cam.distanceTo(d.center) < r;
         push(ps, cam, d.center);
         Vector3f toCam = new Vector3f((float) (cam.x - d.center.x), (float) (cam.y - d.center.y), (float) (cam.z - d.center.z));
-        if (progress < 1f) formationEdge(c, ps, d, progress, now + partial);
+        if (progress < 1f) {
+            // Idle Death Gamble floods the ground white instead (and the sky with it as it seals).
+            if (dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(d.definition)) GambleDomainRenderer.formation(d, progress, now);
+            else formationEdge(c, ps, d, progress, now + partial);
+        }
         // Until the ceiling has closed the sky is still visible: the void only replaces it once it is sealed over.
         if (progress < DomainFormation.CEILING_END) {
             ps.popPose();

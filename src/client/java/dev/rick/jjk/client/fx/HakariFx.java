@@ -168,19 +168,14 @@ final class HakariFx {
             case "idg_charge" -> {
                 sound("domain_charge", pos, 1.4f, 1.1f);
                 sound("gamble_spin", pos, 1f, 1f);
-                if (drawn) {
-                    Flashes.lens(pos, 0.3f, 3f, PINK, 0.6f, 24, now);
-                    for (int i = 0; i < 3; i++) Flashes.ground(groundBelow(level, pos), 0.5f, 3f + i, i == 1 ? COIN : PINK, 0.6f, 20, now + i * 6L);
+                // The hand sign: white smoke gathering, no neon (the cut-in carries the moment).
+                if (drawn) for (int i = 0; i < q(10); i++) {
+                    double a = RNG.nextDouble() * Math.PI * 2;
+                    level.addParticle(ParticleTypes.CLOUD, pos.x + Math.cos(a) * 1.2, pos.y - 0.8, pos.z + Math.sin(a) * 1.2, -Math.cos(a) * 0.04, 0.02, -Math.sin(a) * 0.04);
                 }
             }
-            case "idg_ambient" -> {
-                sound("idg_ambient", pos, 0.8f, 1f);
-                if (drawn) for (int i = 0; i < q(16); i++) {
-                    // Soft pink motes drifting through the bright room.
-                    Vec3 at = pos.add(gauss(s * 0.5), RNG.nextDouble() * s * 0.6, gauss(s * 0.5));
-                    add(level, at, new Vec3(gauss(0.01), 0.01, gauss(0.01)), Sprite.CORE, HOT_PINK, 0.35f, 0.08f, 0.05f, 60);
-                }
-            }
+            // The white room is silent and still: nothing floating in it to judge depth by.
+            case "idg_ambient" -> sound("idg_ambient", pos, 0.8f, 1f);
             case "idg_rules" -> sound("gamble_signal", pos, 0.4f, 1.4f);
             case "gamble_visual" -> {
                 // A visual move: the reels jolt and a cascade of balls and coins bursts off Hakari.

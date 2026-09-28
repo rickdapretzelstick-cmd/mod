@@ -112,6 +112,10 @@ public final class DomainCinematic {
     // --- SOLO ---
 
     private static void solo(GuiGraphicsExtractor g, Font font, Show s, float t, int w, int h) {
+        if (dev.rick.jjk.hakari.IdleDeathGamble.INSTANCE.displayName().equals(s.domains.get(0))) {
+            soloGamble(g, font, s, t, w, h);
+            return;
+        }
         float out = Mth.clamp((s.duration - t) / 6f, 0, 1);
         int color = s.colors[0] | 0xFF000000;
         // Shot 1-2: a cut-in of the caster as their energy builds, then it clears so the domain can be watched forming.
@@ -133,6 +137,42 @@ public final class DomainCinematic {
         // Shot 5: the domain has sealed.
         float tt = t - s.titleAt;
         if (tt >= 0) title(g, font, "DOMAIN EXPANSION", s.domains.get(0).toUpperCase(java.util.Locale.ROOT), w / 2, h / 2 - 8, tt, out, color);
+    }
+
+    /**
+     * Idle Death Gamble's opening, after Jujutsu Shenanigans: a white slash cuts across the screen and opens into a teal
+     * band patterned with double helices, the caster's close-up in it and "DOMAIN" / "EXPANSION" on its edges; it closes
+     * again so the flood of white can be watched spreading from their feet, and the screen goes white as the domain seals
+     * (the rush of trains inside takes over from there, see {@code IdgOpening}). No title card.
+     */
+    private static void soloGamble(GuiGraphicsExtractor g, Font font, Show s, float t, int w, int h) {
+        float center = h * 0.5f, half = h * 0.17f;
+        float faceX = w * 0.44f;
+        // The slash (0-4), opening (4-9), holding, then closing (24-29).
+        float open = ease(Mth.clamp((t - 4) / 5f, 0, 1)) * (1 - easeIn(Mth.clamp((t - 24) / 5f, 0, 1)));
+        float slash = Mth.clamp(t / 4f, 0, 1);
+        if (t < 30) {
+            if (t < 4) {
+                // Two thin white lines racing in from opposite sides.
+                float reach = w * (0.2f + 0.8f * ease(slash));
+                Matrix3x2fStack pose = g.pose();
+                pose.pushMatrix();
+                pose.mul(new org.joml.Matrix3x2f(1, CinematicPanels.HELIX_SLOPE, 0, 1, 0, -CinematicPanels.HELIX_SLOPE * w / 2f));
+                g.fill(-60, Math.round(center - 3), Math.round(-60 + reach + 60), Math.round(center - 1), 0xFFFFFFFF);
+                g.fill(Math.round(w + 60 - reach - 60), Math.round(center + 1), w + 60, Math.round(center + 3), 0xFFFFFFFF);
+                pose.popMatrix();
+            } else {
+                CinematicPanels.helixBand(g, w, center, half, open, s.entities[0], faceX, s.start + t);
+            }
+            float txt = Mth.clamp((t - 7) / 3f, 0, 1) * (1 - Mth.clamp((t - 21) / 4f, 0, 1));
+            float topY = CinematicPanels.helixEdge(center - half * open, w * 0.33f, w);
+            float botY = CinematicPanels.helixEdge(center + half * open, w * 0.7f, w);
+            CinematicPanels.label(g, font, "DOMAIN", w * 0.24f, topY - 20, 1.8f, 0xFFFFFF, txt, false);
+            CinematicPanels.label(g, font, "EXPANSION", w * 0.58f, botY - 22, 1.8f, 0xFFFFFF, txt, false);
+        }
+        // As it seals, everything floods white.
+        float white = Mth.clamp((t - (s.titleAt - 12)) / 10f, 0, 1) * (1 - Mth.clamp((t - s.titleAt - 2) / 3f, 0, 1));
+        if (white > 0) g.fill(0, 0, w, h, CinematicPanels.withAlpha(0xFFFFFFFF, white));
     }
 
     // --- VERSUS ---
