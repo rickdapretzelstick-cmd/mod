@@ -117,7 +117,9 @@ public final class ClashClient {
             tickTime = mc.level.getGameTime();
             tickNanos = System.nanoTime();
         }
-        return tickTime + Mth.clamp((System.nanoTime() - tickNanos) / 5.0e7, 0, 1.2);
+        // Sub-tick progress at the current tick rate (/tick rate changes it; 50 ms at the normal 20 TPS).
+        double perTick = Math.max(1, mc.level.tickRateManager().nanosecondsPerTick());
+        return tickTime + Mth.clamp((System.nanoTime() - tickNanos) / perTick, 0, 1.2);
     }
 
     public static void tick(Minecraft mc) {
