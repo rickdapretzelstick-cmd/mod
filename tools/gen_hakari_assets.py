@@ -5,7 +5,7 @@ Everything is 16x16 pixel art:
   - shutter_panel: the steel shutter of Shutter Doors
   - gamble_door: Door Guard's red lacquer door
   - pachinko_ball: a Reserve Ball
-  - idg_prop (part 0-1): the bullet-train cars and red seven-segment LED pieces drawn inside the domain
+  - idg_prop (part 0-2): the bullet-train cars, red seven-segment LED pieces and quartz kiosks drawn inside the domain
 """
 import json
 import os
@@ -165,7 +165,27 @@ write(os.path.join(MODELS, 'train_car.json'), {
 write(os.path.join(MODELS, 'led_segment.json'), {
     "textures": {"led": "jjk:block/led_segment", "particle": "jjk:block/led_segment"},
     "elements": [box([0, 0, 0], [16, 16, 16], lambda d: "led")]})
-write(os.path.join(STATES, 'idg_prop.json'), {"variants": {"part=0": {"model": "jjk:block/train_car"}, "part=1": {"model": "jjk:block/led_segment"}}})
+# A kiosk of the settled room: a quartz block with an iron trapdoor lying shut on top. Self-lit (the room's warm block
+# light would dye the quartz beige) but normally shaded, so the kiosks stand out of the flat white around them.
+def face(tex, uv=None):
+    f = {"texture": tex}
+    if uv:
+        f["uv"] = uv
+    return f
+write(os.path.join(MODELS, 'kiosk.json'), {
+    "textures": {"side": "minecraft:block/quartz_block_side", "top": "minecraft:block/quartz_block_top",
+                 "lid": "minecraft:block/iron_trapdoor", "particle": "minecraft:block/quartz_block_side"},
+    "elements": [
+        {"from": [0, 0, 0], "to": [16, 16, 16], "light_emission": 15,
+         "faces": {"north": face("#side"), "south": face("#side"), "east": face("#side"), "west": face("#side"),
+                   "up": face("#top"), "down": face("#top")}},
+        {"from": [0, 16, 0], "to": [16, 19, 16], "light_emission": 15,
+         "faces": {"up": face("#lid"), "down": face("#lid"),
+                   "north": face("#lid", [0, 0, 16, 3]), "south": face("#lid", [0, 0, 16, 3]),
+                   "east": face("#lid", [0, 0, 16, 3]), "west": face("#lid", [0, 0, 16, 3])}},
+    ]})
+write(os.path.join(STATES, 'idg_prop.json'), {"variants": {"part=0": {"model": "jjk:block/train_car"}, "part=1": {"model": "jjk:block/led_segment"},
+                                                          "part=2": {"model": "jjk:block/kiosk"}}})
 print('hakari assets written')
 
 # --- The Idle Death Gamble cut-in backdrop: dark teal double helices and cloud shadows (alpha only; the band is teal). ---

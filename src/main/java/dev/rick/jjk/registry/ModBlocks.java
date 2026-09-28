@@ -46,11 +46,11 @@ public final class ModBlocks {
         return s.is(DOMAIN_BARRIER) || s.is(DOMAIN_FLOOR) || s.is(IDG_BARRIER) || s.is(IDG_FLOOR);
     }
 
-    /** A prop drawn inside Idle Death Gamble: {@link #TRAIN_CAR} or {@link #LED_SEGMENT}. */
+    /** A prop drawn inside Idle Death Gamble: {@link #TRAIN_CAR}, {@link #LED_SEGMENT} or {@link #KIOSK}. */
     public static final class PropBlock extends Block {
-        public static final int TRAIN_CAR = 0, LED_SEGMENT = 1;
+        public static final int TRAIN_CAR = 0, LED_SEGMENT = 1, KIOSK = 2;
         public static final net.minecraft.world.level.block.state.properties.IntegerProperty PART =
-                net.minecraft.world.level.block.state.properties.IntegerProperty.create("part", 0, 1);
+                net.minecraft.world.level.block.state.properties.IntegerProperty.create("part", 0, 2);
 
         public PropBlock(BlockBehaviour.Properties p) {
             super(p);

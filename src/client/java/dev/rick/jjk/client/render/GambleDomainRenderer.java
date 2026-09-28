@@ -54,7 +54,7 @@ public final class GambleDomainRenderer {
         // The room glows: its walls bloom into a white haze, and so does everything standing in it.
         Glow.sphere(c, ps, r * 0.97f, 1f, 1f, 1f, 0.45f * calm, toCam, true);
         Glow.sphere(c, ps, r * 0.9f, 1f, 0.98f, 0.95f, 0.12f * calm, toCam, false);
-        standingCars(c, ps, camRot, d, b, r, calm);
+        kiosks(c, ps, camRot, d, b, r, calm);
         ClientState.Gamble gamble = ClientState.GAMBLES.get(d.id);
         GamblePayload p = gamble != null ? gamble.p : null;
         // The giant counters and the winding train play the Riichi out.
@@ -152,21 +152,27 @@ public final class GambleDomainRenderer {
         }
     }
 
-    /** Cars standing about the white floor, facing in: the settled room. */
-    private static void standingCars(SubmitNodeCollector c, PoseStack ps, Quaternionf camRot, ClientState.Domain d, Blocks b, float r, float calm) {
-        for (int ring = 0; ring < 2; ring++) {
-            int n = ring == 0 ? 10 : 14;
-            float rr = r * (ring == 0 ? 0.5f : 0.74f);
-            for (int i = 0; i < n; i++) {
-                float a = Mth.TWO_PI * (i + ring * 0.5f) / n;
-                Vec3 at = new Vec3(Mth.cos(a) * rr, 0.02, Mth.sin(a) * rr);
-                if (!DomainSpace.onSide(d, d.center.add(at))) continue;
-                car(c, ps, b, at, at.scale(-1), 0, 0.9f);
-                ps.pushPose();
-                ps.translate(at.x, at.y + 0.6, at.z);
-                Glow.halo(c, ps, camRot, 1.9f, 1f, 1f, 1f, 0.3f * calm);
-                ps.popPose();
-            }
+    /** The kiosks of the settled room: a quartz block with an iron trapdoor on top. */
+    private static void kiosks(SubmitNodeCollector c, PoseStack ps, Quaternionf camRot, ClientState.Domain d, Blocks b, float r, float calm) {
+        // One big circle of them around the middle of the room, each facing in.
+        int n = 16;
+        float rr = Math.max(3f, Math.min(r * 0.62f, r - 3f));
+        for (int i = 0; i < n; i++) {
+            float a = Mth.TWO_PI * i / n;
+            // The floor is half a block below the domain's center.
+            Vec3 at = new Vec3(Mth.cos(a) * rr, -0.5, Mth.sin(a) * rr);
+            if (!DomainSpace.onSide(d, d.center.add(at))) continue;
+            ps.pushPose();
+            ps.translate(at.x, at.y, at.z);
+            ps.rotate(Axis.YP.rotation(-a));
+            ps.translate(-0.5, 0, -0.5);
+            // A quartz block with an iron trapdoor lying shut on top (one self-lit model).
+            c.submitMovingBlock(ps, b.state(ModBlocks.PropBlock.KIOSK), 0);
+            ps.popPose();
+            ps.pushPose();
+            ps.translate(at.x, at.y + 0.9, at.z);
+            Glow.halo(c, ps, camRot, 1.4f, 1f, 1f, 1f, 0.15f * calm);
+            ps.popPose();
         }
     }
 
@@ -282,7 +288,10 @@ public final class GambleDomainRenderer {
     /** Render states for the domain's props, lit from the domain's center (the models carry their own light anyway). */
     private record Blocks(ClientLevel level, BlockPos at, net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome) {
         MovingBlockRenderState state(int part) {
-            BlockState bs = ModBlocks.IDG_PROP.defaultBlockState().setValue(ModBlocks.PropBlock.PART, part);
+            return state(ModBlocks.IDG_PROP.defaultBlockState().setValue(ModBlocks.PropBlock.PART, part));
+        }
+
+        MovingBlockRenderState state(BlockState bs) {
             MovingBlockRenderState s = new MovingBlockRenderState();
             s.blockPos = at;
             s.blockState = bs;
