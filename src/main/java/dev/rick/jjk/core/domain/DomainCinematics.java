@@ -44,7 +44,7 @@ public final class DomainCinematics {
         List<String> names = List.of(displayName(opener), displayName(counter));
         List<String> doms = List.of(a == null ? "Domain" : a.displayName(), b == null ? "Domain" : b.displayName());
         int[] cols = {a == null ? 0xFFFFFFFF : a.clashColor(), b == null ? 0xFFFFFFFF : b.clashColor()};
-        DomainCinematicPayload vs = new DomainCinematicPayload(DomainCinematicPayload.VERSUS, ents, names, doms, cols, 0, 36);
+        DomainCinematicPayload vs = new DomainCinematicPayload(DomainCinematicPayload.VERSUS, ents, names, doms, cols, 0, 70);
         for (ServerPlayer p : level.players()) {
             if (p == opener || p == counter || p.distanceTo(counter) < JJKConfig.get().domain.observerRange) ServerPlayNetworking.send(p, vs);
         }

@@ -76,65 +76,45 @@ public final class CinematicPanels {
     }
 
     /**
-     * A slash sweeping across the screen: a long blade in the sorcerer's colour centred at (cx, cy), travelling along
-     * {@code angle} (radians, screen space). The head is a bright white edge, the tail fades out behind it with ghost
-     * copies for motion blur, speed lines stream backwards along it, and the sorcerer's close-up rides in the middle.
+     * Motion blur for a band sliding sideways: its edges smear out along the direction of travel ({@code dir}, -1 left or
+     * 1 right) in proportion to {@code speed} (pixels per tick), with a white cutting edge on the leading side and
+     * speed lines streaking ahead of it.
      */
-    public static void slash(GuiGraphicsExtractor g, float cx, float cy, float angle, float length, float thickness, int color, float alpha,
-                             float time, int entityId, boolean portrait) {
-        if (alpha <= 0.01f) return;
+    public static void motion(GuiGraphicsExtractor g, Band b, int w, int color, float slideX, int dir, float speed, float time) {
+        float smear = Math.min(speed * 0.6f, w * 0.7f);
+        if (smear < 2) return;
+        float k = Math.min(1, smear / (w * 0.25f));
         Matrix3x2fStack pose = g.pose();
-        float half = length / 2, t2 = thickness / 2;
-        int dark = mix(color, 0xFF000000, 0.7f), mid = mix(color, 0xFF000000, 0.35f);
-        // Motion blur: faint copies trailing behind.
-        for (int k = 3; k >= 1; k--) {
-            pose.pushMatrix();
-            pose.translate(cx, cy);
-            pose.rotate(angle);
-            pose.translate(-k * thickness * 0.45f, 0);
-            g.fill(Math.round(-half), Math.round(-t2), Math.round(half), Math.round(t2), withAlpha(mid, alpha * 0.18f / k));
-            pose.popMatrix();
-        }
         pose.pushMatrix();
-        pose.translate(cx, cy);
-        pose.rotate(angle);
-        // Body: brightest toward the head, fading out along the tail.
-        int segs = 12;
+        pose.translate(slideX, 0);
+        skew(pose, w);
+        int top = Math.round(b.top), bot = Math.round(b.bottom);
+        int mid = mix(color, 0xFF000000, 0.45f);
+        float lead = dir > 0 ? w + 40 : -40, trail = dir > 0 ? -40 : w + 40;
+        int segs = 10;
         for (int i = 0; i < segs; i++) {
-            float x0 = -half + length * i / segs, x1 = -half + length * (i + 1) / segs;
-            float f = (i + 1f) / segs;
-            float a = alpha * (0.15f + 0.85f * f * f);
-            g.fillGradient(Math.round(x0), Math.round(-t2), Math.round(x1) + 1, Math.round(t2), withAlpha(dark, a), withAlpha(mid, a));
+            float f0 = (float) i / segs, f1 = (i + 1f) / segs;
+            float a = 0.75f * k * (1 - f0) * (1 - f0);
+            // Ahead of the leading edge, and behind the trailing one.
+            g.fill(Math.round(lead + dir * smear * f0), top, Math.round(lead + dir * smear * f1) + dir, bot, withAlpha(mid, a));
+            g.fill(Math.round(trail - dir * smear * f0), top, Math.round(trail - dir * smear * f1) - dir, bot, withAlpha(mid, a * 0.6f));
         }
-        // Ink wash streaming backwards along the blade.
-        int ih = Math.round(thickness), iw = ih * 2;
-        float drift = (time * 14f) % iw;
-        for (float x = -half - drift; x < half; x += iw) {
-            float f = Mth.clamp((x + half) / length, 0, 1);
-            g.blit(RenderPipelines.GUI_TEXTURED, INK, Math.round(x), Math.round(-t2), 0, 0, iw, ih, 256, 128, 256, 128,
-                    withAlpha(mix(color, 0xFFFFFFFF, 0.55f), alpha * 0.7f * f));
+        // The cutting edge.
+        for (int i = 0; i < 4; i++) {
+            float x = lead + dir * i * 3;
+            g.fill(Math.round(x), top, Math.round(x + dir * 3), bot, withAlpha(0xFFFFFFFF, k * (1 - i / 4f)));
         }
-        // Speed lines.
-        java.util.Random r = new java.util.Random(entityId * 7919L);
-        for (int i = 0; i < 22; i++) {
-            float y = -t2 + 2 + r.nextFloat() * (thickness - 4);
-            float len = length * (0.1f + r.nextFloat() * 0.25f);
-            float x = half - ((r.nextFloat() * length + time * (40 + r.nextFloat() * 40)) % (length + len));
-            g.fill(Math.round(x), Math.round(y), Math.round(x + len), Math.round(y) + 1, withAlpha(0xFFFFFFFF, alpha * (0.2f + 0.4f * r.nextFloat())));
-        }
-        // White edges, and the cutting edge at the head.
-        g.fill(Math.round(-half), Math.round(-t2) - 2, Math.round(half), Math.round(-t2), withAlpha(0xFFF4F4F4, alpha));
-        g.fill(Math.round(-half), Math.round(t2), Math.round(half), Math.round(t2) + 2, withAlpha(0xFFF4F4F4, alpha));
-        for (int k = 0; k < 5; k++) {
-            float taper = 1 - k / 5f;
-            g.fill(Math.round(half + k * 4), Math.round(-t2 * taper), Math.round(half + k * 4 + 5), Math.round(t2 * taper), withAlpha(0xFFFFFFFF, alpha * taper));
+        // Speed lines tearing ahead.
+        java.util.Random r = new java.util.Random(Float.floatToIntBits(b.top) * 31L + dir);
+        int ih = bot - top;
+        for (int i = 0; i < 18; i++) {
+            int y = top + 2 + r.nextInt(Math.max(1, ih - 4));
+            float len = smear * (0.5f + r.nextFloat() * 0.9f);
+            float x0 = lead + dir * smear * r.nextFloat() * 0.3f;
+            g.fill(Math.round(Math.min(x0, x0 + dir * len)), y, Math.round(Math.max(x0, x0 + dir * len)), y + 1,
+                    withAlpha(0xFFFFFFFF, k * (0.25f + 0.5f * r.nextFloat())));
         }
         pose.popMatrix();
-        // The sorcerer rides in the middle of their slash.
-        if (portrait && alpha > 0.5f) {
-            float a = thickness * 0.42f, b = thickness * 0.3f;
-            closeUp(g, entityId, Math.round(cx - a), Math.round(cy - b), Math.round(cx + a), Math.round(cy + b));
-        }
     }
 
     public static int withAlpha(int c, float a) {
