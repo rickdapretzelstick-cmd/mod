@@ -61,6 +61,17 @@ final class DomainSpace {
         return out;
     }
 
+    /** A point in Idle Death Gamble's sealed white: inside it, or on its side of a clash split. */
+    static boolean overWhite(Vec3 w) {
+        for (ClientState.Domain d : ClientState.DOMAINS.values()) {
+            if (!dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(d.definition) || d.center == null) continue;
+            if (d.phase != dev.rick.jjk.core.net.DomainPayload.ACTIVE && d.phase != dev.rick.jjk.core.net.DomainPayload.CLASHING) continue;
+            if (consumed(d)) continue;
+            if (holds(d, w) && onSide(d, w)) return true;
+        }
+        return false;
+    }
+
     /** Whether the camera is somewhere in this domain's space (any of its spheres). */
     static boolean holds(ClientState.Domain d, Vec3 w) {
         for (Ball b : balls(d)) if (w.distanceTo(b.center()) < b.radius()) return true;

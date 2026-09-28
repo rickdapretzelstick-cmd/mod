@@ -40,12 +40,23 @@ public final class WorldEffectsRenderer {
         for (Map.Entry<Integer, ClientState.Cast> e : ClientState.CASTS.entrySet()) {
             Entity ent = mc.level.getEntity(e.getKey());
             if (!(ent instanceof LivingEntity user) || ent.isRemoved()) continue;
-            renderCast(c, ps, cam, camRot, user, e.getValue(), now, partial);
+            Glow.ink(1f);
+            try {
+                renderCast(c, ps, cam, camRot, user, e.getValue(), now, partial);
+            } finally {
+                Glow.ink(0f);
+            }
         }
         for (ClientState.Domain d : ClientState.DOMAINS.values()) renderDomain(c, ps, cam, camRot, d, now, partial);
-        renderClashFront(c, ps, cam, camRot, now, partial);
-        renderInfinity(c, ps, cam, mc, partial);
-        Flashes.render(c, ps, cam, camRot, now, partial);
+        // Everything but the domains' own light gets an ink copy where it sits over Idle Death Gamble's white.
+        Glow.ink(1f);
+        try {
+            renderClashFront(c, ps, cam, camRot, now, partial);
+            renderInfinity(c, ps, cam, mc, partial);
+            Flashes.render(c, ps, cam, camRot, now, partial);
+        } finally {
+            Glow.ink(0f);
+        }
     }
 
     // --- Casting visuals ---

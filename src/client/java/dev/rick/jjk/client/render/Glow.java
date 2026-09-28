@@ -16,7 +16,91 @@ import org.joml.Vector3f;
 public final class Glow {
     public static final RenderType ADDITIVE = RenderTypes.lightning();
 
+    /** Alpha-blended (not additive) position-colour quads: the "ink" copy of a glow, which shows on white. */
+    private static final RenderType INK = RenderTypes.debugQuads();
+    /** How strongly glows drawn right now get an ink copy where they sit over Idle Death Gamble's white (0 = none). */
+    private static float ink;
+
     private Glow() {}
+
+    /**
+     * Light added to the glowing white of Idle Death Gamble has nothing to add to, so it vanishes there (it only read on
+     * Infinite Void's side of a clash). While {@code strength} > 0, every glow drawn over that white also lays down a
+     * darker, alpha-blended copy of itself in its own hue, so it stays visible. Callers switch it off again with 0.
+     */
+    public static void ink(float strength) {
+        ink = strength;
+    }
+
+    private static void submit(SubmitNodeCollector c, PoseStack ps, SubmitNodeCollector.CustomGeometryRenderer geo) {
+        c.submitCustomGeometry(ps, ADDITIVE, geo);
+        if (ink <= 0) return;
+        org.joml.Vector3f t = ps.last().pose().getTranslation(new org.joml.Vector3f());
+        net.minecraft.world.phys.Vec3 cam = net.minecraft.client.Minecraft.getInstance().gameRenderer.mainCamera().position();
+        if (!DomainSpace.overWhite(cam.add(t.x, t.y, t.z))) return;
+        float strength = ink;
+        c.submitCustomGeometry(ps, INK, (pose, buf) -> geo.render(pose, new Ink(buf, strength)));
+    }
+
+    /** Passes vertices through with their colour darkened (hue kept) and their alpha turned into opacity. */
+    private record Ink(VertexConsumer out, float strength) implements VertexConsumer {
+        private static int dark(int c) {
+            return Math.round(c * 0.42f);
+        }
+
+        @Override
+        public VertexConsumer addVertex(float x, float y, float z) {
+            out.addVertex(x, y, z);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setColor(int r, int g, int b, int a) {
+            out.setColor(dark(r), dark(g), dark(b), Math.min(215, Math.round(a * 1.25f * strength)));
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setColor(int argb) {
+            return setColor(argb >> 16 & 255, argb >> 8 & 255, argb & 255, argb >>> 24);
+        }
+
+        @Override
+        public VertexConsumer setUv(float u, float v) {
+            out.setUv(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setUv1(int u, int v) {
+            out.setUv1(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setUv2(int u, int v) {
+            out.setUv2(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setUv3(float u, float v) {
+            out.setUv3(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setNormal(float x, float y, float z) {
+            out.setNormal(x, y, z);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setLineWidth(float width) {
+            out.setLineWidth(width);
+            return this;
+        }
+    }
 
     /**
      * Sphere with soft edges: brightness falls off toward the silhouette (as seen from {@code toCamera}),
@@ -27,7 +111,7 @@ public final class Glow {
         final int lat = 10, lon = 18;
         float a = alpha * insideFade(ps, radius);
         Vector3f cam = new Vector3f(toCamera).normalize();
-        c.submitCustomGeometry(ps, ADDITIVE, (pose, buf) -> {
+        submit(c, ps, (pose, buf) -> {
             for (int i = 0; i < lat; i++) {
                 float t0 = Mth.PI * i / lat, t1 = Mth.PI * (i + 1) / lat;
                 for (int j = 0; j < lon; j++) {
@@ -65,7 +149,7 @@ public final class Glow {
         ps.pushPose();
         ps.rotate(cameraOrientation);
         final int seg = 24;
-        c.submitCustomGeometry(ps, ADDITIVE, (pose, buf) -> {
+        submit(c, ps, (pose, buf) -> {
             for (int i = 0; i < seg; i++) {
                 float a0 = Mth.TWO_PI * i / seg, a1 = Mth.TWO_PI * (i + 1) / seg;
                 buf.addVertex(pose, 0, 0, 0).setColor(r, g, b, a);
@@ -81,7 +165,7 @@ public final class Glow {
     public static void ring(SubmitNodeCollector c, PoseStack ps, float radius, float width, float r, float g, float b, float a) {
         final int seg = 40;
         float inner = radius - width / 2, outer = radius + width / 2;
-        c.submitCustomGeometry(ps, ADDITIVE, (pose, buf) -> {
+        submit(c, ps, (pose, buf) -> {
             for (int i = 0; i < seg; i++) {
                 float a0 = Mth.TWO_PI * i / seg, a1 = Mth.TWO_PI * (i + 1) / seg;
                 float c0 = Mth.cos(a0), s0 = Mth.sin(a0), c1 = Mth.cos(a1), s1 = Mth.sin(a1);
@@ -100,7 +184,7 @@ public final class Glow {
 
     /** A glowing beam from the origin along +Z of the current pose, as two crossed soft quads. */
     public static void beam(SubmitNodeCollector c, PoseStack ps, float length, float width, float r, float g, float b, float a) {
-        c.submitCustomGeometry(ps, ADDITIVE, (pose, buf) -> {
+        submit(c, ps, (pose, buf) -> {
             for (int k = 0; k < 2; k++) {
                 float wx = k == 0 ? width : 0, wy = k == 0 ? 0 : width;
                 buf.addVertex(pose, -wx, -wy, 0).setColor(r, g, b, 0f);
@@ -122,7 +206,7 @@ public final class Glow {
     public static void spiral(SubmitNodeCollector c, PoseStack ps, int arms, float rOuter, float rInner, float turns, float width,
                               float r, float g, float b, float a, float phase) {
         final int steps = 28;
-        c.submitCustomGeometry(ps, ADDITIVE, (pose, buf) -> {
+        submit(c, ps, (pose, buf) -> {
             for (int arm = 0; arm < arms; arm++) {
                 float base = phase + Mth.TWO_PI * arm / arms;
                 for (int i = 0; i < steps; i++) {
