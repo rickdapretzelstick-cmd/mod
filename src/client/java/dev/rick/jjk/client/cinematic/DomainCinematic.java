@@ -106,7 +106,6 @@ public final class DomainCinematic {
 
     private static void solo(GuiGraphicsExtractor g, Font font, Show s, float t, int w, int h) {
         float out = Mth.clamp((s.duration - t) / 6f, 0, 1);
-        letterbox(g, w, h, Math.min(1, t / 6f) * out);
         int color = s.colors[0] | 0xFF000000;
         // Shot 1-2: a cut-in of the caster as their energy builds, then it clears so the domain can be watched forming.
         float slide = ease(Mth.clamp(t / 6f, 0, 1));
@@ -137,8 +136,6 @@ public final class DomainCinematic {
         float time = s.start + t;
         // Two cut-in bands: the opponent's slams in from the right on top, yours from the left underneath.
         float slide = ease(Mth.clamp(t / 6f, 0, 1)), slideOut = ease(1 - out);
-        // Only a light dim behind the bands: the battlefield stays visible, as in the anime cut-ins.
-        g.fill(0, 0, w, h, (Math.round(Math.min(1, t / 3f) * out * 90) << 24));
         CinematicPanels.Band top = new CinematicPanels.Band(h * 0.12f, h * 0.5f), bottom = new CinematicPanels.Band(h * 0.5f, h * 0.88f);
         int lc = contrast(s.colors, them, me), rc = s.colors[me] | 0xFF000000;
         float topSlide = (1 - slide) * w - slideOut * w, bottomSlide = -(1 - slide) * w + slideOut * w;
@@ -149,8 +146,6 @@ public final class DomainCinematic {
             CinematicPanels.border(g, top.bottom(), w, 6);
             CinematicPanels.border(g, bottom.bottom(), w, 5);
         }
-        // Impact flash as they meet.
-        if (t > 5 && t < 7.5f) g.fill(0, 0, w, h, (Math.round((1 - (t - 5) / 2.5f) * 160) << 24) | 0xFFFFFF);
         float txt = Mth.clamp((t - 6) / 3f, 0, 1) * out;
         float mid = h * 0.5f;
         // Who is who, in each band's corner.
@@ -191,13 +186,6 @@ public final class DomainCinematic {
     }
 
     // --- pieces ---
-
-    private static void letterbox(GuiGraphicsExtractor g, int w, int h, float f) {
-        int bar = Math.round(h / 9f * Mth.clamp(f, 0, 1));
-        if (bar <= 0) return;
-        g.fill(0, 0, w, bar, 0xF0000000);
-        g.fill(0, h - bar, w, h, 0xF0000000);
-    }
 
     private static void title(GuiGraphicsExtractor g, Font font, String small, String big, int cx, int cy, float tt, float out, int color) {
         float in = Mth.clamp(tt / 3f, 0, 1);
