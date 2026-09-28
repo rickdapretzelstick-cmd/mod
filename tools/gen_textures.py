@@ -84,3 +84,24 @@ save_gui('clash_receptor', np.clip(soften(outer - eroded, 1) * 1.5, 0, 1))
 yy, xx = np.mgrid[0:A, 0:A]
 rr = np.hypot(xx - (A - 1) / 2, yy - (A - 1) / 2) / (A / 2)
 save_gui('clash_burst', np.exp(-((rr - 0.7) / 0.14) ** 2) * (rr < 1) + np.exp(-rr ** 2 * 6) * 0.6)
+
+# --- Domain cinematic backdrop: soft ink clouds and splatter, white (tinted in code), tiles horizontally. ---
+from PIL import ImageFilter as _IF
+W, H = 256, 128
+rng2 = np.random.default_rng(11)
+field = np.zeros((H, W))
+for octave, amp in ((8, 1.0), (16, 0.5), (32, 0.25)):
+    small = rng2.random((octave // 2 + 1, octave + 1))
+    small[:, -1] = small[:, 0]  # wrap horizontally
+    big2 = np.array(Image.fromarray((small * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC)) / 255.0
+    field += big2 * amp
+field /= field.max()
+ink = np.clip((field - 0.45) * 2.6, 0, 1)
+# Splatter dots
+for _ in range(90):
+    cx2, cy2, rr2 = rng2.integers(0, W), rng2.integers(0, H), rng2.integers(1, 5)
+    yy2, xx2 = np.mgrid[0:H, 0:W]
+    d2 = np.minimum(np.abs(xx2 - cx2), W - np.abs(xx2 - cx2))
+    ink = np.maximum(ink, (np.hypot(d2, yy2 - cy2) < rr2) * 0.9)
+ink = np.array(Image.fromarray((ink * 255).astype(np.uint8)).filter(_IF.GaussianBlur(1.2))) / 255.0
+save_gui('cinematic_ink', ink)

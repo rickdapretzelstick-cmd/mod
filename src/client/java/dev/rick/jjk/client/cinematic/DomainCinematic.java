@@ -108,17 +108,21 @@ public final class DomainCinematic {
         float out = Mth.clamp((s.duration - t) / 6f, 0, 1);
         letterbox(g, w, h, Math.min(1, t / 6f) * out);
         int color = s.colors[0] | 0xFF000000;
-        // Shot 1-2: the caster, large, as their energy builds; then tucked into the corner while the domain forms.
-        float intro = Mth.clamp(t / 8f, 0, 1);
-        float shrink = Mth.clamp((t - 18) / 8f, 0, 1);
-        int big = Math.round(Mth.lerp(shrink, h * 0.46f, h * 0.2f));
-        int bw = Math.round(big * 0.8f);
-        int x0 = Math.round(Mth.lerp(shrink, w * 0.08f, 10)) - Math.round((1 - intro) * (bw + 40));
-        int y0 = Math.round(Mth.lerp(shrink, h * 0.26f, h * 0.14f));
-        if (t < s.titleAt) {
-            Portraits.draw(g, s.entities[0], x0, y0, x0 + bw, y0 + big, 1.6f, color);
-            g.text(font, s.names.get(0), x0, y0 + big + 6, 0xFFFFFFFF, true);
-            if (shrink < 1) g.text(font, "Domain Expansion…", x0, y0 + big + 17, 0xFFBFD8FF, true);
+        // Shot 1-2: a cut-in of the caster as their energy builds, then it clears so the domain can be watched forming.
+        float slide = ease(Mth.clamp(t / 6f, 0, 1));
+        float leave = ease(Mth.clamp((t - 26) / 6f, 0, 1));
+        if (t < s.titleAt && leave < 1f) {
+            CinematicPanels.Band band = new CinematicPanels.Band(h * 0.3f, h * 0.7f);
+            float sx = -(1 - slide) * w + leave * w;
+            CinematicPanels.band(g, band, w, color, s.entities[0], w * 0.5f, sx, s.start + t);
+            if (slide > 0.95f && leave < 0.05f) {
+                CinematicPanels.border(g, band.top(), w, 5);
+                CinematicPanels.border(g, band.bottom(), w, 5);
+            }
+            float txt = Mth.clamp((t - 5) / 3f, 0, 1) * (1 - leave);
+            CinematicPanels.label(g, font, "DOMAIN", w * 0.12f + sx, band.topAt(w * 0.12f, w) + 10, 2.2f, 0xFFFFFF, txt, false);
+            CinematicPanels.label(g, font, "EXPANSION", w * 0.88f + sx, band.bottomAt(w * 0.88f, w) - 28, 2.2f, 0xFFFFFF, txt, true);
+            CinematicPanels.label(g, font, s.names.get(0), w * 0.12f + sx, band.topAt(w * 0.12f, w) + 34, 1f, color, txt, false);
         }
         // Shot 5: the domain has sealed.
         float tt = t - s.titleAt;
@@ -129,36 +133,45 @@ public final class DomainCinematic {
 
     private static void versus(GuiGraphicsExtractor g, Font font, Show s, float t, int w, int h) {
         float out = Mth.clamp((s.duration - t) / 6f, 0, 1);
-        letterbox(g, w, h, Math.min(1, t / 4f) * out);
         int me = Math.max(0, s.local), them = s.entities.length > 1 ? 1 - me : 0;
-        float slide = Mth.clamp(t / 7f, 0, 1);
-        slide = 1 - (1 - slide) * (1 - slide);
-        int ph = Math.round(h * 0.42f), pw = Math.round(ph * 0.8f);
-        int y0 = h / 2 - ph / 2 - 6;
-        // Opponent from the left, you from the right.
-        int lx = Math.round(Mth.lerp(slide, -pw - 20, w * 0.16f));
-        int rx = Math.round(Mth.lerp(slide, w + 20, w * 0.84f - pw));
+        float time = s.start + t;
+        // Two cut-in bands: the opponent's slams in from the right on top, yours from the left underneath.
+        float slide = ease(Mth.clamp(t / 6f, 0, 1)), slideOut = ease(1 - out);
+        // Only a light dim behind the bands: the battlefield stays visible, as in the anime cut-ins.
+        g.fill(0, 0, w, h, (Math.round(Math.min(1, t / 3f) * out * 90) << 24));
+        CinematicPanels.Band top = new CinematicPanels.Band(h * 0.12f, h * 0.5f), bottom = new CinematicPanels.Band(h * 0.5f, h * 0.88f);
         int lc = contrast(s.colors, them, me), rc = s.colors[me] | 0xFF000000;
-        Portraits.draw(g, s.entities[them], lx, y0, lx + pw, y0 + ph, 1.6f, lc);
-        Portraits.draw(g, s.entities[me], rx, y0, rx + pw, y0 + ph, 1.6f, rc);
-        int a = Math.round(slide * out * 255) << 24;
-        g.centeredText(font, s.names.get(them), lx + pw / 2, y0 + ph + 6, 0xFFFFFF | a);
-        g.centeredText(font, s.names.get(me), rx + pw / 2, y0 + ph + 6, 0xFFFFFF | a);
-        g.centeredText(font, "DOMAIN EXPANSION", lx + pw / 2, y0 - 22, (lc & 0xFFFFFF) | a);
-        g.centeredText(font, s.domains.get(them).toUpperCase(java.util.Locale.ROOT), lx + pw / 2, y0 - 12, 0xFFFFFF | a);
-        g.centeredText(font, "DOMAIN EXPANSION", rx + pw / 2, y0 - 22, (rc & 0xFFFFFF) | a);
-        g.centeredText(font, s.domains.get(me).toUpperCase(java.util.Locale.ROOT), rx + pw / 2, y0 - 12, 0xFFFFFF | a);
-        // "VS" slams in once both are on screen.
-        float vs = Mth.clamp((t - 6) / 4f, 0, 1);
-        if (vs > 0) {
-            if (t - 6 < 1.2f) g.fill(0, 0, w, h, (Math.round((1 - (t - 6) / 1.2f) * 140) << 24) | 0xFFFFFF);
-            Matrix3x2fStack pose = g.pose();
-            pose.pushMatrix();
-            pose.translate(w / 2f, h / 2f - 4);
-            pose.scale(Mth.lerp(vs, 9f, 4.2f));
-            g.centeredText(font, "VS", 0, -4, 0xFFFFE08A | 0xFF000000);
-            pose.popMatrix();
+        float topSlide = (1 - slide) * w - slideOut * w, bottomSlide = -(1 - slide) * w + slideOut * w;
+        CinematicPanels.band(g, top, w, lc, s.entities[them], w * 0.6f, topSlide, time);
+        CinematicPanels.band(g, bottom, w, rc, s.entities[me], w * 0.42f, bottomSlide, time);
+        if (slide > 0.95f && out > 0.5f) {
+            CinematicPanels.border(g, top.top(), w, 5);
+            CinematicPanels.border(g, top.bottom(), w, 6);
+            CinematicPanels.border(g, bottom.bottom(), w, 5);
         }
+        // Impact flash as they meet.
+        if (t > 5 && t < 7.5f) g.fill(0, 0, w, h, (Math.round((1 - (t - 5) / 2.5f) * 160) << 24) | 0xFFFFFF);
+        float txt = Mth.clamp((t - 6) / 3f, 0, 1) * out;
+        float mid = h * 0.5f;
+        // Who is who, in each band's corner.
+        CinematicPanels.label(g, font, s.domains.get(them).toUpperCase(java.util.Locale.ROOT), w * 0.05f + topSlide, top.topAt(w * 0.05f, w) + 12, 1.6f,
+                0xFFFFFF, txt, false);
+        CinematicPanels.label(g, font, s.names.get(them), w * 0.05f + topSlide, top.topAt(w * 0.05f, w) + 30, 1f, lc, txt, false);
+        CinematicPanels.label(g, font, s.domains.get(me).toUpperCase(java.util.Locale.ROOT), w * 0.95f + bottomSlide, bottom.bottomAt(w * 0.95f, w) - 40, 1.6f,
+                0xFFFFFF, txt, true);
+        CinematicPanels.label(g, font, s.names.get(me) + " (YOU)", w * 0.95f + bottomSlide, bottom.bottomAt(w * 0.95f, w) - 22, 1f, rc, txt, true);
+        // The big words, straddling the seams like the anime title cards.
+        CinematicPanels.label(g, font, "DOMAIN", w * 0.26f, top.bottomAt(w * 0.26f, w) - 26, 2.4f, 0xFFFFFF, txt, false);
+        CinematicPanels.label(g, font, "EXPANSION", w * 0.8f, bottom.bottomAt(w * 0.8f, w) - 12, 2.4f, 0xFFFFFF, txt, true);
+        float vs = Mth.clamp((t - 7) / 3f, 0, 1) * out;
+        if (vs > 0) {
+            float vx = w * 0.64f;
+            CinematicPanels.label(g, font, "VS", vx, top.bottomAt(vx, w) - 12 * Mth.lerp(vs, 5f, 3f) / 3f, Mth.lerp(vs, 5f, 3f), 0xFFFFE08A, vs, false);
+        }
+    }
+
+    private static float ease(float x) {
+        return 1 - (1 - x) * (1 - x) * (1 - x);
     }
 
     // --- OBSERVE ---

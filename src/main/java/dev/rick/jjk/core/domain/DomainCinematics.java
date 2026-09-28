@@ -24,7 +24,7 @@ public final class DomainCinematics {
         if (!(caster.level() instanceof ServerLevel level)) return;
         int titleAt = startupTicks + def.formingTicks();
         int[] ents = {caster.getId()};
-        List<String> names = List.of(caster.getName().getString());
+        List<String> names = List.of(displayName(caster));
         List<String> doms = List.of(def.displayName());
         int[] cols = {def.clashColor()};
         DomainCinematicPayload solo = new DomainCinematicPayload(DomainCinematicPayload.SOLO, ents, names, doms, cols, titleAt, titleAt + 14);
@@ -41,13 +41,18 @@ public final class DomainCinematics {
         if (opener == null || !(counter.level() instanceof ServerLevel level)) return;
         DomainDefinition a = domainOf(opener), b = domainOf(counter);
         int[] ents = {opener.getId(), counter.getId()};
-        List<String> names = List.of(opener.getName().getString(), counter.getName().getString());
+        List<String> names = List.of(displayName(opener), displayName(counter));
         List<String> doms = List.of(a == null ? "Domain" : a.displayName(), b == null ? "Domain" : b.displayName());
         int[] cols = {a == null ? 0xFFFFFFFF : a.clashColor(), b == null ? 0xFFFFFFFF : b.clashColor()};
         DomainCinematicPayload vs = new DomainCinematicPayload(DomainCinematicPayload.VERSUS, ents, names, doms, cols, 0, 70);
         for (ServerPlayer p : level.players()) {
             if (p == opener || p == counter || p.distanceTo(counter) < JJKConfig.get().domain.observerRange) ServerPlayNetworking.send(p, vs);
         }
+    }
+
+    /** Players by their name; other sorcerers by what they are (a name tag may carry status text). */
+    private static String displayName(LivingEntity e) {
+        return e instanceof net.minecraft.world.entity.player.Player ? e.getName().getString() : e.getType().getDescription().getString();
     }
 
     @Nullable
