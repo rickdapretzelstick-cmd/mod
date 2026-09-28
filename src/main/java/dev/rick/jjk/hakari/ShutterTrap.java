@@ -222,12 +222,12 @@ public final class ShutterTrap {
             shatter(false);
             return;
         }
-        AABB top = new AABB(center.x - 1.6, center.y + 2.0, center.z - 1.6, center.x + 1.6, center.y + 3.4, center.z + 1.6);
+        AABB top = new AABB(center.x - 1.6, center.y + 1.4, center.z - 1.6, center.x + 1.6, center.y + 2.8, center.z + 1.6);
         // Hakari lands on them: a high bounce, and they shatter.
         if (owner.getBoundingBox().intersects(top) && owner.getDeltaMovement().y <= 0.05) {
             Motion.set(owner, new Vec3(owner.getDeltaMovement().x, cfg.shutterBounceLaunch, owner.getDeltaMovement().z));
             owner.resetFallDistance();
-            Fx.play(level, "door_bounce", center.add(0, 2.6, 0), Vec3.ZERO, 1.4f, owner.getId());
+            Fx.play(level, "door_bounce", center.add(0, 2.0, 0), Vec3.ZERO, 1.4f, owner.getId());
             shatter(true);
             return;
         }

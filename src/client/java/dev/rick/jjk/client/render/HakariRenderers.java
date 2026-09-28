@@ -147,6 +147,11 @@ public final class HakariRenderers {
                 ps.translate(-w / 2, 0, 0);
                 ps.rotate(Axis.YP.rotationDegrees(-100 * s.open));
                 ps.translate(w / 2, 0, 0);
+            } else {
+                // Shutter doors lie on their side: long edge along the ground, closing in from either flank.
+                ps.translate(0, w / 2, 0);
+                ps.rotate(Axis.ZP.rotationDegrees(90));
+                ps.translate(0, -h / 2, 0);
             }
             // Turn the thin block model (a slab across Z) side-on to face along the door's facing.
             ps.scale(w, h, 1);
