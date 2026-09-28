@@ -66,6 +66,7 @@ public class JJKClient implements ClientModInitializer {
             dev.rick.jjk.client.render.Flashes.clear();
             dev.rick.jjk.client.clash.ClashClient.reset();
             dev.rick.jjk.client.cinematic.DomainCinematic.reset();
+            dev.rick.jjk.client.clash.ClashCamera.reset();
         });
     }
 
@@ -196,6 +197,7 @@ public class JJKClient implements ClientModInitializer {
         ClientState.tick();
         dev.rick.jjk.client.clash.ClashClient.tick(mc);
         dev.rick.jjk.client.cinematic.DomainCinematic.tick(mc);
+        dev.rick.jjk.client.clash.ClashCamera.tick(mc);
         InputHandler.tick(mc);
         ambientTicks++;
         ambient(mc);

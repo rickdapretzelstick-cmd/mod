@@ -26,7 +26,7 @@ import java.util.List;
  */
 public final class DomainCinematic {
     private record Show(int kind, int[] entities, List<String> names, List<String> domains, int[] colors, long start, int titleAt, int duration,
-                        int local) {}
+                        int local, int opponentSide) {}
 
     @Nullable private static Show show;
     @Nullable private static CameraType restoreCamera;
@@ -43,7 +43,8 @@ public final class DomainCinematic {
         if (kind == DomainCinematicPayload.VERSUS && local < 0) kind = DomainCinematicPayload.OBSERVE;
         // Never let a passing banner replace a duellist's own presentation.
         if (kind == DomainCinematicPayload.OBSERVE && show != null && show.kind != DomainCinematicPayload.OBSERVE && active()) return;
-        show = new Show(kind, p.entities(), p.names(), p.domains(), p.colors(), mc.level.getGameTime(), p.titleAt(), p.duration(), local);
+        show = new Show(kind, p.entities(), p.names(), p.domains(), p.colors(), mc.level.getGameTime(), p.titleAt(), p.duration(), local,
+                opponentSide(mc, p.entities(), local));
         if (kind != DomainCinematicPayload.OBSERVE) {
             // The caster watches their domain build from just behind themselves; restored afterwards.
             if (restoreCamera == null && mc.options.getCameraType().isFirstPerson()) {
@@ -66,7 +67,8 @@ public final class DomainCinematic {
 
     /** A versus card is on screen (the clash intro waits for it). */
     public static boolean versusShowing() {
-        return active() && show.kind == DomainCinematicPayload.VERSUS;
+        Minecraft mc = Minecraft.getInstance();
+        return active() && show.kind == DomainCinematicPayload.VERSUS && mc.level.getGameTime() - show.start < SWEEP;
     }
 
     public static void tick(Minecraft mc) {
@@ -130,39 +132,80 @@ public final class DomainCinematic {
 
     // --- VERSUS ---
 
+    /** Ticks for the two slashes to sweep all the way through. */
+    public static final float SWEEP = 34f;
+
     private static void versus(GuiGraphicsExtractor g, Font font, Show s, float t, int w, int h) {
-        float out = Mth.clamp((s.duration - t) / 6f, 0, 1);
         int me = Math.max(0, s.local), them = s.entities.length > 1 ? 1 - me : 0;
         float time = s.start + t;
-        // Two cut-in bands: the opponent's slams in from the right on top, yours from the left underneath.
-        float slide = ease(Mth.clamp(t / 6f, 0, 1)), slideOut = ease(1 - out);
-        CinematicPanels.Band top = new CinematicPanels.Band(h * 0.12f, h * 0.5f), bottom = new CinematicPanels.Band(h * 0.5f, h * 0.88f);
+        float p = Mth.clamp(t / SWEEP, 0, 1);
+        if (p >= 1) return;
+        // Travel along each slash's path: fast in, slowing as they cross in the middle, fast out.
+        float u = p * 2 - 1;
+        float travel = Math.signum(u) * (float) Math.pow(Math.abs(u), 2.2);
+        float alpha = Mth.clamp(p / 0.12f, 0, 1) * Mth.clamp((1 - p) / 0.12f, 0, 1);
+        float angle = (float) Math.toRadians(24);
+        float reach = w * 0.95f, length = w * 1.1f;
+        float thickness = h * 0.34f * (0.85f + 0.25f * (1 - Math.abs(u)));
         int lc = contrast(s.colors, them, me), rc = s.colors[me] | 0xFF000000;
-        float topSlide = (1 - slide) * w - slideOut * w, bottomSlide = -(1 - slide) * w + slideOut * w;
-        CinematicPanels.band(g, top, w, lc, s.entities[them], w * 0.6f, topSlide, time);
-        CinematicPanels.band(g, bottom, w, rc, s.entities[me], w * 0.42f, bottomSlide, time);
-        if (slide > 0.95f && out > 0.5f) {
-            CinematicPanels.border(g, top.top(), w, 5);
-            CinematicPanels.border(g, top.bottom(), w, 6);
-            CinematicPanels.border(g, bottom.bottom(), w, 5);
+        int themSide = s.opponentSide, meSide = -themSide;
+        // Each slash enters from its sorcerer's side, cuts down across the screen through the centre and exits the other side.
+        float[] a = path(w, h, themSide, angle, travel * reach);
+        float[] b = path(w, h, meSide, angle, travel * reach);
+        CinematicPanels.slash(g, a[0], a[1], a[2], length, thickness, lc, alpha, time, s.entities[them], true);
+        CinematicPanels.slash(g, b[0], b[1], b[2], length, thickness, rc, alpha, time, s.entities[me], true);
+        // Where they cross: the impact.
+        float impact = 1 - Math.abs(u) / 0.14f;
+        if (impact > 0) {
+            int size = Math.round(h * (0.5f + 0.7f * (1 - impact)));
+            g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, dev.rick.jjk.JJK.id("textures/gui/clash_burst.png"), w / 2 - size / 2,
+                    h / 2 - size / 2, 0, 0, size, size, 64, 64, 64, 64, CinematicPanels.withAlpha(0xFFFFFFFF, impact));
+            Matrix3x2fStack pose = g.pose();
+            java.util.Random r = new java.util.Random(s.start);
+            for (int i = 0; i < 14; i++) {
+                pose.pushMatrix();
+                pose.translate(w / 2f, h / 2f);
+                pose.rotate(r.nextFloat() * Mth.TWO_PI);
+                int len = Math.round(h * (0.3f + 0.4f * r.nextFloat()) * (1.2f - impact));
+                g.fill(size / 6, -1, size / 6 + len, 1, CinematicPanels.withAlpha(0xFFFFFFFF, impact));
+                pose.popMatrix();
+            }
         }
-        float txt = Mth.clamp((t - 6) / 3f, 0, 1) * out;
-        float mid = h * 0.5f;
-        // Who is who, in each band's corner.
-        CinematicPanels.label(g, font, s.domains.get(them).toUpperCase(java.util.Locale.ROOT), w * 0.05f + topSlide, top.topAt(w * 0.05f, w) + 12, 1.6f,
-                0xFFFFFF, txt, false);
-        CinematicPanels.label(g, font, s.names.get(them), w * 0.05f + topSlide, top.topAt(w * 0.05f, w) + 30, 1f, lc, txt, false);
-        CinematicPanels.label(g, font, s.domains.get(me).toUpperCase(java.util.Locale.ROOT), w * 0.95f + bottomSlide, bottom.bottomAt(w * 0.95f, w) - 40, 1.6f,
-                0xFFFFFF, txt, true);
-        CinematicPanels.label(g, font, s.names.get(me) + " (YOU)", w * 0.95f + bottomSlide, bottom.bottomAt(w * 0.95f, w) - 22, 1f, rc, txt, true);
-        // The big words, straddling the seams like the anime title cards.
-        CinematicPanels.label(g, font, "DOMAIN", w * 0.26f, top.bottomAt(w * 0.26f, w) - 26, 2.4f, 0xFFFFFF, txt, false);
-        CinematicPanels.label(g, font, "EXPANSION", w * 0.8f, bottom.bottomAt(w * 0.8f, w) - 12, 2.4f, 0xFFFFFF, txt, true);
-        float vs = Mth.clamp((t - 7) / 3f, 0, 1) * out;
-        if (vs > 0) {
-            float vx = w * 0.64f;
-            CinematicPanels.label(g, font, "VS", vx, top.bottomAt(vx, w) - 12 * Mth.lerp(vs, 5f, 3f) / 3f, Mth.lerp(vs, 5f, 3f), 0xFFFFE08A, vs, false);
-        }
+        // Lettering rides with each slash on its sorcerer's own side, so the two sets stay apart as the slashes cross.
+        float txt = alpha;
+        float ax = a[0] + themSide * thickness * 0.75f, ay = a[1] - thickness * 0.15f;
+        float bx = b[0] + meSide * thickness * 0.75f, by = b[1] + thickness * 0.35f;
+        boolean aLeft = themSide > 0, bLeft = meSide > 0;
+        CinematicPanels.label(g, font, "DOMAIN", ax, ay - 34, 2.4f, 0xFFFFFF, txt, !aLeft);
+        CinematicPanels.label(g, font, s.domains.get(them).toUpperCase(java.util.Locale.ROOT), ax, ay - 8, 1.4f, 0xFFFFFF, txt, !aLeft);
+        CinematicPanels.label(g, font, s.names.get(them), ax, ay + 8, 1f, lc, txt, !aLeft);
+        CinematicPanels.label(g, font, "EXPANSION", bx, by - 34, 2.4f, 0xFFFFFF, txt, !bLeft);
+        CinematicPanels.label(g, font, s.domains.get(me).toUpperCase(java.util.Locale.ROOT), bx, by - 8, 1.4f, 0xFFFFFF, txt, !bLeft);
+        CinematicPanels.label(g, font, s.names.get(me) + " (YOU)", bx, by + 8, 1f, rc, txt, !bLeft);
+        float vs = 1 - Math.abs(u) / 0.35f;
+        if (vs > 0) CinematicPanels.label(g, font, "VS", w / 2f - 22, h / 2f - 18, Mth.lerp(vs, 2.5f, 4f), 0xFFFFE08A, Math.min(1, vs * 2), false);
+    }
+
+    /** Centre and heading of a slash that enters from {@code side} (-1 left, 1 right) and has travelled {@code dist} past the centre. */
+    private static float[] path(int w, int h, int side, float angle, float dist) {
+        float dx = -side * Mth.cos(angle), dy = Mth.sin(angle);
+        return new float[] {w / 2f + dx * dist, h / 2f + dy * dist, (float) Math.atan2(dy, dx)};
+    }
+
+    /**
+     * Which side of the screen the opponent is on from where the camera looks (-1 left, 1 right), so each sorcerer's
+     * slash comes from their own side. When they are lined up with the camera, the opponent is on the left (matching the
+     * clash screen, where your lanes are on the right).
+     */
+    private static int opponentSide(Minecraft mc, int[] entities, int local) {
+        if (local < 0 || entities.length < 2 || mc.level == null) return -1;
+        var me = mc.level.getEntity(entities[local]);
+        var them = mc.level.getEntity(entities[1 - local]);
+        if (me == null || them == null) return -1;
+        double yaw = Math.toRadians(mc.gameRenderer.mainCamera().yRot());
+        double rx = -Math.cos(yaw), rz = -Math.sin(yaw);
+        double d = (them.getX() - me.getX()) * rx + (them.getZ() - me.getZ()) * rz;
+        return Math.abs(d) < 2 ? -1 : d > 0 ? 1 : -1;
     }
 
     private static float ease(float x) {

@@ -42,10 +42,11 @@ public final class ClashHud {
         v.shownMeter += (v.meter - v.shownMeter) * 0.25f;
         int me = v.local, them = v.other(me);
 
-        // Cinematic letterbox, and the screen edges burning in each side's colour as they gain ground.
+        // The domains themselves are the backdrop: only thin translucent strips behind the meter and the title, and a
+        // faint edge tint for whoever is gaining ground.
         int bar = Math.max(14, h / 11);
-        g.fill(0, 0, w, bar, 0xE0000000);
-        g.fill(0, h - bar, w, h, 0xE0000000);
+        g.fill(0, 0, w, bar - 4, 0x50000000);
+        g.fill(0, h - 16, w, h, 0x50000000);
         float mine = me == 0 ? v.shownMeter : -v.shownMeter;
         edgeGlow(g, w, h, bar, v.colors[me], Math.max(0, mine) * 0.6f + v.heat[me] * 0.08f, true);
         edgeGlow(g, w, h, bar, v.colors[them], Math.max(0, -mine) * 0.6f + v.heat[them] * 0.08f, false);
@@ -69,9 +70,9 @@ public final class ClashHud {
 
         // Progress through the chart along the bottom bar.
         float prog = Mth.clamp((float) (clock / Math.max(1, v.end())), 0, 1);
-        g.fill(0, h - bar, Math.round(w * prog), h - bar + 2, 0xC0FFFFFF);
+        g.fill(0, h - 16, Math.round(w * prog), h - 14, 0xC0FFFFFF);
         String title = v.round == 0 ? "DOMAIN CLASH" : "SUDDEN DEATH";
-        g.centeredText(font, title, w / 2, h - bar / 2 - 4, v.round == 0 ? 0xFFDDEEFF : 0xFFFF6A6A);
+        g.centeredText(font, title, w / 2, h - 11, v.round == 0 ? 0xFFDDEEFF : 0xFFFF6A6A);
 
         countdown(g, font, v, w, h, clock);
     }
@@ -190,7 +191,7 @@ public final class ClashHud {
 
     private static void edgeGlow(GuiGraphicsExtractor g, int w, int h, int bar, int color, float strength, boolean right) {
         if (strength <= 0.01f) return;
-        int a = Math.round(Mth.clamp(strength, 0, 1) * 150);
+        int a = Math.round(Mth.clamp(strength, 0, 1) * 60);
         int edge = w / 6;
         // A horizontal fade built from strips (fillGradient runs top to bottom).
         for (int i = 0; i < 12; i++) {

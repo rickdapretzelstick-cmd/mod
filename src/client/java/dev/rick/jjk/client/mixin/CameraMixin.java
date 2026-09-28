@@ -17,9 +17,21 @@ public abstract class CameraMixin {
     @Shadow
     protected abstract void setRotation(float yRot, float xRot);
 
+    @Shadow
+    protected abstract void setPosition(net.minecraft.world.phys.Vec3 position);
+
+    @Shadow
+    public abstract net.minecraft.world.phys.Vec3 position();
+
     /** Screen shake: offset the view after vanilla positions the camera. */
     @Inject(method = "alignWithEntity", at = @At("TAIL"))
     private void jjk$shake(float partialTicks, CallbackInfo ci) {
+        // Domain clash: frame the two domains and where they collide.
+        double[] clash = dev.rick.jjk.client.clash.ClashCamera.apply(position(), yRot, xRot);
+        if (clash != null) {
+            setPosition(new net.minecraft.world.phys.Vec3(clash[0], clash[1], clash[2]));
+            setRotation((float) clash[3], (float) clash[4]);
+        }
         float dy = ScreenEffects.yawOffset(partialTicks), dx = ScreenEffects.pitchOffset(partialTicks);
         if (dy != 0 || dx != 0) setRotation(yRot + dy, xRot + dx);
     }

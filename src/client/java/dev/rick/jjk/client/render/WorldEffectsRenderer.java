@@ -278,6 +278,28 @@ public final class WorldEffectsRenderer {
         push(ps, cam, front);
         Glow.halo(c, ps, camRot, 2.5f + heat, 1f, 1f, 1f, 0.5f + 0.1f * heat);
         ps.popPose();
+        // Each domain as a bubble of its own energy, the two pressing against each other at the front: whoever is winning
+        // swells, the other is pushed back. A PERFECT makes that side flare and sends a shell racing out to the front.
+        ClientState.Domain[] ds = {a, b};
+        float[][] cols = {ca, cb};
+        for (int i = 0; i < 2; i++) {
+            ClientState.Domain d = ds[i];
+            Vec3 ctr = d.center.add(0, 1.4, 0);
+            float rad = (float) ctr.distanceTo(front);
+            float flare = 0, wave = -1;
+            if (d.pulseTick != Long.MIN_VALUE) {
+                float pa = now - d.pulseTick + partial;
+                if (pa >= 0 && pa < 12) {
+                    flare = (1 - pa / 12f) * d.pulseStrength;
+                    wave = pa / 12f;
+                }
+            }
+            Vector3f tc = new Vector3f((float) (cam.x - ctr.x), (float) (cam.y - ctr.y), (float) (cam.z - ctr.z));
+            push(ps, cam, ctr);
+            Glow.sphere(c, ps, rad * (1 + 0.05f * flare), cols[i][0], cols[i][1], cols[i][2], 0.3f + 0.06f * heat + 0.35f * flare, tc, true);
+            if (wave >= 0) Glow.sphere(c, ps, Math.max(0.5f, rad * wave), 1f, 1f, 1f, 0.7f * (1 - wave), tc, true);
+            ps.popPose();
+        }
     }
 
     private static float[] rgb(int c) {
