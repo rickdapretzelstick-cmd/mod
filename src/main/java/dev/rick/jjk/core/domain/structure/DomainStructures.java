@@ -88,6 +88,16 @@ public final class DomainStructures {
         List<DomainStructure> list = ACTIVE.get(level);
         if (list == null || list.isEmpty()) return;
         int budget = Math.max(64, JJKConfig.get().domain.blocksPerTick);
+        // Domain blocks are a temporary structure with their own exact restore, never battle damage.
+        dev.rick.jjk.core.world.WorldRestoration.pause();
+        try {
+            tickStructures(list, budget);
+        } finally {
+            dev.rick.jjk.core.world.WorldRestoration.resume();
+        }
+    }
+
+    private static void tickStructures(List<DomainStructure> list, int budget) {
         for (DomainStructure s : List.copyOf(list)) {
             switch (s.state()) {
                 case BUILDING -> s.buildStep(budget);
@@ -123,6 +133,15 @@ public final class DomainStructures {
 
     /** Restores every live structure synchronously (server stopping). */
     public static void restoreEverythingNow() {
+        dev.rick.jjk.core.world.WorldRestoration.pause();
+        try {
+            restoreEverythingNowInner();
+        } finally {
+            dev.rick.jjk.core.world.WorldRestoration.resume();
+        }
+    }
+
+    private static void restoreEverythingNowInner() {
         for (Map.Entry<ServerLevel, List<DomainStructure>> e : ACTIVE.entrySet()) {
             for (DomainStructure s : List.copyOf(e.getValue())) {
                 s.restoreAll((from, pos, original, be) -> false);
@@ -190,7 +209,12 @@ public final class DomainStructures {
                         continue;
                     }
                     DomainStructure s = DomainStructure.load(level, tag);
-                    s.restoreAll((from, pos, original, be) -> false);
+                    dev.rick.jjk.core.world.WorldRestoration.pause();
+                    try {
+                        s.restoreAll((from, pos, original, be) -> false);
+                    } finally {
+                        dev.rick.jjk.core.world.WorldRestoration.resume();
+                    }
                     Files.deleteIfExists(f);
                     restored++;
                     JJK.LOGGER.info("Recovered world blocks from interrupted domain {} ({} blocks)", s.id, s.size());

@@ -154,7 +154,7 @@ public class RedEntity extends TechniqueEntity {
             if (away.lengthSqr() > 1e-4) Motion.set(e, away.normalize().scale(knockback * 0.6).add(0, 0.4, 0));
         }
         if (Destruction.allowed(level)) {
-            Destruction.sphere(level, pos, r * 0.55, 6f, maxBlocks, owner, null);
+            Destruction.sphere(level, pos, r * 0.55, 6f, maxBlocks, owner, null, max ? "jjk:max_red" : "jjk:red");
         }
     }
 }

@@ -3,10 +3,13 @@
   "package": "dev.rick.jjk.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "BlockDropMixin",
+    "LevelSetBlockMixin",
     "LivingEntityMixin",
     "MobMixin",
     "PlayerMixin",
-    "ProjectileMixin"
+    "ProjectileMixin",
+    "ServerLevelSpawnMixin"
   ],
   "injectors": { "defaultRequire": 1 }
 }

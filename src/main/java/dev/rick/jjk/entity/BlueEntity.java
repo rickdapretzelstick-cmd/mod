@@ -213,7 +213,7 @@ public class BlueEntity extends TechniqueEntity {
             if (s.isAir() || !loose(level, p, s)) continue;
             BlockPos at = p.immutable();
             int stateId = Block.getId(s);
-            if (Destruction.destroy(level, at, 2f, this)) {
+            if (Destruction.destroy(level, at, 2f, this, params.ultimate() ? "jjk:max_blue" : "jjk:blue")) {
                 torn++;
                 Fx.play(level, "blue_debris", Vec3.atCenterOf(at), position().subtract(Vec3.atCenterOf(at)), 1f, stateId);
             }

@@ -104,6 +104,22 @@ public final class JJKCommand {
                                 .then(Commands.argument("count", IntegerArgumentType.integer(1, 16))
                                         .executes(c -> dummy(c, mode(c), IntegerArgumentType.getInteger(c, "count"))))))
                 .then(Commands.literal("arena").executes(JJKCommand::arena))
+                .then(Commands.literal("restore")
+                        .then(Commands.literal("status").executes(c -> {
+                            int n = dev.rick.jjk.core.world.WorldRestoration.pending(c.getSource().getLevel());
+                            c.getSource().sendSuccess(() -> Component.literal(n + " damaged positions waiting to be restored"), false);
+                            return n;
+                        }))
+                        .then(Commands.literal("now").executes(c -> {
+                            int n = dev.rick.jjk.core.world.WorldRestoration.restoreAllNow(c.getSource().getLevel());
+                            c.getSource().sendSuccess(() -> Component.literal("Restored " + n + " damaged positions"), true);
+                            return n;
+                        }))
+                        .then(Commands.literal("forget").executes(c -> {
+                            int n = dev.rick.jjk.core.world.WorldRestoration.forgetAll(c.getSource().getLevel());
+                            c.getSource().sendSuccess(() -> Component.literal("Forgot " + n + " pending restorations (damage is now permanent)"), true);
+                            return n;
+                        })))
                 .then(Commands.literal("domain")
                         .then(Commands.literal("cancel").executes(c -> {
                             DomainInstance dom = DomainManager.ownedBy(c.getSource().getPlayerOrException());

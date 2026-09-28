@@ -94,7 +94,7 @@ public class HollowPurpleEntity extends TechniqueEntity {
             int steps = Math.max(1, (int) Math.ceil(speed));
             for (int i = 1; i <= steps && blocksDestroyed < cfg.maxBlocksDestroyed; i++) {
                 Vec3 p = from.add(direction.scale(speed * i / steps));
-                blocksDestroyed += Destruction.sphere(level, p, radius, 60f, cfg.maxBlocksDestroyed - blocksDestroyed, owner, null);
+                blocksDestroyed += Destruction.sphere(level, p, radius, 60f, cfg.maxBlocksDestroyed - blocksDestroyed, owner, null, "jjk:hollow_purple");
             }
         }
 

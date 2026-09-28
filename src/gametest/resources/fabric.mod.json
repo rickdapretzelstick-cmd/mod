@@ -7,7 +7,8 @@
   "entrypoints": {
     "fabric-gametest": [
       "dev.rick.jjk.test.GojoGameTests",
-      "dev.rick.jjk.test.AwakeningDomainTests"
+      "dev.rick.jjk.test.AwakeningDomainTests",
+      "dev.rick.jjk.test.WorldRestorationTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.GojoClientGameTest"

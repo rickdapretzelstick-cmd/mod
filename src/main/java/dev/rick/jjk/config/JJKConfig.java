@@ -36,6 +36,8 @@ public final class JJKConfig {
     public Awakening awakening = new Awakening();
     public MaxBlue maxBlue = new MaxBlue();
     public MaxRed maxRed = new MaxRed();
+    public Restoration restoration = new Restoration();
+    public Clash clash = new Clash();
     public Client client = new Client();
 
     public static JJKConfig get() {
@@ -271,6 +273,78 @@ public final class JJKConfig {
         public float knockbackMultiplier = 2.2f;
         public int maxBlocksDestroyed = 400;
         public int cooldown = 60;
+    }
+
+    /**
+     * Temporary battle damage: every block a technique destroys or alters comes back exactly, a fixed time after that
+     * block was damaged. Domain structures are separate and restore the moment their domain ends.
+     */
+    public static class Restoration {
+        public boolean enabled = true;
+        /** Per-block delay from damage to restoration. 3600 ticks = 3 minutes at 20 TPS. */
+        public int delayTicks = 3600;
+        /** Blocks restored per tick at most (bigger batches are spread over the following ticks). */
+        public int blocksPerTick = 1500;
+        /**
+         * What to do when a damaged position was changed by something else (a player placed a block, a crop grew into it)
+         * before it was due: "preserve" keeps that change and hands the original block back as drops, "force" puts the
+         * original back regardless.
+         */
+        public String conflictPolicy = "preserve";
+        /** Restoration also covers containers and other block entities (destroyed with their data kept, never dropped). */
+        public boolean destroyBlockEntities = true;
+        /** How long after a change its neighbours are watched for knock-on effects (falling sand, popped torches, water). */
+        public int cascadeWatchTicks = 60;
+        /** How many steps a knock-on chain is followed (a 12-high sand column needs 12). */
+        public int cascadeDepth = 24;
+        /** Restore paintings and item frames that hung on destroyed blocks. */
+        public boolean restoreHangingEntities = true;
+        /** A block damaged again before it came back restarts its timer (the original snapshot is always kept). */
+        public boolean rearmOnRepeatDamage = false;
+    }
+
+    /** Domain clash: a rhythm duel. Players' timing decides it; domain strength and stats do not. */
+    public static class Clash {
+        /** Ticks of countdown before the first note. */
+        public int countdownTicks = 50;
+        /** Tempo of the chart. Notes land on beats and half beats. */
+        public float bpm = 132f;
+        /** Notes per participant in the main sequence. */
+        public int notes = 28;
+        /** Timing windows in milliseconds either side of the note. */
+        public int perfectWindowMs = 45;
+        public int greatWindowMs = 90;
+        public int goodWindowMs = 140;
+        public int scorePerfect = 100;
+        public int scoreGreat = 75;
+        public int scoreGood = 40;
+        public int scoreMiss = 0;
+        /** How far one judgement moves the shared meter (the meter runs from -1 to 1; reaching the end ends the clash). */
+        public float pushPerfect = 0.075f;
+        public float pushGreat = 0.05f;
+        public float pushGood = 0.02f;
+        public float pushMiss = -0.045f;
+        /** A press with no note to hit: breaks the streak and costs a little ground. */
+        public float pushGhostTap = -0.015f;
+        /** Streak bonus on pushes: +streakBonusPerNote per consecutive hit, capped at streakBonusCap (0.35 = +35%). */
+        public float streakBonusPerNote = 0.035f;
+        public float streakBonusCap = 0.35f;
+        /** Meter within this of the centre, with scores this close (fraction), counts as a tie. */
+        public float tieMeter = 0.06f;
+        public float tieScoreFraction = 0.02f;
+        /** Tie breaking: "sudden_death" plays short extra sequences; "final_sequence" plays one longer decider. */
+        public String tieMode = "sudden_death";
+        public int suddenDeathNotes = 6;
+        public int suddenDeathRounds = 3;
+        public int finalSequenceNotes = 12;
+        /** Latency allowance: how far in the past a reported input time may be (ticks) before it is judged at arrival. */
+        public int maxInputLatencyTicks = 12;
+        /** Ticks after a note's window before an unanswered note counts as missed (lets late packets arrive). */
+        public int missGraceTicks = 6;
+        /** Skill of non-player participants (0 = misses everything, 1 = frame-perfect). */
+        public float botSkill = 0.6f;
+        /** Participants can't move, act or be hit while they duel. */
+        public boolean freezeParticipants = true;
     }
 
     public static class Domain {
