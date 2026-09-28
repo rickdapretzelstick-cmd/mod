@@ -92,7 +92,12 @@ def main():
                 idx = sections.index(sec) + 1 if sec in sections else 0
                 label = f'{idx:02d}'
                 d.text((16, h + 20), label, font=num_font, fill=(92, 255, 168))
-                d.text((52, h + 16), sec, font=cap_font, fill=(255, 255, 255))
+                # Long captions shrink to fit the strip.
+                size, f = 22, cap_font
+                while size > 12 and d.textlength(sec, font=f) > w - 70:
+                    size -= 1
+                    f = font(BOLD, size)
+                d.text((52, h + 16 + (22 - size) // 2), sec, font=f, fill=(255, 255, 255))
             cache[key] = np.array(frame)
         writer.append_data(cache[key])
 
