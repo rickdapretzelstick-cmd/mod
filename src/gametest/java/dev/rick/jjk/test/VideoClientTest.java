@@ -48,7 +48,7 @@ public class VideoClientTest implements FabricClientGameTest {
             ctx.waitTicks(5);
 
             // Slow the game so every tick can be photographed; the video is rebuilt at real speed afterwards.
-            server.runCommand("tick rate 1");
+            server.runCommand("tick rate 20");
             ctx.waitTicks(3);
             frames(ctx, server, in, 10);
             // Awakening.
@@ -72,7 +72,7 @@ public class VideoClientTest implements FabricClientGameTest {
             });
             server.runCommand("execute as @a at @s run tp @s ~ ~ ~ -90 8");
             ctx.waitTicks(10);
-            server.runCommand("tick rate 1");
+            server.runCommand("tick rate 20");
             ctx.waitTicks(3);
             // A rival opens their domain...
             server.runOnServer(s -> {
@@ -117,25 +117,24 @@ public class VideoClientTest implements FabricClientGameTest {
     private void frames(ClientGameTestContext ctx, TestServerContext server, TestInput in, int n) {
         int[] keys = {InputConstants.KEY_LEFT, InputConstants.KEY_DOWN, InputConstants.KEY_UP, InputConstants.KEY_RIGHT};
         long target = ctx.computeOnClient(mc -> mc.level.getGameTime()) + n;
-        while (ctx.computeOnClient(mc -> mc.level.getGameTime()) < target) {
-            ctx.waitTick();
-            int[] due = ctx.computeOnClient(mc -> {
+        double[] now = {0};
+        while (now[0] < target) {
+            // One call per frame: which prompts are due, and the exact time this frame shows.
+            double[] info = ctx.computeOnClient(mc -> {
                 var v = ClashClient.view();
-                if (v == null || mc.level == null) return new int[0];
-                double clock = mc.level.getGameTime() - v.startTick;
-                java.util.List<Integer> out = new java.util.ArrayList<>();
-                for (int k = 0; k < v.times.length; k++) if (Math.abs(v.times[k] - clock) <= 0.5) out.add(v.round * 1000 + k);
-                return out.stream().mapToInt(Integer::intValue).toArray();
+                java.util.List<Double> out = new java.util.ArrayList<>();
+                out.add(mc.level.getGameTime() + (double) mc.getDeltaTracker().getGameTimeDeltaPartialTick(false));
+                if (v != null) {
+                    double clock = mc.level.getGameTime() - v.startTick;
+                    for (int k = 0; k < v.times.length; k++) {
+                        if (Math.abs(v.times[k] - clock) <= 0.5 && pressed.add(v.round * 1000 + k)) out.add((double) v.lanes[k]);
+                    }
+                }
+                return out.stream().mapToDouble(Double::doubleValue).toArray();
             });
-            for (int id : due) {
-                if (!pressed.add(id)) continue;
-                int lane = ctx.computeOnClient(mc -> {
-                    var v = ClashClient.view();
-                    return v == null || id % 1000 >= v.lanes.length ? -1 : (int) v.lanes[id % 1000];
-                });
-                if (lane >= 0) in.pressKey(keys[lane]);
-            }
-            double t = ctx.computeOnClient(mc -> mc.level.getGameTime() + (double) mc.getDeltaTracker().getGameTimeDeltaPartialTick(false));
+            now[0] = info[0];
+            for (int i = 1; i < info.length; i++) in.pressKey(keys[(int) info[i]]);
+            double t = info[0];
             String name = String.format("v%05d", frame++);
             ctx.takeScreenshot(name);
             log.append(name).append(' ').append(t).append('\n');
