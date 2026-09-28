@@ -63,7 +63,11 @@ public class PachinkoBallEntity extends TechniqueEntity {
     }
 
     private void land(ServerLevel level, @Nullable LivingEntity stunned) {
-        if (owner != null) ReserveBallsAbility.landed(level, owner, position(), doors, stunned);
+        land(level, stunned, false);
+    }
+
+    private void land(ServerLevel level, @Nullable LivingEntity stunned, boolean hit) {
+        if (owner != null) ReserveBallsAbility.landed(level, owner, position(), doors, stunned, hit);
         discard();
     }
 
@@ -100,7 +104,7 @@ public class PachinkoBallEntity extends TechniqueEntity {
                     b.knockback(Knockback.HOLD).hitstun(cfg.ballHitstun).fx("ball_hit", 1f);
                 }
                 boolean connected = HitResolver.resolve(b.build(), t).connected();
-                land(level, connected && !ragdoll ? t : null);
+                land(level, connected && !ragdoll ? t : null, connected);
                 return;
             }
         }

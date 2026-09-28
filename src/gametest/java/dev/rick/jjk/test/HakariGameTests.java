@@ -603,6 +603,49 @@ public class HakariGameTests {
                 .thenSucceed();
     }
 
+    @GameTest(maxTicks = 400, padding = 10)
+    public void visualMovesCountAgainAfterAMiss(GameTestHelper h) {
+        floor(h, 12);
+        TrainingDummy target = dummy(h, 7.5, 4.5);
+        TrainingDummy g = hakari(h, 4.5, 4.5, target);
+        HakariState.of(g).oddsBonus = -5f;
+        int[] riichis = {0};
+        boolean[] inRiichi = {false};
+        h.onEachTick(() -> {
+            Gamble gm = IdleDeathGamble.gambleOf(g);
+            boolean r = gm != null && gm.state() == Gamble.State.RIICHI;
+            if (r && !inRiichi[0]) riichis[0]++;
+            inRiichi[0] = r;
+        });
+        h.startSequence()
+                .thenExecute(() -> DomainManager.expand(g, IdleDeathGamble.INSTANCE))
+                .thenWaitUntil(() -> h.assertTrue(IdleDeathGamble.gambleOf(g) != null, "gambling"))
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_1))
+                .thenIdle(30)
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_2))
+                .thenWaitUntil(() -> h.assertTrue(IdleDeathGamble.gambleOf(g).state() == Gamble.State.SPINNING && riichis[0] == 1, "first Riichi missed, spinning again"))
+                .thenIdle(5)
+                .thenExecute(() -> {
+                    // The first ball hit someone, so a second Reserve Balls within 8s would be Renewal: let that lapse.
+                    h.assertTrue(HakariState.of(g).renewal != null, "the first ball hit someone inside the domain: Renewal is ready");
+                    HakariState.of(g).renewal = null;
+                    press(g, AbilitySlot.SKILL_1);
+                })
+                .thenIdle(30)
+                .thenExecute(() -> {
+                    boolean ok = Casters.get(g).input(AbilitySlot.SKILL_2, true, 0, 0, null);
+                    h.assertTrue(ok, "Shutter Doors cast the second time (refused: " + Casters.get(g).lastRefusal + ")");
+                })
+                .thenWaitUntil(() -> {
+                    Gamble gm = IdleDeathGamble.gambleOf(g);
+                    var cst = Casters.get(g);
+                    h.assertTrue(riichis[0] == 2, "the second pair of visual moves started another Riichi (state " + gm.state() + ", progress " + gm.progress()
+                            + ", attempt " + gm.attempt() + ", busy " + cst.isBusy() + ", cast " + (cst.cast() == null ? "-" : cst.cast().ability.id) + ")");
+                })
+                .thenExecute(() -> DomainManager.collapseOwnedBy(g, DomainInstance.EndReason.CANCELLED))
+                .thenSucceed();
+    }
+
     @GameTest(maxTicks = 20)
     public void jackpotIsImmortalWhileItsMeterLasts(GameTestHelper h) {
         floor(h, 6);

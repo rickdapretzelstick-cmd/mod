@@ -221,22 +221,17 @@ public class HakariPresentationClientTest extends PresentationClientTest {
             film(120);
             section("Everyone caught is frozen while the rules are imparted");
             film(30);
-            section("Land 2 visual moves: Reserve Balls...");
-            in.pressKey(z);
-            film(30);
-            section("...and Shutter Doors (the dropkick, Fever Crush or a Door Guard counter count too)");
-            in.pressKey(x);
-            film(30);
+            section("Land 2 visual moves: Reserve Balls, Shutter Doors, the dropkick, Fever Crush, a Door Guard counter");
+            visualMovesUntilRiichi(z, x);
             section("Riichi! Transit Card (1 star) or Travel Emergency (2 stars): the third reel decides");
             for (int i = 0; i < 150 && gambleState() != GamblePayload.MISS; i++) film(1);
             section("A miss: back to spinning. 4 attempts, and the 4th is a guaranteed pity jackpot");
             server.runOnServer(s -> HakariState.of(s.getPlayerList().getPlayers().getFirst()).oddsBonus = 5f);
             film(30);
+            // (Reserve Balls again within 8s of the first ball hitting would be Renewal, the rewind; start this round fresh.)
+            server.runOnServer(s -> HakariState.of(s.getPlayerList().getPlayers().getFirst()).renewal = null);
             section("Two more visual moves...");
-            in.pressKey(z);
-            film(30);
-            in.pressKey(x);
-            film(20);
+            visualMovesUntilRiichi(z, x);
             section("...Riichi again...");
             for (int i = 0; i < 160 && !ctx.computeOnClient(mc -> ClientState.awakened()); i++) film(1);
             section("JACKPOT: 100s of infinite cursed energy; damage drains the meter instead of killing him");
@@ -292,6 +287,19 @@ public class HakariPresentationClientTest extends PresentationClientTest {
             } catch (java.io.IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    /** Makes visual moves (Reserve Balls, then Shutter Doors, and again if one didn't count) until a Riichi starts. */
+    private void visualMovesUntilRiichi(KeyMapping z, KeyMapping x) {
+        int presses = 0;
+        for (int i = 0; i < 60 && gambleState() != GamblePayload.RIICHI; i++) {
+            int progress = ctx.computeOnClient(mc -> {
+                var gm = ClientState.gambleOf(mc.player.getId());
+                return gm == null || gm.p == null ? 0 : gm.p.progress();
+            });
+            if (gambleState() == GamblePayload.SPINNING && progress < 2) in.pressKey(presses++ % 2 == 0 ? z : x);
+            film(12);
         }
     }
 

@@ -103,10 +103,11 @@ public final class ReserveBallsAbility extends Ability {
     }
 
     /**
-     * Where a ball stopped: the doors of the combination, and (inside Hakari's own domain) the moment Renewal rewinds to.
-     * {@code stunned} is the target the ball stunned (not ragdolled), if any.
+     * Where a ball stopped: the doors of the combination, and (inside Hakari's own domain, if it hit someone) the moment
+     * Renewal rewinds to. {@code stunned} is the target the ball stunned (not ragdolled), if any; {@code hit} whether it
+     * landed on anyone at all.
      */
-    public static void landed(ServerLevel level, LivingEntity owner, Vec3 at, boolean doors, @Nullable LivingEntity stunned) {
+    public static void landed(ServerLevel level, LivingEntity owner, Vec3 at, boolean doors, @Nullable LivingEntity stunned, boolean hit) {
         if (doors) {
             Vec3 spot = stunned != null ? stunned.position() : ShutterDoorsAbility.ground(level, at);
             ShutterTrap.open(level, owner, stunned != null ? ShutterTrap.Mode.BOUNCE : ShutterTrap.Mode.STRIKE, spot, stunned,
@@ -114,7 +115,7 @@ public final class ReserveBallsAbility extends Ability {
         }
         Gamble g = IdleDeathGamble.gambleOf(owner);
         AbilityCaster c = dev.rick.jjk.core.ability.Casters.getOrNull(owner);
-        if (g != null && c != null && !c.isAwakened()) {
+        if (hit && g != null && c != null && !c.isAwakened()) {
             DomainInstance d = g.domain;
             List<LivingEntity> everyone = new ArrayList<>(level.getEntitiesOfClass(LivingEntity.class,
                     new net.minecraft.world.phys.AABB(d.center, d.center).inflate(d.radius + 1), e -> e.isAlive() && d.contains(e)));

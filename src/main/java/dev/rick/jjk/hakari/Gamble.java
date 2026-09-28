@@ -95,6 +95,14 @@ public final class Gamble {
         return state;
     }
 
+    public int progress() {
+        return progress;
+    }
+
+    public int attempt() {
+        return attempt;
+    }
+
     public boolean hitJackpot() {
         return jackpot;
     }
