@@ -18,6 +18,11 @@ public final class ClientState {
     public static int flags;
     public static String activeCast = "";
     public static int castTicks;
+    public static float awakening, awakeningMax = 100;
+    /** Ability id bound to each slot in the current mode ("" when empty). */
+    public static String[] slotAbilities = new String[AbilitySlot.values().length];
+    /** Client tick when the awakened state last changed (drives HUD transitions). */
+    public static long awakenedChangedTick;
     /** Combat stance: left click performs this mod's melee instead of vanilla attacks. */
     public static boolean stanceEnabled = true;
 
@@ -52,6 +57,7 @@ public final class ClientState {
     }
 
     public static void apply(CasterSyncPayload p) {
+        boolean wasAwakened = awakened();
         character = p.character();
         energy = p.energy();
         maxEnergy = p.maxEnergy();
@@ -61,6 +67,13 @@ public final class ClientState {
         flags = p.flags();
         activeCast = p.activeCast();
         castTicks = p.castTicks();
+        awakening = p.awakening();
+        awakeningMax = Math.max(1, p.awakeningMax());
+        String[] ids = p.abilities().split(",", -1);
+        slotAbilities = new String[AbilitySlot.values().length];
+        for (int i = 0; i < slotAbilities.length; i++) slotAbilities[i] = i < ids.length ? ids[i] : "";
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (wasAwakened != awakened() && mc.level != null) awakenedChangedTick = mc.level.getGameTime();
     }
 
     public static void tick() {
@@ -78,6 +91,15 @@ public final class ClientState {
 
     public static int charges(AbilitySlot slot) {
         return slot.ordinal() < charges.length ? charges[slot.ordinal()] : 0;
+    }
+
+    public static boolean awakened() {
+        return (flags & CasterSyncPayload.FLAG_AWAKENED) != 0;
+    }
+
+    public static String abilityIn(AbilitySlot slot) {
+        String s = slot.ordinal() < slotAbilities.length ? slotAbilities[slot.ordinal()] : null;
+        return s == null ? "" : s;
     }
 
     public static boolean flag(int f) {

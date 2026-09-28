@@ -18,8 +18,15 @@ public abstract class EntityRendererMixin {
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void jjk$pose(Entity entity, EntityRenderState state, float partialTicks, CallbackInfo ci) {
         if (entity instanceof LivingEntity le) {
-            PoseFrame f = ClientAnimations.compute(le, le.level().getGameTime() + partialTicks);
+            float now = le.level().getGameTime() + partialTicks;
+            PoseFrame f = ClientAnimations.compute(le, now);
             state.setData(PoseKeys.FRAME, f);
+            int visual = 0;
+            if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.BLINDFOLD)) visual |= PoseKeys.BLINDFOLD;
+            if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.AWAKENED)) visual |= PoseKeys.AWAKENED;
+            state.setData(PoseKeys.VISUAL, visual);
+            float t = ClientAnimations.elapsed(le.getId(), "awaken", now);
+            state.setData(PoseKeys.BLINDFOLD_OFF, t < 0 ? 0f : net.minecraft.util.Mth.clamp((t - 6f) / 8f, 0f, 1f));
         }
     }
 }

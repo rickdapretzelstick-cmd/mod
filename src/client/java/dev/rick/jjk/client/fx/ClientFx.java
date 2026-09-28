@@ -333,6 +333,95 @@ public final class ClientFx {
                 }
             }
             case "domain_surehit_tick" -> burst(level, pos, q(3), 0.2, Sprite.STAR, WHITE, 0.08f, 6);
+            // --- Awakening ---
+            case "awaken_start" -> {
+                sound("max_charge", pos, 2f, 0.8f);
+                for (int i = 0; i < q(50); i++) {
+                    Vec3 from = pos.add(randomUnit().scale(4 + RNG.nextDouble() * 3));
+                    add(level, from, Vec3.ZERO, Sprite.GLOW, i % 2 == 0 ? WHITE : BLUE_LIGHT, 0.8f, 0.18f, 0.04f, 20).attract(pos, 0.02).spin(0.2f).fadeIn();
+                }
+            }
+            case "awaken" -> {
+                // The eyes open: a column of cursed energy tears upward and a shockwave rolls out.
+                sound("awaken", pos, 5f, 1f);
+                flashAt(level, pos, 7f, WHITE, 10);
+                flashAt(level, pos, 12f, BLUE_LIGHT, 18);
+                ringBurst(level, pos, 1f, 22f, BLUE_LIGHT, 0.9f, 20);
+                ringBurst(level, pos.add(0, -1, 0), 1f, 14f, WHITE, 0.8f, 14);
+                for (int i = 0; i < q(90); i++) {
+                    double a = RNG.nextDouble() * Mth.TWO_PI, r = RNG.nextDouble() * 1.2;
+                    Vec3 at = pos.add(Math.cos(a) * r, -1 + RNG.nextDouble(), Math.sin(a) * r);
+                    add(level, at, new Vec3(Math.cos(a) * 0.05, 0.6 + RNG.nextDouble() * 0.9, Math.sin(a) * 0.05), Sprite.GLOW,
+                            i % 3 == 0 ? WHITE : BLUE_LIGHT, 0.9f, 0.35f, 0.05f, 24 + RNG.nextInt(12)).friction(0.95f);
+                }
+                ring3d(level, pos.add(0, -0.9, 0), new Vec3(0, 1, 0), 0.8, q(60), 1.1, WHITE, 0.3f, 16);
+                burst(level, pos, q(40), 1.2, Sprite.SPARK, BLUE_LIGHT, 0.25f, 12);
+            }
+            case "awaken_end" -> {
+                sound("awaken_end", pos, 1.2f, 1f);
+                sphereShell(level, pos, 1.4, q(30), BLUE_LIGHT, 0.14f, 16, -0.02).forEach(x -> x.gravity(0.2f));
+            }
+            // --- Max techniques: the same identities, on another scale ---
+            case "max_blue_cast" -> {
+                sound("max_charge", pos, 1.6f, 1.2f);
+                implode(level, pos.add(dir.scale(1.2)), 3.5, q(40), BLUE, 0.2f, 14);
+                if (mine) ScreenEffects.fovPunch(-0.06f);
+            }
+            case "max_blue_spawn" -> {
+                sound("blue_spawn", pos, 3f, 0.7f);
+                sound("blue_collapse", pos, 2f, 0.6f);
+                implode(level, pos, 12, q(120), BLUE, 0.35f, 22);
+                flashAt(level, pos, 6f, BLUE_LIGHT, 8);
+                ringCollapse(level, pos, 12f, BLUE_LIGHT, 18);
+                ringCollapse(level, pos, 8f, WHITE, 12);
+                distanceShake(pos, 40, 0.5f);
+            }
+            case "max_blue_collapse" -> {
+                sound("blue_collapse", pos, 3.5f, 0.7f);
+                sound("red_explosion", pos, 2f, 1.4f);
+                flashAt(level, pos, 9f, WHITE, 8);
+                ringBurst(level, pos, 1f, 16f, BLUE_LIGHT, 0.9f, 14);
+                burst(level, pos, q(80), 1.1, Sprite.GLOW, BLUE, 0.35f, 16);
+                distanceShake(pos, 50, 0.6f);
+            }
+            case "max_red_charge" -> {
+                sound("max_charge", pos, 1.8f, 1.35f);
+                sound("red_charge", pos, 1.4f, 0.7f);
+                implode(level, pos, 2.5, q(30), RED, 0.16f, 16);
+            }
+            case "max_red_fire" -> {
+                sound("red_fire", pos, 2.5f, 0.7f);
+                sound("purple_fire", pos, 1.2f, 1.6f);
+                flashAt(level, pos, 4f, RED, 6);
+                ring3d(level, pos, dir, 0.3, q(40), 0.8, ORANGE, 0.2f, 10);
+                if (mine) {
+                    ScreenEffects.shake(0.7f, 12);
+                    ScreenEffects.fovPunch(0.1f);
+                }
+            }
+            case "max_red_explosion" -> {
+                sound("red_amplified", pos, 4f, 0.8f);
+                sound("purple_end", pos, 2f, 1.3f);
+                flashAt(level, pos, 10f * s, WHITE, 8);
+                flashAt(level, pos, 16f * s, RED, 14);
+                ringBurst(level, pos, 1f, 20f * s, ORANGE, 0.9f, 16);
+                ringBurst(level, pos, 0.5f, 12f * s, RED, 1f, 10);
+                ring3d(level, pos, new Vec3(0, 1, 0), 1, q(60), 1.6, ORANGE, 0.35f, 16);
+                burst(level, pos, q(120), 1.8, Sprite.SPARK, ORANGE, 0.3f, 14);
+                burst(level, pos, q(50), 1.0, Sprite.GLOW, RED, 0.5f, 18);
+                burst(level, pos, q(24), 0.35, Sprite.SMOKE, GREY, 0.9f, 40);
+                distanceShake(pos, 70, 0.6f);
+            }
+            case "finisher" -> {
+                sound("finisher", pos, 4f, 1f);
+                flashAt(level, pos, 6f, WHITE, 6);
+                ringBurst(level, pos, 0.5f, 10f, WHITE, 1f, 10);
+                for (int i = 0; i < q(40); i++) {
+                    add(level, pos, dir.scale(0.8 + RNG.nextDouble()).add(randomUnit().scale(0.4)), Sprite.SPARK, i % 2 == 0 ? WHITE : GOLD, 1f, 0.3f,
+                            0.05f, 14);
+                }
+            }
+            case "domain_block" -> sound("domain_block", pos, 1f, 0.9f + RNG.nextFloat() * 0.2f);
             default -> {}
         }
     }

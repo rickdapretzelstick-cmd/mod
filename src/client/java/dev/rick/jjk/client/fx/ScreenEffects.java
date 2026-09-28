@@ -13,6 +13,8 @@ public final class ScreenEffects {
     private static float fovKick;
     private static float fovTarget;
     private static long time;
+    private static int impactTicks;
+    private static int impactLength;
 
     private ScreenEffects() {}
 
@@ -48,8 +50,26 @@ public final class ScreenEffects {
         fovTarget = JJKConfig.get().client.fovEffects ? amount : 0;
     }
 
+    /** Impact frame: a hard white flash then a dark hold, for ultimate-level finishes. */
+    public static void impact(int duration) {
+        if (!JJKConfig.get().client.screenFlashes) return;
+        impactLength = Math.max(3, duration);
+        impactTicks = impactLength;
+        shake(1.2f, 14);
+    }
+
+    /** ARGB overlay for the current impact frame (0 when none). */
+    public static int impactColor() {
+        if (impactTicks <= 0) return 0;
+        int elapsed = impactLength - impactTicks;
+        if (elapsed < 2) return 0xE0FFFFFF;
+        if (elapsed < 4) return 0xB0000000;
+        return 0x60FFFFFF;
+    }
+
     public static void tick() {
         time++;
+        if (impactTicks > 0) impactTicks--;
         trauma = Math.max(0, trauma - traumaDecay);
         flashAlpha = Math.max(0, flashAlpha - flashDecay);
         fovKick *= 0.78f;

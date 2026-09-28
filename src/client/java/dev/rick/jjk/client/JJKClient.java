@@ -45,6 +45,11 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.TRAINING_DUMMY, DummyRenderer::new);
 
         InputHandler.init();
+        net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, ctx) -> {
+            if (renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>) {
+                helper.register(new dev.rick.jjk.client.render.BlindfoldLayer(renderer));
+            }
+        });
         HudElementRegistry.addLast(JJK.id("combat_hud"), CombatHud::render);
         LevelRenderEvents.COLLECT_SUBMITS.register(WorldEffectsRenderer::render);
         registerReceivers();
@@ -66,6 +71,7 @@ public class JJKClient implements ClientModInitializer {
                 case CameraPayload.SHAKE -> ScreenEffects.shake(p.intensity(), p.duration());
                 case CameraPayload.FLASH -> ScreenEffects.flash(p.color(), p.duration());
                 case CameraPayload.FOV -> ScreenEffects.fovPunch(p.intensity());
+                case CameraPayload.IMPACT -> ScreenEffects.impact(p.duration());
                 default -> {}
             }
         });

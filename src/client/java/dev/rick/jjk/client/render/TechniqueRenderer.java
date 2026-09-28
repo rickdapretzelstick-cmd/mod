@@ -80,8 +80,15 @@ public class TechniqueRenderer<T extends TechniqueEntity> extends EntityRenderer
         Glow.orb(c, ps, cam.orientation, toCam, r, ClientFx.BLUE, collapsing ? 1.4f : 1f);
         // Distortion shell: a faint rim, like light bending around the attraction.
         Glow.sphere(c, ps, r * 4.2f, 0.45f, 0.7f, 1f, 0.35f, toCam, true);
+        if (s.scale > 1.5f) {
+            // Max Blue: space visibly caving in, a second lensing shell and a dark event horizon at the heart.
+            Glow.sphere(c, ps, r * 7.5f, 0.35f, 0.55f, 1f, 0.3f, toCam, true);
+            Glow.halo(c, ps, cam.orientation, r * 9f, 0.3f, 0.5f, 1f, 0.12f);
+            c.submitCustomGeometry(ps, net.minecraft.client.renderer.rendertype.RenderTypes.endGateway(),
+                    (pose, buf) -> WorldEffectsRenderer.shell(pose, buf, r * 0.28f));
+        }
         // Accretion rings spinning around the core.
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < (s.scale > 1.5f ? 5 : 3); i++) {
             ps.pushPose();
             ps.rotate(Axis.YP.rotationDegrees(s.age * (14 + i * 9)));
             ps.rotate(Axis.XP.rotationDegrees(55 + i * 40));

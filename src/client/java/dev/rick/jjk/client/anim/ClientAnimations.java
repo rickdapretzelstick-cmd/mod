@@ -35,6 +35,12 @@ public final class ClientAnimations {
         LIE.clear();
     }
 
+    /** Ticks since {@code name} started on this entity, or -1 if it isn't playing. */
+    public static float elapsed(int entityId, String name, float now) {
+        Playing p = PLAYING.get(entityId);
+        return p != null && p.def.name.equals(name) ? (now - p.startTime) * p.speed : -1;
+    }
+
     @Nullable
     public static String current(int entityId) {
         Playing p = PLAYING.get(entityId);

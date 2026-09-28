@@ -168,6 +168,24 @@ public class AwakeningDomainTests {
                 .thenSucceed();
     }
 
+    @GameTest(maxTicks = 20)
+    public void ultimateKillsGetFinisherPresentation(GameTestHelper h) {
+        floor(h);
+        TrainingDummy victim = dummy(h, 5, 4);
+        victim.setAutoHeal(false);
+        victim.setHealth(2);
+        TrainingDummy g = gojo(h, 3, 4);
+        HitResolver.resolve(Hit.builder(g, "t").damage(10).tag(AttackTag.TECHNIQUE, AttackTag.ULTIMATE).knockback(Knockback.NONE).build(), victim);
+        h.assertTrue(victim.isDeadOrDying(), "killed");
+        h.assertTrue(victim.getDeltaMovement().length() > 1.5, "an ultimate kill sends the body flying");
+        TrainingDummy other = dummy(h, 5, 6);
+        other.setAutoHeal(false);
+        other.setHealth(2);
+        HitResolver.resolve(Hit.builder(g, "t").damage(10).tag(AttackTag.MELEE).knockback(Knockback.NONE).build(), other);
+        h.assertTrue(other.isDeadOrDying() && other.getDeltaMovement().length() < 0.5, "normal kills stay fast (no finisher)");
+        h.succeed();
+    }
+
     // --- Physical domain ---
 
     private record Scene(BlockPos chest, BlockPos doorLow, BlockPos doorHigh, BlockPos stone, BlockPos water, BlockPos floorPos, Map<BlockPos, BlockState> before) {}

@@ -68,6 +68,40 @@ public final class WorldEffectsRenderer {
             case "blue" -> {
                 if (cast.phase() == 0) orbAt(c, ps, cam, camRot, fingertip(user, partial), 0.08f + 0.04f * Math.min(1, totalAge / 5), ClientFx.BLUE, 1f);
             }
+            case "max_blue" -> {
+                if (cast.phase() == 0) {
+                    float g = Math.min(1f, totalAge / Math.max(1, JJKConfig.get().maxBlue.startup));
+                    Vec3 between = hand(user, partial, true, 0.9).lerp(hand(user, partial, false, 0.9), 0.5);
+                    orbAt(c, ps, cam, camRot, between, 0.15f + 0.55f * g, ClientFx.BLUE, 1.3f);
+                    push(ps, cam, between);
+                    ps.rotate(com.mojang.math.Axis.YP.rotationDegrees(totalAge * 30));
+                    ps.rotate(com.mojang.math.Axis.XP.rotationDegrees(60));
+                    Glow.ring(c, ps, 0.6f + 1.2f * g, 0.18f, 0.5f, 0.75f, 1f, 0.7f);
+                    ps.popPose();
+                }
+            }
+            case "max_red" -> {
+                float charge = Math.min(1f, totalAge / Math.max(1, JJKConfig.get().maxRed.maxCharge));
+                float flicker = 0.85f + 0.3f * Mth.sin(totalAge * 2.9f);
+                Vec3 tip = fingertip(user, partial);
+                orbAt(c, ps, cam, camRot, tip, (0.15f + 0.4f * charge) * flicker, ClientFx.RED, cast.phase() == 1 ? 1.8f : 1.3f);
+                push(ps, cam, tip);
+                ps.rotate(camRot);
+                Glow.halo(c, ps, new org.joml.Quaternionf(), 1.2f + 1.5f * charge, 1f, 0.35f, 0.15f, 0.25f);
+                ps.popPose();
+            }
+            case "awaken" -> {
+                Vec3 base = user.getPosition(partial);
+                float f = Math.min(1f, totalAge / Math.max(1, JJKConfig.get().awakening.transitionTicks));
+                for (int i = 0; i < 5; i++) {
+                    float t = (totalAge * 0.08f + i / 5f) % 1f;
+                    push(ps, cam, base.add(0, t * 3.2, 0));
+                    ps.rotate(com.mojang.math.Axis.YP.rotationDegrees(totalAge * 12 + i * 70));
+                    Glow.ring(c, ps, (1.8f - t * 1.2f) * (0.5f + f), 0.15f, 0.8f, 0.92f, 1f, 0.7f * (1 - t));
+                    ps.popPose();
+                }
+                orbAt(c, ps, cam, camRot, base.add(0, user.getBbHeight() * 0.55, 0), 0.4f + 0.8f * f, ClientFx.BLUE_LIGHT, 0.6f);
+            }
             case "red" -> {
                 float charge = Math.min(1f, totalAge / Math.max(1, JJKConfig.get().red.maxCharge));
                 float flicker = 0.85f + 0.3f * Mth.sin(totalAge * 2.3f);
@@ -167,7 +201,8 @@ public final class WorldEffectsRenderer {
         boolean inside = cam.distanceTo(d.center) < r;
         push(ps, cam, d.center);
         // The barrier: an infinite starfield enclosing the battlefield. Drawn double-sided so it reads from both sides.
-        float rr = r;
+        // Just inside the physical barrier so block faces never poke through the starfield.
+        float rr = Math.max(0.5f, r - 0.35f);
         c.submitCustomGeometry(ps, RenderTypes.endPortal(), (pose, buf) -> sphereShell(pose, buf, rr, false));
         c.submitCustomGeometry(ps, RenderTypes.endPortal(), (pose, buf) -> sphereShell(pose, buf, rr, true));
         Vector3f toCam = new Vector3f((float) (cam.x - d.center.x), (float) (cam.y - d.center.y), (float) (cam.z - d.center.z));
@@ -181,6 +216,36 @@ public final class WorldEffectsRenderer {
                 ps.rotate(Axis.YP.rotation(t * (1 + i * 0.15f) + i));
                 ps.rotate(Axis.XP.rotation(0.4f + i * 0.45f + Mth.sin(t + i) * 0.2f));
                 Glow.ring(c, ps, r * (0.55f + i * 0.07f), 0.25f, 0.8f, 0.9f, 1f, 0.22f);
+                ps.popPose();
+            }
+            // A black hole hanging over the battlefield, with a burning accretion disc, and distant galaxies on the walls.
+            Vec3 holeOffset = new Vec3(0, r * 0.5, 0);
+            ps.pushPose();
+            ps.translate(holeOffset.x, holeOffset.y, holeOffset.z);
+            float hr = Math.max(1.2f, r * 0.08f);
+            c.submitCustomGeometry(ps, RenderTypes.endGateway(), (pose, buf) -> sphereShell(pose, buf, hr, false));
+            ps.rotate(com.mojang.math.Axis.XP.rotationDegrees(72));
+            ps.rotate(com.mojang.math.Axis.YP.rotation(t * 3));
+            for (int i = 0; i < 4; i++) Glow.ring(c, ps, hr * (1.5f + i * 0.45f), hr * 0.35f, 1f, 0.85f - i * 0.12f, 0.6f + i * 0.1f, 0.55f - i * 0.1f);
+            ps.popPose();
+            Vector3f holeToCam = new Vector3f((float) (cam.x - d.center.x), (float) (cam.y - d.center.y - holeOffset.y), (float) (cam.z - d.center.z));
+            ps.pushPose();
+            ps.translate(0, holeOffset.y, 0);
+            Glow.sphere(c, ps, hr * 1.3f, 0.6f, 0.75f, 1f, 0.4f, holeToCam, true);
+            ps.popPose();
+            java.util.Random rnd = new java.util.Random(d.id * 31L);
+            for (int i = 0; i < 5; i++) {
+                double yaw = rnd.nextDouble() * Math.PI * 2, pitch = 0.15 + rnd.nextDouble() * 0.9;
+                Vec3 at = new Vec3(Math.cos(yaw) * Math.cos(pitch), Math.sin(pitch), Math.sin(yaw) * Math.cos(pitch)).scale(r * 0.9);
+                ps.pushPose();
+                ps.translate(at.x, at.y, at.z);
+                ps.rotate(camRot);
+                float gs = 1.5f + rnd.nextFloat() * 2.5f;
+                float[] col = rnd.nextBoolean() ? new float[]{0.6f, 0.75f, 1f} : new float[]{0.85f, 0.7f, 1f};
+                Glow.halo(c, ps, new org.joml.Quaternionf(), gs, col[0], col[1], col[2], 0.35f);
+                ps.rotate(com.mojang.math.Axis.XP.rotationDegrees(90));
+                ps.rotate(com.mojang.math.Axis.YP.rotation(t * (0.5f + i * 0.2f)));
+                Glow.ring(c, ps, gs * 0.6f, gs * 0.25f, col[0], col[1], col[2], 0.35f);
                 ps.popPose();
             }
             if (JJKConfig.get().domain.voidFloor) {
@@ -208,6 +273,11 @@ public final class WorldEffectsRenderer {
                 }
             }
         }
+    }
+
+    /** Outward-facing sphere for position-only render types. */
+    static void shell(PoseStack.Pose pose, com.mojang.blaze3d.vertex.VertexConsumer buf, float r) {
+        sphereShell(pose, buf, r, false);
     }
 
     private static float[] pt(float r, float theta, float phi) {

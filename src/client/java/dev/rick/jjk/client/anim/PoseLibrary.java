@@ -133,6 +133,24 @@ public final class PoseLibrary {
         add(AnimDef.builder("teleport_strike", 10)
                 .key(RIGHT_ARM, 0, 30, 0, 20).key(RIGHT_ARM, 10, -60, 0, 10).key(LEFT_ARM, 0, -60, 20, -10).key(LEFT_ARM, 10, -30, 0, -5)
                 .key(BODY, 0, 12, 20, 0).key(BODY, 10, 0, 0, 0).build());
+        // Awakening: right hand reaches up to the blindfold, drags it down, then the arms throw wide as the energy erupts.
+        add(AnimDef.builder("awaken", 34).blend(2, 6)
+                .key(RIGHT_ARM, 0, -20, 0, 10).key(RIGHT_ARM, 6, -150, -35, 0).key(RIGHT_ARM, 11, -150, -35, 0).key(RIGHT_ARM, 15, -60, -20, 10)
+                .key(RIGHT_ARM, 19, -70, 0, 75).key(RIGHT_ARM, 30, -60, 0, 70).key(RIGHT_ARM, 34, 0, 0, 5)
+                .key(LEFT_ARM, 0, 0, 0, -5).key(LEFT_ARM, 15, 0, 0, -8).key(LEFT_ARM, 19, -70, 0, -75).key(LEFT_ARM, 30, -60, 0, -70).key(LEFT_ARM, 34, 0, 0, -5)
+                .key(HEAD, 0, 0, 0, 0).key(HEAD, 8, 15, 0, 0).key(HEAD, 15, 10, 0, 0).key(HEAD, 19, -25, 0, 0).key(HEAD, 34, 0, 0, 0)
+                .key(BODY, 15, 5, 0, 0).key(BODY, 19, -12, 0, 0).key(BODY, 34, 0, 0, 0).build());
+        // Max Blue: both hands forward, gathering the attraction between them.
+        add(AnimDef.builder("max_blue_cast", 22).blend(1.5f, 6)
+                .key(RIGHT_ARM, 0, -40, 0, 30).key(RIGHT_ARM, 8, -100, -25, 0).key(RIGHT_ARM, 14, -95, -15, 0).key(RIGHT_ARM, 22, -30, 0, 8)
+                .key(LEFT_ARM, 0, -40, 0, -30).key(LEFT_ARM, 8, -100, 25, 0).key(LEFT_ARM, 14, -95, 15, 0).key(LEFT_ARM, 22, -30, 0, -8)
+                .key(BODY, 8, 8, 0, 0).key(BODY, 22, 0, 0, 0).key(HEAD, 8, 6, 0, 0).build());
+        // Max Red: a deeper, braced charge.
+        add(AnimDef.builder("max_red_charge", 10).hold().blend(1.5f, 3)
+                .key(RIGHT_ARM, 0, -60, 0, 10).key(RIGHT_ARM, 10, -95, -8, 0)
+                .key(LEFT_ARM, 0, -30, 0, -5).key(LEFT_ARM, 10, -80, 45, 0)
+                .key(BODY, 10, 10, -18, 0).key(RIGHT_LEG, 10, 25, 0, 5).key(LEFT_LEG, 10, -25, 0, -5).build());
+
         // Domain: the crossed-fingers hand sign held at chest height.
         add(AnimDef.builder("domain_sign", 8).hold().blend(2, 4)
                 .key(RIGHT_ARM, 0, -40, 0, 10).key(RIGHT_ARM, 8, -112, -38, 0)

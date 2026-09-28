@@ -135,4 +135,16 @@ g = np.concatenate([np.sin(2 * np.pi * rng.uniform(400, 4000) * t(0.02)) * rng.u
 save('domain_surehit', mix(g, highpass(noise(0.6), 4000) * env(int(SR * 0.6), 0.001, 6) * 0.3), 0.7)
 tt = t(1.5); grind = np.sign(np.sin(2 * np.pi * 110 * tt)) * 0.3 + np.sin(2 * np.pi * 116.5 * tt) + np.sin(2 * np.pi * 233 * tt) * 0.5
 save('domain_clash', mix(lowpass(grind, 1500) * env(len(tt), 0.05, 2), crackle(1.5, 1200) * 0.5))
+# --- awakening / finishers ---
+tt = t(3.0)
+rise = sine_sweep(1.2, 80, 900) * np.linspace(0, 1, int(SR * 1.2)) ** 2
+erupt = mix(boom(2.2, 70, 20, 1.2, 2), reverse(whoosh(0.6, 300, 9000)) * 0.7, pad_chord(2.2, [220, 330, 440, 659], 0.05) * 0.4,
+            chime(2.2, [1760, 2637, 3520], 2.5) * 0.25)
+save('awaken', delay(np.concatenate([rise * 0.6, erupt]), 0.21, 0.3, 3))
+save('awaken_end', mix(sine_sweep(0.9, 660, 180) * env(int(SR * 0.9), 0.01, 4), whoosh(0.6, 3000, 300) * 0.4))
+save('finisher', mix(boom(1.6, 90, 22, 1.4, 3), highpass(noise(0.08), 2500) * env(int(SR * 0.08), 0.001, 30),
+                      chime(1.4, [1318, 1975, 2637], 3) * 0.35))
+save('domain_block', mix(chime(0.4, [180, 271, 405], 9) * 0.8, thump(0.2, 90, 50, 18)))
+save('max_charge', mix(pad_chord(1.6, [110, 164.8, 220], 0.3) * np.linspace(0.3, 1, int(SR * 1.6)), crackle(1.6, 2000) * np.linspace(0.1, 1, int(SR * 1.6)) * 0.6,
+                      reverse(whoosh(1.6, 150, 7000)) * 0.5))
 print('generated', len(os.listdir(OUT)), 'sounds')

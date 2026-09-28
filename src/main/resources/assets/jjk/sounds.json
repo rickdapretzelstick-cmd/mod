@@ -214,5 +214,35 @@
    "jjk:domain_clash"
   ],
   "subtitle": "subtitles.jjk.domain_clash"
+ },
+ "awaken": {
+  "sounds": [
+   "jjk:awaken"
+  ],
+  "subtitle": "subtitles.jjk.awaken"
+ },
+ "awaken_end": {
+  "sounds": [
+   "jjk:awaken_end"
+  ],
+  "subtitle": "subtitles.jjk.awaken_end"
+ },
+ "finisher": {
+  "sounds": [
+   "jjk:finisher"
+  ],
+  "subtitle": "subtitles.jjk.finisher"
+ },
+ "domain_block": {
+  "sounds": [
+   "jjk:domain_block"
+  ],
+  "subtitle": "subtitles.jjk.domain_block"
+ },
+ "max_charge": {
+  "sounds": [
+   "jjk:max_charge"
+  ],
+  "subtitle": "subtitles.jjk.max_charge"
  }
 }
