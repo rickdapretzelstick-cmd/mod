@@ -3,6 +3,7 @@ package dev.rick.jjk.client.fx;
 import dev.rick.jjk.client.particle.EnergyParticle;
 import dev.rick.jjk.client.particle.EnergyParticle.Sprite;
 import dev.rick.jjk.client.render.Flashes;
+import dev.rick.jjk.client.ClientState;
 import dev.rick.jjk.config.JJKConfig;
 import dev.rick.jjk.core.net.FxPayload;
 import dev.rick.jjk.registry.ModSounds;
@@ -63,7 +64,8 @@ public final class ClientFx {
 
     /** Effects big enough to always be drawn in full, whatever the distance. */
     private static final java.util.Set<String> MAJOR = java.util.Set.of("awaken", "max_blue_spawn", "max_blue_collapse", "max_red_explosion",
-            "purple_fire", "purple_end", "domain_expand", "domain_collapse", "red_explosion", "red_amplified", "finisher");
+            "purple_fire", "purple_end", "domain_expand", "domain_collapse", "red_explosion", "red_amplified", "finisher", "clash_start",
+            "clash_sudden_death", "clash_perfect", "clash_win");
 
     private static float lod = 1f;
 
@@ -605,9 +607,104 @@ public final class ClientFx {
                 Flashes.ring(pos, 0.5f, 10f, WHITE, 1f, 10, now);
                 if (drawn) sparks(level, pos, dir, q(30), 1.2, GOLD, 0.25f, 14);
             }
+            // --- Domain clash ---
+            case "clash_start", "clash_sudden_death" -> {
+                boolean sd = p.id().equals("clash_sudden_death");
+                sound("clash_start", pos, 4f, sd ? 1.2f : 1f);
+                float r = Math.max(4f, s);
+                Flashes.flash(pos, 3f, r * 0.8f, sd ? RED : WHITE, 1f, 10, now);
+                Flashes.lens(pos, 1f, r, sd ? RED : BLUE_LIGHT, 0.9f, 16, now);
+                for (int i = 0; i < 3; i++) Flashes.ground(groundBelow(level, pos), 1f, r * (0.8f + i * 0.35f), i == 0 ? WHITE : BLUE_LIGHT, 0.8f, 16, now + i * 3L);
+                Flashes.beam(pos.add(0, -2, 0), pos.add(0, r * 1.5, 0), 1.2f, WHITE, 0.9f, 14, now);
+                if (drawn) sparks(level, pos, Vec3.ZERO, q(40), 1.0, WHITE, 0.25f, 14);
+                if (mc.player != null && mc.player.position().distanceTo(pos) < r * 3) {
+                    ScreenEffects.shake(0.8f, 16);
+                    ScreenEffects.fovPunch(-0.08f);
+                }
+            }
+            case "clash_perfect" -> {
+                // The duellist's own domain surges: a shockwave out through it, the barrier flares, the front is shoved.
+                float tier = Math.max(1f, s);
+                float[] c = clashColor(p.entityId());
+                ClientState.Domain dom = ClientState.domainOwnedBy(p.entityId());
+                float r = dom != null ? dom.radius : 10f;
+                if (dom != null) {
+                    dom.pulseTick = now;
+                    dom.pulseStrength = tier;
+                }
+                sound("clash_perfect", pos, 1.2f + 0.3f * tier, 0.9f + 0.1f * tier);
+                Flashes.flash(pos, 1.5f * tier, 0.3f, WHITE, 1f, 5, now);
+                Flashes.lens(pos, 0.5f, r * (0.55f + 0.15f * tier), c, 0.55f + 0.1f * tier, 12, now);
+                Flashes.ring(pos, 0.5f, r * 0.5f * tier, c, 0.8f, 10, now);
+                Flashes.ground(groundBelow(level, pos), 0.5f, r * 0.9f, c, 0.7f + 0.1f * tier, 14, now + 1);
+                if (dir.lengthSqr() > 1e-4) {
+                    // The pulse rolls toward the opposing domain in rings.
+                    Vec3 d = dir.normalize();
+                    double reach = dir.length() * 0.6;
+                    int rings = 2 + Math.round(tier);
+                    for (int i = 0; i < rings; i++) {
+                        Vec3 at = pos.add(d.scale(reach * (i + 1) / rings));
+                        Flashes.ripple(at, d, 0.5f, 2f + tier * 1.2f, i % 2 == 0 ? c : WHITE, 0.8f, 8, now + i * 2L);
+                    }
+                    Flashes.beam(pos, pos.add(d.scale(reach)), 0.25f * tier, c, 0.8f, 7, now);
+                }
+                if (drawn) {
+                    sparks(level, pos, Vec3.ZERO, q(Math.round(14 * tier)), 0.6 + 0.2 * tier, c, 0.16f, 10);
+                    // Stars in the void flare outward from the duellist.
+                    if (dom != null) sphereShell(level, dom.center, r * 0.85, q(Math.round(10 * tier)), WHITE, 0.2f, 12, 0.08);
+                }
+                if (mine) {
+                    ScreenEffects.fovPunch(0.02f * tier);
+                    ScreenEffects.shake(0.12f * tier, 5);
+                }
+            }
+            case "clash_hit" -> {
+                float[] c = clashColor(p.entityId());
+                sound("clash_hit", pos, 0.8f, 0.9f + 0.2f * s);
+                Flashes.ring(pos, 0.3f, 2.2f * s, c, 0.6f, 7, now);
+                Flashes.lens(pos, 0.3f, 2.5f * s, c, 0.35f, 7, now);
+                if (drawn) sparks(level, pos, Vec3.ZERO, q(5), 0.3, c, 0.1f, 6);
+            }
+            case "clash_miss" -> {
+                // The domain falters: its energy flickers and caves in a little.
+                ClientState.Domain dom = ClientState.domainOwnedBy(p.entityId());
+                if (dom != null) dom.unstableUntil = now + 10;
+                sound("clash_miss", pos, 0.6f, 0.9f + RNG.nextFloat() * 0.15f);
+                Flashes.lens(pos, 2.2f, 0.3f, GREY, 0.45f, 6, now);
+                if (drawn) burst(level, pos, q(5), 0.06, Sprite.SMOKE, GREY, 0.35f, 12);
+                if (mine) ScreenEffects.shake(0.12f, 4);
+            }
+            case "clash_win" -> {
+                // The winner's domain swallows the other.
+                float r = Math.max(6f, s);
+                float[] c = clashColor(p.entityId());
+                sound("clash_win", pos, 5f, 1f);
+                Vec3 ground = groundBelow(level, pos);
+                Flashes.flash(pos, 3f, r, WHITE, 1f, 12, now);
+                Flashes.lens(pos, 1f, r * 1.3f, c, 0.95f, 20, now);
+                for (int i = 0; i < 3; i++) Flashes.ground(ground, 1f, r * (0.9f + i * 0.4f), i == 0 ? WHITE : c, 0.9f - i * 0.2f, 18 + i * 4, now + i * 4L);
+                Flashes.beam(ground, ground.add(0, r * 2.2, 0), 2f, c, 1f, 24, now);
+                if (drawn) sparks(level, pos, Vec3.ZERO, q(60), 1.4, c, 0.3f, 16);
+                distanceShake(pos, r * 3, 0.8f);
+                if (mc.player != null && mc.player.position().distanceTo(pos) < r * 2) ScreenEffects.impact(4);
+            }
             case "domain_block" -> sound("domain_block", pos, 1f, 0.9f + RNG.nextFloat() * 0.2f);
             default -> {}
         }
+    }
+
+    /** The clash colour of whoever owns this entity's domain (as the clash announced it), as rgb floats. */
+    private static float[] clashColor(int entityId) {
+        dev.rick.jjk.client.clash.ClashClient.View v = dev.rick.jjk.client.clash.ClashClient.view();
+        if (v != null) {
+            for (int i = 0; i < v.entities.length; i++) {
+                if (v.entities[i] == entityId) {
+                    int c = v.colors[i];
+                    return new float[] {(c >> 16 & 255) / 255f, (c >> 8 & 255) / 255f, (c & 255) / 255f};
+                }
+            }
+        }
+        return BLUE_LIGHT;
     }
 
     // --- composite effects ---

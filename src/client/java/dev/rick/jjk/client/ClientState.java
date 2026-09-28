@@ -48,6 +48,17 @@ public final class ClientState {
         public long phaseStartTick;
         /** Smoothly animated 0..1 barrier formation. */
         public float formation;
+        /** Clash feedback: last perfect-input pulse (game time, strength) and a destabilised-until time after a miss. */
+        public long pulseTick = Long.MIN_VALUE;
+        public float pulseStrength;
+        public long unstableUntil = Long.MIN_VALUE;
+    }
+
+    /** The live domain owned by this entity, if any. */
+    @org.jetbrains.annotations.Nullable
+    public static Domain domainOwnedBy(int entityId) {
+        for (Domain d : DOMAINS.values()) if (d.ownerId == entityId && d.phase != dev.rick.jjk.core.net.DomainPayload.REMOVED) return d;
+        return null;
     }
 
     private ClientState() {}

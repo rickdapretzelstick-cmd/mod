@@ -165,4 +165,17 @@ save('max_red_explosion', delay(mix(boom(2.6, 110, 16, 1.4, 2), crackle(2.4, 300
 # Purple: the two opposites grinding against each other before they fuse.
 tt = t(0.9); beat = np.sin(2 * np.pi * 180 * tt) * np.sin(2 * np.pi * 187 * tt) + 0.5 * np.sign(np.sin(2 * np.pi * 90 * tt))
 save('purple_collision', mix(lowpass(beat, 2500) * np.linspace(0.3, 1, len(tt)), crackle(0.9, 3000) * np.linspace(0.2, 1, len(tt)) * 0.6))
+
+# --- domain clash ---
+tt = t(2.2)
+save('clash_start', mix(boom(2.0, 60, 18, 1.2, 2), np.concatenate([reverse(whoosh(0.7, 200, 9000)) * 0.8, np.zeros(int(SR * 1.5))]),
+                        highpass(noise(0.12), 2500) * env(int(SR * 0.12), 0.001, 30), pad_chord(2.2, [110, 116.5, 220], 0.02) * 0.35))
+save('clash_perfect', mix(chime(0.7, [1568, 2349, 3136], 5, 0.001) * 0.7, whoosh(0.35, 800, 6000) * 0.5, thump(0.3, 180, 60, 12) * 0.6))
+save('clash_hit', mix(chime(0.25, [1175, 1760], 16) * 0.6, thump(0.15, 160, 90, 25) * 0.5))
+save('clash_miss', mix(thump(0.35, 110, 55, 10), lowpass(noise(0.25), 800) * env(int(SR * 0.25), 0.001, 14) * 0.5,
+                       sine_sweep(0.3, 330, 180) * env(int(SR * 0.3), 0.005, 9) * 0.3), 0.7)
+save('clash_win', delay(mix(boom(2.4, 80, 16, 1.4, 1.8), chime(2.4, [523, 659, 784, 1046, 1568], 1.8) * 0.4,
+                            reverse(whoosh(0.5, 300, 9000)) * 0.6), 0.2, 0.35, 3))
+save('clash_beat', thump(0.18, 95, 45, 20), 0.6)
+save('clash_countdown', mix(chime(0.35, [880, 1760], 10), thump(0.2, 200, 120, 20) * 0.4), 0.7)
 print('generated', len(os.listdir(OUT)), 'sounds')

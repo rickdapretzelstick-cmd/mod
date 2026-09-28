@@ -51,6 +51,7 @@ public class JJKClient implements ClientModInitializer {
             }
         });
         HudElementRegistry.addLast(JJK.id("combat_hud"), CombatHud::render);
+        HudElementRegistry.addLast(JJK.id("clash_hud"), (g, delta) -> dev.rick.jjk.client.clash.ClashHud.render(g));
         LevelRenderEvents.COLLECT_SUBMITS.register(WorldEffectsRenderer::render);
         registerReceivers();
 
@@ -61,6 +62,7 @@ public class JJKClient implements ClientModInitializer {
             ClientAnimations.clear();
             ScreenEffects.reset();
             dev.rick.jjk.client.render.Flashes.clear();
+            dev.rick.jjk.client.clash.ClashClient.reset();
         });
     }
 
@@ -122,6 +124,9 @@ public class JJKClient implements ClientModInitializer {
                 ScreenEffects.fovPunch(0.012f);
             }
         });
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ClashStartPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.ClashClient.start(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ClashUpdatePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.ClashClient.update(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ClashEndPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.ClashClient.end(p));
         ClientPlayNetworking.registerGlobalReceiver(DomainPayload.TYPE, (p, ctx) -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.level != null) ClientState.applyDomain(p, mc.level.getGameTime());
@@ -176,6 +181,7 @@ public class JJKClient implements ClientModInitializer {
         ScreenEffects.tick();
         if (mc.level == null || mc.player == null) return;
         ClientState.tick();
+        dev.rick.jjk.client.clash.ClashClient.tick(mc);
         InputHandler.tick(mc);
         ambientTicks++;
         ambient(mc);

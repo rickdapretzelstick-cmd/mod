@@ -56,7 +56,8 @@ public class GojoGameTests {
         cfg.domain.radius = 6;
         cfg.domain.duration = 60;
         cfg.domain.startup = 10;
-        cfg.domain.clashDuration = 20;
+        cfg.clash.notes = 8;
+        cfg.clash.countdownTicks = 10;
         cfg.red.range = 12;
         cfg.teleport.targetRange = 12;
         JJKConfig.set(cfg);

@@ -1,13 +1,13 @@
 package dev.rick.jjk.core.domain;
 
 import dev.rick.jjk.config.JJKConfig;
-import dev.rick.jjk.core.ability.AbilityCaster;
-import dev.rick.jjk.core.ability.Casters;
 import dev.rick.jjk.core.combat.Combat;
 import dev.rick.jjk.core.combat.CombatStatus;
 import dev.rick.jjk.core.combat.Statuses;
 import dev.rick.jjk.core.combat.Targeting;
 import dev.rick.jjk.core.fx.Fx;
+import dev.rick.jjk.core.domain.clash.ClashManager;
+import dev.rick.jjk.core.domain.clash.ClashSession;
 import dev.rick.jjk.core.net.DomainPayload;
 import dev.rick.jjk.util.Motion;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -102,6 +102,7 @@ public final class DomainManager {
         List<DomainInstance> list = DOMAINS.get(level);
         if (list == null || list.isEmpty()) return;
         for (DomainInstance d : List.copyOf(list)) tickDomain(d);
+        ClashManager.tick(level);
         list.removeIf(d -> d.phase == DomainInstance.Phase.ENDED);
     }
 
@@ -117,6 +118,7 @@ public final class DomainManager {
                     if (d.clashWith != null) setPhase(d, DomainInstance.Phase.CLASHING);
                     else {
                         setPhase(d, DomainInstance.Phase.ACTIVE);
+                        d.activated = true;
                         d.definition.onActivated(d);
                     }
                 }
@@ -206,9 +208,12 @@ public final class DomainManager {
     private static void startClash(DomainInstance a, DomainInstance b) {
         a.clashWith = b;
         b.clashWith = a;
-        a.clashPressure = 0;
-        b.clashPressure = 0;
         if (b.phase == DomainInstance.Phase.ACTIVE) setPhase(b, DomainInstance.Phase.CLASHING);
+        // Both domains pause (no sure-hit) while their owners duel for control. The duel decides the winner.
+        // Participants in expansion order (b was already standing).
+        ClashSession session = ClashManager.start(b, a, DomainManager::clashFinished);
+        a.clash = session;
+        b.clash = session;
         Vec3 mid = a.center.add(b.center).scale(0.5);
         Fx.play(a.level, "domain_clash", mid, b.center.subtract(a.center), (float) Math.max(a.radius, b.radius), a.owner.getId());
     }
@@ -216,28 +221,37 @@ public final class DomainManager {
     private static void tickClash(DomainInstance d) {
         DomainInstance other = d.clashWith;
         if (other == null || !other.isLive()) {
+            ClashManager.cancel(d.clash);
+            d.clash = null;
             d.clashWith = null;
             setPhase(d, DomainInstance.Phase.ACTIVE);
-            return;
-        }
-        d.clashPressure += pressure(d);
-        // The lower id resolves the pair once both have clashed long enough.
-        if (d.id < other.id && d.phaseAge >= JJKConfig.get().domain.clashDuration && other.phase == DomainInstance.Phase.CLASHING) {
-            DomainInstance loser = d.clashPressure >= other.clashPressure ? other : d;
-            DomainInstance winner = loser == d ? other : d;
-            winner.clashWith = null;
-            loser.clashWith = null;
-            end(loser, DomainInstance.EndReason.CLASH_LOST);
-            setPhase(winner, DomainInstance.Phase.ACTIVE);
-            Fx.play(d.level, "domain_clash_end", winner.center, Vec3.ZERO, (float) winner.radius, winner.owner.getId());
         }
     }
 
-    /** Clash strength per tick: refinement, backed by how much cursed energy the owner still has. */
-    private static float pressure(DomainInstance d) {
-        AbilityCaster c = Casters.getOrNull(d.owner);
-        float energy = c != null && c.maxEnergy() > 0 ? c.energy() / c.maxEnergy() : 0.5f;
-        return d.definition.refinement() * (0.5f + energy) + d.level.getRandom().nextFloat() * 0.3f;
+    /** The duel is over: the winner overwhelms the loser, whose domain collapses and gives its blocks back. */
+    private static void clashFinished(ClashSession s) {
+        DomainInstance winner = s.winnerDomain();
+        for (var p : s.participants()) {
+            DomainInstance d = p.domain;
+            d.clash = null;
+            if (d == winner) continue;
+            d.clashWith = null;
+            if (winner != null) end(d, DomainInstance.EndReason.CLASH_LOST);
+            else if (d.phase == DomainInstance.Phase.CLASHING) setPhase(d, DomainInstance.Phase.ACTIVE);
+        }
+        if (winner == null) return;
+        winner.clashWith = null;
+        if (winner.phase == DomainInstance.Phase.CLASHING || winner.phase == DomainInstance.Phase.FORMING) {
+            setPhase(winner, DomainInstance.Phase.ACTIVE);
+            // A domain that expanded straight into the clash activates now, for the first time.
+            if (!winner.activated) {
+                winner.activated = true;
+                winner.definition.onActivated(winner);
+            }
+        }
+        Fx.play(winner.level, "domain_clash_end", winner.center, Vec3.ZERO, (float) winner.radius, winner.owner.getId());
+        Fx.play(winner.level, "clash_win", winner.owner.position().add(0, 1, 0), Vec3.ZERO, (float) winner.radius, winner.owner.getId());
+        Fx.shake(winner.level, winner.center, winner.radius * 3, 1.0f, 20);
     }
 
     // --- Ending ---
@@ -247,8 +261,11 @@ public final class DomainManager {
         d.endReason = reason;
         DomainInstance partner = d.clashWith;
         d.clashWith = null;
+        if (d.clash != null && d.clash.phase() != ClashSession.Phase.ENDED) ClashManager.cancel(d.clash);
+        d.clash = null;
         if (partner != null) {
             partner.clashWith = null;
+            partner.clash = null;
             if (partner.phase == DomainInstance.Phase.CLASHING) setPhase(partner, DomainInstance.Phase.ACTIVE);
         }
         for (UUID id : List.copyOf(d.victims.keySet())) {

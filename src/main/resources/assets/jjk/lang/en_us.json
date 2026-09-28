@@ -36,5 +36,16 @@
   "subtitles.jjk.max_blue_hum": "Maximum Blue drones",
   "subtitles.jjk.max_blue_collapse": "Maximum Blue implodes",
   "subtitles.jjk.max_red_explosion": "Maximum Red detonates",
-  "subtitles.jjk.purple_collision": "Blue and Red collide"
+  "subtitles.jjk.purple_collision": "Blue and Red collide",
+  "subtitles.jjk.clash_start": "Domains collide",
+  "subtitles.jjk.clash_perfect": "Perfect: domain surges",
+  "subtitles.jjk.clash_hit": "Clash hit",
+  "subtitles.jjk.clash_miss": "Domain falters",
+  "subtitles.jjk.clash_win": "Domain overwhelms",
+  "subtitles.jjk.clash_beat": "Clash beat",
+  "subtitles.jjk.clash_countdown": "Clash countdown",
+  "key.jjk.clash_left": "Clash: left",
+  "key.jjk.clash_down": "Clash: down",
+  "key.jjk.clash_up": "Clash: up",
+  "key.jjk.clash_right": "Clash: right"
 }

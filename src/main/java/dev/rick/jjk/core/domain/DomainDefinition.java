@@ -9,8 +9,13 @@ import net.minecraft.world.entity.LivingEntity;
 public interface DomainDefinition {
     String id();
 
-    /** Clash strength before the owner's cursed energy is factored in. */
-    float refinement();
+    /**
+     * The domain's colour in a clash (the meter, prompts and energy pulses). Clashes are decided by the players'
+     * timing alone; nothing about the domain itself affects the outcome.
+     */
+    default int clashColor() {
+        return 0xFF9FD8FF;
+    }
 
     double radius(LivingEntity owner);
 

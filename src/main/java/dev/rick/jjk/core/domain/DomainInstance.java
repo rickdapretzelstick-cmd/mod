@@ -27,7 +27,9 @@ public final class DomainInstance {
     int phaseAge;
     int activeAge;
     @Nullable DomainInstance clashWith;
-    float clashPressure;
+    @Nullable dev.rick.jjk.core.domain.clash.ClashSession clash;
+    /** onActivated has run (a domain that expands straight into a clash activates only if it wins). */
+    boolean activated;
     @Nullable EndReason endReason;
     @Nullable dev.rick.jjk.core.domain.structure.DomainStructure structure;
     /** Victim UUID → ticks spent inside. */
@@ -41,6 +43,11 @@ public final class DomainInstance {
         this.center = center;
         this.radius = radius;
         this.duration = duration;
+    }
+
+    @Nullable
+    public dev.rick.jjk.core.domain.clash.ClashSession clash() {
+        return clash;
     }
 
     public Phase phase() {

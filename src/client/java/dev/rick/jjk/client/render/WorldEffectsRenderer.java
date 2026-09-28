@@ -42,6 +42,7 @@ public final class WorldEffectsRenderer {
             renderCast(c, ps, cam, camRot, user, e.getValue(), now, partial);
         }
         for (ClientState.Domain d : ClientState.DOMAINS.values()) renderDomain(c, ps, cam, camRot, d, now, partial);
+        renderClashFront(c, ps, cam, camRot, now, partial);
         renderInfinity(c, ps, cam, mc, partial);
         Flashes.render(c, ps, cam, camRot, now, partial);
     }
@@ -184,6 +185,51 @@ public final class WorldEffectsRenderer {
         ps.popPose();
     }
 
+    /**
+     * Where two clashing domains meet: a wall of colliding energy between their centres, shoved toward whoever is losing
+     * the clash and crackling harder the better both sides are playing.
+     */
+    private static void renderClashFront(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, long now, float partial) {
+        dev.rick.jjk.client.clash.ClashClient.View v = dev.rick.jjk.client.clash.ClashClient.view();
+        if (v == null || v.domains.length < 2) return;
+        ClientState.Domain a = ClientState.DOMAINS.get(v.domains[0]), b = ClientState.DOMAINS.get(v.domains[1]);
+        if (a == null || b == null || a.center == null || b.center == null) return;
+        Vec3 ab = b.center.subtract(a.center);
+        double dist = ab.length();
+        if (dist < 0.1) return;
+        Vec3 n = ab.scale(1 / dist);
+        float t = 0.5f + v.shownMeter * 0.35f;
+        Vec3 front = a.center.add(ab.scale(t)).add(0, 1.5, 0);
+        float size = Math.max(3f, Math.min(a.radius, b.radius) * 0.85f);
+        float heat = Math.min(4f, v.heat[0] + v.heat[1]);
+        float time = now + partial;
+        float[] ca = rgb(v.colors[0]), cb = rgb(v.colors[1]);
+        push(ps, cam, front);
+        Flashes.orientY(ps, n);
+        // Two walls of energy pressing into each other, with waves rolling out from the contact.
+        ps.pushPose();
+        ps.translate(0, -0.35f, 0);
+        Glow.ring(c, ps, size * (0.96f + 0.03f * Mth.sin(time * 0.9f)), size * 0.35f, ca[0], ca[1], ca[2], 0.35f + 0.1f * heat);
+        ps.popPose();
+        ps.pushPose();
+        ps.translate(0, 0.35f, 0);
+        Glow.ring(c, ps, size * (0.96f + 0.03f * Mth.cos(time * 1.1f)), size * 0.35f, cb[0], cb[1], cb[2], 0.35f + 0.1f * heat);
+        ps.popPose();
+        for (int i = 0; i < 3; i++) {
+            float w = ((time * (0.06f + 0.02f * heat)) + i / 3f) % 1f;
+            Glow.ring(c, ps, size * w, 0.4f + size * 0.05f, 1f, 1f, 1f, (1 - w) * (0.35f + 0.1f * heat));
+        }
+        Glow.spikes(c, ps, 6 + Math.round(heat * 3), 0.3f, size * 0.9f, 0.12f, 1f, 1f, 1f, 0.6f + 0.1f * heat, (long) (time * 0.5f));
+        ps.popPose();
+        push(ps, cam, front);
+        Glow.halo(c, ps, camRot, 2.5f + heat, 1f, 1f, 1f, 0.5f + 0.1f * heat);
+        ps.popPose();
+    }
+
+    private static float[] rgb(int c) {
+        return new float[] {(c >> 16 & 255) / 255f, (c >> 8 & 255) / 255f, (c & 255) / 255f};
+    }
+
     private static void segment(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Vec3 a, Vec3 b, float width, float[] col, float alpha) {
         Vec3 d = b.subtract(a);
         float len = (float) d.length();
@@ -222,6 +268,14 @@ public final class WorldEffectsRenderer {
             default -> {}
         }
         if (r < 0.2f) return;
+        // Clash feedback: a perfect input makes the whole domain flare; a miss makes it flicker and dim.
+        float pulse = 0f;
+        if (d.pulseTick != Long.MIN_VALUE) {
+            float pa = now - d.pulseTick + partial;
+            if (pa >= 0 && pa < 14) pulse = (1 - pa / 14f) * d.pulseStrength;
+        }
+        edgeGlow += pulse * 0.9f;
+        if (now < d.unstableUntil) edgeGlow *= 0.35f + 0.65f * Math.abs(Mth.sin((now + partial) * 4.7f));
         boolean inside = cam.distanceTo(d.center) < r;
         push(ps, cam, d.center);
         // The barrier: an infinite starfield enclosing the battlefield. Drawn double-sided so it reads from both sides.
@@ -249,7 +303,7 @@ public final class WorldEffectsRenderer {
                 ps.pushPose();
                 ps.rotate(Axis.YP.rotation(t * (1 + i * 0.15f) + i));
                 ps.rotate(Axis.XP.rotation(0.4f + i * 0.45f + Mth.sin(t + i) * 0.2f));
-                Glow.ring(c, ps, r * (0.55f + i * 0.07f), 0.25f, 0.8f, 0.9f, 1f, 0.22f);
+                Glow.ring(c, ps, r * (0.55f + i * 0.07f), 0.25f, 0.8f, 0.9f, 1f, 0.22f * (1 + pulse));
                 ps.popPose();
             }
             // A black hole hanging over the battlefield, with a burning accretion disc, and distant galaxies on the walls.

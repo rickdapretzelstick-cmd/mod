@@ -32,8 +32,8 @@ public final class UnlimitedVoid implements DomainDefinition {
     }
 
     @Override
-    public float refinement() {
-        return 1.3f;
+    public int clashColor() {
+        return 0xFF7FC8FF;
     }
 
     @Override

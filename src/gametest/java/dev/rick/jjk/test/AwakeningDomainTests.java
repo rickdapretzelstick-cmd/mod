@@ -54,7 +54,8 @@ public class AwakeningDomainTests {
         cfg.domain.radius = 6;
         cfg.domain.duration = 60;
         cfg.domain.startup = 10;
-        cfg.domain.clashDuration = 20;
+        cfg.clash.notes = 8;
+        cfg.clash.countdownTicks = 10;
         cfg.purple.range = 14;
         cfg.awakening.transitionTicks = 10;
         JJKConfig.set(cfg);

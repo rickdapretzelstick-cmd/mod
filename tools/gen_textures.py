@@ -54,3 +54,33 @@ img[:8, :8, 3] = 0; img[:8, 24:40, 3] = 0; img[:16, 56:, 3] = 0  # unused UV reg
 img[0:16, 32:64, 3] = 0  # hat layer transparent
 Image.fromarray(img, 'RGBA').save(os.path.join(ROOT, 'entity', 'training_dummy.png'))
 print('textures written')
+
+# --- Domain clash prompts (white, tinted in code). Arrow points LEFT; other lanes rotate it. ---
+GUI = os.path.join(ROOT, 'gui')
+os.makedirs(GUI, exist_ok=True)
+def arrow_mask(n, inset=0.0):
+    yy, xx = np.mgrid[0:n, 0:n] / (n - 1)
+    u, v = xx, yy - 0.5
+    head = (u >= 0.08 + inset) & (u <= 0.55) & (np.abs(v) <= (u - 0.08 - inset) * 0.95)
+    shaft = (u > 0.5) & (u <= 0.92 - inset) & (np.abs(v) <= 0.17 - inset * 0.6)
+    return (head | shaft).astype(float)
+def soften(m, k=2):
+    from PIL import ImageFilter
+    im = Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(k))
+    return np.array(im) / 255.0
+def save_gui(name, alpha):
+    a = np.clip(alpha, 0, 1)
+    img = np.zeros(a.shape + (4,), np.uint8)
+    img[..., :3] = 255
+    img[..., 3] = (a * 255).astype(np.uint8)
+    Image.fromarray(img, 'RGBA').save(os.path.join(GUI, name + '.png'))
+A = 64
+outer = arrow_mask(A)
+inner = arrow_mask(A, 0.07)
+save_gui('clash_arrow', np.clip(outer * 0.55 + soften(outer, 3) * 0.6 + inner * 0.5, 0, 1))
+from PIL import ImageFilter
+eroded = np.array(Image.fromarray((outer * 255).astype(np.uint8)).filter(ImageFilter.MinFilter(7))) / 255.0
+save_gui('clash_receptor', np.clip(soften(outer - eroded, 1) * 1.5, 0, 1))
+yy, xx = np.mgrid[0:A, 0:A]
+rr = np.hypot(xx - (A - 1) / 2, yy - (A - 1) / 2) / (A / 2)
+save_gui('clash_burst', np.exp(-((rr - 0.7) / 0.14) ** 2) * (rr < 1) + np.exp(-rr ** 2 * 6) * 0.6)

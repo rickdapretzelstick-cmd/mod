@@ -42,6 +42,8 @@ public final class CombatStatus {
     public static final CombatStatus IN_DOMAIN = register(builder("in_domain"));
     /** Mid-transformation (awakening): rooted, can't act, untouchable. */
     public static final CombatStatus AWAKENING = register(builder("awakening").lockMovement().lockActions().evasive());
+    /** Locked in a domain clash: rooted, can't act, untouchable while the duel plays out. */
+    public static final CombatStatus CLASHING = register(builder("clashing").lockMovement().lockActions().lockTechniques().evasive());
     /** Awakened state (informational, drives visuals for everyone). */
     public static final CombatStatus AWAKENED = register(builder("awakened"));
     /** Wearing the blindfold (informational, drives the blindfold visual). */

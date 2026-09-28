@@ -8,7 +8,8 @@
     "fabric-gametest": [
       "dev.rick.jjk.test.GojoGameTests",
       "dev.rick.jjk.test.AwakeningDomainTests",
-      "dev.rick.jjk.test.WorldRestorationTests"
+      "dev.rick.jjk.test.WorldRestorationTests",
+      "dev.rick.jjk.test.ClashTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.GojoClientGameTest"

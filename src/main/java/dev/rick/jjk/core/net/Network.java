@@ -18,6 +18,7 @@ public final class Network {
         var c2s = PayloadTypeRegistry.serverboundPlay();
         c2s.register(MeleeInputPayload.TYPE, MeleeInputPayload.CODEC);
         c2s.register(AbilityInputPayload.TYPE, AbilityInputPayload.CODEC);
+        c2s.register(ClashInputPayload.TYPE, ClashInputPayload.CODEC);
 
         var s2c = PayloadTypeRegistry.clientboundPlay();
         s2c.register(FxPayload.TYPE, FxPayload.CODEC);
@@ -28,6 +29,9 @@ public final class Network {
         s2c.register(ComboPayload.TYPE, ComboPayload.CODEC);
         s2c.register(CasterSyncPayload.TYPE, CasterSyncPayload.CODEC);
         s2c.register(DomainPayload.TYPE, DomainPayload.CODEC);
+        s2c.register(ClashStartPayload.TYPE, ClashStartPayload.CODEC);
+        s2c.register(ClashUpdatePayload.TYPE, ClashUpdatePayload.CODEC);
+        s2c.register(ClashEndPayload.TYPE, ClashEndPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
@@ -44,6 +48,8 @@ public final class Network {
             if (hint != null && hint.distanceToSqr(player) > 64 * 64) hint = null;
             caster.input(slot, p.pressed(), Mth.clamp(p.forward(), -1f, 1f), Mth.clamp(p.strafe(), -1f, 1f), hint);
         });
+        ServerPlayNetworking.registerGlobalReceiver(ClashInputPayload.TYPE, (p, ctx) ->
+                dev.rick.jjk.core.domain.clash.ClashManager.input(ctx.player(), p.session(), p.lane(), p.time()));
     }
 }
 

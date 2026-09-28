@@ -360,7 +360,6 @@ public final class JJKConfig {
         public float overloadedDamageScale = 0.75f;
         /** Ticks victims stay overloaded after leaving or the domain ending. */
         public int lingeringOverload = 30;
-        public int clashDuration = 60;
         /** The barrier prevents entities from leaving (and outsiders from entering). */
         public boolean closedBarrier = true;
         /** Draw a floor inside the domain so the battlefield visibly changes. */

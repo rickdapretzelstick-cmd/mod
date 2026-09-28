@@ -44,6 +44,25 @@ Every technique has its own look, and power reads at a glance:
 Effects fade when the camera is inside them, spawn fewer particles past 48 blocks, and small ones are sound-only past
 96 blocks. `particleQuality` (0–3) in the client config scales every particle count.
 
+## Domain clashes
+
+When two domains overlap they don't just fight on stats — the owners duel for control in a rhythm minigame. Both get
+the same chart of prompts (← ↓ ↑ →, played with the arrow keys or A S W D). Each press is judged on timing
+(PERFECT / GREAT / GOOD / MISS, windows configurable) and pushes a shared tug-of-war meter; streaks push harder (capped,
+so consistency matters more than a lucky run). Every PERFECT sends an energy pulse out of the player through their
+domain; misses make it flicker. Whoever holds the meter at the end — or drives it all the way across — wins; the
+loser's domain collapses and gives its blocks back. Dead-even clashes go to sudden death. Domain strength, stats and
+who expanded first never decide it.
+
+![Domain clash](docs/screenshots/domain_clash.png)
+
+## Temporary battle damage
+
+Every block a technique destroys comes back exactly — state, container contents, the torch on it, the painting on
+the wall, the sand that fell — three minutes after *that block* was damaged. Nothing drops, so nothing duplicates.
+Player changes made in the meantime are kept (`restoration.conflictPolicy`). Pending restorations survive restarts.
+Domain structures are separate and restore as soon as the domain ends. `/jjk restore status|now|forget`.
+
 ## Commands (op)
 
 `/jjk arena` test arena with dummies · `/jjk dummy [stand|jump|fight] [n]` · `/jjk nocooldown true|false` ·

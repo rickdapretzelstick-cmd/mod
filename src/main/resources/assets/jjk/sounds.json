@@ -286,5 +286,47 @@
    "jjk:purple_collision"
   ],
   "subtitle": "subtitles.jjk.purple_collision"
+ },
+ "clash_start": {
+  "sounds": [
+   "jjk:clash_start"
+  ],
+  "subtitle": "subtitles.jjk.clash_start"
+ },
+ "clash_perfect": {
+  "sounds": [
+   "jjk:clash_perfect"
+  ],
+  "subtitle": "subtitles.jjk.clash_perfect"
+ },
+ "clash_hit": {
+  "sounds": [
+   "jjk:clash_hit"
+  ],
+  "subtitle": "subtitles.jjk.clash_hit"
+ },
+ "clash_miss": {
+  "sounds": [
+   "jjk:clash_miss"
+  ],
+  "subtitle": "subtitles.jjk.clash_miss"
+ },
+ "clash_win": {
+  "sounds": [
+   "jjk:clash_win"
+  ],
+  "subtitle": "subtitles.jjk.clash_win"
+ },
+ "clash_beat": {
+  "sounds": [
+   "jjk:clash_beat"
+  ],
+  "subtitle": "subtitles.jjk.clash_beat"
+ },
+ "clash_countdown": {
+  "sounds": [
+   "jjk:clash_countdown"
+  ],
+  "subtitle": "subtitles.jjk.clash_countdown"
  }
 }

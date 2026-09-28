@@ -48,6 +48,8 @@ public final class CombatHud {
         CombatState state = Combat.stateOrNull(mc.player);
 
         overlays(g, mc, state, w, h, partial);
+        // The clash screen takes over while duelling.
+        if (dev.rick.jjk.client.clash.ClashClient.playing()) return;
         if (!JJKConfig.get().client.showHud || !ClientState.hasCharacter()) return;
         Font font = mc.font;
         energyBar(g, font, w, h);

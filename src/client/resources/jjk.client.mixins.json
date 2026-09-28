@@ -2,6 +2,6 @@
   "required": true,
   "package": "dev.rick.jjk.client.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["MinecraftMixin", "CameraMixin", "EntityRendererMixin", "HumanoidModelMixin", "LivingEntityRendererMixin"],
+  "client": ["MinecraftMixin", "CameraMixin", "EntityRendererMixin", "HumanoidModelMixin", "LivingEntityRendererMixin", "KeyboardHandlerMixin"],
   "injectors": { "defaultRequire": 1 }
 }
