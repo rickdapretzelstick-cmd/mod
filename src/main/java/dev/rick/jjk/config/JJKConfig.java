@@ -132,6 +132,11 @@ public final class JJKConfig {
 
     public static class Infinity {
         public boolean enabled = true;
+        /**
+         * Whether Infinity is part of Gojo's active moveset (its key, its HUD slot, switching on by default and while
+         * awakened). Off for now: the technique stays implemented and can be brought back by setting this to true.
+         */
+        public boolean inMoveset = false;
         /** Radius (blocks) at which approaching things start slowing down. */
         public double radius = 2.6;
         /** Distance at which things are stopped entirely. */
@@ -396,6 +401,13 @@ public final class JJKConfig {
         public float soundVolume = 1.0f;
         public boolean showHud = true;
         public boolean showComboCounter = true;
+        /**
+         * Combat mode (true) or Vanilla Minecraft mode (false). In vanilla mode every custom HUD element is hidden and
+         * none of this mod's ability keys, melee or clash inputs do anything, so ordinary play can't trigger techniques.
+         */
+        public boolean combatMode = true;
+        /** The small "current / max CE" readout beside the CE bar. */
+        public boolean showCeNumbers = true;
     }
 
     public static Path path() {

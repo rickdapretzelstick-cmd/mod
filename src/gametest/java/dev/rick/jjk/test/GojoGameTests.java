@@ -85,6 +85,13 @@ public class GojoGameTests {
         return g;
     }
 
+    /** Infinity is out of Gojo's moveset for now; these tests raise it directly to exercise the implementation. */
+    private static TrainingDummy withInfinity(TrainingDummy g) {
+        AbilityCaster c = Casters.get(g);
+        if (c.character() instanceof GojoCharacter gojo) gojo.infinity.turnOn(c, false);
+        return g;
+    }
+
     private static List<BlueEntity> ownedBlues(GameTestHelper h, LivingEntity owner) {
         return h.getLevel().getEntitiesOfClass(BlueEntity.class, new AABB(h.absolutePos(BlockPos.ZERO)).inflate(40), b -> b.owner() == owner);
     }
@@ -259,10 +266,23 @@ public class GojoGameTests {
     // --- Infinity ---
 
     @GameTest(maxTicks = 40)
+    public void infinityIsOutOfTheMoveset(GameTestHelper h) {
+        floor(h, 2);
+        TrainingDummy g = gojo(h, 4, 4, null);
+        AbilityCaster c = Casters.get(g);
+        h.assertTrue(!c.toggled(InfinityAbility.ID), "Infinity isn't raised by default");
+        h.assertTrue(c.ability(AbilitySlot.SKILL_3) == null, "C has no ability in the base kit");
+        h.assertTrue(!c.input(AbilitySlot.SKILL_3, true, 0, 0, null), "pressing C does nothing");
+        c.input(AbilitySlot.SKILL_3, false, 0, 0, null);
+        h.assertTrue(!c.toggled(InfinityAbility.ID), "and Infinity stays down");
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 40)
     public void infinityStopsMeleeAndCostsEnergy(GameTestHelper h) {
         floor(h, 2);
         TrainingDummy attacker = dummy(h, 3, 4);
-        TrainingDummy g = gojo(h, 5, 4, attacker);
+        TrainingDummy g = withInfinity(gojo(h, 5, 4, attacker));
         AbilityCaster c = Casters.get(g);
         c.setNoCost(false);
         float before = c.energy();
@@ -283,7 +303,7 @@ public class GojoGameTests {
     @GameTest(maxTicks = 60)
     public void infinityHoldsArrowsInTheAir(GameTestHelper h) {
         floor(h, 2);
-        TrainingDummy g = gojo(h, 4, 6, null);
+        TrainingDummy g = withInfinity(gojo(h, 4, 6, null));
         float hp = g.getHealth();
         Arrow arrow = new Arrow(net.minecraft.world.entity.EntityTypes.ARROW, h.getLevel());
         Vec3 from = h.absoluteVec(new Vec3(4, 2.2, 0.5));
@@ -303,7 +323,7 @@ public class GojoGameTests {
     public void infinityCollapsesWhenEnergyRunsOut(GameTestHelper h) {
         floor(h, 2);
         TrainingDummy attacker = dummy(h, 3, 4);
-        TrainingDummy g = gojo(h, 5, 4, attacker);
+        TrainingDummy g = withInfinity(gojo(h, 5, 4, attacker));
         AbilityCaster c = Casters.get(g);
         c.setNoCost(false);
         c.setEnergy(5);
@@ -401,6 +421,7 @@ public class GojoGameTests {
         TrainingDummy g = gojo(h, 1.5, 4, victim);
         // The victim is Gojo too, with Infinity up.
         CharacterService.assign(victim, Characters.get(GojoCharacter.ID));
+        withInfinity(victim);
         face(g, h.absoluteVec(new Vec3(7.5, 2.0, 4.5)));
         float hp = victim.getHealth();
         awaken(g);
@@ -617,7 +638,7 @@ public class GojoGameTests {
         var player = h.makeMockServerPlayerInLevel();
         CharacterService.assign(player, Characters.get(GojoCharacter.ID));
         AbilityCaster c = Casters.get(player);
-        h.assertTrue(c.character() != null && c.toggled(InfinityAbility.ID), "player is Gojo with Infinity up");
+        h.assertTrue(c.character() != null && !c.toggled(InfinityAbility.ID), "player is Gojo (Infinity is out of the moveset)");
         c.tick();
         CharacterService.assign(player, null);
         h.assertTrue(c.character() == null && !c.toggled(InfinityAbility.ID), "unassigned cleanly");

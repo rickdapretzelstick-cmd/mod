@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class KeyboardHandlerMixin {
     @Inject(method = "keyPress", at = @At("HEAD"), cancellable = true)
     private void jjk$clashLanes(long handle, int action, KeyEvent event, CallbackInfo ci) {
-        if (!ClashClient.playing() || Minecraft.getInstance().gui.screen() != null) return;
+        if (!ClashClient.playing() || !dev.rick.jjk.client.CombatMode.enabled() || Minecraft.getInstance().gui.screen() != null) return;
         int lane = switch (event.key()) {
             case InputConstants.KEY_LEFT, InputConstants.KEY_A -> 0;
             case InputConstants.KEY_DOWN, InputConstants.KEY_S -> 1;

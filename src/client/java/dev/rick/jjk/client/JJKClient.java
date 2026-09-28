@@ -50,10 +50,24 @@ public class JJKClient implements ClientModInitializer {
                 helper.register(new dev.rick.jjk.client.render.BlindfoldLayer(renderer));
             }
         });
-        HudElementRegistry.addLast(JJK.id("combat_hud"), CombatHud::render);
-        HudElementRegistry.addLast(JJK.id("clash_hud"), (g, delta) -> dev.rick.jjk.client.clash.ClashHud.render(g));
-        HudElementRegistry.addLast(JJK.id("domain_cinematic"), (g, delta) ->
-                dev.rick.jjk.client.cinematic.DomainCinematic.render(g, delta.getGameTimeDeltaPartialTick(false)));
+        // Every custom HUD layer is skipped in Vanilla Minecraft mode.
+        HudElementRegistry.addLast(JJK.id("combat_hud"), (g, delta) -> {
+            if (dev.rick.jjk.client.CombatMode.enabled()) CombatHud.render(g, delta);
+        });
+        HudElementRegistry.addLast(JJK.id("clash_hud"), (g, delta) -> {
+            if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.clash.ClashHud.render(g);
+        });
+        HudElementRegistry.addLast(JJK.id("domain_cinematic"), (g, delta) -> {
+            if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.cinematic.DomainCinematic.render(g, delta.getGameTimeDeltaPartialTick(false));
+        });
+        // "JJK Settings" on the pause menu (Combat Mode ON / VANILLA and HUD options).
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, sw, sh) -> {
+            if (screen instanceof net.minecraft.client.gui.screens.PauseScreen) {
+                net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(screen).add(net.minecraft.client.gui.components.Button.builder(
+                        net.minecraft.network.chat.Component.literal("JJK Settings"),
+                        b -> client.gui.setScreen(new dev.rick.jjk.client.hud.JJKSettingsScreen(screen))).bounds(6, 6, 90, 20).build());
+            }
+        });
         LevelRenderEvents.COLLECT_SUBMITS.register(WorldEffectsRenderer::render);
         registerReceivers();
 

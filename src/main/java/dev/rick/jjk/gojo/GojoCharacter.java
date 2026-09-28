@@ -9,8 +9,9 @@ import dev.rick.jjk.core.character.JJKCharacter;
 import dev.rick.jjk.core.combat.melee.MeleeMoveset;
 
 /**
- * Gojo Satoru. Six Eyes make his technique cheap to run (high regen), Limitless gives Infinity, Blue, Red and
- * Hollow Purple, and Unlimited Void is his domain.
+ * Gojo Satoru. Six Eyes make his technique cheap to run (high regen), Limitless gives Blue, Red and Hollow Purple,
+ * and Unlimited Void is his domain. Infinity is implemented and bound to C, but is only part of the active moveset
+ * when {@code infinity.inMoveset} is set (see {@link #infinityInMoveset()}).
  */
 public final class GojoCharacter extends JJKCharacter {
     public static final String ID = "gojo";
@@ -40,6 +41,24 @@ public final class GojoCharacter extends JJKCharacter {
         bindAwakened(AbilitySlot.ULTIMATE, new UnlimitedVoidAbility());
     }
 
+    /** Infinity is implemented but currently kept out of the moveset unless the config brings it back. */
+    public static boolean infinityInMoveset() {
+        var cfg = JJKConfig.get().infinity;
+        return cfg.enabled && cfg.inMoveset;
+    }
+
+    @Override
+    public dev.rick.jjk.core.ability.Ability ability(AbilitySlot slot) {
+        return ability(slot, false);
+    }
+
+    @Override
+    public dev.rick.jjk.core.ability.Ability ability(AbilitySlot slot, boolean awakened) {
+        dev.rick.jjk.core.ability.Ability a = super.ability(slot, awakened);
+        // Out of the moveset: its slot is simply empty (no key, no HUD slot, can't be activated).
+        return a == infinity && !infinityInMoveset() ? null : a;
+    }
+
     @Override
     public float maxEnergy() {
         return JJKConfig.get().resources.gojoMaxCursedEnergy;
@@ -57,15 +76,19 @@ public final class GojoCharacter extends JJKCharacter {
 
     @Override
     public void onAssigned(AbilityCaster caster) {
-        // Infinity is Gojo's default state.
-        if (JJKConfig.get().infinity.enabled) infinity.turnOn(caster, false);
+        // Infinity is Gojo's default state while it is part of the moveset. Otherwise make sure a save from when it was
+        // doesn't leave it running.
+        if (infinityInMoveset()) infinity.turnOn(caster, false);
+        else if (caster.toggled(InfinityAbility.ID)) infinity.toggleOff(caster, "not_in_moveset");
     }
 
     @Override
     public void tick(AbilityCaster caster) {
-        if (caster.isAwakened() && !caster.toggled(InfinityAbility.ID)
-                && !dev.rick.jjk.core.combat.Combat.has(caster.owner, dev.rick.jjk.core.combat.CombatStatus.BURNOUT)) {
-            infinity.turnOn(caster, false);
+        if (infinityInMoveset()) {
+            if (caster.isAwakened() && !caster.toggled(InfinityAbility.ID)
+                    && !dev.rick.jjk.core.combat.Combat.has(caster.owner, dev.rick.jjk.core.combat.CombatStatus.BURNOUT)) {
+                infinity.turnOn(caster, false);
+            }
         }
         infinity.tickField(caster);
         // Visual state everyone can see: blindfold on in the base kit, off (eyes open) while awakened.
@@ -80,7 +103,7 @@ public final class GojoCharacter extends JJKCharacter {
     @Override
     public void onAwakeningChanged(AbilityCaster caster, boolean awakened) {
         if (awakened) {
-            infinity.turnOn(caster, false);
+            if (infinityInMoveset()) infinity.turnOn(caster, false);
         } else if (caster.owner.level() instanceof net.minecraft.server.level.ServerLevel sl) {
             dev.rick.jjk.core.fx.Fx.play(sl, "awaken_end", caster.owner.position().add(0, 1.2, 0), net.minecraft.world.phys.Vec3.ZERO, 1f, caster.owner.getId());
         }

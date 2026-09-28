@@ -9,12 +9,13 @@ Fabric mod for **Minecraft 26.3** (Java 25, Fabric API). Install the jar plus Fa
 | Left click (empty hand) | Light chain · hold = charged heavy | same |
 | Z | Lapse Blue (hold to steer) | **Lapse Blue: MAX** |
 | X | Reversal Red (hold to charge) | **Reversal Red: MAX** |
-| C | Infinity on/off | **Hollow Purple** (hold) |
+| C | — | **Hollow Purple** (hold) |
 | V | Teleport (3 charges) | Teleport |
 | G | **Awaken** (meter full) | **Domain Expansion: Infinite Void** |
 | R | Guard (hold; tap early = parry) | same |
 | Left Alt | Dash | same |
 | \` | Combat stance on/off | same |
+| *(unbound)* | Combat / Vanilla Minecraft mode | same |
 
 Melee variations: click in the air for air combos, hold jump on the 4th hit for an uppercut, click while sprinting for a
 lunge, look down at a knocked-down enemy for a stomp.
@@ -27,6 +28,23 @@ on, and the bar becomes a timer that drains; MAX moves also spend it. At zero he
 14 seconds. Everything it replaces (including chest contents, block states, waterlogging) is saved to disk first and
 restored exactly afterwards. The barrier can't be mined, blown up or pushed. If the server stops or crashes mid-domain,
 the world is restored on the next start.
+
+## HUD and Vanilla Minecraft mode
+
+CE is a slim vertical bar on the left edge. It eases between values, what you just spent lingers as a pale ghost, it
+turns red and pulses when low, and it reads EMPTY when nothing is left. The current moveset is shown on the right as
+16x16 pixel-art icons with each one's bound key beside it, following your Controls settings. The icons show when a move
+is on cooldown (a receding shade and the time left) and when there isn't enough CE or Awakening meter. When Awakening
+starts, the icons flip over to the MAX moves and are named for a moment. The Awakening meter stays its own bar above the
+hotbar.
+
+**Vanilla Minecraft mode** (pause menu → *JJK Settings* → *Combat Mode: VANILLA*, or bind *Toggle Combat / Vanilla
+Minecraft mode* in Controls) hides every JJK HUD element and switches off all of the mod's ability keys, melee and clash
+inputs, so you can build and mine without setting anything off. The choice is saved in `config/jjk.json`.
+
+Infinity is implemented but not currently part of Gojo's moveset; `infinity.inMoveset` in the config brings it back.
+
+![Ability HUD](docs/screenshots/ability_hud.png)
 
 ## Visual tiers
 

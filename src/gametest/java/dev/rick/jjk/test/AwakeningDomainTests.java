@@ -96,7 +96,7 @@ public class AwakeningDomainTests {
         }
         h.assertTrue(c.awakening() > 5, "landing hits builds the meter (" + c.awakening() + ")");
         float before = c.awakening();
-        HitResolver.resolve(Hit.builder(target, "t").damage(4).tag(AttackTag.MELEE).build(), g); // Infinity stops it: no damage taken
+        HitResolver.resolve(Hit.builder(target, "t").damage(4).tag(AttackTag.MELEE).build(), g);
         c.setAwakening(c.maxAwakening());
         h.startSequence()
                 .thenExecute(() -> h.assertTrue(c.input(AbilitySlot.ULTIMATE, true, 0, 0, null), "full meter awakens"))
@@ -107,7 +107,7 @@ public class AwakeningDomainTests {
                     h.assertValueEqual(c.ability(AbilitySlot.SKILL_2).id, RedAbility.MAX_ID, "X is Max Red");
                     h.assertValueEqual(c.ability(AbilitySlot.SKILL_3).id, HollowPurpleAbility.ID, "C is Hollow Purple");
                     h.assertValueEqual(c.ability(AbilitySlot.ULTIMATE).id, UnlimitedVoid.ID, "G is Infinite Void");
-                    h.assertTrue(c.toggled("infinity"), "Infinity always on while awakened");
+                    h.assertTrue(!c.toggled("infinity"), "Infinity is out of the moveset, so awakening doesn't raise it");
                 })
                 .thenIdle(20)
                 .thenExecute(() -> {

@@ -14,28 +14,38 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
+import dev.rick.jjk.JJK;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 
 /** Heads-up display for combat: energy, abilities, casts, combos, statuses and full-screen feedback. */
 public final class CombatHud {
-    private record Meta(String label, int color, boolean ultimate) {}
+    /** How each ability is presented: its pixel-art icon, display name and colour. Awakened moves get gold frames. */
+    private record Meta(String name, int color, boolean ultimate, Identifier icon) {}
 
-    /** Display info per ability id. Awakened moves are flagged "ultimate" and drawn with gold, shimmering frames. */
+    private static Meta meta(String name, int color, boolean ultimate, String icon) {
+        return new Meta(name, color, ultimate, JJK.id("textures/gui/ability/" + icon + ".png"));
+    }
+
+    /** Presentation per ability id. Infinity keeps its entry for when it returns to the moveset. */
     private static final java.util.Map<String, Meta> META = java.util.Map.ofEntries(
-            java.util.Map.entry("blue", new Meta("Blue", 0xFF4F9BFF, false)),
-            java.util.Map.entry("red", new Meta("Red", 0xFFFF3B30, false)),
-            java.util.Map.entry("infinity", new Meta("Inf", 0xFFCFE8FF, false)),
-            java.util.Map.entry("teleport", new Meta("Warp", 0xFF9FE7FF, false)),
-            java.util.Map.entry("awaken", new Meta("AWK", 0xFFFFE08A, false)),
-            java.util.Map.entry("max_blue", new Meta("MAX", 0xFF4F9BFF, true)),
-            java.util.Map.entry("max_red", new Meta("MAX", 0xFFFF3B30, true)),
-            java.util.Map.entry("hollow_purple", new Meta("Pur", 0xFFA24DFF, true)),
-            java.util.Map.entry("unlimited_void", new Meta("Void", 0xFFFFFFFF, true)),
-            java.util.Map.entry("dash", new Meta("Dash", 0xFFB0B0B0, false)),
-            java.util.Map.entry("heavy", new Meta("Hvy", 0xFFFFC857, false)));
-    private static final AbilitySlot[] SHOWN = {AbilitySlot.SKILL_1, AbilitySlot.SKILL_2, AbilitySlot.SKILL_3, AbilitySlot.SKILL_4,
-            AbilitySlot.ULTIMATE, AbilitySlot.HEAVY, AbilitySlot.DASH};
+            java.util.Map.entry("blue", meta("Blue", 0xFF4F9BFF, false, "blue")),
+            java.util.Map.entry("red", meta("Red", 0xFFFF3B30, false, "red")),
+            java.util.Map.entry("infinity", meta("Infinity", 0xFFCFE8FF, false, "infinity")),
+            java.util.Map.entry("teleport", meta("Teleport", 0xFF9FE7FF, false, "teleport")),
+            java.util.Map.entry("awaken", meta("Awaken", 0xFFFFE08A, false, "awaken")),
+            java.util.Map.entry("max_blue", meta("Max Blue", 0xFF4F9BFF, true, "max_blue")),
+            java.util.Map.entry("max_red", meta("Max Red", 0xFFFF3B30, true, "max_red")),
+            java.util.Map.entry("hollow_purple", meta("Hollow Purple", 0xFFA24DFF, true, "hollow_purple")),
+            java.util.Map.entry("unlimited_void", meta("Infinite Void", 0xFFE8F0FF, true, "unlimited_void")),
+            java.util.Map.entry("dash", meta("Dash", 0xFFB0B8C8, false, "dash")),
+            java.util.Map.entry("guard", meta("Guard", 0xFFB0B8C8, false, "guard")));
+    /** The technique column (empty slots are skipped), then the movement/defence pair under it. */
+    private static final AbilitySlot[] TECHNIQUES = {AbilitySlot.SKILL_1, AbilitySlot.SKILL_2, AbilitySlot.SKILL_3, AbilitySlot.SKILL_4,
+            AbilitySlot.SKILL_5, AbilitySlot.ULTIMATE};
+    private static final AbilitySlot[] UTILITY = {AbilitySlot.GUARD, AbilitySlot.DASH};
     private static final RandomSource RNG = RandomSource.create();
 
     private CombatHud() {}
@@ -52,8 +62,8 @@ public final class CombatHud {
         if (dev.rick.jjk.client.clash.ClashClient.playing() || dev.rick.jjk.client.cinematic.DomainCinematic.fullscreen()) return;
         if (!JJKConfig.get().client.showHud || !ClientState.hasCharacter()) return;
         Font font = mc.font;
-        energyBar(g, font, w, h);
-        abilityBar(g, font, mc, state, w, h);
+        ceBar(g, font, mc, w, h);
+        abilityHud(g, font, mc, state, w, h, partial);
         awakeningBar(g, font, mc, w, h);
         awakeningBanner(g, font, mc, w, h, partial);
         castBar(g, font, w, h, partial);
@@ -61,56 +71,261 @@ public final class CombatHud {
         statusBanner(g, font, state, w, h);
     }
 
-    private static void energyBar(GuiGraphicsExtractor g, Font font, int w, int h) {
-        int x = 8, y = h - 30, bw = 112, bh = 6;
-        float frac = ClientState.maxEnergy > 0 ? Mth.clamp(ClientState.energy / ClientState.maxEnergy, 0, 1) : 0;
-        g.fill(x - 1, y - 1, x + bw + 1, y + bh + 1, 0xC0000000);
-        int fillW = Math.round(bw * frac);
-        boolean low = frac < 0.2f;
-        g.fillGradient(x, y, x + fillW, y + bh, low ? 0xFFFF6060 : 0xFF6FC3FF, low ? 0xFFB02020 : 0xFF2A6BFF);
-        for (int i = 1; i < 10; i++) g.fill(x + bw * i / 10, y, x + bw * i / 10 + 1, y + bh, 0x40000000);
-        g.text(font, String.format("CE %d / %d", Math.round(ClientState.energy), Math.round(ClientState.maxEnergy)), x, y - 10, 0xFFE0F0FF, true);
-        String stance = InputHandler.inStance() ? "◆ COMBAT STANCE" : ClientState.stanceEnabled ? "◇ stance (empty hand)" : "◇ stance off";
-        g.text(font, stance, x, y + 9, InputHandler.inStance() ? 0xFF9FE7FF : 0xFF808890, true);
-        if (ClientState.flag(CasterSyncPayload.FLAG_NO_COST)) g.text(font, "NO COOLDOWN", x, y - 20, 0xFFFFD060, true);
+    // --- CE: a slim vertical bar hugging the left edge ---
+
+    /** CE as drawn (eases toward the real value), the "just spent" ghost that trails behind it, and regen detection. */
+    private static float shownCe = -1, trailCe = -1, lastEnergy = -1;
+    private static long lastFrameNanos, regenUntilNanos;
+
+    private static void ceBar(GuiGraphicsExtractor g, Font font, Minecraft mc, int w, int h) {
+        float max = Math.max(1, ClientState.maxEnergy);
+        float target = Mth.clamp(ClientState.energy / max, 0, 1);
+        long nanos = System.nanoTime();
+        float dt = lastFrameNanos == 0 ? 0 : Math.min(0.1f, (nanos - lastFrameNanos) / 1e9f);
+        lastFrameNanos = nanos;
+        if (shownCe < 0) shownCe = trailCe = target;
+        shownCe += (target - shownCe) * (1 - (float) Math.exp(-dt * 14));
+        // What was just spent lingers as a pale ghost, then drains away.
+        if (shownCe >= trailCe) trailCe = shownCe;
+        else trailCe += (shownCe - trailCe) * (1 - (float) Math.exp(-dt * 3.5f));
+        if (lastEnergy >= 0 && ClientState.energy > lastEnergy + 0.001f) regenUntilNanos = nanos + 600_000_000L;
+        lastEnergy = ClientState.energy;
+        boolean regenerating = nanos < regenUntilNanos && target < 1;
+        boolean noCost = ClientState.flag(CasterSyncPayload.FLAG_NO_COST);
+        boolean empty = !noCost && ClientState.energy < 1;
+        boolean low = !empty && target < 0.25f;
+        boolean full = target >= 0.999f;
+        float time = (mc.level.getGameTime() % 100000) + mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+
+        // Anchored to the left edge and centred vertically; its length follows the screen height.
+        int bw = 5, bh = Mth.clamp(Math.round(h * 0.4f), 60, 160);
+        int x = 7, y0 = h / 2 - bh / 2 - 8, y1 = y0 + bh;
+        // Frame: a dark shell with a thin coloured rim (red and pulsing when empty).
+        int rim = empty ? pulse(0xFFFF4040, 0xFF501010, time, 0.25f) : low ? 0xFF803030 : full ? 0xFF7FD4FF : 0xFF2A3A55;
+        g.fill(x - 2, y0 - 2, x + bw + 2, y1 + 2, 0xB0000000);
+        outlineRect(g, x - 1, y0 - 1, x + bw + 1, y1 + 1, rim);
+        g.fill(x, y0, x + bw, y1, 0xFF090C12);
+        int top = y1 - Math.round(bh * shownCe);
+        int ghostTop = y1 - Math.round(bh * trailCe);
+        if (ghostTop < top) g.fill(x, ghostTop, x + bw, top, 0x90E8F0FF);
+        if (top < y1) {
+            int hi = low ? pulse(0xFFFF8A7A, 0xFFE05050, time, 0.18f) : 0xFFA8ECFF;
+            int lo = low ? 0xFFA01818 : 0xFF2455E0;
+            g.fillGradient(x, top, x + bw, y1, hi, lo);
+            // A soft inner highlight down the left edge gives the fill some depth.
+            g.fill(x, top, x + 1, y1, low ? 0x40FFFFFF : 0x50FFFFFF);
+            // The surface line.
+            g.fill(x, top, x + bw, top + 1, 0xFFFFFFFF);
+            if (regenerating) {
+                // Regenerating: a faint glint travelling up through the fill.
+                int span = y1 - top;
+                if (span > 4) {
+                    int gy = y1 - Math.round(((time * 2.2f) % span));
+                    g.fill(x, gy - 1, x + bw, gy + 1, 0x60FFFFFF);
+                }
+            }
+        }
+        // Quarter marks.
+        for (int i = 1; i < 4; i++) g.fill(x, y0 + bh * i / 4, x + bw, y0 + bh * i / 4 + 1, 0x70000000);
+        if (full) g.fill(x - 1, y0 - 3, x + bw + 1, y0 - 2, 0x807FD4FF);
+
+        // Label above, a small readout below.
+        smallText(g, font, "CE", x + bw / 2f, y0 - 11, 0.75f, empty ? 0xFFFF6A6A : 0xFFB8D8FF, true);
+        int ty = y1 + 5;
+        if (JJKConfig.get().client.showCeNumbers) {
+            smallText(g, font, String.format(java.util.Locale.ROOT, "%,d", Math.round(ClientState.energy)), x - 2, ty, 0.6f,
+                    empty ? 0xFFFF6A6A : low ? 0xFFFFA090 : 0xFFE0F0FF, false);
+            smallText(g, font, String.format(java.util.Locale.ROOT, "/%,d", Math.round(ClientState.maxEnergy)), x - 2, ty + 7, 0.6f, 0xFF7888A0, false);
+            ty += 16;
+        }
+        if (empty) {
+            smallText(g, font, "EMPTY", x - 2, ty, 0.6f, pulse(0xFFFF5050, 0xFF803030, time, 0.25f), false);
+            ty += 8;
+        }
+        if (noCost) {
+            smallText(g, font, "NO COST", x - 2, ty, 0.6f, 0xFFFFD060, false);
+            ty += 8;
+        }
+        // Combat stance (the mod's melee on an empty hand): a small marker rather than a sentence.
+        boolean stance = InputHandler.inStance();
+        smallText(g, font, stance ? "◆ STANCE" : ClientState.stanceEnabled ? "◇ STANCE" : "◇ OFF", x - 2, ty, 0.6f,
+                stance ? 0xFF9FE7FF : 0xFF606878, false);
     }
 
-    private static void abilityBar(GuiGraphicsExtractor g, Font font, Minecraft mc, CombatState state, int w, int h) {
-        int size = 18, gap = 10;
-        int total = SHOWN.length * (size + gap) - gap;
-        int x = w - size - 6, y0 = Math.max(4, h / 2 - total / 2);
-        boolean techLocked = state != null && state.techniquesLocked();
+    // --- Abilities: pixel-art icons down the right edge ---
+
+    private static final long[] readyFlash = new long[AbilitySlot.values().length];
+    private static final int[] lastCooldown = new int[AbilitySlot.values().length];
+
+    private static void abilityHud(GuiGraphicsExtractor g, Font font, Minecraft mc, CombatState state, int w, int h, float partial) {
+        java.util.List<AbilitySlot> techniques = new java.util.ArrayList<>();
+        for (AbilitySlot s : TECHNIQUES) if (!ClientState.abilityIn(s).isEmpty()) techniques.add(s);
+        int size = 22, small = 18, gap = 5, split = 9;
+        int total = techniques.size() * (size + gap) - gap + split + UTILITY.length * (small + 3) - 3;
+        if (total > h - 90) gap = 2;
+        total = techniques.size() * (size + gap) - gap + split + UTILITY.length * (small + 3) - 3;
+        int right = w - 6;
+        int y = Math.max(20, h / 2 - total / 2 - 8);
         long now = mc.level.getGameTime();
-        for (int i = 0; i < SHOWN.length; i++) {
-            AbilitySlot slot = SHOWN[i];
-            String id = slot == AbilitySlot.HEAVY ? "heavy" : ClientState.abilityIn(slot);
-            Meta m = META.getOrDefault(id, new Meta(id.isEmpty() ? "-" : id.substring(0, Math.min(3, id.length())), 0xFF808080, false));
-            int y = y0 + i * (size + gap);
-            boolean toggledOn = id.equals("infinity") && ClientState.flag(CasterSyncPayload.FLAG_INFINITY);
-            boolean casting = ClientState.activeCast.equals(id);
-            boolean awakenReady = id.equals("awaken") && ClientState.awakening >= ClientState.awakeningMax;
-            int frame = m.ultimate ? shimmer(now, i) : toggledOn || casting ? m.color : awakenReady && (now / 5) % 2 == 0 ? 0xFFFFE08A : 0xFF202428;
-            g.fill(x - 1, y - 1, x + size + 1, y + size + 1, frame);
-            g.fill(x, y, x + size, y + size, m.ultimate ? 0xE0241438 : 0xE0101418);
-            g.fill(x, y, x + size, y + 3, m.color);
-            g.centeredText(font, m.label, x + size / 2, y + 6, m.ultimate ? 0xFFFFF0C0 : 0xFFFFFFFF);
-            g.centeredText(font, InputHandler.keyLabel(slot), x + size / 2, y + size + 1, 0xFFB8C4D0);
-            int cd = ClientState.cooldown(slot);
-            int max = ClientState.maxCooldown(slot);
-            boolean usesCharges = id.equals("teleport");
-            int charges = ClientState.charges(slot);
-            boolean blocked = usesCharges ? charges <= 0 : cd > 0;
-            if (cd > 0) {
-                int covered = Math.round(size * Math.min(1f, cd / (float) max));
-                g.fill(x, y + size - covered, x + size, y + size, blocked ? 0xB0000000 : 0x60000000);
-                if (blocked) g.centeredText(font, String.format(cd >= 200 ? "%.0f" : "%.1f", cd / 20f), x + size / 2, y + 11, 0xFFFFE08A);
-            }
-            if (usesCharges) g.text(font, String.valueOf(charges), x + size - 5, y + size - 8, charges > 0 ? 0xFF9FE7FF : 0xFFFF6060, true);
-            float cost = meterCost(id);
-            if (cost > 0 && ClientState.awakening < cost) g.fill(x, y, x + size, y + size, 0x90000000);
-            boolean technique = !id.equals("dash") && !id.equals("heavy") && !id.equals("awaken");
-            if (techLocked && technique && !toggledOn) g.fill(x, y, x + size, y + size, 0x90400000);
+        float since = now - ClientState.awakenedChangedTick + partial;
+        boolean justChanged = ClientState.awakenedChangedTick != 0 && since < 70;
+        for (int i = 0; i < techniques.size(); i++) {
+            slot(g, font, mc, state, techniques.get(i), right - size, y, size, now, partial, justChanged ? since - i * 2.5f : -1, justChanged ? since : -1);
+            y += size + gap;
         }
+        y += split - gap;
+        g.fill(right - size + 3, y - split / 2 - 1, right - 3, y - split / 2, 0x40FFFFFF);
+        for (AbilitySlot s : UTILITY) {
+            if (ClientState.abilityIn(s).isEmpty()) continue;
+            slot(g, font, mc, state, s, right - small, y, small, now, partial, -1, -1);
+            y += small + 3;
+        }
+    }
+
+    /**
+     * One ability: its icon in a frame whose look carries the state (ready, cooldown with timer, not enough CE or
+     * Awakening, locked, casting, awakened), with the bound key in a badge beside it.
+     *
+     * @param flip  ticks into this slot's awakening transition (flips in with the new icon), or negative
+     * @param named ticks since the moveset changed (names are shown briefly then), or negative
+     */
+    private static void slot(GuiGraphicsExtractor g, Font font, Minecraft mc, CombatState state, AbilitySlot slot, int x, int y, int size,
+                             long now, float partial, float flip, float named) {
+        String id = ClientState.abilityIn(slot);
+        Meta m = META.getOrDefault(id, meta(id, 0xFF808080, false, "dash"));
+        JJKConfig cfg = JJKConfig.get();
+        boolean noCost = ClientState.flag(CasterSyncPayload.FLAG_NO_COST);
+        int cd = ClientState.cooldown(slot), max = Math.max(1, ClientState.maxCooldown(slot));
+        boolean usesCharges = id.equals("teleport");
+        int charges = ClientState.charges(slot);
+        boolean cooling = usesCharges ? charges <= 0 : cd > 0;
+        if (lastCooldown[slot.ordinal()] > 0 && cd == 0) readyFlash[slot.ordinal()] = now;
+        lastCooldown[slot.ordinal()] = cd;
+        boolean lackCe = !noCost && ClientState.energy < ceCost(id, cfg);
+        boolean lackMeter = meterCost(id) > 0 && ClientState.awakening < meterCost(id);
+        boolean technique = !id.equals("dash") && !id.equals("guard") && !id.equals("awaken");
+        boolean locked = state != null && state.techniquesLocked() && technique;
+        boolean casting = ClientState.activeCast.equals(id);
+        boolean awakenReady = id.equals("awaken") && ClientState.awakening >= ClientState.awakeningMax;
+        boolean counter = id.equals("awaken") && awakenReady && now < ClientState.counterUntilTick;
+        boolean ready = !cooling && !lackCe && !lackMeter && !locked;
+        float time = now + partial;
+
+        var pose = g.pose();
+        pose.pushMatrix();
+        if (flip >= 0 && flip < 8) {
+            // Awakening swapped the moveset: each icon flips over into its new form, one after another.
+            float t = Mth.clamp(flip / 8f, 0, 1);
+            pose.translate(x + size / 2f, y + size / 2f);
+            pose.scale(Math.max(0.05f, t), 1f);
+            pose.translate(-(x + size / 2f), -(y + size / 2f));
+        } else if (flip < 0 && named >= 0) {
+            pose.translate(0, 0);
+        }
+        int frame;
+        if (counter) frame = pulse(0xFFFF6A6A, 0xFFFFFFFF, time, 0.35f);
+        else if (casting) frame = pulse(0xFFFFFFFF, m.color, time, 0.4f);
+        else if (awakenReady) frame = pulse(0xFFFFE08A, 0xFFFFFFFF, time, 0.2f);
+        else if (locked) frame = 0xFF3A3A44;
+        else if (lackCe || lackMeter) frame = 0xFF8A2A2A;
+        else if (cooling) frame = 0xFF2A2F38;
+        else if (m.ultimate) frame = shimmer(now, slot.ordinal());
+        else frame = m.color;
+        // Shadowed tile, rim, inner bevel.
+        g.fill(x - 1, y - 1, x + size + 1, y + size + 1, 0xA0000000);
+        outlineRect(g, x - 1, y - 1, x + size + 1, y + size + 1, frame);
+        g.fillGradient(x, y, x + size, y + size, m.ultimate ? 0xE82A1A40 : 0xE81A2030, m.ultimate ? 0xE8120A20 : 0xE80A0E16);
+        g.fill(x, y, x + size, y + 1, 0x30FFFFFF);
+        int tint = locked ? 0xFF46464E : cooling ? 0xFF585E6A : lackCe || lackMeter ? 0xFF9A6060 : 0xFFFFFFFF;
+        int off = (size - 16) / 2;
+        g.blit(RenderPipelines.GUI_TEXTURED, m.icon, x + off, y + off, 0, 0, 16, 16, 16, 16, 16, 16, tint);
+        // Cooldown: a shade that recedes upward, with the time left.
+        if (cooling && !usesCharges) {
+            int covered = Math.round(size * Math.min(1f, cd / (float) max));
+            g.fill(x, y, x + size, y + covered, 0x88000000);
+            smallText(g, font, String.format(cd >= 200 ? "%.0f" : "%.1f", cd / 20f), x + size / 2f, y + size / 2f - 3, 0.75f, 0xFFFFE08A, true);
+        }
+        // Not enough of a resource: a strip along the bottom in the colour of what's missing.
+        if (!cooling && (lackCe || lackMeter)) {
+            g.fill(x, y + size - 2, x + size, y + size, lackCe ? 0xFFFF4A4A : 0xFFB08AFF);
+            smallText(g, font, lackCe ? "CE" : "AWK", x + size / 2f, y + size - 8, 0.5f, lackCe ? 0xFFFF8A8A : 0xFFD8C8FF, true);
+        }
+        if (locked) padlock(g, x + size - 7, y + size - 8);
+        // Teleport charges as pips.
+        if (usesCharges) {
+            int maxCharges = Math.max(charges, cfg.teleport.charges);
+            for (int c = 0; c < maxCharges; c++) {
+                int px = x + size / 2 - maxCharges * 2 + c * 4 + 1;
+                g.fill(px, y + size - 4, px + 2, y + size - 2, c < charges ? 0xFF9FE7FF : 0xFF303844);
+            }
+            if (charges <= 0 && cd > 0) smallText(g, font, String.format("%.1f", cd / 20f), x + size / 2f, y + size / 2f - 3, 0.75f, 0xFFFFE08A, true);
+        }
+        // Just came off cooldown: a quick white pop.
+        long flash = now - readyFlash[slot.ordinal()];
+        if (ready && flash < 6) g.fill(x, y, x + size, y + size, (Math.round((1 - (flash + partial) / 6f) * 150) << 24) | 0xFFFFFF);
+        pose.popMatrix();
+
+        // The key, in a badge to the left of the icon (whatever the player has bound it to).
+        String key = InputHandler.keyLabel(slot);
+        if (!key.isEmpty()) {
+            int kw = Math.round(font.width(key) * 0.75f) + 6;
+            int kx = x - kw - 3, ky = y + size / 2 - 5;
+            g.fill(kx, ky, kx + kw, ky + 10, 0xB0000000);
+            outlineRect(g, kx, ky, kx + kw, ky + 10, ready ? 0x60FFFFFF : 0x30FFFFFF);
+            smallText(g, font, key, kx + kw / 2f, ky + 2, 0.75f, ready ? 0xFFE8EEF8 : 0xFF8890A0, true);
+            // Right after Awakening starts or ends, name the new moves so the changed kit is obvious.
+            if (named >= 0 && named < 70) {
+                float a = named < 6 ? named / 6f : named > 55 ? 1 - (named - 55) / 15f : 1f;
+                int ac = Math.round(Mth.clamp(a, 0, 1) * 255) << 24;
+                String name = m.name.toUpperCase(java.util.Locale.ROOT);
+                int nw = Math.round(font.width(name) * 0.75f);
+                smallText(g, font, name, kx - 4 - nw / 2f, ky + 2, 0.75f, ac | (m.ultimate ? 0xFFE8A0 : 0xE8EEF8), true);
+            }
+        }
+    }
+
+    private static float ceCost(String id, JJKConfig cfg) {
+        return switch (id) {
+            case "blue" -> cfg.blue.cost;
+            case "red" -> cfg.red.cost;
+            case "teleport" -> cfg.teleport.cost;
+            case "hollow_purple" -> cfg.purple.cost;
+            case "unlimited_void" -> cfg.domain.cost;
+            default -> 0;
+        };
+    }
+
+    private static void padlock(GuiGraphicsExtractor g, int x, int y) {
+        g.fill(x + 1, y, x + 5, y + 1, 0xFFB8C0CC);
+        g.fill(x + 1, y, x + 2, y + 3, 0xFFB8C0CC);
+        g.fill(x + 4, y, x + 5, y + 3, 0xFFB8C0CC);
+        g.fill(x, y + 3, x + 6, y + 7, 0xFFD8DEE8);
+        g.fill(x + 2, y + 4, x + 4, y + 6, 0xFF404048);
+    }
+
+    private static void outlineRect(GuiGraphicsExtractor g, int x0, int y0, int x1, int y1, int c) {
+        g.fill(x0, y0, x1, y0 + 1, c);
+        g.fill(x0, y1 - 1, x1, y1, c);
+        g.fill(x0, y0, x0 + 1, y1, c);
+        g.fill(x1 - 1, y0, x1, y1, c);
+    }
+
+    /** Text at a smaller scale; centred on x or left-aligned. */
+    private static void smallText(GuiGraphicsExtractor g, Font font, String text, float x, float y, float scale, int color, boolean centered) {
+        var pose = g.pose();
+        pose.pushMatrix();
+        pose.translate(x, y);
+        pose.scale(scale, scale);
+        if (centered) g.centeredText(font, text, 0, 0, color);
+        else g.text(font, text, 0, 0, color, true);
+        pose.popMatrix();
+    }
+
+    /** Blends between two colours on a slow sine, for pulsing states. */
+    private static int pulse(int a, int b, float time, float speed) {
+        float t = (float) Math.sin(time * speed) * 0.5f + 0.5f;
+        int ar = a >> 16 & 255, ag = a >> 8 & 255, ab = a & 255, br = b >> 16 & 255, bg = b >> 8 & 255, bb = b & 255;
+        return 0xFF000000 | Math.round(ar + (br - ar) * t) << 16 | Math.round(ag + (bg - ag) * t) << 8 | Math.round(ab + (bb - ab) * t);
     }
 
     private static float meterCost(String id) {
@@ -252,7 +467,7 @@ public final class CombatHud {
         if (age > window + 20) return;
         float alpha = age > window ? 1f - (age - window) / 20f : 1f;
         int a = Math.round(alpha * 255) << 24;
-        int x = 10, y = h / 2 - 30;
+        int x = 26, y = h / 2 - 30;
         var pose = g.pose();
         pose.pushMatrix();
         pose.translate(x, y);

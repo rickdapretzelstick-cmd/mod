@@ -39,7 +39,11 @@ public class GojoClientGameTest implements FabricClientGameTest {
             ctx.waitTicks(40);
             server.runCommand("execute as @a at @s run jjk arena");
             server.runCommand("execute as @a run jjk nocooldown true");
+            // Infinity no longer shields Gojo, and the arena's fighting dummy never stops: keep the test player alive.
+            server.runCommand("effect give @a minecraft:resistance infinite 4 true");
             server.runCommand("execute as @a at @s run tp @s ~ ~ ~ -90 10");
+            // Put back what the staged Red broke, so vanilla grass can't creep over it before the domain checks.
+            server.runCommand("jjk restore now");
             ctx.waitTicks(40);
             if (!ctx.computeOnClient(mc -> ClientState.hasCharacter())) throw new AssertionError("player should have become Gojo on join");
             ctx.takeScreenshot("01_arena_hud");
@@ -61,6 +65,49 @@ public class GojoClientGameTest implements FabricClientGameTest {
             if (combo < 2) throw new AssertionError("melee chain should connect (combo " + combo + ")");
             float meter = ctx.computeOnClient(mc -> ClientState.awakening);
             if (meter <= 0) throw new AssertionError("landing hits should build the Awakening meter");
+
+            // --- Ability HUD: spend some CE for real so the bar, its trailing ghost and a cooldown show. ---
+            server.runCommand("execute as @a run jjk nocooldown false");
+            server.runCommand("execute as @a run jjk awakening 100");
+            server.runOnServer(s -> {
+                var p = s.getPlayerList().getPlayers().getFirst();
+                Casters.get(p).setEnergy(Casters.get(p).maxEnergy() * 0.62f);
+            });
+            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+            // Face the open side of the arena (the dummies are east, west and south).
+            server.runCommand("execute as @a at @s run tp @s ~ ~ ~ 180 8");
+            ctx.waitTicks(40);
+            in.pressKey(v);
+            ctx.waitTicks(6);
+            in.holdKey(x);
+            ctx.waitTicks(10);
+            in.releaseKey(x);
+            ctx.waitTicks(4);
+            ctx.takeScreenshot("01b_ability_hud");
+            if (ctx.computeOnClient(mc -> ClientState.abilityIn(dev.rick.jjk.core.ability.AbilitySlot.SKILL_3).length() != 0)) {
+                throw new AssertionError("Infinity is out of the moveset: C should be empty in the base kit");
+            }
+
+            // --- Vanilla Minecraft mode: HUD gone and ability keys inert. ---
+            ctx.runOnClient(mc -> dev.rick.jjk.client.CombatMode.set(false));
+            float ceBefore = server.computeOnServer(s -> Casters.get(s.getPlayerList().getPlayers().getFirst()).energy());
+            in.pressKey(z);
+            in.pressKey(x);
+            ctx.waitTicks(10);
+            ctx.takeScreenshot("01c_vanilla_mode");
+            boolean fired = server.computeOnServer(s -> {
+                ServerPlayer p = s.getPlayerList().getPlayers().getFirst();
+                return Casters.get(p).energy() < ceBefore - 1 || !p.level().getEntitiesOfClass(dev.rick.jjk.entity.BlueEntity.class, p.getBoundingBox().inflate(30)).isEmpty();
+            });
+            if (fired) throw new AssertionError("ability keys must do nothing in Vanilla Minecraft mode");
+            if (!ctx.computeOnClient(mc -> !dev.rick.jjk.client.input.InputHandler.inStance())) throw new AssertionError("no JJK melee in vanilla mode");
+            ctx.runOnClient(mc -> dev.rick.jjk.client.CombatMode.set(true));
+            server.runCommand("execute as @a at @s run tp @s ~ ~ ~ -90 10");
+            if (!ctx.computeOnClient(mc -> net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("jjk.json").toFile().exists()
+                    && dev.rick.jjk.config.JJKConfig.get().client.combatMode)) throw new AssertionError("combat mode should be saved back on");
+            server.runCommand("execute as @a run jjk nocooldown true");
+            ctx.waitTicks(40);
+
 
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
             server.runCommand("execute as @a at @s run tp @s ~-4 ~ ~ -90 5");
@@ -91,6 +138,9 @@ public class GojoClientGameTest implements FabricClientGameTest {
             ctx.takeScreenshot("09_awakening_transition");
             ctx.waitTicks(12);
             ctx.takeScreenshot("10_awakened");
+            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+            ctx.waitTicks(40);
+            ctx.takeScreenshot("10b_awakened_hud");
             if (!ctx.computeOnClient(mc -> ClientState.awakened())) throw new AssertionError("pressing G on a full meter should awaken");
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
             ctx.waitTicks(20);

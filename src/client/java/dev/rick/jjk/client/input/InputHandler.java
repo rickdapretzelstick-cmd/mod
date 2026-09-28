@@ -32,6 +32,8 @@ public final class InputHandler {
     private static final Map<AbilitySlot, KeyMapping> KEYS = new EnumMap<>(AbilitySlot.class);
     private static final Map<AbilitySlot, Boolean> DOWN = new EnumMap<>(AbilitySlot.class);
     private static KeyMapping stanceKey;
+    /** Switches between combat mode and Vanilla Minecraft mode. Unbound by default so it can't be hit mid-fight. */
+    private static KeyMapping modeKey;
 
     private static final int HEAVY_HOLD_TICKS = 7;
     private static boolean attackHeld;
@@ -50,6 +52,7 @@ public final class InputHandler {
         bind(AbilitySlot.GUARD, "guard", InputConstants.KEY_R);
         bind(AbilitySlot.DASH, "dash", InputConstants.KEY_LALT);
         stanceKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.stance", InputConstants.Type.KEYBOARD, InputConstants.KEY_GRAVE, CATEGORY));
+        modeKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.combat_mode", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY));
     }
 
     private static void bind(AbilitySlot slot, String name, int key) {
@@ -61,6 +64,15 @@ public final class InputHandler {
     public static void tick(Minecraft mc) {
         LocalPlayer player = mc.player;
         if (player == null) return;
+        while (modeKey.consumeClick()) dev.rick.jjk.client.CombatMode.toggle();
+        if (!dev.rick.jjk.client.CombatMode.enabled()) {
+            // Vanilla Minecraft mode: none of this mod's keys do anything. Swallow their presses so nothing fires later.
+            while (stanceKey.consumeClick()) {}
+            for (KeyMapping k : KEYS.values()) while (k.consumeClick()) {}
+            attackHeld = false;
+            heavyStarted = false;
+            return;
+        }
         while (stanceKey.consumeClick()) ClientState.stanceEnabled = !ClientState.stanceEnabled;
         boolean canAct = mc.gui.screen() == null && ClientState.hasCharacter() && player.isAlive();
         for (Map.Entry<AbilitySlot, KeyMapping> e : KEYS.entrySet()) {
@@ -90,7 +102,7 @@ public final class InputHandler {
     /** True when left click should perform this mod's melee. */
     public static boolean inStance() {
         Minecraft mc = Minecraft.getInstance();
-        return mc.player != null && ClientState.hasCharacter() && ClientState.stanceEnabled && mc.player.getMainHandItem().isEmpty()
+        return mc.player != null && dev.rick.jjk.client.CombatMode.enabled() && ClientState.hasCharacter() && ClientState.stanceEnabled && mc.player.getMainHandItem().isEmpty()
                 && !mc.player.isSpectator();
     }
 
@@ -152,11 +164,14 @@ public final class InputHandler {
         return best != null ? best.getId() : -1;
     }
 
+    /** The key currently bound to a slot, as the player set it in Controls (short enough for a HUD badge). */
     public static String keyLabel(AbilitySlot slot) {
         if (slot == AbilitySlot.HEAVY) return "Hold";
         KeyMapping k = KEYS.get(slot);
         if (k == null) return "";
+        if (k.isUnbound()) return "-";
         String s = k.getTranslatedKeyMessage().getString();
+        s = s.replace("Left ", "L").replace("Right ", "R");
         return s.length() > 4 ? s.substring(0, 4) : s;
     }
 
