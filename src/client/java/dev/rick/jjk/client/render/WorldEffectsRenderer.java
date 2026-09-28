@@ -295,9 +295,14 @@ public final class WorldEffectsRenderer {
                 }
             }
             Vector3f tc = new Vector3f((float) (cam.x - ctr.x), (float) (cam.y - ctr.y), (float) (cam.z - ctr.z));
+            // Kept from filling the view (the clash camera can sit inside a bubble), so the lanes stay readable.
+            float focus = dev.rick.jjk.client.clash.ClashFocus.world(cam, ctr, rad);
             push(ps, cam, ctr);
-            Glow.sphere(c, ps, rad * (1 + 0.05f * flare), cols[i][0], cols[i][1], cols[i][2], 0.3f + 0.06f * heat + 0.35f * flare, tc, true);
-            if (wave >= 0) Glow.sphere(c, ps, Math.max(0.5f, rad * wave), 1f, 1f, 1f, 0.7f * (1 - wave), tc, true);
+            Glow.sphere(c, ps, rad * (1 + 0.05f * flare), cols[i][0], cols[i][1], cols[i][2], (0.3f + 0.06f * heat + 0.35f * flare) * focus, tc, true);
+            if (wave >= 0) {
+                float wr = Math.max(0.5f, rad * wave);
+                Glow.sphere(c, ps, wr, 1f, 1f, 1f, 0.7f * (1 - wave) * dev.rick.jjk.client.clash.ClashFocus.world(cam, ctr, wr), tc, true);
+            }
             ps.popPose();
         }
     }
@@ -364,8 +369,10 @@ public final class WorldEffectsRenderer {
         float rr = Math.max(0.5f, r - 0.35f);
         c.submitCustomGeometry(ps, RenderTypes.endPortal(), (pose, buf) -> sphereShell(pose, buf, rr, false));
         c.submitCustomGeometry(ps, RenderTypes.endPortal(), (pose, buf) -> sphereShell(pose, buf, rr, true));
+        // Mid-clash the void's wide washes of light are toned down, so they don't haze over the lanes.
+        float calm = dev.rick.jjk.client.clash.ClashFocus.active() ? 0.35f : 1f;
         // Bright edge where the barrier meets the world.
-        Glow.sphere(c, ps, r * 0.995f, 0.8f, 0.9f, 1f, 0.35f * edgeGlow, toCam, true);
+        Glow.sphere(c, ps, r * 0.995f, 0.8f, 0.9f, 1f, 0.35f * edgeGlow * calm, toCam, true);
         if (progress < DomainFormation.SEALED) inside = false;
         if (inside) {
             // Information flowing through the void: slow rings of light sweeping around the center.
@@ -374,7 +381,7 @@ public final class WorldEffectsRenderer {
                 ps.pushPose();
                 ps.rotate(Axis.YP.rotation(t * (1 + i * 0.15f) + i));
                 ps.rotate(Axis.XP.rotation(0.4f + i * 0.45f + Mth.sin(t + i) * 0.2f));
-                Glow.ring(c, ps, r * (0.55f + i * 0.07f), 0.25f, 0.8f, 0.9f, 1f, 0.22f * (1 + pulse));
+                Glow.ring(c, ps, r * (0.55f + i * 0.07f), 0.25f, 0.8f, 0.9f, 1f, 0.22f * (1 + pulse) * calm);
                 ps.popPose();
             }
             // A black hole hanging over the battlefield, with a burning accretion disc, and distant galaxies on the walls.
@@ -386,7 +393,7 @@ public final class WorldEffectsRenderer {
                 ps.pushPose();
                 ps.translate(at.x, at.y, at.z);
                 boolean violet = i % 2 == 1;
-                Glow.halo(c, ps, camRot, r * (0.35f + neb.nextFloat() * 0.25f), violet ? 0.45f : 0.2f, violet ? 0.25f : 0.35f, 1f, 0.1f);
+                Glow.halo(c, ps, camRot, r * (0.35f + neb.nextFloat() * 0.25f), violet ? 0.45f : 0.2f, violet ? 0.25f : 0.35f, 1f, 0.1f * calm);
                 ps.popPose();
             }
             Vec3 holeOffset = new Vec3(0, r * 0.42, 0);

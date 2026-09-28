@@ -91,6 +91,8 @@ public final class Flashes {
                 // Seen from inside, a flash covers the whole screen: keep a hint of it, not a white-out.
                 double d = cam.distanceTo(f.pos);
                 if (d < size) a *= (float) Math.max(0.2, d / size);
+                // During a clash, nothing may tint the whole view over the lanes.
+                a *= dev.rick.jjk.client.clash.ClashFocus.world(cam, f.pos, size);
             }
             float[] col = f.color;
             ps.pushPose();

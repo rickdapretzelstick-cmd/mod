@@ -102,6 +102,9 @@ public final class ClashHud {
     private static void lanes(GuiGraphicsExtractor g, ClashClient.View v, int who, int x, int recY, int gap, int size, double clock, long ms,
                               int bottom, float alpha) {
         int a = Math.round(alpha * 255) << 24;
+        // A soft dark track under the lanes, so arrows read against whatever the battle is flashing behind them.
+        int top = recY - size, trackA = Math.round(alpha * 0x78);
+        g.fillGradient(x - 3, top, x + gap * 4 + 3, bottom, trackA << 24, (trackA / 4) << 24);
         for (int lane = 0; lane < 4; lane++) {
             int cx = x + lane * gap + gap / 2;
             long since = ms - v.laneFlashAt[who][lane];
@@ -118,6 +121,7 @@ public final class ClashHud {
             int lane = v.lanes[i];
             int cx = x + lane * gap + gap / 2;
             if (res == 0) {
+                drawArrow(g, ARROW, cx, y + 1, size + 4, lane, Math.round(alpha * 0x90) << 24);
                 drawArrow(g, ARROW, cx, y, size, lane, (LANE_COLOR[lane] & 0xFFFFFF) | a);
             } else if (res - 1 <= ClashJudgement.GOOD.ordinal() && dt > -3) {
                 float f = (float) Mth.clamp(1 + dt / 3, 0, 1);

@@ -318,9 +318,29 @@ public final class CombatHud {
             }
         }
         int impact = ScreenEffects.impactColor();
-        if (impact != 0) g.fill(0, 0, w, h, impact);
         float fa = ScreenEffects.flashAlpha();
+        if (dev.rick.jjk.client.clash.ClashFocus.active()) {
+            // Mid-clash the lanes must stay readable: flashes glow in from the edges of the screen instead.
+            if (impact != 0) edgeFlash(g, w, h, impact & 0xFFFFFF, (impact >>> 24) / 255f);
+            if (fa > 0.01f) edgeFlash(g, w, h, ScreenEffects.flashColor(), fa);
+            return;
+        }
+        if (impact != 0) g.fill(0, 0, w, h, impact);
         if (fa > 0.01f) g.fill(0, 0, w, h, (Math.round(fa * 255) << 24) | ScreenEffects.flashColor());
+    }
+
+    /** A flash confined to a frame around the edges of the screen, fading to nothing toward the middle. */
+    private static void edgeFlash(GuiGraphicsExtractor g, int w, int h, int rgb, float alpha) {
+        int a = Math.round(Math.min(1, alpha * 1.2f) * 255) << 24;
+        int band = h / 7, side = w / 9;
+        g.fillGradient(0, 0, w, band, a | rgb, rgb);
+        g.fillGradient(0, h - band, w, h, rgb, a | rgb);
+        // Sides, as strips (fillGradient runs top to bottom).
+        for (int i = 0; i < 8; i++) {
+            int sa = Math.round((a >>> 24) * (1 - i / 8f)) << 24;
+            g.fill(side * i / 8, band, side * (i + 1) / 8, h - band, sa | rgb);
+            g.fill(w - side * (i + 1) / 8, band, w - side * i / 8, h - band, sa | rgb);
+        }
     }
 
     private static String randomGlyphs() {
