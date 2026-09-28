@@ -40,7 +40,7 @@ import java.util.Locale;
 /**
  * /jjk: test and admin commands.
  * <pre>
- * /jjk character <id|none> [targets]   become a character (gojo)
+ * /jjk character <id|none> [targets]   become a character (gojo, hakari); admin override, skips the switching rules
  * /jjk nocooldown <true|false>         no cooldowns or energy costs for yourself
  * /jjk reset                           refill energy, clear cooldowns and statuses
  * /jjk energy <amount>                 set cursed energy

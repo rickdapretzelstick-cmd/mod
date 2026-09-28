@@ -178,4 +178,52 @@ save('clash_win', delay(mix(boom(2.4, 80, 16, 1.4, 1.8), chime(2.4, [523, 659, 7
                             reverse(whoosh(0.5, 300, 9000)) * 0.6), 0.2, 0.35, 3))
 save('clash_beat', thump(0.18, 95, 45, 20), 0.6)
 save('clash_countdown', mix(chime(0.35, [880, 1760], 10), thump(0.2, 200, 120, 20) * 0.4), 0.7)
+# --- Hakari: pachinko, casino, steel doors and rough energy ---
+def rattle(d, density=60, f0=2500, f1=5200):
+    """Steel balls bouncing through pins: a shower of tiny metallic ticks."""
+    n = int(SR * d); x = np.zeros(n)
+    for _ in range(int(density * d)):
+        i = rng.integers(0, max(1, n - 800)); f = rng.uniform(f0, f1)
+        tick = np.sin(2 * np.pi * f * t(0.012)) * np.exp(-t(0.012) * 400)
+        x[i:i + len(tick)] += tick * rng.uniform(0.3, 1.0)
+    return x
+save('ball_throw', mix(whoosh(0.14, 1500, 6000) * 0.7, chime(0.12, [3520, 4699], 40) * 0.4))
+save('ball_hit', mix(chime(0.25, [2637, 3951, 5274], 22) * 0.6, thump(0.15, 260, 120, 25) * 0.6))
+save('ball_ricochet', mix(chime(0.2, [3136, 4186], 30) * 0.6, rattle(0.25, 40) * 0.5), 0.7)
+tt = t(0.6)
+save('shutter_rise', mix(lowpass(np.sign(np.sin(2 * np.pi * 31 * tt)) * (0.5 + 0.5 * rng.standard_normal(len(tt))), 1800) * np.linspace(0.3, 1, len(tt)) * 0.6,
+                         sine_sweep(0.6, 120, 260) * 0.3))
+save('shutter_slam', mix(boom(0.9, 140, 50, 1.2, 6), highpass(noise(0.1), 1800) * env(int(SR * 0.1), 0.001, 30), chime(0.8, [233, 349, 466], 5) * 0.5))
+tt = t(0.7)
+save('rough_charge', mix(bandsweep(noise(0.7), 200, 1400) * np.linspace(0.2, 1, len(tt)) * 0.7, crackle(0.7, 1400) * np.linspace(0.1, 1, len(tt)) * 0.5,
+                         sine_sweep(0.7, 90, 240) * 0.4))
+save('rough_impact', softclip(mix(boom(1.0, 120, 30, 1.2, 5), crackle(0.8, 1800) * env(int(SR * 0.8), 0.001, 7) * 0.6, thump(0.3, 200, 60, 12) * 0.6), 1.6))
+save('fever_kick', mix(whoosh(0.2, 500, 3500), thump(0.25, 150, 55, 16) * 0.8))
+save('fever_rush', whoosh(0.35, 300, 5000) * 0.9)
+save('fever_break', softclip(mix(boom(1.3, 110, 26, 1.3, 4), highpass(noise(0.1), 2200) * env(int(SR * 0.1), 0.001, 30), chime(1.0, [587, 880, 1175], 4) * 0.3), 1.5))
+save('door_open', mix(lowpass(noise(0.3), 900) * env(int(SR * 0.3), 0.02, 6) * 0.6, chime(0.3, [196, 294], 10) * 0.5))
+save('door_block', mix(thump(0.25, 120, 70, 16), chime(0.3, [466, 698], 12) * 0.5))
+save('door_slam', mix(boom(0.7, 130, 55, 1.0, 7), chime(0.6, [392, 587, 784], 6) * 0.4))
+# The gamble: reels, the riichi fanfare, the miss, and the jackpot.
+save('gamble_visual', mix(rattle(0.5, 90) * 0.7, chime(0.5, [1046, 1318, 1568], 6) * 0.35), 0.8)
+tt = t(0.5)
+save('gamble_spin', mix(np.sign(np.sin(2 * np.pi * 24 * tt)) * 0.15 * lowpass(noise(0.5), 3000), chime(0.5, [2093], 20) * 0.2), 0.6)
+riff = np.concatenate([chime(0.14, [f, f * 1.5], 12) for f in (523, 659, 784, 1046, 784, 1046, 1318)])
+save('gamble_riichi', delay(mix(riff, np.zeros(len(riff))), 0.12, 0.3, 2), 0.9)
+save('gamble_signal', mix(chime(0.6, [1760, 2217, 2637, 3520], 5) * 0.8, rattle(0.6, 50) * 0.3))
+save('gamble_stop', mix(thump(0.12, 300, 180, 30) * 0.8, chime(0.2, [1568], 20) * 0.5))
+save('gamble_miss', mix(sine_sweep(0.8, 440, 110) * env(int(SR * 0.8), 0.01, 3) * 0.7, thump(0.3, 90, 50, 10) * 0.5))
+fan = np.concatenate([chime(0.16, [f, f * 1.25, f * 1.5], 8) for f in (523, 659, 784, 1046, 1318, 1568)])
+save('jackpot', delay(mix(np.concatenate([fan, np.zeros(int(SR * 1.8))]), np.concatenate([np.zeros(len(fan) - int(SR * 0.2)), boom(2.0, 90, 20, 1.2, 2)]) * 0.9,
+                          np.concatenate([np.zeros(len(fan)), rattle(1.8, 220) * 0.6])), 0.17, 0.35, 3))
+save('jackpot_heal', mix(chime(0.9, [784, 1175, 1568, 2349], 3) * 0.7, reverse(whoosh(0.4, 400, 6000)) * 0.4))
+save('jackpot_end', mix(sine_sweep(1.0, 784, 196) * env(int(SR * 1.0), 0.01, 3) * 0.6, rattle(0.8, 40) * 0.3))
+save('lucky_hit', mix(thump(0.16, 180, 70, 22), highpass(noise(0.04), 2000) * env(int(SR * 0.04), 0.001, 60) * 0.6, chime(0.12, [2349], 30) * 0.25))
+save('lucky_final', softclip(mix(boom(1.1, 120, 28, 1.3, 4), chime(0.9, [784, 1175, 1568], 4) * 0.35, highpass(noise(0.08), 2500) * env(int(SR * 0.08), 0.001, 35)), 1.5))
+save('surge_vanish', mix(reverse(whoosh(0.2, 800, 8000)), crackle(0.2, 2500) * 0.5))
+save('surge_appear', mix(highpass(noise(0.05), 2500) * env(int(SR * 0.05), 0.001, 50), whoosh(0.25, 6000, 900) * 0.6, chime(0.3, [1318, 1760], 12) * 0.3))
+save('rhythm_beat', mix(thump(0.16, 120, 55, 22), chime(0.18, [1568, 2093], 18) * 0.4), 0.8)
+save('rhythm_tick', thump(0.12, 90, 50, 26) * 0.7, 0.6)
+tt = t(2.5); amb = pad_chord(2.5, [261.6, 329.6, 392, 523.2], 0.4, 0.2) * 0.6 + rattle(2.5, 30) * 0.4
+save('idg_ambient', amb, 0.55)
 print('generated', len(os.listdir(OUT)), 'sounds')

@@ -58,4 +58,9 @@ public interface DomainDefinition {
 
     /** Called once when the domain ends, for any reason. */
     default void onCollapse(DomainInstance domain, DomainInstance.EndReason reason) {}
+
+    /** Whether the owner suffers technique burnout when this domain ends (Hakari's Jackpot ending skips it). */
+    default boolean burnoutOnCollapse(DomainInstance domain, DomainInstance.EndReason reason) {
+        return true;
+    }
 }

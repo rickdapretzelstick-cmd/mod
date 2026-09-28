@@ -5,6 +5,8 @@ import dev.rick.jjk.entity.BlueEntity;
 import dev.rick.jjk.entity.HollowPurpleEntity;
 import dev.rick.jjk.entity.RedEntity;
 import dev.rick.jjk.entity.TrainingDummy;
+import dev.rick.jjk.entity.PachinkoBallEntity;
+import dev.rick.jjk.entity.HakariDoorEntity;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -24,6 +26,12 @@ public final class ModEntities {
     public static final EntityType<HollowPurpleEntity> HOLLOW_PURPLE = register("hollow_purple",
             EntityType.Builder.<HollowPurpleEntity>of(HollowPurpleEntity::new, MobCategory.MISC).sized(1.5f, 1.5f).noSave().noSummon().fireImmune()
                     .clientTrackingRange(16).updateInterval(1).noLootTable());
+    public static final EntityType<PachinkoBallEntity> PACHINKO_BALL = register("pachinko_ball",
+            EntityType.Builder.<PachinkoBallEntity>of(PachinkoBallEntity::new, MobCategory.MISC).sized(0.35f, 0.35f).noSave().noSummon().fireImmune()
+                    .clientTrackingRange(8).updateInterval(1).noLootTable());
+    public static final EntityType<HakariDoorEntity> HAKARI_DOOR = register("hakari_door",
+            EntityType.Builder.<HakariDoorEntity>of(HakariDoorEntity::new, MobCategory.MISC).sized(1.2f, 2.6f).noSave().noSummon().fireImmune()
+                    .clientTrackingRange(8).updateInterval(1).noLootTable());
     public static final EntityType<TrainingDummy> TRAINING_DUMMY = register("training_dummy",
             EntityType.Builder.<TrainingDummy>of(TrainingDummy::new, MobCategory.MISC).sized(0.6f, 1.95f).clientTrackingRange(10));
 

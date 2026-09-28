@@ -110,6 +110,40 @@ public final class WorldEffectsRenderer {
                 orbAt(c, ps, cam, camRot, fingertip(user, partial), (0.07f + 0.16f * charge) * flicker, ClientFx.RED, cast.phase() == 1 ? 1.5f : 1f);
             }
             case HollowPurpleAbility.ID -> renderPurpleCast(c, ps, cam, camRot, user, cast, phaseAge, totalAge, partial);
+            case "rough_energy" -> {
+                if (cast.phase() == 0) {
+                    // Coarse cursed energy packing around the cocked fist.
+                    float f = Math.min(1f, totalAge / Math.max(1, JJKConfig.get().hakari.roughWindup));
+                    Vec3 fist = hand(user, partial, false, -0.2).add(0, -0.2, 0);
+                    orbAt(c, ps, cam, camRot, fist, 0.12f + 0.3f * f, new float[]{0.36f, 1f, 0.66f}, 0.8f + f);
+                    push(ps, cam, fist);
+                    ps.rotate(camRot);
+                    Glow.spikes(c, ps, 7, 0.1f, 0.35f + 0.5f * f, 0.05f, 0.8f, 1f, 0.9f, 0.8f, (long) (totalAge * 0.7f));
+                    ps.popPose();
+                }
+            }
+            case "idle_death_gamble" -> {
+                Vec3 base = user.getPosition(partial);
+                for (int i = 0; i < 4; i++) {
+                    float t = (totalAge * 0.07f + i / 4f) % 1f;
+                    push(ps, cam, base.add(0, t * 2.8, 0));
+                    ps.rotate(Axis.YP.rotationDegrees(-totalAge * 9 + i * 45));
+                    float[] col = i % 2 == 0 ? new float[]{1f, 0.25f, 0.63f} : new float[]{1f, 0.8f, 0.25f};
+                    Glow.ring(c, ps, 1.7f - t * 0.9f, 0.13f, col[0], col[1], col[2], 0.65f * (1 - t));
+                    ps.popPose();
+                }
+            }
+            case "rhythm" -> {
+                // Beat rings pulsing out from his feet with the music.
+                Vec3 base = user.getPosition(partial).add(0, 0.05, 0);
+                float beat = (totalAge - JJKConfig.get().hakari.rhythmLeadIn) / Math.max(1, JJKConfig.get().hakari.rhythmBeatTicks);
+                float fr = beat - (float) Math.floor(beat);
+                if (beat > -0.5f) {
+                    push(ps, cam, base);
+                    Glow.ring(c, ps, 0.4f + fr * 1.8f, 0.12f, 1f, 0.8f, 0.25f, 0.8f * (1 - fr));
+                    ps.popPose();
+                }
+            }
             case "unlimited_void" -> {
                 Vec3 base = user.getPosition(partial);
                 for (int i = 0; i < 3; i++) {
@@ -361,6 +395,13 @@ public final class WorldEffectsRenderer {
         if (progress < 1f) formationEdge(c, ps, d, progress, now + partial);
         // Until the ceiling has closed the sky is still visible: the void only replaces it once it is sealed over.
         if (progress < DomainFormation.CEILING_END) {
+            ps.popPose();
+            return;
+        }
+        // Every domain has its own interior: Idle Death Gamble is a casino, not a void.
+        if (dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(d.definition)) {
+            boolean sealed = progress >= DomainFormation.SEALED;
+            GambleDomainRenderer.render(c, ps, cam, camRot, d, r, edgeGlow, inside && sealed, now, partial);
             ps.popPose();
             return;
         }

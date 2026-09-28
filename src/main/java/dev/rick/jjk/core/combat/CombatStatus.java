@@ -50,6 +50,14 @@ public final class CombatStatus {
     public static final CombatStatus BLINDFOLD = register(builder("blindfold"));
     /** Slowed by pushing against Infinity. */
     public static final CombatStatus INFINITY_SLOWED = register(builder("infinity_slowed"));
+    /** Held in someone's grip (Lucky Rushdown's drag, Lucky Volley's flurry): no gravity, can't act. */
+    public static final CombatStatus GRABBED = register(builder("grabbed").lockMovement().lockActions().lockTechniques().gravity(0f).interrupts());
+    /** Hakari's Riichi presentation is playing: he is untouchable and can't act until it resolves. */
+    public static final CombatStatus GAMBLING = register(builder("gambling").lockMovement().lockActions().lockTechniques().evasive());
+    /** Hakari's Jackpot (the visible state; the moveset itself is the awakened kit). */
+    public static final CombatStatus JACKPOT = register(builder("jackpot"));
+    /** Rhythm's reward: every Jackpot move hits harder while it lasts. */
+    public static final CombatStatus LUCKY_STREAK = register(builder("lucky_streak"));
 
     public final String id;
     public final int index;

@@ -39,7 +39,9 @@ public final class Bootstrap {
         Network.init();
 
         Characters.register(new GojoCharacter());
+        Characters.register(new dev.rick.jjk.hakari.HakariCharacter());
         Defenses.register(new InfinityDefense());
+        Defenses.register(new dev.rick.jjk.hakari.DoorGuardDefense());
         Defenses.register(new GuardDefense());
         VanillaDamageBridge.init();
         CharacterService.init();
@@ -66,6 +68,7 @@ public final class Bootstrap {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             HitboxManager.clearAll();
             DomainManager.clearAll();
+            dev.rick.jjk.hakari.IdleDeathGamble.clearAll();
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> JJKCommand.register(dispatcher));
         JJK.LOGGER.info("Jujutsu loaded: {} character(s)", Characters.ids().spliterator().getExactSizeIfKnown());

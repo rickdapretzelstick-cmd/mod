@@ -19,6 +19,8 @@ public final class Network {
         c2s.register(MeleeInputPayload.TYPE, MeleeInputPayload.CODEC);
         c2s.register(AbilityInputPayload.TYPE, AbilityInputPayload.CODEC);
         c2s.register(ClashInputPayload.TYPE, ClashInputPayload.CODEC);
+        c2s.register(CharacterSelectPayload.TYPE, CharacterSelectPayload.CODEC);
+        c2s.register(RhythmInputPayload.TYPE, RhythmInputPayload.CODEC);
 
         var s2c = PayloadTypeRegistry.clientboundPlay();
         s2c.register(FxPayload.TYPE, FxPayload.CODEC);
@@ -34,6 +36,7 @@ public final class Network {
         s2c.register(ClashEndPayload.TYPE, ClashEndPayload.CODEC);
         s2c.register(DomainCinematicPayload.TYPE, DomainCinematicPayload.CODEC);
         s2c.register(DomainCounterPayload.TYPE, DomainCounterPayload.CODEC);
+        s2c.register(GamblePayload.TYPE, GamblePayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
@@ -50,6 +53,16 @@ public final class Network {
             if (hint != null && hint.distanceToSqr(player) > 64 * 64) hint = null;
             caster.input(slot, p.pressed(), Mth.clamp(p.forward(), -1f, 1f), Mth.clamp(p.strafe(), -1f, 1f), hint);
         });
+        ServerPlayNetworking.registerGlobalReceiver(CharacterSelectPayload.TYPE, (p, ctx) -> {
+            String why = dev.rick.jjk.core.character.CharacterService.select(ctx.player(), p.character());
+            var c = dev.rick.jjk.core.character.Characters.get(p.character());
+            ctx.player().sendOverlayMessage(why != null
+                    ? net.minecraft.network.chat.Component.literal(why).withStyle(net.minecraft.ChatFormatting.RED)
+                    : net.minecraft.network.chat.Component.literal(c == null ? "No character" : c.displayName() + " — " + c.title())
+                            .withStyle(net.minecraft.ChatFormatting.AQUA));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(RhythmInputPayload.TYPE, (p, ctx) ->
+                dev.rick.jjk.hakari.RhythmAbility.input(ctx.player(), p.time()));
         ServerPlayNetworking.registerGlobalReceiver(ClashInputPayload.TYPE, (p, ctx) ->
                 dev.rick.jjk.core.domain.clash.ClashManager.input(ctx.player(), p.session(), p.lane(), p.time()));
     }

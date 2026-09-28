@@ -43,6 +43,8 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.RED, TechniqueRenderer.red());
         EntityRendererRegistry.register(ModEntities.HOLLOW_PURPLE, TechniqueRenderer.purple());
         EntityRendererRegistry.register(ModEntities.TRAINING_DUMMY, DummyRenderer::new);
+        EntityRendererRegistry.register(ModEntities.PACHINKO_BALL, dev.rick.jjk.client.render.HakariRenderers.ball());
+        EntityRendererRegistry.register(ModEntities.HAKARI_DOOR, dev.rick.jjk.client.render.HakariRenderers.door());
 
         InputHandler.init();
         net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, ctx) -> {
@@ -53,6 +55,12 @@ public class JJKClient implements ClientModInitializer {
         // Every custom HUD layer is skipped in Vanilla Minecraft mode.
         HudElementRegistry.addLast(JJK.id("combat_hud"), (g, delta) -> {
             if (dev.rick.jjk.client.CombatMode.enabled()) CombatHud.render(g, delta);
+        });
+        HudElementRegistry.addLast(JJK.id("gamble_hud"), (g, delta) -> {
+            if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.hud.GambleHud.render(g);
+        });
+        HudElementRegistry.addLast(JJK.id("rhythm_hud"), (g, delta) -> {
+            if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.hud.RhythmClient.render(g);
         });
         HudElementRegistry.addLast(JJK.id("clash_hud"), (g, delta) -> {
             if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.clash.ClashHud.render(g);
@@ -87,6 +95,9 @@ public class JJKClient implements ClientModInitializer {
     private static void registerReceivers() {
         ClientPlayNetworking.registerGlobalReceiver(FxPayload.TYPE, (p, ctx) -> ClientFx.handle(p));
         ClientPlayNetworking.registerGlobalReceiver(CasterSyncPayload.TYPE, (p, ctx) -> ClientState.apply(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.GamblePayload.TYPE, (p, ctx) -> {
+            if (ctx.client().level != null) ClientState.applyGamble(p, ctx.client().level.getGameTime());
+        });
         ClientPlayNetworking.registerGlobalReceiver(CameraPayload.TYPE, (p, ctx) -> {
             switch (p.kind()) {
                 case CameraPayload.SHAKE -> ScreenEffects.shake(p.intensity(), p.duration());

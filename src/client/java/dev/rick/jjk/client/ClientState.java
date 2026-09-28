@@ -62,6 +62,35 @@ public final class ClientState {
         return null;
     }
 
+    /** Idle Death Gamble state per domain id (the gamble HUD and the giant reels over the domain). */
+    public static final Map<Integer, Gamble> GAMBLES = new HashMap<>();
+
+    public static final class Gamble {
+        public dev.rick.jjk.core.net.GamblePayload p;
+        /** Game time the current state began (for animating the reels and the Riichi). */
+        public long stateStart;
+        /** Game time the last visual move landed (the reels jolt). */
+        public long visualTick = -100000L;
+    }
+
+    /** The gamble in a domain Hakari owns (null if none). */
+    @org.jetbrains.annotations.Nullable
+    public static Gamble gambleOf(int ownerId) {
+        for (Gamble g : GAMBLES.values()) if (g.p.ownerId() == ownerId) return g;
+        return null;
+    }
+
+    public static void applyGamble(dev.rick.jjk.core.net.GamblePayload p, long now) {
+        if (p.state() == dev.rick.jjk.core.net.GamblePayload.REMOVED) {
+            GAMBLES.remove(p.domainId());
+            return;
+        }
+        Gamble g = GAMBLES.computeIfAbsent(p.domainId(), k -> new Gamble());
+        if (g.p != null && g.p.progress() < p.progress()) g.visualTick = now;
+        g.stateStart = now - p.stateAge();
+        g.p = p;
+    }
+
     /** Domain counter window (game tick it closes), its length, and the domain being opened. */
     public static long counterUntilTick;
     public static int counterWindow = 1;
@@ -156,6 +185,10 @@ public final class ClientState {
         activeCast = "";
         CASTS.clear();
         DOMAINS.clear();
+        GAMBLES.clear();
+        // A counter window belongs to the world it was offered in.
+        counterUntilTick = 0;
+        counterDomain = "";
         comboCount = 0;
     }
 }

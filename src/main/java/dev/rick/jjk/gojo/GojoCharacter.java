@@ -41,6 +41,21 @@ public final class GojoCharacter extends JJKCharacter {
         bindAwakened(AbilitySlot.ULTIMATE, new UnlimitedVoidAbility());
     }
 
+    @Override
+    public String displayName() {
+        return "Gojo";
+    }
+
+    @Override
+    public String title() {
+        return "Honored One";
+    }
+
+    @Override
+    public String description() {
+        return "Lapse Blue pulls, Reversal Red repels. Awaken for the MAX techniques, Hollow Purple and Infinite Void.";
+    }
+
     /** Infinity is implemented but currently kept out of the moveset unless the config brings it back. */
     public static boolean infinityInMoveset() {
         var cfg = JJKConfig.get().infinity;

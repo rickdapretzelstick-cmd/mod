@@ -28,16 +28,18 @@ public class JJKSettingsScreen extends Screen {
             CombatMode.toggle();
             b.setMessage(modeText());
         }).bounds(x, y, bw, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Choose Character..."), b -> minecraft.gui.setScreen(new CharacterSelectScreen(this)))
+                .bounds(x, y + 24, bw, 20).build());
         addRenderableWidget(Button.builder(toggleText("CE numbers", JJKConfig.get().client.showCeNumbers), b -> {
             JJKConfig.get().client.showCeNumbers = !JJKConfig.get().client.showCeNumbers;
             JJKConfig.save();
             b.setMessage(toggleText("CE numbers", JJKConfig.get().client.showCeNumbers));
-        }).bounds(x, y + 48, bw, 20).build());
+        }).bounds(x, y + 52, bw, 20).build());
         addRenderableWidget(Button.builder(toggleText("Combo counter", JJKConfig.get().client.showComboCounter), b -> {
             JJKConfig.get().client.showComboCounter = !JJKConfig.get().client.showComboCounter;
             JJKConfig.save();
             b.setMessage(toggleText("Combo counter", JJKConfig.get().client.showComboCounter));
-        }).bounds(x, y + 72, bw, 20).build());
+        }).bounds(x, y + 76, bw, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose()).bounds(x, y + 110, bw, 20).build());
     }
 
@@ -59,7 +61,7 @@ public class JJKSettingsScreen extends Screen {
         String hint = CombatMode.enabled()
                 ? "Gojo's HUD and ability keys are active."
                 : "Vanilla mode: JJK HUD hidden and ability keys disabled.";
-        g.centeredText(font, hint, width / 2, height / 4 + 34, 0xFFA0A8B8);
+        g.centeredText(font, hint, width / 2, height / 4 + 98 + 40, 0xFFA0A8B8);
     }
 
     @Override

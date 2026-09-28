@@ -34,6 +34,8 @@ public final class InputHandler {
     private static KeyMapping stanceKey;
     /** Switches between combat mode and Vanilla Minecraft mode. Unbound by default so it can't be hit mid-fight. */
     private static KeyMapping modeKey;
+    /** Opens the character select screen. */
+    private static KeyMapping characterKey;
 
     private static final int HEAVY_HOLD_TICKS = 7;
     private static boolean attackHeld;
@@ -52,6 +54,7 @@ public final class InputHandler {
         bind(AbilitySlot.GUARD, "guard", InputConstants.KEY_R);
         bind(AbilitySlot.DASH, "dash", InputConstants.KEY_LALT);
         stanceKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.stance", InputConstants.Type.KEYBOARD, InputConstants.KEY_GRAVE, CATEGORY));
+        characterKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.character_menu", InputConstants.Type.KEYBOARD, InputConstants.KEY_K, CATEGORY));
         modeKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.combat_mode", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY));
     }
 
@@ -65,6 +68,9 @@ public final class InputHandler {
         LocalPlayer player = mc.player;
         if (player == null) return;
         while (modeKey.consumeClick()) dev.rick.jjk.client.CombatMode.toggle();
+        while (characterKey.consumeClick()) {
+            if (mc.gui.screen() == null) mc.gui.setScreen(new dev.rick.jjk.client.hud.CharacterSelectScreen(null));
+        }
         if (!dev.rick.jjk.client.CombatMode.enabled()) {
             // Vanilla Minecraft mode: none of this mod's keys do anything. Swallow their presses so nothing fires later.
             while (stanceKey.consumeClick()) {}
@@ -81,6 +87,12 @@ public final class InputHandler {
             boolean was = DOWN.get(slot);
             boolean clicked = false;
             while (e.getValue().consumeClick()) clicked = true;
+            // Hakari's Rhythm: the Special key is a beat button while the dance runs.
+            if (slot == AbilitySlot.SKILL_5 && dev.rick.jjk.client.hud.RhythmClient.active()) {
+                if ((down && !was) || (clicked && !down)) dev.rick.jjk.client.hud.RhythmClient.press();
+                DOWN.put(slot, down);
+                continue;
+            }
             if (down != was) {
                 DOWN.put(slot, down);
                 sendAbility(player, slot, down);

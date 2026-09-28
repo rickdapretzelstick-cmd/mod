@@ -22,7 +22,58 @@ public final class CharacterService {
         ServerPlayerEvents.JOIN.register(CharacterService::restore);
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> restore(newPlayer));
         ServerPlayerEvents.LEAVE.register(player -> cleanup(player, DomainInstance.EndReason.OWNER_LOST));
-        ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> cleanup(entity, DomainInstance.EndReason.OWNER_LOST));
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+            AbilityCaster c = Casters.getOrNull(entity);
+            if (c != null && c.character() != null) c.character().onDeath(c);
+            cleanup(entity, DomainInstance.EndReason.OWNER_LOST);
+        });
+        // A character's own state can refuse a death (Hakari's Jackpot).
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) -> {
+            AbilityCaster c = Casters.getOrNull(entity);
+            return c == null || c.character() == null || !c.character().preventDeath(c, source, amount);
+        });
+    }
+
+    /**
+     * Why this entity can't change character right now, or null if it can. Switching is only allowed from a neutral
+     * state: not mid-attack or mid-cast, not in or near a domain or clash, not awakened (or in Jackpot), not stunned,
+     * and not hit in the last few seconds.
+     */
+    @Nullable
+    public static String switchBlocked(LivingEntity entity) {
+        AbilityCaster c = Casters.get(entity);
+        if (!entity.isAlive()) return "You can't switch while dead.";
+        if (c.isCasting() || !c.overlays().isEmpty()) return "Finish your technique first.";
+        if (c.melee.isCommitted()) return "Finish your attack first.";
+        if (c.isAwakened()) return "You can't switch while awakened.";
+        var state = dev.rick.jjk.core.combat.Combat.state(entity);
+        if (state.has(dev.rick.jjk.core.combat.CombatStatus.CLASHING)) return "You can't switch during a domain clash.";
+        if (state.actionsLocked() || state.movementLocked() || state.has(dev.rick.jjk.core.combat.CombatStatus.AWAKENING)) {
+            return "You can't switch while stunned.";
+        }
+        if (DomainManager.ownedBy(entity) != null) return "You can't switch while your domain is open.";
+        for (DomainInstance d : DomainManager.all((net.minecraft.server.level.ServerLevel) entity.level())) {
+            if (d.isLive() && d.contains(entity)) return "You can't switch inside a domain.";
+        }
+        if (entity.getLastHurtByMob() != null && entity.tickCount - entity.getLastHurtByMobTimestamp() < 60) return "You're still in combat.";
+        if (c.character() != null) {
+            String own = c.character().switchBlocked(c);
+            if (own != null) return own;
+        }
+        return null;
+    }
+
+    /** A player picked a character on the select screen. Returns why not, or null once switched. */
+    @Nullable
+    public static String select(ServerPlayer player, String id) {
+        JJKCharacter next = id.isEmpty() ? null : Characters.get(id);
+        if (!id.isEmpty() && next == null) return "Unknown character.";
+        AbilityCaster c = Casters.get(player);
+        if (c.character() == next) return null;
+        String blocked = switchBlocked(player);
+        if (blocked != null) return blocked;
+        assign(player, next);
+        return null;
     }
 
     private static void restore(ServerPlayer player) {

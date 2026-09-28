@@ -233,6 +233,8 @@ public class GojoClientGameTest implements FabricClientGameTest {
                     if (e.getValue().is(net.minecraft.tags.BlockTags.LEAVES) && e.getValue().hasProperty(net.minecraft.world.level.block.LeavesBlock.DISTANCE)
                             && e.getValue().getValue(net.minecraft.world.level.block.LeavesBlock.DISTANCE) == 7
                             && !e.getValue().getValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT)) continue;
+                    // Grass creeping onto bare dirt (left by an earlier crater) is vanilla growth too.
+                    if (e.getValue().is(net.minecraft.world.level.block.Blocks.DIRT) && now.is(net.minecraft.world.level.block.Blocks.GRASS_BLOCK)) continue;
                     if (!now.equals(e.getValue())) {
                         if (wrong++ == 0) example = e.getKey() + " was " + e.getValue() + " now " + now;
                     }

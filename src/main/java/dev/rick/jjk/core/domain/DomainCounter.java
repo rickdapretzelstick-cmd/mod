@@ -56,11 +56,16 @@ public final class DomainCounter {
         return !c.isAwakened() && (c.noCost() || c.awakening() >= c.maxAwakening()) && domainAbility(c) != null && DomainManager.ownedBy(c.owner) == null;
     }
 
-    /** The domain this sorcerer opens when awakened, if any. */
+    /**
+     * The domain this sorcerer can open: on the Ultimate key while awakened (Gojo), or in the base kit (Hakari, whose
+     * domain is what leads to his Jackpot).
+     */
     @Nullable
     public static Ability domainAbility(AbilityCaster c) {
         if (c.character() == null) return null;
         Ability a = c.character().ability(AbilitySlot.ULTIMATE, true);
+        if (a instanceof DomainAbility) return a;
+        a = c.character().ability(AbilitySlot.ULTIMATE, false);
         return a instanceof DomainAbility ? a : null;
     }
 
@@ -92,9 +97,14 @@ public final class DomainCounter {
         LivingEntity opener = (LivingEntity) level.getEntity(w.opener);
         Ability ability = domainAbility(c);
         DomainDefinition def = ((DomainAbility) ability).domain();
-        // No long transformation: the eyes open and the domain answers in the same breath.
-        c.enterAwakening();
-        Fx.play(level, "awaken", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
+        // No long transformation: the eyes open and the domain answers in the same breath. (Characters whose domain
+        // is the way into their awakened state skip straight to it, spending the full meter.)
+        if (c.character().awakensOnCounter()) {
+            c.enterAwakening();
+            Fx.play(level, "awaken", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
+        } else if (!c.noCost()) {
+            c.setAwakening(0);
+        }
         Fx.play(level, "domain_counter", user.position().add(0, 1.2, 0), opener.position().subtract(user.position()), 1f, user.getId());
         Fx.shake(level, user.position(), 48, 1.0f, 18);
         float meter = ability.awakeningCost(c);

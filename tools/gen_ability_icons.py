@@ -217,4 +217,163 @@ for t in range(200):
 i.outline()
 i.save('infinity')
 
+# ===================== Hakari =====================
+# Casino palette: black, white, hot pink, red, gold, pachinko chrome, and Jackpot green.
+PINK, HOT, GOLD, CHROME, CHROME_D, JADE = 0xFF3FA0, 0xFF7FC0, 0xF0C040, 0xD8DEE8, 0x8A94A4, 0x5CFFA8
+
+# --- Reserve Balls: three steel pachinko balls in flight with speed ticks. ---
+i = Icon()
+for (cx, cy, r) in ((4.5, 10.5, 2.6), (8.5, 6.5, 2.2), (12.5, 3.5, 1.8)):
+    i.disk(r, CHROME_D, cx, cy)
+    i.disk(r - 0.9, CHROME, cx, cy)
+    i.set(round(cx - 0.8), round(cy - 0.8), 0xFFFFFF)
+for x, y in ((1, 13), (2, 14), (5, 8), (9, 4)):
+    i.set(x, y, HOT)
+i.outline()
+i.save('reserve_balls')
+
+# --- Shutter Doors: two steel shutters sliding shut, with a pink strip and inward arrows. ---
+i = Icon()
+for x0 in (1, 9):
+    for y in range(2, 15):
+        for x in range(x0, x0 + 6):
+            i.set(x, y, [0xB8C0CC, 0x9AA2AE, 0x7A828E][y % 3])
+    for x in range(x0, x0 + 6):
+        i.set(x, 13, PINK)
+for y in (7, 8):
+    i.set(7, y, 0xFFFFFF)
+    i.set(8, y, 0xFFFFFF)
+i.outline()
+i.save('shutter_doors')
+
+# --- Rough Energy: a fist wrapped in jagged, coarse cursed energy. ---
+i = Icon()
+for k in range(10):
+    a = k * math.pi / 5 + 0.3
+    r = 7.2 if k % 2 == 0 else 5.2
+    i.line(C + math.cos(a) * 2.5, C + math.sin(a) * 2.5, C + math.cos(a) * r, C + math.sin(a) * r, JADE if k % 2 else 0xE8FFF4)
+for y in range(5, 11):
+    for x in range(5, 11):
+        i.set(x, y, 0xE8B894)
+for x in range(5, 11):
+    i.set(x, 5, 0xC89874)
+for y in (7, 9):
+    for x in range(6, 10):
+        i.set(x, y, 0xB88864)
+i.set(10, 8, 0xC89874)
+i.outline()
+i.save('rough_energy')
+
+# --- Fever Breaker: a spinning kick (a leg sweeping an arc) and a double impact burst. ---
+i = Icon()
+i.ring(5.2, 6.6, PINK, 7, 8, when=lambda a: -2.6 < a < 0.4)
+for k in range(6):
+    i.set(3 + k, 12 - k // 2, 0xF4F0F6)
+    i.set(3 + k, 13 - k // 2, 0x2A2A38)
+for k in range(8):
+    a = k * math.pi / 4
+    i.line(12 + math.cos(a) * 1, 5 + math.sin(a) * 1, 12 + math.cos(a) * 3.2, 5 + math.sin(a) * 3.2, GOLD if k % 2 else 0xFFFFFF)
+i.outline()
+i.save('fever_breaker')
+
+# --- Door Guard: the red lacquer gamble door with its gold 7. ---
+i = Icon()
+for y in range(1, 15):
+    for x in range(3, 13):
+        edge = x in (3, 12) or y in (1, 14)
+        i.set(x, y, GOLD if edge else (0x8A1020 if x in (7, 8) else 0xB01828))
+for x, y in ((6, 4), (7, 4), (8, 4), (9, 4), (9, 5), (8, 6), (8, 7), (7, 8), (7, 9), (7, 10)):
+    i.set(x, y, 0xFFFFFF)
+i.outline()
+i.save('door_guard')
+
+# --- Idle Death Gamble: a slot window showing 7 7 7 under a pink neon arch. ---
+i = Icon()
+i.ring(6.4, 7.5, PINK, 7.5, 8.5, when=lambda a: a < 0.05)
+for y in range(5, 13):
+    for x in range(0, 16):
+        i.set(x, y, GOLD)
+for x0 in (1, 6, 11):
+    for y in range(6, 12):
+        for x in range(x0, x0 + 4):
+            i.set(x, y, 0xF4F0F6)
+    for x, y in ((0, 0), (1, 0), (2, 0), (3, 0), (3, 1), (2, 2), (2, 3), (1, 4), (1, 5)):
+        i.set(x0 + x, 6 + y, 0xE0102A)
+i.set(7, 2, 0xFFFFFF)
+i.set(8, 2, 0xFFFFFF)
+i.outline()
+i.save('idle_death_gamble')
+
+# --- Lucky Volley: a flurry of fists with a gold streak burst. ---
+i = Icon()
+for (cx, cy) in ((4, 5), (7, 9), (11, 6)):
+    for y in range(cy - 2, cy + 2):
+        for x in range(cx - 2, cx + 2):
+            i.set(x, y, 0xE8B894)
+    i.set(cx - 2, cy - 2, 0xC89874)
+for x, y in ((1, 12), (2, 13), (13, 12), (14, 11), (8, 2), (9, 1)):
+    i.set(x, y, JADE)
+i.line(1, 14, 5, 12, GOLD)
+i.outline()
+i.save('lucky_volley')
+
+# --- Lucky Rushdown: a charging silhouette leaning into a sprint, speed lines behind. ---
+i = Icon()
+for y in range(3, 14):
+    for x in range(7, 11):
+        i.set(x + (13 - y) // 4, y, 0x2A2A38)
+i.disk(1.8, 0x3A3A48, 11.5, 3.5)
+i.set(12, 3, JADE)
+for y, x0 in ((6, 1), (9, 0), (12, 2)):
+    for x in range(x0, x0 + 5):
+        i.set(x, y, JADE if x % 2 else 0xE8FFF4)
+i.line(10, 13, 13, 15, 0x2A2A38)
+i.outline()
+i.save('lucky_rushdown')
+
+# --- Overwhelming Luck: a huge fist over a burst of repeated impacts. ---
+i = Icon()
+for k in range(12):
+    a = k * math.pi / 6
+    i.line(C + math.cos(a) * 3, C + math.sin(a) * 3, C + math.cos(a) * 7.5, C + math.sin(a) * 7.5, JADE if k % 3 else GOLD)
+for y in range(4, 12):
+    for x in range(4, 12):
+        i.set(x, y, 0xF0C8A4)
+for x in range(4, 12):
+    i.set(x, 4, 0xD0A884)
+for y in (6, 8, 10):
+    for x in range(5, 11):
+        i.set(x, y, 0xC89874)
+i.outline()
+i.save('overwhelming_luck')
+
+# --- Energy Surge: a jade energy bolt splitting into an afterimage and a downward kick arrow. ---
+i = Icon()
+for (x, y) in ((3, 2), (4, 3), (5, 4), (6, 5), (5, 6), (6, 7), (7, 8), (8, 9)):
+    i.set(x, y, JADE)
+    i.set(x + 1, y, 0xE8FFF4)
+for y in range(8, 15):
+    i.set(11, y, 0xE8FFF4)
+    i.set(12, y, JADE)
+for x, y in ((9, 12), (10, 13), (13, 13), (14, 12)):
+    i.set(x, y, JADE)
+i.disk(1.3, 0x3A3A48, 12, 5)
+i.outline()
+i.save('energy_surge')
+
+# --- Rhythm: two beamed eighth notes over a gold beat bar. ---
+i = Icon()
+for y in range(2, 11):
+    i.set(5, y, 0xF4F0F6)
+    i.set(12, y - 1, 0xF4F0F6)
+for x in range(5, 13):
+    i.set(x, 2 + (0 if x < 9 else 0), PINK)
+    i.set(x, 3, PINK)
+i.disk(1.8, 0xF4F0F6, 3.8, 11)
+i.disk(1.8, 0xF4F0F6, 10.8, 10)
+for x in range(1, 15):
+    i.set(x, 14, GOLD if x % 3 else JADE)
+i.outline()
+i.save('rhythm')
+
 print('icons written to', os.path.normpath(OUT))

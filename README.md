@@ -1,4 +1,4 @@
-# Jujutsu — Phase 1: Gojo Satoru
+# Jujutsu — Gojo Satoru and Kinji Hakari
 
 Fabric mod for **Minecraft 26.3** (Java 25, Fabric API). Install the jar plus Fabric API.
 
@@ -28,6 +28,57 @@ on, and the bar becomes a timer that drains; MAX moves also spend it. At zero he
 14 seconds. Everything it replaces (including chest contents, block states, waterlogging) is saved to disk first and
 restored exactly afterwards. The barrier can't be mined, blown up or pushed. If the server stops or crashes mid-domain,
 the world is restored on the next start.
+
+## Characters
+
+Press **K** (or pause menu → *JJK Settings* → *Choose Character...*) to open the character select screen and click a
+card. Every registered character gets a card from its own name, title, description, theme and portrait, so adding a
+character never touches the screen. Switching only works from a neutral state: not mid-attack or mid-cast, not
+awakened or in Jackpot, not in or near a domain or clash, not stunned, and not hit in the last few seconds. The old
+kit's techniques, toggles and states are cleared and the new moveset, HUD icons and theme load at once.
+
+| Key | Gojo (Honored One) | Hakari (Restless Gambler) | Hakari in Jackpot |
+|---|---|---|---|
+| Z | Lapse Blue | Reserve Balls | Lucky Volley |
+| X | Reversal Red | Shutter Doors | Lucky Rushdown |
+| C | — | Rough Energy | Overwhelming Luck |
+| V | Teleport | Fever Breaker | Energy Surge |
+| B (Special) | — | Door Guard (hold) | Rhythm |
+| G | Awaken → Infinite Void | Idle Death Gamble | — |
+
+![Hakari](docs/screenshots/hakari_showcase.png)
+
+### Kinji Hakari — Restless Gambler
+
+Gambling → domain → Jackpot → sustain → pressure.
+
+- **Reserve Balls**: a quick three-ball volley of steel pachinko balls. They bounce once off surfaces, and the last
+  one knocks back.
+- **Shutter Doors**: two steel shutters rise out of the ground on either side of the target and slam shut. They crush
+  the target and pin them in hitstun from range.
+- **Rough Energy**: a committed wind-up, then a guard-breaking straight at the very end of it that gouges the ground.
+- **Fever Breaker**: a spinning kick knocks them away, Hakari rushes them down, and a second, heavier kick breaks them.
+- **Door Guard** (Special, hold): a red lacquer door stops everything from the front. Melee caught in the first few
+  ticks makes the door swing open into the attacker.
+- **Idle Death Gamble** (full Awakening meter): a physical domain built by the shared framework, with a neon pachinko
+  wall, a casino floor, sweeping spotlights and giant slot reels over the arena. The sure-hit only imparts the rules
+  and deals no damage.
+  - **Visual moves**: Hakari's techniques used inside the domain count as visual moves, and enough of them start a
+    **Riichi**.
+  - **Riichi**: a scenario is drawn (Transit Card, Seat Struggle or Potty Emergency) with a green, red, gold or
+    rainbow signal. A cut-in plays, the first two reels lock and the third spins down.
+  - **Attempts**: a miss goes back to spinning for another attempt. A final attempt is forced as the domain runs out.
+  - **Bonuses**: odd jackpot numbers give the next domain better odds, and even ones give it a head start. Both are
+    kept for one life only.
+  - **Missing entirely**: if the domain ends without a jackpot, part of the meter is refunded.
+- **Jackpot**: full heal, unlimited cursed energy and heavy regeneration. A lethal blow is survived, but not twice in
+  quick succession. The timer is a big casino-lit bar at the top of the screen. The kit becomes:
+  - **Lucky Volley**: an opener, a flurry, then a final strike.
+  - **Lucky Rushdown**: run the target down, drag them, then throw them.
+  - **Overwhelming Luck**: a march of escalating punches ending in a blast.
+  - **Energy Surge**: a dash, then he vanishes, reappears above the target and axe-kicks down.
+  - **Rhythm**: press the Special key on each beat. Landed beats stretch the Jackpot, and all GREAT or better gives a
+    Lucky Streak damage buff.
 
 ## HUD and Vanilla Minecraft mode
 

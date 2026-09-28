@@ -41,7 +41,19 @@ public final class CombatHud {
             java.util.Map.entry("hollow_purple", meta("Hollow Purple", 0xFFA24DFF, true, "hollow_purple")),
             java.util.Map.entry("unlimited_void", meta("Infinite Void", 0xFFE8F0FF, true, "unlimited_void")),
             java.util.Map.entry("dash", meta("Dash", 0xFFB0B8C8, false, "dash")),
-            java.util.Map.entry("guard", meta("Guard", 0xFFB0B8C8, false, "guard")));
+            java.util.Map.entry("guard", meta("Guard", 0xFFB0B8C8, false, "guard")),
+            // Hakari: base kit, domain, and the Jackpot kit (gold frames like other awakened moves).
+            java.util.Map.entry("reserve_balls", meta("Reserve Balls", 0xFFD8DEE8, false, "reserve_balls")),
+            java.util.Map.entry("shutter_doors", meta("Shutter Doors", 0xFFB8C0CC, false, "shutter_doors")),
+            java.util.Map.entry("rough_energy", meta("Rough Energy", 0xFF5CFFA8, false, "rough_energy")),
+            java.util.Map.entry("fever_breaker", meta("Fever Breaker", 0xFFFF3FA0, false, "fever_breaker")),
+            java.util.Map.entry("door_guard", meta("Door Guard", 0xFFE8B840, false, "door_guard")),
+            java.util.Map.entry("idle_death_gamble", meta("Idle Death Gamble", 0xFFFF3FA0, false, "idle_death_gamble")),
+            java.util.Map.entry("lucky_volley", meta("Lucky Volley", 0xFF5CFFA8, true, "lucky_volley")),
+            java.util.Map.entry("lucky_rushdown", meta("Lucky Rushdown", 0xFF5CFFA8, true, "lucky_rushdown")),
+            java.util.Map.entry("overwhelming_luck", meta("Overwhelming Luck", 0xFF5CFFA8, true, "overwhelming_luck")),
+            java.util.Map.entry("energy_surge", meta("Energy Surge", 0xFF5CFFA8, true, "energy_surge")),
+            java.util.Map.entry("rhythm", meta("Rhythm", 0xFFF0C040, true, "rhythm")));
     /** The technique column (empty slots are skipped), then the movement/defence pair under it. */
     private static final AbilitySlot[] TECHNIQUES = {AbilitySlot.SKILL_1, AbilitySlot.SKILL_2, AbilitySlot.SKILL_3, AbilitySlot.SKILL_4,
             AbilitySlot.SKILL_5, AbilitySlot.ULTIMATE};
@@ -101,7 +113,8 @@ public final class CombatHud {
         int bw = 5, bh = Mth.clamp(Math.round(h * 0.4f), 60, 160);
         int x = 7, y0 = h / 2 - bh / 2 - 8, y1 = y0 + bh;
         // Frame: a dark shell with a thin coloured rim (red and pulsing when empty).
-        int rim = empty ? pulse(0xFFFF4040, 0xFF501010, time, 0.25f) : low ? 0xFF803030 : full ? 0xFF7FD4FF : 0xFF2A3A55;
+        CharacterTheme theme = CharacterTheme.of(ClientState.character);
+        int rim = empty ? pulse(0xFFFF4040, 0xFF501010, time, 0.25f) : low ? 0xFF803030 : full ? theme.accent() : theme.ceRim();
         g.fill(x - 2, y0 - 2, x + bw + 2, y1 + 2, 0xB0000000);
         outlineRect(g, x - 1, y0 - 1, x + bw + 1, y1 + 1, rim);
         g.fill(x, y0, x + bw, y1, 0xFF090C12);
@@ -109,8 +122,8 @@ public final class CombatHud {
         int ghostTop = y1 - Math.round(bh * trailCe);
         if (ghostTop < top) g.fill(x, ghostTop, x + bw, top, 0x90E8F0FF);
         if (top < y1) {
-            int hi = low ? pulse(0xFFFF8A7A, 0xFFE05050, time, 0.18f) : 0xFFA8ECFF;
-            int lo = low ? 0xFFA01818 : 0xFF2455E0;
+            int hi = low ? pulse(0xFFFF8A7A, 0xFFE05050, time, 0.18f) : theme.ceTop();
+            int lo = low ? 0xFFA01818 : theme.ceBottom();
             g.fillGradient(x, top, x + bw, y1, hi, lo);
             // A soft inner highlight down the left edge gives the fill some depth.
             g.fill(x, top, x + 1, y1, low ? 0x40FFFFFF : 0x50FFFFFF);
@@ -127,10 +140,12 @@ public final class CombatHud {
         }
         // Quarter marks.
         for (int i = 1; i < 4; i++) g.fill(x, y0 + bh * i / 4, x + bw, y0 + bh * i / 4 + 1, 0x70000000);
-        if (full) g.fill(x - 1, y0 - 3, x + bw + 1, y0 - 2, 0x807FD4FF);
+        if (full) g.fill(x - 1, y0 - 3, x + bw + 1, y0 - 2, (theme.accent() & 0xFFFFFF) | 0x80000000);
 
         // Label above, a small readout below.
-        smallText(g, font, "CE", x + bw / 2f, y0 - 11, 0.75f, empty ? 0xFFFF6A6A : 0xFFB8D8FF, true);
+        smallText(g, font, "CE", x + bw / 2f, y0 - 11, 0.75f, empty ? 0xFFFF6A6A : ClientState.awakened() && theme.bigTimer() ? 0xFFB8FFD8 : 0xFFB8D8FF, true);
+        // Jackpot: cursed energy is unlimited.
+        if (ClientState.awakened() && theme.bigTimer()) smallText(g, font, "∞", x + bw / 2f, y0 + bh / 2f - 3, 0.9f, 0xFF0A2A18, true);
         int ty = y1 + 5;
         if (JJKConfig.get().client.showCeNumbers) {
             smallText(g, font, String.format(java.util.Locale.ROOT, "%,d", Math.round(ClientState.energy)), x - 2, ty, 0.6f,
@@ -202,12 +217,13 @@ public final class CombatHud {
         if (lastCooldown[slot.ordinal()] > 0 && cd == 0) readyFlash[slot.ordinal()] = now;
         lastCooldown[slot.ordinal()] = cd;
         boolean lackCe = !noCost && ClientState.energy < ceCost(id, cfg);
-        boolean lackMeter = meterCost(id) > 0 && ClientState.awakening < meterCost(id);
-        boolean technique = !id.equals("dash") && !id.equals("guard") && !id.equals("awaken");
+        boolean lackMeter = meterCost(id) > 0 && ClientState.awakening < meterCost(id) - 0.01f;
+        boolean technique = !id.equals("dash") && !id.equals("guard") && !id.equals("awaken") && !id.equals("door_guard");
         boolean locked = state != null && state.techniquesLocked() && technique;
         boolean casting = ClientState.activeCast.equals(id);
-        boolean awakenReady = id.equals("awaken") && ClientState.awakening >= ClientState.awakeningMax;
-        boolean counter = id.equals("awaken") && awakenReady && now < ClientState.counterUntilTick;
+        boolean opensUp = id.equals("awaken") || id.equals("idle_death_gamble");
+        boolean awakenReady = opensUp && !ClientState.awakened() && ClientState.awakening >= ClientState.awakeningMax;
+        boolean counter = awakenReady && now < ClientState.counterUntilTick;
         boolean ready = !cooling && !lackCe && !lackMeter && !locked;
         float time = now + partial;
 
@@ -291,6 +307,11 @@ public final class CombatHud {
             case "teleport" -> cfg.teleport.cost;
             case "hollow_purple" -> cfg.purple.cost;
             case "unlimited_void" -> cfg.domain.cost;
+            case "reserve_balls" -> cfg.hakari.ballsCost;
+            case "shutter_doors" -> cfg.hakari.shutterCost;
+            case "rough_energy" -> cfg.hakari.roughCost;
+            case "fever_breaker" -> cfg.hakari.feverCost;
+            case "idle_death_gamble" -> cfg.hakari.domainCost;
             default -> 0;
         };
     }
@@ -335,6 +356,7 @@ public final class CombatHud {
             case "max_red" -> a.maxRedCost;
             case "hollow_purple" -> a.hollowPurpleCost;
             case "unlimited_void" -> a.infiniteVoidCost;
+            case "idle_death_gamble" -> a.max;
             default -> 0;
         };
     }
@@ -347,44 +369,102 @@ public final class CombatHud {
     }
 
     /** The Awakening meter: builds through combat, then becomes the timer once awakened. */
+    /** Seconds of the awakened state left (the meter is its timer, drained at the character's own rate). */
+    private static float awakenedSecondsLeft() {
+        var ch = dev.rick.jjk.core.character.Characters.get(ClientState.character);
+        float drain = ch != null ? ch.awakeningDrainPerSecond() : JJKConfig.get().awakening.drainPerSecond;
+        return ClientState.awakening / Math.max(0.01f, drain);
+    }
+
+    /** The Awakening meter: builds through combat, then becomes the timer once awakened. Worded and coloured per character. */
     private static void awakeningBar(GuiGraphicsExtractor g, Font font, Minecraft mc, int w, int h) {
-        int bw = 182, bh = 5, x = w / 2 - bw / 2, y = h - 52;
-        long now = mc.level.getGameTime();
-        float frac = Mth.clamp(ClientState.awakening / ClientState.awakeningMax, 0, 1);
+        CharacterTheme theme = CharacterTheme.of(ClientState.character);
         boolean awakened = ClientState.awakened();
+        long now = mc.level.getGameTime();
+        float partial = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+        if (awakened && theme.bigTimer()) {
+            jackpotTimer(g, font, theme, w, h, now + partial);
+            return;
+        }
+        int bw = 182, bh = 5, x = w / 2 - bw / 2, y = h - 52;
+        float frac = Mth.clamp(ClientState.awakening / ClientState.awakeningMax, 0, 1);
         boolean ready = !awakened && frac >= 1f;
         g.fill(x - 2, y - 2, x + bw + 2, y + bh + 2, ready || awakened ? shimmer(now, 0) : 0xFF101018);
         g.fill(x - 1, y - 1, x + bw + 1, y + bh + 1, 0xFF05050A);
         int fill = Math.round(bw * frac);
         if (awakened) {
-            g.fillGradient(x, y, x + fill, y + bh, 0xFFFFFFFF, 0xFF7FD4FF);
+            g.fillGradient(x, y, x + fill, y + bh, theme.timerFrom(), theme.timerTo());
         } else {
-            g.fillGradient(x, y, x + fill, y + bh, 0xFF8A5CFF, 0xFF3E7BFF);
+            g.fillGradient(x, y, x + fill, y + bh, theme.meterFrom(), theme.meterTo());
         }
         for (int i = 1; i < 4; i++) g.fill(x + bw * i / 4, y, x + bw * i / 4 + 1, y + bh, 0x50000000);
         String label;
         int color;
+        String key = "  [" + InputHandler.keyLabel(AbilitySlot.ULTIMATE) + "]";
         if (awakened) {
-            float secs = ClientState.awakening / Math.max(0.01f, JJKConfig.get().awakening.drainPerSecond);
-            label = String.format("AWAKENED  %.0fs", secs);
+            label = String.format("%s  %.0fs", theme.awakenedName(), awakenedSecondsLeft());
             color = 0xFFEAF8FF;
         } else if (ready && now < ClientState.counterUntilTick) {
             // Someone nearby is opening a domain: the same button answers it.
-            label = "COUNTER " + ClientState.counterDomain.toUpperCase(java.util.Locale.ROOT) + "!  [" + InputHandler.keyLabel(AbilitySlot.ULTIMATE) + "]";
+            label = "COUNTER " + ClientState.counterDomain.toUpperCase(java.util.Locale.ROOT) + "!" + key;
             color = (now / 3) % 2 == 0 ? 0xFFFF6A6A : 0xFFFFFFFF;
             float left = (ClientState.counterUntilTick - now) / (float) Math.max(1, ClientState.counterWindow);
             g.fill(x, y + bh + 3, x + Math.round(bw * left), y + bh + 5, 0xFFFF6A6A);
         } else if (ready) {
-            label = "AWAKENING READY  [" + InputHandler.keyLabel(AbilitySlot.ULTIMATE) + "]";
+            label = theme.readyText() + key;
             color = (now / 6) % 2 == 0 ? 0xFFFFE08A : 0xFFFFFFFF;
         } else if (ClientState.flag(CasterSyncPayload.FLAG_REFILL_LOCKED)) {
-            label = "AWAKENING  (recovering)";
+            label = theme.meterName() + "  (recovering)";
             color = 0xFF8088A0;
         } else {
-            label = "AWAKENING  " + Math.round(frac * 100) + "%";
+            label = theme.meterName() + "  " + Math.round(frac * 100) + "%";
             color = 0xFFC8B8FF;
         }
         g.centeredText(font, label, w / 2, y - 10, color);
+    }
+
+    /**
+     * The Jackpot timer: a major element at the top of the screen while it runs — big lettering that cycles like
+     * casino lights, the time left, and a wide bar that drains (flashing red in the last few seconds).
+     */
+    private static void jackpotTimer(GuiGraphicsExtractor g, Font font, CharacterTheme theme, int w, int h, float time) {
+        float secs = awakenedSecondsLeft();
+        float frac = Mth.clamp(ClientState.awakening / ClientState.awakeningMax, 0, 1);
+        boolean ending = secs < 6;
+        int bw = Math.min(260, w - 120), bh = 7, x = w / 2 - bw / 2, y = 26;
+        g.fill(x - 3, y - 3, x + bw + 3, y + bh + 3, 0xC0000000);
+        int frame = ending ? pulse(0xFFFF4040, 0xFFFFFFFF, time, 0.6f) : rainbow(time, 0);
+        outlineRect(g, x - 2, y - 2, x + bw + 2, y + bh + 2, frame);
+        int fill = Math.round(bw * frac);
+        g.fillGradient(x, y, x + fill, y + bh, theme.timerFrom(), theme.timerTo());
+        // Lights chasing along the bar.
+        for (int i = 0; i < bw; i += 12) {
+            boolean on = ((int) (time / 2) + i / 12) % 3 == 0;
+            if (i < fill && on) g.fill(x + i, y + 1, x + i + 3, y + bh - 1, 0x90FFFFFF);
+        }
+        var pose = g.pose();
+        pose.pushMatrix();
+        pose.translate(w / 2f, 6);
+        float pop = 2.0f + 0.08f * Mth.sin(time * 0.5f);
+        pose.scale(pop, pop);
+        String word = theme.awakenedName();
+        int tw = font.width(word);
+        // Each letter its own casino light.
+        int cx = -tw / 2;
+        for (int i = 0; i < word.length(); i++) {
+            String ch = String.valueOf(word.charAt(i));
+            g.text(font, ch, cx, 0, rainbow(time, i), true);
+            cx += font.width(ch);
+        }
+        pose.popMatrix();
+        String t = String.format("%d:%02d", (int) secs / 60, (int) secs % 60);
+        g.centeredText(font, t, w / 2, y + bh + 5, ending ? pulse(0xFFFF6060, 0xFFFFFFFF, time, 0.6f) : 0xFFE8FFF0);
+    }
+
+    /** Casino lights: a hue that walks through pink, gold and green. */
+    private static int rainbow(float time, int i) {
+        int[] cols = {0xFFFF3FA0, 0xFFF0C040, 0xFF5CFFA8, 0xFFFFFFFF, 0xFF7FD4FF};
+        return cols[(int) Math.floorMod((int) (time / 3) + i, cols.length)];
     }
 
     /** Big announcement when entering Awakening, and a quieter one when it ends. */
@@ -399,10 +479,11 @@ public final class CombatHud {
         if (ClientState.awakened()) {
             float sc = 3.2f + Math.max(0, 1 - age / 6f);
             pose.scale(sc, sc);
-            g.centeredText(font, "AWAKENED", 0, 0, a | 0xEAF8FF);
+            g.centeredText(font, CharacterTheme.of(ClientState.character).awakenedName(), 0, 0, a | 0xEAF8FF);
         } else {
             pose.scale(1.5f, 1.5f);
-            g.centeredText(font, "Awakening ended", 0, 0, a | 0xA0A8C0);
+            String ended = CharacterTheme.of(ClientState.character).awakenedName();
+            g.centeredText(font, ended.charAt(0) + ended.substring(1).toLowerCase(java.util.Locale.ROOT) + " ended", 0, 0, a | 0xA0A8C0);
         }
         pose.popMatrix();
     }
@@ -444,6 +525,16 @@ public final class CombatHud {
                 frac = Mth.clamp(t / cfg.domain.startup, 0, 1);
                 label = "DOMAIN EXPANSION: INFINITE VOID";
                 color = 0xFFFFFFFF;
+            }
+            case "idle_death_gamble" -> {
+                frac = Mth.clamp(t / cfg.hakari.domainStartup, 0, 1);
+                label = "DOMAIN EXPANSION: IDLE DEATH GAMBLE";
+                color = 0xFFFF7FC0;
+            }
+            case "rough_energy" -> {
+                frac = Mth.clamp(t / cfg.hakari.roughWindup, 0, 1);
+                label = "ROUGH ENERGY";
+                color = 0xFF5CFFA8;
             }
             case "blue" -> {
                 frac = 1;

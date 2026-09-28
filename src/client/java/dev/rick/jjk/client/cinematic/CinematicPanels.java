@@ -148,6 +148,12 @@ public final class CinematicPanels {
         g.disableScissor();
     }
 
+    /** {@link #label} centred on x. */
+    public static void labelCentered(GuiGraphicsExtractor g, Font font, String text, float x, float y, float scale, int color, float alpha) {
+        int tw = font.width(Component.literal(text).withStyle(ChatFormatting.BOLD));
+        label(g, font, text, x - tw * scale / 2f, y, scale, color, alpha, false);
+    }
+
     /** Heavy white lettering with a thick black outline. */
     public static void label(GuiGraphicsExtractor g, Font font, String text, float x, float y, float scale, int color, float alpha, boolean alignRight) {
         if (alpha <= 0.02f) return;

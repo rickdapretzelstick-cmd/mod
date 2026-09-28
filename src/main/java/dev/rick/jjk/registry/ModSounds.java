@@ -21,7 +21,9 @@ public final class ModSounds {
             "domain_charge", "domain_expand", "domain_ambient", "domain_collapse", "domain_surehit", "domain_clash",
             "awaken", "awaken_end", "finisher", "domain_block", "max_charge",
             "red_compress", "teleport_out", "teleport_in", "max_blue_hum", "max_blue_collapse", "max_red_explosion", "purple_collision",
-            "clash_start", "clash_perfect", "clash_hit", "clash_miss", "clash_win", "clash_beat", "clash_countdown"
+            "clash_start", "clash_perfect", "clash_hit", "clash_miss", "clash_win", "clash_beat", "clash_countdown",
+            // Hakari
+            "ball_throw", "ball_hit", "ball_ricochet", "shutter_rise", "shutter_slam", "rough_charge", "rough_impact", "fever_kick", "fever_rush", "fever_break", "door_open", "door_block", "door_slam", "gamble_visual", "gamble_spin", "gamble_riichi", "gamble_signal", "gamble_stop", "gamble_miss", "jackpot", "jackpot_heal", "jackpot_end", "lucky_hit", "lucky_final", "surge_vanish", "surge_appear", "rhythm_beat", "rhythm_tick", "idg_ambient"
     };
     private static final Map<String, SoundEvent> SOUNDS = new LinkedHashMap<>();
 

@@ -9,10 +9,12 @@
       "dev.rick.jjk.test.GojoGameTests",
       "dev.rick.jjk.test.AwakeningDomainTests",
       "dev.rick.jjk.test.WorldRestorationTests",
-      "dev.rick.jjk.test.ClashTests"
+      "dev.rick.jjk.test.ClashTests",
+      "dev.rick.jjk.test.HakariGameTests"
     ],
     "fabric-client-gametest": [
-      "dev.rick.jjk.test.GojoClientGameTest"
+      "dev.rick.jjk.test.GojoClientGameTest",
+      "dev.rick.jjk.test.HakariClientGameTest"
     ]
   },
   "depends": {

@@ -37,7 +37,7 @@ public final class ClientFx {
     public static final float[] GREY = {0.6f, 0.6f, 0.65f};
     public static final float[] DARK = {0.08f, 0.08f, 0.14f};
 
-    private static final RandomSource RNG = RandomSource.create();
+    static final RandomSource RNG = RandomSource.create();
     private static int trailCounter;
 
     private ClientFx() {}
@@ -65,9 +65,9 @@ public final class ClientFx {
     /** Effects big enough to always be drawn in full, whatever the distance. */
     private static final java.util.Set<String> MAJOR = java.util.Set.of("awaken", "max_blue_spawn", "max_blue_collapse", "max_red_explosion",
             "purple_fire", "purple_end", "domain_expand", "domain_sealed", "domain_counter", "domain_collapse", "red_explosion", "red_amplified", "finisher", "clash_start",
-            "clash_sudden_death", "clash_perfect", "clash_win");
+            "clash_sudden_death", "clash_perfect", "clash_win", "jackpot", "gamble_riichi", "gamble_hit", "overwhelm_final", "idg_charge");
 
-    private static float lod = 1f;
+    static float lod = 1f;
 
     private static void play(FxPayload p, Minecraft mc, ClientLevel level, Vec3 pos, Vec3 dir, float s, boolean mine, long now) {
         boolean drawn = lod > 0;
@@ -724,7 +724,7 @@ public final class ClientFx {
                 if (mc.player != null && mc.player.position().distanceTo(pos) < r * 2) ScreenEffects.impact(4);
             }
             case "domain_block" -> sound("domain_block", pos, 1f, 0.9f + RNG.nextFloat() * 0.2f);
-            default -> {}
+            default -> HakariFx.play(p, mc, level, pos, dir, s, mine, now);
         }
     }
 
@@ -745,7 +745,7 @@ public final class ClientFx {
     // --- composite effects ---
 
     /** A crisp arc of light across the swing, plus a thin inner edge. */
-    private static void swingTrail(Vec3 pos, Vec3 dir, float reach, float width, long now) {
+    static void swingTrail(Vec3 pos, Vec3 dir, float reach, float width, long now) {
         if (dir.lengthSqr() < 1e-4) return;
         Vec3 d = dir.normalize();
         Vec3 side = d.cross(new Vec3(0, 1, 0));
@@ -763,7 +763,7 @@ public final class ClientFx {
     }
 
     /** Thin radial streaks: the sharp "star" of a clean hit. */
-    private static void impactStar(Vec3 pos, Vec3 dir, int n, float length, float width, float[] c, long now) {
+    static void impactStar(Vec3 pos, Vec3 dir, int n, float length, float width, float[] c, long now) {
         for (int i = 0; i < n; i++) {
             Vec3 d = randomUnit();
             if (dir.lengthSqr() > 1e-4) d = d.add(dir.normalize().scale(0.8)).normalize();
@@ -772,7 +772,7 @@ public final class ClientFx {
     }
 
     /** Sparks flying mostly along {@code dir} (or in every direction when it is zero). */
-    private static void sparks(ClientLevel level, Vec3 pos, Vec3 dir, int n, double speed, float[] c, float size, int life) {
+    static void sparks(ClientLevel level, Vec3 pos, Vec3 dir, int n, double speed, float[] c, float size, int life) {
         Vec3 d = dir.lengthSqr() > 1e-4 ? dir.normalize() : Vec3.ZERO;
         for (int i = 0; i < n; i++) {
             Vec3 v = randomUnit().scale(0.6).add(d).normalize().scale(speed * (0.4 + RNG.nextDouble() * 0.6));
@@ -782,7 +782,7 @@ public final class ClientFx {
     }
 
     /** Chunks of the ground below {@code pos} thrown up and out. */
-    private static void debris(ClientLevel level, Vec3 pos, int n, double speed) {
+    static void debris(ClientLevel level, Vec3 pos, int n, double speed) {
         BlockPos below = BlockPos.containing(pos).below();
         BlockState ground = level.getBlockState(below);
         for (int k = 0; k < 4 && ground.isAir(); k++) {
@@ -800,7 +800,7 @@ public final class ClientFx {
     }
 
     /** The first solid surface under {@code pos} (up to 6 blocks down), for effects that roll along the ground. */
-    private static Vec3 groundBelow(ClientLevel level, Vec3 pos) {
+    static Vec3 groundBelow(ClientLevel level, Vec3 pos) {
         BlockPos b = BlockPos.containing(pos);
         for (int i = 0; i < 6; i++) {
             if (!level.getBlockState(b.below()).isAir()) return new Vec3(pos.x, b.getY() + 0.05, pos.z);
@@ -809,7 +809,7 @@ public final class ClientFx {
         return pos;
     }
 
-    private static boolean isAttackerClose(Minecraft mc, Vec3 pos) {
+    static boolean isAttackerClose(Minecraft mc, Vec3 pos) {
         return mc.player != null && mc.player.position().distanceTo(pos) < 3.5;
     }
 
@@ -879,7 +879,7 @@ public final class ClientFx {
     }
 
     /** Fading silhouette-ish cloud where someone just vanished. */
-    private static void afterimage(ClientLevel level, Vec3 pos) {
+    static void afterimage(ClientLevel level, Vec3 pos) {
         for (int i = 0; i < q(16); i++) {
             Vec3 at = pos.add(gauss(0.25), gauss(0.6), gauss(0.25));
             add(level, at, new Vec3(0, 0.01, 0), Sprite.GLOW, BLUE_LIGHT, 0.5f, 0.25f, 0.02f, 10);
@@ -887,7 +887,7 @@ public final class ClientFx {
         flashAt(level, pos, 1.2f, WHITE, 3);
     }
 
-    private static void victimFeedback(FxPayload p, float strength) {
+    static void victimFeedback(FxPayload p, float strength) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null && p.entityId() == mc.player.getId()) {
             ScreenEffects.shake(strength, 8);
@@ -895,7 +895,7 @@ public final class ClientFx {
         }
     }
 
-    private static void distanceShake(Vec3 pos, double radius, float max) {
+    static void distanceShake(Vec3 pos, double radius, float max) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         double d = mc.player.position().distanceTo(pos);
@@ -917,7 +917,7 @@ public final class ClientFx {
         return new Vec3(r * Math.cos(a), z, r * Math.sin(a));
     }
 
-    private static double gauss(double s) {
+    static double gauss(double s) {
         return RNG.nextGaussian() * s;
     }
 }

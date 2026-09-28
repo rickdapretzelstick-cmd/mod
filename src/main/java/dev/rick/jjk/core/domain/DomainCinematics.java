@@ -59,7 +59,7 @@ public final class DomainCinematics {
     private static DomainDefinition domainOf(LivingEntity e) {
         var c = Casters.getOrNull(e);
         if (c == null || c.character() == null) return null;
-        var a = c.character().ability(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true);
+        var a = DomainCounter.domainAbility(c);
         return a instanceof DomainAbility da ? da.domain() : null;
     }
 }

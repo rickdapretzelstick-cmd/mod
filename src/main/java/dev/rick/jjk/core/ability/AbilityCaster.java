@@ -371,6 +371,7 @@ public final class AbilityCaster {
         melee.cancel();
         AbilityInstance inst = ability.activate(ctx);
         lastRefusal = null;
+        character.onAbilityUsed(this, ability, slot);
         if (inst == null) return true;
         if (ability.usableWhileCasting()) {
             overlays.add(inst);
@@ -440,7 +441,7 @@ public final class AbilityCaster {
         if (refillDelay > 0 && --refillDelay == 0) dirty = true;
         if (awakened) {
             // Awakening is a timer: it drains, and when it's empty Gojo returns to his base kit.
-            if (!noCost()) awakening -= cfg.awakening.drainPerSecond / 20f;
+            if (!noCost()) awakening -= character.awakeningDrainPerSecond() / 20f;
             if (awakening <= 0 && !isCasting()) endAwakening("expired");
             else if (owner.tickCount % 5 == 0) dirty = true;
         }

@@ -39,6 +39,7 @@ public final class JJKConfig {
     public Restoration restoration = new Restoration();
     public Clash clash = new Clash();
     public Client client = new Client();
+    public Hakari hakari = new Hakari();
 
     public static JJKConfig get() {
         return instance;
@@ -410,6 +411,146 @@ public final class JJKConfig {
         public boolean showCeNumbers = true;
     }
 
+    /** Kinji Hakari / Restless Gambler. Every number here can be rebalanced without code changes. */
+    public static class Hakari {
+        public float maxCursedEnergy = 900f;
+        public float regenPerSecond = 20f;
+
+        // --- 1: Reserve Balls ---
+        public float ballsCost = 45f;
+        public int ballsCooldown = 70;
+        public int ballsCount = 3;
+        public int ballsInterval = 3;
+        public double ballSpeed = 1.7;
+        public int ballLife = 26;
+        public float ballDamage = 3.5f;
+        public int ballHitstun = 9;
+        public double ballKnockback = 0.35;
+        /** The last ball of the volley hits harder. */
+        public float lastBallDamage = 5f;
+        public double lastBallKnockback = 0.75;
+
+        // --- 2: Shutter Doors ---
+        public float shutterCost = 70f;
+        public int shutterCooldown = 110;
+        public double shutterRange = 14;
+        public int shutterRiseTicks = 5;
+        public int shutterCloseTicks = 3;
+        public int shutterHoldTicks = 12;
+        public float shutterDamage = 8f;
+        public int shutterHitstun = 24;
+
+        // --- 3: Rough Energy ---
+        public float roughCost = 80f;
+        public int roughCooldown = 130;
+        public int roughWindup = 12;
+        public float roughDamage = 12f;
+        public double roughReach = 3.4;
+        public double roughKnockback = 1.6;
+        public int roughHitstun = 20;
+
+        // --- 4: Fever Breaker ---
+        public float feverCost = 90f;
+        public int feverCooldown = 150;
+        public float feverKickDamage = 6f;
+        public double feverKickKnockback = 1.25;
+        public int feverRushTicks = 10;
+        public float feverFinishDamage = 11f;
+        public double feverFinishKnockback = 1.9;
+
+        // --- Special: Door Guard ---
+        public int doorGuardMaxTicks = 40;
+        public int doorGuardCooldown = 120;
+        /** Blocking a melee hit in the first ticks swings the door into the attacker. */
+        public int doorGuardCounterWindow = 6;
+        public int doorGuardCounterStun = 30;
+        public float doorGuardBlockCost = 10f;
+
+        // --- Idle Death Gamble ---
+        public double domainRadius = 14;
+        public int domainDuration = 900;
+        public int domainFormationTicks = 44;
+        public int domainStartup = 26;
+        public float domainCost = 200f;
+        public int domainCooldown = 900;
+        /** Visual moves (Hakari's techniques used inside his domain) needed before a Riichi scenario. */
+        public int visualMovesRequired = 3;
+        /** Riichi attempts per domain. */
+        public int maxAttempts = 3;
+        public int riichiTicks = 76;
+        public int missTicks = 24;
+        /** Base jackpot odds per scenario, and the signal colour multipliers. */
+        public float transitCardOdds = 0.22f;
+        public float seatStruggleOdds = 0.34f;
+        public float pottyEmergencyOdds = 0.5f;
+        public float greenSignal = 0.6f;
+        public float redSignal = 1.15f;
+        public float goldSignal = 1.8f;
+        /** Chance a Riichi rolls the rainbow signal (a certain jackpot). */
+        public float rainbowChance = 0.04f;
+        /** Extra odds on a forced final attempt as the domain runs out. */
+        public float finalAttemptBonus = 0.12f;
+        /** Share of the Awakening meter refunded when the domain ends without a jackpot. */
+        public float missRefund = 0.3f;
+        /** After an odd jackpot: extra odds on the next domain's Riichi (lost on death). */
+        public float oddJackpotBonus = 0.25f;
+        /** After an even jackpot: visual moves the next domain starts with (lost on death). */
+        public int evenJackpotHeadStart = 1;
+
+        // --- Jackpot ---
+        public int jackpotSeconds = 45;
+        public float jackpotRegenPerSecond = 3f;
+        /** A lethal blow during Jackpot is survived with this share of max health... */
+        public float jackpotLethalHeal = 0.5f;
+        /** ...at most once per this many ticks. */
+        public int jackpotLethalCooldown = 80;
+
+        // --- Jackpot 1: Lucky Volley ---
+        public int volleyCooldown = 90;
+        public float volleyOpenerDamage = 4f;
+        public int volleyFlurryHits = 8;
+        public float volleyFlurryDamage = 1.5f;
+        public float volleyFinalDamage = 9f;
+        public double volleyFinalKnockback = 1.8;
+
+        // --- Jackpot 2: Lucky Rushdown ---
+        public int rushdownCooldown = 120;
+        public int rushdownRunTicks = 22;
+        public double rushdownSpeed = 1.05;
+        public int rushdownDragTicks = 14;
+        public float rushdownGrabDamage = 5f;
+        public float rushdownThrowDamage = 10f;
+        public double rushdownThrowKnockback = 2.2;
+
+        // --- Jackpot 3: Overwhelming Luck ---
+        public int overwhelmCooldown = 150;
+        public int overwhelmPunches = 7;
+        public int overwhelmInterval = 4;
+        public float overwhelmPunchDamage = 3f;
+        public float overwhelmFinalDamage = 16f;
+        public double overwhelmFinalKnockback = 2.6;
+
+        // --- Jackpot 4: Energy Surge ---
+        public int surgeCooldown = 110;
+        public int surgeDashTicks = 7;
+        public float surgeDashDamage = 5f;
+        public float surgeKickDamage = 10f;
+
+        // --- Jackpot special: Rhythm ---
+        public int rhythmCooldown = 200;
+        public int rhythmBeats = 4;
+        /** Ticks between beats (10 = 120 BPM). */
+        public int rhythmBeatTicks = 10;
+        public int rhythmLeadIn = 14;
+        /** Jackpot seconds added per PERFECT / GREAT / GOOD beat. */
+        public float rhythmPerfectSeconds = 1.5f;
+        public float rhythmGreatSeconds = 1f;
+        public float rhythmGoodSeconds = 0.5f;
+        /** All beats GREAT or better: Lucky Streak (more damage) for this long. */
+        public int rhythmStreakTicks = 200;
+        public float rhythmStreakDamage = 1.25f;
+    }
+
     public static Path path() {
         return FabricLoader.getInstance().getConfigDir().resolve("jjk.json");
     }
@@ -462,5 +603,6 @@ public final class JJKConfig {
         if (maxBlue == null) maxBlue = new MaxBlue();
         if (maxRed == null) maxRed = new MaxRed();
         if (client == null) client = new Client();
+        if (hakari == null) hakari = new Hakari();
     }
 }

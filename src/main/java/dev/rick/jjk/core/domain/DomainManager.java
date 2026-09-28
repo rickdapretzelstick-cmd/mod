@@ -276,7 +276,7 @@ public final class DomainManager {
         }
         d.victims.clear();
         d.definition.onCollapse(d, reason);
-        if (d.owner.isAlive()) Statuses.apply(d.owner, CombatStatus.BURNOUT, JJKConfig.get().resources.domainBurnout);
+        if (d.owner.isAlive() && d.definition.burnoutOnCollapse(d, reason)) Statuses.apply(d.owner, CombatStatus.BURNOUT, JJKConfig.get().resources.domainBurnout);
         setPhase(d, DomainInstance.Phase.COLLAPSING);
         Fx.play(d.level, "domain_collapse", d.center, Vec3.ZERO, (float) d.radius, d.owner.getId());
     }

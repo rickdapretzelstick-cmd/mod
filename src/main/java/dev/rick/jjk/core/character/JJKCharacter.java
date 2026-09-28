@@ -66,4 +66,61 @@ public abstract class JJKCharacter {
 
     /** Passive per-tick logic. */
     public void tick(AbilityCaster caster) {}
+
+    // --- Identity (shown by the character select screen; every character registers its own) ---
+
+    /** Short name, e.g. "Gojo". */
+    public String displayName() {
+        return id;
+    }
+
+    /** The character's JJS title, e.g. "Honored One". */
+    public String title() {
+        return "";
+    }
+
+    /** One or two sentences on how the character plays. */
+    public String description() {
+        return "";
+    }
+
+    // --- Hooks the shared systems call ---
+
+    /**
+     * How fast the awakened state's timer drains, as meter per second (the meter doubles as the timer). Gojo's
+     * Awakening and Hakari's Jackpot both run on it.
+     */
+    public float awakeningDrainPerSecond() {
+        return dev.rick.jjk.config.JJKConfig.get().awakening.drainPerSecond;
+    }
+
+    /**
+     * Whether answering a domain with the counter first puts the sorcerer into their awakened state (Gojo's eyes open
+     * and his domain answers). Characters whose domain is how they reach that state (Hakari's Jackpot) open it directly.
+     */
+    public boolean awakensOnCounter() {
+        return true;
+    }
+
+    /** An ability was just used (after its costs were paid). */
+    public void onAbilityUsed(AbilityCaster caster, dev.rick.jjk.core.ability.Ability ability, AbilitySlot slot) {}
+
+    /**
+     * About to die from {@code source}. Return true to cancel the death (the character's own state must then make the
+     * entity survive, e.g. heal it).
+     */
+    public boolean preventDeath(AbilityCaster caster, net.minecraft.world.damagesource.DamageSource source, float amount) {
+        return false;
+    }
+
+    /** The entity died (for clearing per-life state). */
+    public void onDeath(AbilityCaster caster) {}
+
+    /**
+     * A reason this caster can't switch to another character right now (beyond the shared neutral-state rules), or
+     * null.
+     */
+    public @org.jetbrains.annotations.Nullable String switchBlocked(AbilityCaster caster) {
+        return null;
+    }
 }
