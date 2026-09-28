@@ -28,6 +28,11 @@ public record StructureSpec(double radius, int thickness, BlockState shell, Bloc
         return null;
     }
 
+    /** When the block at this offset is placed, as a fraction of the formation time (see {@link DomainFormation}). */
+    public float buildTime(int dx, int dy, int dz) {
+        return DomainFormation.time(dx, dy, dz, radius, thickness);
+    }
+
     public boolean contains(BlockPos center, BlockPos p) {
         int dx = p.getX() - center.getX(), dy = p.getY() - center.getY(), dz = p.getZ() - center.getZ();
         return targetAt(dx, dy, dz) != null;

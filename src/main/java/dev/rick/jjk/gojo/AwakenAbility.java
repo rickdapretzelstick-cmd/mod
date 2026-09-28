@@ -52,6 +52,11 @@ public final class AwakenAbility extends Ability {
 
             @Override
             public void start() {
+                // Someone nearby is opening a domain: this press is a counter (instant Awakening + domain), not a transformation.
+                if (dev.rick.jjk.core.domain.DomainCounter.tryCounter(caster)) {
+                    finish();
+                    return;
+                }
                 total = JJKConfig.get().awakening.transitionTicks;
                 reveal = total * REVEAL_FRACTION_NUM / REVEAL_FRACTION_DEN;
                 Statuses.apply(user, CombatStatus.AWAKENING, total + 2);

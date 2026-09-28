@@ -14,7 +14,13 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntitySpawnRequest;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.decoration.HangingEntity;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -45,6 +51,12 @@ public final class DomainStructure {
     final BlockState[] originals;
     @Nullable final BlockState[] targets;
     final Map<Long, CompoundTag> blockEntities;
+    /** Build time (0..1 of the formation) of each position, in placement order. Null once loaded from disk. */
+    @Nullable final float[] times;
+    /** Paintings and item frames taken down because they hung inside or on the structure, put back when it ends. */
+    final List<CompoundTag> hanging = new ArrayList<>();
+    long startTick;
+    int formationTicks = 1;
     /** Originals taken over from another structure that collapsed while overlapping this one. */
     final Map<Long, Adopted> adopted = new HashMap<>();
     private State state;
@@ -54,6 +66,12 @@ public final class DomainStructure {
 
     DomainStructure(int id, ServerLevel level, BlockPos center, @Nullable StructureSpec spec, long[] positions, BlockState[] originals,
                     @Nullable BlockState[] targets, Map<Long, CompoundTag> blockEntities, State state) {
+        this(id, level, center, spec, positions, originals, targets, blockEntities, state, null);
+    }
+
+    DomainStructure(int id, ServerLevel level, BlockPos center, @Nullable StructureSpec spec, long[] positions, BlockState[] originals,
+                    @Nullable BlockState[] targets, Map<Long, CompoundTag> blockEntities, State state, @Nullable float[] times) {
+        this.times = times;
         this.id = id;
         this.level = level;
         this.center = center;
@@ -67,8 +85,17 @@ public final class DomainStructure {
 
     /** Captures everything the spec would replace. Positions claimed by {@code skip} (another structure) are left out. */
     static DomainStructure capture(int id, ServerLevel level, BlockPos center, StructureSpec spec, java.util.function.LongPredicate skip) {
+        return capture(id, level, center, spec, skip, 1);
+    }
+
+    /**
+     * Captures everything the spec would replace, scheduled to build over {@code formationTicks}: from the feet
+     * outward along the ground, up the walls to the ceiling, then the underground seal (see {@link DomainFormation}).
+     */
+    static DomainStructure capture(int id, ServerLevel level, BlockPos center, StructureSpec spec, java.util.function.LongPredicate skip,
+                                   int formationTicks) {
         int r = (int) Math.ceil(spec.radius()) + 1;
-        record Entry(long pos, BlockState original, BlockState target, double dist) {}
+        record Entry(long pos, BlockState original, BlockState target, double dist, float time) {}
         List<Entry> entries = new ArrayList<>();
         Map<Long, CompoundTag> bes = new HashMap<>();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
@@ -85,7 +112,7 @@ public final class DomainStructure {
                     if (skip.test(packed)) continue;
                     BlockState original = level.getBlockState(p);
                     if (original == target) continue;
-                    entries.add(new Entry(packed, original, target, Math.sqrt(dx * dx + dy * dy + dz * dz)));
+                    entries.add(new Entry(packed, original, target, Math.sqrt(dx * dx + dy * dy + dz * dz), spec.buildTime(dx, dy, dz)));
                     if (original.hasBlockEntity()) {
                         BlockEntity be = level.getBlockEntity(p);
                         if (be != null) bes.put(packed, be.saveWithFullMetadata(level.registryAccess()));
@@ -93,17 +120,36 @@ public final class DomainStructure {
                 }
             }
         }
-        // The void spreads outward from the center; the barrier closes last.
-        entries.sort((a, b) -> Double.compare(a.dist, b.dist));
+        // Placement order follows the formation schedule (ties: nearest the sorcerer first).
+        entries.sort((a, b) -> a.time != b.time ? Float.compare(a.time, b.time) : Double.compare(a.dist, b.dist));
         long[] pos = new long[entries.size()];
         BlockState[] orig = new BlockState[entries.size()];
         BlockState[] tgt = new BlockState[entries.size()];
+        float[] times = new float[entries.size()];
         for (int i = 0; i < entries.size(); i++) {
             pos[i] = entries.get(i).pos;
             orig[i] = entries.get(i).original;
             tgt[i] = entries.get(i).target;
+            times[i] = entries.get(i).time;
         }
-        return new DomainStructure(id, level, center, spec, pos, orig, tgt, bes, State.BUILDING);
+        DomainStructure s = new DomainStructure(id, level, center, spec, pos, orig, tgt, bes, State.BUILDING, times);
+        s.startTick = level.getGameTime();
+        s.formationTicks = Math.max(1, formationTicks);
+        return s;
+    }
+
+    /** Takes down, whole and without drops, every painting or item frame hanging inside or on the structure. */
+    void captureHanging() {
+        if (spec == null) return;
+        double r = spec.radius() + 1.5;
+        Vec3 c = Vec3.atBottomCenterOf(center);
+        for (HangingEntity e : level.getEntitiesOfClass(HangingEntity.class, new AABB(center).inflate(r), Entity::isAlive)) {
+            if (e.position().distanceTo(c) > r) continue;
+            TagValueOutput out = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, level.registryAccess());
+            if (!e.save(out)) continue;
+            hanging.add(out.buildResult());
+            e.discard();
+        }
     }
 
     public State state() {
@@ -114,12 +160,23 @@ public final class DomainStructure {
         return positions.length;
     }
 
-    /** Places up to {@code budget} blocks. Returns true when fully built. */
+    /** Formation progress (0..1) at the current tick. */
+    public float progress() {
+        if (state != State.BUILDING) return 1f;
+        return Math.min(1f, (level.getGameTime() - startTick + 1) / (float) formationTicks);
+    }
+
+    /**
+     * Places every block whose build time has come (at most {@code budget} per tick, catching up next tick if a huge
+     * structure needs more). Returns true when fully built.
+     */
     boolean buildStep(int budget) {
         if (state != State.BUILDING || targets == null) return state != State.BUILDING;
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        float progress = progress();
         int end = Math.min(positions.length, cursor + budget);
         for (; cursor < end; cursor++) {
+            if (times != null && times[cursor] > progress) break;
             p.set(positions[cursor]);
             level.setBlock(p, targets[cursor], FLAGS);
         }
@@ -145,15 +202,19 @@ public final class DomainStructure {
      */
     boolean restoreStep(int budget, Adopter adopt) {
         if (state != State.RESTORING) return state == State.DONE;
-        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        // This tick's batch goes back supports first, then the blocks that rest on or hang off them (bottom up).
+        List<Integer> dependents = new ArrayList<>();
         int done = 0;
         for (; cursor >= 0 && done < budget; cursor--, done++) {
             long packed = positions[cursor];
-            p.set(packed);
-            CompoundTag be = blockEntities.get(packed);
-            if (adopt.adopt(this, packed, originals[cursor], be)) continue;
-            restoreOne(p.immutable(), originals[cursor], be);
+            if (dev.rick.jjk.core.world.BlockSnapshots.dependsOnSupport(originals[cursor])) {
+                dependents.add(cursor);
+                continue;
+            }
+            restoreAt(cursor, adopt);
         }
+        dependents.sort((a, b) -> Integer.compare(BlockPos.getY(positions[a]), BlockPos.getY(positions[b])));
+        for (int i : dependents) restoreAt(i, adopt);
         if (cursor < 0) {
             for (Map.Entry<Long, Adopted> e : new ArrayList<>(adopted.entrySet())) {
                 if (adopt.adopt(this, e.getKey(), e.getValue().original(), e.getValue().blockEntity())) continue;
@@ -164,6 +225,13 @@ public final class DomainStructure {
             return true;
         }
         return false;
+    }
+
+    private void restoreAt(int i, Adopter adopt) {
+        long packed = positions[i];
+        CompoundTag be = blockEntities.get(packed);
+        if (adopt.adopt(this, packed, originals[i], be)) return;
+        restoreOne(BlockPos.of(packed), originals[i], be);
     }
 
     /** Restores everything immediately (server stopping, crash recovery). */
@@ -189,6 +257,11 @@ public final class DomainStructure {
 
     private void finish() {
         state = State.DONE;
+        for (CompoundTag tag : hanging) {
+            EntityType.create(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag), level,
+                    new EntitySpawnRequest(EntitySpawnReason.LOAD, true)).ifPresent(level::addFreshEntity);
+        }
+        hanging.clear();
         // Anyone left standing where a block came back is lifted to the nearest free space.
         double r = spec != null ? spec.radius() + 2 : 32;
         AABB box = new AABB(center).inflate(r);
@@ -291,6 +364,9 @@ public final class DomainStructure {
             ad.add(t);
         }
         tag.put("Adopted", ad);
+        ListTag hang = new ListTag();
+        hang.addAll(hanging);
+        tag.put("Hanging", hang);
         return tag;
     }
 
@@ -311,6 +387,7 @@ public final class DomainStructure {
         DomainStructure s = new DomainStructure(tag.getIntOr("Id", -1), level, BlockPos.of(tag.getLongOr("Center", 0L)), null, pos, orig, null, bes,
                 State.RESTORING);
         s.cursor = pos.length - 1;
+        for (net.minecraft.nbt.Tag t : tag.getListOrEmpty("Hanging")) if (t instanceof CompoundTag c) s.hanging.add(c);
         for (net.minecraft.nbt.Tag t : tag.getListOrEmpty("Adopted")) {
             if (t instanceof CompoundTag c) {
                 s.adopted.put(c.getLongOr("Pos", 0L), new Adopted(NbtUtils.readBlockState(blocks, c.getCompoundOrEmpty("State")),

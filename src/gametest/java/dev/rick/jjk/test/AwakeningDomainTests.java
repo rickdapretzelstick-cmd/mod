@@ -30,6 +30,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -339,6 +340,61 @@ public class AwakeningDomainTests {
                 .thenExecute(() -> {
                     h.assertTrue(level.getBlockState(pillar.above(1)).is(Blocks.STONE), "pillar restored");
                     h.assertTrue(level.noCollision(victim), "victim not stuck inside the pillar (y=" + victim.getY() + ")");
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 160, padding = 10)
+    public void domainBuildsFromTheFeetOutwardThenUpThenUnderneath(GameTestHelper h) {
+        floor(h);
+        ServerLevel level = h.getLevel();
+        // A pillar inside the future domain with a torch and a painting on it: cleared by the domain, then restored.
+        h.setBlock(6, 1, 4, Blocks.STONE_BRICKS);
+        h.setBlock(6, 2, 4, Blocks.STONE_BRICKS);
+        h.setBlock(5, 2, 4, Blocks.WALL_TORCH.defaultBlockState().setValue(net.minecraft.world.level.block.WallTorchBlock.FACING, Direction.WEST));
+        BlockPos paintingPos = h.absolutePos(new BlockPos(5, 1, 4));
+        var kebab = level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.PAINTING_VARIANT)
+                .getOrThrow(net.minecraft.world.entity.decoration.painting.PaintingVariants.KEBAB);
+        level.addFreshEntity(new net.minecraft.world.entity.decoration.painting.Painting(level, paintingPos, Direction.WEST, kebab));
+        BlockPos anchor = h.absolutePos(new BlockPos(4, 1, 4));
+        var spec = new dev.rick.jjk.core.domain.structure.StructureSpec(5, 1, ModBlocks.DOMAIN_BARRIER.defaultBlockState(),
+                ModBlocks.DOMAIN_FLOOR.defaultBlockState(), true);
+        DomainStructure[] s = new DomainStructure[1];
+        Map<BlockPos, BlockState> before = new HashMap<>();
+        java.util.function.Function<int[], BlockState> at = o -> level.getBlockState(anchor.offset(o[0], o[1], o[2]));
+        int[] feet = {0, -1, 0}, groundRing = {5, 0, 0}, top = {0, 5, 0}, bottom = {0, -5, 0};
+        h.startSequence()
+                .thenExecute(() -> {
+                    for (BlockPos p : BlockPos.betweenClosed(anchor.offset(-6, -6, -6), anchor.offset(6, 6, 6))) before.put(p.immutable(), level.getBlockState(p));
+                    s[0] = DomainStructures.create(level, anchor, spec, 40);
+                })
+                .thenExecuteAfter(8, () -> {
+                    h.assertTrue(ModBlocks.isDomainBlock(at.apply(feet)), "the floor under the caster's feet forms first");
+                    h.assertTrue(!ModBlocks.isDomainBlock(at.apply(groundRing)), "the outer ring hasn't been reached yet");
+                    h.assertTrue(level.getEntitiesOfClass(net.minecraft.world.entity.decoration.painting.Painting.class,
+                            new net.minecraft.world.phys.AABB(paintingPos).inflate(1)).isEmpty(), "painting taken down whole (no drop)");
+                })
+                .thenExecuteAfter(14, () -> {
+                    h.assertTrue(ModBlocks.isDomainBlock(at.apply(groundRing)), "the ground has spread to the outer ring");
+                    h.assertTrue(!ModBlocks.isDomainBlock(at.apply(top)), "the ceiling hasn't closed yet");
+                })
+                .thenExecuteAfter(12, () -> {
+                    h.assertTrue(ModBlocks.isDomainBlock(at.apply(top)), "the walls have curved over and closed the ceiling");
+                    h.assertTrue(!ModBlocks.isDomainBlock(at.apply(bottom)), "the underground half seals last");
+                })
+                .thenExecuteAfter(12, () -> {
+                    h.assertTrue(ModBlocks.isDomainBlock(at.apply(bottom)), "sealed underneath");
+                    h.assertTrue(s[0].state() == DomainStructure.State.BUILT, "fully built");
+                    h.assertTrue(level.getEntitiesOfClass(ItemEntity.class, new net.minecraft.world.phys.AABB(anchor).inflate(8)).isEmpty(), "nothing dropped");
+                    DomainStructures.beginRestore(s[0]);
+                })
+                .thenExecuteAfter(4, () -> {
+                    for (Map.Entry<BlockPos, BlockState> e : before.entrySet()) {
+                        h.assertTrue(level.getBlockState(e.getKey()) == e.getValue(), "restored exactly at " + e.getKey() + ": " + level.getBlockState(e.getKey()));
+                    }
+                    h.assertTrue(level.getEntitiesOfClass(net.minecraft.world.entity.decoration.painting.Painting.class,
+                            new net.minecraft.world.phys.AABB(paintingPos).inflate(1)).size() == 1, "painting hung back up");
+                    h.assertTrue(level.getEntitiesOfClass(ItemEntity.class, new net.minecraft.world.phys.AABB(anchor).inflate(8)).isEmpty(), "still nothing dropped");
                 })
                 .thenSucceed();
     }

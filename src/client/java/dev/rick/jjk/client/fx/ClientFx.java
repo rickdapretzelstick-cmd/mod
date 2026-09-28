@@ -64,7 +64,7 @@ public final class ClientFx {
 
     /** Effects big enough to always be drawn in full, whatever the distance. */
     private static final java.util.Set<String> MAJOR = java.util.Set.of("awaken", "max_blue_spawn", "max_blue_collapse", "max_red_explosion",
-            "purple_fire", "purple_end", "domain_expand", "domain_collapse", "red_explosion", "red_amplified", "finisher", "clash_start",
+            "purple_fire", "purple_end", "domain_expand", "domain_sealed", "domain_counter", "domain_collapse", "red_explosion", "red_amplified", "finisher", "clash_start",
             "clash_sudden_death", "clash_perfect", "clash_win");
 
     private static float lod = 1f;
@@ -432,14 +432,49 @@ public final class ClientFx {
                 }
             }
             case "domain_expand" -> {
+                // The domain starts at the sorcerer's feet: a burst of energy into the ground that the structure grows from.
+                sound("domain_charge", pos, 3f, 0.8f);
+                sound("max_charge", pos, 2f, 0.7f);
+                Vec3 feet = pos.add(0, -0.5, 0);
+                Flashes.flash(feet.add(0, 0.6, 0), 2.5f, 0.5f, WHITE, 1f, 8, now);
+                Flashes.ground(feet, 0.3f, 4f, WHITE, 0.9f, 10, now);
+                Flashes.ground(feet, 0.3f, 2.5f, BLUE_LIGHT, 0.8f, 8, now + 3);
+                Flashes.beam(feet, feet.add(0, 7, 0), 0.6f, BLUE_LIGHT, 0.9f, 14, now);
+                if (drawn) {
+                    for (int i = 0; i < q(30); i++) {
+                        double ang = RNG.nextDouble() * Mth.TWO_PI, rad = 0.4 + RNG.nextDouble() * 2.5;
+                        Vec3 at = feet.add(Math.cos(ang) * rad, 0.1, Math.sin(ang) * rad);
+                        add(level, at, new Vec3(Math.cos(ang) * 0.15, 0.02, Math.sin(ang) * 0.15), Sprite.GLOW, i % 3 == 0 ? WHITE : BLUE_LIGHT,
+                                0.8f, 0.2f, 0.04f, 14).friction(0.9f);
+                    }
+                }
+                distanceShake(pos, s * 3, 0.35f);
+            }
+            case "domain_counter" -> {
+                // Answering a domain with a domain: energy erupts and lashes toward the one who opened first.
+                sound("max_charge", pos, 3f, 1.4f);
+                sound("clash_start", pos, 2.5f, 1.2f);
+                Flashes.flash(pos, 5f, 1f, WHITE, 1f, 8, now);
+                Flashes.lens(pos, 1f, 9f, BLUE_LIGHT, 0.9f, 12, now);
+                Flashes.ground(groundBelow(level, pos), 1f, 10f, WHITE, 0.9f, 12, now);
+                if (dir.lengthSqr() > 1e-4) Flashes.beam(pos, pos.add(dir.scale(0.5)), 0.8f, BLUE_LIGHT, 1f, 10, now);
+                if (drawn) sparks(level, pos, Vec3.ZERO, q(40), 1.2, WHITE, 0.25f, 12);
+                if (mine) {
+                    ScreenEffects.flash(0x60FFFFFF, 6);
+                    ScreenEffects.fovPunch(0.12f);
+                }
+            }
+            case "domain_sealed" -> {
+                // The final seal: one pulse runs through the whole structure.
+                float r = Math.max(4f, s);
                 sound("domain_expand", pos, 6f, 1f);
-                Flashes.flash(pos, 4f, s * 1.2f, WHITE, 1f, 12, now);
-                Flashes.lens(pos, 1f, s, WHITE, 0.9f, 16, now);
-                Flashes.ground(pos.add(0, -1, 0), 1f, s * 1.1f, BLUE_LIGHT, 0.9f, 18, now + 2);
-                if (drawn) ring3d(level, pos, new Vec3(0, 1, 0), 1, q(40), s / 14.0, WHITE, 0.35f, 16);
-                if (mc.player != null && mc.player.position().distanceTo(pos) < s + 20) {
-                    ScreenEffects.flash(0xC0FFFFFF, 18);
-                    ScreenEffects.shake(0.8f, 20);
+                Flashes.lens(pos, r * 0.85f, r * 1.08f, WHITE, 0.9f, 12, now);
+                Flashes.ground(pos.add(0, -0.45, 0), r * 0.2f, r * 1.1f, BLUE_LIGHT, 0.8f, 14, now);
+                Flashes.ring(pos, r * 0.5f, r * 1.2f, WHITE, 0.6f, 12, now);
+                if (drawn) sphereShell(level, pos, r * 0.95, q(50), WHITE, 0.3f, 16, -0.05).forEach(x -> x.gravity(0.2f));
+                if (mc.player != null && mc.player.position().distanceTo(pos) < r + 2) {
+                    ScreenEffects.flash(0x70FFFFFF, 12);
+                    ScreenEffects.shake(0.7f, 16);
                 }
             }
             case "domain_clash", "domain_clash_end" -> {

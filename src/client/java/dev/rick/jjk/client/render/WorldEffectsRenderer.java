@@ -3,6 +3,7 @@ package dev.rick.jjk.client.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import dev.rick.jjk.client.ClientState;
+import dev.rick.jjk.core.domain.structure.DomainFormation;
 import dev.rick.jjk.client.fx.ClientFx;
 import dev.rick.jjk.config.JJKConfig;
 import dev.rick.jjk.core.combat.Combat;
@@ -186,6 +187,59 @@ public final class WorldEffectsRenderer {
     }
 
     /**
+     * The newest edge of a forming domain, where the blocks are being laid right now: a ring racing outward across the
+     * ground from the caster's feet, then climbing the wall and curving over into the ceiling, then sealing underneath.
+     * Drawn on both faces of the shell so it reads from inside and outside.
+     */
+    private static void formationEdge(SubmitNodeCollector c, PoseStack ps, ClientState.Domain d, float p, float time) {
+        float R = d.radius + d.thickness;
+        float flicker = 0.85f + 0.15f * Mth.sin(time * 2.3f);
+        float floorY = -0.45f;
+        if (p < DomainFormation.GROUND_END) {
+            float g = p / DomainFormation.GROUND_END;
+            float rad = Math.max(0.4f, R * g);
+            ps.pushPose();
+            ps.translate(0, floorY, 0);
+            Glow.ring(c, ps, rad, 1.4f, 0.55f, 0.8f, 1f, 0.9f * flicker);
+            Glow.ring(c, ps, rad, 0.35f, 1f, 1f, 1f, 1f);
+            // Energy still pouring out of the sorcerer at the centre.
+            Glow.ring(c, ps, 0.9f + 0.3f * Mth.sin(time), 0.6f, 1f, 1f, 1f, 0.8f * (1 - g));
+            Glow.spikes(c, ps, 10, rad - 0.4f, rad + 1.6f, 0.08f, 0.8f, 0.92f, 1f, 0.6f, (long) (time * 0.7f));
+            ps.popPose();
+            return;
+        }
+        if (p < DomainFormation.CEILING_END) {
+            double a = DomainFormation.wallAngle(p);
+            float y = (float) (R * Math.sin(a)), rad = (float) (R * Math.cos(a));
+            ps.pushPose();
+            ps.translate(0, y, 0);
+            float inner = Math.max(0.3f, rad - d.thickness - 0.6f);
+            Glow.ring(c, ps, rad + 0.9f, 2.4f, 0.55f, 0.8f, 1f, 1f * flicker);
+            Glow.ring(c, ps, rad + 0.9f, 0.5f, 1f, 1f, 1f, 1f);
+            Glow.ring(c, ps, inner, 2.4f, 0.55f, 0.8f, 1f, 1f * flicker);
+            Glow.ring(c, ps, inner, 0.5f, 1f, 1f, 1f, 1f);
+            Glow.spikes(c, ps, 14, rad - 1f, rad + 2.5f, 0.12f, 0.8f, 0.92f, 1f, 0.7f, (long) (time * 0.7f));
+            ps.popPose();
+            // The ground ring it rose from keeps humming.
+            ps.pushPose();
+            ps.translate(0, floorY, 0);
+            Glow.ring(c, ps, R + 0.6f, 0.8f, 0.5f, 0.75f, 1f, 0.4f);
+            ps.popPose();
+            return;
+        }
+        double a = DomainFormation.underAngle(p);
+        float y = (float) (-R * Math.sin(a)), rad = (float) (R * Math.cos(a));
+        ps.pushPose();
+        ps.translate(0, y, 0);
+        Glow.ring(c, ps, rad + 0.7f, 1.2f, 0.55f, 0.8f, 1f, 0.8f * flicker);
+        ps.popPose();
+        ps.pushPose();
+        ps.translate(0, floorY, 0);
+        Glow.ring(c, ps, R + 0.6f, 1.2f, 1f, 1f, 1f, 0.7f * flicker);
+        ps.popPose();
+    }
+
+    /**
      * Where two clashing domains meet: a wall of colliding energy between their centres, shoved toward whoever is losing
      * the clash and crackling harder the better both sides are playing.
      */
@@ -253,12 +307,10 @@ public final class WorldEffectsRenderer {
         float phaseAge = now - d.phaseStartTick + partial;
         float r = d.radius;
         float edgeGlow = 0.35f;
+        // Formation progress (0..1): the real blocks build on the same schedule (DomainFormation).
+        float progress = d.phase == DomainPayload.FORMING ? Mth.clamp(phaseAge / d.formationTicks, 0, 1) : 1f;
         switch (d.phase) {
-            case DomainPayload.FORMING -> {
-                float f = Mth.clamp(phaseAge / 20f, 0, 1);
-                r *= 1 - (1 - f) * (1 - f) * (1 - f);
-                edgeGlow = 1.2f;
-            }
+            case DomainPayload.FORMING -> edgeGlow = 1.2f;
             case DomainPayload.COLLAPSING -> {
                 float f = Mth.clamp(phaseAge / 20f, 0, 1);
                 r *= 1 - f * f;
@@ -278,24 +330,21 @@ public final class WorldEffectsRenderer {
         if (now < d.unstableUntil) edgeGlow *= 0.35f + 0.65f * Math.abs(Mth.sin((now + partial) * 4.7f));
         boolean inside = cam.distanceTo(d.center) < r;
         push(ps, cam, d.center);
+        Vector3f toCam = new Vector3f((float) (cam.x - d.center.x), (float) (cam.y - d.center.y), (float) (cam.z - d.center.z));
+        if (progress < 1f) formationEdge(c, ps, d, progress, now + partial);
+        // Until the ceiling has closed the sky is still visible: the void only replaces it once it is sealed over.
+        if (progress < DomainFormation.CEILING_END) {
+            ps.popPose();
+            return;
+        }
         // The barrier: an infinite starfield enclosing the battlefield. Drawn double-sided so it reads from both sides.
         // Just inside the physical barrier so block faces never poke through the starfield.
         float rr = Math.max(0.5f, r - 0.35f);
         c.submitCustomGeometry(ps, RenderTypes.endPortal(), (pose, buf) -> sphereShell(pose, buf, rr, false));
         c.submitCustomGeometry(ps, RenderTypes.endPortal(), (pose, buf) -> sphereShell(pose, buf, rr, true));
-        Vector3f toCam = new Vector3f((float) (cam.x - d.center.x), (float) (cam.y - d.center.y), (float) (cam.z - d.center.z));
         // Bright edge where the barrier meets the world.
         Glow.sphere(c, ps, r * 0.995f, 0.8f, 0.9f, 1f, 0.35f * edgeGlow, toCam, true);
-        if (d.phase == DomainPayload.FORMING) {
-            // The formation front: a white wall of light sweeping outward and erasing the world behind it.
-            float f = Mth.clamp(phaseAge / 20f, 0, 1);
-            Glow.sphere(c, ps, r, 1f, 1f, 1f, 1.2f * (1 - f * 0.6f), toCam, true);
-            Glow.sphere(c, ps, r * 0.96f, 0.5f, 0.7f, 1f, 0.8f * (1 - f), toCam, true);
-            ps.pushPose();
-            ps.translate(0, -0.9f, 0);
-            Glow.ring(c, ps, r, 2.5f, 1f, 1f, 1f, 1f - f * 0.5f);
-            ps.popPose();
-        }
+        if (progress < DomainFormation.SEALED) inside = false;
         if (inside) {
             // Information flowing through the void: slow rings of light sweeping around the center.
             float t = (now + partial) * 0.02f;

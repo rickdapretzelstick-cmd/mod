@@ -46,8 +46,9 @@ public final class ClientState {
         public float radius;
         public long lastUpdateTick;
         public long phaseStartTick;
-        /** Smoothly animated 0..1 barrier formation. */
-        public float formation;
+        /** Formation schedule: ticks to build, and the shell thickness (structure radius = radius + thickness). */
+        public int formationTicks = 1;
+        public int thickness;
         /** Clash feedback: last perfect-input pulse (game time, strength) and a destabilised-until time after a miss. */
         public long pulseTick = Long.MIN_VALUE;
         public float pulseStrength;
@@ -60,6 +61,11 @@ public final class ClientState {
         for (Domain d : DOMAINS.values()) if (d.ownerId == entityId && d.phase != dev.rick.jjk.core.net.DomainPayload.REMOVED) return d;
         return null;
     }
+
+    /** Domain counter window (game tick it closes), its length, and the domain being opened. */
+    public static long counterUntilTick;
+    public static int counterWindow = 1;
+    public static String counterDomain = "";
 
     private ClientState() {}
 
@@ -137,6 +143,10 @@ public final class ClientState {
         d.age = p.age();
         d.duration = p.duration();
         d.clashWith = p.clashWith();
+        d.formationTicks = Math.max(1, p.formationTicks());
+        d.thickness = p.thickness();
+        // Late joiners see the formation where it actually is, not from the start.
+        if (p.phase() == DomainPayload.FORMING) d.phaseStartTick = now - p.age();
         d.lastUpdateTick = now;
     }
 

@@ -52,6 +52,8 @@ public class JJKClient implements ClientModInitializer {
         });
         HudElementRegistry.addLast(JJK.id("combat_hud"), CombatHud::render);
         HudElementRegistry.addLast(JJK.id("clash_hud"), (g, delta) -> dev.rick.jjk.client.clash.ClashHud.render(g));
+        HudElementRegistry.addLast(JJK.id("domain_cinematic"), (g, delta) ->
+                dev.rick.jjk.client.cinematic.DomainCinematic.render(g, delta.getGameTimeDeltaPartialTick(false)));
         LevelRenderEvents.COLLECT_SUBMITS.register(WorldEffectsRenderer::render);
         registerReceivers();
 
@@ -63,6 +65,7 @@ public class JJKClient implements ClientModInitializer {
             ScreenEffects.reset();
             dev.rick.jjk.client.render.Flashes.clear();
             dev.rick.jjk.client.clash.ClashClient.reset();
+            dev.rick.jjk.client.cinematic.DomainCinematic.reset();
         });
     }
 
@@ -127,6 +130,16 @@ public class JJKClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ClashStartPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.ClashClient.start(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ClashUpdatePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.ClashClient.update(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ClashEndPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.ClashClient.end(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.DomainCinematicPayload.TYPE,
+                (p, ctx) -> dev.rick.jjk.client.cinematic.DomainCinematic.start(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.DomainCounterPayload.TYPE, (p, ctx) -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level == null) return;
+            ClientState.counterUntilTick = mc.level.getGameTime() + p.ticks();
+            ClientState.counterWindow = Math.max(1, p.ticks());
+            ClientState.counterDomain = p.domain();
+            if (p.ticks() > 0 && mc.player != null) ClientFx.sound("clash_countdown", mc.player.position(), 1f, 1.4f);
+        });
         ClientPlayNetworking.registerGlobalReceiver(DomainPayload.TYPE, (p, ctx) -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.level != null) ClientState.applyDomain(p, mc.level.getGameTime());
@@ -182,6 +195,7 @@ public class JJKClient implements ClientModInitializer {
         if (mc.level == null || mc.player == null) return;
         ClientState.tick();
         dev.rick.jjk.client.clash.ClashClient.tick(mc);
+        dev.rick.jjk.client.cinematic.DomainCinematic.tick(mc);
         InputHandler.tick(mc);
         ambientTicks++;
         ambient(mc);

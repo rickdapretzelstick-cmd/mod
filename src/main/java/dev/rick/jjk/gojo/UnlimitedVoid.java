@@ -56,7 +56,12 @@ public final class UnlimitedVoid implements DomainDefinition {
 
     @Override
     public int formingTicks() {
-        return 16;
+        return JJKConfig.get().domain.formationTicks;
+    }
+
+    @Override
+    public String displayName() {
+        return "Infinite Void";
     }
 
     @Override

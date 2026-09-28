@@ -49,7 +49,7 @@ public final class CombatHud {
 
         overlays(g, mc, state, w, h, partial);
         // The clash screen takes over while duelling.
-        if (dev.rick.jjk.client.clash.ClashClient.playing()) return;
+        if (dev.rick.jjk.client.clash.ClashClient.playing() || dev.rick.jjk.client.cinematic.DomainCinematic.fullscreen()) return;
         if (!JJKConfig.get().client.showHud || !ClientState.hasCharacter()) return;
         Font font = mc.font;
         energyBar(g, font, w, h);
@@ -153,6 +153,12 @@ public final class CombatHud {
             float secs = ClientState.awakening / Math.max(0.01f, JJKConfig.get().awakening.drainPerSecond);
             label = String.format("AWAKENED  %.0fs", secs);
             color = 0xFFEAF8FF;
+        } else if (ready && now < ClientState.counterUntilTick) {
+            // Someone nearby is opening a domain: the same button answers it.
+            label = "COUNTER " + ClientState.counterDomain.toUpperCase(java.util.Locale.ROOT) + "!  [" + InputHandler.keyLabel(AbilitySlot.ULTIMATE) + "]";
+            color = (now / 3) % 2 == 0 ? 0xFFFF6A6A : 0xFFFFFFFF;
+            float left = (ClientState.counterUntilTick - now) / (float) Math.max(1, ClientState.counterWindow);
+            g.fill(x, y + bh + 3, x + Math.round(bw * left), y + bh + 5, 0xFFFF6A6A);
         } else if (ready) {
             label = "AWAKENING READY  [" + InputHandler.keyLabel(AbilitySlot.ULTIMATE) + "]";
             color = (now / 6) % 2 == 0 ? 0xFFFFE08A : 0xFFFFFFFF;

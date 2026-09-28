@@ -60,8 +60,15 @@ public final class DomainStructures {
     /** Snapshots and starts building a structure. Returns null if the spec covers nothing. */
     @Nullable
     public static DomainStructure create(ServerLevel level, BlockPos center, StructureSpec spec) {
-        DomainStructure s = DomainStructure.capture(nextId++, level, center, spec, packed -> ownerOf(level, packed) != null);
+        return create(level, center, spec, 1);
+    }
+
+    /** Snapshots and starts building a structure that forms over {@code formationTicks} (see {@link DomainFormation}). */
+    @Nullable
+    public static DomainStructure create(ServerLevel level, BlockPos center, StructureSpec spec, int formationTicks) {
+        DomainStructure s = DomainStructure.capture(nextId++, level, center, spec, packed -> ownerOf(level, packed) != null, formationTicks);
         if (s.size() == 0) return null;
+        s.captureHanging();
         persist(s);
         ACTIVE.computeIfAbsent(level, l -> new ArrayList<>()).add(s);
         return s;

@@ -145,6 +145,8 @@ public final class ClashManager {
         @Override
         public void ended(ClashSession s) {
             send(s, new ClashEndPayload(s.id, s.winner, s.outcome.ordinal()));
+            // Resolve the domains right away, even when the decisive input arrived between ticks.
+            finish(s);
         }
     };
 

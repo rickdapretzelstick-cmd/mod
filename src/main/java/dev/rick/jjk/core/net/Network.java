@@ -32,6 +32,8 @@ public final class Network {
         s2c.register(ClashStartPayload.TYPE, ClashStartPayload.CODEC);
         s2c.register(ClashUpdatePayload.TYPE, ClashUpdatePayload.CODEC);
         s2c.register(ClashEndPayload.TYPE, ClashEndPayload.CODEC);
+        s2c.register(DomainCinematicPayload.TYPE, DomainCinematicPayload.CODEC);
+        s2c.register(DomainCounterPayload.TYPE, DomainCounterPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();

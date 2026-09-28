@@ -353,6 +353,17 @@ public final class JJKConfig {
         public int startup = 28;
         /** About 14 seconds, like the reference game. */
         public int duration = 280;
+        /**
+         * Counter window: while someone nearby starts opening a domain, a sorcerer with a full Awakening meter can press
+         * their Awakening button within this many ticks to awaken instantly and answer with their own domain.
+         */
+        public int counterWindowTicks = 36;
+        /** How close (blocks) a sorcerer must be to counter an opening domain. */
+        public double counterRange = 34;
+        /** Players within this many blocks of an opening domain see the (light) observer presentation. */
+        public double observerRange = 64;
+        /** Ticks the physical domain takes to build itself, from the caster's feet to the final seal. */
+        public int formationTicks = 44;
         public double radius = 18;
         public int sureHitDamageInterval = 20;
         public float sureHitDamage = 1.0f;

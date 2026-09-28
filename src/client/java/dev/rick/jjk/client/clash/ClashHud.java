@@ -32,6 +32,8 @@ public final class ClashHud {
     public static void render(GuiGraphicsExtractor g) {
         ClashClient.View v = ClashClient.view();
         if (v == null || v.local < 0) return;
+        // A counter's versus card has the screen first; the clash takes over for its 3-2-1.
+        if (dev.rick.jjk.client.cinematic.DomainCinematic.versusShowing()) return;
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
         int w = g.guiWidth(), h = g.guiHeight();
@@ -149,6 +151,8 @@ public final class ClashHud {
 
     private static void countdown(GuiGraphicsExtractor g, Font font, ClashClient.View v, int w, int h, double clock) {
         if (clock >= 12) return;
+        // A counter's versus card is still on screen: the clash intro waits for it.
+        if (dev.rick.jjk.client.cinematic.DomainCinematic.versusShowing()) return;
         String text;
         int color = 0xFFFFFFFF;
         float scale;

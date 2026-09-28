@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
  * Hand sign, startup, then Unlimited Void expands around Gojo. The startup is committed and can be interrupted by
  * stuns; if interrupted, most of the energy is refunded and the cooldown is short.
  */
-public final class UnlimitedVoidAbility extends Ability {
+public final class UnlimitedVoidAbility extends Ability implements dev.rick.jjk.core.domain.DomainAbility {
     public static final String ID = "unlimited_void";
 
     public UnlimitedVoidAbility() {
@@ -27,6 +27,11 @@ public final class UnlimitedVoidAbility extends Ability {
     @Override
     public Kind kind() {
         return Kind.INSTANT;
+    }
+
+    @Override
+    public dev.rick.jjk.core.domain.DomainDefinition domain() {
+        return UnlimitedVoid.INSTANCE;
     }
 
     @Override
@@ -59,6 +64,9 @@ public final class UnlimitedVoidAbility extends Ability {
                 Anim.play(user, "domain_sign");
                 setPhase(0, JJKConfig.get().domain.startup);
                 Fx.play(level, "domain_charge", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
+                // Everyone around sees it coming; anyone who can answer gets their counter window.
+                dev.rick.jjk.core.domain.DomainCinematics.opening(user, UnlimitedVoid.INSTANCE, JJKConfig.get().domain.startup);
+                dev.rick.jjk.core.domain.DomainCounter.opening(user, UnlimitedVoid.INSTANCE);
             }
 
             @Override

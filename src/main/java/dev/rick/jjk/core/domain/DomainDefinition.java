@@ -21,7 +21,15 @@ public interface DomainDefinition {
 
     int duration(LivingEntity owner);
 
-    /** Ticks the barrier takes to close (sure-hit starts afterwards). */
+    /** Name shown when the domain opens ("DOMAIN EXPANSION — ..."). */
+    default String displayName() {
+        return id();
+    }
+
+    /**
+     * Ticks the domain takes to form: its structure builds on this schedule (feet → ground → walls → ceiling →
+     * underground) and the barrier and sure-hit only switch on once it is sealed.
+     */
     default int formingTicks() {
         return 20;
     }

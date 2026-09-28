@@ -145,7 +145,14 @@ public class GojoClientGameTest implements FabricClientGameTest {
             in.pressKey(g);
             ctx.waitTicks(15);
             ctx.takeScreenshot("19_domain_sign");
-            ctx.waitTicks(30);
+            // The domain builds itself from Gojo's feet: ground, walls, ceiling, then the seal and the title card.
+            ctx.waitTicks(18);
+            ctx.takeScreenshot("20a_forming_ground");
+            ctx.waitTicks(14);
+            ctx.takeScreenshot("20b_forming_walls");
+            ctx.waitTicks(12);
+            ctx.takeScreenshot("20c_forming_ceiling");
+            ctx.waitTicks(16);
             ctx.takeScreenshot("20_infinite_void");
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
             server.runCommand("execute as @a at @s run tp @s ~ ~ ~ ~ -35");
@@ -163,7 +170,7 @@ public class GojoClientGameTest implements FabricClientGameTest {
                 return false;
             });
             if (!overloaded) throw new AssertionError("dummies inside Infinite Void should be overloaded");
-            ctx.waitTicks(340);
+            ctx.waitTicks(320);
             ctx.takeScreenshot("23_after_domain");
             String diff = server.computeOnServer(s -> {
                 var level = s.getPlayerList().getPlayers().getFirst().level();
@@ -187,39 +194,49 @@ public class GojoClientGameTest implements FabricClientGameTest {
                     || Casters.get(p).character() == null));
             if (!burnt) throw new AssertionError("owner should be burnt out after the domain");
 
-            // --- Domain clash: a rival sorcerer expands into Gojo's domain, and the clash is a rhythm duel. ---
+            // --- Domain counter: a rival starts opening their domain; with a full meter, the Awakening key answers it. ---
             server.runOnServer(s -> {
                 ServerPlayer p = s.getPlayerList().getPlayers().getFirst();
                 dev.rick.jjk.core.combat.Statuses.remove(p, CombatStatus.BURNOUT);
                 var caster = Casters.get(p);
-                if (!caster.isAwakened()) caster.enterAwakening();
+                caster.endAwakening("test");
                 caster.setAwakening(caster.maxAwakening());
             });
-            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
-            server.runCommand("execute as @a at @s run tp @s ~ ~ ~ ~ 12");
+            ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
+            server.runCommand("execute as @a at @s run tp @s ~ ~ ~ ~ 5");
             ctx.waitTicks(5);
-            in.pressKey(g);
-            for (int i = 0; i < 80 && !server.computeOnServer(s -> dev.rick.jjk.core.domain.DomainManager.ownedBy(s.getPlayerList().getPlayers().getFirst()) != null); i++) {
-                ctx.waitTick();
-            }
             server.runOnServer(s -> {
                 ServerPlayer p = s.getPlayerList().getPlayers().getFirst();
                 var level = p.level();
                 var rival = new dev.rick.jjk.entity.TrainingDummy(dev.rick.jjk.registry.ModEntities.TRAINING_DUMMY, level);
                 var look = p.getLookAngle().multiply(1, 0, 1).normalize();
-                rival.setPos(p.getX() + look.x * 9, p.getY(), p.getZ() + look.z * 9);
+                rival.setPos(p.getX() + look.x * 12, p.getY(), p.getZ() + look.z * 12);
+                rival.setYRot(p.getYRot() + 180);
                 rival.setCustomName(net.minecraft.network.chat.Component.literal("Rival"));
                 level.addFreshEntity(rival);
                 dev.rick.jjk.core.character.CharacterService.assign(rival, dev.rick.jjk.core.character.Characters.get(dev.rick.jjk.gojo.GojoCharacter.ID));
                 dev.rick.jjk.core.domain.clash.ClashManager.setBotSkill(rival, 0.45f);
-                dev.rick.jjk.core.domain.DomainManager.expand(rival, dev.rick.jjk.gojo.UnlimitedVoid.INSTANCE);
+                var rc = Casters.get(rival);
+                rc.enterAwakening();
+                rc.setAwakening(rc.maxAwakening());
+                rc.setNoCost(true);
+                if (!rc.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null)) throw new AssertionError("rival should start opening a domain");
             });
+            ctx.waitTicks(6);
+            ctx.takeScreenshot("24_counter_prompt");
+            if (ctx.computeOnClient(mc -> mc.level.getGameTime() >= ClientState.counterUntilTick)) throw new AssertionError("a full meter should get a counter window");
+            in.pressKey(g);
+            ctx.waitTicks(3);
+            if (!ctx.computeOnClient(mc -> ClientState.awakened())) throw new AssertionError("the counter awakens instantly");
+            ctx.takeScreenshot("25_counter_versus");
+            ctx.waitTicks(6);
+            ctx.takeScreenshot("25b_counter_versus");
             for (int i = 0; i < 40 && !ctx.computeOnClient(mc -> dev.rick.jjk.client.clash.ClashClient.playing()); i++) ctx.waitTick();
             if (!ctx.computeOnClient(mc -> dev.rick.jjk.client.clash.ClashClient.playing())) throw new AssertionError("overlapping domains should start a clash");
             ctx.waitTicks(8);
-            ctx.takeScreenshot("24_clash_intro");
+            ctx.takeScreenshot("26_clash_intro");
             ctx.waitTicks(22);
-            ctx.takeScreenshot("25_clash_countdown");
+            ctx.takeScreenshot("27_clash_countdown");
             // Play the chart with the arrow keys, pressing each prompt on the tick nearest its hit time.
             int[] keys = {InputConstants.KEY_LEFT, InputConstants.KEY_DOWN, InputConstants.KEY_UP, InputConstants.KEY_RIGHT};
             java.util.Set<Integer> pressed = new java.util.HashSet<>();
@@ -244,12 +261,12 @@ public class GojoClientGameTest implements FabricClientGameTest {
                     if (lane >= 0) in.pressKey(keys[lane]);
                 }
                 if (shots < 3 && pressed.size() >= 6 + shots * 6) {
-                    ctx.takeScreenshot("26_clash_play_" + shots);
+                    ctx.takeScreenshot("28_clash_play_" + shots);
                     shots++;
                 }
                 ctx.waitTick();
             }
-            ctx.takeScreenshot("27_clash_won");
+            ctx.takeScreenshot("29_clash_won");
             String result = server.computeOnServer(s -> {
                 ServerPlayer p = s.getPlayerList().getPlayers().getFirst();
                 var mine = dev.rick.jjk.core.domain.DomainManager.ownedBy(p);
@@ -258,7 +275,7 @@ public class GojoClientGameTest implements FabricClientGameTest {
             if (!result.isEmpty()) throw new AssertionError(result);
             if (ctx.computeOnClient(mc -> dev.rick.jjk.client.clash.ClashClient.view() != null)) throw new AssertionError("clash UI should be gone");
             ctx.waitTicks(20);
-            ctx.takeScreenshot("28_after_clash");
+            ctx.takeScreenshot("30_after_clash");
         }
     }
 

@@ -189,4 +189,69 @@ public class ClashTests {
                 .thenWaitUntil(() -> h.assertTrue(s.phase() == ClashSession.Phase.ENDED, "clash still resolves"))
                 .thenSucceed();
     }
+
+    // --- Domain counter: the Awakening button answers an opening domain ---
+
+    private static TrainingDummy opener(GameTestHelper h, double x, double z) {
+        TrainingDummy a = gojo(h, x, z, 0.6f);
+        var c = dev.rick.jjk.core.ability.Casters.get(a);
+        c.enterAwakening();
+        c.setAwakening(c.maxAwakening());
+        return a;
+    }
+
+    private static TrainingDummy fullMeter(GameTestHelper h, double x, double z) {
+        TrainingDummy b = gojo(h, x, z, 0.6f);
+        var c = dev.rick.jjk.core.ability.Casters.get(b);
+        c.setAwakening(c.maxAwakening());
+        return b;
+    }
+
+    @GameTest(maxTicks = 200, environment = "jjk-test:clash_a")
+    public void awakeningButtonCountersAnOpeningDomainIntoAClash(GameTestHelper h) {
+        floor(h);
+        TrainingDummy a = opener(h, 2, 4);
+        TrainingDummy b = fullMeter(h, 6, 4);
+        var ca = dev.rick.jjk.core.ability.Casters.get(a);
+        var cb = dev.rick.jjk.core.ability.Casters.get(b);
+        h.assertTrue(ca.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null), "the opener starts their domain");
+        h.assertTrue(dev.rick.jjk.core.domain.DomainCounter.canCounter(cb), "a full meter nearby gets a counter window");
+        h.startSequence()
+                .thenIdle(3)
+                .thenExecute(() -> {
+                    h.assertTrue(cb.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null), "the ordinary Awakening button");
+                    h.assertTrue(cb.isAwakened(), "awakened instantly, no transformation");
+                    h.assertTrue(!Combat.has(b, CombatStatus.AWAKENING), "no lengthy awakening transition");
+                    h.assertTrue(DomainManager.ownedBy(b) != null, "their domain opens at once");
+                })
+                .thenWaitUntil(() -> h.assertTrue(DomainManager.ownedBy(a) != null, "the opener's domain expands"))
+                .thenExecute(() -> {
+                    ClashSession s = DomainManager.ownedBy(a).clash();
+                    h.assertTrue(s != null && s == DomainManager.ownedBy(b).clash(), "the two domains collide into the existing clash");
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 200, environment = "jjk-test:clash_a")
+    public void aLateOrUnchargedPressIsANormalAwakening(GameTestHelper h) {
+        floor(h);
+        TrainingDummy a = opener(h, 2, 4);
+        TrainingDummy late = fullMeter(h, 6, 4);
+        TrainingDummy empty = gojo(h, 6, 2, 0.6f);
+        var ca = dev.rick.jjk.core.ability.Casters.get(a);
+        var cLate = dev.rick.jjk.core.ability.Casters.get(late);
+        var cEmpty = dev.rick.jjk.core.ability.Casters.get(empty);
+        ca.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null);
+        h.assertTrue(!dev.rick.jjk.core.domain.DomainCounter.canCounter(cEmpty), "no meter, no counter");
+        h.assertTrue(!cEmpty.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null), "the button does nothing without a full meter");
+        h.startSequence()
+                .thenIdle(JJKConfig.get().domain.counterWindowTicks + 2)
+                .thenExecute(() -> {
+                    h.assertTrue(!dev.rick.jjk.core.domain.DomainCounter.canCounter(cLate), "the window has closed");
+                    h.assertTrue(cLate.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null), "pressing still works");
+                    h.assertTrue(!cLate.isAwakened() && Combat.has(late, CombatStatus.AWAKENING), "a normal Awakening transition instead");
+                    h.assertTrue(DomainManager.ownedBy(late) == null, "no domain from a late press");
+                })
+                .thenSucceed();
+    }
 }

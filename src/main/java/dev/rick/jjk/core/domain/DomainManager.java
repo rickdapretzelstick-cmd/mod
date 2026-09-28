@@ -78,7 +78,7 @@ public final class DomainManager {
         Vec3 center = spec != null ? Vec3.atBottomCenterOf(anchor).add(0, 0.5, 0) : owner.position().add(0, 0.5, 0);
         DomainInstance d = new DomainInstance(nextId++, def, owner, level, center, radius, def.duration(owner));
         DOMAINS.computeIfAbsent(level, l -> new ArrayList<>()).add(d);
-        if (spec != null) d.structure = dev.rick.jjk.core.domain.structure.DomainStructures.create(level, anchor, spec);
+        if (spec != null) d.structure = dev.rick.jjk.core.domain.structure.DomainStructures.create(level, anchor, spec, def.formingTicks());
         Fx.play(level, "domain_expand", d.center, Vec3.ZERO, (float) d.radius, owner.getId());
         Fx.shake(level, d.center, d.radius * 2.5, 0.8f, 20);
         // Overlapping another live domain → clash.
@@ -115,6 +115,9 @@ public final class DomainManager {
         switch (d.phase) {
             case FORMING -> {
                 if (d.phaseAge >= d.definition.formingTicks()) {
+                    // The last sections connect: a pulse runs through the whole domain.
+                    Fx.play(d.level, "domain_sealed", d.center, Vec3.ZERO, (float) d.radius, d.owner.getId());
+                    Fx.shake(d.level, d.center, d.radius * 2.5, 0.7f, 16);
                     if (d.clashWith != null) setPhase(d, DomainInstance.Phase.CLASHING);
                     else {
                         setPhase(d, DomainInstance.Phase.ACTIVE);
@@ -298,13 +301,14 @@ public final class DomainManager {
 
     private static void sync(DomainInstance d) {
         DomainPayload p = new DomainPayload(d.id, d.owner.getId(), d.definition.id(), d.center, (float) d.radius, phaseCode(d),
-                d.phase == DomainInstance.Phase.ACTIVE ? d.activeAge : d.phaseAge, d.duration, d.clashWith != null ? d.clashWith.id : -1);
+                d.phase == DomainInstance.Phase.ACTIVE ? d.activeAge : d.phaseAge, d.duration, d.clashWith != null ? d.clashWith.id : -1,
+                d.definition.formingTicks(), d.structure != null ? d.structure.spec.thickness() : 0);
         double range = d.radius + 96;
         for (ServerPlayer p2 : d.level.players()) if (p2.distanceToSqr(d.center) < range * range) ServerPlayNetworking.send(p2, p);
     }
 
     private static void sendRemoved(DomainInstance d) {
-        DomainPayload p = new DomainPayload(d.id, d.owner.getId(), d.definition.id(), d.center, (float) d.radius, DomainPayload.REMOVED, 0, 0, -1);
+        DomainPayload p = new DomainPayload(d.id, d.owner.getId(), d.definition.id(), d.center, (float) d.radius, DomainPayload.REMOVED, 0, 0, -1, 1, 0);
         for (ServerPlayer p2 : d.level.players()) ServerPlayNetworking.send(p2, p);
     }
 

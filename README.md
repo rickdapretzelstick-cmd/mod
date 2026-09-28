@@ -44,6 +44,23 @@ Every technique has its own look, and power reads at a glance:
 Effects fade when the camera is inside them, spawn fewer particles past 48 blocks, and small ones are sound-only past
 96 blocks. `particleQuality` (0–3) in the client config scales every particle count.
 
+## Opening a domain
+
+A domain physically builds itself out of blocks, starting at the caster's feet: the ground spreads outward to the
+outer ring, the walls rise and curve over into the ceiling, then the underground half seals and a pulse confirms it —
+about two seconds, with a bright energy edge tracing the newest blocks. The barrier and sure-hit switch on only once
+it is sealed. Everything replaced (including paintings and item frames inside) comes back exactly when it ends.
+
+Every opening is presented: the caster gets a short cinematic (portrait, energy, the structure forming, then
+"DOMAIN EXPANSION — INFINITE VOID"); nearby players see it build in their world with a light banner.
+
+**Counter:** when someone nearby starts opening a domain and your Awakening meter is full, your Awakening key becomes
+a counter for a moment — instant Awakening, your domain opens at once, a "DOMAIN EXPANSION VS DOMAIN EXPANSION" card
+presents both of you, and the domains collide into the clash below. Miss the window and the key is a normal Awakening.
+
+![Formation](docs/screenshots/domain_formation.png)
+![Counter](docs/screenshots/domain_counter_versus.png)
+
 ## Domain clashes
 
 When two domains overlap they don't just fight on stats — the owners duel for control in a rhythm minigame. Both get
