@@ -31,7 +31,6 @@ public final class InputHandler {
     private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(JJK.id("gojo"));
     private static final Map<AbilitySlot, KeyMapping> KEYS = new EnumMap<>(AbilitySlot.class);
     private static final Map<AbilitySlot, Boolean> DOWN = new EnumMap<>(AbilitySlot.class);
-    private static KeyMapping stanceKey;
     /** Switches between combat mode and Vanilla Minecraft mode. Unbound by default so it can't be hit mid-fight. */
     private static KeyMapping modeKey;
     /** Opens the character select screen. */
@@ -57,7 +56,6 @@ public final class InputHandler {
         bind(AbilitySlot.ULTIMATE, "ultimate", InputConstants.KEY_G);
         bind(AbilitySlot.GUARD, "guard", InputConstants.KEY_F);
         bind(AbilitySlot.DASH, "dash", InputConstants.KEY_Q);
-        stanceKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.stance", InputConstants.Type.KEYBOARD, InputConstants.KEY_GRAVE, CATEGORY));
         characterKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.character_menu", InputConstants.Type.KEYBOARD, InputConstants.KEY_K, CATEGORY));
         modeKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.combat_mode", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY));
     }
@@ -127,13 +125,11 @@ public final class InputHandler {
         }
         if (!dev.rick.jjk.client.CombatMode.enabled()) {
             // Vanilla Minecraft mode: none of this mod's keys do anything. Swallow their presses so nothing fires later.
-            while (stanceKey.consumeClick()) {}
             for (KeyMapping k : KEYS.values()) while (k.consumeClick()) {}
             attackHeld = false;
             heavyStarted = false;
             return;
         }
-        while (stanceKey.consumeClick()) ClientState.stanceEnabled = !ClientState.stanceEnabled;
         boolean canAct = mc.gui.screen() == null && ClientState.hasCharacter() && player.isAlive();
         for (Map.Entry<AbilitySlot, KeyMapping> e : KEYS.entrySet()) {
             AbilitySlot slot = e.getKey();

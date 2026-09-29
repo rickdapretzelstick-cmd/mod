@@ -225,8 +225,8 @@ public class RedEntity extends TechniqueEntity {
     public static void detonate(ServerLevel level, LivingEntity owner, Vec3 pos, float charge, Entity direct, boolean max, float damageOverride) {
         JJKConfig.Red cfg = JJKConfig.get().red;
         JJKConfig.MaxRed mcfg = JJKConfig.get().maxRed;
-        double radius = Mth.lerp(charge, cfg.radius, cfg.chargedRadius) * (max ? mcfg.radiusMultiplier : 1);
-        float damage = damageOverride > 0 ? damageOverride : Mth.lerp(charge, cfg.damage, cfg.chargedDamage) * (max ? mcfg.damageMultiplier : 1);
+        double radius = cfg.radius * (max ? mcfg.radiusMultiplier : 1);
+        float damage = damageOverride > 0 ? damageOverride : cfg.damage * (max ? mcfg.damageMultiplier : 1);
         double knockback = cfg.knockback * (0.8 + 0.4 * charge) * (max ? mcfg.knockbackMultiplier : 1);
         int maxBlocks = max ? mcfg.maxBlocksDestroyed : cfg.maxBlocksDestroyed;
         String fx = max ? "max_red_explosion" : "red_explosion";

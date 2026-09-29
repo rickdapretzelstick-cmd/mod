@@ -72,7 +72,7 @@ public class HollowPurpleEntity extends TechniqueEntity {
         double speed = cfg.speed * Math.min(1.0, 0.35 + tickCount * 0.12);
         Vec3 from = position();
         Vec3 to = from.add(direction.scale(speed));
-        if (!level.isLoaded(BlockPos.containing(to))) {
+        if (!level.isPositionEntityTicking(BlockPos.containing(to))) {
             end(level, from, cfg);
             return;
         }

@@ -53,7 +53,7 @@ public final class RedAbility extends Ability {
     }
 
     int windup() {
-        return max ? JJKConfig.get().maxRed.minCharge : JJKConfig.get().red.minCharge;
+        return max ? JJKConfig.get().maxRed.charge : JJKConfig.get().red.windup;
     }
 
     @Override

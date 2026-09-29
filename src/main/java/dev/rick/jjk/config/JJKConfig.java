@@ -22,6 +22,13 @@ public final class JJKConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static JJKConfig instance = new JJKConfig();
 
+    /**
+     * The gameplay tuning this file was written for. When the mod's defaults change (the JJS wiki pass), older files have
+     * their gameplay sections reset to the new defaults; the player's client settings are kept.
+     */
+    public static final int CURRENT_VERSION = 3;
+    public int version;
+
     public General general = new General();
     public Resources resources = new Resources();
     public Melee melee = new Melee();
@@ -186,16 +193,13 @@ public final class JJKConfig {
         /** 20 seconds. */
         public int cooldown = 400;
         /** JJS: a short wind-up, no charging. Limitless pressed inside it sets up a special variant. */
-        public int minCharge = 12;
-        public int maxCharge = 12;
+        public int windup = 12;
         public double speed = 2.2;
         /** 40 studs. */
         public double range = 11;
         public float damage = 12.5f;
-        public float chargedDamage = 12.5f;
         /** 15 studs. */
         public double radius = 4.2;
-        public double chargedRadius = 4.2;
         public double knockback = 2.6;
         public double launch = 0.75;
         public int hitstun = 24;
@@ -226,14 +230,10 @@ public final class JJKConfig {
         public float casterMoveSpeed = 0.25f;
     }
 
+    /** Limitless' arrival (its cooldown, range and wind-up are in the gojo section). */
     public static class Teleport {
         public float cost = 30f;
-        public int charges = 3;
-        public int rechargeTicks = 55;
-        public int minInterval = 5;
-        public double blinkDistance = 11;
-        public double targetRange = 32;
-        /** Degrees off the crosshair within which a target is picked for a targeted teleport. */
+        /** Degrees off the crosshair within which a target is picked. */
         public double targetAssistAngle = 9;
         public int airHoverTicks = 12;
         public int invulnerabilityTicks = 3;
@@ -286,8 +286,7 @@ public final class JJKConfig {
 
     public static class MaxRed {
         /** "A little over a second" of charge, then it fires by itself. */
-        public int minCharge = 24;
-        public int maxCharge = 24;
+        public int charge = 24;
         /** 100 studs, piercing; 30 damage falling to 7 at the end of its range. */
         public double range = 28;
         public double speed = 2.0;
@@ -702,6 +701,13 @@ public final class JJKConfig {
         if (Files.exists(p)) {
             try (Reader r = Files.newBufferedReader(p)) {
                 JJKConfig loaded = GSON.fromJson(r, JJKConfig.class);
+                if (loaded != null && loaded.version < CURRENT_VERSION) {
+                    JJK.LOGGER.info("{} is from an older version (tuning {} < {}): gameplay values reset to the new defaults, client settings kept",
+                            p, loaded.version, CURRENT_VERSION);
+                    JJKConfig fresh = new JJKConfig();
+                    if (loaded.client != null) fresh.client = loaded.client;
+                    loaded = fresh;
+                }
                 if (loaded != null) instance = loaded;
             } catch (Exception e) {
                 JJK.LOGGER.error("Failed to read {}, using defaults", p, e);
@@ -709,6 +715,7 @@ public final class JJKConfig {
             }
         }
         instance.fillNulls();
+        instance.version = CURRENT_VERSION;
         save();
     }
 

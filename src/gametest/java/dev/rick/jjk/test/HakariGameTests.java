@@ -56,7 +56,6 @@ public class HakariGameTests {
         cfg.clash.notes = 8;
         cfg.clash.countdownTicks = 10;
         cfg.red.range = 12;
-        cfg.teleport.targetRange = 12;
         cfg.hakari.domainRadius = 6;
         cfg.hakari.domainStartup = 8;
         cfg.hakari.domainDuration = 500;

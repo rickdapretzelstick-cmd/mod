@@ -20,7 +20,6 @@ those keys are held back); Vanilla Minecraft mode gives them back. Everything ca
 | Q | Dash · ragdoll escape while ragdolled | same |
 | W W | Sprint (Minecraft's double tap) | same |
 | Space | Jump | same |
-| \` | Combat stance on/off | same |
 | *(unbound)* | Combat / Vanilla Minecraft mode | same |
 
 Melee variations: click in the air for air combos, hold jump on the 4th hit for an uppercut, click while sprinting for a

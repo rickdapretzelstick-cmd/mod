@@ -59,7 +59,7 @@ public class JJKSettingsScreen extends Screen {
         int y = height / 4 - 14;
         g.centeredText(font, title, width / 2, y, 0xFFFFFFFF);
         String hint = CombatMode.enabled()
-                ? "Gojo's HUD and ability keys are active."
+                ? "The JJK HUD and ability keys are active."
                 : "Vanilla mode: JJK HUD hidden and ability keys disabled.";
         g.centeredText(font, hint, width / 2, height / 4 + 98 + 40, 0xFFA0A8B8);
     }

@@ -62,7 +62,6 @@ public class GojoGameTests {
         cfg.clash.notes = 8;
         cfg.clash.countdownTicks = 10;
         cfg.red.range = 12;
-        cfg.teleport.targetRange = 12;
         JJKConfig.set(cfg);
         testConfig = cfg;
     }
@@ -394,7 +393,7 @@ public class GojoGameTests {
         h.startSequence()
                 .thenExecute(() -> press(g, AbilitySlot.SKILL_2))
                 .thenExecute(() -> release(g, AbilitySlot.SKILL_2))
-                .thenIdle(JJKConfig.get().red.minCharge + 4).thenExecute(() -> {
+                .thenIdle(JJKConfig.get().red.windup + 4).thenExecute(() -> {
                     h.assertTrue(target.getHealth() < hp, "Red damages");
                     h.assertTrue(target.position().distanceTo(start) > 2 || target.getDeltaMovement().length() > 0.5, "Red blasts the target away");
                     h.assertTrue(Combat.has(target, CombatStatus.LAUNCHED), "target launched");
@@ -423,7 +422,7 @@ public class GojoGameTests {
                     h.assertTrue(rel.dot(toTarget) > 0, "Gojo phased behind the target (" + rel + ")");
                     h.assertTrue(Casters.get(g).cooldown(AbilitySlot.SKILL_5) > 0, "Limitless went on cooldown too");
                 })
-                .thenIdle(JJKConfig.get().red.minCharge)
+                .thenIdle(JJKConfig.get().red.windup)
                 .thenExecute(() -> h.assertTrue(target.getHealth() <= hp - JJKConfig.get().red.damage * 0.6f, "point-blank Red (" + (hp - target.getHealth()) + ")"))
                 .thenSucceed();
     }

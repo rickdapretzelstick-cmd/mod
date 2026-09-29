@@ -87,6 +87,11 @@ public class PachinkoBallEntity extends TechniqueEntity {
         }
         velocity = velocity.add(0, -0.02, 0);
         Vec3 from = position(), to = from.add(velocity);
+        // The edge of the simulated world: it would freeze there, so it lands instead.
+        if (!level.isPositionEntityTicking(net.minecraft.core.BlockPos.containing(to))) {
+            land(level, null);
+            return;
+        }
         List<LivingEntity> hits = HitboxQuery.targets(owner, HitShape.capsule(from, to, 0.45 * scale()), 0.2, false);
         BlockHitResult block = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
         if (!hits.isEmpty()) {

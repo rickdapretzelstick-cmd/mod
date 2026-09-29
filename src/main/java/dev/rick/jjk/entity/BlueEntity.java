@@ -157,7 +157,7 @@ public class BlueEntity extends TechniqueEntity {
             }
             steerTarget = null;
         }
-        if (!level.isLoaded(blockPosition())) {
+        if (!level.isPositionEntityTicking(blockPosition())) {
             discard();
             return;
         }

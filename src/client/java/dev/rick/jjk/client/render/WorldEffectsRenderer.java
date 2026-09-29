@@ -94,7 +94,7 @@ public final class WorldEffectsRenderer {
                 }
             }
             case "max_red" -> {
-                float charge = Math.min(1f, totalAge / Math.max(1, JJKConfig.get().maxRed.maxCharge));
+                float charge = Math.min(1f, totalAge / Math.max(1, JJKConfig.get().maxRed.charge));
                 float flicker = 0.85f + 0.3f * Mth.sin(totalAge * 2.9f);
                 Vec3 tip = fingertip(user, partial);
                 orbAt(c, ps, cam, camRot, tip, (0.15f + 0.4f * charge) * flicker, ClientFx.RED, cast.phase() == 1 ? 1.8f : 1.3f);
@@ -116,7 +116,7 @@ public final class WorldEffectsRenderer {
                 orbAt(c, ps, cam, camRot, base.add(0, user.getBbHeight() * 0.55, 0), 0.4f + 0.8f * f, ClientFx.BLUE_LIGHT, 0.6f);
             }
             case "red" -> {
-                float charge = Math.min(1f, totalAge / Math.max(1, JJKConfig.get().red.maxCharge));
+                float charge = Math.min(1f, totalAge / Math.max(1, JJKConfig.get().red.windup));
                 float flicker = 0.85f + 0.3f * Mth.sin(totalAge * 2.3f);
                 orbAt(c, ps, cam, camRot, fingertip(user, partial), (0.07f + 0.16f * charge) * flicker, ClientFx.RED, cast.phase() == 1 ? 1.5f : 1f);
             }

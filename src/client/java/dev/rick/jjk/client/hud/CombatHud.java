@@ -149,7 +149,8 @@ public final class CombatHud {
         // Jackpot: cursed energy is unlimited.
         if (ClientState.awakened() && theme.bigTimer()) smallText(g, font, "∞", x + bw / 2f, y0 + bh / 2f - 3, 0.9f, 0xFF0A2A18, true);
         int ty = y1 + 5;
-        if (JJKConfig.get().client.showCeNumbers) {
+        boolean unlimited = ClientState.awakened() && theme.bigTimer();
+        if (JJKConfig.get().client.showCeNumbers && !unlimited) {
             smallText(g, font, String.format(java.util.Locale.ROOT, "%,d", Math.round(ClientState.energy)), x - 2, ty, 0.6f,
                     empty ? 0xFFFF6A6A : low ? 0xFFFFA090 : 0xFFE0F0FF, false);
             smallText(g, font, String.format(java.util.Locale.ROOT, "/%,d", Math.round(ClientState.maxEnergy)), x - 2, ty + 7, 0.6f, 0xFF7888A0, false);
@@ -163,10 +164,6 @@ public final class CombatHud {
             smallText(g, font, "NO COST", x - 2, ty, 0.6f, 0xFFFFD060, false);
             ty += 8;
         }
-        // Combat stance (the mod's melee on an empty hand): a small marker rather than a sentence.
-        boolean stance = InputHandler.inStance();
-        smallText(g, font, stance ? "◆ STANCE" : ClientState.stanceEnabled ? "◇ STANCE" : "◇ OFF", x - 2, ty, 0.6f,
-                stance ? 0xFF9FE7FF : 0xFF606878, false);
     }
 
     // --- Abilities: pixel-art icons down the right edge ---
@@ -213,9 +210,7 @@ public final class CombatHud {
         JJKConfig cfg = JJKConfig.get();
         boolean noCost = ClientState.flag(CasterSyncPayload.FLAG_NO_COST);
         int cd = ClientState.cooldown(slot), max = Math.max(1, ClientState.maxCooldown(slot));
-        boolean usesCharges = id.equals("teleport");
-        int charges = ClientState.charges(slot);
-        boolean cooling = usesCharges ? charges <= 0 : cd > 0;
+        boolean cooling = cd > 0;
         if (lastCooldown[slot.ordinal()] > 0 && cd == 0) readyFlash[slot.ordinal()] = now;
         lastCooldown[slot.ordinal()] = cd;
         boolean lackCe = !noCost && ClientState.energy < ceCost(id, cfg);
@@ -258,7 +253,7 @@ public final class CombatHud {
         int off = (size - 16) / 2;
         g.blit(RenderPipelines.GUI_TEXTURED, m.icon, x + off, y + off, 0, 0, 16, 16, 16, 16, 16, 16, tint);
         // Cooldown: a shade that recedes upward, with the time left.
-        if (cooling && !usesCharges) {
+        if (cooling) {
             int covered = Math.round(size * Math.min(1f, cd / (float) max));
             g.fill(x, y, x + size, y + covered, 0x88000000);
             smallText(g, font, String.format(cd >= 200 ? "%.0f" : "%.1f", cd / 20f), x + size / 2f, y + size / 2f - 3, 0.75f, 0xFFFFE08A, true);
@@ -269,15 +264,6 @@ public final class CombatHud {
             smallText(g, font, lackCe ? "CE" : "AWK", x + size / 2f, y + size - 8, 0.5f, lackCe ? 0xFFFF8A8A : 0xFFD8C8FF, true);
         }
         if (locked) padlock(g, x + size - 7, y + size - 8);
-        // Teleport charges as pips.
-        if (usesCharges) {
-            int maxCharges = Math.max(charges, cfg.teleport.charges);
-            for (int c = 0; c < maxCharges; c++) {
-                int px = x + size / 2 - maxCharges * 2 + c * 4 + 1;
-                g.fill(px, y + size - 4, px + 2, y + size - 2, c < charges ? 0xFF9FE7FF : 0xFF303844);
-            }
-            if (charges <= 0 && cd > 0) smallText(g, font, String.format("%.1f", cd / 20f), x + size / 2f, y + size / 2f - 3, 0.75f, 0xFFFFE08A, true);
-        }
         // Just came off cooldown: a quick white pop.
         long flash = now - readyFlash[slot.ordinal()];
         if (ready && flash < 6) g.fill(x, y, x + size, y + size, (Math.round((1 - (flash + partial) / 6f) * 150) << 24) | 0xFFFFFF);
@@ -307,6 +293,8 @@ public final class CombatHud {
             case "blue" -> cfg.blue.cost;
             case "red" -> cfg.red.cost;
             case "teleport" -> cfg.teleport.cost;
+            case "rapid_punches" -> cfg.gojo.punchesCost;
+            case "twofold_kick" -> cfg.gojo.twofoldCost;
             case "hollow_purple" -> cfg.purple.cost;
             case "unlimited_void" -> cfg.domain.cost;
             case "reserve_balls" -> cfg.hakari.ballsCost;
@@ -501,26 +489,19 @@ public final class CombatHud {
         switch (cast) {
             case "red", "max_red" -> {
                 boolean max = cast.equals("max_red");
-                int maxC = max ? cfg.maxRed.maxCharge : cfg.red.maxCharge, minC = max ? cfg.maxRed.minCharge : cfg.red.minCharge;
-                String name = max ? "REVERSAL RED: MAX" : "RED";
-                frac = Mth.clamp(t / maxC, 0, 1);
-                label = frac >= 1 ? name + "  — FULL" : t < minC ? name : name + "  " + Math.round(frac * 100) + "%";
+                frac = Mth.clamp(t / (max ? cfg.maxRed.charge : cfg.red.windup), 0, 1);
+                label = max ? "REVERSAL RED MAX" : "REVERSAL RED";
                 color = 0xFFFF3B30;
             }
             case "max_blue" -> {
                 frac = Mth.clamp(t / cfg.maxBlue.startup, 0, 1);
-                label = "LAPSE BLUE: MAX";
+                label = "LAPSE BLUE MAX";
                 color = 0xFF4F9BFF;
-            }
-            case "awaken" -> {
-                frac = Mth.clamp(t / cfg.awakening.transitionTicks, 0, 1);
-                label = "AWAKENING";
-                color = 0xFFEAF8FF;
             }
             case "hollow_purple" -> {
                 int b = cfg.purple.blueFormTicks, r = b + cfg.purple.redFormTicks, f = r + cfg.purple.fusionTicks;
                 frac = Mth.clamp(t / f, 0, 1);
-                label = t < b ? "LAPSE: BLUE" : t < r ? "REVERSAL: RED" : t < f ? "HOLLOW TECHNIQUE" : "PURPLE — RELEASE";
+                label = t < b ? "LAPSE: BLUE" : t < r ? "REVERSAL: RED" : "HOLLOW PURPLE";
                 color = t < b ? 0xFF4F9BFF : t < r ? 0xFFFF3B30 : 0xFFA24DFF;
             }
             case "unlimited_void" -> {
@@ -539,8 +520,8 @@ public final class CombatHud {
                 color = 0xFF5CFFA8;
             }
             case "blue" -> {
-                frac = 1;
-                label = "BLUE";
+                frac = Mth.clamp(t / cfg.gojo.blueWindup, 0, 1);
+                label = "LAPSE BLUE";
                 color = 0xFF4F9BFF;
             }
             default -> {

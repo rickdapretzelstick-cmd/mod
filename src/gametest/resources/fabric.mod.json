@@ -10,7 +10,8 @@
       "dev.rick.jjk.test.AwakeningDomainTests",
       "dev.rick.jjk.test.WorldRestorationTests",
       "dev.rick.jjk.test.ClashTests",
-      "dev.rick.jjk.test.HakariGameTests"
+      "dev.rick.jjk.test.HakariGameTests",
+      "dev.rick.jjk.test.MovesetAuditTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.GojoClientGameTest",
