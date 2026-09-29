@@ -98,6 +98,12 @@ public final class JJKCommand {
                         })))
                 .then(Commands.literal("dummy")
                         .executes(c -> dummy(c, TrainingDummy.Mode.STAND, 1))
+                        .then(Commands.literal("domain")
+                                .then(Commands.argument("domain", StringArgumentType.word())
+                                        .suggests((c, b) -> SharedSuggestionProvider.suggest(List.of("void", "idg", "shrine"), b))
+                                        .executes(c -> dummyDomain(c, 0.8f))
+                                        .then(Commands.argument("skill", FloatArgumentType.floatArg(0, 1))
+                                                .executes(c -> dummyDomain(c, FloatArgumentType.getFloat(c, "skill"))))))
                         .then(Commands.argument("mode", StringArgumentType.word())
                                 .suggests((c, b) -> SharedSuggestionProvider.suggest(List.of("stand", "jump", "fight"), b))
                                 .executes(c -> dummy(c, mode(c), 1))
@@ -185,6 +191,73 @@ public final class JJKCommand {
         }
         c.getSource().sendSuccess(() -> Component.literal("Spawned " + count + " dummy(s) [" + mode.name().toLowerCase() + "]"), false);
         return count;
+    }
+
+    /**
+     * Solo clash practice: the nearest training dummy (or a new one) opens a domain, and you get the counter window
+     * a real opponent's domain would give. Press Awakening in time to answer it and clash; {@code skill} (0..1) is how
+     * well the dummy hits its notes.
+     */
+    private static int dummyDomain(CommandContext<CommandSourceStack> c, float skill) throws CommandSyntaxException {
+        ServerPlayer p = c.getSource().getPlayerOrException();
+        ServerLevel level = p.level();
+        String which = StringArgumentType.getString(c, "domain").toLowerCase(Locale.ROOT);
+        dev.rick.jjk.core.domain.DomainDefinition def;
+        String character;
+        switch (which) {
+            case "void", "unlimited_void", "gojo" -> {
+                def = dev.rick.jjk.gojo.UnlimitedVoid.INSTANCE;
+                character = "gojo";
+            }
+            case "idg", "idle_death_gamble", "hakari" -> {
+                def = dev.rick.jjk.hakari.IdleDeathGamble.INSTANCE;
+                character = "hakari";
+            }
+            case "shrine", "malevolent_shrine", "sukuna", "yuji" -> {
+                def = dev.rick.jjk.yuji.MalevolentShrine.INSTANCE;
+                character = "yuji";
+            }
+            default -> {
+                c.getSource().sendFailure(Component.literal("Unknown domain " + which + " (void, idg, shrine)"));
+                return 0;
+            }
+        }
+        TrainingDummy dummy = null;
+        for (TrainingDummy d : level.getEntitiesOfClass(TrainingDummy.class, p.getBoundingBox().inflate(16), TrainingDummy::isAlive)) {
+            if (dummy == null || d.distanceToSqr(p) < dummy.distanceToSqr(p)) dummy = d;
+        }
+        if (dummy == null) {
+            Vec3 look = p.getLookAngle();
+            Vec3 fwd = new Vec3(look.x, 0, look.z).normalize();
+            dummy = spawnDummy(level, p.position().add(fwd.scale(8)), TrainingDummy.Mode.STAND, p.getYRot() + 180);
+            if (dummy == null) return 0;
+        }
+        if (DomainManager.ownedBy(dummy) != null) {
+            c.getSource().sendFailure(Component.literal("That dummy already has a domain up (/jjk domain cancel all)"));
+            return 0;
+        }
+        DomainInstance d = openDummyDomain(dummy, def, character, skill);
+        if (d == null) {
+            c.getSource().sendFailure(Component.literal("The dummy couldn't open " + def.displayName()));
+            return 0;
+        }
+        AbilityCaster pc = Casters.getOrNull(p);
+        boolean ready = pc != null && dev.rick.jjk.core.domain.DomainCounter.eligible(pc);
+        c.getSource().sendSuccess(() -> Component.literal("Dummy opened " + def.displayName() + " (clash skill " + skill + "). "
+                + (ready ? "Press Awakening now to counter!" : "You can't counter yet: pick a character with a domain, fill Awakening (/jjk nocooldown true), and don't be awakened.")), false);
+        return 1;
+    }
+
+    /** A dummy opens a domain as the given character and offers everyone nearby the counter window. */
+    @org.jetbrains.annotations.Nullable
+    public static DomainInstance openDummyDomain(TrainingDummy dummy, dev.rick.jjk.core.domain.DomainDefinition def, String character, float skill) {
+        JJKCharacter ch = Characters.get(character);
+        if (ch != null && Casters.getOrNull(dummy) == null) CharacterService.assign(dummy, ch);
+        dev.rick.jjk.core.domain.clash.ClashManager.setBotSkill(dummy, skill);
+        dev.rick.jjk.core.anim.Anim.play(dummy, "domain_release");
+        DomainInstance d = DomainManager.expand(dummy, def);
+        if (d != null) dev.rick.jjk.core.domain.DomainCounter.opening(dummy, def);
+        return d;
     }
 
     public static TrainingDummy spawnDummy(ServerLevel level, Vec3 pos, TrainingDummy.Mode mode, float yaw) {

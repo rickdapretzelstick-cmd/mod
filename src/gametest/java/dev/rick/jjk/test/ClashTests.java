@@ -207,6 +207,33 @@ public class ClashTests {
         return b;
     }
 
+    /** Solo practice: /jjk dummy domain makes a dummy open any domain, and the Awakening button answers it. */
+    @GameTest(maxTicks = 200, environment = "jjk-test:clash_b")
+    public void dummyDomainCommandCanBeCounteredIntoAClash(GameTestHelper h) {
+        floor(h);
+        String[][] domains = {{"gojo"}, {"hakari"}, {"yuji"}};
+        dev.rick.jjk.core.domain.DomainDefinition[] defs = {dev.rick.jjk.gojo.UnlimitedVoid.INSTANCE,
+                dev.rick.jjk.hakari.IdleDeathGamble.INSTANCE, dev.rick.jjk.yuji.MalevolentShrine.INSTANCE};
+        for (int i = 0; i < 3; i++) {
+            TrainingDummy opener = h.spawn(ModEntities.TRAINING_DUMMY, new Vec3(2, 1, 1 + i * 3));
+            opener.setMode(TrainingDummy.Mode.STAND);
+            TrainingDummy me = fullMeter(h, 6, 1 + i * 3);
+            var d = dev.rick.jjk.command.JJKCommand.openDummyDomain(opener, defs[i], domains[i][0], 0.5f);
+            h.assertTrue(d != null, "the dummy opens " + defs[i].displayName());
+            var mc = dev.rick.jjk.core.ability.Casters.get(me);
+            h.assertTrue(dev.rick.jjk.core.domain.DomainCounter.canCounter(mc), "a counter window for " + defs[i].displayName());
+            h.assertTrue(mc.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null), "the Awakening button counters (" + mc.lastRefusal + ")");
+            var mine = DomainManager.ownedBy(me);
+            h.assertTrue(mine != null && mine.clash() != null && mine.clash() == d.clash(), "countering " + defs[i].displayName() + " starts a clash");
+            ClashManager.cancel(mine.clash());
+            DomainManager.cancel(mine, dev.rick.jjk.core.domain.DomainInstance.EndReason.CANCELLED);
+            DomainManager.cancel(d, dev.rick.jjk.core.domain.DomainInstance.EndReason.CANCELLED);
+            opener.discard();
+            me.discard();
+        }
+        h.succeed();
+    }
+
     /** Vessel answers Infinite Void with the King of Curses and Malevolent Shrine at once, into a clash. */
     @GameTest(maxTicks = 200, environment = "jjk-test:clash_b")
     public void yujiCountersWithMalevolentShrine(GameTestHelper h) {
