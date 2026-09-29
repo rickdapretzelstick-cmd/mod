@@ -10,7 +10,18 @@ import java.util.Map;
  * transitions from walking/idle are smooth. Parts without keyframes are left to vanilla animation.
  */
 public final class AnimDef {
-    public record Key(float time, float x, float y, float z) {}
+    /**
+     * A keyframe. {@code ease} shapes the move into it: {@link #SMOOTH} eases both ends, {@link #STRIKE} starts slow and
+     * whips into the key (a punch landing), {@link #SETTLE} leaves fast and slows into it (recoil, follow-through),
+     * {@link #LINEAR} is constant speed (spins), {@link #OVERSHOOT} flies a little past and snaps back.
+     */
+    public record Key(float time, float x, float y, float z, int ease) {
+        public Key(float time, float x, float y, float z) {
+            this(time, x, y, z, SMOOTH);
+        }
+    }
+
+    public static final int SMOOTH = 0, STRIKE = 1, SETTLE = 2, LINEAR = 3, OVERSHOOT = 4;
 
     public final String name;
     public final float duration;
@@ -41,7 +52,7 @@ public final class AnimDef {
             Key a = keys.get(i), b = keys.get(i + 1);
             if (time <= b.time()) {
                 float f = (time - a.time()) / Math.max(1e-4f, b.time() - a.time());
-                f = ease(f);
+                f = ease(f, b.ease());
                 return new float[]{a.x() + (b.x() - a.x()) * f, a.y() + (b.y() - a.y()) * f, a.z() + (b.z() - a.z()) * f};
             }
         }
@@ -49,9 +60,17 @@ public final class AnimDef {
         return new float[]{last.x(), last.y(), last.z()};
     }
 
-    /** Smooth-step easing: snappy strikes that still read clearly. */
-    private static float ease(float f) {
-        return f * f * (3 - 2 * f);
+    private static float ease(float f, int type) {
+        return switch (type) {
+            case STRIKE -> f * f * f;
+            case SETTLE -> 1 - (1 - f) * (1 - f) * (1 - f);
+            case LINEAR -> f;
+            case OVERSHOOT -> {
+                float c = 1.9f, g = f - 1;
+                yield 1 + (c + 1) * g * g * g + c * g * g;
+            }
+            default -> f * f * (3 - 2 * f);
+        };
     }
 
     public boolean animates(Part part) {
@@ -82,8 +101,32 @@ public final class AnimDef {
         }
 
         public Builder key(Part part, float time, float x, float y, float z) {
-            tracks.computeIfAbsent(part, p -> new ArrayList<>()).add(new Key(time, x, y, z));
+            return key(part, time, x, y, z, SMOOTH);
+        }
+
+        public Builder key(Part part, float time, float x, float y, float z, int ease) {
+            tracks.computeIfAbsent(part, p -> new ArrayList<>()).add(new Key(time, x, y, z, ease));
             return this;
+        }
+
+        /** Whips into this key (a blow landing). */
+        public Builder strike(Part part, float time, float x, float y, float z) {
+            return key(part, time, x, y, z, STRIKE);
+        }
+
+        /** Slows into this key (recoil, follow-through, settling back). */
+        public Builder settle(Part part, float time, float x, float y, float z) {
+            return key(part, time, x, y, z, SETTLE);
+        }
+
+        /** Constant speed into this key (a spin). */
+        public Builder spin(Part part, float time, float x, float y, float z) {
+            return key(part, time, x, y, z, LINEAR);
+        }
+
+        /** Flies a little past this key and snaps back (a stance snapping into place). */
+        public Builder snap(Part part, float time, float x, float y, float z) {
+            return key(part, time, x, y, z, OVERSHOOT);
         }
 
         public AnimDef build() {
@@ -95,6 +138,29 @@ public final class AnimDef {
             }
             return def;
         }
+    }
+
+    /**
+     * The torso turns about the neck, so leaning it far forward or back pulls the hips away from the legs. For a pose
+     * with no root motion of its own, this moves the torso's lean onto the whole body (which turns about the hips) and
+     * keeps only its twist and sway on the torso.
+     */
+    public AnimDef leanFromHips() {
+        List<Key> body = tracks.get(Part.BODY);
+        if (body == null || tracks.containsKey(Part.ROOT)) return this;
+        boolean leans = false;
+        for (Key k : body) leans |= Math.abs(k.x()) > 8;
+        if (!leans) return this;
+        AnimDef d = new AnimDef(name, duration, hold, blendIn, blendOut);
+        d.tracks.putAll(tracks);
+        List<Key> twist = new ArrayList<>(), lean = new ArrayList<>();
+        for (Key k : body) {
+            twist.add(new Key(k.time(), 0, k.y(), k.z(), k.ease()));
+            lean.add(new Key(k.time(), k.x(), 0, 0, k.ease()));
+        }
+        d.tracks.put(Part.BODY, twist);
+        d.tracks.put(Part.ROOT, lean);
+        return d;
     }
 
     /** A left/right mirrored copy (for alternating jabs). */
@@ -109,7 +175,11 @@ public final class AnimDef {
                 default -> e.getKey();
             };
             List<Key> keys = new ArrayList<>();
-            for (Key k : e.getValue()) keys.add(new Key(k.time(), k.x(), -k.y(), -k.z()));
+            // A root offset mirrors sideways; every angle mirrors its turn and its roll.
+            boolean offset = e.getKey() == Part.ROOT_POS;
+            for (Key k : e.getValue()) {
+                keys.add(offset ? new Key(k.time(), -k.x(), k.y(), k.z(), k.ease()) : new Key(k.time(), k.x(), -k.y(), -k.z(), k.ease()));
+            }
             m.tracks.put(target, keys);
         }
         return m;

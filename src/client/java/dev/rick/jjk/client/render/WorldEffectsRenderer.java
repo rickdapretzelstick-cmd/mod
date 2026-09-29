@@ -62,16 +62,13 @@ public final class WorldEffectsRenderer {
 
     // --- Casting visuals ---
 
-    private static Vec3 hand(LivingEntity e, float partial, boolean left, double forward) {
-        float yaw = e.getViewYRot(partial) * Mth.DEG_TO_RAD;
-        Vec3 right = new Vec3(-Math.cos(yaw), 0, -Math.sin(yaw));
-        Vec3 fwd = new Vec3(-Math.sin(yaw), 0, Math.cos(yaw));
-        return e.getPosition(partial).add(0, e.getBbHeight() * 0.75, 0).add(fwd.scale(forward)).add(right.scale(left ? -0.75 : 0.75));
+    /** The real position of a hand ({@code reach} blocks past the knuckles): energy held in a fist follows the fist. */
+    private static Vec3 hand(LivingEntity e, float partial, boolean left, double reach) {
+        return dev.rick.jjk.client.anim.HandPos.of(e, partial, !left, (float) Math.max(0, reach) * 0.4f + 0.05f);
     }
 
     private static Vec3 fingertip(LivingEntity e, float partial) {
-        Vec3 look = e.getViewVector(partial);
-        return e.getEyePosition(partial).add(look.scale(0.9)).add(0, -0.25, 0);
+        return dev.rick.jjk.client.anim.HandPos.of(e, partial, true, 0.15f);
     }
 
     private static void renderCast(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, LivingEntity user, ClientState.Cast cast,
@@ -134,7 +131,7 @@ public final class WorldEffectsRenderer {
                 if (cast.phase() == 0) {
                     // Coarse cursed energy packing around the cocked fist.
                     float f = Math.min(1f, totalAge / Math.max(1, JJKConfig.get().hakari.roughWindup));
-                    Vec3 fist = hand(user, partial, false, -0.2).add(0, -0.2, 0);
+                    Vec3 fist = hand(user, partial, false, 0);
                     orbAt(c, ps, cam, camRot, fist, 0.12f + 0.3f * f, new float[]{0.36f, 1f, 0.66f}, 0.8f + f);
                     push(ps, cam, fist);
                     ps.rotate(camRot);
@@ -169,7 +166,7 @@ public final class WorldEffectsRenderer {
                 if (cast.phase() == 0) {
                     // Cyan cursed energy packing around the cocked fist.
                     float f = Math.min(1f, totalAge / 9f);
-                    Vec3 fist = hand(user, partial, false, cast.ability().equals("crushing_blow") ? 0.1 : -0.25).add(0, -0.15, 0);
+                    Vec3 fist = hand(user, partial, false, 0);
                     orbAt(c, ps, cam, camRot, fist, 0.08f + 0.18f * f, new float[]{0.35f, 0.9f, 1f}, 0.8f + f);
                 }
             }
@@ -215,7 +212,7 @@ public final class WorldEffectsRenderer {
                     Glow.ring(c, ps, 1.6f - t * 0.9f, 0.12f, 0.85f, 0.92f, 1f, 0.6f * (1 - t));
                     ps.popPose();
                 }
-                orbAt(c, ps, cam, camRot, hand(user, partial, false, 0.3).add(0, 0.2, 0), 0.07f, ClientFx.WHITE, 1.2f);
+                orbAt(c, ps, cam, camRot, hand(user, partial, false, 0), 0.07f, ClientFx.WHITE, 1.2f);
             }
             default -> {}
         }

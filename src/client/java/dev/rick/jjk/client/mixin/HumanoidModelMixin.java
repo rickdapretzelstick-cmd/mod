@@ -27,13 +27,26 @@ public abstract class HumanoidModelMixin {
     @Inject(method = "setupAnim(Lnet/minecraft/client/renderer/entity/state/HumanoidRenderState;)V", at = @At("TAIL"))
     private void jjk$apply(HumanoidRenderState state, CallbackInfo ci) {
         PoseFrame f = state.getData(PoseKeys.FRAME);
-        if (f == null) return;
-        apply(head, f, Part.HEAD);
-        apply(body, f, Part.BODY);
-        apply(rightArm, f, Part.RIGHT_ARM);
-        apply(leftArm, f, Part.LEFT_ARM);
-        apply(rightLeg, f, Part.RIGHT_LEG);
-        apply(leftLeg, f, Part.LEFT_LEG);
+        if (f != null) {
+            apply(head, f, Part.HEAD);
+            apply(body, f, Part.BODY);
+            apply(rightArm, f, Part.RIGHT_ARM);
+            apply(leftArm, f, Part.LEFT_ARM);
+            apply(rightLeg, f, Part.RIGHT_LEG);
+            apply(leftLeg, f, Part.LEFT_LEG);
+            if (f.weight[Part.BODY.ordinal()] > 0) {
+                // The shoulders ride the torso's twist, so a punch thrown with the body turns the arm with it.
+                float twist = body.yRot;
+                rightArm.z = Mth.sin(twist) * 5f;
+                rightArm.x = -Mth.cos(twist) * 5f;
+                leftArm.z = -Mth.sin(twist) * 5f;
+                leftArm.x = Mth.cos(twist) * 5f;
+                rightArm.yRot += twist;
+                leftArm.yRot += twist;
+            }
+        }
+        Integer id = state.getData(PoseKeys.ENTITY);
+        if (id != null) dev.rick.jjk.client.anim.HandPos.record(id, rightArm, leftArm);
     }
 
     private static void apply(ModelPart part, PoseFrame f, Part p) {

@@ -19,8 +19,13 @@ public final class PoseLibrary {
         return ANIMS.get(name);
     }
 
+    /** Every animation's name, sorted (for the pose gallery test). */
+    public static java.util.List<String> names() {
+        return ANIMS.keySet().stream().sorted().toList();
+    }
+
     private static void add(AnimDef def) {
-        ANIMS.put(def.name, def);
+        ANIMS.put(def.name, def.leanFromHips());
     }
 
     static {
@@ -359,5 +364,8 @@ public final class PoseLibrary {
                 .key(RIGHT_ARM, 60, -15, 0, 60).key(LEFT_ARM, 60, -15, 0, -60).key(BODY, 60, 0, 0, 0).key(HEAD, 60, 0, 0, 0)
                 .key(RIGHT_LEG, 60, 0, 0, 3).key(LEFT_LEG, 60, 0, 0, -3);
         add(dance.build());
+        // The animated fighting moves replace the older poses of the same name.
+        Moves.register(PoseLibrary::add);
+        YujiMoves.register(PoseLibrary::add);
     }
 }

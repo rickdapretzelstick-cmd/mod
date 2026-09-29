@@ -13,7 +13,7 @@ public final class Anim {
     }
 
     /** Animations that hold their last pose until replaced (mirrors the client's held defs). */
-    private static final java.util.Set<String> HELD = java.util.Set.of("heavy_charge", "guard", "red_charge", "purple_blue", "purple_red",
+    private static final java.util.Set<String> HELD = java.util.Set.of("heavy_charge", "guard", "guard_gojo", "fever_raise", "red_charge", "purple_blue", "purple_red",
             "purple_fusion", "max_red_charge", "domain_sign", "rough_charge", "fever_rush", "door_guard", "idg_sign", "rushdown_run",
             "rushdown_drag", "surge_dash",
             // Vessel / King of Curses

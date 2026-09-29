@@ -23,6 +23,7 @@ public abstract class EntityRendererMixin {
             float now = le.level().getGameTime() + partialTicks;
             PoseFrame f = ClientAnimations.compute(le, now);
             state.setData(PoseKeys.FRAME, f);
+            state.setData(PoseKeys.ENTITY, le.getId());
             int visual = 0;
             if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.BLINDFOLD)) visual |= PoseKeys.BLINDFOLD;
             if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.AWAKENED)) visual |= PoseKeys.AWAKENED;

@@ -1,6 +1,6 @@
 package dev.rick.jjk.client.anim;
 
-/** The pose override computed for one entity for one rendered frame (radians). */
+/** The pose override computed for one entity for one rendered frame (radians; {@link Part#ROOT_POS} in pixels). */
 public final class PoseFrame {
     public final float[][] rot = new float[Part.values().length][3];
     public final float[] weight = new float[Part.values().length];
@@ -17,7 +17,8 @@ public final class PoseFrame {
     void blend(Part part, float xDeg, float yDeg, float zDeg, float w) {
         if (w <= 0) return;
         int i = part.ordinal();
-        float rad = (float) (Math.PI / 180);
+        // Root offsets are pixels, not angles.
+        float rad = part == Part.ROOT_POS ? 1f : (float) (Math.PI / 180);
         if (weight[i] <= 0) {
             rot[i][0] = xDeg * rad;
             rot[i][1] = yDeg * rad;

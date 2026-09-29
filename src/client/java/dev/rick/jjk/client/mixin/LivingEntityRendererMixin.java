@@ -13,13 +13,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LivingEntityRenderer.class)
 public abstract class LivingEntityRendererMixin {
-    /** Knockdown: the whole body tips over onto its back. */
+    /** Knockdown (the whole body tips over onto its back), then the animation's whole-body lean, turn and step. */
     @Inject(method = "setupRotations", at = @At("TAIL"))
     private void jjk$knockdown(LivingEntityRenderState state, PoseStack poseStack, float bodyRot, float scale, CallbackInfo ci) {
         PoseFrame f = state.getData(PoseKeys.FRAME);
-        if (f != null && f.lieDown > 0) {
+        if (f == null) return;
+        if (f.lieDown > 0) {
             poseStack.translate(0, 0.25f * f.lieDown, 0);
             poseStack.rotate(Axis.XP.rotationDegrees(-90f * f.lieDown));
         }
+        dev.rick.jjk.client.anim.HandPos.applyRoot(poseStack, f);
     }
 }

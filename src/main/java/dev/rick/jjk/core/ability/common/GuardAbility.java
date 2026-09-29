@@ -30,7 +30,9 @@ public class GuardAbility extends Ability {
             @Override
             public void start() {
                 Combat.state(user).startGuard(level.getGameTime());
-                Anim.play(user, "guard");
+                // Gojo doesn't need to block (JJS): Infinity lets him just float there at ease.
+                var character = dev.rick.jjk.core.ability.Casters.get(user).character();
+                Anim.play(user, character != null && dev.rick.jjk.gojo.GojoCharacter.ID.equals(character.id) ? "guard_gojo" : "guard");
             }
 
             @Override

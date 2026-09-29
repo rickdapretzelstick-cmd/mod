@@ -222,6 +222,28 @@ Infinity is implemented but not currently part of Gojo's moveset; `infinity.inMo
 
 ![Ability HUD](docs/screenshots/ability_hud.png)
 
+## Animation
+
+Moves are animated like JJS moves, not just posed:
+- **Anticipation:** the body coils and dips before a blow.
+- **The hit:** a whip into contact, with the whole body turning, leaning and lunging behind it.
+- **Follow-through:** it carries past the target, then settles back into a fighting stance.
+- **Shoulders:** they ride the torso's twist.
+- **Timing:** each blow lands on the tick its hit resolves.
+
+Rapid Punches follows its GIF:
+1. A full 360° spinning roundhouse that locks the target.
+2. Fifteen punches hammering from alternating sides at varying heights, torso snapping side to side.
+3. Three wound-up heavy punches.
+4. A deep coil into the final blow.
+
+Dashes throw the body low and hard into their direction. The block crosses the forearms in front of the face, sunk
+into the knees. Gojo doesn't block: like the Infinity GIF, he floats at ease with a hand raised.
+
+Anything held in a hand follows the hand through its wind-up and swing: Divergent Fist's cyan energy, Red's orb, Rough
+Energy, Hollow Purple's blue and red. The model records where its arms really are each frame. The opt-in
+`PoseGalleryClientTest` films every animation on a training dummy.
+
 ## Visual tiers
 
 Every technique has its own look, and power reads at a glance:
