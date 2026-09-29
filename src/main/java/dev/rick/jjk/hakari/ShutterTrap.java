@@ -53,7 +53,6 @@ public final class ShutterTrap {
     private int age;
     private boolean slammed, lingering, done;
     private int lingerAge, bounces;
-    private boolean finisher;
     /** The doors' own damage when they shut (Shutter Doors' 8, the combination's 3, Fever Crush's 8). */
     private final float damage;
 
@@ -109,11 +108,19 @@ public final class ShutterTrap {
         return JJKConfig.get().hakari;
     }
 
-    /** Where a door stands: {@code side} of the center, {@code close} 0 = wide open .. 1 = shut. */
+    /** Height of the flat panels' underside above the target's feet: they shut across the torso. */
+    static final double PANEL_Y = 1.1;
+    /** The panels' top surface (what lingering doors are bounced off). */
+    static final double PANEL_TOP = PANEL_Y + HakariDoorEntity.SHUTTER_THICKNESS;
+
+    /**
+     * Where a door lies: {@code side} of the center, {@code close} 0 = wide open .. 1 = shut. The doors are flat
+     * panels; shut, their inner edges meet over the target (half a panel's width either side).
+     */
     private Vec3 doorPos(int side, float close) {
-        double gap = Mth.lerp(close, 2.4, finisher ? 0.3 : 0.55);
+        double gap = Mth.lerp(close, 2.4, HakariDoorEntity.SHUTTER_WIDTH / 2);
         double rise = Math.min(1, age / (double) Math.max(1, cfg().shutterRiseTicks));
-        return center.add(across.scale(side * gap)).add(0, -2.6 * (1 - rise), 0);
+        return center.add(across.scale(side * gap)).add(0, PANEL_Y - 2.6 * (1 - rise), 0);
     }
 
     private void place(float close) {
@@ -168,7 +175,6 @@ public final class ShutterTrap {
         if (target == null) return;
         // Shut in completely: the finisher.
         if (mode == Mode.STRIKE && HakariCombat.finishable(target)) {
-            finisher = true;
             place(1);
             HakariCombat.execute(owner, target, ShutterDoorsAbility.ID, "shutter_finisher");
             return;
@@ -203,31 +209,32 @@ public final class ShutterTrap {
                 .tag(AttackTag.TECHNIQUE, AttackTag.OTG).origin(center).knockback(Knockback.set(new Vec3(0, 0.75, 0)))
                 .hitstun(14).status(CombatStatus.LAUNCHED, 12).noComboScaling().fx("door_bounce", 1f).build();
         HakariCombat.hit(hit, e);
-        Fx.play(level, "door_bounce", center.add(0, 2.2, 0), Vec3.ZERO, 1f, owner.getId());
+        Fx.play(level, "door_bounce", center.add(0, PANEL_TOP, 0), Vec3.ZERO, 1f, owner.getId());
     }
 
     private void startLinger() {
         lingering = true;
         lingerAge = 0;
         target = null;
-        place(0.35f);
+        place(1f);
         Fx.play(level, "shutter_linger", center.add(0, 1.2, 0), across, 1f, owner.getId());
     }
 
     /** Missed doors stand for a while: a spring for Hakari, a trampoline for anyone ragdolled onto them. */
     private void linger() {
         JJKConfig.Hakari cfg = cfg();
-        place(0.35f);
+        place(1f);
         if (++lingerAge > cfg.shutterLingerTicks) {
             shatter(false);
             return;
         }
-        AABB top = new AABB(center.x - 1.6, center.y + 1.4, center.z - 1.6, center.x + 1.6, center.y + 2.8, center.z + 1.6);
+        // Lingering, the two panels lie flush as one platform (2.2 across each, 2.8 long): landing on its top bounces.
+        AABB top = new AABB(center.x - 2.0, center.y + PANEL_TOP - 0.3, center.z - 2.0, center.x + 2.0, center.y + PANEL_TOP + 1.0, center.z + 2.0);
         // Hakari lands on them: a high bounce, and they shatter.
         if (owner.getBoundingBox().intersects(top) && owner.getDeltaMovement().y <= 0.05) {
             Motion.set(owner, new Vec3(owner.getDeltaMovement().x, cfg.shutterBounceLaunch, owner.getDeltaMovement().z));
             owner.resetFallDistance();
-            Fx.play(level, "door_bounce", center.add(0, 2.0, 0), Vec3.ZERO, 1.4f, owner.getId());
+            Fx.play(level, "door_bounce", center.add(0, PANEL_TOP, 0), Vec3.ZERO, 1.4f, owner.getId());
             shatter(true);
             return;
         }

@@ -127,6 +127,13 @@ public final class RhythmAbility extends Ability {
         }
 
         @Override
+        public void interrupt(String reason) {
+            // Knocked out of the dance: stop it on every client instead of letting it play out over the hit reaction.
+            Anim.stop(user);
+            super.interrupt(reason);
+        }
+
+        @Override
         public boolean exclusive() {
             return false;
         }

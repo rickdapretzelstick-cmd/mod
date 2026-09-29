@@ -259,15 +259,37 @@ public final class PoseLibrary {
                 .key(RIGHT_LEG, 0, -150, 0, 0).key(RIGHT_LEG, 4, -160, 0, 0).key(RIGHT_LEG, 7, 10, 0, 0).key(RIGHT_LEG, 14, 0, 0, 0)
                 .key(BODY, 0, -20, 0, 0).key(BODY, 7, 25, 0, 0).key(BODY, 14, 0, 0, 0)
                 .key(RIGHT_ARM, 0, -40, 0, 60).key(LEFT_ARM, 0, -40, 0, -60).key(RIGHT_ARM, 14, 0, 0, 5).key(LEFT_ARM, 14, 0, 0, -5).build());
-        // Rhythm: the Jackpot dance — hips and arms swinging to the beat.
-        AnimDef.Builder dance = AnimDef.builder("rhythm_dance", 60).blend(2, 6);
-        for (int i = 0; i <= 12; i++) {
-            boolean a = i % 2 == 0;
-            int tt = i * 5;
-            dance.key(RIGHT_ARM, tt, a ? -150 : -40, 0, a ? 20 : 60).key(LEFT_ARM, tt, a ? -40 : -150, 0, a ? -60 : -20)
-                    .key(BODY, tt, 0, a ? 15 : -15, a ? 6 : -6).key(HEAD, tt, a ? -10 : 5, a ? -10 : 10, 0)
-                    .key(RIGHT_LEG, tt, a ? -20 : 10, 0, a ? 8 : 0).key(LEFT_LEG, tt, a ? 10 : -20, 0, a ? 0 : -8);
+        // Rhythm: Hakari's Jackpot dance (JJS reference). Home pose: facing forward, arms spread wide and angled down, legs
+        // straight. On every beat (RhythmAbility: lead-in 14, beats every 10 ticks) he shifts his weight onto one side —
+        // the torso rolls over it, the arm on that side swings up level while the other drops, the free leg kicks out —
+        // and on the off-beat he bounces back to the open pose. Last beat: both arms thrown up in a V.
+        AnimDef.Builder dance = AnimDef.builder("rhythm_dance", 60).blend(2, 6)
+                // Lead-in: arms open out from the sides into the pose, a little knee dip to catch the count.
+                .key(RIGHT_ARM, 0, 0, 0, 5).key(LEFT_ARM, 0, 0, 0, -5).key(BODY, 0, 0, 0, 0).key(HEAD, 0, 0, 0, 0)
+                .key(RIGHT_LEG, 0, 0, 0, 0).key(LEFT_LEG, 0, 0, 0, 0)
+                .key(RIGHT_ARM, 8, -10, 0, 60).key(LEFT_ARM, 8, -10, 0, -60)
+                .key(RIGHT_LEG, 8, -8, 0, 3).key(LEFT_LEG, 8, -8, 0, -3)
+                .key(RIGHT_ARM, 11, -10, 0, 55).key(LEFT_ARM, 11, -10, 0, -55)
+                .key(RIGHT_LEG, 11, 0, 0, 3).key(LEFT_LEG, 11, 0, 0, -3).key(BODY, 11, 0, 0, 0).key(HEAD, 11, 0, 0, 0);
+        for (int beat = 0; beat < 4; beat++) {
+            int on = 14 + beat * 10, off = on + 5;
+            boolean onRight = beat % 2 == 0; // weight onto his right, then his left
+            float s = onRight ? 1 : -1;
+            // Snap onto the beat (reached in 2 ticks so the hit lands on the count), hold, then ease back on the off-beat.
+            dance.key(BODY, on, 4, -8 * s, 11 * s).key(HEAD, on, -6, 6 * s, -9 * s)
+                    .key(RIGHT_ARM, on, -15, 0, onRight ? 92 : 38).key(LEFT_ARM, on, -15, 0, onRight ? -38 : -92)
+                    .key(RIGHT_LEG, on, onRight ? -6 : -22, 0, onRight ? 2 : 14).key(LEFT_LEG, on, onRight ? -22 : -6, 0, onRight ? -14 : -2)
+                    .key(BODY, on + 2, 4, -8 * s, 12 * s)
+                    .key(RIGHT_ARM, on + 2, -15, 0, onRight ? 95 : 36).key(LEFT_ARM, on + 2, -15, 0, onRight ? -36 : -95)
+                    .key(BODY, off, 0, 0, 0).key(HEAD, off, 3, 0, 0)
+                    .key(RIGHT_ARM, off, -10, 0, 58).key(LEFT_ARM, off, -10, 0, -58)
+                    .key(RIGHT_LEG, off, -10, 0, 3).key(LEFT_LEG, off, -10, 0, -3);
         }
+        // Finish (after the fourth beat): arms flung up into a V, chest up, legs set.
+        dance.key(RIGHT_ARM, 54, -20, 0, 140).key(LEFT_ARM, 54, -20, 0, -140).key(BODY, 54, -8, 0, 0).key(HEAD, 54, -18, 0, 0)
+                .key(RIGHT_LEG, 54, 0, 0, 6).key(LEFT_LEG, 54, 0, 0, -6)
+                .key(RIGHT_ARM, 60, -20, 0, 135).key(LEFT_ARM, 60, -20, 0, -135).key(BODY, 60, -6, 0, 0).key(HEAD, 60, -15, 0, 0)
+                .key(RIGHT_LEG, 60, 0, 0, 6).key(LEFT_LEG, 60, 0, 0, -6);
         add(dance.build());
     }
 }

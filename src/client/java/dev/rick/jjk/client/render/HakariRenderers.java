@@ -148,10 +148,17 @@ public final class HakariRenderers {
                 ps.rotate(Axis.YP.rotationDegrees(-100 * s.open));
                 ps.translate(w / 2, 0, 0);
             } else {
-                // Shutter doors lie on their side: long edge along the ground, closing in from either flank.
-                ps.translate(0, w / 2, 0);
-                ps.rotate(Axis.ZP.rotationDegrees(90));
-                ps.translate(0, -h / 2, 0);
+                // Shutter doors lie completely flat: the panel's face turned up, its length along the door's facing, its
+                // underside at the entity's feet. Same size as its hitbox (HakariDoorEntity.SHUTTER_*).
+                float t = HakariDoorEntity.SHUTTER_THICKNESS;
+                ps.translate(0, t / 2, -h / 2);
+                ps.rotate(Axis.XP.rotationDegrees(90));
+                ps.scale(w, h, t / 0.125f);
+                ps.translate(-0.5, 0, -0.5);
+                c.submitMovingBlock(ps, s.block, s.outlineColor);
+                ps.popPose();
+                super.submit(s, ps, c, cam);
+                return;
             }
             // Turn the thin block model (a slab across Z) side-on to face along the door's facing.
             ps.scale(w, h, 1);

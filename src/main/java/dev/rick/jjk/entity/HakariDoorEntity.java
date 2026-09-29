@@ -62,6 +62,20 @@ public class HakariDoorEntity extends TechniqueEntity {
         entityData.set(OPEN, v);
     }
 
+    /** Shutter doors lie flat (a horizontal panel); Door Guard's door stands upright. */
+    public static final float SHUTTER_WIDTH = 2.2f, SHUTTER_LENGTH = 2.8f, SHUTTER_THICKNESS = 0.25f;
+
+    @Override
+    public net.minecraft.world.entity.EntityDimensions getDimensions(net.minecraft.world.entity.Pose pose) {
+        return kind() == SHUTTER ? net.minecraft.world.entity.EntityDimensions.scalable(SHUTTER_WIDTH, SHUTTER_THICKNESS) : super.getDimensions(pose);
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
+        super.onSyncedDataUpdated(key);
+        refreshDimensions();
+    }
+
     @Override
     public void tick() {
         super.tick();
