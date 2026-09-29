@@ -82,7 +82,8 @@ public class ClashCinematicClientTest extends PresentationClientTest {
                         var rc = Casters.get(d);
                         for (AbilitySlot slot : AbilitySlot.values()) {
                             if (rc.character().ability(slot, true) instanceof DomainAbility) {
-                                rc.input(slot, true, 0, 0, null);
+                                boolean ok = rc.input(slot, true, 0, 0, null);
+                                if (!ok) System.out.println("[cinematic] Sukuna's domain refused: " + rc.lastRefusal);
                                 break;
                             }
                         }
@@ -94,8 +95,14 @@ public class ClashCinematicClientTest extends PresentationClientTest {
 
             section("INFINITE VOID");
             in.pressKey(g);
+            film(3);
+            server.runOnServer(s -> {
+                // The key press can be lost while the game is frozen; answer the domain directly if it was.
+                ServerPlayer p = s.getPlayerList().getPlayers().getFirst();
+                if (dev.rick.jjk.core.domain.DomainManager.ownedBy(p) == null) dev.rick.jjk.core.domain.DomainCounter.tryCounter(Casters.get(p));
+            });
             ShowcaseCamera.set(200, 4.5f, 1f, 0f);
-            film(24);
+            film(21);
             ShowcaseCamera.set(90, 12f, 3.5f, 6f);
             film(50);
 
