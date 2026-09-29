@@ -1,0 +1,16 @@
+{
+  "name": "crushing_blow_air",
+  "duration": 350,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 350, "ease": "OVERSHOOT", "bones": {
+        "chest": {"rot": [5, 30, 0]},
+        "rightArm": {"rot": [45, 20, 36]},
+        "leftArm": {"rot": [-100, 20, -15]},
+        "rightThigh": {"rot": [-65, 0, 5]},
+        "leftThigh": {"rot": [-25, 0, -5]},
+        "hips": {"rot": [22, 20, 0]}}}
+  ]
+}

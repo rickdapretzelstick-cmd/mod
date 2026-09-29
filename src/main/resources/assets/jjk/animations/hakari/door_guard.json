@@ -1,0 +1,18 @@
+{
+  "name": "door_guard",
+  "duration": 200,
+  "hold": true,
+  "blendIn": 50, "blendOut": 150,
+  "priority": "COMBAT",
+  "keys": [
+    {"t": 200, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [10, 0, 0]},
+        "chest": {"rot": [0, -10, 0]},
+        "rightArm": {"rot": [-102, -50, 0]},
+        "leftArm": {"rot": [-62, 30, -20]},
+        "rightThigh": {"rot": [22, 0, 5]},
+        "leftThigh": {"rot": [-22, 0, -5]},
+        "hips": {"rot": [12, -8, 0]},
+        "root": {"pos": [0, -2.5, -0.5]}}}
+  ]
+}

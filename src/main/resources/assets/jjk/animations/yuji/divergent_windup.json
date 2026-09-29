@@ -1,0 +1,22 @@
+{
+  "name": "divergent_windup",
+  "duration": 450,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-40, 0, 12]}}},
+    {"t": 350, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [4, 20, 0]},
+        "chest": {"rot": [6, 44, 0]},
+        "rightArm": {"rot": [50, 28, 38]},
+        "leftArm": {"rot": [-88, 34, -10]},
+        "rightThigh": {"rot": [30, 0, 6]},
+        "leftThigh": {"rot": [-32, 0, -6]},
+        "hips": {"rot": [10, 36, 0]},
+        "root": {"pos": [0, -4, -1.5]}}},
+    {"t": 450, "bones": {
+        "rightArm": {"rot": [55, 30, 40]}}}
+  ]
+}

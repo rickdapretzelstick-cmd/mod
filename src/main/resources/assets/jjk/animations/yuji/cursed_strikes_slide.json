@@ -1,0 +1,18 @@
+{
+  "name": "cursed_strikes_slide",
+  "duration": 200,
+  "hold": true,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "MOVEMENT",
+  "keys": [
+    {"t": 200, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-28, 0, 0]},
+        "chest": {"rot": [0, -14, 0]},
+        "rightArm": {"rot": [-100, -30, 18]},
+        "leftArm": {"rot": [55, 20, -25]},
+        "rightThigh": {"rot": [55, 0, 8]},
+        "leftThigh": {"rot": [-70, 0, -4]},
+        "hips": {"rot": [34, -6, 0]},
+        "root": {"pos": [0, -5, 3]}}}
+  ]
+}

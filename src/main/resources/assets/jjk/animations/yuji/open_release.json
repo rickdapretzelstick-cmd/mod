@@ -1,0 +1,20 @@
+{
+  "name": "open_release",
+  "duration": 700,
+  "blendIn": 10, "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "head": {"rot": [0, -45, 0]},
+        "chest": {"rot": [0, 45, 0]},
+        "rightArm": {"rot": [-92, 85, 20]},
+        "leftArm": {"rot": [-92, 5, 0]}}},
+    {"t": 100, "bones": {
+        "rightArm": {"rot": [-40, 90, 60]}}},
+    {"t": 700, "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-20, 0, 8]},
+        "leftArm": {"rot": [-30, 0, -8]}}}
+  ]
+}

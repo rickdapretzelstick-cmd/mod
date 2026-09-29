@@ -1,0 +1,18 @@
+{
+  "name": "red_charge",
+  "duration": 300,
+  "hold": true,
+  "blendIn": 75, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 300, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [0, -14, 0]},
+        "rightArm": {"rot": [-92, -8, 0]},
+        "leftArm": {"rot": [-80, 44, 0]},
+        "rightThigh": {"rot": [20, 0, 6]},
+        "leftThigh": {"rot": [-22, 0, -6]},
+        "hips": {"rot": [6, -16, 0]},
+        "root": {"pos": [0, -2.5, 0]}}}
+  ]
+}

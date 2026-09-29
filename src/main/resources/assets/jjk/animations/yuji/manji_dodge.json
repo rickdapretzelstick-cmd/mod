@@ -1,0 +1,24 @@
+{
+  "name": "manji_dodge",
+  "duration": 300,
+  "blendIn": 10, "blendOut": 100,
+  "priority": "COMBAT",
+  "keys": [
+    {"t": 150, "ease": "OVERSHOOT", "bones": {
+        "rightArm": {"rot": [-20, 0, 90]},
+        "leftArm": {"rot": [-20, 0, -90]},
+        "rightThigh": {"rot": [-30, 0, 40]},
+        "leftThigh": {"rot": [20, 0, -20]},
+        "hips": {"rot": [22, 0, -42]},
+        "root": {"pos": [3, -3, 0]}}},
+    {"t": 300, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-8, 0, 6]},
+        "leftArm": {"rot": [-8, 0, -6]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]},
+        "root": {"pos": [0, 0, 0]}}}
+  ]
+}

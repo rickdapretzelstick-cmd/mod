@@ -1,0 +1,17 @@
+{
+  "name": "rush_chase",
+  "duration": 200,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "MOVEMENT",
+  "keys": [
+    {"t": 200, "bones": {
+        "head": {"rot": [-25, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [60, 0, 10]},
+        "leftArm": {"rot": [-70, 0, -10]},
+        "rightThigh": {"rot": [35, 0, 0]},
+        "leftThigh": {"rot": [-45, 0, 0]},
+        "hips": {"rot": [35, 0, 0]}}}
+  ]
+}

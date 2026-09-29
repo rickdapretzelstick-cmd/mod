@@ -1,0 +1,17 @@
+{
+  "name": "rushdown_drag",
+  "duration": 200,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 200, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-12, 0, 0]},
+        "rightArm": {"rot": [-98, -20, 0]},
+        "leftArm": {"rot": [-92, 30, 0]},
+        "rightThigh": {"rot": [-38, 0, 0]},
+        "leftThigh": {"rot": [32, 0, 0]},
+        "hips": {"rot": [30, 18, 0]},
+        "root": {"pos": [0, -3, 2]}}}
+  ]
+}

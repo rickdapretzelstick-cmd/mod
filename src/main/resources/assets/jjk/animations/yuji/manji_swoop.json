@@ -1,0 +1,19 @@
+{
+  "name": "manji_swoop",
+  "duration": 400,
+  "hold": true,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "hips": {"rot": [22, 0, -42]}}},
+    {"t": 200, "bones": {
+        "rightArm": {"rot": [0, 0, 100]},
+        "leftArm": {"rot": [0, 0, -100]},
+        "rightThigh": {"rot": [-100, 0, 40]},
+        "leftThigh": {"rot": [-40, 0, -20]},
+        "hips": {"rot": [60, 0, 30]}}},
+    {"t": 400, "bones": {
+        "hips": {"rot": [40, 0, -20]}}}
+  ]
+}

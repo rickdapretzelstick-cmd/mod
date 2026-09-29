@@ -1,0 +1,16 @@
+{
+  "name": "open_aim",
+  "duration": 400,
+  "hold": true,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 400, "bones": {
+        "head": {"rot": [0, -45, 0]},
+        "chest": {"rot": [0, 45, 0]},
+        "rightArm": {"rot": [-92, 85, 20]},
+        "leftArm": {"rot": [-92, 5, 0]},
+        "rightThigh": {"rot": [20, 0, 10]},
+        "leftThigh": {"rot": [-25, 0, -10]}}}
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "reaction_hitstun",
+  "hold": true,
+  "priority": "RAGDOLL",
+  "interruptible": false,
+  "blendIn": 30, "blendOut": 250,
+  "tremble": 2,
+  "keys": [
+    {"t": 0, "marker": "impact", "bones": {
+        "head": [-6, 0, 0], "chest": [-4, 0, 0],
+        "rightArm": [10, 0, 14], "leftArm": [10, 0, -14]}},
+    {"t": 70, "ease": "EASE_OUT", "marker": "recoil", "bones": {
+        "head": [-24, 6, 4], "chest": [-16, 4, 3], "hips": [-6, 0, 0],
+        "rightArm": [28, 0, 30], "rightForearm": [-25, 0, 0], "leftArm": [24, 0, -28], "leftForearm": [-30, 0, 0],
+        "rightShin": [12, 0, 0], "leftShin": [8, 0, 0], "root": {"pos": [0, -0.5, -0.5]}}},
+    {"t": 380, "ease": "EASE_IN_OUT", "marker": "stagger", "bones": {
+        "head": [-14, 0, 0], "chest": [-9, 0, 0], "hips": [-3, 0, 0],
+        "rightArm": [18, 0, 22], "rightForearm": [-18, 0, 0], "leftArm": [16, 0, -22], "leftForearm": [-20, 0, 0],
+        "rightShin": [8, 0, 0], "leftShin": [6, 0, 0], "root": {"pos": [0, -0.3, 0]}}}
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "fever_rush",
+  "duration": 300,
+  "hold": true,
+  "blendIn": 50, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 300, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-26, 0, 0]},
+        "rightArm": {"rot": [60, 0, 16]},
+        "leftArm": {"rot": [60, 0, -16]},
+        "rightThigh": {"rot": [-48, 0, 0]},
+        "leftThigh": {"rot": [40, 0, 0]},
+        "hips": {"rot": [34, 0, 0]},
+        "root": {"pos": [0, -3, 2]}}}
+  ]
+}

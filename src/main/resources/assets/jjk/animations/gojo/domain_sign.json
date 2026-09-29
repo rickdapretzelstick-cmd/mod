@@ -1,0 +1,16 @@
+{
+  "name": "domain_sign",
+  "duration": 400,
+  "hold": true,
+  "blendIn": 100, "blendOut": 200,
+  "priority": "AWAKENING",
+  "keys": [
+    {"t": 400, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [14, 0, 0]},
+        "chest": {"rot": [3, -8, 0]},
+        "rightArm": {"rot": [-112, -38, 0]},
+        "leftArm": {"rot": [5, 0, -8]},
+        "hips": {"rot": [2, -6, 0]},
+        "root": {"pos": [0, -0.5, 0]}}}
+  ]
+}

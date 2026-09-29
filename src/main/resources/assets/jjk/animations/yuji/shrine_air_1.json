@@ -1,0 +1,33 @@
+{
+  "name": "shrine_air_1",
+  "duration": 450,
+  "blendIn": 25, "blendOut": 150,
+  "priority": "ATTACK",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, 28, 0]},
+        "rightArm": {"rot": [-105, 60, 45]},
+        "leftArm": {"rot": [-40, 0, -18]},
+        "hips": {"rot": [2, 14, 0]},
+        "root": {"pos": [0, -1, 0]}}},
+    {"t": 150, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -34, 0]},
+        "rightArm": {"rot": [-88, -65, -10]},
+        "leftArm": {"rot": [-20, 0, -30]},
+        "rightThigh": {"rot": [18, 0, 4]},
+        "leftThigh": {"rot": [-18, 0, -4]},
+        "hips": {"rot": [8, -18, 0]},
+        "root": {"pos": [0, -1.5, 2]}}},
+    {"t": 250, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-80, -75, -5]}}},
+    {"t": 450, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [0, 12, 0]},
+        "rightArm": {"rot": [-62, -22, 12]},
+        "leftArm": {"rot": [-78, 22, -10]},
+        "rightThigh": {"rot": [10, 0, 4]},
+        "leftThigh": {"rot": [-12, 0, -4]},
+        "hips": {"rot": [4, 0, 0]},
+        "root": {"pos": [0, -1, 0]}}}
+  ]
+}

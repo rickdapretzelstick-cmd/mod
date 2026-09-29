@@ -1,0 +1,21 @@
+{
+  "name": "cleave_reach",
+  "duration": 300,
+  "hold": true,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [5, 30, 0]},
+        "rightArm": {"rot": [40, 20, 30]},
+        "hips": {"rot": [4, 16, 0]}}},
+    {"t": 200, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [5, -25, 0]},
+        "rightArm": {"rot": [-98, -5, 0]},
+        "leftArm": {"rot": [25, 0, -22]},
+        "rightThigh": {"rot": [30, 0, 5]},
+        "leftThigh": {"rot": [-32, 0, -5]},
+        "hips": {"rot": [16, -14, 0]},
+        "root": {"pos": [0, -2, 5]}}}
+  ]
+}

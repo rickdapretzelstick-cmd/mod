@@ -1,0 +1,90 @@
+{
+  "name": "cursed_strikes_flurry",
+  "duration": 1500,
+  "blendIn": 25, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "head": {"rot": [8, 0, 0]},
+        "rightThigh": {"rot": [24, 0, 6]},
+        "leftThigh": {"rot": [-24, 0, -6]}}},
+    {"t": 100, "bones": {
+        "chest": {"rot": [0, 22, 0]},
+        "rightArm": {"rot": [-40, -8, 26]},
+        "hips": {"rot": [10, 14, 0]},
+        "root": {"pos": [0, -3, 0.5]}}},
+    {"t": 250, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -30, 0]},
+        "rightArm": {"rot": [-102, -12, 0]},
+        "leftArm": {"rot": [-62, 24, -16], "ease": "EASE_IN_OUT"},
+        "hips": {"rot": [16, -16, 3]},
+        "root": {"pos": [0.8, -3, 3]}}},
+    {"t": 325, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-88, -18, 6]}}},
+    {"t": 350, "bones": {
+        "chest": {"rot": [0, -22, 0]},
+        "leftArm": {"rot": [-78, -55, -70]},
+        "hips": {"rot": [10, -14, 0]},
+        "root": {"pos": [0, -3, 0.5]}}},
+    {"t": 500, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, 30, 0]},
+        "rightArm": {"rot": [-62, -24, 16], "ease": "EASE_IN_OUT"},
+        "leftArm": {"rot": [-94, 45, -8]},
+        "hips": {"rot": [16, 16, -3]},
+        "root": {"pos": [-0.8, -3, 3]}}},
+    {"t": 575, "ease": "EASE_OUT", "bones": {
+        "leftArm": {"rot": [-88, 18, -6]}}},
+    {"t": 600, "bones": {
+        "chest": {"rot": [0, 22, 0]},
+        "rightArm": {"rot": [-40, -8, 26]},
+        "hips": {"rot": [10, 14, 0]},
+        "root": {"pos": [0, -3, 0.5]}}},
+    {"t": 750, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -30, 0]},
+        "rightArm": {"rot": [-102, -12, 0]},
+        "leftArm": {"rot": [-62, 24, -16], "ease": "EASE_IN_OUT"},
+        "hips": {"rot": [16, -16, 3]},
+        "root": {"pos": [0.8, -3, 3]}}},
+    {"t": 825, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-88, -18, 6]}}},
+    {"t": 850, "bones": {
+        "chest": {"rot": [0, -22, 0]},
+        "leftArm": {"rot": [-40, 8, -26]},
+        "hips": {"rot": [10, -14, 0]},
+        "root": {"pos": [0, -3, 0.5]}}},
+    {"t": 1000, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, 30, 0]},
+        "rightArm": {"rot": [-62, -24, 16], "ease": "EASE_IN_OUT"},
+        "leftArm": {"rot": [-102, 12, 0]},
+        "hips": {"rot": [16, 16, -3]},
+        "root": {"pos": [-0.8, -3, 3]}}},
+    {"t": 1075, "ease": "EASE_OUT", "bones": {
+        "leftArm": {"rot": [-88, 18, -6]}}},
+    {"t": 1100, "bones": {
+        "chest": {"rot": [0, 22, 0]},
+        "rightArm": {"rot": [-78, 55, 70]},
+        "hips": {"rot": [10, 14, 0]},
+        "root": {"pos": [0, -3, 0.5]}}},
+    {"t": 1250, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -30, 0]},
+        "rightArm": {"rot": [-94, -45, 8]},
+        "leftArm": {"rot": [-62, 24, -16], "ease": "EASE_IN_OUT"},
+        "hips": {"rot": [16, -16, 3]},
+        "root": {"pos": [0.8, -3, 3]}}},
+    {"t": 1325, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-88, -18, 6]}}},
+    {"t": 1350, "bones": {
+        "chest": {"rot": [0, -22, 0]},
+        "leftArm": {"rot": [-40, 8, -26]},
+        "hips": {"rot": [10, -14, 0]},
+        "root": {"pos": [0, -3, 0.5]}}},
+    {"t": 1500, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, 30, 0]},
+        "rightArm": {"rot": [-62, -24, 16], "ease": "EASE_IN_OUT"},
+        "leftArm": {"rot": [-102, 12, 0]},
+        "hips": {"rot": [16, 16, -3]},
+        "root": {"pos": [-0.8, -3, 3]}}},
+    {"t": 1575, "ease": "EASE_OUT", "bones": {
+        "leftArm": {"rot": [-88, 18, -6]}}}
+  ]
+}

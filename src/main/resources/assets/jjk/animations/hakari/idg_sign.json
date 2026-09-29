@@ -1,0 +1,17 @@
+{
+  "name": "idg_sign",
+  "duration": 400,
+  "hold": true,
+  "blendIn": 100, "blendOut": 200,
+  "priority": "AWAKENING",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-40, 0, 10]},
+        "leftArm": {"rot": [-40, 0, -10]}}},
+    {"t": 400, "bones": {
+        "head": {"rot": [10, 0, 0]},
+        "chest": {"rot": [5, 0, 0]},
+        "rightArm": {"rot": [-85, -45, 0]},
+        "leftArm": {"rot": [-85, 45, 0]}}}
+  ]
+}

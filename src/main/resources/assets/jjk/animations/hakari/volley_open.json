@@ -1,0 +1,38 @@
+{
+  "name": "volley_open",
+  "duration": 400,
+  "blendIn": 50, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "head": {"rot": [6, 0, 0]},
+        "chest": {"rot": [0, 12, 0]},
+        "rightArm": {"rot": [-45, -5, 22]},
+        "leftArm": {"rot": [-85, 25, -10]},
+        "rightThigh": {"rot": [8, 0, 3]},
+        "leftThigh": {"rot": [-10, 0, -3]},
+        "hips": {"rot": [2, 8.4, 0]},
+        "root": {"pos": [0, -1.6, -1]}}},
+    {"t": 150, "ease": "EASE_IN", "bones": {
+        "head": {"rot": [8, 0, 0]},
+        "chest": {"rot": [0, -26, 0]},
+        "rightArm": {"rot": [-98, -10, 0]},
+        "leftArm": {"rot": [-35, 10, -18]},
+        "rightThigh": {"rot": [28, 0, 3]},
+        "leftThigh": {"rot": [-28, 0, -3]},
+        "hips": {"rot": [11, -10, 0]},
+        "root": {"pos": [0, -2, 4.5]}}},
+    {"t": 250, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-92, -6, 2]},
+        "root": {"pos": [0, -2, 3.6]}}},
+    {"t": 400, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [0, 12, 0]},
+        "rightArm": {"rot": [-62, -22, 12]},
+        "leftArm": {"rot": [-78, 22, -10]},
+        "rightThigh": {"rot": [10, 0, 4]},
+        "leftThigh": {"rot": [-12, 0, -4]},
+        "hips": {"rot": [4, 0, 0]},
+        "root": {"pos": [0, -1, 0]}}}
+  ]
+}

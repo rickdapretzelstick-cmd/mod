@@ -1,0 +1,21 @@
+{
+  "name": "limitless_raise",
+  "duration": 600,
+  "blendIn": 50, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-20, 0, 10]}}},
+    {"t": 250, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-6, 0, 0]},
+        "chest": {"rot": [0, -12, 0]},
+        "rightArm": {"rot": [-148, -14, -16]},
+        "leftArm": {"rot": [-5, 0, -8]},
+        "rightThigh": {"rot": [6, 0, 2], "ease": "EASE_IN_OUT"},
+        "leftThigh": {"rot": [-6, 0, -2], "ease": "EASE_IN_OUT"},
+        "hips": {"rot": [-3, -8, 0]},
+        "root": {"pos": [0, 0.5, 0]}}},
+    {"t": 600, "bones": {
+        "rightArm": {"rot": [-156, -14, -18]}}}
+  ]
+}

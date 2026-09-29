@@ -1,0 +1,29 @@
+{
+  "name": "sprint",
+  "duration": 800,
+  "blendIn": 50, "blendOut": 200,
+  "priority": "MOVEMENT",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, 10, 0]},
+        "rightArm": {"rot": [-40, 0, 20]},
+        "leftArm": {"rot": [20, 0, -15]},
+        "hips": {"rot": [10, 0, 0]}}},
+    {"t": 150, "bones": {
+        "chest": {"rot": [0, -20, 0]},
+        "rightArm": {"rot": [-100, -5, 0]},
+        "leftArm": {"rot": [45, 0, -20]},
+        "rightThigh": {"rot": [30, 0, 0]},
+        "leftThigh": {"rot": [-40, 0, 0]},
+        "hips": {"rot": [25, 0, 0]}}},
+    {"t": 500, "bones": {
+        "rightArm": {"rot": [-95, 0, 0]}}},
+    {"t": 800, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-30, 0, 8]},
+        "leftArm": {"rot": [0, 0, -8]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]}}}
+  ]
+}

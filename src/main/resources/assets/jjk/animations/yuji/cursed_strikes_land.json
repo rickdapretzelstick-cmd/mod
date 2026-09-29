@@ -1,0 +1,27 @@
+{
+  "name": "cursed_strikes_land",
+  "duration": 600,
+  "blendIn": 15, "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-20, 0, 55]},
+        "leftArm": {"rot": [-20, 0, -55]},
+        "rightThigh": {"rot": [-75, 0, 10]},
+        "leftThigh": {"rot": [30, 0, -10]},
+        "hips": {"rot": [38, 0, 0]},
+        "root": {"pos": [0, -8, 0]}}},
+    {"t": 250, "ease": "EASE_OUT", "bones": {
+        "hips": {"rot": [20, 0, 0]},
+        "root": {"pos": [0, -3, 0]}}},
+    {"t": 600, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-8, 0, 6]},
+        "leftArm": {"rot": [-8, 0, -6]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]},
+        "root": {"pos": [0, 0, 0]}}}
+  ]
+}

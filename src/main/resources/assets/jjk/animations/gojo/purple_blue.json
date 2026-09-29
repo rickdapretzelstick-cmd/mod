@@ -1,0 +1,18 @@
+{
+  "name": "purple_blue",
+  "duration": 500,
+  "hold": true,
+  "blendIn": 100, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 500, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [2, 0, 0]},
+        "chest": {"rot": [0, 12, 0]},
+        "rightArm": {"rot": [-10, 0, 12]},
+        "leftArm": {"rot": [-88, 22, -50]},
+        "rightThigh": {"rot": [12, 0, 6]},
+        "leftThigh": {"rot": [-12, 0, -6]},
+        "hips": {"rot": [0, 8, 0]},
+        "root": {"pos": [0, -1.5, 0]}}}
+  ]
+}

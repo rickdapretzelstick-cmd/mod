@@ -1,0 +1,18 @@
+{
+  "name": "infinity_on",
+  "duration": 900,
+  "blendIn": 100, "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-20, 0, 5]}}},
+    {"t": 200, "bones": {
+        "head": {"rot": [5, 0, 0]},
+        "rightArm": {"rot": [-115, -15, 0]}}},
+    {"t": 600, "bones": {
+        "rightArm": {"rot": [-110, -15, 0]}}},
+    {"t": 900, "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-20, 0, 5]}}}
+  ]
+}

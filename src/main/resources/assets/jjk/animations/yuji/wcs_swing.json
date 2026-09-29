@@ -1,0 +1,26 @@
+{
+  "name": "wcs_swing",
+  "duration": 900,
+  "blendIn": 10, "blendOut": 300,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, 50, 0]},
+        "rightArm": {"rot": [-30, 90, 80]},
+        "hips": {"rot": [15, 0, 0]}}},
+    {"t": 100, "bones": {
+        "chest": {"rot": [0, -55, 0]},
+        "rightArm": {"rot": [-90, -80, -40]},
+        "rightThigh": {"rot": [35, 0, 10]},
+        "leftThigh": {"rot": [-40, 0, -10]},
+        "hips": {"rot": [20, 0, 0]}}},
+    {"t": 600, "bones": {
+        "rightArm": {"rot": [-90, -80, -30]}}},
+    {"t": 900, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-30, 0, 10]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]}}}
+  ]
+}

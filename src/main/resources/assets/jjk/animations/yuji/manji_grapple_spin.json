@@ -1,0 +1,26 @@
+{
+  "name": "manji_grapple_spin",
+  "duration": 600,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [0, 0, 80]},
+        "leftArm": {"rot": [0, 0, -80]},
+        "rightThigh": {"rot": [-110, 0, 30]},
+        "leftThigh": {"rot": [-110, 0, -30]},
+        "hips": {"rot": [-30, 0, 0]}}},
+    {"t": 200, "bones": {
+        "chest": {"rot": [0, 0, 40]},
+        "hips": {"rot": [-60, 0, 0]}}},
+    {"t": 400, "bones": {
+        "chest": {"rot": [0, 0, -40]},
+        "hips": {"rot": [-40, 0, 0]}}},
+    {"t": 600, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightThigh": {"rot": [-110, 0, 30]},
+        "leftThigh": {"rot": [-110, 0, -30]},
+        "hips": {"rot": [-30, 0, 0]}}}
+  ]
+}

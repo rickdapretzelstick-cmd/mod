@@ -1,0 +1,20 @@
+{
+  "name": "purple_red",
+  "duration": 500,
+  "hold": true,
+  "blendIn": 25, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-10, 0, 12]},
+        "leftArm": {"rot": [-88, 22, -50]}}},
+    {"t": 500, "ease": "OVERSHOOT", "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-88, -22, 55]},
+        "leftArm": {"rot": [-88, 22, -55]},
+        "rightThigh": {"rot": [14, 0, 8]},
+        "leftThigh": {"rot": [-14, 0, -8]},
+        "hips": {"rot": [2, 0, 0]},
+        "root": {"pos": [0, -2.5, 0]}}}
+  ]
+}

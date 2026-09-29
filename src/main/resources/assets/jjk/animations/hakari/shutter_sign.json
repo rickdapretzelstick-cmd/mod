@@ -1,0 +1,24 @@
+{
+  "name": "shutter_sign",
+  "duration": 700,
+  "blendIn": 50, "blendOut": 200,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-20, 0, 10]},
+        "leftArm": {"rot": [-20, 0, -10]}}},
+    {"t": 200, "bones": {
+        "head": {"rot": [-8, 0, 0]},
+        "chest": {"rot": [-6, 0, 0]},
+        "rightArm": {"rot": [-15, 0, 95]},
+        "leftArm": {"rot": [-15, 0, -95]}}},
+    {"t": 500, "bones": {
+        "rightArm": {"rot": [-12, 0, 90]},
+        "leftArm": {"rot": [-12, 0, -90]}}},
+    {"t": 700, "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-10, 0, 10]},
+        "leftArm": {"rot": [-10, 0, -10]}}}
+  ]
+}

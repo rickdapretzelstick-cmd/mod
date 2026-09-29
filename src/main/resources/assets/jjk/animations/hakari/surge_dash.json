@@ -1,0 +1,17 @@
+{
+  "name": "surge_dash",
+  "duration": 400,
+  "hold": true,
+  "blendIn": 50, "blendOut": 150,
+  "priority": "MOVEMENT",
+  "keys": [
+    {"t": 400, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-30, 0, 0]},
+        "rightArm": {"rot": [65, 0, 20]},
+        "leftArm": {"rot": [65, 0, -20]},
+        "rightThigh": {"rot": [-36, 0, 0]},
+        "leftThigh": {"rot": [46, 0, 0]},
+        "hips": {"rot": [42, 0, 0]},
+        "root": {"pos": [0, -4, 3]}}}
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "air_3",
+  "duration": 500,
+  "blendIn": 50, "blendOut": 150,
+  "priority": "ATTACK",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, 30, 0]},
+        "rightArm": {"rot": [-75, 55, 70]},
+        "leftArm": {"rot": [-80, 25, -12]},
+        "rightThigh": {"rot": [-55, 0, 6]},
+        "leftThigh": {"rot": [-20, 0, -6]},
+        "hips": {"rot": [3, 18, -4]},
+        "root": {"pos": [0, 0, 0]}}},
+    {"t": 150, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -38, 0]},
+        "rightArm": {"rot": [-92, -45, 8]},
+        "leftArm": {"rot": [-40, 15, -25]},
+        "rightThigh": {"rot": [25, 0, 5]},
+        "leftThigh": {"rot": [-22, 0, -5]},
+        "hips": {"rot": [10, -22, 4]},
+        "root": {"pos": [0, -2, 3]}}},
+    {"t": 300, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-80, -60, 5]}}},
+    {"t": 500, "bones": {
+        "rightThigh": {"rot": [-55, 0, 6]},
+        "leftThigh": {"rot": [-20, 0, -6]},
+        "root": {"pos": [0, 0, 0]}}}
+  ]
+}

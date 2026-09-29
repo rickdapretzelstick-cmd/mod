@@ -1,0 +1,16 @@
+{
+  "name": "cursed_strikes_dropkick",
+  "duration": 200,
+  "hold": true,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 200, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [28, 0, 0]},
+        "rightArm": {"rot": [45, 0, 65]},
+        "leftArm": {"rot": [45, 0, -65]},
+        "rightThigh": {"rot": [-30, 0, 6]},
+        "leftThigh": {"rot": [-26, 0, -6]},
+        "hips": {"rot": [-55, 0, 0]}}}
+  ]
+}

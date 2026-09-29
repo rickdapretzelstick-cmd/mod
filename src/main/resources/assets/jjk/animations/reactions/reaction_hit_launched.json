@@ -1,0 +1,21 @@
+{
+  "name": "reaction_hit_launched",
+  "hold": true,
+  "priority": "RAGDOLL",
+  "interruptible": false,
+  "blendIn": 40, "blendOut": 250,
+  "tremble": 2,
+  "keys": [
+    {"t": 0, "marker": "impact", "bones": {
+        "head": [-10, 0, 0], "chest": [-8, 0, 0],
+        "rightArm": [14, 0, 20], "leftArm": [14, 0, -20]}},
+    {"t": 90, "ease": "EASE_OUT", "marker": "airborne", "bones": {
+        "head": [-30, 0, 0], "chest": [-20, 0, 0], "hips": [-14, 0, 0],
+        "rightArm": [30, 0, 45], "rightForearm": [-30, 0, 0], "leftArm": [30, 0, -45], "leftForearm": [-30, 0, 0],
+        "rightThigh": [-35, 0, 8], "rightShin": [45, 0, 0], "leftThigh": [12, 0, -8], "leftShin": [30, 0, 0]}},
+    {"t": 450, "ease": "EASE_IN_OUT", "bones": {
+        "head": [-22, 0, 0], "chest": [-14, 0, 0], "hips": [-10, 0, 0],
+        "rightArm": [24, 0, 38], "leftArm": [24, 0, -38],
+        "rightThigh": [-28, 0, 8], "rightShin": [40, 0, 0], "leftThigh": [8, 0, -8], "leftShin": [26, 0, 0]}}
+  ]
+}

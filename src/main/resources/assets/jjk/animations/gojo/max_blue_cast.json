@@ -1,0 +1,31 @@
+{
+  "name": "max_blue_cast",
+  "duration": 1100,
+  "blendIn": 75, "blendOut": 300,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-40, 0, 30]},
+        "leftArm": {"rot": [-40, 0, -30]}}},
+    {"t": 400, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [6, 0, 0]},
+        "rightArm": {"rot": [-100, -25, 0]},
+        "leftArm": {"rot": [-100, 25, 0]},
+        "rightThigh": {"rot": [-18, 0, 6]},
+        "leftThigh": {"rot": [18, 0, -6]},
+        "hips": {"rot": [-8, 0, 0]},
+        "root": {"pos": [0, -2, -1.5]}}},
+    {"t": 800, "bones": {
+        "rightArm": {"rot": [-96, -15, 0]},
+        "leftArm": {"rot": [-96, 15, 0]}}},
+    {"t": 1100, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-8, 0, 6]},
+        "leftArm": {"rot": [-8, 0, -6]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]},
+        "root": {"pos": [0, 0, 0]}}}
+  ]
+}

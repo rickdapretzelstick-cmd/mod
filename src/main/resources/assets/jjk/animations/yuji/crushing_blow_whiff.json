@@ -1,0 +1,30 @@
+{
+  "name": "crushing_blow_whiff",
+  "duration": 600,
+  "blendIn": 15, "blendOut": 200,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [35, 20, 32]},
+        "hips": {"rot": [18, 24, 0]},
+        "root": {"pos": [0, -4, -1]}}},
+    {"t": 100, "ease": "EASE_IN", "bones": {
+        "rightArm": {"rot": [-25, 0, 10]},
+        "leftArm": {"rot": [30, 0, -35]},
+        "rightThigh": {"rot": [35, 0, 6]},
+        "leftThigh": {"rot": [-45, 0, -6]},
+        "hips": {"rot": [55, -10, 0]},
+        "root": {"pos": [0, -9, 3]}}},
+    {"t": 300, "ease": "EASE_OUT", "bones": {
+        "hips": {"rot": [45, -8, 0]}}},
+    {"t": 600, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [0, 12, 0]},
+        "rightArm": {"rot": [-62, -22, 12]},
+        "leftArm": {"rot": [-78, 22, -10]},
+        "rightThigh": {"rot": [10, 0, 4]},
+        "leftThigh": {"rot": [-12, 0, -4]},
+        "hips": {"rot": [4, 0, 0]},
+        "root": {"pos": [0, -1, 0]}}}
+  ]
+}

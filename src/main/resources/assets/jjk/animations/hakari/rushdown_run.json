@@ -1,0 +1,17 @@
+{
+  "name": "rushdown_run",
+  "duration": 300,
+  "hold": true,
+  "blendIn": 50, "blendOut": 150,
+  "priority": "MOVEMENT",
+  "keys": [
+    {"t": 300, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-26, 0, 0]},
+        "rightArm": {"rot": [60, 0, 12]},
+        "leftArm": {"rot": [-75, 0, -12]},
+        "rightThigh": {"rot": [-50, 0, 0]},
+        "leftThigh": {"rot": [38, 0, 0]},
+        "hips": {"rot": [34, 0, 0]},
+        "root": {"pos": [0, -2.5, 2]}}}
+  ]
+}

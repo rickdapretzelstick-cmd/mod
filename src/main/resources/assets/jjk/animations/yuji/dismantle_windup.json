@@ -1,0 +1,18 @@
+{
+  "name": "dismantle_windup",
+  "duration": 400,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 400, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [0, -20, 0]},
+        "chest": {"rot": [0, 36, 0]},
+        "rightArm": {"rot": [-112, 72, 62]},
+        "leftArm": {"rot": [-25, 0, -16]},
+        "rightThigh": {"rot": [14, 0, 5]},
+        "leftThigh": {"rot": [-14, 0, -5]},
+        "hips": {"rot": [2, 18, 0]},
+        "root": {"pos": [0, -1.5, 0]}}}
+  ]
+}

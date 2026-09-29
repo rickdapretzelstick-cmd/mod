@@ -1,0 +1,16 @@
+{
+  "name": "wcs_chant_3",
+  "duration": 200,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 200, "bones": {
+        "chest": {"rot": [0, 50, 0]},
+        "rightArm": {"rot": [-30, 90, 80]},
+        "leftArm": {"rot": [-60, 30, -30]},
+        "rightThigh": {"rot": [30, 0, 10]},
+        "leftThigh": {"rot": [-35, 0, -10]},
+        "hips": {"rot": [15, 0, 0]}}}
+  ]
+}

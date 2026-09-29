@@ -1,0 +1,18 @@
+{
+  "name": "manji_stance",
+  "duration": 150,
+  "hold": true,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "COMBAT",
+  "keys": [
+    {"t": 150, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [0, -18, 0]},
+        "chest": {"rot": [0, 24, 0]},
+        "rightArm": {"rot": [-152, -20, 22]},
+        "leftArm": {"rot": [-72, 30, -20]},
+        "rightThigh": {"rot": [-90, 0, 10]},
+        "leftThigh": {"rot": [8, 0, -5]},
+        "hips": {"rot": [-8, 10, -4]},
+        "root": {"pos": [0, 1, -1]}}}
+  ]
+}

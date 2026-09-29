@@ -1,0 +1,37 @@
+{
+  "name": "light_4",
+  "duration": 700,
+  "blendIn": 25, "blendOut": 200,
+  "priority": "ATTACK",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [5, 35, 0]},
+        "rightArm": {"rot": [40, 10, 28]},
+        "leftArm": {"rot": [-95, 30, -10]},
+        "rightThigh": {"rot": [18, 0, 5]},
+        "leftThigh": {"rot": [-18, 0, -5]},
+        "hips": {"rot": [0, 28, 0]},
+        "root": {"pos": [0, -3, -2]}}},
+    {"t": 150, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -40, 0]},
+        "rightArm": {"rot": [-108, -8, 0]},
+        "leftArm": {"rot": [30, 5, -25]},
+        "rightThigh": {"rot": [38, 0, 5]},
+        "leftThigh": {"rot": [-35, 0, -5]},
+        "hips": {"rot": [16, -24, 0]},
+        "root": {"pos": [0, -3, 7]}}},
+    {"t": 350, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-100, -4, 2]},
+        "hips": {"rot": [12, -20, 0]},
+        "root": {"pos": [0, -2.5, 6]}}},
+    {"t": 700, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [0, 12, 0]},
+        "rightArm": {"rot": [-62, -22, 12]},
+        "leftArm": {"rot": [-78, 22, -10]},
+        "rightThigh": {"rot": [10, 0, 4]},
+        "leftThigh": {"rot": [-12, 0, -4]},
+        "hips": {"rot": [4, 0, 0]},
+        "root": {"pos": [0, -1, 0]}}}
+  ]
+}

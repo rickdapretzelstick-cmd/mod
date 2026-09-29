@@ -1,0 +1,16 @@
+{
+  "name": "cleave_hold",
+  "duration": 200,
+  "hold": true,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 200, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-10, 0, 0]},
+        "chest": {"rot": [5, -20, 0]},
+        "rightArm": {"rot": [-102, -10, 0]},
+        "leftArm": {"rot": [10, 0, -15]},
+        "hips": {"rot": [10, -10, 0]},
+        "root": {"pos": [0, -2, 3]}}}
+  ]
+}

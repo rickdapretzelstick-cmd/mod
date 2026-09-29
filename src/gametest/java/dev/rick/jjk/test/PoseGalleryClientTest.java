@@ -1,7 +1,7 @@
 package dev.rick.jjk.test;
 
 import dev.rick.jjk.client.anim.ClientAnimations;
-import dev.rick.jjk.client.anim.PoseLibrary;
+import dev.rick.jjk.client.anim.AnimLibrary;
 import dev.rick.jjk.registry.ModEntities;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
@@ -45,10 +45,10 @@ public class PoseGalleryClientTest implements FabricClientGameTest {
             server.runCommand("execute as @a at @s run summon jjk:training_dummy ~ ~ ~2.9 {NoAI:1b,Rotation:[-60f,0f]}");
             ctx.waitTicks(20);
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
-            List<String> names = ctx.computeOnClient(mc -> PoseLibrary.names());
+            List<String> names = ctx.computeOnClient(mc -> AnimLibrary.names());
             for (String name : names) {
                 if (!only.isEmpty() && !only.contains(name)) continue;
-                float duration = ctx.computeOnClient(mc -> PoseLibrary.get(name).duration);
+                float duration = ctx.computeOnClient(mc -> AnimLibrary.get(name).duration / 50f);
                 long start = ctx.computeOnClient(mc -> {
                     Entity d = dummy(mc);
                     ClientAnimations.play(d.getId(), name, 1f, mc.level.getGameTime());

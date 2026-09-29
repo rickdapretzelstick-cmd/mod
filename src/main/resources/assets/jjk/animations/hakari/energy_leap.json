@@ -1,0 +1,19 @@
+{
+  "name": "energy_leap",
+  "duration": 350,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "MOVEMENT",
+  "keys": [
+    {"t": 150, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-10, 0, 0]},
+        "chest": {"rot": [0, 30, 0]},
+        "rightArm": {"rot": [50, 20, 30]},
+        "leftArm": {"rot": [-100, 25, -20]},
+        "rightThigh": {"rot": [-60, 0, 4]},
+        "leftThigh": {"rot": [30, 0, -4]},
+        "hips": {"rot": [20, 20, 0]}}},
+    {"t": 350, "bones": {
+        "rightArm": {"rot": [55, 22, 32]},
+        "hips": {"rot": [18, 26, 0]}}}
+  ]
+}

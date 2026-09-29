@@ -1,0 +1,33 @@
+{
+  "name": "sukuna_takeover",
+  "duration": 1800,
+  "blendIn": 100, "blendOut": 400,
+  "priority": "AWAKENING",
+  "interruptible": false,
+  "keys": [
+    {"t": 0, "bones": {
+        "head": {"rot": [40, 0, 10]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [10, 0, 10]},
+        "leftArm": {"rot": [10, 0, -10]},
+        "hips": {"rot": [25, 0, 0]}}},
+    {"t": 300, "bones": {
+        "head": {"rot": [-25, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-80, 0, 70]},
+        "leftArm": {"rot": [-80, 0, -70]},
+        "hips": {"rot": [-12, 0, 0]}}},
+    {"t": 500, "bones": {
+        "rightArm": {"rot": [-150, -45, 0]},
+        "leftArm": {"rot": [-10, 0, -20]}}},
+    {"t": 1500, "bones": {
+        "head": {"rot": [-10, 10, 0]},
+        "rightArm": {"rot": [-150, -45, 0]}}},
+    {"t": 1800, "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [0, 0, 5]},
+        "leftArm": {"rot": [0, 0, -5]},
+        "hips": {"rot": [0, 0, 0]}}}
+  ]
+}

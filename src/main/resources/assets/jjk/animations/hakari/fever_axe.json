@@ -1,0 +1,31 @@
+{
+  "name": "fever_axe",
+  "duration": 600,
+  "blendIn": 15, "blendOut": 200,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightThigh": {"rot": [-168, 0, 6]},
+        "hips": {"rot": [-22, 0, 0]},
+        "root": {"pos": [0, 2, -1]}}},
+    {"t": 100, "ease": "EASE_IN", "bones": {
+        "head": {"rot": [22, 0, 0]},
+        "rightArm": {"rot": [35, 0, 40]},
+        "leftArm": {"rot": [35, 0, -40]},
+        "rightThigh": {"rot": [12, 0, 4]},
+        "leftThigh": {"rot": [-25, 0, -4]},
+        "hips": {"rot": [28, 0, 0]},
+        "root": {"pos": [0, -4, 3]}}},
+    {"t": 300, "ease": "EASE_OUT", "bones": {
+        "hips": {"rot": [22, 0, 0]}}},
+    {"t": 600, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [0, 12, 0]},
+        "rightArm": {"rot": [-62, -22, 12]},
+        "leftArm": {"rot": [-78, 22, -10]},
+        "rightThigh": {"rot": [10, 0, 4]},
+        "leftThigh": {"rot": [-12, 0, -4]},
+        "hips": {"rot": [4, 0, 0]},
+        "root": {"pos": [0, -1, 0]}}}
+  ]
+}

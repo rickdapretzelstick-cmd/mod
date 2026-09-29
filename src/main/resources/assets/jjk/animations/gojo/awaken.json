@@ -1,0 +1,43 @@
+{
+  "name": "awaken",
+  "duration": 2500,
+  "blendIn": 100, "blendOut": 300,
+  "priority": "AWAKENING",
+  "interruptible": false,
+  "keys": [
+    {"t": 0, "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-10, 0, 8]},
+        "leftArm": {"rot": [0, 0, -5]}}},
+    {"t": 350, "bones": {
+        "head": {"rot": [12, 0, 0]},
+        "rightArm": {"rot": [-168, -20, -28]}}},
+    {"t": 600, "bones": {
+        "head": {"rot": [-12, 0, 0]},
+        "chest": {"rot": [-4, 0, 0]},
+        "rightArm": {"rot": [-175, -10, -20]}}},
+    {"t": 700, "bones": {
+        "leftArm": {"rot": [0, 0, -6]}}},
+    {"t": 850, "bones": {
+        "rightArm": {"rot": [-95, 0, -40]}}},
+    {"t": 950, "bones": {
+        "leftArm": {"rot": [-82, 0, 30]}}},
+    {"t": 1050, "bones": {
+        "chest": {"rot": [0, 18, 0]},
+        "rightArm": {"rot": [-45, 15, 25]}}},
+    {"t": 1200, "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [6, -8, 0]},
+        "rightArm": {"rot": [-88, 0, -32]}}},
+    {"t": 1900, "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [2, -4, 0]},
+        "rightArm": {"rot": [-86, 0, -30]},
+        "leftArm": {"rot": [-84, 0, 32]}}},
+    {"t": 2300, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [0, 0, 5]},
+        "leftArm": {"rot": [0, 0, -5]}}}
+  ]
+}

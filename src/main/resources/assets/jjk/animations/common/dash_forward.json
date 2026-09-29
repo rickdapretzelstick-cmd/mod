@@ -1,0 +1,29 @@
+{
+  "name": "dash_forward",
+  "duration": 450,
+  "blendIn": 25, "blendOut": 150,
+  "priority": "MOVEMENT",
+  "keys": [
+    {"t": 100, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-25, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [65, 0, 18]},
+        "leftArm": {"rot": [65, 0, -18]},
+        "rightThigh": {"rot": [45, 0, 0]},
+        "leftThigh": {"rot": [-50, 0, 0]},
+        "hips": {"rot": [34, 0, 0]},
+        "root": {"pos": [0, -3, 3]}}},
+    {"t": 300, "bones": {
+        "hips": {"rot": [26, 0, 0]},
+        "root": {"pos": [0, -2, 2]}}},
+    {"t": 450, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-8, 0, 6]},
+        "leftArm": {"rot": [-8, 0, -6]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]},
+        "root": {"pos": [0, 0, 0]}}}
+  ]
+}

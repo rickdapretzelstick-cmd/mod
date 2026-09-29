@@ -1,0 +1,20 @@
+{
+  "name": "reaction_guard_broken",
+  "hold": true,
+  "priority": "RAGDOLL",
+  "interruptible": false,
+  "blendIn": 60, "blendOut": 250,
+  "keys": [
+    {"t": 0, "marker": "break", "bones": {
+        "head": [-8, 0, 0], "chest": [-6, 0, 0],
+        "rightArm": [-60, 0, 30], "leftArm": [-60, 0, -30]}},
+    {"t": 120, "ease": "EASE_OUT", "marker": "stagger", "bones": {
+        "head": [-22, 0, 0], "chest": [-18, 0, 0], "hips": [-4, 0, 0],
+        "rightArm": [-35, 0, 62], "rightForearm": [-30, 0, 0], "leftArm": [-35, 0, -62], "leftForearm": [-30, 0, 0],
+        "rightThigh": [-8, 0, 4], "rightShin": [14, 0, 0], "leftThigh": [10, 0, -4], "leftShin": [8, 0, 0],
+        "root": {"pos": [0, -0.5, -1]}}},
+    {"t": 600, "ease": "EASE_IN_OUT", "bones": {
+        "head": [-18, 0, 0], "chest": [-14, 0, 0],
+        "rightArm": [-30, 0, 55], "leftArm": [-30, 0, -55]}}
+  ]
+}

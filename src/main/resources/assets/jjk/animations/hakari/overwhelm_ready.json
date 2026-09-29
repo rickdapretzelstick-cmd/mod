@@ -1,0 +1,15 @@
+{
+  "name": "overwhelm_ready",
+  "duration": 250,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 250, "ease": "OVERSHOOT", "bones": {
+        "rightArm": {"rot": [-70, -22, 12]},
+        "leftArm": {"rot": [-82, 22, -10]},
+        "rightThigh": {"rot": [18, 0, 6]},
+        "leftThigh": {"rot": [-18, 0, -6]},
+        "hips": {"rot": [10, 0, 0]},
+        "root": {"pos": [0, -2, 0]}}}
+  ]
+}

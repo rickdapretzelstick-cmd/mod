@@ -1,0 +1,35 @@
+{
+  "name": "rough_strike",
+  "duration": 700,
+  "blendIn": 25, "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [8, 42, 0]},
+        "rightArm": {"rot": [55, 22, 32]},
+        "leftArm": {"rot": [-88, 32, -8]},
+        "rightThigh": {"rot": [32, 0, 7]},
+        "leftThigh": {"rot": [-34, 0, -7]},
+        "hips": {"rot": [10, 34, 0]},
+        "root": {"pos": [0, -4, -2]}}},
+    {"t": 100, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [10, -42, 0]},
+        "rightArm": {"rot": [-104, -6, 0]},
+        "leftArm": {"rot": [35, 0, -22]},
+        "rightThigh": {"rot": [45, 0, 7]},
+        "leftThigh": {"rot": [-42, 0, -7]},
+        "hips": {"rot": [18, -26, 0]},
+        "root": {"pos": [0, -4, 9]}}},
+    {"t": 400, "ease": "EASE_OUT", "bones": {
+        "root": {"pos": [0, -3, 7]}}},
+    {"t": 700, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [0, 12, 0]},
+        "rightArm": {"rot": [-62, -22, 12]},
+        "leftArm": {"rot": [-78, 22, -10]},
+        "rightThigh": {"rot": [10, 0, 4]},
+        "leftThigh": {"rot": [-12, 0, -4]},
+        "hips": {"rot": [4, 0, 0]},
+        "root": {"pos": [0, -1, 0]}}}
+  ]
+}

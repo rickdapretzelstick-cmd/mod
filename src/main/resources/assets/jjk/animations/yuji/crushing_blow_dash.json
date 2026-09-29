@@ -1,0 +1,17 @@
+{
+  "name": "crushing_blow_dash",
+  "duration": 200,
+  "hold": true,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 200, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-25, 0, 0]},
+        "chest": {"rot": [0, -25, 0]},
+        "rightArm": {"rot": [-100, -10, 0]},
+        "leftArm": {"rot": [45, 0, -30]},
+        "rightThigh": {"rot": [35, 0, 0]},
+        "leftThigh": {"rot": [-55, 0, 0]},
+        "hips": {"rot": [34, -14, 0]}}}
+  ]
+}

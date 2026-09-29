@@ -1,0 +1,14 @@
+{
+  "name": "shrine_sign",
+  "duration": 400,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "AWAKENING",
+  "keys": [
+    {"t": 400, "bones": {
+        "head": {"rot": [8, 0, 0]},
+        "chest": {"rot": [3, 0, 0]},
+        "rightArm": {"rot": [-80, -35, 0]},
+        "leftArm": {"rot": [-80, 35, 0]}}}
+  ]
+}

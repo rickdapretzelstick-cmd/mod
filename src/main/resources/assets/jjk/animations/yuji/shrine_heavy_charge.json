@@ -1,0 +1,17 @@
+{
+  "name": "shrine_heavy_charge",
+  "duration": 300,
+  "hold": true,
+  "blendIn": 75, "blendOut": 150,
+  "priority": "ATTACK",
+  "keys": [
+    {"t": 300, "ease": "OVERSHOOT", "bones": {
+        "chest": {"rot": [0, 36, 0]},
+        "rightArm": {"rot": [-112, 80, 52]},
+        "leftArm": {"rot": [-35, 0, -18]},
+        "rightThigh": {"rot": [20, 0, 5]},
+        "leftThigh": {"rot": [-20, 0, -5]},
+        "hips": {"rot": [4, 22, 0]},
+        "root": {"pos": [0, -2, -1]}}}
+  ]
+}

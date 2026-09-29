@@ -1,0 +1,13 @@
+{
+  "name": "open_flames",
+  "duration": 350,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 350, "bones": {
+        "head": {"rot": [-10, 0, 0]},
+        "rightArm": {"rot": [-150, 0, 40]},
+        "leftArm": {"rot": [-150, 0, -40]}}}
+  ]
+}

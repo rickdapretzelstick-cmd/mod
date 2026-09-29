@@ -1,0 +1,14 @@
+{
+  "name": "reaction_pulled",
+  "hold": true,
+  "priority": "RAGDOLL",
+  "interruptible": false,
+  "blendIn": 100, "blendOut": 250,
+  "tremble": 3,
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": [8, 0, 0],
+        "rightArm": [-150, 0, 35], "rightForearm": [-20, 0, 0], "leftArm": [-150, 0, -35], "leftForearm": [-20, 0, 0],
+        "rightThigh": [-20, 0, 10], "rightShin": [30, 0, 0], "leftThigh": [15, 0, -10], "leftShin": [20, 0, 0]}}
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "name": "reserve_balls",
+  "duration": 800,
+  "blendIn": 50, "blendOut": 200,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-20, 0, 20]}}},
+    {"t": 200, "bones": {
+        "rightArm": {"rot": [-178, 0, 25]},
+        "leftArm": {"rot": [-45, 0, -30]},
+        "rightThigh": {"rot": [10, 0, 3]},
+        "hips": {"rot": [-10, 16, 0]},
+        "root": {"pos": [0, 0, -1]}}},
+    {"t": 350, "ease": "EASE_IN", "bones": {
+        "rightArm": {"rot": [-112, -12, 5]},
+        "rightThigh": {"rot": [24, 0, 3]},
+        "leftThigh": {"rot": [-22, 0, -3]},
+        "hips": {"rot": [14, -18, 0]},
+        "root": {"pos": [0, -1.5, 2]}}},
+    {"t": 550, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-45, 0, 10]}}},
+    {"t": 800, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-8, 0, 6]},
+        "leftArm": {"rot": [-8, 0, -6]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]},
+        "root": {"pos": [0, 0, 0]}}}
+  ]
+}

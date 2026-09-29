@@ -49,11 +49,16 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.FIRE_ARROW, dev.rick.jjk.client.render.YujiRenderers.arrow());
 
         InputHandler.init();
+        dev.rick.jjk.client.anim.AnimLibrary.init();
+        dev.rick.jjk.client.anim.AnimDebug.init();
+        dev.rick.jjk.client.render.DummyRenderer.registerLayer();
         net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, ctx) -> {
             if (renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>) {
                 helper.register(new dev.rick.jjk.client.render.BlindfoldLayer(renderer));
             }
         });
+        // The animation debugger works in either mode (it only shows once turned on).
+        HudElementRegistry.addLast(JJK.id("anim_debug"), (g, delta) -> dev.rick.jjk.client.anim.AnimDebug.renderHud(g));
         // Every custom HUD layer is skipped in Vanilla Minecraft mode.
         HudElementRegistry.addLast(JJK.id("combat_hud"), (g, delta) -> {
             if (dev.rick.jjk.client.CombatMode.enabled()) CombatHud.render(g, delta);

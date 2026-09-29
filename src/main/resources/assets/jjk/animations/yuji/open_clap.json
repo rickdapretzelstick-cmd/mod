@@ -1,0 +1,15 @@
+{
+  "name": "open_clap",
+  "duration": 250,
+  "hold": true,
+  "blendIn": 15, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-150, 0, 40]},
+        "leftArm": {"rot": [-150, 0, -40]}}},
+    {"t": 250, "bones": {
+        "rightArm": {"rot": [-95, -40, 0]},
+        "leftArm": {"rot": [-95, 40, 0]}}}
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "manji_slam",
+  "duration": 700,
+  "blendIn": 10, "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightThigh": {"rot": [-110, 0, 30]},
+        "leftThigh": {"rot": [-110, 0, -30]},
+        "hips": {"rot": [-30, 0, 0]}}},
+    {"t": 150, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-150, 0, 20]},
+        "leftArm": {"rot": [-150, 0, -20]},
+        "rightThigh": {"rot": [20, 0, 10]},
+        "leftThigh": {"rot": [20, 0, -10]},
+        "hips": {"rot": [60, 0, 0]}}},
+    {"t": 700, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [0, 0, 5]},
+        "leftArm": {"rot": [0, 0, -5]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]}}}
+  ]
+}

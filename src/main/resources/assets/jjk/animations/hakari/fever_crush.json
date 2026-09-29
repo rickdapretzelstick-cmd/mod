@@ -1,0 +1,17 @@
+{
+  "name": "fever_crush",
+  "duration": 300,
+  "blendIn": 25, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 150, "ease": "OVERSHOOT", "bones": {
+        "rightArm": {"rot": [-30, 0, 45]},
+        "leftArm": {"rot": [-30, 0, -45]},
+        "rightThigh": {"rot": [18, 0, 5]},
+        "leftThigh": {"rot": [-18, 0, -5]},
+        "hips": {"rot": [10, 10, 0]},
+        "root": {"pos": [0, -3, 0]}}},
+    {"t": 300, "bones": {
+        "hips": {"rot": [8, 8, 0]}}}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "wcs_chant_2",
+  "duration": 200,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 200, "bones": {
+        "chest": {"rot": [-5, 10, 0]},
+        "rightArm": {"rot": [-140, 10, 30]},
+        "leftArm": {"rot": [-95, 20, -20]}}}
+  ]
+}

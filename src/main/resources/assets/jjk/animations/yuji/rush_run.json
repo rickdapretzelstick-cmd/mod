@@ -1,0 +1,17 @@
+{
+  "name": "rush_run",
+  "duration": 200,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "MOVEMENT",
+  "keys": [
+    {"t": 200, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-32, 0, 0]},
+        "rightArm": {"rot": [72, 0, 12]},
+        "leftArm": {"rot": [72, 0, -12]},
+        "rightThigh": {"rot": [-55, 0, 0]},
+        "leftThigh": {"rot": [45, 0, 0]},
+        "hips": {"rot": [40, 0, 0]},
+        "root": {"pos": [0, -3, 2]}}}
+  ]
+}

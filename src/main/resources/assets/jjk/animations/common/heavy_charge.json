@@ -1,0 +1,18 @@
+{
+  "name": "heavy_charge",
+  "duration": 350,
+  "hold": true,
+  "blendIn": 75, "blendOut": 150,
+  "priority": "ATTACK",
+  "keys": [
+    {"t": 350, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [6, 0, 0]},
+        "chest": {"rot": [5, 38, 0]},
+        "rightArm": {"rot": [55, 25, 38]},
+        "leftArm": {"rot": [-85, 32, -8]},
+        "rightThigh": {"rot": [28, 0, 6]},
+        "leftThigh": {"rot": [-26, 0, -6]},
+        "hips": {"rot": [6, 34, 0]},
+        "root": {"pos": [0, -3.5, -1.5]}}}
+  ]
+}

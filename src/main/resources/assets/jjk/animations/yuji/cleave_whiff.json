@@ -1,0 +1,16 @@
+{
+  "name": "cleave_whiff",
+  "duration": 500,
+  "blendIn": 15, "blendOut": 200,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, -25, 0]},
+        "rightArm": {"rot": [-95, -5, 0]},
+        "hips": {"rot": [15, 0, 0]}}},
+    {"t": 500, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-20, 0, 8]},
+        "hips": {"rot": [0, 0, 0]}}}
+  ]
+}

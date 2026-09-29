@@ -1,0 +1,34 @@
+{
+  "name": "twofold_2",
+  "duration": 600,
+  "blendIn": 15, "blendOut": 200,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightThigh": {"rot": [20, 0, 0]},
+        "leftThigh": {"rot": [-110, 0, 0]},
+        "hips": {"rot": [-10, 150, 0]},
+        "root": {"pos": [0, 2, 1]}}},
+    {"t": 100, "ease": "EASE_IN", "bones": {
+        "head": {"rot": [-15, 0, 0]},
+        "rightArm": {"rot": [40, 0, 65]},
+        "leftArm": {"rot": [40, 0, -65]},
+        "rightThigh": {"rot": [25, 0, 0]},
+        "leftThigh": {"rot": [-178, 0, -10]},
+        "hips": {"rot": [-18, 0, -10], "ease": "LINEAR"},
+        "root": {"pos": [0, 3, 2]}}},
+    {"t": 300, "ease": "EASE_OUT", "bones": {
+        "hips": {"rot": [-10, -50, 0]}}},
+    {"t": 350, "ease": "EASE_OUT", "bones": {
+        "leftThigh": {"rot": [-60, 0, 0]}}},
+    {"t": 600, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-8, 0, 6]},
+        "leftArm": {"rot": [-8, 0, -6]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]},
+        "root": {"pos": [0, 0, 0]}}}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "rush_leap",
+  "duration": 300,
+  "hold": true,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 300, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-10, 0, 0]},
+        "rightArm": {"rot": [-175, 0, 15]},
+        "leftArm": {"rot": [-175, 0, -15]},
+        "rightThigh": {"rot": [-45, 0, 0]},
+        "leftThigh": {"rot": [25, 0, 0]},
+        "hips": {"rot": [-18, 0, 0]}}}
+  ]
+}

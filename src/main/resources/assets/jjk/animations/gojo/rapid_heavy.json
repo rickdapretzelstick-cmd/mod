@@ -1,0 +1,65 @@
+{
+  "name": "rapid_heavy",
+  "duration": 1050,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "head": {"rot": [8, 0, 0]},
+        "rightThigh": {"rot": [24, 0, 6]},
+        "leftThigh": {"rot": [-24, 0, -6]}}},
+    {"t": 50, "bones": {
+        "chest": {"rot": [4, 36, 0]},
+        "rightArm": {"rot": [45, 20, 30]},
+        "leftArm": {"rot": [-85, 30, -10]},
+        "hips": {"rot": [6, 30, 0]},
+        "root": {"pos": [0, -3.5, -1]}}},
+    {"t": 200, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [6, -40, 0]},
+        "rightArm": {"rot": [-106, -10, 0]},
+        "leftArm": {"rot": [30, 0, -20]},
+        "hips": {"rot": [18, -22, 0]},
+        "root": {"pos": [0, -3, 6]}}},
+    {"t": 275, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-96, -8, 2]}}},
+    {"t": 300, "bones": {
+        "chest": {"rot": [4, -36, 0]},
+        "rightArm": {"rot": [-85, -30, 10]},
+        "leftArm": {"rot": [45, -20, -30]},
+        "hips": {"rot": [6, -30, 0]},
+        "root": {"pos": [0, -3.5, -1]}}},
+    {"t": 450, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [6, 40, 0]},
+        "rightArm": {"rot": [30, 0, 20]},
+        "leftArm": {"rot": [-106, 10, 0]},
+        "hips": {"rot": [18, 22, 0]},
+        "root": {"pos": [0, -3, 6]}}},
+    {"t": 525, "ease": "EASE_OUT", "bones": {
+        "leftArm": {"rot": [-96, 8, -2]}}},
+    {"t": 550, "bones": {
+        "chest": {"rot": [4, 36, 0]},
+        "rightArm": {"rot": [45, 20, 30]},
+        "leftArm": {"rot": [-85, 30, -10]},
+        "hips": {"rot": [6, 30, 0]},
+        "root": {"pos": [0, -3.5, -1]}}},
+    {"t": 700, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [6, -40, 0]},
+        "rightArm": {"rot": [-106, -10, 0]},
+        "leftArm": {"rot": [30, 0, -20]},
+        "hips": {"rot": [18, -22, 0]},
+        "root": {"pos": [0, -3, 6]}}},
+    {"t": 775, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-96, -8, 2]}}},
+    {"t": 900, "bones": {
+        "chest": {"rot": [5, 42, 0]},
+        "rightArm": {"rot": [58, 25, 40]},
+        "leftArm": {"rot": [-95, 35, -8]},
+        "rightThigh": {"rot": [34, 0, 7]},
+        "leftThigh": {"rot": [-30, 0, -7]},
+        "hips": {"rot": [8, 40, 0]},
+        "root": {"pos": [0, -4, -2]}}},
+    {"t": 1050, "bones": {
+        "rightArm": {"rot": [62, 25, 42]},
+        "hips": {"rot": [8, 44, 0]}}}
+  ]
+}

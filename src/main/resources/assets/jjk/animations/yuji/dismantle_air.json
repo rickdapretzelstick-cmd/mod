@@ -1,0 +1,29 @@
+{
+  "name": "dismantle_air",
+  "duration": 1000,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]}}},
+    {"t": 350, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-30, 0, 60]},
+        "leftArm": {"rot": [-30, 0, -60]},
+        "rightThigh": {"rot": [-90, 0, 5]},
+        "leftThigh": {"rot": [-90, 0, -5]},
+        "hips": {"rot": [-40, 0, 0]}}},
+    {"t": 650, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "hips": {"rot": [50, 0, 0]}}},
+    {"t": 1000, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-175, 0, 10]},
+        "leftArm": {"rot": [-40, 0, -20]},
+        "rightThigh": {"rot": [-20, 0, 5]},
+        "leftThigh": {"rot": [10, 0, -5]},
+        "hips": {"rot": [10, 0, 0]}}}
+  ]
+}

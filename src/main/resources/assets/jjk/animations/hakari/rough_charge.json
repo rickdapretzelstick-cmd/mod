@@ -1,0 +1,18 @@
+{
+  "name": "rough_charge",
+  "duration": 400,
+  "hold": true,
+  "blendIn": 75, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 400, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [6, 0, 0]},
+        "chest": {"rot": [8, 42, 0]},
+        "rightArm": {"rot": [55, 22, 32]},
+        "leftArm": {"rot": [-88, 32, -8]},
+        "rightThigh": {"rot": [32, 0, 7]},
+        "leftThigh": {"rot": [-34, 0, -7]},
+        "hips": {"rot": [10, 34, 0]},
+        "root": {"pos": [0, -4, -2]}}}
+  ]
+}

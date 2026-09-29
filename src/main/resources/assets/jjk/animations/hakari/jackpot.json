@@ -1,0 +1,27 @@
+{
+  "name": "jackpot",
+  "duration": 1500,
+  "blendIn": 25, "blendOut": 400,
+  "priority": "AWAKENING",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-60, 0, 20]},
+        "leftArm": {"rot": [-60, 0, -20]}}},
+    {"t": 200, "bones": {
+        "head": {"rot": [-30, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-160, 0, 30]},
+        "leftArm": {"rot": [-160, 0, -30]},
+        "hips": {"rot": [-12, 0, 0]}}},
+    {"t": 1100, "bones": {
+        "head": {"rot": [-25, 0, 0]},
+        "rightArm": {"rot": [-150, 0, 35]},
+        "leftArm": {"rot": [-150, 0, -35]}}},
+    {"t": 1500, "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [0, 0, 5]},
+        "leftArm": {"rot": [0, 0, -5]},
+        "hips": {"rot": [0, 0, 0]}}}
+  ]
+}

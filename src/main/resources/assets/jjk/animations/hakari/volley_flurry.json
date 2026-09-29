@@ -1,0 +1,76 @@
+{
+  "name": "volley_flurry",
+  "duration": 1000,
+  "blendIn": 50, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -22, 0]},
+        "rightArm": {"rot": [-100, -12, 0]},
+        "leftArm": {"rot": [-58, 24, -16], "ease": "EASE_IN_OUT"},
+        "rightThigh": {"rot": [20, 0, 6], "ease": "EASE_IN_OUT"},
+        "leftThigh": {"rot": [-20, 0, -6], "ease": "EASE_IN_OUT"},
+        "hips": {"rot": [11, -7, 0]},
+        "root": {"pos": [0.5, -2, 1.5]}}},
+    {"t": 100, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, 22, 0]},
+        "rightArm": {"rot": [-58, -24, 16], "ease": "EASE_IN_OUT"},
+        "leftArm": {"rot": [-95, 12, 0]},
+        "hips": {"rot": [11, 7, 0]},
+        "root": {"pos": [-0.5, -2, 2.5]}}},
+    {"t": 200, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -22, 0]},
+        "rightArm": {"rot": [-90, -12, 0]},
+        "leftArm": {"rot": [-58, 24, -16], "ease": "EASE_IN_OUT"},
+        "hips": {"rot": [11, -7, 0]},
+        "root": {"pos": [0.5, -2, 1.5]}}},
+    {"t": 300, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, 22, 0]},
+        "rightArm": {"rot": [-58, -24, 16], "ease": "EASE_IN_OUT"},
+        "leftArm": {"rot": [-100, 12, 0]},
+        "hips": {"rot": [11, 7, 0]},
+        "root": {"pos": [-0.5, -2, 2.5]}}},
+    {"t": 400, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -22, 0]},
+        "rightArm": {"rot": [-95, -12, 0]},
+        "leftArm": {"rot": [-58, 24, -16], "ease": "EASE_IN_OUT"},
+        "hips": {"rot": [11, -7, 0]},
+        "root": {"pos": [0.5, -2, 1.5]}}},
+    {"t": 500, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, 22, 0]},
+        "rightArm": {"rot": [-58, -24, 16], "ease": "EASE_IN_OUT"},
+        "leftArm": {"rot": [-90, 12, 0]},
+        "hips": {"rot": [11, 7, 0]},
+        "root": {"pos": [-0.5, -2, 2.5]}}},
+    {"t": 600, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -22, 0]},
+        "rightArm": {"rot": [-100, -12, 0]},
+        "leftArm": {"rot": [-58, 24, -16], "ease": "EASE_IN_OUT"},
+        "hips": {"rot": [11, -7, 0]},
+        "root": {"pos": [0.5, -2, 1.5]}}},
+    {"t": 700, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, 22, 0]},
+        "rightArm": {"rot": [-58, -24, 16], "ease": "EASE_IN_OUT"},
+        "leftArm": {"rot": [-95, 12, 0]},
+        "hips": {"rot": [11, 7, 0]},
+        "root": {"pos": [-0.5, -2, 2.5]}}},
+    {"t": 800, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -22, 0]},
+        "rightArm": {"rot": [-90, -12, 0]},
+        "leftArm": {"rot": [-58, 24, -16], "ease": "EASE_IN_OUT"},
+        "hips": {"rot": [11, -7, 0]},
+        "root": {"pos": [0.5, -2, 1.5]}}},
+    {"t": 900, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, 22, 0]},
+        "rightArm": {"rot": [-58, -24, 16], "ease": "EASE_IN_OUT"},
+        "leftArm": {"rot": [-100, 12, 0]},
+        "hips": {"rot": [11, 7, 0]},
+        "root": {"pos": [-0.5, -2, 2.5]}}},
+    {"t": 1000, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -22, 0]},
+        "rightArm": {"rot": [-95, -12, 0]},
+        "leftArm": {"rot": [-58, 24, -16], "ease": "EASE_IN_OUT"},
+        "hips": {"rot": [11, -7, 0]},
+        "root": {"pos": [0.5, -2, 1.5]}}}
+  ]
+}

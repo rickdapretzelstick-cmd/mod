@@ -1,0 +1,14 @@
+{
+  "name": "reaction_knockdown",
+  "hold": true,
+  "priority": "RAGDOLL",
+  "interruptible": false,
+  "blendIn": 250, "blendOut": 300,
+  "keys": [
+    {"t": 0, "bones": {
+        "root": {"rot": [-90, 0, 0], "pos": [0, 2, 0]},
+        "head": [10, 0, 0],
+        "rightArm": [-10, 0, 40], "rightForearm": [-15, 0, 0], "leftArm": [-10, 0, -40], "leftForearm": [-15, 0, 0],
+        "rightThigh": [-6, 0, 6], "rightShin": [10, 0, 0], "leftThigh": [-4, 0, -4], "leftShin": [16, 0, 0]}}
+  ]
+}

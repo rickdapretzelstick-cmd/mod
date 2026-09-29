@@ -1,0 +1,36 @@
+{
+  "name": "blue_kick",
+  "duration": 600,
+  "blendIn": 25, "blendOut": 200,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightThigh": {"rot": [10, 0, 0]},
+        "hips": {"rot": [0, -8, 0]}}},
+    {"t": 250, "bones": {
+        "rightArm": {"rot": [-60, 0, 25]},
+        "leftArm": {"rot": [-80, 0, -10]},
+        "rightThigh": {"rot": [30, 0, 0]},
+        "leftThigh": {"rot": [-10, 0, 0]},
+        "hips": {"rot": [6, -10, 0]},
+        "root": {"pos": [0, -2, 0]}}},
+    {"t": 400, "ease": "EASE_IN", "bones": {
+        "rightArm": {"rot": [25, 0, 45]},
+        "leftArm": {"rot": [-30, 0, -55]},
+        "rightThigh": {"rot": [-100, 0, 0]},
+        "leftThigh": {"rot": [12, 0, 0]},
+        "hips": {"rot": [-18, 6, 0]},
+        "root": {"pos": [0, 1, 3]}}},
+    {"t": 500, "ease": "EASE_OUT", "bones": {
+        "rightThigh": {"rot": [-80, 0, 0]}}},
+    {"t": 600, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-8, 0, 6]},
+        "leftArm": {"rot": [-8, 0, -6]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]},
+        "root": {"pos": [0, 0, 0]}}}
+  ]
+}

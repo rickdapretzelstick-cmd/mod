@@ -1,0 +1,37 @@
+{
+  "name": "black_flash_punch",
+  "duration": 700,
+  "blendIn": 15, "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [6, 44, 0]},
+        "rightArm": {"rot": [55, 30, 40]},
+        "leftArm": {"rot": [-88, 34, -10]},
+        "rightThigh": {"rot": [30, 0, 6]},
+        "leftThigh": {"rot": [-32, 0, -6]},
+        "hips": {"rot": [10, 36, 0]},
+        "root": {"pos": [0, -4, -1.5]}}},
+    {"t": 75, "ease": "EASE_IN", "bones": {
+        "head": {"rot": [12, 20, 0]},
+        "chest": {"rot": [12, -50, 0]},
+        "rightArm": {"rot": [-108, -12, 0]},
+        "leftArm": {"rot": [55, 0, -32]},
+        "rightThigh": {"rot": [52, 0, 6]},
+        "leftThigh": {"rot": [-48, 0, -6]},
+        "hips": {"rot": [24, -32, 0]},
+        "root": {"pos": [0, -5, 11]}}},
+    {"t": 400, "ease": "EASE_OUT", "bones": {
+        "hips": {"rot": [20, -28, 0]},
+        "root": {"pos": [0, -4, 10]}}},
+    {"t": 700, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [0, 12, 0]},
+        "rightArm": {"rot": [-62, -22, 12]},
+        "leftArm": {"rot": [-78, 22, -10]},
+        "rightThigh": {"rot": [10, 0, 4]},
+        "leftThigh": {"rot": [-12, 0, -4]},
+        "hips": {"rot": [4, 0, 0]},
+        "root": {"pos": [0, -1, 0]}}}
+  ]
+}

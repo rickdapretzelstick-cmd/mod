@@ -1,0 +1,25 @@
+{
+  "name": "fever_raise",
+  "duration": 600,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightThigh": {"rot": [10, 0, 4]}}},
+    {"t": 300, "bones": {
+        "rightArm": {"rot": [-60, 0, 55]},
+        "leftArm": {"rot": [-60, 0, -55]},
+        "rightThigh": {"rot": [-120, 0, 6]},
+        "hips": {"rot": [-10, 0, 0]},
+        "root": {"pos": [0, 1, 0]}}},
+    {"t": 600, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [10, 0, 0]},
+        "rightArm": {"rot": [-50, 0, 70]},
+        "leftArm": {"rot": [-50, 0, -70]},
+        "rightThigh": {"rot": [-168, 0, 6]},
+        "leftThigh": {"rot": [12, 0, -4]},
+        "hips": {"rot": [-22, 0, 0]},
+        "root": {"pos": [0, 2, -1]}}}
+  ]
+}

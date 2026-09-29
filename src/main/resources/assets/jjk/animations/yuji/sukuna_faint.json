@@ -1,0 +1,17 @@
+{
+  "name": "sukuna_faint",
+  "duration": 400,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "AWAKENING",
+  "keys": [
+    {"t": 400, "bones": {
+        "head": {"rot": [40, 0, 10]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [10, 0, 10]},
+        "leftArm": {"rot": [10, 0, -10]},
+        "rightThigh": {"rot": [-15, 0, 0]},
+        "leftThigh": {"rot": [10, 0, 0]},
+        "hips": {"rot": [25, 0, 0]}}}
+  ]
+}

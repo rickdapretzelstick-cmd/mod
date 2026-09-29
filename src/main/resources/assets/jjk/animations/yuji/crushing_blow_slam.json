@@ -1,0 +1,42 @@
+{
+  "name": "crushing_blow_slam",
+  "duration": 1200,
+  "blendIn": 15, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-150, -12, 0]},
+        "leftArm": {"rot": [-150, 12, 0]},
+        "rightThigh": {"rot": [26, 0, 6]},
+        "leftThigh": {"rot": [-30, 0, -6]},
+        "hips": {"rot": [-12, 0, 0]},
+        "root": {"pos": [0, 1, 0]}}},
+    {"t": 150, "ease": "EASE_IN", "bones": {
+        "rightArm": {"rot": [-25, -12, 5]},
+        "leftArm": {"rot": [-25, 12, -5]},
+        "hips": {"rot": [50, 0, 0]},
+        "root": {"pos": [0, -8, 3]}}},
+    {"t": 300, "ease": "EASE_OUT", "bones": {
+        "hips": {"rot": [40, 0, 0]}}},
+    {"t": 500, "bones": {
+        "rightArm": {"rot": [-150, -12, 0]},
+        "leftArm": {"rot": [-150, 12, 0]},
+        "hips": {"rot": [-12, 0, 0]},
+        "root": {"pos": [0, 1, 0]}}},
+    {"t": 650, "ease": "EASE_IN", "bones": {
+        "rightArm": {"rot": [-25, -12, 5]},
+        "leftArm": {"rot": [-25, 12, -5]},
+        "hips": {"rot": [50, 0, 0]},
+        "root": {"pos": [0, -8, 3]}}},
+    {"t": 800, "ease": "EASE_OUT", "bones": {
+        "hips": {"rot": [40, 0, 0]}}},
+    {"t": 950, "bones": {
+        "rightArm": {"rot": [-95, -12, 0]},
+        "leftArm": {"rot": [-95, 12, 0]},
+        "hips": {"rot": [10, 0, 0]},
+        "root": {"pos": [0, -3, 0]}}},
+    {"t": 1200, "bones": {
+        "rightArm": {"rot": [-60, -10, 10]},
+        "leftArm": {"rot": [-60, 10, -10]}}}
+  ]
+}

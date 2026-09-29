@@ -1,0 +1,26 @@
+{
+  "name": "stomp",
+  "duration": 650,
+  "blendIn": 75, "blendOut": 150,
+  "priority": "ATTACK",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]}}},
+    {"t": 100, "bones": {
+        "rightArm": {"rot": [-20, 0, 45]},
+        "leftArm": {"rot": [-20, 0, -45]},
+        "rightThigh": {"rot": [-70, 0, 5]}}},
+    {"t": 200, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightThigh": {"rot": [15, 0, 0]},
+        "hips": {"rot": [18, 0, 0]}}},
+    {"t": 650, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [0, 0, 5]},
+        "leftArm": {"rot": [0, 0, -5]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]}}}
+  ]
+}

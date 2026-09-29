@@ -1,0 +1,35 @@
+{
+  "name": "teleport_strike",
+  "duration": 500,
+  "blendIn": 15, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, 36, 0]},
+        "rightArm": {"rot": [-75, 55, 70]},
+        "leftArm": {"rot": [-80, 25, -12]},
+        "rightThigh": {"rot": [10, 0, 5]},
+        "leftThigh": {"rot": [-10, 0, -5]},
+        "hips": {"rot": [3, 21.6, -4]},
+        "root": {"pos": [0, -2, 0]}}},
+    {"t": 100, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, -45.6, 0]},
+        "rightArm": {"rot": [-92, -45, 8]},
+        "leftArm": {"rot": [-40, 15, -25]},
+        "rightThigh": {"rot": [25, 0, 5]},
+        "leftThigh": {"rot": [-22, 0, -5]},
+        "hips": {"rot": [10, -26.4, 4]},
+        "root": {"pos": [0, -2, 3.6]}}},
+    {"t": 250, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-80, -60, 5]}}},
+    {"t": 500, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [0, 12, 0]},
+        "rightArm": {"rot": [-62, -22, 12]},
+        "leftArm": {"rot": [-78, 22, -10]},
+        "rightThigh": {"rot": [10, 0, 4]},
+        "leftThigh": {"rot": [-12, 0, -4]},
+        "hips": {"rot": [4, 0, 0]},
+        "root": {"pos": [0, -1, 0]}}}
+  ]
+}

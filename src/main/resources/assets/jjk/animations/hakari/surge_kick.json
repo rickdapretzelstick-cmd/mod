@@ -1,0 +1,33 @@
+{
+  "name": "surge_kick",
+  "duration": 700,
+  "blendIn": 25, "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-45, 0, 62]},
+        "leftArm": {"rot": [-45, 0, -62]},
+        "rightThigh": {"rot": [-160, 0, 4]},
+        "hips": {"rot": [-22, 0, 0]}}},
+    {"t": 200, "bones": {
+        "rightThigh": {"rot": [-170, 0, 4]},
+        "hips": {"rot": [-26, 0, 0]},
+        "root": {"pos": [0, 2, 0]}}},
+    {"t": 350, "ease": "EASE_IN", "bones": {
+        "head": {"rot": [20, 0, 0]},
+        "rightArm": {"rot": [30, 0, 40]},
+        "leftArm": {"rot": [30, 0, -40]},
+        "rightThigh": {"rot": [15, 0, 4]},
+        "hips": {"rot": [30, 0, 0]},
+        "root": {"pos": [0, -4, 3]}}},
+    {"t": 700, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [0, 12, 0]},
+        "rightArm": {"rot": [-62, -22, 12]},
+        "leftArm": {"rot": [-78, 22, -10]},
+        "rightThigh": {"rot": [10, 0, 4]},
+        "leftThigh": {"rot": [-12, 0, -4]},
+        "hips": {"rot": [4, 0, 0]},
+        "root": {"pos": [0, -1, 0]}}}
+  ]
+}

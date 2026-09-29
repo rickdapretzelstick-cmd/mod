@@ -1,0 +1,13 @@
+{
+  "name": "reaction_overload",
+  "hold": true,
+  "priority": "RAGDOLL",
+  "interruptible": false,
+  "blendIn": 200, "blendOut": 300,
+  "tremble": 4,
+  "keys": [
+    {"t": 0, "bones": {
+        "head": [-28, 0, 0], "chest": [-6, 0, 0],
+        "rightArm": [8, 0, 12], "rightForearm": [-10, 0, 0], "leftArm": [8, 0, -12], "leftForearm": [-10, 0, 0]}}
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "overwhelm_left",
+  "duration": 200,
+  "blendIn": 25, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, -14, 0]},
+        "rightArm": {"rot": [-85, -18, 10]},
+        "leftArm": {"rot": [-60, 18, -20]},
+        "hips": {"rot": [10, -8, 0]},
+        "root": {"pos": [0, -2, 0]}}},
+    {"t": 100, "ease": "EASE_IN", "bones": {
+        "chest": {"rot": [0, 24, 0]},
+        "leftArm": {"rot": [-102, 10, 0]},
+        "rightThigh": {"rot": [-24, 0, 6]},
+        "leftThigh": {"rot": [26, 0, -6]},
+        "hips": {"rot": [14, 14, 0]},
+        "root": {"pos": [0, -2, 4]}}},
+    {"t": 200, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-70, -22, 10], "ease": "EASE_IN_OUT"},
+        "leftArm": {"rot": [-72, 12, -10]},
+        "root": {"pos": [0, -2, 2.5]}}}
+  ]
+}

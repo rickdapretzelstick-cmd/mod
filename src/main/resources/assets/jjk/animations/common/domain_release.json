@@ -1,0 +1,29 @@
+{
+  "name": "domain_release",
+  "duration": 1200,
+  "blendIn": 25, "blendOut": 400,
+  "priority": "AWAKENING",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-112, -38, 0]},
+        "leftArm": {"rot": [5, 0, -8]}}},
+    {"t": 250, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [-16, 0, 0]},
+        "rightArm": {"rot": [-60, 0, 72]},
+        "leftArm": {"rot": [-60, 0, -72]},
+        "hips": {"rot": [-10, 0, 0]},
+        "root": {"pos": [0, 1, 0]}}},
+    {"t": 800, "bones": {
+        "rightArm": {"rot": [-55, 0, 66]},
+        "leftArm": {"rot": [-55, 0, -66]}}},
+    {"t": 1200, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-8, 0, 6]},
+        "leftArm": {"rot": [-8, 0, -6]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]},
+        "root": {"pos": [0, 0, 0]}}}
+  ]
+}

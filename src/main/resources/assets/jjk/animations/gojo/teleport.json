@@ -1,0 +1,18 @@
+{
+  "name": "teleport",
+  "duration": 400,
+  "blendIn": 75, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-30, 0, 30]},
+        "leftArm": {"rot": [-30, 0, -30]},
+        "hips": {"rot": [15, 0, 0]}}},
+    {"t": 400, "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [0, 0, 5]},
+        "leftArm": {"rot": [0, 0, -5]},
+        "hips": {"rot": [0, 0, 0]}}}
+  ]
+}

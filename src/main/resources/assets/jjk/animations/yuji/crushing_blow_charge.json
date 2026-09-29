@@ -1,0 +1,18 @@
+{
+  "name": "crushing_blow_charge",
+  "duration": 350,
+  "hold": true,
+  "blendIn": 50, "blendOut": 100,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 350, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [4, 10, 0]},
+        "chest": {"rot": [5, 34, 0]},
+        "rightArm": {"rot": [35, 20, 32]},
+        "leftArm": {"rot": [-85, 22, -14]},
+        "rightThigh": {"rot": [26, 0, 6]},
+        "leftThigh": {"rot": [-32, 0, -6]},
+        "hips": {"rot": [18, 24, 0]},
+        "root": {"pos": [0, -4, -1]}}}
+  ]
+}
