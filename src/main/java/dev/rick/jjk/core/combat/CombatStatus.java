@@ -62,6 +62,10 @@ public final class CombatStatus {
     public static final CombatStatus MELEE_ARMOR = register(builder("melee_armor").meleeImmune());
     /** JJS "bullet i-frames": projectiles pass harmlessly (Gojo during Rapid Punches). */
     public static final CombatStatus BULLET_ARMOR = register(builder("bullet_armor").projectileImmune());
+    /** Sukuna has taken over Vessel (informational: the face tattoos and the red aura, for everyone). */
+    public static final CombatStatus SUKUNA = register(builder("sukuna"));
+    /** Manji Kick's raised stance (informational: drives the pose's glint). */
+    public static final CombatStatus MANJI = register(builder("manji"));
 
     public final String id;
     public final int index;

@@ -41,7 +41,7 @@ public final class GuardDefense implements DefenseLayer {
         Vec3 from = attack.directionFromTarget();
         Vec3 look = defender.getLookAngle();
         Vec3 flatLook = new Vec3(look.x, 0, look.z);
-        if (from.lengthSqr() > 1e-4 && flatLook.lengthSqr() > 1e-4 && from.normalize().dot(flatLook.normalize()) < -0.1) {
+        if (!attack.has(AttackTag.BLOCKABLE_360) && from.lengthSqr() > 1e-4 && flatLook.lengthSqr() > 1e-4 && from.normalize().dot(flatLook.normalize()) < -0.1) {
             return DefenseResult.PASS; // hit from behind
         }
         JJKConfig.Guard cfg = JJKConfig.get().guard;

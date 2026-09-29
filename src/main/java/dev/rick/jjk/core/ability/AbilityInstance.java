@@ -47,6 +47,11 @@ public abstract class AbilityInstance {
         return true;
     }
 
+    /** JJS "uninterruptible": stuns don't stop it (the hit still lands; only death or a disconnect ends it). */
+    public boolean uninterruptible() {
+        return false;
+    }
+
     /** Multiplier on the caster's movement speed while this runs (1 = unaffected). */
     public float movementMultiplier() {
         return 1f;

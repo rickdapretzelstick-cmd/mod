@@ -423,6 +423,8 @@ public final class AbilityCaster {
 
     /** Stops the current exclusive cast without firing it. */
     public void interrupt(String reason) {
+        boolean stun = !reason.equals("death") && !reason.equals("disconnect") && !reason.equals("feint") && !reason.equals("removed");
+        if (stun && cast != null && !cast.isFinished() && cast.uninterruptible()) return;
         if (cast != null && !cast.isFinished()) {
             cast.interrupt(reason);
             cast.finish();

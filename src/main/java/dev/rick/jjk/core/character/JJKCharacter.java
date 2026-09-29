@@ -58,6 +58,11 @@ public abstract class JJKCharacter {
 
     public abstract MeleeMoveset melee();
 
+    /** The melee this caster fights with right now (a character whose basic attacks change while awakened overrides it). */
+    public MeleeMoveset melee(AbilityCaster caster) {
+        return melee();
+    }
+
     /** Called when a caster becomes this character. */
     public void onAssigned(AbilityCaster caster) {}
 

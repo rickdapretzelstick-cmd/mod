@@ -33,6 +33,8 @@ public final class AttackTag {
     public static final AttackTag ULTIMATE = of("ultimate");
     /** Produced by the Limitless technique. */
     public static final AttackTag LIMITLESS = of("limitless");
+    /** JJS "360 blockable": a guard stops it from any side, not only the front (Shrine's slashes, Dismantle...). */
+    public static final AttackTag BLOCKABLE_360 = of("blockable_360");
 
     public final String id;
 

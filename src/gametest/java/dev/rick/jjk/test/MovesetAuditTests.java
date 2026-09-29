@@ -38,7 +38,13 @@ public class MovesetAuditTests {
             Map.entry("reserve_balls", 12 * 20), Map.entry("shutter_doors", 15 * 20), Map.entry("rough_energy", 14 * 20),
             Map.entry("fever_breaker", 23 * 20), Map.entry("door_guard", 16 * 20), Map.entry("lucky_volley", 10 * 20),
             Map.entry("lucky_rushdown", 15 * 20), Map.entry("overwhelming_luck", 20 * 20), Map.entry("energy_surge", 25 * 20),
-            Map.entry("rhythm", 8 * 20));
+            Map.entry("rhythm", 8 * 20),
+            // Yuji (Vessel / King of Curses)
+            Map.entry("cursed_strikes", 14 * 20), Map.entry("crushing_blow", 15 * 20), Map.entry("divergent_fist", 18 * 20),
+            Map.entry("manji_kick", 20 * 20), Map.entry("combat_instincts", 2 * 20), Map.entry("cleave", 12 * 20), Map.entry("dismantle", 13 * 20),
+            Map.entry("open", 40 * 20), Map.entry("rush", 15 * 20), Map.entry("malevolent_shrine", 120 * 20));
+    /** Moves that only do something alongside another (Combat Instincts feints; alone it needs a throwable). */
+    static final java.util.Set<String> NOT_STANDALONE = java.util.Set.of("combat_instincts");
 
     private static final AbilitySlot[] MOVES = {AbilitySlot.SKILL_1, AbilitySlot.SKILL_2, AbilitySlot.SKILL_3, AbilitySlot.SKILL_4, AbilitySlot.SKILL_5};
 
@@ -69,7 +75,7 @@ public class MovesetAuditTests {
         JJKConfig saved = JJKConfig.get();
         JJKConfig.set(defaults);
         try {
-            for (String character : new String[] {GojoCharacter.ID, HakariCharacter.ID}) {
+            for (String character : new String[] {GojoCharacter.ID, HakariCharacter.ID, dev.rick.jjk.yuji.YujiCharacter.ID}) {
                 var ch = Characters.get(character);
                 for (Ability a : ch.abilitiesAllModes()) {
                     Integer want = WIKI_COOLDOWN.get(a.id);
@@ -109,8 +115,8 @@ public class MovesetAuditTests {
                 c.setEnergy(c.maxEnergy());
                 if (awakened) c.setAwakening(c.maxAwakening());
                 Ability a = c.ability(slot);
-                id[0] = a == null ? "" : a.id;
-                if (a == null) return;
+                id[0] = a == null || NOT_STANDALONE.contains(a.id) ? "" : a.id;
+                if (id[0].isEmpty()) return;
                 pressedAt[0] = (int) h.getTick();
                 h.assertTrue(c.input(slot, true, 0, 0, target), character + (awakened ? " (awakened) " : " ") + a.id + " activates (" + c.lastRefusal + ")");
             }).thenIdle(4).thenExecute(() -> {
@@ -150,6 +156,16 @@ public class MovesetAuditTests {
     @GameTest(maxTicks = 900, padding = 16, skyAccess = true)
     public void hakariBaseKitPlaysOut(GameTestHelper h) {
         runKit(h, HakariCharacter.ID, false);
+    }
+
+    @GameTest(maxTicks = 900, padding = 16, skyAccess = true)
+    public void yujiBaseKitPlaysOut(GameTestHelper h) {
+        runKit(h, dev.rick.jjk.yuji.YujiCharacter.ID, false);
+    }
+
+    @GameTest(maxTicks = 1200, padding = 20, skyAccess = true)
+    public void yujiKingOfCursesKitPlaysOut(GameTestHelper h) {
+        runKit(h, dev.rick.jjk.yuji.YujiCharacter.ID, true);
     }
 
     @GameTest(maxTicks = 900, padding = 16, skyAccess = true)

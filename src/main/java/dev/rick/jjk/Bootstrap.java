@@ -40,8 +40,10 @@ public final class Bootstrap {
 
         Characters.register(new GojoCharacter());
         Characters.register(new dev.rick.jjk.hakari.HakariCharacter());
+        Characters.register(new dev.rick.jjk.yuji.YujiCharacter());
         Defenses.register(new InfinityDefense());
         Defenses.register(new dev.rick.jjk.hakari.DoorGuardDefense());
+        Defenses.register(new dev.rick.jjk.yuji.ManjiKickDefense());
         Defenses.register(new GuardDefense());
         VanillaDamageBridge.init();
         CharacterService.init();

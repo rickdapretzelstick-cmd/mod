@@ -19,6 +19,9 @@ public final class ModBlocks {
     /** Idle Death Gamble: an endless white room (floor and walls the same flat, self-lit white). */
     public static final Block IDG_BARRIER = register("idg_barrier", 15);
     public static final Block IDG_FLOOR = register("idg_floor", 12);
+    /** Malevolent Shrine: a black void over a shallow pool of blood. */
+    public static final Block SHRINE_BARRIER = register("shrine_barrier", 0);
+    public static final Block SHRINE_FLOOR = register("shrine_floor", 4);
 
     // Model-only blocks: never placed in the world, only drawn by renderers (Hakari's doors and balls, and the trains and
     // seven-segment counters inside his domain),
@@ -43,7 +46,7 @@ public final class ModBlocks {
     }
 
     public static boolean isDomainBlock(net.minecraft.world.level.block.state.BlockState s) {
-        return s.is(DOMAIN_BARRIER) || s.is(DOMAIN_FLOOR) || s.is(IDG_BARRIER) || s.is(IDG_FLOOR);
+        return s.is(DOMAIN_BARRIER) || s.is(DOMAIN_FLOOR) || s.is(IDG_BARRIER) || s.is(IDG_FLOOR) || s.is(SHRINE_BARRIER) || s.is(SHRINE_FLOOR);
     }
 
     /** A prop drawn inside Idle Death Gamble: {@link #TRAIN_CAR}, {@link #LED_SEGMENT} or {@link #KIOSK}. */

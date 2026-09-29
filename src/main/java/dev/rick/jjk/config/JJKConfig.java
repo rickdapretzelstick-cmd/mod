@@ -48,6 +48,7 @@ public final class JJKConfig {
     public Client client = new Client();
     public Hakari hakari = new Hakari();
     public Gojo gojo = new Gojo();
+    public Yuji yuji = new Yuji();
 
     public static JJKConfig get() {
         return instance;
@@ -687,6 +688,159 @@ public final class JJKConfig {
         public int rhythmCooldownCut = 12;
     }
 
+    /**
+     * Yuji Itadori / Vessel, and Sukuna's King of Curses, after the Jujutsu Shenanigans wiki. Damage is the wiki's (out of
+     * 100 HP), cooldowns and durations its seconds in ticks, distances its studs in blocks (about 3.6 studs to a block);
+     * timings follow the wiki's GIFs (50 fps: 2.5 frames to a tick).
+     */
+    public static class Yuji {
+        public float maxCursedEnergy = 800f;
+        public float regenPerSecond = 20f;
+        /** Vessel has 85 max HP (of the usual 100). */
+        public float maxHealthShare = 0.85f;
+        public float finisherThreshold = 0.2f;
+
+        // --- 1: Cursed Strikes (14s) ---
+        public int strikesCooldown = 280;
+        public float strikesCost = 60f;
+        public int strikesWindup = 9;
+        public int strikesSlideTicks = 12;
+        public double strikesSlideSpeed = 0.95;
+        public float strikesGrabDamage = 4f;
+        public int strikesPunches = 6;
+        public int strikesPunchInterval = 5;
+        public float strikesPunchDamage = 1.75f;
+        public float strikesKickDamage = 3f;
+        /** The calf kick leaves them stunned in place. */
+        public int strikesKickStun = 22;
+        /** Front dash is disabled this long after it lands. */
+        public int strikesFrontDashLock = 30;
+        /** Airborne: a dropkick straight down at the ground that grounds whoever it lands on. */
+        public float strikesAirDamage = 14f;
+        public double strikesAirSpeed = 1.3;
+        public int strikesAirMaxTicks = 60;
+        public float strikesFinisherKickDamage = 1.75f;
+        public float strikesFinisherLaunchDamage = 3f;
+
+        // --- 2: Crushing Blow (15s) ---
+        public int crushingCooldown = 300;
+        public float crushingCost = 70f;
+        public int crushingWindup = 7;
+        public double crushingReach = 3.0;
+        public float crushingSlamDamage = 6f;
+        public float crushingShockwaveDamage = 3f;
+        public double crushingShockwaveRadius = 3.4;
+        public double crushingLaunch = 1.3;
+        /** Airborne: a dash across the air toward the target (this far) before the grab. */
+        public double crushingAirDash = 8;
+
+        // --- 3: Divergent Fist (18s) ---
+        public int divergentCooldown = 360;
+        public float divergentCost = 70f;
+        public int divergentWindup = 10;
+        public double divergentReach = 3.2;
+        public float divergentPunchDamage = 5f;
+        public float divergentImpactDamage = 5f;
+        /** The cursed energy lags this long behind the punch. */
+        public int divergentImpactDelay = 5;
+        public int divergentInterruptStun = 26;
+        /** Black Flash: pressed again while his body flashes white (these ticks of the wind-up). */
+        public int blackFlashWindowStart = 5;
+        public int blackFlashWindowEnd = 9;
+        public float blackFlashDamage = 10f;
+        public float blackFlashChainDamage = 7f;
+        public float blackFlashFourthDamage = 15f;
+        public int blackFlashChainMax = 4;
+        /** Stun on a chained (from behind) Black Flash: long enough for the next one. */
+        public int blackFlashChainStun = 36;
+        /** Chain window: the next Divergent Fist within this long continues the chain. */
+        public int blackFlashChainWindow = 60;
+
+        // --- 4: Manji Kick (20s) ---
+        public int manjiCooldown = 400;
+        public float manjiCost = 50f;
+        public int manjiWindow = 12;
+        public float manjiDamage = 8.5f;
+        public float manjiSlamDamage = 4f;
+
+        // --- Special: Combat Instincts (2s) ---
+        public int instinctsCooldown = 40;
+        /** 3% of the Awakening meter when there is any (not required, except to throw). */
+        public float instinctsMeterCost = 3f;
+        public double throwableRange = 3.2;
+        public float throwableDamage = 15f;
+        public double throwableSpeed = 1.6;
+
+        // --- King of Curses (Awakening, 60s) ---
+        public int awakeningSeconds = 60;
+        /** 45 HP healed (of Vessel's 85). */
+        public float awakenHeal = 45f;
+        public int awakenTicks = 44;
+        /** Shrine: basic attacks reach 24 studs instead of 8. */
+        public float shrineRangeMultiplier = 3f;
+
+        // --- Special: Cleave (12s) ---
+        public int cleaveCooldown = 240;
+        public int cleaveWindup = 6;
+        public double cleaveReach = 3.2;
+        /** Grabbed, a pause, then the slashes. */
+        public int cleavePause = 16;
+        public float cleaveShare = 0.4f;
+        public float cleaveMinDamage = 10f;
+        public double cleaveKnockback = 1.8;
+
+        // --- 1: Dismantle (13s) ---
+        public int dismantleCooldown = 260;
+        public int dismantleWindup = 8;
+        /** 30 studs. */
+        public double dismantleRange = 8.3;
+        public float dismantleDamage = 17.5f;
+        public float dismantleBlockedDamage = 10f;
+        public int dismantleSlashes = 5;
+        /** Airborne: hover, flip, one long slash (explosion) down the line. */
+        public float dismantleAirDamage = 25f;
+        public double dismantleAirLength = 16;
+        public int dismantleAirWindup = 20;
+
+        // --- World Cutting Slash: Rush during Dismantle's wind-up, then Open, then Cleave ---
+        public int worldSlashLineTicks = 17;
+        /** Each line waits this long for the next press before the chant falls apart. */
+        public int worldSlashChantWindow = 40;
+        public float worldSlashDamage = 80f;
+        public double worldSlashLength = 30;
+        public double worldSlashWidth = 18;
+
+        // --- 2: Open (40s) ---
+        public int openCooldown = 800;
+        /** Fire in the hands, the clap, the arrow drawn: fired this many ticks in. */
+        public int openWindup = 42;
+        public double openSpeed = 2.4;
+        public double openRange = 60;
+        public float openDamage = 30f;
+        public double openPillarRadius = 4.5;
+        public double openLift = 1.4;
+
+        // --- 3: Rush (15s) ---
+        public int rushCooldown = 300;
+        public int rushTicks = 12;
+        public double rushSpeed = 1.6;
+        public float rushImpactDamage = 5f;
+        public float rushKneeDamage = 15f;
+        public float rushSlamDamage = 5f;
+
+        // --- 4: Malevolent Shrine (120s cooldown, 18s) ---
+        public int shrineCooldown = 2400;
+        public float shrineCost = 200f;
+        public int shrineStartup = 26;
+        public double shrineRadius = 18;
+        public int shrineDuration = 360;
+        public int shrineFormationTicks = 40;
+        /** 109 slashes over the 18 seconds, 2 each (0.5 through a guard, which also can't be executed). */
+        public int shrineSlashInterval = 3;
+        public float shrineSlashDamage = 2f;
+        public float shrineBlockedDamage = 0.5f;
+    }
+
     public static Path path() {
         return FabricLoader.getInstance().getConfigDir().resolve("jjk.json");
     }
@@ -748,5 +902,7 @@ public final class JJKConfig {
         if (maxRed == null) maxRed = new MaxRed();
         if (client == null) client = new Client();
         if (hakari == null) hakari = new Hakari();
+        if (gojo == null) gojo = new Gojo();
+        if (yuji == null) yuji = new Yuji();
     }
 }

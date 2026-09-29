@@ -58,6 +58,17 @@ public final class MeleeState {
         return current != null && currentAge < current.startup() + current.active();
     }
 
+    /** Still winding up (no hitbox yet): a feint can take it back. */
+    public boolean inStartup() {
+        return current != null && currentAge <= current.startup();
+    }
+
+    /** Takes back an attack still winding up, with no endlag: the chain doesn't count it. */
+    public void feint() {
+        if (current != null && chainIndex > 0) chainIndex--;
+        cancel();
+    }
+
     public boolean canChain() {
         return current == null || currentAge >= current.chainAt();
     }

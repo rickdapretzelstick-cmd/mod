@@ -87,16 +87,17 @@ public final class MeleeSystem {
             move = sprintAttack(set, cfg);
             m.chainIndex = 1;
         } else if (m.chainIndex == 3) {
-            move = airborne ? downslam(set, cfg) : jumpHeld ? uppercut(set, cfg) : finisher(set, cfg);
+            // Movesets without launchers (Shrine) end every chain on the plain finisher.
+            move = !set.launchers() ? finisher(set, cfg) : airborne ? downslam(set, cfg) : jumpHeld ? uppercut(set, cfg) : finisher(set, cfg);
             m.chainIndex = 4;
         } else {
             move = airborne ? airLight(set, cfg, m.chainIndex) : groundLight(set, cfg, m.chainIndex);
             m.chainIndex++;
         }
-        start(user, m, move, targetHint);
+        start(user, m, move, targetHint, set);
     }
 
-    private static void start(LivingEntity user, MeleeState m, MeleeMove move, int targetHint) {
+    private static void start(LivingEntity user, MeleeState m, MeleeMove move, int targetHint, MeleeMoveset set) {
         m.current = move;
         m.currentAge = 0;
         m.connected = false;
@@ -105,7 +106,8 @@ public final class MeleeSystem {
         m.lastAttackTime = user.level().getGameTime();
         Anim.play(user, move.anim());
         if (user.level() instanceof ServerLevel sl) {
-            Fx.play(sl, "swing", user.getEyePosition().add(user.getLookAngle().scale(0.8)), user.getLookAngle(), move.id().contains("finisher") || move.id().contains("heavy") ? 1.5f : 1f, user.getId());
+            Fx.play(sl, set.fx("swing"), user.getEyePosition().add(user.getLookAngle().scale(0.8)), user.getLookAngle(), move.id().contains("finisher") || move.id().contains("heavy") ? 1.5f : 1f, user.getId());
+            if (set.onSwing() != null) set.onSwing().accept(user);
         }
         magnetize(user, targetHint);
     }
@@ -133,7 +135,9 @@ public final class MeleeSystem {
     private static boolean hintValid(LivingEntity user, LivingEntity target, MeleeMove move) {
         if (!Targeting.canTarget(user, target)) return false;
         JJKConfig cfg = JJKConfig.get();
-        double reach = cfg.melee.lightRange + cfg.general.latencyTolerance + 0.8;
+        var c = dev.rick.jjk.core.ability.Casters.getOrNull(user);
+        double range = cfg.melee.lightRange * (c != null ? moveset(c).rangeMultiplier() : 1f);
+        double reach = range + cfg.general.latencyTolerance + 0.8;
         if (target.getBoundingBox().distanceToSqr(user.getEyePosition()) > reach * reach) return false;
         Vec3 to = target.getBoundingBox().getCenter().subtract(user.getEyePosition()).normalize();
         return to.dot(user.getLookAngle()) > 0.25 && HitboxQuery.hasLineOfSight(user.level(), user.getEyePosition(), target);
@@ -173,14 +177,15 @@ public final class MeleeSystem {
         float charge = Mth.clamp((held - cfg.heavyMinCharge) / (float) Math.max(1, cfg.heavyMaxCharge - cfg.heavyMinCharge), 0f, 1f);
         caster.startCooldown(AbilitySlot.HEAVY, cfg.heavyCooldown);
         m.chainIndex = 0;
-        start(user, m, heavy(moveset(caster), cfg, charge), m.targetHint);
+        MeleeMoveset set = moveset(caster);
+        start(user, m, heavy(set, cfg, charge), m.targetHint, set);
     }
 
     // --- Moves ---
 
     private static MeleeMoveset moveset(AbilityCaster caster) {
         JJKCharacter c = caster.character();
-        return c != null ? c.melee() : new MeleeMoveset("", "", 1f, 1f, 1f);
+        return c != null ? c.melee(caster) : new MeleeMoveset("", "", 1f, 1f, 1f);
     }
 
     private static HitShape frontBox(LivingEntity user, double length, double width, double height) {
@@ -192,14 +197,16 @@ public final class MeleeSystem {
     }
 
     private static Hit.Builder base(LivingEntity user, String id, MeleeMoveset set, float damage) {
-        return Hit.builder(user, id).type(ModDamageTypes.MELEE).damage(damage * set.damageMultiplier()).tag(AttackTag.MELEE)
+        Hit.Builder b = Hit.builder(user, id).type(ModDamageTypes.MELEE).damage(damage * set.damageMultiplier()).tag(AttackTag.MELEE)
                 .origin(user.getEyePosition());
+        if (set.blockable360()) b.tag(AttackTag.BLOCKABLE_360);
+        return b;
     }
 
     private static MeleeMove groundLight(MeleeMoveset set, JJKConfig.Melee cfg, int index) {
         int interval = Math.max(4, Math.round(cfg.lightInterval / set.speedMultiplier()));
         return new MeleeMove("light_" + (index + 1), set.anim("light_" + (index + 1)), 2, 2, 5, interval, 0.55f,
-                u -> frontBox(u, cfg.lightRange, cfg.lightWidth, 1.7),
+                u -> frontBox(u, cfg.lightRange * set.rangeMultiplier(), cfg.lightWidth, 1.7),
                 (u, t) -> base(u, "light", set, cfg.lightDamage)
                         .knockback(Combat.isAirborne(t) ? Knockback.set(horizontalLook(u).scale(0.22).add(0, 0.16, 0))
                                 : Knockback.directional(u.getLookAngle(), 0.24 * set.knockbackMultiplier(), 0))
@@ -210,7 +217,7 @@ public final class MeleeSystem {
 
     private static MeleeMove airLight(MeleeMoveset set, JJKConfig.Melee cfg, int index) {
         return new MeleeMove("air_" + (index + 1), set.anim("air_" + (index + 1)), 2, 2, 5, Math.max(4, cfg.lightInterval), 1f,
-                u -> frontBox(u, cfg.lightRange, cfg.lightWidth + 0.3, 2.2),
+                u -> frontBox(u, cfg.lightRange * set.rangeMultiplier(), cfg.lightWidth + 0.3, 2.2),
                 (u, t) -> base(u, "air_light", set, cfg.lightDamage)
                         .knockback(Knockback.NONE)
                         .hitstun(cfg.lightHitstun).status(CombatStatus.LAUNCHED, 16).fx(set.fx("hit_light"), 1f).build(),
@@ -224,7 +231,7 @@ public final class MeleeSystem {
 
     private static MeleeMove finisher(MeleeMoveset set, JJKConfig.Melee cfg) {
         return new MeleeMove("finisher", set.anim("light_4"), 3, 2, 12, 17, 0.4f,
-                u -> frontBox(u, cfg.lightRange + 0.3, cfg.lightWidth + 0.2, 1.8),
+                u -> frontBox(u, cfg.lightRange * set.rangeMultiplier() + 0.3, cfg.lightWidth + 0.2, 1.8),
                 (u, t) -> base(u, "finisher", set, cfg.lightFinisherDamage)
                         .knockback(Knockback.directional(u.getLookAngle(), cfg.finisherKnockback * set.knockbackMultiplier(), 0.38))
                         .hitstun(cfg.lightHitstun + 8).status(CombatStatus.LAUNCHED, 14).fx(set.fx("hit_heavy"), 1.3f).build(),
@@ -233,7 +240,7 @@ public final class MeleeSystem {
 
     private static MeleeMove uppercut(MeleeMoveset set, JJKConfig.Melee cfg) {
         return new MeleeMove("uppercut", set.anim("uppercut"), 3, 3, 10, 15, 0.4f,
-                u -> frontBox(u, cfg.lightRange, cfg.lightWidth + 0.2, 2.4),
+                u -> frontBox(u, cfg.lightRange * set.rangeMultiplier(), cfg.lightWidth + 0.2, 2.4),
                 (u, t) -> base(u, "uppercut", set, cfg.lightFinisherDamage)
                         .knockback(Knockback.set(horizontalLook(u).scale(0.12).add(0, cfg.uppercutLaunch * set.knockbackMultiplier(), 0)))
                         .hitstun(cfg.lightHitstun + 14).status(CombatStatus.LAUNCHED, 34).fx(set.fx("hit_launch"), 1.3f).build(),
@@ -242,7 +249,7 @@ public final class MeleeSystem {
 
     private static MeleeMove downslam(MeleeMoveset set, JJKConfig.Melee cfg) {
         return new MeleeMove("downslam", set.anim("downslam"), 3, 3, 12, 17, 1f,
-                u -> frontBox(u, cfg.lightRange + 0.4, cfg.lightWidth + 0.6, 3.0),
+                u -> frontBox(u, cfg.lightRange * set.rangeMultiplier() + 0.4, cfg.lightWidth + 0.6, 3.0),
                 (u, t) -> base(u, "downslam", set, cfg.lightFinisherDamage)
                         .knockback(Knockback.set(horizontalLook(u).scale(0.25).add(0, -cfg.downslamSpeed, 0)))
                         .hitstun(cfg.lightHitstun + 10).status(CombatStatus.SPIKED, 40).fx(set.fx("hit_slam"), 1.4f).build(),
@@ -278,7 +285,7 @@ public final class MeleeSystem {
     private static MeleeMove heavy(MeleeMoveset set, JJKConfig.Melee cfg, float charge) {
         float damage = Mth.lerp(charge, cfg.heavyMinDamage, cfg.heavyMaxDamage);
         return new MeleeMove(charge >= 1f ? "heavy_full" : "heavy", set.anim("heavy"), 4, 3, 14, 20, 0.3f,
-                u -> frontBox(u, cfg.lightRange + 0.6, cfg.lightWidth + 0.5, 2.0),
+                u -> frontBox(u, cfg.lightRange * set.rangeMultiplier() + 0.6, cfg.lightWidth + 0.5, 2.0),
                 (u, t) -> base(u, "heavy", set, damage).tag(AttackTag.HEAVY, AttackTag.GUARD_BREAK).guardDamage(99)
                         .knockback(Knockback.directional(u.getLookAngle(), cfg.heavyKnockback * (0.7 + 0.3 * charge) * set.knockbackMultiplier(), 0.42))
                         .hitstun(cfg.lightHitstun + 12).status(CombatStatus.LAUNCHED, 16).fx(set.fx("hit_heavy"), 1.4f + charge * 0.6f).build(),

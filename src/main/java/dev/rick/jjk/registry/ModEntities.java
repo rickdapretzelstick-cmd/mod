@@ -32,6 +32,12 @@ public final class ModEntities {
     public static final EntityType<HakariDoorEntity> HAKARI_DOOR = register("hakari_door",
             EntityType.Builder.<HakariDoorEntity>of(HakariDoorEntity::new, MobCategory.MISC).sized(1.2f, 2.6f).noSave().noSummon().fireImmune()
                     .clientTrackingRange(8).updateInterval(1).noLootTable());
+    public static final EntityType<dev.rick.jjk.entity.ThrownPropEntity> THROWN_PROP = register("thrown_prop",
+            EntityType.Builder.<dev.rick.jjk.entity.ThrownPropEntity>of(dev.rick.jjk.entity.ThrownPropEntity::new, MobCategory.MISC).sized(0.9f, 0.9f).noSave().noSummon().fireImmune()
+                    .clientTrackingRange(8).updateInterval(1).noLootTable());
+    public static final EntityType<dev.rick.jjk.entity.FireArrowEntity> FIRE_ARROW = register("fire_arrow",
+            EntityType.Builder.<dev.rick.jjk.entity.FireArrowEntity>of(dev.rick.jjk.entity.FireArrowEntity::new, MobCategory.MISC).sized(0.6f, 0.6f).noSave().noSummon().fireImmune()
+                    .clientTrackingRange(16).updateInterval(1).noLootTable());
     public static final EntityType<TrainingDummy> TRAINING_DUMMY = register("training_dummy",
             EntityType.Builder.<TrainingDummy>of(TrainingDummy::new, MobCategory.MISC).sized(0.6f, 1.95f).clientTrackingRange(10));
 
