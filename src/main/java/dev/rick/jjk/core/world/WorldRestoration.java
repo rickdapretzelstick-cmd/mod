@@ -324,6 +324,7 @@ public final class WorldRestoration {
     // --- Restoring ---
 
     private static void tick(ServerLevel level) {
+        if (!level.tickRateManager().runsNormally()) return;
         Store st = STORES.get(level);
         if (st == null) return;
         long now = level.getGameTime();

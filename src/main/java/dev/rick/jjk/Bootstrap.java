@@ -64,6 +64,8 @@ public final class Bootstrap {
         dev.rick.jjk.core.character.AwakeningGain.init();
 
         ServerTickEvents.END_LEVEL_TICK.register(level -> {
+            // /tick freeze stops JJK too (players still tick while frozen; nothing of ours should).
+            if (!level.tickRateManager().runsNormally()) return;
             HitboxManager.tick(level);
             DomainManager.tick(level);
             dev.rick.jjk.hakari.ShutterTrap.tick(level);

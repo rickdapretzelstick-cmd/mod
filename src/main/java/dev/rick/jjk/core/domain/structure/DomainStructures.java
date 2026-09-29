@@ -92,6 +92,7 @@ public final class DomainStructures {
     }
 
     private static void tick(ServerLevel level) {
+        if (!level.tickRateManager().runsNormally()) return;
         List<DomainStructure> list = ACTIVE.get(level);
         if (list == null || list.isEmpty()) return;
         int budget = Math.max(64, JJKConfig.get().domain.blocksPerTick);

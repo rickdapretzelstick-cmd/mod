@@ -234,6 +234,35 @@ public class ClashTests {
         h.succeed();
     }
 
+    /** Gojo answers Sukuna's Malevolent Shrine with Infinite Void: the shrine still opens and the two clash. */
+    @GameTest(maxTicks = 200, environment = "jjk-test:clash_a")
+    public void gojoCountersMalevolentShrine(GameTestHelper h) {
+        floor(h);
+        TrainingDummy sukuna = h.spawn(ModEntities.TRAINING_DUMMY, new Vec3(2, 1, 4));
+        sukuna.setMode(TrainingDummy.Mode.STAND);
+        CharacterService.assign(sukuna, Characters.get(dev.rick.jjk.yuji.YujiCharacter.ID));
+        ClashManager.setBotSkill(sukuna, 0.6f);
+        var cs = dev.rick.jjk.core.ability.Casters.get(sukuna);
+        cs.setNoCost(true);
+        cs.enterAwakening();
+        TrainingDummy gojo = fullMeter(h, 6, 4);
+        var cg = dev.rick.jjk.core.ability.Casters.get(gojo);
+        h.startSequence()
+                .thenIdle(40)
+                .thenExecute(() -> h.assertTrue(cs.input(dev.rick.jjk.core.ability.AbilitySlot.SKILL_4, true, 0, 0, null), "Sukuna opens Malevolent Shrine (" + cs.lastRefusal + ")"))
+                .thenIdle(3)
+                .thenExecute(() -> h.assertTrue(cg.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null), "Gojo counters (" + cg.lastRefusal + ")"))
+                .thenIdle(2)
+                .thenExecute(() -> h.assertTrue(cs.isCasting() || DomainManager.ownedBy(sukuna) != null,
+                        "Sukuna's opening survives the counter (casting=" + cs.isCasting() + ")"))
+                .thenWaitUntil(() -> h.assertTrue(DomainManager.ownedBy(sukuna) != null, "Malevolent Shrine expands"))
+                .thenExecute(() -> {
+                    ClashSession s = DomainManager.ownedBy(sukuna).clash();
+                    h.assertTrue(s != null && DomainManager.ownedBy(gojo) != null && s == DomainManager.ownedBy(gojo).clash(), "the two domains clash");
+                })
+                .thenSucceed();
+    }
+
     /** Vessel answers Infinite Void with the King of Curses and Malevolent Shrine at once, into a clash. */
     @GameTest(maxTicks = 200, environment = "jjk-test:clash_b")
     public void yujiCountersWithMalevolentShrine(GameTestHelper h) {

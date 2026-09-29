@@ -14,6 +14,8 @@ public final class CombatTicker {
     private CombatTicker() {}
 
     public static void tick(LivingEntity e, @Nullable CombatState state, @Nullable AbilityCaster caster) {
+        // Players keep ticking under /tick freeze; their statuses, casts and cooldowns stop with everything else.
+        if (!e.level().tickRateManager().runsNormally()) return;
         if (state != null) {
             state.tick();
             if (e.level() instanceof ServerLevel level) serverTick(e, level, state);
