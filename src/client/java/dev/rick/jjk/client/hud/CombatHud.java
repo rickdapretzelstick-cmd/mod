@@ -31,13 +31,15 @@ public final class CombatHud {
 
     /** Presentation per ability id. Infinity keeps its entry for when it returns to the moveset. */
     private static final java.util.Map<String, Meta> META = java.util.Map.ofEntries(
-            java.util.Map.entry("blue", meta("Blue", 0xFF4F9BFF, false, "blue")),
-            java.util.Map.entry("red", meta("Red", 0xFFFF3B30, false, "red")),
+            java.util.Map.entry("blue", meta("Lapse Blue", 0xFF4F9BFF, false, "blue")),
+            java.util.Map.entry("red", meta("Reversal Red", 0xFFFF3B30, false, "red")),
+            java.util.Map.entry("rapid_punches", meta("Rapid Punches", 0xFFCFE8FF, false, "rapid_punches")),
+            java.util.Map.entry("twofold_kick", meta("Twofold Kick", 0xFF8FC8FF, false, "twofold_kick")),
             java.util.Map.entry("infinity", meta("Infinity", 0xFFCFE8FF, false, "infinity")),
-            java.util.Map.entry("teleport", meta("Teleport", 0xFF9FE7FF, false, "teleport")),
-            java.util.Map.entry("awaken", meta("Awaken", 0xFFFFE08A, false, "awaken")),
-            java.util.Map.entry("max_blue", meta("Max Blue", 0xFF4F9BFF, true, "max_blue")),
-            java.util.Map.entry("max_red", meta("Max Red", 0xFFFF3B30, true, "max_red")),
+            java.util.Map.entry("teleport", meta("Limitless", 0xFF9FE7FF, false, "teleport")),
+            java.util.Map.entry("awaken", meta("Six Eyes", 0xFFFFE08A, false, "awaken")),
+            java.util.Map.entry("max_blue", meta("Lapse Blue MAX", 0xFF4F9BFF, true, "max_blue")),
+            java.util.Map.entry("max_red", meta("Reversal Red MAX", 0xFFFF3B30, true, "max_red")),
             java.util.Map.entry("hollow_purple", meta("Hollow Purple", 0xFFA24DFF, true, "hollow_purple")),
             java.util.Map.entry("unlimited_void", meta("Infinite Void", 0xFFE8F0FF, true, "unlimited_void")),
             java.util.Map.entry("dash", meta("Dash", 0xFFB0B8C8, false, "dash")),

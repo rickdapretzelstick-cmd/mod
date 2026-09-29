@@ -259,6 +259,64 @@ public final class PoseLibrary {
                 .key(RIGHT_LEG, 0, -150, 0, 0).key(RIGHT_LEG, 4, -160, 0, 0).key(RIGHT_LEG, 7, 10, 0, 0).key(RIGHT_LEG, 14, 0, 0, 0)
                 .key(BODY, 0, -20, 0, 0).key(BODY, 7, 25, 0, 0).key(BODY, 14, 0, 0, 0)
                 .key(RIGHT_ARM, 0, -40, 0, 60).key(LEFT_ARM, 0, -40, 0, -60).key(RIGHT_ARM, 14, 0, 0, 5).key(LEFT_ARM, 14, 0, 0, -5).build());
+        // --- Gojo (JJS kit) ---
+        // Lapse Blue: the kick into the suspended target.
+        add(AnimDef.builder("blue_kick", 12).blend(0.5f, 4)
+                .key(RIGHT_LEG, 0, 10, 0, 0).key(RIGHT_LEG, 5, 10, 0, 0).key(RIGHT_LEG, 8, -95, 0, 0).key(RIGHT_LEG, 12, -20, 0, 0)
+                .key(BODY, 0, 0, 10, 0).key(BODY, 8, -12, -10, 0).key(BODY, 12, 0, 0, 0)
+                .key(RIGHT_ARM, 0, -60, 0, 20).key(RIGHT_ARM, 8, 20, 0, 40).key(LEFT_ARM, 0, -80, 0, -10).key(LEFT_ARM, 8, -30, 0, -50).build());
+        // Rapid Punches: the spinning kick that locks them, the barrage, the heavy punches, the final blow.
+        add(AnimDef.builder("spin_kick", 10).blend(0.5f, 3)
+                .key(BODY, 0, 0, 0, 0).key(BODY, 3, 0, 120, 0).key(BODY, 6, 0, 300, 0).key(BODY, 10, 0, 360, 0)
+                .key(RIGHT_LEG, 0, 0, 0, 0).key(RIGHT_LEG, 3, -70, 0, 60).key(RIGHT_LEG, 7, -70, 0, 60).key(RIGHT_LEG, 10, 0, 0, 0)
+                .key(RIGHT_ARM, 3, 0, 0, 70).key(LEFT_ARM, 3, 0, 0, -70).key(RIGHT_ARM, 10, -40, 0, 10).key(LEFT_ARM, 10, -40, 0, -10).build());
+        AnimDef.Builder barrage = AnimDef.builder("rapid_barrage", 32).blend(1, 2);
+        for (int t = 0; t <= 32; t += 2) {
+            boolean r = (t / 2) % 2 == 0;
+            barrage.key(RIGHT_ARM, t, r ? -95 : -40, r ? -6 : 0, r ? 0 : 20).key(LEFT_ARM, t, r ? -40 : -95, r ? 0 : 6, r ? -20 : 0)
+                    .key(BODY, t, 4, r ? -14 : 14, 0);
+        }
+        add(barrage.build());
+        AnimDef.Builder heavy = AnimDef.builder("rapid_heavy", 16).blend(0.5f, 2);
+        for (int k = 0; k < 3; k++) {
+            int t = k * 5;
+            boolean r = k % 2 == 0;
+            heavy.key(RIGHT_ARM, t, r ? 30 : -50, 0, 20).key(RIGHT_ARM, t + 3, r ? -100 : -40, 0, 0)
+                    .key(LEFT_ARM, t, r ? -50 : 30, 0, -20).key(LEFT_ARM, t + 3, r ? -40 : -100, 0, 0)
+                    .key(BODY, t, 0, r ? 30 : -30, 0).key(BODY, t + 3, 8, r ? -30 : 30, 0);
+        }
+        add(heavy.build());
+        add(AnimDef.builder("rapid_final", 14).blend(0.5f, 5)
+                .key(RIGHT_ARM, 0, 40, 10, 30).key(RIGHT_ARM, 4, -100, -5, 0).key(RIGHT_ARM, 9, -95, 0, 0).key(RIGHT_ARM, 14, -30, 0, 8)
+                .key(BODY, 0, 5, 40, 0).key(BODY, 4, 12, -40, 0).key(BODY, 14, 0, 0, 0)
+                .key(RIGHT_LEG, 4, 25, 0, 0).key(LEFT_LEG, 4, -25, 0, 0).key(RIGHT_LEG, 14, 0, 0, 0).key(LEFT_LEG, 14, 0, 0, 0).build());
+        // Twofold Kick: the rising kick, then the second kick that bounces them higher.
+        add(AnimDef.builder("twofold_1", 12).blend(0.5f, 3)
+                .key(RIGHT_LEG, 0, 15, 0, 0).key(RIGHT_LEG, 5, -160, 0, 0).key(RIGHT_LEG, 12, -60, 0, 0)
+                .key(BODY, 0, 10, 0, 0).key(BODY, 5, -20, 0, 0).key(BODY, 12, -5, 0, 0)
+                .key(RIGHT_ARM, 5, 30, 0, 40).key(LEFT_ARM, 5, 30, 0, -40).build());
+        add(AnimDef.builder("twofold_2", 12).blend(0.5f, 4)
+                .key(LEFT_LEG, 0, 10, 0, 0).key(LEFT_LEG, 3, -170, 0, 0).key(LEFT_LEG, 12, 0, 0, 0)
+                .key(RIGHT_LEG, 0, -60, 0, 0).key(RIGHT_LEG, 12, 0, 0, 0)
+                .key(BODY, 0, 0, 0, 0).key(BODY, 3, -30, 0, 0).key(BODY, 12, 0, 0, 0)
+                .key(RIGHT_ARM, 3, 40, 0, 50).key(LEFT_ARM, 3, 40, 0, -50).key(RIGHT_ARM, 12, 0, 0, 5).key(LEFT_ARM, 12, 0, 0, -5).build());
+        // Limitless: a hand raised, fingers up, until the glass shatters; the air kick; Red's upside-down point blank.
+        add(AnimDef.builder("limitless_raise", 8).blend(1, 3)
+                .key(RIGHT_ARM, 0, -40, 0, 10).key(RIGHT_ARM, 4, -150, -20, -10).key(RIGHT_ARM, 8, -150, -20, -10)
+                .key(HEAD, 4, -10, 0, 0).key(BODY, 4, -4, -8, 0).build());
+        add(AnimDef.builder("limitless_air_kick", 10).blend(0.5f, 4)
+                .key(RIGHT_LEG, 0, -120, 0, 0).key(RIGHT_LEG, 4, 30, 0, 0).key(RIGHT_LEG, 10, 0, 0, 0)
+                .key(BODY, 0, -20, 0, 0).key(BODY, 4, 30, 0, 0).key(BODY, 10, 0, 0, 0)
+                .key(RIGHT_ARM, 4, -150, 0, 30).key(LEFT_ARM, 4, -150, 0, -30).key(RIGHT_ARM, 10, 0, 0, 5).key(LEFT_ARM, 10, 0, 0, -5).build());
+        add(AnimDef.builder("red_upside_down", 14).blend(0.5f, 4)
+                .key(BODY, 0, 0, 0, 0).key(BODY, 4, 180, 0, 0).key(BODY, 11, 180, 0, 0).key(BODY, 14, 360, 0, 0)
+                .key(RIGHT_ARM, 4, -90, 0, 0).key(RIGHT_ARM, 11, -90, 0, 0).key(LEFT_ARM, 4, 20, 0, -30)
+                .key(RIGHT_LEG, 4, 0, 0, 10).key(LEFT_LEG, 4, 0, 0, -10).build());
+        // Black Flash (Red MAX's rebound): wound back, then the punch.
+        add(AnimDef.builder("black_flash", 16).blend(0.5f, 6)
+                .key(RIGHT_ARM, 0, 50, 20, 30).key(RIGHT_ARM, 5, -100, -5, 0).key(RIGHT_ARM, 11, -95, 0, 0).key(RIGHT_ARM, 16, -30, 0, 8)
+                .key(BODY, 0, 8, 45, 0).key(BODY, 5, 14, -45, 0).key(BODY, 16, 0, 0, 0)
+                .key(RIGHT_LEG, 5, 30, 0, 0).key(LEFT_LEG, 5, -30, 0, 0).key(RIGHT_LEG, 16, 0, 0, 0).key(LEFT_LEG, 16, 0, 0, 0).build());
         // Rhythm: Hakari's Jackpot dance (JJS reference). Home pose: facing forward, arms spread wide and angled down, legs
         // straight. On every beat (RhythmAbility: lead-in 14, beats every 10 ticks) he shifts his weight onto one side —
         // the torso rolls over it, the arm on that side swings up level while the other drops, the free leg kicks out —

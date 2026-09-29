@@ -50,7 +50,15 @@ public class GojoClientGameTest implements FabricClientGameTest {
 
             TestInput in = ctx.getInput();
             KeyMapping z = key(ctx, "key.jjk.skill_1"), x = key(ctx, "key.jjk.skill_2"), c = key(ctx, "key.jjk.skill_3");
-            KeyMapping v = key(ctx, "key.jjk.skill_4"), g = key(ctx, "key.jjk.ultimate");
+            KeyMapping v = key(ctx, "key.jjk.skill_4"), g = key(ctx, "key.jjk.ultimate"), r = key(ctx, "key.jjk.skill_5");
+            // JJS PC controls by default: 1-4 moves, R special, G awakening, F block, Q dash.
+            String[][] defaults = {{"key.jjk.skill_1", "key.keyboard.1"}, {"key.jjk.skill_2", "key.keyboard.2"}, {"key.jjk.skill_3", "key.keyboard.3"},
+                    {"key.jjk.skill_4", "key.keyboard.4"}, {"key.jjk.skill_5", "key.keyboard.r"}, {"key.jjk.ultimate", "key.keyboard.g"},
+                    {"key.jjk.guard", "key.keyboard.f"}, {"key.jjk.dash", "key.keyboard.q"}};
+            for (String[] d : defaults) {
+                String bound = key(ctx, d[0]).saveString();
+                if (!bound.equals(d[1])) throw new AssertionError(d[0] + " should default to " + d[1] + " (is " + bound + ")");
+            }
 
             // --- Base kit ---
             in.holdKeyFor(o -> o.keyUp, 18);
@@ -84,8 +92,11 @@ public class GojoClientGameTest implements FabricClientGameTest {
             in.releaseKey(x);
             ctx.waitTicks(4);
             ctx.takeScreenshot("01b_ability_hud");
-            if (ctx.computeOnClient(mc -> ClientState.abilityIn(dev.rick.jjk.core.ability.AbilitySlot.SKILL_3).length() != 0)) {
-                throw new AssertionError("Infinity is out of the moveset: C should be empty in the base kit");
+            if (!ctx.computeOnClient(mc -> ClientState.abilityIn(dev.rick.jjk.core.ability.AbilitySlot.SKILL_3).equals("rapid_punches"))) {
+                throw new AssertionError("3 should be Rapid Punches in the base kit");
+            }
+            if (ctx.computeOnClient(mc -> mc.player.getInventory().getSelectedSlot()) != 0) {
+                throw new AssertionError("pressing 2 in combat mode is a move, not a hotbar switch");
             }
 
             // --- Vanilla Minecraft mode: HUD gone and ability keys inert. ---
@@ -100,6 +111,10 @@ public class GojoClientGameTest implements FabricClientGameTest {
                 return Casters.get(p).energy() < ceBefore - 1 || !p.level().getEntitiesOfClass(dev.rick.jjk.entity.BlueEntity.class, p.getBoundingBox().inflate(30)).isEmpty();
             });
             if (fired) throw new AssertionError("ability keys must do nothing in Vanilla Minecraft mode");
+            if (ctx.computeOnClient(mc -> mc.player.getInventory().getSelectedSlot()) != 1) {
+                throw new AssertionError("in Vanilla mode 2 selects hotbar slot 2 again");
+            }
+            ctx.runOnClient(mc -> mc.player.getInventory().setSelectedSlot(0));
             if (!ctx.computeOnClient(mc -> !dev.rick.jjk.client.input.InputHandler.inStance())) throw new AssertionError("no JJK melee in vanilla mode");
             ctx.runOnClient(mc -> dev.rick.jjk.client.CombatMode.set(true));
             server.runCommand("execute as @a at @s run tp @s ~ ~ ~ -90 10");
@@ -124,6 +139,22 @@ public class GojoClientGameTest implements FabricClientGameTest {
             in.releaseKey(x);
             ctx.waitTicks(5);
             ctx.takeScreenshot("06_red_explosion");
+            ctx.waitTicks(30);
+            // Rapid Punches, Twofold Kick and Limitless on the dummy in front.
+            server.runCommand("execute as @a at @s run tp @s ~ ~ ~ -90 5");
+            in.pressKey(r);
+            ctx.waitTicks(8);
+            ctx.takeScreenshot("06b_limitless");
+            ctx.waitTicks(4);
+            in.pressKey(c);
+            ctx.waitTicks(14);
+            ctx.takeScreenshot("06c_rapid_punches");
+            ctx.waitTicks(40);
+            in.pressKey(r);
+            ctx.waitTicks(8);
+            in.pressKey(v);
+            ctx.waitTicks(7);
+            ctx.takeScreenshot("06d_twofold_kick");
             ctx.waitTicks(30);
 
             // --- Awakening ---
@@ -192,7 +223,7 @@ public class GojoClientGameTest implements FabricClientGameTest {
                 for (BlockPos pos : BlockPos.betweenClosed(c0.offset(-21, -21, -21), c0.offset(21, 21, 21))) m.put(pos.immutable(), p.level().getBlockState(pos));
                 return m;
             });
-            in.pressKey(g);
+            in.pressKey(v); // Infinite Void is the awakened kit's 4
             ctx.waitTicks(15);
             ctx.takeScreenshot("19_domain_sign");
             // The domain builds itself from Gojo's feet: ground, walls, ceiling, then the seal and the title card.
@@ -272,7 +303,7 @@ public class GojoClientGameTest implements FabricClientGameTest {
                 rc.enterAwakening();
                 rc.setAwakening(rc.maxAwakening());
                 rc.setNoCost(true);
-                if (!rc.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null)) throw new AssertionError("rival should start opening a domain");
+                if (!rc.input(dev.rick.jjk.core.ability.AbilitySlot.SKILL_4, true, 0, 0, null)) throw new AssertionError("rival should start opening a domain");
             });
             ctx.waitTicks(6);
             ctx.takeScreenshot("24_counter_prompt");

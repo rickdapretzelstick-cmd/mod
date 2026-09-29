@@ -65,12 +65,14 @@ public final class Bootstrap {
             HitboxManager.tick(level);
             DomainManager.tick(level);
             dev.rick.jjk.hakari.ShutterTrap.tick(level);
+            dev.rick.jjk.gojo.UnlimitedPurple.tick(level);
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             HitboxManager.clearAll();
             DomainManager.clearAll();
             dev.rick.jjk.hakari.IdleDeathGamble.clearAll();
             dev.rick.jjk.hakari.ShutterTrap.clearAll();
+            dev.rick.jjk.gojo.UnlimitedPurple.clearAll();
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> JJKCommand.register(dispatcher));
         JJK.LOGGER.info("Jujutsu loaded: {} character(s)", Characters.ids().spliterator().getExactSizeIfKnown());

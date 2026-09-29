@@ -214,7 +214,7 @@ public class ClashTests {
         TrainingDummy b = fullMeter(h, 6, 4);
         var ca = dev.rick.jjk.core.ability.Casters.get(a);
         var cb = dev.rick.jjk.core.ability.Casters.get(b);
-        h.assertTrue(ca.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null), "the opener starts their domain");
+        h.assertTrue(ca.input(dev.rick.jjk.core.ability.AbilitySlot.SKILL_4, true, 0, 0, null), "the opener starts their domain");
         h.assertTrue(dev.rick.jjk.core.domain.DomainCounter.canCounter(cb), "a full meter nearby gets a counter window");
         h.startSequence()
                 .thenIdle(3)
@@ -241,7 +241,7 @@ public class ClashTests {
         var ca = dev.rick.jjk.core.ability.Casters.get(a);
         var cLate = dev.rick.jjk.core.ability.Casters.get(late);
         var cEmpty = dev.rick.jjk.core.ability.Casters.get(empty);
-        ca.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null);
+        ca.input(dev.rick.jjk.core.ability.AbilitySlot.SKILL_4, true, 0, 0, null);
         h.assertTrue(!dev.rick.jjk.core.domain.DomainCounter.canCounter(cEmpty), "no meter, no counter");
         h.assertTrue(!cEmpty.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null), "the button does nothing without a full meter");
         h.startSequence()

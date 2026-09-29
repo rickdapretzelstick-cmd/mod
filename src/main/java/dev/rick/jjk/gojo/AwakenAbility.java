@@ -46,55 +46,89 @@ public final class AwakenAbility extends Ability {
 
     @Override
     public @Nullable AbilityInstance activate(AbilityContext ctx) {
-        return new AbilityInstance(this, ctx) {
-            private int reveal;
-            private int total;
+        return new Transformation(this, ctx);
+    }
 
-            @Override
-            public void start() {
-                // Someone nearby is opening a domain: this press is a counter (instant Awakening + domain), not a transformation.
-                if (dev.rick.jjk.core.domain.DomainCounter.tryCounter(caster)) {
-                    finish();
+    /**
+     * Six Eyes: the blindfold comes off ("Let's get... a little crazy"), 25 HP healed, 60 seconds of Awakening.
+     * The Special pressed during it is the 0.2 Domain instead (see {@link ZeroTwoDomain}).
+     */
+    private static final class Transformation extends AbilityInstance implements dev.rick.jjk.core.ability.LockedInputCast {
+        private int reveal;
+        private int total;
+        private boolean zeroTwo;
+        @Nullable private ZeroTwoDomain rush;
+
+        Transformation(Ability ability, AbilityContext ctx) {
+            super(ability, ctx);
+        }
+
+        @Override
+        public void start() {
+            // Someone nearby is opening a domain: this press is a counter (instant Awakening + domain), not a transformation.
+            if (dev.rick.jjk.core.domain.DomainCounter.tryCounter(caster)) {
+                finish();
+                return;
+            }
+            total = JJKConfig.get().awakening.transitionTicks;
+            reveal = total * REVEAL_FRACTION_NUM / REVEAL_FRACTION_DEN;
+            Statuses.apply(user, CombatStatus.AWAKENING, total + 2);
+            Anim.play(user, "awaken");
+            setPhase(0, total);
+            Fx.play(level, "awaken_start", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
+        }
+
+        @Override
+        public boolean pressWhileLocked(dev.rick.jjk.core.ability.AbilitySlot slot) {
+            if (slot != dev.rick.jjk.core.ability.AbilitySlot.SKILL_5 || zeroTwo || age >= reveal) return false;
+            zeroTwo = true;
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            if (rush != null) {
+                if (rush.tick()) finish();
+                return;
+            }
+            Motion.set(user, new Vec3(0, Math.min(0, user.getDeltaMovement().y) * 0.2, 0));
+            if (age == reveal) {
+                // The blindfold comes off: the Six Eyes open and everything around him feels it.
+                caster.enterAwakening();
+                setPhase(1, total - reveal);
+                Fx.play(level, "awaken", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
+                Fx.shake(level, user.position(), 48, 1.1f, 24);
+                Fx.flash(level, user.position(), 40, 0xB0D8F0FF, 14);
+                if (zeroTwo) {
+                    rush = new ZeroTwoDomain(level, caster, user);
                     return;
                 }
-                total = JJKConfig.get().awakening.transitionTicks;
-                reveal = total * REVEAL_FRACTION_NUM / REVEAL_FRACTION_DEN;
-                Statuses.apply(user, CombatStatus.AWAKENING, total + 2);
-                Anim.play(user, "awaken");
-                setPhase(0, total);
-                Fx.play(level, "awaken_start", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
+                user.heal(user.getMaxHealth() * JJKConfig.get().gojo.awakenHealShare);
             }
+            if (age >= total) finish();
+        }
 
-            @Override
-            public void tick() {
-                Motion.set(user, new Vec3(0, Math.min(0, user.getDeltaMovement().y) * 0.2, 0));
-                if (age == reveal) {
-                    // The blindfold comes off: the Six Eyes open and everything around him feels it.
-                    caster.enterAwakening();
-                    setPhase(1, total - reveal);
-                    Fx.play(level, "awaken", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
-                    Fx.shake(level, user.position(), 48, 1.1f, 24);
-                    Fx.flash(level, user.position(), 40, 0xB0D8F0FF, 14);
-                }
-                if (age >= total) finish();
-            }
+        @Override
+        public boolean exclusive() {
+            return true;
+        }
 
-            @Override
-            public boolean exclusive() {
-                return true;
-            }
+        @Override
+        public float movementMultiplier() {
+            return 0f;
+        }
 
-            @Override
-            public float movementMultiplier() {
-                return 0f;
-            }
+        @Override
+        public void interrupt(String reason) {
+            // Only death/disconnect interrupt the transformation (it is untouchable); make sure the state is sane.
+            if (rush != null) rush.abort();
+            else if (age >= reveal && !caster.isAwakened()) caster.enterAwakening();
+            super.interrupt(reason);
+        }
 
-            @Override
-            public void interrupt(String reason) {
-                // Only death/disconnect interrupt the transformation (it is untouchable); make sure the state is sane.
-                if (age >= reveal && !caster.isAwakened()) caster.enterAwakening();
-                super.interrupt(reason);
-            }
-        };
+        @Override
+        public void end() {
+            if (rush != null) rush.abort();
+        }
     }
 }

@@ -124,6 +124,10 @@ public final class CombatState {
         return anyMatch(6);
     }
 
+    public boolean isProjectileImmune() {
+        return anyMatch(7);
+    }
+
     private boolean anyMatch(int property) {
         if (activeCount == 0) return false;
         for (int i = 0; i < ticks.length; i++) {
@@ -137,6 +141,7 @@ public final class CombatState {
                 case 3 -> s.interruptsCasting;
                 case 4 -> s.downed;
                 case 5 -> s.meleeImmune;
+                case 7 -> s.projectileImmune;
                 default -> s.evasive;
             };
             if (v) return true;

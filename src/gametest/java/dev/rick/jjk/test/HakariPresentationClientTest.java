@@ -184,7 +184,7 @@ public class HakariPresentationClientTest extends PresentationClientTest {
                 rc.enterAwakening();
                 rc.setAwakening(rc.maxAwakening());
                 rc.setNoCost(true);
-                rc.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null);
+                rc.input(dev.rick.jjk.core.ability.AbilitySlot.SKILL_4, true, 0, 0, null);
             });
             film(8);
             section("...Hakari answers with Idle Death Gamble (G on a full meter)");

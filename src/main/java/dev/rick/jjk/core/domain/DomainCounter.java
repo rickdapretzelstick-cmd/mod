@@ -63,10 +63,16 @@ public final class DomainCounter {
     @Nullable
     public static Ability domainAbility(AbilityCaster c) {
         if (c.character() == null) return null;
-        Ability a = c.character().ability(AbilitySlot.ULTIMATE, true);
-        if (a instanceof DomainAbility) return a;
-        a = c.character().ability(AbilitySlot.ULTIMATE, false);
-        return a instanceof DomainAbility ? a : null;
+        // Awakened kit first (Gojo's Infinite Void is its fourth move), then the base kit (Hakari's domain).
+        for (boolean awakened : new boolean[] {true, false}) {
+            Ability a = c.character().ability(AbilitySlot.ULTIMATE, awakened);
+            if (a instanceof DomainAbility) return a;
+            for (AbilitySlot s : AbilitySlot.values()) {
+                a = c.character().ability(s, awakened);
+                if (a instanceof DomainAbility) return a;
+            }
+        }
+        return null;
     }
 
     /** Whether this sorcerer's Awakening button is a counter right now. */

@@ -40,6 +40,7 @@ public final class JJKConfig {
     public Clash clash = new Clash();
     public Client client = new Client();
     public Hakari hakari = new Hakari();
+    public Gojo gojo = new Gojo();
 
     public static JJKConfig get() {
         return instance;
@@ -182,15 +183,19 @@ public final class JJKConfig {
 
     public static class Red {
         public float cost = 150f;
-        public int cooldown = 180;
-        public int minCharge = 6;
-        public int maxCharge = 30;
-        public double speed = 2.6;
-        public double range = 28;
-        public float damage = 9f;
-        public float chargedDamage = 15f;
-        public double radius = 3.5;
-        public double chargedRadius = 5.5;
+        /** 20 seconds. */
+        public int cooldown = 400;
+        /** JJS: a short wind-up, no charging. Limitless pressed inside it sets up a special variant. */
+        public int minCharge = 12;
+        public int maxCharge = 12;
+        public double speed = 2.2;
+        /** 40 studs. */
+        public double range = 11;
+        public float damage = 12.5f;
+        public float chargedDamage = 12.5f;
+        /** 15 studs. */
+        public double radius = 4.2;
+        public double chargedRadius = 4.2;
         public double knockback = 2.6;
         public double launch = 0.75;
         public int hitstun = 24;
@@ -201,17 +206,18 @@ public final class JJKConfig {
 
     public static class Purple {
         public float cost = 150f;
-        public int cooldown = 100;
+        /** 40 seconds. */
+        public int cooldown = 800;
         public int blueFormTicks = 14;
         public int redFormTicks = 14;
         public int fusionTicks = 16;
-        /** Ticks after fusion that the fully charged Purple can be held before it fires by itself. */
-        public int maxHoldTicks = 60;
+        /** JJS releases Hollow Purple about 3 seconds in: after the fusion it charges this long, then fires by itself. */
+        public int maxHoldTicks = 16;
         public double speed = 1.9;
         public double range = 90;
         public double radius = 3.2;
         public double chargedRadius = 4.6;
-        public float damage = 38f;
+        public float damage = 70f;
         public double knockback = 3.2;
         public float impactDamage = 16f;
         public double impactRadius = 9.0;
@@ -263,24 +269,39 @@ public final class JJKConfig {
         public double range = 22;
         public double pullRadius = 18;
         public double pullStrength = 0.6;
+        /** JJS: 20 damage ticks of 2.2 (44). */
         public int duration = 80;
         /** Visual scale of the anomaly relative to base Blue. */
         public float power = 5f;
-        public float tickDamage = 1.2f;
-        public float collapseDamage = 14f;
+        public float tickDamage = 2.2f;
+        public int tickDamageInterval = 4;
+        public float collapseDamage = 0f;
         public int collapseStun = 30;
         public double blockPullRadius = 7;
-        public int cooldown = 60;
+        /** 17 seconds. */
+        public int cooldown = 340;
+        /** After killing someone the orb lingers, and 19 more ticks at half damage go to everyone else it holds. */
+        public int lingerTicks = 76;
     }
 
     public static class MaxRed {
-        public int minCharge = 16;
-        public int maxCharge = 40;
+        /** "A little over a second" of charge, then it fires by itself. */
+        public int minCharge = 24;
+        public int maxCharge = 24;
+        /** 100 studs, piercing; 30 damage falling to 7 at the end of its range. */
+        public double range = 28;
+        public double speed = 2.0;
+        public float nearDamage = 30f;
+        public float farDamage = 7f;
+        /** Rebound variant: Black Flash on the caught target, damage to Gojo if it comes back empty. */
+        public float blackFlashDamage = 10f;
+        public float reboundSelfDamage = 15f;
         public float damageMultiplier = 1.8f;
         public float radiusMultiplier = 3.0f;
         public float knockbackMultiplier = 2.2f;
         public int maxBlocksDestroyed = 400;
-        public int cooldown = 60;
+        /** 10 seconds. */
+        public int cooldown = 200;
     }
 
     /**
@@ -413,6 +434,90 @@ public final class JJKConfig {
         public boolean combatMode = true;
         /** The small "current / max CE" readout beside the CE bar. */
         public boolean showCeNumbers = true;
+    }
+
+    /**
+     * Gojo (Honored One), tuned after the Jujutsu Shenanigans wiki: its seconds in ticks, its studs in blocks (about 3.6
+     * studs to a block), its damage as written.
+     */
+    public static class Gojo {
+        /** A target at or under this share of max health is finished off by a finisher. */
+        public float finisherThreshold = 0.2f;
+        /** Six Eyes: 25 HP (of 100) healed on awakening, and the Awakening lasts 60 seconds. */
+        public float awakenHealShare = 0.25f;
+        public int awakeningSeconds = 60;
+
+        // --- 1: Lapse Blue (13s) — pull within 35 studs, suspend, unblockable kick ---
+        public int blueCooldown = 260;
+        public int blueWindup = 8;
+        public double blueRange = 9.7;
+        public float bluePullDamage = 5f;
+        public float blueKickDamage = 7.5f;
+        public int bluePullTicks = 10;
+        public int blueSuspendTicks = 8;
+        public double blueKickKnockback = 1.5;
+
+        // --- 3: Rapid Punches (15s) — spin kick lock, 15 punches, 3 heavy, final blow ---
+        public float punchesCost = 80f;
+        public int punchesCooldown = 300;
+        public int punchesWindup = 6;
+        public double punchesReach = 3.0;
+        public float punchesGrabDamage = 1.25f;
+        public int punchesBarrage = 15;
+        public float punchesBarrageDamage = 0.5f;
+        public int punchesHeavy = 3;
+        public float punchesHeavyDamage = 1.5f;
+        public float punchesFinalDamage = 4f;
+        public double punchesFinalKnockback = 1.5;
+        /** Face Grater: Limitless right after Rapid Punches lands (this many ticks to press it). */
+        public int faceGraterWindow = 16;
+        public float faceGraterDamage = 10.2f;
+        public int faceGraterDragTicks = 14;
+
+        // --- 4: Twofold Kick (18s) ---
+        public float twofoldCost = 70f;
+        public int twofoldCooldown = 360;
+        public int twofoldWindup = 5;
+        public double twofoldReach = 3.0;
+        public float twofoldFirstDamage = 6f;
+        public float twofoldSecondDamage = 4f;
+        public int twofoldAnchorTicks = 9;
+        /** The finisher's point-blank Red. */
+        public float twofoldRedDamage = 10f;
+
+        // --- R: Limitless (15s) ---
+        public int limitlessCooldown = 300;
+        public double limitlessRange = 32;
+        /** Hand raised until the glass shatters: turning the camera in this time picks where Gojo appears. */
+        public int limitlessWindup = 6;
+        /** 6% of the Awakening meter, in the base kit. */
+        public float limitlessMeterCost = 6f;
+        public float limitlessAirKickDamage = 8f;
+
+        // --- Reversal Red special variants ---
+        public float redAirKickDamage = 5f;
+        public float redInterruptDamage = 15f;
+        public int redInterruptStun = 30;
+
+        /** Infinite Void: 120 seconds (it lasts 14, see domain.duration). */
+        public int infiniteVoidCooldown = 2400;
+
+        // --- 0.2 Domain: Special during the Awakening sequence ---
+        public double zeroTwoRadius = 40;
+        /** Exposed to the sure hit for 7 seconds. */
+        public int zeroTwoStun = 140;
+        public int zeroTwoPhase1Hits = 7;
+        public float zeroTwoPhase1Damage = 5f;
+        public int zeroTwoPhase2Hits = 6;
+        public float zeroTwoPhase2Damage = 20f;
+        public float zeroTwoFinalDamage = 65f;
+
+        // --- Unlimited Purple: Red MAX into the orb Lapse Blue MAX left behind ---
+        public int unlimitedPurpleFuse = 60;
+        public double unlimitedPurpleRadius = 16;
+        public float unlimitedPurpleMinDamage = 50f;
+        public float unlimitedPurpleMaxDamage = 100f;
+        public int unlimitedPurpleMaxBlocks = 6000;
     }
 
     /** Kinji Hakari / Restless Gambler. Every number here can be rebalanced without code changes. */

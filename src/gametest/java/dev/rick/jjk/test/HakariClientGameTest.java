@@ -71,7 +71,9 @@ public class HakariClientGameTest implements FabricClientGameTest {
             in.pressKey(s2);
             ctx.waitTicks(7);
             ctx.takeScreenshot("h05_shutter_doors");
-            ctx.waitTicks(30);
+            ctx.waitTicks(6);
+            ctx.takeScreenshot("h05b_shutter_doors_shut");
+            ctx.waitTicks(24);
             server.runCommand("execute as @a at @s run kill @e[type=jjk:training_dummy,distance=..40]");
             server.runCommand("execute as @a at @s rotated ~ 0 run summon jjk:training_dummy ^ ^ ^2.6");
             ctx.waitTicks(20);
@@ -250,7 +252,7 @@ public class HakariClientGameTest implements FabricClientGameTest {
             rc.enterAwakening();
             rc.setAwakening(rc.maxAwakening());
             rc.setNoCost(true);
-            if (!rc.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null)) throw new AssertionError("Gojo should start opening a domain");
+            if (!rc.input(dev.rick.jjk.core.ability.AbilitySlot.SKILL_4, true, 0, 0, null)) throw new AssertionError("Gojo should start opening a domain");
         });
         ctx.waitTicks(6);
         in.pressKey(ult);

@@ -820,7 +820,7 @@ public class HakariGameTests {
         hc.setEnergy(hc.maxEnergy());
         Casters.get(gojo).enterAwakening();
         h.startSequence()
-                .thenExecute(() -> h.assertTrue(Casters.get(gojo).input(AbilitySlot.ULTIMATE, true, 0, 0, null), "Gojo starts opening"))
+                .thenExecute(() -> h.assertTrue(Casters.get(gojo).input(AbilitySlot.SKILL_4, true, 0, 0, null), "Gojo starts opening"))
                 .thenIdle(3)
                 .thenExecute(() -> {
                     h.assertTrue(hc.input(AbilitySlot.ULTIMATE, true, 0, 0, null), "Hakari answers with his domain");

@@ -363,3 +363,26 @@ i.outline()
 i.save('rhythm')
 
 print('icons written to', os.path.normpath(OUT))
+
+# --- Gojo: Rapid Punches — a fist with a blur of fists behind it. ---
+i = Icon()
+for k, x0 in enumerate((0, 3)):
+    for y in range(5, 11):
+        for x in range(x0, x0 + 3):
+            i.set(x, y, 0x3A6FB8 if k == 0 else 0x6FA8FF)
+fist(i, 6, 3, 9, 10)
+i.outline()
+i.save('rapid_punches')
+
+# --- Gojo: Twofold Kick — a leg kicking straight up, two arcs over the boot. ---
+i = Icon()
+for y in range(4, 15):
+    for x in range(6, 10):
+        i.set(x, y, 0x20202C if x < 9 else 0x34344A)
+for y in range(1, 5):
+    for x in range(5, 11):
+        i.set(x, y, 0xF4F4F8 if y > 1 else 0x8FC8FF)
+i.ring(5.5, 6.3, 0x8FC8FF, 7.5, 7.5, when=lambda a: -2.6 < a < -0.5)
+i.ring(3.3, 4.0, 0xCFE8FF, 7.5, 7.5, when=lambda a: -2.6 < a < -0.5)
+i.outline()
+i.save('twofold_kick')

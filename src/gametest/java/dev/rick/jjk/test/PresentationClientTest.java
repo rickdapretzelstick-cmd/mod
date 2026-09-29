@@ -316,7 +316,7 @@ public class PresentationClientTest implements FabricClientGameTest {
             server.runOnServer(s -> {
                 for (var e : s.overworld().getAllEntities()) {
                     if (e instanceof dev.rick.jjk.entity.TrainingDummy d && Casters.getOrNull(d) != null && Casters.get(d).isAwakened()) {
-                        Casters.get(d).input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null);
+                        Casters.get(d).input(dev.rick.jjk.core.ability.AbilitySlot.SKILL_4, true, 0, 0, null);
                     }
                 }
             });

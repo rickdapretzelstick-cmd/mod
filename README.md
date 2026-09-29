@@ -4,25 +4,63 @@ Fabric mod for **Minecraft 26.3** (Java 25, Fabric API). Install the jar plus Fa
 
 ## Controls
 
-| Key | Base Gojo | Awakened Gojo |
+The Jujutsu Shenanigans PC layout. In combat mode 1-4, Q and F belong to the mod (the hotbar, drop and offhand swap on
+those keys are held back); Vanilla Minecraft mode gives them back. Everything can be rebound in Controls.
+
+| Key | Base Gojo | Six Eyes (awakened) |
 |---|---|---|
-| Left click (empty hand) | Light chain · hold = charged heavy | same |
-| Z | Lapse Blue (hold to steer) | **Lapse Blue: MAX** |
-| X | Reversal Red (hold to charge) | **Reversal Red: MAX** |
-| C | — | **Hollow Purple** (hold) |
-| V | Teleport (3 charges) | Teleport |
-| G | **Awaken** (meter full) | **Domain Expansion: Infinite Void** |
-| R | Guard (hold; tap early = parry) | same |
-| Left Alt | Dash | same |
+| Left click (empty hand) | M1 chain · hold = charged heavy | same |
+| 1 | Lapse Blue | **Lapse Blue MAX** (hold to steer) |
+| 2 | Reversal Red | **Reversal Red MAX** |
+| 3 | Rapid Punches | **Hollow Purple** |
+| 4 | Twofold Kick | **Infinite Void** |
+| R | Limitless (Special) | Limitless |
+| G | **Awakening** (meter full) · the domain counter | counter |
+| F | Block (hold; tap early = parry) | same |
+| Q | Dash · ragdoll escape while ragdolled | same |
+| W W | Sprint (Minecraft's double tap) | same |
+| Space | Jump | same |
 | \` | Combat stance on/off | same |
 | *(unbound)* | Combat / Vanilla Minecraft mode | same |
 
 Melee variations: click in the air for air combos, hold jump on the 4th hit for an uppercut, click while sprinting for a
 lunge, look down at a knocked-down enemy for a stomp.
 
-**Awakening.** The bar above the hotbar fills as you fight (landing hits, dealing/taking damage, blocking, parrying).
-When full, press G: Gojo pulls off his blindfold and awakens. His kit switches to the MAX techniques, Infinity is always
-on, and the bar becomes a timer that drains; MAX moves also spend it. At zero he returns to his base kit.
+### Satoru Gojo — Honored One
+
+Tuned after the [Jujutsu Shenanigans wiki](https://jujutsu-shenanigans.fandom.com/wiki/Honored_One) (the `gojo`,
+`red`, `maxBlue`, `maxRed` and `purple` config sections).
+
+- **Lapse Blue** (13s): aimed at someone within 35 studs, a vacuum pulls them in (5), suspends them in front of Gojo —
+  who gains melee i-frames — and he follows with an unblockable kick (7.5). Blocking stops the pull.
+- **Reversal Red** (20s): a short wind-up, then an orb that flies 40 studs and bursts in a 15-stud blast (12.5; half,
+  with no knockback and never fatal, through a guard). Limitless during the wind-up: he phases behind the target, upside
+  down, for a point-blank Red; on an airborne target he kicks first (5 + 12.5); on a target caught mid-move or mid-dash
+  they freeze and he calls "Aka" before an enhanced orb (15).
+- **Rapid Punches** (15s): a spinning kick locks a nearby enemy (it can't catch a ragdoll); bullet i-frames, 15 punches,
+  3 heavy punches, then a final blow that ragdolls them — nearly twice as far if they had just got up. Limitless right
+  after it lands is **Face Grater**: he appears before them, drags them along the floor and tosses them (10.2).
+- **Twofold Kick** (18s): a rising kick (a guard stops the rest); melee i-frames and an unblockable second kick that
+  bounces them higher.
+- **Limitless** (Special, 15s, 6% of the meter in the base kit): hand up, the glass shatters, and he is right in front
+  of the target under the crosshair; turn the camera during the wind-up to choose where around them. Airborne target:
+  he appears over them and kicks them to the floor (8).
+- **Six Eyes** (G on a full meter): the blindfold comes off, 25% health back, 60 seconds of Awakening.
+  **0.2 Domain**: press R during the Awakening sequence. Infinite Void for two tenths of a second — every enemy in a wide
+  range is overloaded for 7 seconds — then a three-phase rush (7×5, 6×20, 65) with i-frames during each run. Two
+  targets held at the end are both finished. Afterwards he is burnt out: base kit, all on cooldown except Limitless.
+- **Lapse Blue MAX** (17s): a steerable vortex (hold to guide it; walk or hang in the air meanwhile), 20 ticks of 2.2.
+  If it kills someone it lingers and keeps pulling everyone else in at half damage.
+- **Reversal Red MAX** (10s): a little over a second of charge, then a piercing orb for 100 studs, 30 falling to 7 with
+  distance. Airborne: he hovers and aims freely. Limitless during the charge (free): it rebounds to him — a target it
+  caught is pulled in for a Black Flash (10), an empty return hits Gojo (15).
+- **Unlimited Purple**: Red MAX into the orb Lapse Blue MAX left behind after a kill. Three seconds later it erases
+  everything around it (50-100 by distance) and drains the whole Awakening.
+- **Hollow Purple** (40s): Blue and Red combine and it rushes forward about three seconds in (70, unblockable, erases
+  blocks); airborne he hovers with free aim.
+- **Infinite Void** (4 while awakened, 120s): the domain below, 14 seconds; everyone caught is stunned until it ends.
+- **Finishers** (under 20% health): Lapse Blue crushes them in rubble, Red shatters them, Rapid Punches ends in a Black
+  Flash, Twofold Kick holds them up for a point-blank Red.
 
 **Infinite Void** builds a real, sealed dome of blocks (walls, ceiling, floor and underground shell) around the fight for
 14 seconds. Everything it replaces (including chest contents, block states, waterlogging) is saved to disk first and
@@ -39,12 +77,12 @@ kit's techniques, toggles and states are cleared and the new moveset, HUD icons 
 
 | Key | Gojo (Honored One) | Hakari (Restless Gambler) | Hakari in Jackpot |
 |---|---|---|---|
-| Z | Lapse Blue | Reserve Balls | Lucky Volley |
-| X | Reversal Red | Shutter Doors | Lucky Rushdown |
-| C | — | Rough Energy | Overwhelming Luck |
-| V | Teleport | Fever Breaker | Energy Surge |
-| B (Special) | — | Door Guard (hold) | Rhythm |
-| G | Awaken → Infinite Void | Idle Death Gamble | — |
+| 1 | Lapse Blue | Reserve Balls | Lucky Volley |
+| 2 | Reversal Red | Shutter Doors | Lucky Rushdown |
+| 3 | Rapid Punches | Rough Energy | Overwhelming Luck |
+| 4 | Twofold Kick | Fever Breaker | Energy Surge |
+| R (Special) | Limitless | Door Guard (hold) | Rhythm |
+| G | Awakening (Six Eyes) | Idle Death Gamble | — |
 
 ![Hakari](docs/screenshots/hakari_showcase.png)
 ![Idle Death Gamble opening](docs/screenshots/hakari_idg_cutin.png)
@@ -59,8 +97,8 @@ cooldowns and durations, its studs as blocks (about 3.6 studs to a block), all i
 - **Reserve Balls** (12s): one steel ball flicked about 65 studs, ricocheting off surfaces while it has distance left
   (much further inside his domain). It stuns whoever it hits, or ragdolls them if it hit within 15 studs.
   *Shutter Doors during the wind-up*: the doors manifest where the ball lands and bounce a target it stunned.
-- **Shutter Doors** (15s): two shutters from the "Private Pure Love Train" pachinko game close on the target's torso
-  from up to 25 studs away. The target is stunned and Hakari's melee chain jumps to its 3rd hit. Doors that catch nobody
+- **Shutter Doors** (15s): two flat shutter panels from the "Private Pure Love Train" pachinko game slide shut across
+  the target's torso from up to 25 studs away (Door Guard's door is the one that stands upright). The target is stunned and Hakari's melee chain jumps to its 3rd hit. Doors that catch nobody
   linger for 7 seconds: jump on them to bounce high (they shatter), and a ragdolled enemy falling on them bounces three
   times, taking damage each time.
 - **Rough Energy** (14s): a long wind-up, then an unblockable punch that sends them flying. *In the air*: a short
@@ -105,7 +143,7 @@ cooldowns and durations, its studs as blocks (about 3.6 studs to a block), all i
   - **Overwhelming Luck** (20s): a rushing strike that tosses them, then he sprints after them, grabs everyone it
     caught and finishes with a string of hits and a final punch. Unblockable.
   - **Energy Surge** (25s): a dash punch launches them skyward, and he blinks up and kicks them down.
-  - **Rhythm** (8s): he dances to the beat. Finish the dance uninterrupted to get a stacking speed boost to his moves
+  - **Rhythm** (8s): he does his dance — arms spread wide, shifting his weight side to side on each beat, a V to finish. Finish the dance uninterrupted to get a stacking speed boost to his moves
     and special, and every cooldown finishes 0.6s sooner.
 - **Finishers**: on a target at 20% health or less, Shutter Doors shut them in completely, Lucky Volley's swipe sends
   them flying, and Lucky Rushdown drags them further, hurls them into the air and ends with a leaping punch.

@@ -22,6 +22,9 @@ import dev.rick.jjk.entity.BlueEntity;
 import dev.rick.jjk.entity.HollowPurpleEntity;
 import dev.rick.jjk.entity.TrainingDummy;
 import dev.rick.jjk.gojo.GojoCharacter;
+import dev.rick.jjk.gojo.BlueAbility;
+import dev.rick.jjk.gojo.RedAbility;
+import dev.rick.jjk.gojo.TeleportAbility;
 import dev.rick.jjk.gojo.InfinityAbility;
 import dev.rick.jjk.registry.ModDamageTypes;
 import dev.rick.jjk.registry.ModEntities;
@@ -266,15 +269,17 @@ public class GojoGameTests {
     // --- Infinity ---
 
     @GameTest(maxTicks = 40)
-    public void infinityIsOutOfTheMoveset(GameTestHelper h) {
+    public void baseKitIsTheJjsKit(GameTestHelper h) {
         floor(h, 2);
         TrainingDummy g = gojo(h, 4, 4, null);
         AbilityCaster c = Casters.get(g);
         h.assertTrue(!c.toggled(InfinityAbility.ID), "Infinity isn't raised by default");
-        h.assertTrue(c.ability(AbilitySlot.SKILL_3) == null, "C has no ability in the base kit");
-        h.assertTrue(!c.input(AbilitySlot.SKILL_3, true, 0, 0, null), "pressing C does nothing");
-        c.input(AbilitySlot.SKILL_3, false, 0, 0, null);
-        h.assertTrue(!c.toggled(InfinityAbility.ID), "and Infinity stays down");
+        h.assertValueEqual(c.ability(AbilitySlot.SKILL_1).id, BlueAbility.ID, "1 Lapse Blue");
+        h.assertValueEqual(c.ability(AbilitySlot.SKILL_2).id, RedAbility.ID, "2 Reversal Red");
+        h.assertValueEqual(c.ability(AbilitySlot.SKILL_3).id, dev.rick.jjk.gojo.RapidPunchesAbility.ID, "3 Rapid Punches");
+        h.assertValueEqual(c.ability(AbilitySlot.SKILL_4).id, dev.rick.jjk.gojo.TwofoldKickAbility.ID, "4 Twofold Kick");
+        h.assertValueEqual(c.ability(AbilitySlot.SKILL_5).id, TeleportAbility.ID, "R Limitless");
+        h.assertValueEqual(c.ability(AbilitySlot.ULTIMATE).id, "awaken", "G Awakening");
         h.succeed();
     }
 
@@ -336,31 +341,45 @@ public class GojoGameTests {
     // --- Blue / Red ---
 
     @GameTest(maxTicks = 100, padding = 16, skyAccess = true, environment = "jjk-test:pull_a")
-    public void bluePullsEnemiesTogether(GameTestHelper h) {
+    public void lapseBluePullsSuspendsThenKicks(GameTestHelper h) {
         floor(h, 6);
-        // Everyone stays inside the test's own 8x8 bounds: entities outside it can land in chunks that don't tick.
-        TrainingDummy a = dummy(h, 5, 1);
-        TrainingDummy b = dummy(h, 5, 7);
-        TrainingDummy c = dummy(h, 7.9, 4);
-        TrainingDummy center = dummy(h, 5, 4);
-        for (TrainingDummy d : List.of(a, b, c, center)) infinityOff(d);
-        TrainingDummy g = gojo(h, 0.5, 4, center);
+        TrainingDummy target = dummy(h, 7, 4);
+        infinityOff(target);
+        target.setAutoHeal(false);
+        TrainingDummy g = gojo(h, 1, 4, target);
+        float hp = target.getHealth();
+        boolean[] armored = new boolean[1];
         h.startSequence()
                 .thenExecute(() -> press(g, AbilitySlot.SKILL_1))
                 .thenExecute(() -> release(g, AbilitySlot.SKILL_1))
-                .thenIdle(25)
-                .thenExecute(() -> {
-                    List<BlueEntity> blues = ownedBlues(h, g);
-                    h.assertTrue(!blues.isEmpty(), "Blue exists");
-                    Vec3 core = blues.getFirst().position();
-                    for (TrainingDummy d : List.of(a, b, c)) {
-                        double dist = d.getBoundingBox().getCenter().distanceTo(core);
-                        h.assertTrue(dist < 2.5, "dummy dragged to the core (distance " + dist + ", core " + h.relativeVec(core) + ", dummy "
-                                + h.relativeVec(d.position()) + ", caster " + h.relativeVec(g.position()) + " yaw " + g.getYRot() + ")");
-                        h.assertTrue(Combat.has(d, CombatStatus.PULLED), "pulled status");
-                    }
-                    h.assertTrue(g.position().distanceTo(core) > 4, "caster is not pulled");
+                .thenIdle(JJKConfig.get().gojo.blueWindup + 4)
+                .thenExecute(() -> h.assertTrue(Combat.has(target, CombatStatus.PULLED) || Combat.has(target, CombatStatus.GRABBED), "pulled in"))
+                .thenWaitUntil(() -> {
+                    if (Combat.has(g, CombatStatus.MELEE_ARMOR)) armored[0] = true;
+                    h.assertTrue(target.distanceTo(g) < 3, "suspended right in front of Gojo (" + target.distanceTo(g) + ")");
                 })
+                .thenWaitUntil(() -> {
+                    if (Combat.has(g, CombatStatus.MELEE_ARMOR)) armored[0] = true;
+                    h.assertTrue(Combat.has(target, CombatStatus.LAUNCHED), "then kicked away");
+                })
+                .thenExecute(() -> {
+                    float want = JJKConfig.get().gojo.bluePullDamage + JJKConfig.get().gojo.blueKickDamage;
+                    h.assertTrue(hp - target.getHealth() >= want * 0.8f, "pull + kick damage (" + (hp - target.getHealth()) + ")");
+                    h.assertTrue(armored[0], "Gojo had melee i-frames while it was suspended");
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 40, padding = 16, skyAccess = true)
+    public void lapseBlueAtNobodyWhiffs(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy g = gojo(h, 1, 4, null);
+        face(g, h.absoluteVec(new Vec3(8, 1.6, 4)));
+        h.startSequence()
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_1))
+                .thenIdle(JJKConfig.get().gojo.blueWindup + 2)
+                .thenExecute(() -> h.assertTrue(Casters.get(g).isCasting(BlueAbility.ID), "stuck in the whiff's endlag"))
+                .thenWaitUntil(() -> h.assertTrue(!Casters.get(g).isBusy(), "then free again"))
                 .thenSucceed();
     }
 
@@ -374,8 +393,8 @@ public class GojoGameTests {
         Vec3 start = target.position();
         h.startSequence()
                 .thenExecute(() -> press(g, AbilitySlot.SKILL_2))
-                .thenIdle(8).thenExecute(() -> release(g, AbilitySlot.SKILL_2))
-                .thenIdle(6).thenExecute(() -> {
+                .thenExecute(() -> release(g, AbilitySlot.SKILL_2))
+                .thenIdle(JJKConfig.get().red.minCharge + 4).thenExecute(() -> {
                     h.assertTrue(target.getHealth() < hp, "Red damages");
                     h.assertTrue(target.position().distanceTo(start) > 2 || target.getDeltaMovement().length() > 0.5, "Red blasts the target away");
                     h.assertTrue(Combat.has(target, CombatStatus.LAUNCHED), "target launched");
@@ -384,27 +403,138 @@ public class GojoGameTests {
                 .thenSucceed();
     }
 
-    @GameTest(maxTicks = 100, padding = 16, skyAccess = true, environment = "jjk-test:pull_b")
-    public void redInsideBlueIsAmplified(GameTestHelper h) {
+    @GameTest(maxTicks = 60, padding = 16, skyAccess = true)
+    public void limitlessDuringRedPhasesBehindForPointBlank(GameTestHelper h) {
         floor(h, 6);
-        TrainingDummy target = dummy(h, 9, 4);
+        TrainingDummy target = dummy(h, 6.5, 4.5);
         infinityOff(target);
-        TrainingDummy g = gojo(h, 1, 4, target);
-        float[] hp = new float[1];
+        target.setAutoHeal(false);
+        TrainingDummy g = gojo(h, 1.5, 4.5, target);
+        Casters.get(g).setNoCost(false);
+        Casters.get(g).setEnergy(Casters.get(g).maxEnergy());
+        Vec3 toTarget = target.position().subtract(g.position());
+        float hp = target.getHealth();
         h.startSequence()
-                .thenExecute(() -> press(g, AbilitySlot.SKILL_1)).thenExecute(() -> release(g, AbilitySlot.SKILL_1))
-                .thenIdle(12).thenExecute(() -> {
-                    hp[0] = target.getHealth();
-                    face(g, target.getBoundingBox().getCenter());
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_2))
+                .thenIdle(3)
+                .thenExecute(() -> {
+                    press(g, AbilitySlot.SKILL_5);
+                    Vec3 rel = g.position().subtract(target.position());
+                    h.assertTrue(rel.dot(toTarget) > 0, "Gojo phased behind the target (" + rel + ")");
+                    h.assertTrue(Casters.get(g).cooldown(AbilitySlot.SKILL_5) > 0, "Limitless went on cooldown too");
+                })
+                .thenIdle(JJKConfig.get().red.minCharge)
+                .thenExecute(() -> h.assertTrue(target.getHealth() <= hp - JJKConfig.get().red.damage * 0.6f, "point-blank Red (" + (hp - target.getHealth()) + ")"))
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 60, padding = 16, skyAccess = true)
+    public void redOnSomeoneMidActionFreezesThemForAka(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy target = dummy(h, 6.5, 4.5);
+        infinityOff(target);
+        target.setAutoHeal(false);
+        TrainingDummy g = gojo(h, 1.5, 4.5, target);
+        float hp = target.getHealth();
+        h.startSequence()
+                .thenExecute(() -> {
                     press(g, AbilitySlot.SKILL_2);
+                    dev.rick.jjk.core.combat.Statuses.apply(target, CombatStatus.EVADING, 6); // mid-dash
                 })
-                .thenIdle(8).thenExecute(() -> release(g, AbilitySlot.SKILL_2))
-                .thenIdle(10).thenExecute(() -> {
-                    float dealt = hp[0] - target.getHealth();
-                    float plain = JJKConfig.get().red.damage * JJKConfig.get().red.blueAmplifyMultiplier * 0.55f;
-                    h.assertTrue(dealt >= plain, "amplified Red dealt " + dealt);
-                    h.assertTrue(ownedBlues(h, g).isEmpty(), "Blue was consumed by the collision");
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    press(g, AbilitySlot.SKILL_5);
+                    h.assertTrue(Combat.has(target, CombatStatus.GRABBED), "frozen in place");
                 })
+                .thenWaitUntil(() -> h.assertTrue(hp - target.getHealth() >= JJKConfig.get().gojo.redInterruptDamage * 0.6f, "the enhanced Red lands"))
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 100, padding = 16, skyAccess = true)
+    public void rapidPunchesLocksBarragesAndLaunches(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy target = dummy(h, 3.5, 4.5);
+        infinityOff(target);
+        target.setAutoHeal(false);
+        TrainingDummy g = gojo(h, 1.5, 4.5, target);
+        float hp = target.getHealth();
+        JJKConfig.Gojo cfg = JJKConfig.get().gojo;
+        boolean[] bulletArmor = new boolean[1];
+        h.startSequence()
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_3))
+                .thenIdle(cfg.punchesWindup + 4)
+                .thenExecute(() -> h.assertTrue(Combat.has(target, CombatStatus.GRABBED), "locked in place by the kick"))
+                .thenWaitUntil(() -> {
+                    if (Combat.has(g, CombatStatus.BULLET_ARMOR)) bulletArmor[0] = true;
+                    h.assertTrue(Combat.has(target, CombatStatus.LAUNCHED), "the final blow ragdolls them out");
+                })
+                .thenExecute(() -> {
+                    float want = cfg.punchesGrabDamage + cfg.punchesBarrage * cfg.punchesBarrageDamage + cfg.punchesHeavy * cfg.punchesHeavyDamage + cfg.punchesFinalDamage;
+                    h.assertTrue(hp - target.getHealth() >= want * 0.6f, "the whole sequence landed (" + (hp - target.getHealth()) + " of " + want + ")");
+                    h.assertTrue(bulletArmor[0], "bullet i-frames during the barrage");
+                    h.assertTrue(dev.rick.jjk.gojo.GojoState.of(g).faceGraterTarget(h.getLevel().getGameTime()) == target, "Face Grater is ready");
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 60, padding = 16, skyAccess = true)
+    public void rapidPunchesCantCatchARagdoll(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy target = dummy(h, 3.5, 4.5);
+        infinityOff(target);
+        TrainingDummy g = gojo(h, 1.5, 4.5, target);
+        dev.rick.jjk.core.combat.Statuses.apply(target, CombatStatus.KNOCKDOWN, 40);
+        float hp = target.getHealth();
+        h.startSequence()
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_3))
+                .thenIdle(JJKConfig.get().gojo.punchesWindup + 3)
+                .thenExecute(() -> {
+                    h.assertTrue(!Combat.has(target, CombatStatus.GRABBED), "no grab on a ragdolled target");
+                    h.assertTrue(target.getHealth() == hp, "and no damage");
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 80, padding = 16, skyAccess = true)
+    public void twofoldKickKicksTwiceAndBouncesHigher(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy target = dummy(h, 3.5, 4.5);
+        infinityOff(target);
+        target.setAutoHeal(false);
+        TrainingDummy g = gojo(h, 1.5, 4.5, target);
+        float hp = target.getHealth();
+        double ground = target.getY();
+        JJKConfig.Gojo cfg = JJKConfig.get().gojo;
+        float[] afterFirst = new float[1];
+        double[] peak = new double[1];
+        h.startSequence()
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_4))
+                .thenIdle(cfg.twofoldWindup + 2)
+                .thenExecute(() -> {
+                    afterFirst[0] = hp - target.getHealth();
+                    h.assertTrue(afterFirst[0] > 0, "first kick lands");
+                    h.assertTrue(Combat.has(g, CombatStatus.MELEE_ARMOR), "melee i-frames on hit");
+                })
+                .thenIdle(cfg.twofoldAnchorTicks + 2)
+                .thenExecute(() -> h.assertTrue(hp - target.getHealth() > afterFirst[0], "second kick lands"))
+                .thenWaitUntil(() -> {
+                    peak[0] = Math.max(peak[0], target.getY() - ground);
+                    h.assertTrue(peak[0] > 2.5, "bounced high (" + peak[0] + ")");
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 60, padding = 16, skyAccess = true)
+    public void twofoldKickFinisherIsPointBlankRed(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy target = dummy(h, 3.5, 4.5);
+        infinityOff(target);
+        target.setAutoHeal(false);
+        target.setHealth(target.getMaxHealth() * 0.15f);
+        TrainingDummy g = gojo(h, 1.5, 4.5, target);
+        h.startSequence()
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_4))
+                .thenWaitUntil(() -> h.assertTrue(target.isDeadOrDying(), "finished by the point-blank Red"))
                 .thenSucceed();
     }
 
@@ -463,36 +593,210 @@ public class GojoGameTests {
     // --- Teleport ---
 
     @GameTest(maxTicks = 40)
-    public void teleportLandsBehindTarget(GameTestHelper h) {
+    public void limitlessAppearsInFrontOfTarget(GameTestHelper h) {
         floor(h, 6);
-        TrainingDummy target = dummy(h, 4.5, 4.5);
+        TrainingDummy target = dummy(h, 6.5, 4.5);
         TrainingDummy g = gojo(h, 0.5, 4.5, target);
+        Casters.get(g).setNoCost(false); // cooldowns only run when costs do
+        Casters.get(g).setEnergy(Casters.get(g).maxEnergy());
         Vec3 toTarget = target.position().subtract(g.position());
-        press(g, AbilitySlot.SKILL_4);
-        Vec3 rel = g.position().subtract(target.position());
-        h.assertTrue(rel.dot(toTarget) > 0, "Gojo is behind the target (" + rel + ")");
-        h.assertTrue(g.position().distanceTo(target.position()) < 3, "and close to it");
-        Vec3 look = g.getLookAngle();
-        h.assertTrue(look.dot(target.position().subtract(g.position()).normalize()) > 0.5, "facing it");
-        h.assertTrue(h.getLevel().noCollision(g), "not inside blocks");
-        h.succeed();
+        h.startSequence()
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_5))
+                .thenIdle(JJKConfig.get().gojo.limitlessWindup + 1)
+                .thenExecute(() -> {
+                    Vec3 rel = g.position().subtract(target.position());
+                    h.assertTrue(rel.dot(toTarget) < 0, "Gojo is in front of the target (" + rel + ")");
+                    h.assertTrue(g.position().distanceTo(target.position()) < 3, "and close to it");
+                    h.assertTrue(g.getLookAngle().dot(target.position().subtract(g.position()).normalize()) > 0.5, "facing it");
+                    h.assertTrue(h.getLevel().noCollision(g), "not inside blocks");
+                    h.assertTrue(Casters.get(g).cooldown(AbilitySlot.SKILL_5) > 0, "15s cooldown started");
+                })
+                .thenSucceed();
     }
 
     @GameTest(maxTicks = 40)
-    public void teleportNeverPassesThroughWalls(GameTestHelper h) {
+    public void limitlessNeedsATarget(GameTestHelper h) {
         floor(h, 6);
         for (int y = 1; y < 6; y++) for (int z = -2; z < 10; z++) h.setBlock(3, y, z, Blocks.STONE);
-        TrainingDummy g = gojo(h, 1.5, 4, null);
-        face(g, h.absoluteVec(new Vec3(10, 1.6, 4.5)));
+        TrainingDummy hidden = dummy(h, 6.5, 4.5);
+        TrainingDummy g = gojo(h, 1.5, 4.5, hidden);
         Vec3 before = g.position();
         AbilityCaster c = Casters.get(g);
-        c.setNoCost(false);
-        float energy = c.energy();
-        boolean ok = c.input(AbilitySlot.SKILL_4, true, 0, 0, null);
-        h.assertTrue(g.getX() < h.absoluteVec(new Vec3(3, 0, 0)).x, "stayed on this side of the wall");
-        h.assertTrue(h.getLevel().noCollision(g), "not inside blocks");
-        if (!ok) h.assertTrue(c.energy() == energy && g.position().equals(before), "failed teleport costs nothing");
+        boolean ok = c.input(AbilitySlot.SKILL_5, true, 0, 0, null);
+        h.assertTrue(!ok, "nobody in sight behind the wall: nothing happens");
+        h.assertTrue(g.position().equals(before), "stayed put");
         h.succeed();
+    }
+
+    @GameTest(maxTicks = 40, padding = 16, skyAccess = true)
+    public void limitlessOnAnAirborneTargetKicksThemDown(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy target = dummy(h, 5.5, 4.5);
+        infinityOff(target);
+        target.setAutoHeal(false);
+        TrainingDummy g = gojo(h, 1.5, 4.5, target);
+        float hp = target.getHealth();
+        h.startSequence()
+                .thenExecute(() -> {
+                    target.teleportTo(target.getX(), target.getY() + 4, target.getZ());
+                    dev.rick.jjk.core.combat.Statuses.apply(target, CombatStatus.HOVER, 40);
+                    face(g, target.getBoundingBox().getCenter());
+                    press(g, AbilitySlot.SKILL_5);
+                })
+                .thenIdle(JJKConfig.get().gojo.limitlessWindup + 1)
+                .thenExecute(() -> {
+                    h.assertTrue(hp - target.getHealth() >= JJKConfig.get().gojo.limitlessAirKickDamage * 0.6f, "air kick");
+                    h.assertTrue(Combat.has(target, CombatStatus.SPIKED) || target.getDeltaMovement().y < 0, "sent toward the floor");
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 140, padding = 16, skyAccess = true)
+    public void faceGraterFollowsRapidPunches(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy target = dummy(h, 3.5, 4.5);
+        infinityOff(target);
+        target.setAutoHeal(false);
+        TrainingDummy g = gojo(h, 1.5, 4.5, target);
+        float[] hp = new float[1];
+        h.startSequence()
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_3))
+                .thenWaitUntil(() -> h.assertTrue(dev.rick.jjk.gojo.GojoState.of(g).faceGraterTarget(h.getLevel().getGameTime()) == target, "punches landed"))
+                .thenWaitUntil(() -> h.assertTrue(!Casters.get(g).isBusy(), "punches over"))
+                .thenExecute(() -> {
+                    hp[0] = target.getHealth();
+                    face(g, target.getBoundingBox().getCenter());
+                    h.assertTrue(Casters.get(g).input(AbilitySlot.SKILL_5, true, 0, 0, null), "Limitless becomes Face Grater");
+                })
+                .thenWaitUntil(() -> h.assertTrue(hp[0] - target.getHealth() >= JJKConfig.get().gojo.faceGraterDamage * 0.6f, "dragged and tossed"))
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 60)
+    public void dashBreaksOutOfARagdoll(GameTestHelper h) {
+        floor(h, 2);
+        TrainingDummy g = gojo(h, 4, 4, null);
+        AbilityCaster c = Casters.get(g);
+        dev.rick.jjk.core.combat.Statuses.apply(g, CombatStatus.HITSTUN, 30);
+        dev.rick.jjk.core.combat.Statuses.apply(g, CombatStatus.LAUNCHED, 30);
+        h.assertTrue(c.input(AbilitySlot.DASH, true, 0, 0, null), "dash while ragdolled is the escape");
+        h.assertTrue(!Combat.has(g, CombatStatus.LAUNCHED) && !Combat.has(g, CombatStatus.HITSTUN), "ragdoll cleared");
+        h.assertTrue(Combat.has(g, CombatStatus.EVADING), "with dash i-frames");
+        dev.rick.jjk.core.combat.Statuses.apply(g, CombatStatus.HITSTUN, 30);
+        dev.rick.jjk.core.combat.Statuses.apply(g, CombatStatus.LAUNCHED, 30);
+        h.assertTrue(!c.input(AbilitySlot.DASH, true, 0, 0, null), "on its own cooldown");
+        dev.rick.jjk.core.combat.Statuses.remove(g, CombatStatus.LAUNCHED);
+        dev.rick.jjk.core.combat.Statuses.apply(g, CombatStatus.GRABBED, 30);
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 100)
+    public void sixEyesHealsAndLastsSixtySeconds(GameTestHelper h) {
+        floor(h, 2);
+        TrainingDummy g = gojo(h, 4, 4, null);
+        g.setAutoHeal(false);
+        AbilityCaster c = Casters.get(g);
+        g.setHealth(g.getMaxHealth() * 0.5f);
+        float before = g.getHealth();
+        float drain = c.character().awakeningDrainPerSecond();
+        h.assertTrue(Math.abs(c.maxAwakening() / drain - 60) < 1, "the meter lasts 60 seconds (" + c.maxAwakening() / drain + ")");
+        c.setAwakening(c.maxAwakening());
+        h.startSequence()
+                .thenExecute(() -> h.assertTrue(c.input(AbilitySlot.ULTIMATE, true, 0, 0, null), "awakens"))
+                .thenWaitUntil(() -> h.assertTrue(c.isAwakened(), "awakened"))
+                .thenExecute(() -> h.assertTrue(g.getHealth() >= before + g.getMaxHealth() * 0.24f, "healed 25% (" + (g.getHealth() - before) + ")"))
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 200, padding = 16, skyAccess = true)
+    public void zeroTwoDomainOverloadsRushesThenBurnsOut(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy victim = dummy(h, 6, 4);
+        infinityOff(victim);
+        victim.setAutoHeal(false);
+        TrainingDummy g = gojo(h, 2, 4, victim);
+        AbilityCaster c = Casters.get(g);
+        c.setNoCost(false);
+        c.setEnergy(c.maxEnergy());
+        c.setAwakening(c.maxAwakening());
+        float hp = victim.getHealth();
+        h.startSequence()
+                .thenExecute(() -> h.assertTrue(c.input(AbilitySlot.ULTIMATE, true, 0, 0, null), "awakening starts"))
+                .thenIdle(3)
+                .thenExecute(() -> h.assertTrue(c.input(AbilitySlot.SKILL_5, true, 0, 0, null), "the Special during the sequence"))
+                .thenWaitUntil(() -> h.assertTrue(Combat.has(victim, CombatStatus.OVERLOAD), "the 0.2-second sure hit"))
+                .thenWaitUntil(() -> h.assertTrue(hp - victim.getHealth() > 30 || victim.isDeadOrDying(), "the rush lands"))
+                .thenWaitUntil(() -> h.assertTrue(!c.isAwakened() && !c.isBusy(), "burnt out afterwards"))
+                .thenExecute(() -> {
+                    h.assertTrue(c.cooldown(AbilitySlot.SKILL_1) > 0 && c.cooldown(AbilitySlot.SKILL_4) > 0, "base moveset on cooldown");
+                    h.assertTrue(c.cooldown(AbilitySlot.SKILL_5) == 0, "except Limitless");
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 120, padding = 32, skyAccess = true)
+    public void redMaxReboundDeliversABlackFlash(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy target = dummy(h, 6.5, 4.5);
+        infinityOff(target);
+        target.setAutoHeal(false);
+        TrainingDummy g = gojo(h, 1.5, 4.5, target);
+        awaken(g);
+        float hp = target.getHealth();
+        h.startSequence()
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_2))
+                .thenIdle(4)
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_5))
+                .thenWaitUntil(() -> h.assertTrue(Combat.has(g, CombatStatus.MELEE_ARMOR), "the rebound pulls the target in for a Black Flash (melee i-frames)"))
+                .thenIdle(1)
+                .thenExecute(() -> h.assertTrue(hp - target.getHealth() >= JJKConfig.get().maxRed.farDamage + JJKConfig.get().maxRed.blackFlashDamage * 0.8f,
+                        "pierced, then Black Flash (" + (hp - target.getHealth()) + ")"))
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 120, padding = 32, skyAccess = true)
+    public void redMaxReboundWithNobodyHurtsGojo(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy g = gojo(h, 1.5, 4.5, null);
+        g.setAutoHeal(false);
+        face(g, h.absoluteVec(new Vec3(12, 1.6, 4.5)));
+        awaken(g);
+        float hp = g.getHealth();
+        h.startSequence()
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_2))
+                .thenIdle(4)
+                .thenExecute(() -> press(g, AbilitySlot.SKILL_5))
+                .thenWaitUntil(() -> h.assertTrue(hp - g.getHealth() >= JJKConfig.get().maxRed.reboundSelfDamage * 0.6f, "the empty rebound hits Gojo"))
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 200, padding = 32, skyAccess = true)
+    public void unlimitedPurpleFromMaxBlueAndMaxRed(GameTestHelper h) {
+        floor(h, 6);
+        TrainingDummy g = gojo(h, 0.5, 4.5, null);
+        awaken(g);
+        TrainingDummy doomed = dummy(h, 6.5, 4.5);
+        infinityOff(doomed);
+        doomed.setAutoHeal(false);
+        doomed.setHealth(1);
+        TrainingDummy bystander = dummy(h, 7.5, 7.5);
+        infinityOff(bystander);
+        bystander.setAutoHeal(false);
+        float hp = bystander.getHealth();
+        Vec3 core = h.absoluteVec(new Vec3(6.5, 1.8, 4.5));
+        BlueEntity[] blue = new BlueEntity[1];
+        h.startSequence()
+                .thenExecute(() -> blue[0] = BlueEntity.spawn(h.getLevel(), g, core, BlueEntity.Params.max()))
+                .thenWaitUntil(() -> h.assertTrue(blue[0].isLingering(), "the kill leaves the orb lingering"))
+                .thenExecute(() -> {
+                    face(g, blue[0].position());
+                    press(g, AbilitySlot.SKILL_2);
+                })
+                .thenWaitUntil(() -> h.assertTrue(blue[0].isRemoved(), "Red MAX sets it off"))
+                .thenExecute(() -> h.assertTrue(Casters.get(g).awakening() == 0 || Casters.get(g).noCost(), "the whole Awakening is spent"))
+                .thenWaitUntil(() -> h.assertTrue(hp - bystander.getHealth() >= JJKConfig.get().gojo.unlimitedPurpleMinDamage * 0.5f || bystander.isDeadOrDying(),
+                        "the nuke goes off"))
+                .thenSucceed();
     }
 
     // --- Domain ---
@@ -506,9 +810,7 @@ public class GojoGameTests {
         h.startSequence()
                 .thenExecute(() -> {
                     awaken(g);
-                    press(g, AbilitySlot.ULTIMATE);
-                    // The victim tries to charge Red; the sure-hit will interrupt it.
-                    press(victim, AbilitySlot.SKILL_2);
+                    press(g, AbilitySlot.SKILL_4);
                 })
                 .thenWaitUntil(() -> h.assertTrue(DomainManager.ownedBy(g) != null && DomainManager.ownedBy(g).phase() == DomainInstance.Phase.ACTIVE, "domain active"))
                 .thenIdle(3)

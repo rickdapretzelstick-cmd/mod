@@ -46,7 +46,7 @@ public final class UnlimitedVoidAbility extends Ability implements dev.rick.jjk.
 
     @Override
     public int cooldown(AbilityCaster caster) {
-        return JJKConfig.get().domain.cooldown;
+        return JJKConfig.get().gojo.infiniteVoidCooldown;
     }
 
     @Override
@@ -90,8 +90,12 @@ public final class UnlimitedVoidAbility extends Ability implements dev.rick.jjk.
                 if (!expanded) {
                     caster.setEnergy(caster.energy() + JJKConfig.get().domain.cost * 0.75f);
                     if (caster.isAwakened()) caster.setAwakening(caster.awakening() + JJKConfig.get().awakening.infiniteVoidCost * 0.75f);
-                    caster.resetSlot(AbilitySlot.ULTIMATE);
-                    caster.startCooldown(AbilitySlot.ULTIMATE, 60);
+                    for (AbilitySlot s : AbilitySlot.values()) {
+                        if (caster.ability(s) == ability) {
+                            caster.resetSlot(s);
+                            caster.startCooldown(s, 60);
+                        }
+                    }
                     Fx.play(level, "domain_fizzle", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
                 }
                 super.interrupt(reason);

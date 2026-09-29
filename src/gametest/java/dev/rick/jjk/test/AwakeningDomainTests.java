@@ -103,10 +103,11 @@ public class AwakeningDomainTests {
                 .thenExecute(() -> h.assertTrue(Combat.has(g, CombatStatus.AWAKENING), "transition state (untouchable, rooted)"))
                 .thenWaitUntil(() -> h.assertTrue(c.isAwakened(), "awakened after the transition"))
                 .thenExecute(() -> {
-                    h.assertValueEqual(c.ability(AbilitySlot.SKILL_1).id, BlueAbility.MAX_ID, "Z is Max Blue");
-                    h.assertValueEqual(c.ability(AbilitySlot.SKILL_2).id, RedAbility.MAX_ID, "X is Max Red");
-                    h.assertValueEqual(c.ability(AbilitySlot.SKILL_3).id, HollowPurpleAbility.ID, "C is Hollow Purple");
-                    h.assertValueEqual(c.ability(AbilitySlot.ULTIMATE).id, UnlimitedVoid.ID, "G is Infinite Void");
+                    h.assertValueEqual(c.ability(AbilitySlot.SKILL_1).id, BlueAbility.MAX_ID, "1 is Lapse Blue MAX");
+                    h.assertValueEqual(c.ability(AbilitySlot.SKILL_2).id, RedAbility.MAX_ID, "2 is Reversal Red MAX");
+                    h.assertValueEqual(c.ability(AbilitySlot.SKILL_3).id, HollowPurpleAbility.ID, "3 is Hollow Purple");
+                    h.assertValueEqual(c.ability(AbilitySlot.SKILL_4).id, UnlimitedVoid.ID, "4 is Infinite Void");
+                    h.assertValueEqual(c.ability(AbilitySlot.SKILL_5).id, dev.rick.jjk.gojo.TeleportAbility.ID, "R is still Limitless");
                     h.assertTrue(!c.toggled("infinity"), "Infinity is out of the moveset, so awakening doesn't raise it");
                 })
                 .thenIdle(20)

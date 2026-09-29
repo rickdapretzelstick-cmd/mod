@@ -62,7 +62,7 @@ public class BlueEntity extends TechniqueEntity {
         public static Params max() {
             JJKConfig.MaxBlue c = JJKConfig.get().maxBlue;
             JJKConfig.Blue b = JJKConfig.get().blue;
-            return new Params(c.pullRadius, c.pullStrength, c.duration, c.tickDamage, b.tickDamageInterval, c.collapseDamage, c.collapseStun,
+            return new Params(c.pullRadius, c.pullStrength, c.duration, c.tickDamage, c.tickDamageInterval, c.collapseDamage, c.collapseStun,
                     c.blockPullRadius, b.pullsBlocks, c.power, true);
         }
     }
@@ -101,6 +101,17 @@ public class BlueEntity extends TechniqueEntity {
 
     public boolean isCollapsing() {
         return phase() == COLLAPSING;
+    }
+
+    private boolean lingering;
+
+    /** Lapse Blue MAX killed someone: the orb stays a while, and is what Unlimited Purple is made from. */
+    public boolean isLingering() {
+        return lingering && !isCollapsing() && !isRemoved();
+    }
+
+    public boolean isMax() {
+        return params.ultimate();
     }
 
     /** Blue near a point (for Red amplification). */
@@ -185,10 +196,17 @@ public class BlueEntity extends TechniqueEntity {
                 Statuses.apply(living, CombatStatus.PULLED, 4);
                 Combat.state(living).setPull(core, speed, now);
                 if (damageTick && params.tickDamage() > 0) {
+                    // After a kill the rest of the orb's ticks go to everyone else it holds, at half damage.
+                    float dmg = lingering ? params.tickDamage() * 0.5f : params.tickDamage();
                     HitResolver.resolve(Hit.builder(owner, params.ultimate() ? "max_blue" : "blue").direct(this).type(ModDamageTypes.BLUE)
-                            .damage(params.tickDamage()).tag(params.ultimate() ? AttackTag.ULTIMATE : AttackTag.LIMITLESS)
+                            .damage(dmg).tag(params.ultimate() ? AttackTag.ULTIMATE : AttackTag.LIMITLESS)
                             .tag(AttackTag.TECHNIQUE, AttackTag.LIMITLESS, AttackTag.AREA).origin(core).hitstun(8)
                             .knockback(Knockback.NONE).noComboScaling().fx("blue_hit", 0.6f).build(), living);
+                    if (params.ultimate() && !lingering && living.isDeadOrDying()) {
+                        lingering = true;
+                        lifetime = Math.max(lifetime, tickCount + JJKConfig.get().maxBlue.lingerTicks);
+                        Fx.play(level, "max_blue_collapse", core, Vec3.ZERO, power * 0.6f, getId());
+                    }
                 }
             } else if (e instanceof ItemEntity || e instanceof Projectile || e instanceof net.minecraft.world.entity.item.FallingBlockEntity) {
                 Motion.set(e, e.getDeltaMovement().scale(0.5).add(dir.scale(Math.min(0.45 + closeness, d * 0.5))));

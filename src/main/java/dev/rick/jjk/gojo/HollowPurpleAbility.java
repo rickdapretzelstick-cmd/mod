@@ -110,9 +110,12 @@ public final class HollowPurpleAbility extends Ability {
                 Fx.play(level, "purple_charged", user.getEyePosition().add(user.getLookAngle().scale(1.5)), user.getLookAngle(), 1f, user.getId());
                 Fx.shake(level, user.position(), 24, 0.4f, 10);
             }
+            // Airborne: Gojo hovers and aims freely (the look direction already carries pitch).
+            if (dev.rick.jjk.core.combat.Combat.isAirborne(user)) dev.rick.jjk.core.combat.Statuses.apply(user, dev.rick.jjk.core.combat.CombatStatus.HOVER, 3);
             if (age >= fusionEnd()) {
                 chargedTicks++;
-                if (!held || chargedTicks >= cfg.maxHoldTicks) fire(cfg);
+                // JJS: it's released about three seconds in, however the key is held.
+                if (chargedTicks >= cfg.maxHoldTicks) fire(cfg);
             }
         }
 

@@ -326,6 +326,8 @@ public final class AbilityCaster {
     public boolean input(AbilitySlot slot, boolean pressed, float forward, float strafe, @Nullable Entity targetHint) {
         if (!(owner.level() instanceof ServerLevel level)) return false;
         Ability ability = ability(slot);
+        // The Awakening key is always the domain counter, even when the current kit has nothing bound to it.
+        if (ability == null && pressed && slot == AbilitySlot.ULTIMATE && dev.rick.jjk.core.domain.DomainCounter.tryCounter(this)) return true;
         if (ability == null) return refuse("no_ability");
 
         if (!pressed) {
@@ -339,6 +341,11 @@ public final class AbilityCaster {
 
         if (ability.kind() == Ability.Kind.TOGGLE && ability.isToggled(this)) {
             ability.toggleOff(this, "manual");
+            return true;
+        }
+        if (state.actionsLocked() && cast instanceof LockedInputCast locked && !cast.isFinished() && locked.pressWhileLocked(slot)) {
+            lastRefusal = null;
+            dirty = true;
             return true;
         }
         // JJS: the dash key breaks out of a ragdoll (launched, spiked or knocked down) on its own cooldown.

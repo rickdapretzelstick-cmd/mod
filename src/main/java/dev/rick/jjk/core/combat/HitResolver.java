@@ -46,6 +46,9 @@ public final class HitResolver {
             Fx.play(level, "evade", target.position().add(0, target.getBbHeight() / 2, 0));
             return finish(new HitResult(hit, target, HitResult.Outcome.WHIFF, 0, 0));
         }
+        if (!sureHit && hit.has(AttackTag.PROJECTILE) && !hit.has(AttackTag.MELEE) && state.isProjectileImmune()) {
+            return finish(new HitResult(hit, target, HitResult.Outcome.WHIFF, 0, 0));
+        }
         if (!sureHit && hit.has(AttackTag.MELEE) && !hit.has(AttackTag.OTG) && (state.isMeleeImmune() || state.isDowned())) {
             return finish(new HitResult(hit, target, HitResult.Outcome.WHIFF, 0, 0));
         }

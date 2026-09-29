@@ -37,6 +37,13 @@ public class RedEntity extends TechniqueEntity {
     private float charge;
     private double travelled;
     private boolean max;
+    /** Damage override for this orb (Red's "Aka" variant), or -1. */
+    private float damageOverride = -1;
+    /** Red MAX: a piercing orb (not an explosion) that can rebound to Gojo. */
+    private boolean piercing, rebound, returning;
+    private final java.util.Set<java.util.UUID> pierced = new java.util.HashSet<>();
+    @org.jetbrains.annotations.Nullable private LivingEntity caught;
+    private int blocksCarved;
 
     public RedEntity(EntityType<? extends RedEntity> type, Level level) {
         super(type, level);
@@ -59,6 +66,96 @@ public class RedEntity extends TechniqueEntity {
         return e;
     }
 
+    public RedEntity setDamage(float damage) {
+        this.damageOverride = damage;
+        return this;
+    }
+
+    /** Reversal Red MAX: pierces through everyone in its path for 100 studs; {@code rebound} brings it back to Gojo. */
+    public static RedEntity fireMax(ServerLevel level, LivingEntity owner, Vec3 from, Vec3 dir, boolean rebound) {
+        RedEntity e = fire(level, owner, from, dir, 0, true);
+        e.piercing = true;
+        e.rebound = rebound;
+        e.setScale(3.5f);
+        return e;
+    }
+
+    private void tickPiercing(ServerLevel level) {
+        JJKConfig.MaxRed cfg = JJKConfig.get().maxRed;
+        if (returning && owner != null) {
+            Vec3 home = owner.getBoundingBox().getCenter().subtract(position());
+            if (home.length() < 1.6 || tickCount > 200) {
+                reboundHome(level, cfg);
+                discard();
+                return;
+            }
+            direction = home.normalize();
+        }
+        Vec3 from = position();
+        Vec3 to = from.add(direction.scale(cfg.speed));
+        if (!level.isPositionEntityTicking(net.minecraft.core.BlockPos.containing(to))) {
+            // The edge of the simulated world (it would freeze there): a rebounding orb turns back, anything else fades.
+            if (rebound && !returning && owner != null) returning = true;
+            else discard();
+            return;
+        }
+        // Through a Lapse Blue MAX left lingering after a kill: Unlimited Purple.
+        BlueEntity blue = BlueEntity.findNear(level, to, 2.5);
+        if (blue != null && blue.isLingering() && blue.owner() == owner) {
+            dev.rick.jjk.gojo.UnlimitedPurple.start(level, owner, blue);
+            discard();
+            return;
+        }
+        float t = (float) Mth.clamp(travelled / cfg.range, 0, 1);
+        float damage = Mth.lerp(t, cfg.nearDamage, cfg.farDamage);
+        for (LivingEntity victim : HitboxQuery.targets(owner, HitShape.capsule(from, to, 1.2), 0.2, false)) {
+            if (victim == owner || !pierced.add(victim.getUUID())) continue;
+            Hit hit = Hit.builder(owner, "max_red").direct(this).type(ModDamageTypes.RED).damage(damage)
+                    .tag(AttackTag.TECHNIQUE, AttackTag.LIMITLESS, AttackTag.PROJECTILE, AttackTag.UNBLOCKABLE, AttackTag.ULTIMATE, AttackTag.OTG)
+                    .origin(from).knockback(Knockback.directional(direction, 0.9, 0.3)).hitstun(18).status(CombatStatus.LAUNCHED, 16)
+                    .fx("red_hit", 1.5f).build();
+            if (HitResolver.resolve(hit, victim).connected() && rebound && caught == null) caught = victim;
+        }
+        // It bores through what's in the way.
+        if (Destruction.allowed(level) && blocksCarved < cfg.maxBlocksDestroyed
+                && !level.getBlockState(net.minecraft.core.BlockPos.containing(to)).isAir()) {
+            blocksCarved += Destruction.sphere(level, to, 1.4, 6f, Math.max(0, cfg.maxBlocksDestroyed - blocksCarved), owner, null, "jjk:max_red");
+        }
+        setPos(to.x, to.y, to.z);
+        setDeltaMovement(direction.scale(cfg.speed));
+        if (!returning) travelled += cfg.speed;
+        if (!returning && travelled >= cfg.range) {
+            if (rebound && owner != null) {
+                returning = true;
+                Fx.play(level, "red_full", to, direction.scale(-1), 1.5f, owner.getId());
+            } else {
+                Fx.play(level, "red_fizzle", to, Vec3.ZERO, 2f, owner != null ? owner.getId() : -1);
+                discard();
+            }
+        }
+    }
+
+    /** The rebound reaches Gojo: the target it caught gets a Black Flash; an empty return hits him instead. */
+    private void reboundHome(ServerLevel level, JJKConfig.MaxRed cfg) {
+        if (owner == null) return;
+        if (caught != null && caught.isAlive()) {
+            Vec3 front = owner.position().add(dev.rick.jjk.hakari.HakariCombat.flat(owner).scale(1.4));
+            caught.teleportTo(front.x, front.y, front.z);
+            dev.rick.jjk.core.combat.Statuses.apply(owner, CombatStatus.MELEE_ARMOR, 16);
+            dev.rick.jjk.hakari.HakariCombat.faceTowards(owner, caught.getBoundingBox().getCenter());
+            dev.rick.jjk.core.anim.Anim.play(owner, "black_flash");
+            Hit bf = Hit.builder(owner, "max_red").type(ModDamageTypes.MELEE).damage(cfg.blackFlashDamage)
+                    .tag(AttackTag.MELEE, AttackTag.UNBLOCKABLE, AttackTag.ULTIMATE).origin(owner.getEyePosition())
+                    .knockback(Knockback.directional(dev.rick.jjk.hakari.HakariCombat.flat(owner), 2.0, 0.6)).hitstun(30)
+                    .status(CombatStatus.LAUNCHED, 30).fx("finisher", 0.9f).build();
+            HitResolver.resolve(bf, caught);
+            Fx.shake(level, owner.position(), 30, 1.2f, 14);
+        } else {
+            Fx.play(level, "red_explosion", owner.getBoundingBox().getCenter(), Vec3.ZERO, 1f, owner.getId());
+            owner.hurtServer(level, ModDamageTypes.source(level, ModDamageTypes.RED, this, owner), cfg.reboundSelfDamage);
+        }
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -67,12 +164,16 @@ public class RedEntity extends TechniqueEntity {
             discard();
             return;
         }
+        if (piercing) {
+            tickPiercing(level);
+            return;
+        }
         JJKConfig.Red cfg = JJKConfig.get().red;
         Vec3 from = position();
         Vec3 step = direction.scale(cfg.speed);
         Vec3 to = from.add(step);
-        if (!level.isLoaded(net.minecraft.core.BlockPos.containing(to))) {
-            detonate(level, owner, from, charge, this, max);
+        if (!level.isPositionEntityTicking(net.minecraft.core.BlockPos.containing(to))) {
+            detonateSelf(level, from);
             discard();
             return;
         }
@@ -91,7 +192,7 @@ public class RedEntity extends TechniqueEntity {
         BlueEntity blue = BlueEntity.findNear(level, to, 1.8);
         if (impact == null && blue != null && blue.owner() == owner) impact = blue.position();
         if (impact != null) {
-            detonate(level, owner, impact, charge, this, max);
+            detonateSelf(level, impact);
             discard();
             return;
         }
@@ -99,9 +200,13 @@ public class RedEntity extends TechniqueEntity {
         setDeltaMovement(step);
         travelled += cfg.speed;
         if (travelled >= cfg.range) {
-            detonate(level, owner, to, charge, this, max);
+            detonateSelf(level, to);
             discard();
         }
+    }
+
+    private void detonateSelf(ServerLevel level, Vec3 at) {
+        detonate(level, owner, at, charge, this, max, damageOverride);
     }
 
     /**
@@ -113,10 +218,14 @@ public class RedEntity extends TechniqueEntity {
     }
 
     public static void detonate(ServerLevel level, LivingEntity owner, Vec3 pos, float charge, Entity direct, boolean max) {
+        detonate(level, owner, pos, charge, direct, max, -1);
+    }
+
+    public static void detonate(ServerLevel level, LivingEntity owner, Vec3 pos, float charge, Entity direct, boolean max, float damageOverride) {
         JJKConfig.Red cfg = JJKConfig.get().red;
         JJKConfig.MaxRed mcfg = JJKConfig.get().maxRed;
         double radius = Mth.lerp(charge, cfg.radius, cfg.chargedRadius) * (max ? mcfg.radiusMultiplier : 1);
-        float damage = Mth.lerp(charge, cfg.damage, cfg.chargedDamage) * (max ? mcfg.damageMultiplier : 1);
+        float damage = damageOverride > 0 ? damageOverride : Mth.lerp(charge, cfg.damage, cfg.chargedDamage) * (max ? mcfg.damageMultiplier : 1);
         double knockback = cfg.knockback * (0.8 + 0.4 * charge) * (max ? mcfg.knockbackMultiplier : 1);
         int maxBlocks = max ? mcfg.maxBlocksDestroyed : cfg.maxBlocksDestroyed;
         String fx = max ? "max_red_explosion" : "red_explosion";
@@ -143,6 +252,18 @@ public class RedEntity extends TechniqueEntity {
                 .origin(pos).knockback(Knockback.radial(pos, knockback, cfg.launch)).hitstun(cfg.hitstun)
                 .status(CombatStatus.LAUNCHED, 28).guardDamage(3).tag(max ? AttackTag.ULTIMATE : AttackTag.LIMITLESS).fx("red_hit", 1.2f).build();
         for (LivingEntity t : HitboxQuery.targets(owner, HitShape.sphere(pos, r), 0.2, false)) {
+            // Finisher: shattered by the blast.
+            if (!max && dev.rick.jjk.gojo.GojoCombat.finishable(t)) {
+                dev.rick.jjk.gojo.GojoCombat.execute(owner, t, "red", "red_hit");
+                continue;
+            }
+            // Through a guard: half damage, and it can neither kill nor send them flying.
+            if (dev.rick.jjk.core.combat.Combat.state(t).isGuarding()) {
+                float half = Math.min(damage * 0.5f, Math.max(0, t.getHealth() - 1));
+                HitResolver.resolve(hit.toBuilder().damage(half / Math.max(0.01f, JJKConfig.get().guard.blockedTechniqueDamageScale))
+                        .knockback(Knockback.NONE).build(), t);
+                continue;
+            }
             // Falloff: full power in the core, 60% at the edge.
             double d = t.getBoundingBox().getCenter().distanceTo(pos);
             float f = (float) Mth.clamp(1.0 - 0.4 * d / r, 0.6, 1.0);

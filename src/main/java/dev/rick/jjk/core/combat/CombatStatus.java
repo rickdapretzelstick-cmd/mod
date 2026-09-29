@@ -58,6 +58,10 @@ public final class CombatStatus {
     public static final CombatStatus JACKPOT = register(builder("jackpot"));
     /** Rhythm's reward: every Jackpot move hits harder while it lasts. */
     public static final CombatStatus LUCKY_STREAK = register(builder("lucky_streak"));
+    /** JJS "melee i-frames": melee can't touch them (Gojo mid Lapse Blue kick, Twofold Kick, Red MAX's Black Flash...). */
+    public static final CombatStatus MELEE_ARMOR = register(builder("melee_armor").meleeImmune());
+    /** JJS "bullet i-frames": projectiles pass harmlessly (Gojo during Rapid Punches). */
+    public static final CombatStatus BULLET_ARMOR = register(builder("bullet_armor").projectileImmune());
 
     public final String id;
     public final int index;
@@ -68,6 +72,7 @@ public final class CombatStatus {
     public final boolean downed;
     public final boolean meleeImmune;
     public final boolean evasive;
+    public final boolean projectileImmune;
     public final float gravityScale;
 
     private CombatStatus(Builder b, int index) {
@@ -80,6 +85,7 @@ public final class CombatStatus {
         this.downed = b.downed;
         this.meleeImmune = b.meleeImmune;
         this.evasive = b.evasive;
+        this.projectileImmune = b.projectileImmune;
         this.gravityScale = b.gravity;
     }
 
@@ -112,7 +118,7 @@ public final class CombatStatus {
 
     public static final class Builder {
         private final String id;
-        private boolean locksMovement, locksActions, locksTechniques, interrupts, downed, meleeImmune, evasive;
+        private boolean locksMovement, locksActions, locksTechniques, interrupts, downed, meleeImmune, evasive, projectileImmune;
         private float gravity = 1f;
 
         private Builder(String id) { this.id = id; }
@@ -123,6 +129,7 @@ public final class CombatStatus {
         public Builder downed() { downed = true; return this; }
         public Builder meleeImmune() { meleeImmune = true; return this; }
         public Builder evasive() { evasive = true; return this; }
+        public Builder projectileImmune() { projectileImmune = true; return this; }
         public Builder gravity(float g) { gravity = g; return this; }
     }
 }
