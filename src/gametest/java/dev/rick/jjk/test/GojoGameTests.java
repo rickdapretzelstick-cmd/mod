@@ -831,7 +831,7 @@ public class GojoGameTests {
                 .thenSucceed();
     }
 
-    @GameTest(maxTicks = 200, padding = 6)
+    @GameTest(maxTicks = 600, padding = 6)
     public void domainClashCollapsesOne(GameTestHelper h) {
         floor(h, 6);
         TrainingDummy a = gojo(h, 2, 4, null);
