@@ -83,6 +83,7 @@ public class JJKClient implements ClientModInitializer {
         registerReceivers();
 
         ClientTickEvents.END_CLIENT_TICK.register(JJKClient::tick);
+        ClientTickEvents.START_CLIENT_TICK.register(InputHandler::beforeVanillaKeys);
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             InputHandler.releaseAll(null);
             ClientState.reset();

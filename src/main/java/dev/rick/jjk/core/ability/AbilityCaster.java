@@ -341,6 +341,14 @@ public final class AbilityCaster {
             ability.toggleOff(this, "manual");
             return true;
         }
+        // JJS: the dash key breaks out of a ragdoll (launched, spiked or knocked down) on its own cooldown.
+        if (slot == AbilitySlot.DASH && state.actionsLocked()) {
+            if (dev.rick.jjk.core.ability.common.DashAbility.ragdollEscape(this, state, forward, strafe)) {
+                lastRefusal = null;
+                dirty = true;
+                return true;
+            }
+        }
         if (state.actionsLocked()) return refuse("stunned");
         if (ability.isTechnique() && state.techniquesLocked()) return refuse("technique_locked");
         // The character can take the press itself (a combination during another move's wind-up, a follow-up).

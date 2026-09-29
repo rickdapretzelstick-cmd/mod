@@ -129,6 +129,8 @@ public final class JJKConfig {
         public double airSpeed = 1.05;
         public int cooldown = 28;
         public int invulnerabilityTicks = 4;
+        /** Ticks between ragdoll escapes (dash while launched / spiked / knocked down). */
+        public int ragdollEscapeCooldown = 200;
     }
 
     public static class Infinity {
@@ -394,6 +396,8 @@ public final class JJKConfig {
     public static class Client {
         /** 0 = minimal, 1 = reduced, 2 = full, 3 = extreme */
         public int particleQuality = 2;
+        /** Which default key layout the player's binds were last moved to (2 = the JJS layout). */
+        public int controlsLayout = 0;
         public boolean screenShake = true;
         public float screenShakeScale = 1.0f;
         public boolean screenFlashes = true;

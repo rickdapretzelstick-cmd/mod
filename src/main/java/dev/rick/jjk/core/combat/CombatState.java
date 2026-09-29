@@ -37,6 +37,9 @@ public final class CombatState {
         return ticks[status.index];
     }
 
+    /** Game time the ragdoll escape (dash while ragdolled) is ready again. */
+    public long ragdollEscapeReadyAt;
+
     public boolean has(CombatStatus status) {
         return get(status) > 0;
     }

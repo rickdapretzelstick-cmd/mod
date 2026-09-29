@@ -45,14 +45,18 @@ public final class InputHandler {
     private InputHandler() {}
 
     public static void init() {
-        bind(AbilitySlot.SKILL_1, "skill_1", InputConstants.KEY_Z);
-        bind(AbilitySlot.SKILL_2, "skill_2", InputConstants.KEY_X);
-        bind(AbilitySlot.SKILL_3, "skill_3", InputConstants.KEY_C);
-        bind(AbilitySlot.SKILL_4, "skill_4", InputConstants.KEY_V);
-        bind(AbilitySlot.SKILL_5, "skill_5", InputConstants.KEY_B);
+        // Jujutsu Shenanigans' PC controls: M1 attack, 1-4 moves, R special, G awakening, F block, Q dash / ragdoll
+        // escape (double-tap W sprint and Space jump are Minecraft's own). In combat mode these keys belong to the mod:
+        // the hotbar, drop and offhand-swap actions sharing them are held back (see beforeVanillaKeys); Vanilla mode gives
+        // them back.
+        bind(AbilitySlot.SKILL_1, "skill_1", InputConstants.KEY_1);
+        bind(AbilitySlot.SKILL_2, "skill_2", InputConstants.KEY_2);
+        bind(AbilitySlot.SKILL_3, "skill_3", InputConstants.KEY_3);
+        bind(AbilitySlot.SKILL_4, "skill_4", InputConstants.KEY_4);
+        bind(AbilitySlot.SKILL_5, "skill_5", InputConstants.KEY_R);
         bind(AbilitySlot.ULTIMATE, "ultimate", InputConstants.KEY_G);
-        bind(AbilitySlot.GUARD, "guard", InputConstants.KEY_R);
-        bind(AbilitySlot.DASH, "dash", InputConstants.KEY_LALT);
+        bind(AbilitySlot.GUARD, "guard", InputConstants.KEY_F);
+        bind(AbilitySlot.DASH, "dash", InputConstants.KEY_Q);
         stanceKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.stance", InputConstants.Type.KEYBOARD, InputConstants.KEY_GRAVE, CATEGORY));
         characterKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.character_menu", InputConstants.Type.KEYBOARD, InputConstants.KEY_K, CATEGORY));
         modeKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.combat_mode", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY));
@@ -61,6 +65,56 @@ public final class InputHandler {
     private static void bind(AbilitySlot slot, String name, int key) {
         KEYS.put(slot, KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk." + name, InputConstants.Type.KEYBOARD, key, CATEGORY)));
         DOWN.put(slot, false);
+    }
+
+    /**
+     * Start of the client tick, before Minecraft handles its own keys: in combat mode, vanilla actions bound to the same
+     * key as one of this mod's (hotbar slots 1-4 under the moves, drop under dash, offhand swap under block) are held
+     * back so pressing a move doesn't also change slot or throw the held item.
+     */
+    public static void beforeVanillaKeys(Minecraft mc) {
+        migrateLayout(mc);
+        if (mc.player == null || mc.gui.screen() != null || !dev.rick.jjk.client.CombatMode.enabled() || !ClientState.hasCharacter()) return;
+        java.util.List<KeyMapping> vanilla = new java.util.ArrayList<>(java.util.List.of(mc.options.keyHotbarSlots));
+        vanilla.add(mc.options.keyDrop);
+        vanilla.add(mc.options.keySwapOffhand);
+        for (KeyMapping v : vanilla) {
+            if (v.isUnbound()) continue;
+            for (KeyMapping ours : KEYS.values()) {
+                if (!ours.isUnbound() && v.same(ours)) {
+                    while (v.consumeClick()) {}
+                    break;
+                }
+            }
+        }
+    }
+
+    private static boolean migrated;
+    /** The pre-JJS default keys, per slot: binds still on these move to the JJS layout once. */
+    private static final Map<AbilitySlot, Integer> OLD_DEFAULTS = Map.of(AbilitySlot.SKILL_1, InputConstants.KEY_Z,
+            AbilitySlot.SKILL_2, InputConstants.KEY_X, AbilitySlot.SKILL_3, InputConstants.KEY_C, AbilitySlot.SKILL_4, InputConstants.KEY_V,
+            AbilitySlot.SKILL_5, InputConstants.KEY_B, AbilitySlot.GUARD, InputConstants.KEY_R, AbilitySlot.DASH, InputConstants.KEY_LALT);
+
+    /** Players upgrading from the old layout get the JJS keys, unless they had rebound a key themselves. */
+    private static void migrateLayout(Minecraft mc) {
+        if (migrated) return;
+        migrated = true;
+        var cfg = dev.rick.jjk.config.JJKConfig.get().client;
+        if (cfg.controlsLayout >= 2) return;
+        boolean changed = false;
+        for (var e : OLD_DEFAULTS.entrySet()) {
+            KeyMapping k = KEYS.get(e.getKey());
+            if (k != null && k.saveString().equals(InputConstants.Type.KEYBOARD.getOrCreate(e.getValue()).getName())) {
+                k.setKey(k.getDefaultKey());
+                changed = true;
+            }
+        }
+        if (changed) {
+            KeyMapping.resetMapping();
+            mc.options.save();
+        }
+        cfg.controlsLayout = 2;
+        dev.rick.jjk.config.JJKConfig.save();
     }
 
     /** Called every client tick. */
