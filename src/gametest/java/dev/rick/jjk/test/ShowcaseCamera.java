@@ -22,6 +22,9 @@ public final class ShowcaseCamera {
     /** Holds the current shot still (for moves that cross the arena, like teleports). */
     public static volatile boolean frozen;
 
+    /** 0..1 while a frame-stepped recording pins the sub-tick moment being drawn; -1 otherwise. */
+    public static volatile float pinnedPartial = -1;
+
     @Nullable private static Vec3 smoothPos;
     @Nullable private static double[] last;
 

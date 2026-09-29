@@ -109,10 +109,14 @@ public final class ClashClient {
         return current != null && current.local >= 0;
     }
 
+    /** A recording stepping the game frame by frame pins the sub-tick moment here (0..1); -1 = live. */
+    public static volatile float recordingPartial = -1;
+
     /** Game time with sub-tick precision (the same clock draws the notes and stamps the presses). */
     public static double now() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return 0;
+        if (recordingPartial >= 0) return mc.level.getGameTime() + recordingPartial;
         if (tickTime != mc.level.getGameTime()) {
             tickTime = mc.level.getGameTime();
             tickNanos = System.nanoTime();

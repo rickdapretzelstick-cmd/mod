@@ -65,8 +65,8 @@ public class ClashCinematicClientTest extends PresentationClientTest {
             KeyMapping g = key("key.jjk.ultimate");
             ctx.waitTicks(60);
 
-            // Film slowed down: 3 ticks a second, so each tick is caught several times over.
-            cmd("tick rate 3");
+            // Filmed frame by frame: the game is frozen and stepped one tick at a time, each tick drawn at three sub-tick moments.
+            cmd("tick freeze");
             ctx.waitTicks(2);
 
             section("STANDOFF");
@@ -108,11 +108,53 @@ public class ClashCinematicClientTest extends PresentationClientTest {
             ShowcaseCamera.set(60, 10f, 3f, 6f);
             film(60);
             ShowcaseCamera.off();
-            cmd("tick rate 20");
+            ShowcaseCamera.pinnedPartial = -1;
+            ClashClient.recordingPartial = -1;
+            cmd("tick unfreeze");
             try {
                 java.nio.file.Files.writeString(java.nio.file.Path.of("screenshots", "frames.txt"), log.toString());
             } catch (java.io.IOException e) {
                 throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /** Sub-tick moments drawn per game tick: 3 per tick is 60 fps at real speed. */
+    private static final int SUB = 3;
+
+    /**
+     * Films {@code n} game ticks with the game frozen: step one tick, then draw it at SUB evenly spaced sub-tick
+     * moments (every clock the mod reads is pinned to the moment being drawn), pressing clash notes as they come due.
+     */
+    @Override
+    protected void film(int n) {
+        int[] keys = {com.mojang.blaze3d.platform.InputConstants.KEY_LEFT, com.mojang.blaze3d.platform.InputConstants.KEY_DOWN,
+                com.mojang.blaze3d.platform.InputConstants.KEY_UP, com.mojang.blaze3d.platform.InputConstants.KEY_RIGHT};
+        for (int t = 0; t < n; t++) {
+            long before = ctx.computeOnClient(mc -> mc.level.getGameTime());
+            cmd("tick step 1");
+            for (int w = 0; w < 40 && ctx.computeOnClient(mc -> mc.level.getGameTime()) == before; w++) ctx.waitTick();
+            for (int sub = 0; sub < SUB; sub++) {
+                float partial = sub / (float) SUB;
+                double[] info = ctx.computeOnClient(mc -> {
+                    ShowcaseCamera.pinnedPartial = partial;
+                    ClashClient.recordingPartial = partial;
+                    var cv = ClashClient.view();
+                    java.util.List<Double> out = new java.util.ArrayList<>();
+                    out.add(mc.level.getGameTime() + (double) partial);
+                    if (cv != null) {
+                        double clock = cv.clock();
+                        for (int k = 0; k < cv.times.length; k++) {
+                            double dt = cv.times[k] - clock;
+                            if (dt <= 0.2 && dt > -2.5 && pressed.add(cv.round * 1000 + k)) out.add((double) cv.lanes[k]);
+                        }
+                    }
+                    return out.stream().mapToDouble(Double::doubleValue).toArray();
+                });
+                for (int i = 1; i < info.length; i++) in.pressKey(keys[(int) info[i]]);
+                String name = String.format("p%05d", frame++);
+                ctx.takeScreenshot(net.fabricmc.fabric.api.client.gametest.v1.screenshot.TestScreenshotOptions.of(name).withDeltaTicks(partial));
+                log.append(name).append(' ').append(info[0]).append(' ').append(section).append('\n');
             }
         }
     }
