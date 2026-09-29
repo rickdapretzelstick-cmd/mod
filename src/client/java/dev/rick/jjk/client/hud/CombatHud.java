@@ -342,10 +342,6 @@ public final class CombatHud {
     private static float meterCost(String id) {
         var a = JJKConfig.get().awakening;
         return switch (id) {
-            case "max_blue" -> a.maxBlueCost;
-            case "max_red" -> a.maxRedCost;
-            case "hollow_purple" -> a.hollowPurpleCost;
-            case "unlimited_void" -> a.infiniteVoidCost;
             case "idle_death_gamble" -> a.max;
             default -> 0;
         };

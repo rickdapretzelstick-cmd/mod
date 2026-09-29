@@ -57,11 +57,6 @@ public final class RedAbility extends Ability {
     }
 
     @Override
-    public float awakeningCost(AbilityCaster caster) {
-        return max ? JJKConfig.get().awakening.maxRedCost : 0;
-    }
-
-    @Override
     public Kind kind() {
         return Kind.INSTANT;
     }

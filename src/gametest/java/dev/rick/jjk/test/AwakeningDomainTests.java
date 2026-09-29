@@ -146,19 +146,24 @@ public class AwakeningDomainTests {
     }
 
     @GameTest(maxTicks = 60)
-    public void awakenedMovesSpendTheMeter(GameTestHelper h) {
+    public void awakenedMovesLeaveTheMeterAlone(GameTestHelper h) {
         floor(h);
         TrainingDummy g = gojo(h, 2, 4);
         AbilityCaster c = Casters.get(g);
+        c.setNoCost(false);
         c.enterAwakening();
         c.setAwakening(30);
-        h.assertTrue(c.input(AbilitySlot.SKILL_2, true, 0, 0, null), "Max Red with 30 meter");
+        h.assertTrue(c.input(AbilitySlot.SKILL_2, true, 0, 0, null), "Max Red with 30 meter (" + c.lastRefusal + ")");
         float after = c.awakening();
-        h.assertTrue(Math.abs(after - (30 - JJKConfig.get().awakening.maxRedCost)) < 0.5f, "Max Red cost its share (" + after + ")");
+        h.assertTrue(after > 29.5f, "Max Red doesn't spend the Awakening bar (" + after + ")");
         c.input(AbilitySlot.SKILL_2, false, 0, 0, null);
         h.runAfterDelay(30, () -> {
-            h.assertTrue(!c.input(AbilitySlot.SKILL_3, true, 0, 0, null) && "awakening".equals(c.lastRefusal),
-                    "not enough meter left for Hollow Purple (" + c.lastRefusal + ")");
+            // Only the Six Eyes timer runs the bar down: 1.5 s of it, nothing more.
+            c.setEnergy(c.maxEnergy());
+            float before = c.awakening();
+            h.assertTrue(before > 30 - c.maxAwakening() * 0.05f, "only the timer drained the bar (" + before + ")");
+            h.assertTrue(c.input(AbilitySlot.SKILL_3, true, 0, 0, null), "Hollow Purple even on a low bar (" + c.lastRefusal + ")");
+            h.assertTrue(Math.abs(c.awakening() - before) < 0.5f, "Hollow Purple doesn't spend the Awakening bar (" + c.awakening() + ")");
             h.succeed();
         });
     }

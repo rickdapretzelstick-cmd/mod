@@ -749,6 +749,23 @@ public class HakariGameTests {
         });
     }
 
+    @GameTest(maxTicks = 120, padding = 16)
+    public void luckyRushdownWhiffLeavesHakariFree(GameTestHelper h) {
+        floor(h, 22);
+        // Nobody to run into: the run plays out and ends on its own.
+        TrainingDummy g = hakari(h, 0.5, 2.5, null);
+        AbilityCaster c = Casters.get(g);
+        c.enterAwakening();
+        press(g, AbilitySlot.SKILL_2);
+        h.assertTrue(c.isCasting(), "the run starts");
+        h.succeedWhen(() -> {
+            h.assertTrue(!c.isBusy() && !c.melee.isCommitted(), "the run ended");
+            h.assertTrue(!dev.rick.jjk.core.anim.Anim.isHolding(g), "not left frozen in the run pose");
+            h.assertTrue(!dev.rick.jjk.core.combat.Combat.state(g).actionsLocked(), "nothing locks him");
+            h.assertTrue(c.input(AbilitySlot.SKILL_1, true, 0, 0, null), "free to act again (" + c.lastRefusal + ")");
+        });
+    }
+
     @GameTest(maxTicks = 90, padding = 10)
     public void overwhelmingLuckMarchesForwardAndEndsBig(GameTestHelper h) {
         floor(h, 16);

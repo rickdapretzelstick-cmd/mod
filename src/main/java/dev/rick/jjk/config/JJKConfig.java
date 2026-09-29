@@ -253,11 +253,6 @@ public final class JJKConfig {
         public float drainPerSecond = 3f;
         /** Ticks of the transition (invulnerable, rooted) when awakening. */
         public int transitionTicks = 50;
-        /** Meter consumed by each awakened move. */
-        public float maxBlueCost = 18f;
-        public float maxRedCost = 20f;
-        public float hollowPurpleCost = 35f;
-        public float infiniteVoidCost = 40f;
         /** Cooldown before the meter starts filling again after Awakening ends (ticks). */
         public int refillDelay = 200;
         /** Keep the meter between deaths/relogs. */

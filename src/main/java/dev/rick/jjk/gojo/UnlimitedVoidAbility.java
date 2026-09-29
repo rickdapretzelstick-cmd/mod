@@ -40,11 +40,6 @@ public final class UnlimitedVoidAbility extends Ability implements dev.rick.jjk.
     }
 
     @Override
-    public float awakeningCost(AbilityCaster caster) {
-        return JJKConfig.get().awakening.infiniteVoidCost;
-    }
-
-    @Override
     public int cooldown(AbilityCaster caster) {
         return JJKConfig.get().gojo.infiniteVoidCooldown;
     }
@@ -89,7 +84,6 @@ public final class UnlimitedVoidAbility extends Ability implements dev.rick.jjk.
             public void interrupt(String reason) {
                 if (!expanded) {
                     caster.setEnergy(caster.energy() + JJKConfig.get().domain.cost * 0.75f);
-                    if (caster.isAwakened()) caster.setAwakening(caster.awakening() + JJKConfig.get().awakening.infiniteVoidCost * 0.75f);
                     for (AbilitySlot s : AbilitySlot.values()) {
                         if (caster.ability(s) == ability) {
                             caster.resetSlot(s);

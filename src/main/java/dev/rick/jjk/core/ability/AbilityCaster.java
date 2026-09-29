@@ -447,6 +447,7 @@ public final class AbilityCaster {
     private void removeInstance(AbilityInstance inst) {
         inst.finish();
         inst.end();
+        if (inst.exclusive()) dev.rick.jjk.core.anim.Anim.releaseHeld(owner);
         if (inst == cast) {
             cast = null;
             Fx.toTrackers(owner, new CastPayload(owner.getId(), "", 0, 0), true);

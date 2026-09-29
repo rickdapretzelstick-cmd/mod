@@ -42,11 +42,6 @@ public final class BlueAbility extends Ability {
     }
 
     @Override
-    public float awakeningCost(AbilityCaster caster) {
-        return max ? JJKConfig.get().awakening.maxBlueCost : 0;
-    }
-
-    @Override
     public Kind kind() {
         return max ? Kind.HOLD : Kind.INSTANT;
     }
