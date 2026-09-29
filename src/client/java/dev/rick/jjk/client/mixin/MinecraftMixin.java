@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Minecraft.class)
 public abstract class MinecraftMixin {
-    /** In combat stance, left click is this mod's melee instead of a vanilla attack. */
+    /** In combat mode, left click is this mod's melee instead of a vanilla attack (never mining). */
     @Inject(method = "startAttack", at = @At("HEAD"), cancellable = true)
     private void jjk$startAttack(CallbackInfoReturnable<Boolean> cir) {
         if (InputHandler.inStance()) {
@@ -19,7 +19,7 @@ public abstract class MinecraftMixin {
         }
     }
 
-    /** Holding left click in stance charges a heavy; it must not mine blocks. */
+    /** Holding left click charges a heavy; it must never mine blocks. */
     @Inject(method = "continueAttack", at = @At("HEAD"), cancellable = true)
     private void jjk$continueAttack(boolean down, CallbackInfo ci) {
         if (InputHandler.inStance()) ci.cancel();

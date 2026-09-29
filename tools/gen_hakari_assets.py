@@ -69,39 +69,33 @@ for i in range(16):
         img.putpixel((j, i), rgb(0xC00E22))
 save(img, 'led_segment')
 
-# --- Shutter panel: corrugated steel slats, a hazard-pink kick strip at the bottom. ---
-img = canvas(0x9098A4)
-for y in range(16):
-    for x in range(16):
-        c = [0xB8C0CC, 0x9AA2AE, 0x7A828E, 0x5E6672][y % 4]
-        img.putpixel((x, y), rgb(c))
-for x in range(16):
-    img.putpixel((x, 13), rgb(0xFF3FA0 if (x // 2) % 2 == 0 else 0x202028))
-    img.putpixel((x, 14), rgb(0xFF3FA0 if (x // 2) % 2 == 1 else 0x202028))
-    img.putpixel((x, 15), rgb(0x3A3F48))
-for y in range(16):
-    img.putpixel((0, y), rgb(0x4A505A))
-    img.putpixel((15, y), rgb(0x4A505A))
-save(img, 'shutter_panel')
+# --- Door leaves (the JJS GIFs): light grey doors in a dark frame, a dark window with a pale rim, a darker kick plate
+# and a handle. Shutter Doors lie them flat on the floor (one long window); Door Guard stands two of them up (window
+# and handle toward the middle, where the leaves meet).
+def door_leaf(window, handle_x):
+    img = canvas(0xC9CCD2)
+    for y in range(16):
+        for x in range(16):
+            if x in (0, 15) or y in (0, 15):
+                img.putpixel((x, y), rgb(0x1E2430))
+            elif x in (1, 14) or y in (1, 14):
+                img.putpixel((x, y), rgb(0xE6E8EC))
+            elif y >= 12:
+                img.putpixel((x, y), rgb(0xB2B6BE))
+    x0, y0, x1, y1 = window
+    for y in range(y0 - 1, y1 + 2):
+        for x in range(x0 - 1, x1 + 2):
+            img.putpixel((x, y), rgb(0xF2F3F5))
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            img.putpixel((x, y), rgb(0x2B3240 if (x + y) % 5 else 0x3A4254))
+    for y in (8, 9):
+        img.putpixel((handle_x, y), rgb(0x1E2430))
+    return img
 
-# --- Gamble door: red lacquer panels in a gold frame, a white 7 in the middle. ---
-img = canvas(0xB01828)
-for y in range(16):
-    for x in range(16):
-        if x in (0, 15) or y in (0, 15):
-            img.putpixel((x, y), rgb(0xE8B840))
-        elif x in (1, 14) or y in (1, 14):
-            img.putpixel((x, y), rgb(0x7A0E18))
-        elif x == 7 or x == 8:
-            img.putpixel((x, y), rgb(0x8A1020))
-seven = ["#####", "....#", "...#.", "..#..", "..#..", "..#.."]
-for j, row in enumerate(seven):
-    for i, ch in enumerate(row):
-        if ch == '#':
-            img.putpixel((5 + i, 5 + j), rgb(0xFFFFFF))
-img.putpixel((12, 8), rgb(0xE8B840))
-img.putpixel((3, 8), rgb(0xE8B840))
-save(img, 'gamble_door')
+
+save(door_leaf((4, 3, 11, 9), 13), 'shutter_panel')
+save(door_leaf((4, 3, 10, 7), 12), 'gamble_door')
 
 # --- Pachinko ball: polished chrome with a pink glint. ---
 img = canvas(0x8C94A0)

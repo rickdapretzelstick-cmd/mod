@@ -9,7 +9,7 @@ those keys are held back); Vanilla Minecraft mode gives them back. Everything ca
 
 | Key | Base Gojo | Six Eyes (awakened) |
 |---|---|---|
-| Left click (empty hand) | M1 chain · hold = charged heavy | same |
+| Left click | M1 chain · hold = charged heavy (always the M1 in combat mode, whatever you hold; it never mines) | same |
 | 1 | Lapse Blue | **Lapse Blue MAX** (hold to steer) |
 | 2 | Reversal Red | **Reversal Red MAX** |
 | 3 | Rapid Punches | **Hollow Purple** |
@@ -96,8 +96,8 @@ cooldowns and durations, its studs as blocks (about 3.6 studs to a block), all i
 - **Reserve Balls** (12s): one steel ball flicked about 65 studs, ricocheting off surfaces while it has distance left
   (much further inside his domain). It stuns whoever it hits, or ragdolls them if it hit within 15 studs.
   *Shutter Doors during the wind-up*: the doors manifest where the ball lands and bounce a target it stunned.
-- **Shutter Doors** (15s): two flat shutter panels from the "Private Pure Love Train" pachinko game slide shut across
-  the target's torso from up to 25 studs away (Door Guard's door is the one that stands upright). The target is stunned and Hakari's melee chain jumps to its 3rd hit. Doors that catch nobody
+- **Shutter Doors** (15s): two grey doors flash into being, drop flat onto the floor either side of the target from up to
+  25 studs away and slide shut under them (Door Guard's double door and Fever Breaker's are the ones that stand up). The target is stunned and Hakari's melee chain jumps to its 3rd hit. Doors that catch nobody
   linger for 7 seconds: jump on them to bounce high (they shatter), and a ragdolled enemy falling on them bounces three
   times, taking damage each time.
 - **Rough Energy** (14s): a long wind-up, then an unblockable punch that sends them flying. *In the air*: a short

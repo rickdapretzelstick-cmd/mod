@@ -37,7 +37,7 @@ final class HakariFx {
                 sound("ball_throw", pos, 0.7f, 0.95f + RNG.nextFloat() * 0.2f);
                 if (drawn) {
                     Flashes.flash(pos, 0.5f, 0.15f, CHROME, 0.8f, 3, now);
-                    sparks(level, pos, dir, q(3), 0.25, HOT_PINK, 0.06f, 4);
+                    sparks(level, pos, dir, q(3), 0.25, WHITE, 0.06f, 4);
                 }
             }
             case "ball_hit" -> {
@@ -59,14 +59,20 @@ final class HakariFx {
                 }
             }
             // --- Shutter Doors ---
-            case "shutter_appear" -> {
+            case "shutter_appear", "shutter_appear_upright" -> {
+                // JJS GIF: the doors flash into being, white and glinting, then drop into place.
                 sound("shutter_rise", pos, 1f, 1f);
                 if (drawn) {
+                    boolean upright = p.id().equals("shutter_appear_upright");
                     Vec3 side = dir.lengthSqr() > 1e-4 ? dir.normalize() : new Vec3(1, 0, 0);
                     for (int k = -1; k <= 1; k += 2) {
-                        Vec3 at = pos.add(side.scale(2.4 * k));
-                        Flashes.ground(groundBelow(level, at), 0.2f, 1.6f, PINK, 0.7f, 8, now);
-                        for (int i = 0; i < q(6); i++) level.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, at.x + gauss(0.5), at.y + 0.1, at.z + gauss(0.5), 0, 0.03, 0);
+                        Vec3 at = upright ? pos.add(side.scale(0.6 * k)).add(0, 1.2, 0) : pos.add(side.scale(2.4 * k)).add(0, 1.4, 0);
+                        Flashes.flash(at, 0.4f, 2.4f, WHITE, 1f, 6, now);
+                        for (int i = 0; i < q(7); i++) {
+                            Vec3 tw = at.add(gauss(0.9), gauss(0.6), gauss(0.9));
+                            add(level, tw, Vec3.ZERO, Sprite.STAR, WHITE, 1f, 0.14f + RNG.nextFloat() * 0.1f, 0.02f, 8 + RNG.nextInt(6)).fadeIn();
+                        }
+                        if (!upright) Flashes.ground(groundBelow(level, at), 0.2f, 1.6f, WHITE, 0.6f, 8, now + 4);
                     }
                 }
             }
@@ -75,7 +81,7 @@ final class HakariFx {
                 if (drawn) {
                     Flashes.flash(pos, 2.2f, 0.4f, WHITE, 1f, 4, now);
                     Vec3 side = dir.lengthSqr() > 1e-4 ? dir.normalize() : new Vec3(1, 0, 0);
-                    Flashes.ripple(pos, side, 0.2f, 2.2f, HOT_PINK, 0.8f, 7, now);
+                    Flashes.ripple(pos, side, 0.2f, 2.2f, WHITE, 0.8f, 7, now);
                     sparks(level, pos, up, q(14), 0.55, CHROME, 0.1f, 7);
                     burst(level, pos.add(0, -1, 0), q(6), 0.12, Sprite.SMOKE, GREY, 0.5f, 14);
                 }
@@ -118,7 +124,7 @@ final class HakariFx {
                 sound("fever_hit", pos, 1f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 1.4f, 0.3f, WHITE, 1f, 4, now);
-                    impactStar(pos, dir, 6, 1.4f, 0.07f, HOT_PINK, now);
+                    impactStar(pos, dir, 6, 1.4f, 0.07f, WHITE, now);
                 }
                 victimFeedback(p, 0.5f);
             }
@@ -131,9 +137,9 @@ final class HakariFx {
                 sound("fever_break", pos, 1.3f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 3.2f, 0.5f, WHITE, 1f, 5, now);
-                    Flashes.flash(pos, 2.2f, 0.4f, PINK, 0.9f, 7, now + 1);
+                    Flashes.flash(pos, 2.2f, 0.4f, JADE_LIGHT, 0.9f, 7, now + 1);
                     impactStar(pos, dir, 12, 3f, 0.14f, WHITE, now);
-                    Flashes.ripple(pos, dir, 0.3f, 3.2f, HOT_PINK, 0.9f, 9, now);
+                    Flashes.ripple(pos, dir, 0.3f, 3.2f, JADE_LIGHT, 0.9f, 9, now);
                     Flashes.ripple(pos.add(dir.scale(0.6)), dir, 0.2f, 2.2f, WHITE, 0.6f, 8, now + 2);
                     sparks(level, pos, dir, q(22), 0.9, WHITE, 0.14f, 9);
                     burst(level, pos, q(6), 0.14, Sprite.SMOKE, GREY, 0.6f, 16);
@@ -146,21 +152,28 @@ final class HakariFx {
             // --- Door Guard ---
             case "door_guard_up" -> {
                 sound("door_open", pos, 1f, 1f);
-                if (drawn) Flashes.flash(pos, 1.4f, 0.3f, COIN, 0.7f, 4, now);
+                if (drawn) {
+                    // JJS GIF: the double door flashes white and glints as it forms.
+                    Flashes.flash(pos, 0.6f, 2.2f, WHITE, 1f, 6, now);
+                    for (int i = 0; i < q(10); i++) {
+                        Vec3 tw = pos.add(gauss(0.7), gauss(0.8), gauss(0.7));
+                        add(level, tw, Vec3.ZERO, Sprite.STAR, WHITE, 1f, 0.14f + RNG.nextFloat() * 0.12f, 0.02f, 8 + RNG.nextInt(6)).fadeIn();
+                    }
+                }
             }
             case "door_guard_block" -> {
                 sound("door_block", pos, 1f, 0.9f + RNG.nextFloat() * 0.2f);
                 if (drawn) {
-                    Flashes.ripple(pos, dir, 0.3f, 1.6f, COIN, 0.8f, 6, now);
-                    sparks(level, pos, dir.reverse(), q(8), 0.45, COIN, 0.08f, 6);
+                    Flashes.ripple(pos, dir, 0.3f, 1.6f, WHITE, 0.8f, 6, now);
+                    sparks(level, pos, dir.reverse(), q(8), 0.45, WHITE, 0.08f, 6);
                 }
             }
             case "door_guard_counter" -> {
                 sound("door_slam", pos, 1.2f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 2.2f, 0.4f, WHITE, 1f, 4, now);
-                    Flashes.ripple(pos, dir, 0.3f, 2.8f, PINK, 0.9f, 8, now);
-                    impactStar(pos, dir, 8, 2f, 0.1f, COIN, now);
+                    Flashes.ripple(pos, dir, 0.3f, 2.8f, WHITE, 0.9f, 8, now);
+                    impactStar(pos, dir, 8, 2f, 0.1f, WHITE, now);
                 }
             }
             case "door_guard_down" -> sound("door_open", pos, 0.6f, 1.3f);
@@ -218,6 +231,8 @@ final class HakariFx {
             // --- Jackpot ---
             case "jackpot" -> {
                 sound("jackpot", pos, 2.5f, 1f);
+                // JJS GIF: three slot cards with his numbers appear around him.
+                dev.rick.jjk.client.hud.GojoPresentation.jackpotCards(p.entityId(), Math.round(s));
                 ClientFx.stopSound("jackpot_music");
                 ClientFx.follow("jackpot_music", p.entityId(), 3f); // follows Hakari wherever he goes
                 if (drawn) {
@@ -244,6 +259,10 @@ final class HakariFx {
                 if (drawn) for (int i = 0; i < q(4); i++) {
                     Vec3 at = pos.add(gauss(0.35), gauss(0.6) - 0.3, gauss(0.35));
                     add(level, at, new Vec3(gauss(0.01), 0.06 + RNG.nextDouble() * 0.05, gauss(0.01)), Sprite.GLOW, i % 3 == 0 ? JADE_LIGHT : JADE, 0.7f, 0.3f, 0.05f, 18).fadeIn();
+                }
+                // JJS: music notes float up out of the Jackpot aura (the note particle's colour index ~6/24 is green).
+                if (drawn && RNG.nextInt(3) == 0) {
+                    level.addParticle(ParticleTypes.NOTE, pos.x + gauss(0.5), pos.y + 0.4 + RNG.nextDouble() * 0.8, pos.z + gauss(0.5), (5 + RNG.nextInt(4)) / 24.0, 0, 0);
                 }
             }
             case "jackpot_heal" -> {
@@ -374,7 +393,13 @@ final class HakariFx {
             }
             case "rhythm_start" -> {
                 sound("rhythm_tick", pos, 1f, 1f);
-                if (drawn) Flashes.ring(pos, 0.3f, 1.6f, JADE, 0.7f, 8, now);
+                if (drawn) {
+                    // JJS GIF: the dance opens with an eruption of green lightning around him.
+                    Flashes.ring(pos, 0.3f, 1.6f, JADE, 0.7f, 8, now);
+                    Flashes.lens(pos, 0.5f, 3.5f, JADE, 0.9f, 10, now);
+                    impactStar(pos, up, 14, 3.2f, 0.12f, JADE_LIGHT, now);
+                    sparks(level, pos, up, q(40), 1.1, JADE_LIGHT, 0.14f, 12);
+                }
             }
             case "rhythm_beat" -> {
                 // s = judgement: 0 perfect, 1 great, 2 good, 3 miss.
@@ -385,6 +410,8 @@ final class HakariFx {
                     if (drawn) {
                         float[] c = j == 0 ? COIN : j == 1 ? JADE : WHITE;
                         Flashes.ring(pos.add(0, -1.2, 0), 0.4f, 2.2f - j * 0.4f, c, 0.9f, 8, now);
+                        // A white-green starburst blazing behind him on every beat he hits.
+                        impactStar(pos, dir.lengthSqr() > 1e-4 ? dir : up, 10, 2.6f - j * 0.5f, 0.14f, j == 0 ? WHITE : JADE_LIGHT, now);
                         for (int i = 0; i < q(8); i++) add(level, pos, randomUnit().scale(0.18).add(0, 0.2, 0), Sprite.STAR, c, 1f, 0.16f, 0.04f, 14);
                     }
                 } else {
@@ -401,16 +428,16 @@ final class HakariFx {
             // --- Combinations, lingering doors, finishers, Renewal ---
             case "combo_doors" -> {
                 sound("shutter_rise", pos, 0.8f, 1.3f);
-                if (drawn) Flashes.lens(pos, 0.2f, 1.6f, HOT_PINK, 0.8f, 6, now);
+                if (drawn) Flashes.lens(pos, 0.2f, 1.6f, WHITE, 0.8f, 6, now);
             }
             case "shutter_linger" -> {
                 sound("door_open", pos, 0.7f, 0.8f);
-                if (drawn) Flashes.ripple(pos, dir, 0.2f, 1.8f, PINK, 0.5f, 8, now);
+                if (drawn) Flashes.ripple(pos, dir, 0.2f, 1.8f, WHITE, 0.5f, 8, now);
             }
             case "door_bounce" -> {
                 sound("door_block", pos, 1f, 1.2f + RNG.nextFloat() * 0.2f);
                 if (drawn) {
-                    Flashes.ripple(pos, up, 0.2f, 2.2f * s, COIN, 0.8f, 7, now);
+                    Flashes.ripple(pos, up, 0.2f, 2.2f * s, WHITE, 0.8f, 7, now);
                     sparks(level, pos, up, q(10), 0.55, CHROME, 0.08f, 6);
                 }
             }
@@ -449,12 +476,12 @@ final class HakariFx {
             }
             case "fever_suspend" -> {
                 sound("shutter_rise", pos, 0.9f, 1.1f);
-                if (drawn) Flashes.lens(pos, 0.2f, 1.8f, PINK, 0.7f, 8, now);
+                if (drawn) Flashes.lens(pos, 0.2f, 1.8f, JADE_LIGHT, 0.7f, 8, now);
             }
             case "fever_crush" -> {
                 sound("fever_crush", pos, 1.3f, 1f);
                 if (drawn) {
-                    Flashes.ground(groundBelow(level, pos), 0.3f, 3f * s, PINK, 0.8f, 10, now);
+                    Flashes.ground(groundBelow(level, pos), 0.3f, 3f * s, JADE_LIGHT, 0.8f, 10, now);
                     impactStar(pos.add(0, 0.5, 0), new Vec3(0, -1, 0), 10, 2.6f * s, 0.12f, WHITE, now);
                     debris(level, groundBelow(level, pos), q(10), 0.6);
                 }
@@ -489,6 +516,8 @@ final class HakariFx {
                     Flashes.ripple(pos, up, 0.3f, 5f, JADE_LIGHT, 0.8f, 12, now);
                 }
                 if (mine) ScreenEffects.fovPunch(-0.08f);
+                // JJS GIF: the moment breaks like glass and snaps back, for everyone in the domain.
+                if (mc.player != null && mc.player.position().distanceTo(pos) < 40) dev.rick.jjk.client.hud.GojoPresentation.shatter();
             }
             default -> {}
         }

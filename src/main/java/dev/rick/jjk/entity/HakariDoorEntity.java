@@ -16,7 +16,9 @@ import net.minecraft.world.phys.Vec3;
  * if the technique stops refreshing it.
  */
 public class HakariDoorEntity extends TechniqueEntity {
-    public static final int SHUTTER = 0, GUARD = 1;
+    /** Flat floor shutters (Shutter Doors, Reserve Balls' doors, Fever Crush), Door Guard's double door, and the upright
+     *  double door Fever Breaker kicks its target into. */
+    public static final int SHUTTER = 0, GUARD = 1, UPRIGHT = 2;
     private static final EntityDataAccessor<Float> OPEN = SynchedEntityData.defineId(HakariDoorEntity.class, EntityDataSerializers.FLOAT);
     private int life;
     private int maxLife = 40;

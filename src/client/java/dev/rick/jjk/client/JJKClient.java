@@ -236,6 +236,22 @@ public class JJKClient implements ClientModInitializer {
     }
 
     /** Continuous effects around live techniques: Blue's inward spiral and hum, the domain's ambience. */
+    private static void roughArm(Minecraft mc, LivingEntity le) {
+        float yaw = le.getYRot() * net.minecraft.util.Mth.DEG_TO_RAD;
+        Vec3 right = new Vec3(-Math.cos(yaw), 0, -Math.sin(yaw));
+        Vec3 fwd = new Vec3(-Math.sin(yaw), 0, Math.cos(yaw));
+        Vec3 arm = le.position().add(0, le.getBbHeight() * 0.62, 0).add(right.scale(0.4)).add(fwd.scale(-0.1));
+        for (int i = 0; i < ClientFx.q(4); i++) {
+            Vec3 at = arm.add(ClientFx.randomUnit().scale(0.3)).add(0, -mc.level.getRandom().nextDouble() * 0.5, 0);
+            ClientFx.add(mc.level, at, new Vec3(0, 0.02 + mc.level.getRandom().nextDouble() * 0.03, 0), EnergyParticle.Sprite.GLOW,
+                    i % 4 == 0 ? ClientFx.WHITE : new float[] {0.35f, 1f, 0.62f}, 0.9f, 0.16f + mc.level.getRandom().nextFloat() * 0.12f, 0.04f, 8).fadeIn();
+        }
+        if (mc.level.getRandom().nextInt(3) == 0) {
+            Vec3 at = arm.add(ClientFx.randomUnit().scale(0.35));
+            ClientFx.add(mc.level, at, Vec3.ZERO, EnergyParticle.Sprite.SMOKE, new float[] {0.05f, 0.12f, 0.08f}, 0.7f, 0.2f, 0.02f, 6);
+        }
+    }
+
     private static void ambient(Minecraft mc) {
         for (Entity e : mc.level.entitiesForRendering()) {
             if (e instanceof BlueEntity blue && !blue.isCollapsing()) {
@@ -254,6 +270,11 @@ public class JJKClient implements ClientModInitializer {
                 }
             } else if (e instanceof LivingEntity le && Combat.has(le, CombatStatus.AWAKENED)) {
                 awakenedAura(mc, le);
+            }
+            // Rough Energy's wind-up (JJS GIF): green, black-edged cursed energy boiling up the right arm, growing.
+            if (e instanceof LivingEntity le) {
+                ClientState.Cast cast = ClientState.CASTS.get(le.getId());
+                if (cast != null && "rough_energy".equals(cast.ability())) roughArm(mc, le);
             }
         }
         for (ClientState.Domain d : ClientState.DOMAINS.values()) {

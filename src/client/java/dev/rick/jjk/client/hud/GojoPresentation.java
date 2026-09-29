@@ -48,6 +48,19 @@ public final class GojoPresentation {
         SPEECH.add(new Speech(entityId, mc.level.getGameTime(), duration));
     }
 
+    // --- Hakari's Jackpot: the three slot cards (JJS GIF), his numbers on them, around him ---
+    private record Cards(int entityId, long start, int number) {}
+
+    private static final List<Cards> CARDS = new ArrayList<>();
+    private static final int CARDS_LIFE = 60;
+
+    public static void jackpotCards(int entityId, int number) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        CARDS.removeIf(c -> c.entityId == entityId);
+        CARDS.add(new Cards(entityId, mc.level.getGameTime(), number));
+    }
+
     // --- 0.2 Domain cut-in ---
     private static long cutInStart = Long.MIN_VALUE;
     private static final int CUT_IN = 24;
@@ -115,6 +128,7 @@ public final class GojoPresentation {
         float time = now + partial;
         int w = g.guiWidth(), h = g.guiHeight();
         speechPanels(g, mc, w, h, time, partial);
+        jackpotCards(g, mc, w, h, time, partial);
         cutIn(g, mc.font, w, h, time);
         glass(g, w, h, time);
     }
@@ -144,6 +158,40 @@ public final class GojoPresentation {
             Vec3 side = Vec3.directionFromRotation(0, e.getYRot() + 90);
             panel(g, mc, w, h, head.add(side.scale(-0.9)).add(0, 0.25, 0), "LET'S\nGET", t, 0.02f);
             panel(g, mc, w, h, head.add(side.scale(0.9)).add(0, -0.1, 0), "...A\nLITTLE\nCRAZY.", t, 0.3f);
+        }
+    }
+
+    private static void jackpotCards(GuiGraphicsExtractor g, Minecraft mc, int w, int h, float time, float partial) {
+        CARDS.removeIf(c -> time > c.start + CARDS_LIFE);
+        for (Cards c : CARDS) {
+            Entity e = mc.level.getEntity(c.entityId);
+            if (e == null) continue;
+            float t = (time - c.start) / CARDS_LIFE;
+            float a = Math.min(Mth.clamp(t / 0.1f, 0, 1), Mth.clamp((1 - t) / 0.2f, 0, 1));
+            String digits = String.valueOf(Math.max(0, c.number));
+            Vec3 base = e.getPosition(partial).add(0, e.getBbHeight() * 0.9, 0);
+            for (int i = 0; i < 3; i++) {
+                // Fanned out in front of him and to the sides, rising a little as they settle.
+                double ang = Math.toRadians(e.getYRot() + 90 + (i - 1) * 70);
+                Vec3 at = base.add(Math.cos(ang) * 1.6, 0.3 + (1 - Math.min(1, t * 4)) * -0.6 + (i == 1 ? 0.4 : 0), Math.sin(ang) * 1.6);
+                float[] p = project(mc, at, w, h);
+                if (p == null) continue;
+                float size = Mth.clamp(p[2] * 0.02f, 0.4f, 3f);
+                String d = digits.length() == 3 ? String.valueOf(digits.charAt(i)) : "7";
+                Matrix3x2fStack pose = g.pose();
+                pose.pushMatrix();
+                pose.translate(p[0], p[1]);
+                pose.scale(size, size);
+                int cw = 20, ch = 28;
+                g.fill(-cw / 2 - 1, -ch / 2 - 1, cw / 2 + 1, ch / 2 + 1, CinematicPanels.withAlpha(0xFF2A1A10, a));
+                g.fill(-cw / 2, -ch / 2, cw / 2, ch / 2, CinematicPanels.withAlpha(0xFFFFF4E0, a));
+                g.fill(-cw / 2 + 2, -ch / 2 + 2, cw / 2 - 2, ch / 2 - 2, CinematicPanels.withAlpha(0xFF3FD08A, a * 0.35f));
+                pose.pushMatrix();
+                pose.scale(2f, 2f);
+                g.text(mc.font, d, -mc.font.width(d) / 2, -4, CinematicPanels.withAlpha(0xFFE0182E, a), false);
+                pose.popMatrix();
+                pose.popMatrix();
+            }
         }
     }
 

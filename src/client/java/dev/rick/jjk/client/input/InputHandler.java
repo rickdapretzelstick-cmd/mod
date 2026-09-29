@@ -24,7 +24,7 @@ import java.util.Map;
 
 /**
  * Keybinds and input translation. Ability keys send press and release (hold abilities charge/steer while held).
- * In combat stance (character assigned, empty main hand) left click becomes this mod's melee:
+ * In combat mode (character assigned) left click is always this mod's melee, whatever is held:
  * tap for a light attack, keep holding to charge a heavy, release to throw it.
  */
 public final class InputHandler {
@@ -164,8 +164,9 @@ public final class InputHandler {
     /** True when left click should perform this mod's melee. */
     public static boolean inStance() {
         Minecraft mc = Minecraft.getInstance();
-        return mc.player != null && dev.rick.jjk.client.CombatMode.enabled() && ClientState.hasCharacter() && ClientState.stanceEnabled && mc.player.getMainHandItem().isEmpty()
-                && !mc.player.isSpectator();
+        // Combat mode means fighting: left click is always the M1, whatever is in hand, and never mines or hits vanilla-style
+        // (Vanilla Minecraft mode gives the mouse back).
+        return mc.player != null && dev.rick.jjk.client.CombatMode.enabled() && ClientState.hasCharacter() && !mc.player.isSpectator();
     }
 
     /** Called from the attack-key mixin instead of vanilla's attack/mine. */

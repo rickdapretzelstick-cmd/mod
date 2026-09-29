@@ -23,8 +23,6 @@ public final class ClientState {
     public static String[] slotAbilities = new String[AbilitySlot.values().length];
     /** Client tick when the awakened state last changed (drives HUD transitions). */
     public static long awakenedChangedTick;
-    /** Combat stance: left click performs this mod's melee instead of vanilla attacks. */
-    public static boolean stanceEnabled = true;
 
     // Combo counter (as attacker).
     public static int comboCount;

@@ -138,34 +138,43 @@ public final class HakariRenderers {
         public void submit(State s, PoseStack ps, SubmitNodeCollector c, CameraRenderState cam) {
             ps.pushPose();
             ps.rotate(Axis.YP.rotationDegrees(-s.yaw));
-            boolean guard = s.kind == HakariDoorEntity.GUARD;
-            float w = guard ? 1.4f : 2.2f, h = guard ? 2.4f : 2.8f;
-            if (guard) {
-                // Grows out of nothing, and swings open on its left hinge for the counter.
+            if (s.kind == HakariDoorEntity.GUARD) {
+                // Door Guard (JJS GIF): a grey double door in front of Hakari. It grows out of nothing, and for the counter
+                // both leaves burst open outward (toward the attacker) on their outer hinges.
                 float grow = Mth.clamp(s.age / 3f, 0, 1);
                 ps.scale(1, grow, 1);
-                ps.translate(-w / 2, 0, 0);
-                ps.rotate(Axis.YP.rotationDegrees(-100 * s.open));
-                ps.translate(w / 2, 0, 0);
+                for (int side = -1; side <= 1; side += 2) {
+                    ps.pushPose();
+                    ps.translate(side * 0.8f, 0, 0); // the hinge
+                    ps.rotate(Axis.YP.rotationDegrees(side * 105 * s.open));
+                    ps.translate(-side * 0.4f, 0, 0);
+                    leaf(ps, c, s, 0.8f, 2.4f);
+                    ps.popPose();
+                }
+            } else if (s.kind == HakariDoorEntity.UPRIGHT) {
+                // Fever Breaker's doors: one leaf of a standing double door behind the target.
+                leaf(ps, c, s, 1.0f, 2.4f);
             } else {
-                // Shutter doors lie completely flat: the panel's face turned up, its length along the door's facing, its
-                // underside at the entity's feet. Same size as its hitbox (HakariDoorEntity.SHUTTER_*).
-                float t = HakariDoorEntity.SHUTTER_THICKNESS;
+                // Shutter doors lie completely flat on the floor: the panel's face turned up, its length along the door's
+                // facing, its underside at the entity's feet. Same size as its hitbox (HakariDoorEntity.SHUTTER_*).
+                float w = HakariDoorEntity.SHUTTER_WIDTH, h = HakariDoorEntity.SHUTTER_LENGTH, t = HakariDoorEntity.SHUTTER_THICKNESS;
                 ps.translate(0, t / 2, -h / 2);
                 ps.rotate(Axis.XP.rotationDegrees(90));
                 ps.scale(w, h, t / 0.125f);
                 ps.translate(-0.5, 0, -0.5);
                 c.submitMovingBlock(ps, s.block, s.outlineColor);
-                ps.popPose();
-                super.submit(s, ps, c, cam);
-                return;
             }
-            // Turn the thin block model (a slab across Z) side-on to face along the door's facing.
+            ps.popPose();
+            super.submit(s, ps, c, cam);
+        }
+
+        /** One upright door leaf, centred on the current origin (the block model is a thin slab across Z). */
+        private static void leaf(PoseStack ps, SubmitNodeCollector c, State s, float w, float h) {
+            ps.pushPose();
             ps.scale(w, h, 1);
             ps.translate(-0.5, 0, -0.5);
             c.submitMovingBlock(ps, s.block, s.outlineColor);
             ps.popPose();
-            super.submit(s, ps, c, cam);
         }
     }
 

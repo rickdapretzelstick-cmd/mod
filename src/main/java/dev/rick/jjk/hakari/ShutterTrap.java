@@ -47,8 +47,10 @@ public final class ShutterTrap {
     final Mode mode;
     @Nullable LivingEntity target;
     Vec3 center;
-    private final Vec3 across;
+    private final Vec3 across, forward;
     private final float yaw;
+    /** Fever Breaker's doors stand up behind the target (a wall to be kicked into); every other kind lies on the floor. */
+    private final boolean upright;
     private final HakariDoorEntity left, right;
     private int age;
     private boolean slammed, lingering, done;
@@ -66,11 +68,15 @@ public final class ShutterTrap {
         Vec3 f = new Vec3(facing.x, 0, facing.z);
         f = f.lengthSqr() < 1e-4 ? HakariCombat.flat(owner) : f.normalize();
         across = new Vec3(-f.z, 0, f.x);
+        forward = f;
+        upright = mode == Mode.SUSPEND;
         yaw = (float) (Mth.atan2(f.z, f.x) * Mth.RAD_TO_DEG) - 90f;
         int life = JJKConfig.get().hakari.shutterLingerTicks + 80;
-        left = HakariDoorEntity.spawn(level, owner, HakariDoorEntity.SHUTTER, doorPos(-1, 0), yaw, life);
-        right = HakariDoorEntity.spawn(level, owner, HakariDoorEntity.SHUTTER, doorPos(1, 0), yaw, life);
-        Fx.play(level, "shutter_appear", center, across, 1f, owner.getId());
+        int kind = upright ? HakariDoorEntity.UPRIGHT : HakariDoorEntity.SHUTTER;
+        left = HakariDoorEntity.spawn(level, owner, kind, doorPos(-1, 0), yaw, life);
+        right = HakariDoorEntity.spawn(level, owner, kind, doorPos(1, 0), yaw, life);
+        // They flash into being in the air (white) and drop into place.
+        Fx.play(level, upright ? "shutter_appear_upright" : "shutter_appear", center, across, 1f, owner.getId());
     }
 
     /** Doors across the line from Hakari to {@code center}, closing sideways onto whoever stands there. */
@@ -108,8 +114,11 @@ public final class ShutterTrap {
         return JJKConfig.get().hakari;
     }
 
-    /** Height of the flat panels' underside above the target's feet: they shut across the torso. */
-    static final double PANEL_Y = 1.1;
+    /**
+     * Height of the flat panels above the target's feet: they lie on the floor (the JJS GIFs) and slide shut under the
+     * target. A hair above the ground so they never z-fight with it.
+     */
+    static final double PANEL_Y = 0.03;
     /** The panels' top surface (what lingering doors are bounced off). */
     static final double PANEL_TOP = PANEL_Y + HakariDoorEntity.SHUTTER_THICKNESS;
 
@@ -118,9 +127,15 @@ public final class ShutterTrap {
      * panels; shut, their inner edges meet over the target (half a panel's width either side).
      */
     private Vec3 doorPos(int side, float close) {
-        double gap = Mth.lerp(close, 2.4, HakariDoorEntity.SHUTTER_WIDTH / 2);
         double rise = Math.min(1, age / (double) Math.max(1, cfg().shutterRiseTicks));
-        return center.add(across.scale(side * gap)).add(0, PANEL_Y - 2.6 * (1 - rise), 0);
+        if (upright) {
+            // A double door right behind the target, facing Hakari: the leaves meet in the middle.
+            double gap = Mth.lerp(close, 0.9, 0.5);
+            return center.add(forward.scale(0.9)).add(across.scale(side * gap)).add(0, -0.2 - 2.4 * (1 - rise), 0);
+        }
+        double gap = Mth.lerp(close, 2.4, HakariDoorEntity.SHUTTER_WIDTH / 2);
+        // Dropping out of the air onto the floor, then sliding shut.
+        return center.add(across.scale(side * gap)).add(0, PANEL_Y + 1.6 * (1 - rise), 0);
     }
 
     private void place(float close) {
@@ -166,7 +181,7 @@ public final class ShutterTrap {
     private void slam() {
         slammed = true;
         JJKConfig.Hakari cfg = cfg();
-        Fx.play(level, "shutter_slam", center.add(0, 1.2, 0), across, 1f, owner.getId());
+        Fx.play(level, "shutter_slam", center.add(0, upright ? 1.2 : 0.3, 0), across, 1f, owner.getId());
         Fx.shake(level, center, 16, 0.5f, 8);
         if (mode == Mode.SUSPEND) return; // the kick already landed; the doors are the backdrop
         List<LivingEntity> caught = HitboxQuery.targets(owner, HitShape.orientedBox(center.subtract(across.scale(1.4)).add(0, 1.2, 0), across, 2.8, 1.6, 2.6), 0.3, false);
@@ -230,8 +245,8 @@ public final class ShutterTrap {
         }
         // Lingering, the two panels lie flush as one platform (2.2 across each, 2.8 long): landing on its top bounces.
         AABB top = new AABB(center.x - 2.0, center.y + PANEL_TOP - 0.3, center.z - 2.0, center.x + 2.0, center.y + PANEL_TOP + 1.0, center.z + 2.0);
-        // Hakari lands on them: a high bounce, and they shatter.
-        if (owner.getBoundingBox().intersects(top) && owner.getDeltaMovement().y <= 0.05) {
+        // Hakari lands on them from a jump (not just walking over them): a high bounce, and they shatter.
+        if (owner.getBoundingBox().intersects(top) && owner.getDeltaMovement().y <= 0.05 && (owner.fallDistance > 0.4 || owner.getDeltaMovement().y < -0.2)) {
             Motion.set(owner, new Vec3(owner.getDeltaMovement().x, cfg.shutterBounceLaunch, owner.getDeltaMovement().z));
             owner.resetFallDistance();
             Fx.play(level, "door_bounce", center.add(0, PANEL_TOP, 0), Vec3.ZERO, 1.4f, owner.getId());
@@ -260,7 +275,7 @@ public final class ShutterTrap {
     public void shatter(boolean byBounce) {
         if (done) return;
         done = true;
-        Fx.play(level, "shutter_shatter", center.add(0, 1.2, 0), across, byBounce ? 1.3f : 1f, owner.getId());
+        Fx.play(level, "shutter_shatter", center.add(0, upright ? 1.2 : 0.3, 0), across, byBounce ? 1.3f : 1f, owner.getId());
         remove();
     }
 

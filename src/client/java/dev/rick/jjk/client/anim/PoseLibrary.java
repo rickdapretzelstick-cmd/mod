@@ -168,15 +168,20 @@ public final class PoseLibrary {
         // ===================== Hakari =====================
         // Reserve Balls: a sidearm flick, the hand snapping out three times.
         add(AnimDef.builder("reserve_balls", 16).blend(1, 4)
-                .key(RIGHT_ARM, 0, -20, 0, 30).key(RIGHT_ARM, 3, -95, -30, 10).key(RIGHT_ARM, 5, -70, 10, 20).key(RIGHT_ARM, 7, -98, -25, 8)
-                .key(RIGHT_ARM, 9, -72, 10, 20).key(RIGHT_ARM, 11, -100, -20, 5).key(RIGHT_ARM, 16, -30, 0, 10)
-                .key(LEFT_ARM, 0, -30, 0, -20).key(LEFT_ARM, 16, -20, 0, -10)
-                .key(BODY, 0, 0, 15, 0).key(BODY, 3, 0, -15, 0).key(BODY, 16, 0, 0, 0).build());
+                // Reserve Balls (JJS GIF): the arm goes up and back over the shoulder, then flicks forward — the ball leaves
+                // the fingers with a glint at the top of the swing (the flick lands on the 7th tick, the ball's release).
+                .key(RIGHT_ARM, 0, -20, 0, 20).key(RIGHT_ARM, 4, -175, 0, 25).key(RIGHT_ARM, 7, -115, -10, 5).key(RIGHT_ARM, 11, -45, 0, 10)
+                .key(RIGHT_ARM, 16, -15, 0, 8)
+                .key(LEFT_ARM, 0, -20, 0, -15).key(LEFT_ARM, 4, -40, 0, -30).key(LEFT_ARM, 16, -10, 0, -8)
+                .key(BODY, 0, 0, 0, 0).key(BODY, 4, -10, 15, 0).key(BODY, 7, 12, -18, 0).key(BODY, 16, 0, 0, 0)
+                .key(RIGHT_LEG, 4, 10, 0, 0).key(RIGHT_LEG, 7, 20, 0, 0).key(LEFT_LEG, 7, -20, 0, 0).key(RIGHT_LEG, 16, 0, 0, 0).key(LEFT_LEG, 16, 0, 0, 0)
+                .build());
         // Shutter Doors: both palms slam together in front of him (the doors follow the gesture).
-        add(AnimDef.builder("shutter_sign", 12).blend(1, 4)
-                .key(RIGHT_ARM, 0, -60, 0, 60).key(RIGHT_ARM, 5, -90, -40, 0).key(RIGHT_ARM, 8, -92, -35, 0).key(RIGHT_ARM, 12, -30, 0, 10)
-                .key(LEFT_ARM, 0, -60, 0, -60).key(LEFT_ARM, 5, -90, 40, 0).key(LEFT_ARM, 8, -92, 35, 0).key(LEFT_ARM, 12, -30, 0, -10)
-                .key(BODY, 5, 8, 0, 0).key(BODY, 12, 0, 0, 0).build());
+        add(AnimDef.builder("shutter_sign", 14).blend(1, 4)
+                // Shutter Doors (JJS GIF): both arms thrown out wide to the sides as the doors appear, held, then down.
+                .key(RIGHT_ARM, 0, -20, 0, 10).key(RIGHT_ARM, 4, -15, 0, 95).key(RIGHT_ARM, 10, -12, 0, 90).key(RIGHT_ARM, 14, -10, 0, 10)
+                .key(LEFT_ARM, 0, -20, 0, -10).key(LEFT_ARM, 4, -15, 0, -95).key(LEFT_ARM, 10, -12, 0, -90).key(LEFT_ARM, 14, -10, 0, -10)
+                .key(BODY, 4, -6, 0, 0).key(HEAD, 4, -8, 0, 0).key(BODY, 14, 0, 0, 0).key(HEAD, 14, 0, 0, 0).build());
         // Rough Energy: a deep coil with the fist cocked back (held through the wind-up), then a driving straight.
         add(AnimDef.builder("rough_charge", 8).hold().blend(1.5f, 3)
                 .key(RIGHT_ARM, 0, -40, 0, 10).key(RIGHT_ARM, 8, 50, 20, 30)
@@ -190,16 +195,20 @@ public final class PoseLibrary {
                 .key(RIGHT_LEG, 2, 35, 0, 0).key(RIGHT_LEG, 14, 0, 0, 0).key(LEFT_LEG, 2, -35, 0, 0).key(LEFT_LEG, 14, 0, 0, 0).build());
         // Fever Breaker: a spinning roundhouse, the rush (leaning sprint), and the breaking second kick.
         add(AnimDef.builder("fever_kick", 12).blend(1, 4)
-                .key(RIGHT_LEG, 0, 0, 0, 0).key(RIGHT_LEG, 3, -80, 0, 60).key(RIGHT_LEG, 6, -85, 0, 70).key(RIGHT_LEG, 12, 0, 0, 0)
-                .key(BODY, 0, 0, 40, 0).key(BODY, 3, -5, -60, -10).key(BODY, 6, -5, -70, -15).key(BODY, 12, 0, 0, 0)
-                .key(RIGHT_ARM, 3, -40, 0, 70).key(RIGHT_ARM, 12, 0, 0, 5).key(LEFT_ARM, 3, -40, 0, -70).key(LEFT_ARM, 12, 0, 0, -5).build());
+                // Fever Breaker (JJS GIF): a snapping front kick — knee up, foot driven straight out — that knocks them back
+                // into the doors rising behind them.
+                .key(RIGHT_LEG, 0, 0, 0, 0).key(RIGHT_LEG, 3, -60, 0, 0).key(RIGHT_LEG, 5, -95, 0, 0).key(RIGHT_LEG, 8, -90, 0, 0).key(RIGHT_LEG, 12, 0, 0, 0)
+                .key(BODY, 0, 0, 0, 0).key(BODY, 5, -18, 0, 0).key(BODY, 12, 0, 0, 0)
+                .key(RIGHT_ARM, 5, 25, 0, 30).key(LEFT_ARM, 5, -40, 0, -35).key(RIGHT_ARM, 12, 0, 0, 5).key(LEFT_ARM, 12, 0, 0, -5).build());
         add(AnimDef.builder("fever_rush", 6).hold().blend(1, 3)
                 .key(BODY, 6, 30, 0, 0).key(RIGHT_ARM, 6, 50, 0, 15).key(LEFT_ARM, 6, 50, 0, -15)
                 .key(RIGHT_LEG, 6, -40, 0, 0).key(LEFT_LEG, 6, 30, 0, 0).key(HEAD, 6, -20, 0, 0).build());
         add(AnimDef.builder("fever_finish", 14).blend(0.5f, 5)
-                .key(LEFT_LEG, 0, 30, 0, 0).key(LEFT_LEG, 2, -110, 0, -10).key(LEFT_LEG, 6, -105, 0, -10).key(LEFT_LEG, 14, 0, 0, 0)
-                .key(BODY, 0, 20, 0, 0).key(BODY, 2, -20, 25, 0).key(BODY, 14, 0, 0, 0)
-                .key(RIGHT_ARM, 2, -30, 0, 60).key(RIGHT_ARM, 14, 0, 0, 5).key(LEFT_ARM, 2, 20, 0, -40).key(LEFT_ARM, 14, 0, 0, -5).build());
+                // The dropkick (JJS GIF): a flying two-footed kick, body laid back, both feet driving them through the doors.
+                .key(RIGHT_LEG, 0, 20, 0, 0).key(RIGHT_LEG, 2, -100, 0, 5).key(RIGHT_LEG, 7, -95, 0, 5).key(RIGHT_LEG, 14, 0, 0, 0)
+                .key(LEFT_LEG, 0, 20, 0, 0).key(LEFT_LEG, 2, -95, 0, -5).key(LEFT_LEG, 7, -92, 0, -5).key(LEFT_LEG, 14, 0, 0, 0)
+                .key(BODY, 0, 15, 0, 0).key(BODY, 2, -45, 0, 0).key(BODY, 7, -40, 0, 0).key(BODY, 14, 0, 0, 0)
+                .key(RIGHT_ARM, 2, -40, 0, 70).key(LEFT_ARM, 2, -40, 0, -70).key(RIGHT_ARM, 14, 0, 0, 5).key(LEFT_ARM, 14, 0, 0, -5).build());
         // Door Guard: forearm up behind the door, braced.
         add(AnimDef.builder("door_guard", 4).hold().blend(1, 3)
                 .key(RIGHT_ARM, 0, -40, 0, 10).key(RIGHT_ARM, 4, -100, -50, 0)
@@ -326,37 +335,28 @@ public final class PoseLibrary {
                 .key(RIGHT_ARM, 0, 50, 20, 30).key(RIGHT_ARM, 5, -100, -5, 0).key(RIGHT_ARM, 11, -95, 0, 0).key(RIGHT_ARM, 16, -30, 0, 8)
                 .key(BODY, 0, 8, 45, 0).key(BODY, 5, 14, -45, 0).key(BODY, 16, 0, 0, 0)
                 .key(RIGHT_LEG, 5, 30, 0, 0).key(LEFT_LEG, 5, -30, 0, 0).key(RIGHT_LEG, 16, 0, 0, 0).key(LEFT_LEG, 16, 0, 0, 0).build());
-        // Rhythm: Hakari's Jackpot dance (JJS reference). Home pose: facing forward, arms spread wide and angled down, legs
-        // straight. On every beat (RhythmAbility: lead-in 14, beats every 10 ticks) he shifts his weight onto one side —
-        // the torso rolls over it, the arm on that side swings up level while the other drops, the free leg kicks out —
-        // and on the off-beat he bounces back to the open pose. Last beat: both arms thrown up in a V.
+        // Rhythm: Hakari's Jackpot dance (JJS GIF). Both fists come up beside his head, elbows out, knees bent, and on
+        // every beat of the move (RhythmAbility: lead-in 14, a beat every 10 ticks) his hips and shoulders sway to one side
+        // with the fists pumping, then back through the middle. The last beat ends in his open, arms-wide Jackpot pose.
         AnimDef.Builder dance = AnimDef.builder("rhythm_dance", 60).blend(2, 6)
-                // Lead-in: arms open out from the sides into the pose, a little knee dip to catch the count.
-                .key(RIGHT_ARM, 0, 0, 0, 5).key(LEFT_ARM, 0, 0, 0, -5).key(BODY, 0, 0, 0, 0).key(HEAD, 0, 0, 0, 0)
+                .key(RIGHT_ARM, 0, -10, 0, 8).key(LEFT_ARM, 0, -10, 0, -8).key(BODY, 0, 0, 0, 0).key(HEAD, 0, 0, 0, 0)
                 .key(RIGHT_LEG, 0, 0, 0, 0).key(LEFT_LEG, 0, 0, 0, 0)
-                .key(RIGHT_ARM, 8, -10, 0, 60).key(LEFT_ARM, 8, -10, 0, -60)
-                .key(RIGHT_LEG, 8, -8, 0, 3).key(LEFT_LEG, 8, -8, 0, -3)
-                .key(RIGHT_ARM, 11, -10, 0, 55).key(LEFT_ARM, 11, -10, 0, -55)
-                .key(RIGHT_LEG, 11, 0, 0, 3).key(LEFT_LEG, 11, 0, 0, -3).key(BODY, 11, 0, 0, 0).key(HEAD, 11, 0, 0, 0);
+                .key(RIGHT_ARM, 10, -150, 0, 40).key(LEFT_ARM, 10, -150, 0, -40)
+                .key(RIGHT_LEG, 10, -12, 0, 8).key(LEFT_LEG, 10, -12, 0, -8).key(BODY, 10, 4, 0, 0);
         for (int beat = 0; beat < 4; beat++) {
             int on = 14 + beat * 10, off = on + 5;
-            boolean onRight = beat % 2 == 0; // weight onto his right, then his left
-            float s = onRight ? 1 : -1;
-            // Snap onto the beat (reached in 2 ticks so the hit lands on the count), hold, then ease back on the off-beat.
-            dance.key(BODY, on, 4, -8 * s, 11 * s).key(HEAD, on, -6, 6 * s, -9 * s)
-                    .key(RIGHT_ARM, on, -15, 0, onRight ? 92 : 38).key(LEFT_ARM, on, -15, 0, onRight ? -38 : -92)
-                    .key(RIGHT_LEG, on, onRight ? -6 : -22, 0, onRight ? 2 : 14).key(LEFT_LEG, on, onRight ? -22 : -6, 0, onRight ? -14 : -2)
-                    .key(BODY, on + 2, 4, -8 * s, 12 * s)
-                    .key(RIGHT_ARM, on + 2, -15, 0, onRight ? 95 : 36).key(LEFT_ARM, on + 2, -15, 0, onRight ? -36 : -95)
-                    .key(BODY, off, 0, 0, 0).key(HEAD, off, 3, 0, 0)
-                    .key(RIGHT_ARM, off, -10, 0, 58).key(LEFT_ARM, off, -10, 0, -58)
-                    .key(RIGHT_LEG, off, -10, 0, 3).key(LEFT_LEG, off, -10, 0, -3);
+            float sgn = beat % 2 == 0 ? 1 : -1;
+            dance.key(BODY, on, 6, 10 * sgn, 12 * sgn).key(HEAD, on, -4, -8 * sgn, -8 * sgn)
+                    .key(RIGHT_ARM, on, sgn > 0 ? -165 : -135, 0, sgn > 0 ? 30 : 48).key(LEFT_ARM, on, sgn > 0 ? -135 : -165, 0, sgn > 0 ? -48 : -30)
+                    .key(RIGHT_LEG, on, sgn > 0 ? -6 : -20, 0, sgn > 0 ? 4 : 14).key(LEFT_LEG, on, sgn > 0 ? -20 : -6, 0, sgn > 0 ? -14 : -4)
+                    .key(BODY, off, 5, 0, 0).key(HEAD, off, 0, 0, 0)
+                    .key(RIGHT_ARM, off, -150, 0, 40).key(LEFT_ARM, off, -150, 0, -40)
+                    .key(RIGHT_LEG, off, -14, 0, 8).key(LEFT_LEG, off, -14, 0, -8);
         }
-        // Finish (after the fourth beat): arms flung up into a V, chest up, legs set.
-        dance.key(RIGHT_ARM, 54, -20, 0, 140).key(LEFT_ARM, 54, -20, 0, -140).key(BODY, 54, -8, 0, 0).key(HEAD, 54, -18, 0, 0)
-                .key(RIGHT_LEG, 54, 0, 0, 6).key(LEFT_LEG, 54, 0, 0, -6)
-                .key(RIGHT_ARM, 60, -20, 0, 135).key(LEFT_ARM, 60, -20, 0, -135).key(BODY, 60, -6, 0, 0).key(HEAD, 60, -15, 0, 0)
-                .key(RIGHT_LEG, 60, 0, 0, 6).key(LEFT_LEG, 60, 0, 0, -6);
+        dance.key(RIGHT_ARM, 54, -20, 0, 70).key(LEFT_ARM, 54, -20, 0, -70).key(BODY, 54, 0, 0, 0).key(HEAD, 54, -6, 0, 0)
+                .key(RIGHT_LEG, 54, 0, 0, 4).key(LEFT_LEG, 54, 0, 0, -4)
+                .key(RIGHT_ARM, 60, -15, 0, 60).key(LEFT_ARM, 60, -15, 0, -60).key(BODY, 60, 0, 0, 0).key(HEAD, 60, 0, 0, 0)
+                .key(RIGHT_LEG, 60, 0, 0, 3).key(LEFT_LEG, 60, 0, 0, -3);
         add(dance.build());
     }
 }
