@@ -386,3 +386,141 @@ i.ring(5.5, 6.3, 0x8FC8FF, 7.5, 7.5, when=lambda a: -2.6 < a < -0.5)
 i.ring(3.3, 4.0, 0xCFE8FF, 7.5, 7.5, when=lambda a: -2.6 < a < -0.5)
 i.outline()
 i.save('twofold_kick')
+
+# --- Yuji / Vessel: cyan cursed energy, red eyes; Sukuna: white slashes, black cores, red. ---
+CE, CE_L, BFR, INK_, BLOOD_ = 0x5CE6FF, 0xCCF6FF, 0xE01020, 0x0A0A10, 0x9A0A14
+SKIN = 0xF0CCA8
+
+# Cursed Strikes: a fist sliding in behind two red streaks.
+i = Icon()
+for y in (6, 9):
+    i.line(0, y, 6, y, BFR)
+fist(i, 6, 3, 9, 9)
+i.outline()
+i.save('cursed_strikes')
+
+# Crushing Blow: a cyan-charged fist driving down into cracked ground.
+i = Icon()
+fist(i, 3, 1, 10, 8)
+for x in range(2, 14):
+    i.set(x, 3, None)
+i.ring(0, 2.2, CE, 8, 6, when=lambda a: True)
+fist(i, 3, 1, 10, 8, CE_L, CE)
+for x in range(0, 16):
+    i.set(x, 13, 0x5A5A66)
+for (x0, x1) in ((3, 6), (9, 13)):
+    i.line(x0, 12, x1, 15, 0x2A2A34)
+i.line(8, 10, 8, 14, CE)
+i.outline()
+i.save('crushing_blow')
+
+# Divergent Fist: a fist with its cyan afterimage lagging behind.
+i = Icon()
+fist(i, 1, 4, 9, 8, CE, 0x2A9AC8)
+fist(i, 6, 3, 9, 9)
+i.outline()
+i.save('divergent_fist')
+
+# Manji Kick: a leg swung up in a white arc.
+i = Icon()
+i.ring(5.6, 6.6, 0xF4F4FA, when=lambda a: -2.6 < a < 0.3)
+for k in range(8):
+    for w in range(3):
+        i.set(3 + k, 13 - k + w, 0x2A2A38)
+for y in range(3, 7):
+    for x in range(10, 14):
+        i.set(x, y, 0xF4F4FA)
+i.outline()
+i.save('manji_kick')
+
+# Combat Instincts: the crackling white ring of a feint.
+i = Icon()
+i.ring(5.4, 6.6, 0xF4F4FA, when=lambda a: math.sin(a * 5) > -0.6)
+i.ring(6.6, 7.4, 0xA8B0C0, when=lambda a: math.sin(a * 5 + 1) > 0.4)
+i.line(7, 1, 8, 4, 0xFFFFFF)
+i.line(12, 11, 14, 13, 0xFFFFFF)
+fist(i, 5, 6, 6, 5)
+i.outline()
+i.save('combat_instincts')
+
+# King of Curses: Sukuna's face, the marks and four red eyes.
+i = Icon()
+for y in range(2, 15):
+    for x in range(3, 13):
+        i.set(x, y, SKIN)
+for x in range(3, 13):
+    i.set(x, 1, 0xE88A9A)
+    i.set(x, 2, 0xE88A9A)
+for x in (5, 6, 9, 10):
+    i.set(x, 6, BFR)
+    i.set(x, 9, BFR)
+for x in range(3, 5):
+    i.set(x, 10, INK_)
+    i.set(x + 8, 10, INK_)
+i.line(6, 4, 9, 4, INK_)
+for x in range(6, 10):
+    i.set(x, 12, INK_)
+i.outline()
+i.save('king_of_curses')
+
+# Cleave: a grip and the crossing cuts through it.
+i = Icon()
+i.line(2, 2, 13, 13, 0xFFFFFF)
+i.line(13, 2, 2, 13, 0xFFFFFF)
+i.line(2, 5, 10, 13, BFR)
+i.line(5, 2, 13, 10, BFR)
+i.disk(1.2, INK_)
+i.outline()
+i.save('cleave')
+
+# Dismantle: a white crescent with a black core.
+i = Icon()
+i.ring(5.0, 7.4, 0xFFFFFF, when=lambda a: -2.3 < a < 0.9)
+i.ring(5.6, 6.8, INK_, when=lambda a: -2.0 < a < 0.6)
+for (x, y) in ((4, 12), (6, 13), (3, 10)):
+    i.set(x, y, BLOOD_)
+i.outline()
+i.save('dismantle')
+
+# Open: an arrow of fire.
+i = Icon()
+i.line(1, 14, 12, 3, 0xFF8A20)
+i.line(2, 14, 13, 3, 0xFFD060)
+i.line(1, 13, 12, 2, 0xFF8A20)
+for (x, y) in ((13, 1), (14, 2), (12, 1), (14, 3), (11, 2)):
+    i.set(x, y, 0xFFF0A0)
+for (x, y) in ((0, 11), (3, 15), (1, 15), (0, 13)):
+    i.set(x, y, 0xE04010)
+i.outline()
+i.save('open')
+
+# Rush: a knee driving up out of speed lines, red aura.
+i = Icon()
+for y in (4, 8, 12):
+    i.line(0, y, 5, y, 0xA8B0C0)
+for k in range(6):
+    for w in range(3):
+        i.set(7 + k // 2 + w, 13 - k, 0x2A2A38)
+for y in range(4, 8):
+    for x in range(9, 14):
+        i.set(x, y, 0x2A2A38)
+i.ring(6.5, 7.5, BLOOD_, when=lambda a: a < -0.5)
+i.outline()
+i.save('rush')
+
+# Malevolent Shrine: the shrine — the roof, the red pillars, the mouth between them.
+i = Icon()
+for y in range(2, 6):
+    for x in range(1 + (5 - y), 15 - (5 - y)):
+        i.set(x, y, 0x3E7A52 if y < 4 else 0xC8662A)
+for y in range(6, 15):
+    for x in (3, 4, 11, 12):
+        i.set(x, y, BFR)
+for y in range(8, 14):
+    for x in range(5, 11):
+        i.set(x, y, 0xF4C0C8 if y in (8, 13) else INK_)
+for x in range(5, 11, 2):
+    i.set(x, 9, 0xFFFFFF)
+    i.set(x + 1, 12, 0xFFFFFF)
+i.outline()
+i.save('malevolent_shrine')

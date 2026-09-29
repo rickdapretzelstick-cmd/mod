@@ -1,4 +1,4 @@
-# Jujutsu — Gojo Satoru and Kinji Hakari
+# Jujutsu — Gojo Satoru, Kinji Hakari and Yuji Itadori
 
 Fabric mod for **Minecraft 26.3** (Java 25, Fabric API). Install the jar plus Fabric API.
 
@@ -74,14 +74,14 @@ character never touches the screen. Switching only works from a neutral state: n
 awakened or in Jackpot, not in or near a domain or clash, not stunned, and not hit in the last few seconds. The old
 kit's techniques, toggles and states are cleared and the new moveset, HUD icons and theme load at once.
 
-| Key | Gojo (Honored One) | Hakari (Restless Gambler) | Hakari in Jackpot |
-|---|---|---|---|
-| 1 | Lapse Blue | Reserve Balls | Lucky Volley |
-| 2 | Reversal Red | Shutter Doors | Lucky Rushdown |
-| 3 | Rapid Punches | Rough Energy | Overwhelming Luck |
-| 4 | Twofold Kick | Fever Breaker | Energy Surge |
-| R (Special) | Limitless | Door Guard (hold) | Rhythm |
-| G | Awakening (Six Eyes) | Idle Death Gamble | — |
+| Key | Gojo (Honored One) | Hakari (Restless Gambler) | Hakari in Jackpot | Yuji (Vessel) | King of Curses |
+|---|---|---|---|---|---|
+| 1 | Lapse Blue | Reserve Balls | Lucky Volley | Cursed Strikes | Dismantle |
+| 2 | Reversal Red | Shutter Doors | Lucky Rushdown | Crushing Blow | Open |
+| 3 | Rapid Punches | Rough Energy | Overwhelming Luck | Divergent Fist | Rush |
+| 4 | Twofold Kick | Fever Breaker | Energy Surge | Manji Kick | Malevolent Shrine |
+| R (Special) | Limitless | Door Guard (hold) | Rhythm | Combat Instincts | Cleave |
+| G | Awakening (Six Eyes) | Idle Death Gamble | — | Awakening (King of Curses) | counter |
 
 ![Hakari](docs/screenshots/hakari_showcase.png)
 ![Idle Death Gamble opening](docs/screenshots/hakari_idg_cutin.png)
@@ -146,6 +146,47 @@ cooldowns and durations, its studs as blocks (about 3.6 studs to a block), all i
     and special, and every cooldown finishes 0.6s sooner.
 - **Finishers**: on a target at 20% health or less, Shutter Doors shut them in completely, Lucky Volley's swipe sends
   them flying, and Lucky Rushdown drags them further, hurls them into the air and ends with a leaping punch.
+
+### Yuji Itadori — Vessel
+
+Tuned after the [Jujutsu Shenanigans wiki](https://jujutsu-shenanigans.fandom.com/wiki/Vessel) and its GIFs: the wiki's
+damage, cooldowns and durations, studs as blocks, move timings from the GIFs (the `yuji` section of the config). Every
+sound is the JJS audio. 85 max HP.
+
+- **Cursed Strikes** (14s): eyes glowing red, he slides forward; whoever he meets eats a flurry of punches (bullet
+  i-frames) and a calf kick that stuns them in place. His M1 count carries over and his front dash is shut off for a
+  moment. A guard cuts the slide short; 360 blockable; can't bypass ragdoll. *In the air*: a hop, then a dropkick diving
+  at the ground that grounds whoever it lands on (unblockable). *Finishers*: a kick, the floor struck to launch them, a
+  spin kick; in the air, a Black Flash on landing.
+- **Crushing Blow** (15s): cursed energy charges in his hand; a target close enough is grabbed, slammed twice and flung
+  skyward; nobody close and the floor takes it (a shockwave that catches people getting up). *In the air*: he dashes
+  across the air at them first. *Finisher*: one slam, then a German suplex.
+- **Divergent Fist** (18s): a blow, then the cursed energy lagging behind it launches them a beat later (a stun instead
+  if it interrupts what they were doing). **Black Flash**: press it again while his body flashes white (the cast bar
+  reads BLACK FLASH!). **Black Flash Chain**: a Black Flash on someone's back stuns them and keeps Divergent Fist off
+  cooldown; up to four in a row, the fourth a heavy one ("KOKUSEN"), and his side dash comes back after each.
+  *Finishers*: the body shatters; a finishing Black Flash sends them extremely far.
+- **Manji Kick** (20s): 0.6s counter stance. A melee hit is answered with an upward roundhouse to the side; a bullet is
+  dodged and he swoops in on the shooter. *Finisher*: a leg lock, a spin and a slam that crushes them.
+- **Combat Instincts** (Special, 2s): during an M1's or a move's wind-up (not Manji Kick) it cancels it with no endlag
+  and keeps the move off cooldown; with the aerial variants the hop is kept for mobility. Takes 3% Awakening if there
+  is any. Next to a throwable (barrel, composter, anvil, bookshelf...) it punches the prop across the field for 15
+  (needs the 3%).
+- **King of Curses** (full meter; 60s, heals 45 HP): he faints and Sukuna takes over — "You're such an annoying brat,"
+  the marks and the second pair of eyes on his face, a red aura. **Shrine**: his M1s become slashes reaching three
+  times as far (24 studs), 360 blockable, cutting through walls, with no uppercut or downslam.
+  - **Cleave** (Special, 12s): a grab, a pause, then a storm of slashes: 40% of their current health, at least 10.
+  - **Dismantle** (13s): a barrage of slashes on whoever he faces within 30 studs (17.5; 10 through a guard, which also
+    can't be finished by it). *In the air*: a flip and one long unblockable slash down the line.
+  - **World Cutting Slash**: Rush during Dismantle's wind-up, then Open, then Cleave. He chants "SCALE OF THE DRAGON",
+    "RECOIL", "TWIN METEORS" (uninterruptible), then swings a slash that cuts the world itself (80, less the more it
+    hits), with total i-frames. Puts Open on its full cooldown and doubles Dismantle's.
+  - **Open** (40s): fire in his hands, a clap, a bow drawn; with i-frames he looses an arrow of fire and a pillar of
+    flame goes up where it lands, lifting everyone in it (30, unblockable).
+  - **Rush** (15s): straight ahead at incredible speed; whoever he hits is hurled, chased down, kneed skyward and
+    slammed back down.
+  - **Malevolent Shrine** (120s, 18s): a black void over a pool of blood with the shrine in its middle; its sure hit
+    is a ceaseless stream of Dismantles (2 each, 218 over the domain; 0.5 through a guard, which can't be finished).
 
 ## HUD and Vanilla Minecraft mode
 

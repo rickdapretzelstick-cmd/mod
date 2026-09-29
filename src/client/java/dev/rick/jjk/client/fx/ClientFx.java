@@ -487,8 +487,10 @@ public final class ClientFx {
                 float r = Math.max(4f, s);
                 ClientState.Domain sealed = ClientState.domainOwnedBy(p.entityId());
                 boolean idg = sealed != null && dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(sealed.definition);
-                sound(idg ? "idg_sealed" : "domain_expand", pos, 6f, 1f);
-                sound(idg ? "idg_music" : "uv_music", pos, 4f, 1f);
+                boolean shrine = sealed != null && dev.rick.jjk.yuji.MalevolentShrine.ID.equals(sealed.definition);
+                sound(idg ? "idg_sealed" : shrine ? "shrine_expand" : "domain_expand", pos, 6f, 1f);
+                sound(idg ? "idg_music" : shrine ? "shrine_music" : "uv_music", pos, 4f, 1f);
+                if (shrine) sound("shrine_splash", pos, 3f, 1f);
                 Flashes.lens(pos, r * 0.85f, r * 1.08f, WHITE, 0.9f, 12, now);
                 Flashes.ground(pos.add(0, -0.45, 0), r * 0.2f, r * 1.1f, BLUE_LIGHT, 0.8f, 14, now);
                 Flashes.ring(pos, r * 0.5f, r * 1.2f, WHITE, 0.6f, 12, now);
@@ -508,7 +510,8 @@ public final class ClientFx {
                 sound("domain_collapse", pos, 5f, 1f);
                 stopSound("clash_music");
                 ClientState.Domain ending = ClientState.domainOwnedBy(p.entityId());
-                if (ending != null) stopSound(dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(ending.definition) ? "idg_music" : "uv_music");
+                if (ending != null) stopSound(dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(ending.definition) ? "idg_music"
+                        : dev.rick.jjk.yuji.MalevolentShrine.ID.equals(ending.definition) ? "shrine_music" : "uv_music");
                 Flashes.lens(pos, s, 1f, WHITE, 0.7f, 20, now);
                 if (drawn) sphereShell(level, pos, s * 0.9, q(60), WHITE, 0.3f, 20, -0.08).forEach(x -> x.gravity(0.3f));
             }

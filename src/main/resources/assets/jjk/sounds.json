@@ -715,5 +715,248 @@
     "sounds": [
       "jjk:surge_launch"
     ]
+  },
+  "cursed_strikes_start": {
+    "sounds": [
+      "jjk:cursed_strikes_start"
+    ]
+  },
+  "cursed_strikes_slide": {
+    "sounds": [
+      "jjk:cursed_strikes_slide"
+    ]
+  },
+  "cursed_strikes_hit": {
+    "sounds": [
+      "jjk:cursed_strikes_hit"
+    ]
+  },
+  "cursed_strikes_spin": {
+    "sounds": [
+      "jjk:cursed_strikes_spin"
+    ]
+  },
+  "cursed_strikes_impact": {
+    "sounds": [
+      "jjk:cursed_strikes_impact"
+    ]
+  },
+  "crushing_charge": {
+    "sounds": [
+      "jjk:crushing_charge"
+    ]
+  },
+  "crushing_fist": {
+    "sounds": [
+      "jjk:crushing_fist"
+    ]
+  },
+  "crushing_impact": {
+    "sounds": [
+      "jjk:crushing_impact"
+    ]
+  },
+  "crushing_hit": {
+    "sounds": [
+      "jjk:crushing_hit"
+    ]
+  },
+  "divergent_charge": {
+    "sounds": [
+      "jjk:divergent_charge"
+    ]
+  },
+  "divergent": {
+    "sounds": [
+      "jjk:divergent"
+    ]
+  },
+  "divergent_hit": {
+    "sounds": [
+      "jjk:divergent_hit"
+    ]
+  },
+  "black_flash": {
+    "sounds": [
+      "jjk:black_flash"
+    ]
+  },
+  "black_flash_chain": {
+    "sounds": [
+      "jjk:black_flash_chain"
+    ]
+  },
+  "black_flash_windup": {
+    "sounds": [
+      "jjk:black_flash_windup"
+    ]
+  },
+  "black_flash_heavy": {
+    "sounds": [
+      "jjk:black_flash_heavy"
+    ]
+  },
+  "kokusen": {
+    "sounds": [
+      "jjk:kokusen"
+    ]
+  },
+  "entrusted_music": {
+    "sounds": [
+      {
+        "name": "jjk:entrusted_music",
+        "stream": true
+      }
+    ]
+  },
+  "manji_startup": {
+    "sounds": [
+      "jjk:manji_startup"
+    ]
+  },
+  "manji_dodge": {
+    "sounds": [
+      "jjk:manji_dodge"
+    ]
+  },
+  "manji_swing": {
+    "sounds": [
+      "jjk:manji_swing"
+    ]
+  },
+  "manji_slam": {
+    "sounds": [
+      "jjk:manji_slam"
+    ]
+  },
+  "manji_crush": {
+    "sounds": [
+      "jjk:manji_crush"
+    ]
+  },
+  "sukuna_awaken": {
+    "sounds": [
+      "jjk:sukuna_awaken"
+    ]
+  },
+  "dismantle_slash": {
+    "sounds": [
+      "jjk:dismantle_slash"
+    ]
+  },
+  "dismantle_finish": {
+    "sounds": [
+      "jjk:dismantle_finish"
+    ]
+  },
+  "dismantle_spin": {
+    "sounds": [
+      "jjk:dismantle_spin"
+    ]
+  },
+  "wcs_line": {
+    "sounds": [
+      "jjk:wcs_line",
+      "jjk:wcs_line_2",
+      "jjk:wcs_line_3"
+    ]
+  },
+  "wcs_line_1": {
+    "sounds": [
+      "jjk:wcs_line_1"
+    ]
+  },
+  "wcs_line_2": {
+    "sounds": [
+      "jjk:wcs_line_2"
+    ]
+  },
+  "wcs_line_3": {
+    "sounds": [
+      "jjk:wcs_line_3"
+    ]
+  },
+  "open_hands": {
+    "sounds": [
+      "jjk:open_hands"
+    ]
+  },
+  "open_clap": {
+    "sounds": [
+      "jjk:open_clap"
+    ]
+  },
+  "open_arrow": {
+    "sounds": [
+      "jjk:open_arrow"
+    ]
+  },
+  "open_idle": {
+    "sounds": [
+      "jjk:open_idle"
+    ]
+  },
+  "open_fire": {
+    "sounds": [
+      "jjk:open_fire"
+    ]
+  },
+  "open_explode": {
+    "sounds": [
+      "jjk:open_explode"
+    ]
+  },
+  "rush_start": {
+    "sounds": [
+      "jjk:rush_start"
+    ]
+  },
+  "rush_hit": {
+    "sounds": [
+      "jjk:rush_hit"
+    ]
+  },
+  "rush_break": {
+    "sounds": [
+      "jjk:rush_break"
+    ]
+  },
+  "rush_slam": {
+    "sounds": [
+      "jjk:rush_slam"
+    ]
+  },
+  "shrine_voice": {
+    "sounds": [
+      "jjk:shrine_voice"
+    ]
+  },
+  "shrine_expand": {
+    "sounds": [
+      "jjk:shrine_expand"
+    ]
+  },
+  "shrine_ring": {
+    "sounds": [
+      "jjk:shrine_ring"
+    ]
+  },
+  "shrine_music": {
+    "sounds": [
+      {
+        "name": "jjk:shrine_music",
+        "stream": true
+      }
+    ]
+  },
+  "shrine_ready": {
+    "sounds": [
+      "jjk:shrine_ready"
+    ]
+  },
+  "shrine_splash": {
+    "sounds": [
+      "jjk:shrine_splash"
+    ]
   }
 }

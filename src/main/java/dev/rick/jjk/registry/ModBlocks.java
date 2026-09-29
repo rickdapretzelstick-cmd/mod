@@ -21,7 +21,7 @@ public final class ModBlocks {
     public static final Block IDG_FLOOR = register("idg_floor", 12);
     /** Malevolent Shrine: a black void over a shallow pool of blood. */
     public static final Block SHRINE_BARRIER = register("shrine_barrier", 0);
-    public static final Block SHRINE_FLOOR = register("shrine_floor", 4);
+    public static final Block SHRINE_FLOOR = register("shrine_floor", 10);
 
     // Model-only blocks: never placed in the world, only drawn by renderers (Hakari's doors and balls, and the trains and
     // seven-segment counters inside his domain),

@@ -103,7 +103,8 @@ public final class YujiCombat {
         double range = JJKConfig.get().melee.lightRange * cfg().shrineRangeMultiplier;
         Vec3 eye = user.getEyePosition(), end = eye.add(user.getLookAngle().scale(range));
         BlockHitResult hit = level.clip(new ClipContext(eye, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, user));
-        if (hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS) return;
+        // Walls only: a slash aimed at the floor doesn't dig.
+        if (hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS || !hit.getDirection().getAxis().isHorizontal()) return;
         Vec3 side = new Vec3(-HakariCombat.flat(user).z, 0, HakariCombat.flat(user).x);
         for (int i = -1; i <= 1; i++) {
             BlockPos p = BlockPos.containing(hit.getLocation().add(user.getLookAngle().scale(0.2)).add(side.scale(i * 0.9)));

@@ -519,7 +519,7 @@ final class HakariFx {
                 // JJS GIF: the moment breaks like glass and snaps back, for everyone in the domain.
                 if (mc.player != null && mc.player.position().distanceTo(pos) < 40) dev.rick.jjk.client.hud.GojoPresentation.shatter();
             }
-            default -> {}
+            default -> YujiFx.play(p, mc, level, pos, dir, s, mine, now);
         }
     }
 }

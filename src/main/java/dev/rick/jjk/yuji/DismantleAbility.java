@@ -204,7 +204,7 @@ public final class DismantleAbility extends Ability {
                         .knockback(Knockback.directional(dir, 0.9, 0.3)).hitstun(26).status(CombatStatus.LAUNCHED, 22)
                         .fx("dismantle_hit", 1.5f).build(), t);
             }
-            cut(from, to, 1, 60);
+            cut(from, to, -1, 0, 60);
             endAt = age + 12;
         }
 
@@ -231,7 +231,8 @@ public final class DismantleAbility extends Ability {
                         .fx("world_slash_hit", 1.6f).build(), t);
             }
             Vec3 side = new Vec3(-f.z, 0, f.x).normalize();
-            cut(center.subtract(side.scale(cfg.worldSlashWidth / 2)), center.add(side.scale(cfg.worldSlashWidth / 2)), 0, 200);
+            // The cut runs through everything at chest height (walls, trees, buildings), not the ground.
+            cut(center.subtract(side.scale(cfg.worldSlashWidth / 2)), center.add(side.scale(cfg.worldSlashWidth / 2)), 0, 1, 200);
             // Everything the chant used goes on cooldown; Dismantle's twice over.
             for (AbilitySlot s : AbilitySlot.values()) {
                 Ability a = caster.ability(s);
@@ -243,13 +244,13 @@ public final class DismantleAbility extends Ability {
         }
 
         /** A line of cut blocks (restored later like any destruction). */
-        private void cut(Vec3 a, Vec3 b, int height, int limit) {
+        private void cut(Vec3 a, Vec3 b, int low, int height, int limit) {
             if (!Destruction.allowed(level)) return;
             int n = 0;
             double len = a.distanceTo(b);
             for (double d = 0; d <= len && n < limit; d += 0.8) {
                 Vec3 p = a.lerp(b, d / Math.max(1e-3, len));
-                for (int y = -1; y <= height; y++) if (Destruction.destroy(level, BlockPos.containing(p.add(0, y, 0)), 5f, user, "jjk:dismantle")) n++;
+                for (int y = low; y <= height; y++) if (Destruction.destroy(level, BlockPos.containing(p.add(0, y, 0)), 5f, user, "jjk:dismantle")) n++;
             }
         }
 

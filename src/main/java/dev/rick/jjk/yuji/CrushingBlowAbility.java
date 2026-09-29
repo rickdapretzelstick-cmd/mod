@@ -219,9 +219,12 @@ public final class CrushingBlowAbility extends Ability {
 
         private void crater(Vec3 at, double r) {
             if (!Destruction.allowed(level)) return;
+            // The floor cracks where they're driven in (only the surface, and never under his own feet).
             BlockPos c = BlockPos.containing(at.add(0, -0.5, 0));
-            for (BlockPos p : BlockPos.betweenClosed(c.offset(-2, -1, -2), c.offset(2, 0, 2))) {
-                if (Vec3.atCenterOf(p).distanceTo(at) <= r) Destruction.destroy(level, p, 2f, user, "jjk:crushing_blow");
+            BlockPos feet = user.blockPosition().below();
+            for (BlockPos p : BlockPos.betweenClosed(c.offset(-1, 0, -1), c.offset(1, 0, 1))) {
+                if (p.distManhattan(feet) <= 1 || Vec3.atCenterOf(p).distanceTo(at) > r * 0.6) continue;
+                if (level.getRandom().nextFloat() < 0.5f) Destruction.destroy(level, p, 2f, user, "jjk:crushing_blow");
             }
         }
 

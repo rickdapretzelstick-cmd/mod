@@ -92,3 +92,38 @@ HAKARI = [
 draw(HAKARI, {'O': 0x140810, 'P': 0xFF3FA0, 'W': 0xF6F2F8, 'G': 0xF0C040, 'g': 0xB08820, 'D': 0x2A1420, 'R': 0xE0102A,
               'K': 0x3A2A10}, 'hakari')
 print('emblems written to', os.path.normpath(OUT))
+
+
+# Yuji: one of Sukuna's cursed fingers — withered, dark, a black claw, bound by a talisman strip.
+def yuji():
+    import math
+    img = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
+    ax, ay, bx, by = 6, 26, 25, 6
+    L = math.hypot(bx - ax, by - ay)
+    for y in range(32):
+        for x in range(32):
+            t = ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / (L * L)
+            if not -0.02 <= t <= 1.02:
+                continue
+            px_, py_ = ax + (bx - ax) * t, ay + (by - ay) * t
+            d = math.hypot(x - px_, y - py_)
+            w = 4.2 - 1.2 * t
+            if d > w:
+                continue
+            col = 0x5A2A22 if d < w - 1.2 else 0x2E1410
+            # Knuckle creases.
+            if abs(t - 0.35) < 0.03 or abs(t - 0.66) < 0.03:
+                col = 0x2A120E
+            # The claw at the tip.
+            if t > 0.88:
+                col = 0x101014 if d < w - 0.6 else 0x050506
+            # The talisman strip around the base.
+            if 0.08 < t < 0.2:
+                col = 0xE8DCC0 if d < w - 0.4 else 0xB8A888
+                if abs(t - 0.14) < 0.015:
+                    col = 0xC01020
+            img.putpixel((x, y), rgb(col))
+    img.save(os.path.join(OUT, 'yuji.png'))
+
+
+yuji()

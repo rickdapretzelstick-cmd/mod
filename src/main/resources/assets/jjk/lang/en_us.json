@@ -16,7 +16,7 @@
   "key.jjk.skill_2": "Move 2",
   "key.jjk.skill_3": "Move 3",
   "key.jjk.skill_4": "Move 4",
-  "key.jjk.skill_5": "Special (Limitless / Door Guard / Rhythm)",
+  "key.jjk.skill_5": "Special (Limitless / Door Guard / Combat Instincts)",
   "key.jjk.ultimate": "Ultimate (Awaken / Domain Expansion)",
   "jjk.ability.dash": "Dash",
   "jjk.ability.guard": "Guard",
@@ -52,5 +52,9 @@
   "block.jjk.idg_barrier": "Idle Death Gamble Barrier",
   "block.jjk.idg_floor": "Idle Death Gamble Floor",
   "entity.jjk.pachinko_ball": "Reserve Ball",
-  "entity.jjk.hakari_door": "Hakari Door"
+  "entity.jjk.hakari_door": "Hakari Door",
+  "block.jjk.shrine_barrier": "Malevolent Shrine",
+  "block.jjk.shrine_floor": "Malevolent Shrine Floor",
+  "entity.jjk.thrown_prop": "Thrown Prop",
+  "entity.jjk.fire_arrow": "Open"
 }

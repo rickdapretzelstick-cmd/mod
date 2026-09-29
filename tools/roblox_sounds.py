@@ -173,6 +173,55 @@ SOUNDS = {
     "surge_appear": one(c(9119122635)),
     "surge_launch": one(c(9114362943)),
     "rhythm_tick": one(c(17046377464)),
+    # --- Yuji / Vessel ---
+    "cursed_strikes_start": one(c(16773286492)),
+    "cursed_strikes_slide": one(c(3084314259, speed=1.1)),
+    "cursed_strikes_hit": one(c(16773286330)),
+    "cursed_strikes_spin": one(c(8120249833)),
+    "cursed_strikes_impact": one(c(7093763783)),
+    "crushing_charge": one(c(4403634269)),
+    "crushing_fist": one(c(4571259077)),
+    "crushing_impact": one(c(7093763783)),
+    "crushing_hit": one(c(7307838125, speed=1.25), c(9118614717, speed=1.25)),
+    "divergent_charge": one(c(4403634269), c(4059009185, at=0.25)),
+    "divergent": one(c(5795505380, speed=1.5)),
+    "divergent_hit": one(c(7515452875)),
+    "black_flash": one(c(12764933067, speed=1.5), c(9114314398)),
+    "black_flash_chain": one(c(112426502291350)),
+    "black_flash_windup": one(c(102672006215074)),
+    "black_flash_heavy": one(c(12764933067, speed=1.5), c(12764933067, at=0.05), c(9114314398, at=0.1)),
+    "kokusen": one(c(12761286504)),
+    "entrusted_music": one(c(93167187278849)),
+    "manji_startup": one(c(9125615451)),
+    "manji_dodge": one(c(6470740758)),
+    "manji_swing": one(c(9126228977)),
+    "manji_slam": one(c(9113504593)),
+    "manji_crush": one(c(9118614717), c(8120249833, at=0.2), c(3778609188, at=0.55), c(4307207693, at=0.6), c(3848082818, at=0.65)),
+    # --- King of Curses ---
+    "sukuna_awaken": one(c(15675012262), c(4458760518, at=0.3)),
+    "dismantle_slash": one(c(935843979, speed=1.5)),
+    "dismantle_finish": one(c(9119749145)),
+    "dismantle_spin": one(c(8120249833)),
+    "wcs_line": [[c(17053666464)], [c(17053670289)], [c(17053667034)]],
+    "wcs_line_1": one(c(17053666464)),
+    "wcs_line_2": one(c(17053670289)),
+    "wcs_line_3": one(c(17053667034)),
+    "open_hands": one(c(1072005487)),
+    "open_clap": one(c(6874043782)),
+    "open_arrow": one(c(7278163473)),
+    "open_idle": one(c(7978653185)),
+    "open_fire": one(c(5801273676)),
+    "open_explode": one(c(331888892)),
+    "rush_start": one(c(3084314259)),
+    "rush_hit": one(c(8595975878), c(3763467977, at=0.02)),
+    "rush_break": one(c(4086172909), c(8595975878, at=0.02)),
+    "rush_slam": one(c(8595975458, speed=1.1), c(7093763783, at=0.03)),
+    "shrine_voice": one(c(7817341182)),
+    "shrine_expand": one(c(3059775781), c(7260423115)),
+    "shrine_ring": one(c(7817336081)),
+    "shrine_music": one(c(15583493700)),
+    "shrine_ready": one(c(8181034930)),
+    "shrine_splash": one(c(9120548819)),
 }
 
 # New events whose clips can't be fetched borrow an existing sound instead (music has none: it just stays quiet).
@@ -185,7 +234,7 @@ FALLBACK = {
 }
 
 # Long tracks: streamed, faded out, and capped (the domain stops them when it ends).
-MUSIC = {"uv_music": 80, "idg_music": 80, "jackpot_music": 100, "purple_music": 14, "clash_music": 60, "zero_two_music": 30}
+MUSIC = {"shrine_music": 40, "entrusted_music": 30, "uv_music": 80, "idg_music": 80, "jackpot_music": 100, "purple_music": 14, "clash_music": 60, "zero_two_music": 30}
 
 
 def fetch(i):

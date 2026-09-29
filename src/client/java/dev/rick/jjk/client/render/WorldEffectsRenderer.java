@@ -155,6 +155,48 @@ public final class WorldEffectsRenderer {
                     ps.popPose();
                 }
             }
+            // --- Vessel / King of Curses ---
+            case "divergent_fist", "crushing_blow", "combat_instincts" -> {
+                if (cast.phase() == 0) {
+                    // Cyan cursed energy packing around the cocked fist.
+                    float f = Math.min(1f, totalAge / 9f);
+                    Vec3 fist = hand(user, partial, false, cast.ability().equals("crushing_blow") ? 0.1 : -0.25).add(0, -0.15, 0);
+                    orbAt(c, ps, cam, camRot, fist, 0.08f + 0.18f * f, new float[]{0.35f, 0.9f, 1f}, 0.8f + f);
+                }
+            }
+            case "cursed_strikes" -> {
+                // Eyes glowing red through the slide.
+                Vec3 eye = user.getEyePosition(partial).add(user.getViewVector(partial).scale(0.28));
+                orbAt(c, ps, cam, camRot, eye, 0.06f, new float[]{1f, 0.08f, 0.1f}, 1.4f);
+            }
+            case "open" -> {
+                float[] fire = {1f, 0.55f, 0.15f};
+                Vec3 left = hand(user, partial, true, 0.2), right = hand(user, partial, false, 0.2);
+                float flick = 0.9f + 0.2f * Mth.sin(totalAge * 2.7f);
+                if (cast.phase() <= 1) {
+                    orbAt(c, ps, cam, camRot, left, 0.18f * flick, fire, 1.2f);
+                    orbAt(c, ps, cam, camRot, right, 0.18f * flick, fire, 1.2f);
+                } else {
+                    // The flames drawn out into an arrow along the bow.
+                    Vec3 front = user.getEyePosition(partial).add(user.getViewVector(partial).scale(1.4)).add(0, -0.2, 0);
+                    Vec3 back = user.getEyePosition(partial).add(user.getViewVector(partial).scale(-0.1)).add(0, -0.2, 0);
+                    for (int i = 0; i <= 6; i++) orbAt(c, ps, cam, camRot, back.lerp(front, i / 6.0), (0.12f + 0.04f * (i % 2)) * flick, fire, 1.3f);
+                    orbAt(c, ps, cam, camRot, front, 0.22f * flick, new float[]{1f, 0.95f, 0.6f}, 1.6f);
+                }
+            }
+            case "malevolent_shrine" -> {
+                Vec3 base = user.getPosition(partial);
+                for (int i = 0; i < 3; i++) {
+                    float t = (totalAge * 0.06f + i / 3f) % 1f;
+                    push(ps, cam, base.add(0, t * 2.6, 0));
+                    ps.rotate(Axis.YP.rotationDegrees(-totalAge * 6 + i * 40));
+                    Glow.ring(c, ps, 1.7f - t * 0.9f, 0.14f, 0.8f, 0.05f, 0.08f, 0.6f * (1 - t));
+                    ps.popPose();
+                }
+            }
+            case "dismantle" -> {
+                if (cast.phase() == 0 || cast.phase() > 10) orbAt(c, ps, cam, camRot, hand(user, partial, false, 0.1), 0.07f, ClientFx.WHITE, 1f);
+            }
             case "unlimited_void" -> {
                 Vec3 base = user.getPosition(partial);
                 for (int i = 0; i < 3; i++) {
@@ -419,6 +461,12 @@ public final class WorldEffectsRenderer {
             return;
         }
         // Every domain has its own interior: Idle Death Gamble is a casino, not a void.
+        if (dev.rick.jjk.yuji.MalevolentShrine.ID.equals(d.definition)) {
+            boolean sealed = progress >= DomainFormation.SEALED;
+            ShrineDomainRenderer.render(c, ps, cam, camRot, d, r, shared ? 0 : edgeGlow, inside && sealed, now, partial);
+            ps.popPose();
+            return;
+        }
         if (dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(d.definition)) {
             boolean sealed = progress >= DomainFormation.SEALED;
             GambleDomainRenderer.render(c, ps, cam, camRot, d, r, shared ? 0 : edgeGlow, inside && sealed, now, partial);

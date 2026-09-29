@@ -38,7 +38,7 @@ public final class HakariRenderers {
         public Vec3 velocity = Vec3.ZERO;
     }
 
-    static void light(Entity e, State s, BlockState state) {
+    public static void light(Entity e, State s, BlockState state) {
         BlockPos pos = e.blockPosition().above();
         s.block.randomSeedPos = BlockPos.ZERO;
         s.block.blockPos = pos;

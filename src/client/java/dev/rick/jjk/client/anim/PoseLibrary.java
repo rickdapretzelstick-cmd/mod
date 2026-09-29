@@ -24,6 +24,7 @@ public final class PoseLibrary {
     }
 
     static {
+        YujiPoses.register(PoseLibrary::add);
         // --- Light chain: jab, jab, hook, finisher ---
         AnimDef jab = AnimDef.builder("light_1", 9)
                 .key(RIGHT_ARM, 0, -30, 0, 12).key(RIGHT_ARM, 2, -96, -8, 0).key(RIGHT_ARM, 5, -88, -4, 2).key(RIGHT_ARM, 9, -40, 0, 8)

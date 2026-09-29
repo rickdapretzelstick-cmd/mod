@@ -48,6 +48,19 @@ public final class GojoPresentation {
         SPEECH.add(new Speech(entityId, mc.level.getGameTime(), duration));
     }
 
+    // --- Any line of dialogue in a comic panel beside someone (Sukuna's takeover, the World Cutting Slash chant) ---
+    private record Line(int entityId, long start, int duration, String text, float side) {}
+
+    private static final List<Line> LINES = new ArrayList<>();
+
+    /** {@code text} in a speech panel beside this entity for {@code duration} ticks; {@code side} -1 left, 1 right. */
+    public static void say(int entityId, String text, int duration, float side) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        LINES.removeIf(l -> l.entityId == entityId);
+        LINES.add(new Line(entityId, mc.level.getGameTime(), duration, text, side));
+    }
+
     // --- Hakari's Jackpot: the three slot cards (JJS GIF), his numbers on them, around him ---
     private record Cards(int entityId, long start, int number) {}
 
@@ -158,6 +171,15 @@ public final class GojoPresentation {
             Vec3 side = Vec3.directionFromRotation(0, e.getYRot() + 90);
             panel(g, mc, w, h, head.add(side.scale(-0.9)).add(0, 0.25, 0), "LET'S\nGET", t, 0.02f);
             panel(g, mc, w, h, head.add(side.scale(0.9)).add(0, -0.1, 0), "...A\nLITTLE\nCRAZY.", t, 0.3f);
+        }
+        LINES.removeIf(l -> time > l.start + l.duration + 2);
+        for (Line l : LINES) {
+            Entity e = mc.level.getEntity(l.entityId);
+            if (e == null || e.distanceTo(mc.getCameraEntity() != null ? mc.getCameraEntity() : mc.player) > 48) continue;
+            float t = (time - l.start) / l.duration;
+            Vec3 head = e.getPosition(partial).add(0, e.getBbHeight() * 0.85, 0);
+            Vec3 side = Vec3.directionFromRotation(0, e.getYRot() + 90);
+            panel(g, mc, w, h, head.add(side.scale(0.95 * l.side)).add(0, 0.2, 0), l.text, t, 0.02f);
         }
     }
 

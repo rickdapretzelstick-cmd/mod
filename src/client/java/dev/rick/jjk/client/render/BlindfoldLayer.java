@@ -21,6 +21,7 @@ import net.minecraft.util.Mth;
  */
 public class BlindfoldLayer<S extends HumanoidRenderState, M extends HumanoidModel<S>> extends RenderLayer<S, M> {
     private static final RenderType CLOTH = RenderTypes.entityCutout(JJK.id("textures/entity/blindfold.png"));
+    private static final RenderType MARKS = RenderTypes.entityCutout(JJK.id("textures/entity/sukuna_marks.png"));
 
     public BlindfoldLayer(RenderLayerParent<S, M> parent) {
         super(parent);
@@ -45,7 +46,36 @@ public class BlindfoldLayer<S extends HumanoidRenderState, M extends HumanoidMod
                 eye(pose, buf, 1.5f, pulse);
             });
         }
+        if ((flags & PoseKeys.SUKUNA) != 0) {
+            // Sukuna has taken over: his marks on the face and the second pair of eyes, glowing faintly red.
+            c.submitCustomGeometry(ps, MARKS, (pose, buf) -> face(pose, buf, light));
+            float pulse = 0.7f + 0.3f * Mth.sin(state.ageInTicks * 0.25f);
+            c.submitCustomGeometry(ps, Glow.ADDITIVE, (pose, buf) -> {
+                redEye(pose, buf, -3f, -3.0f, pulse);
+                redEye(pose, buf, 2f, -3.0f, pulse);
+                redEye(pose, buf, -2.5f, -4.4f, pulse * 0.8f);
+                redEye(pose, buf, 1.5f, -4.4f, pulse * 0.8f);
+            });
+        }
         ps.popPose();
+    }
+
+    /** The marks, one texture pixel per model pixel over the whole face (the face is at z = -4 px). */
+    private static void face(PoseStack.Pose pose, VertexConsumer buf, int light) {
+        float z = -4.04f / 16f, x0 = -4f / 16f, x1 = 4f / 16f, y0 = -8f / 16f, y1 = 0f;
+        v(buf, pose, x0, y1, z, 0, 1, 0, -1, light);
+        v(buf, pose, x1, y1, z, 1, 1, 0, -1, light);
+        v(buf, pose, x1, y0, z, 1, 0, 0, -1, light);
+        v(buf, pose, x0, y0, z, 0, 0, 0, -1, light);
+    }
+
+    private static void redEye(PoseStack.Pose pose, VertexConsumer buf, float x, float y, float pulse) {
+        float z = -4.08f / 16f, y0 = y / 16f, y1 = (y + 0.8f) / 16f, x0 = x / 16f, x1 = (x + 1f) / 16f;
+        float a = 0.8f * pulse;
+        buf.addVertex(pose, x0, y0, z).setColor(1f, 0.1f, 0.12f, a);
+        buf.addVertex(pose, x1, y0, z).setColor(1f, 0.1f, 0.12f, a);
+        buf.addVertex(pose, x1, y1, z).setColor(1f, 0.1f, 0.12f, a);
+        buf.addVertex(pose, x0, y1, z).setColor(1f, 0.1f, 0.12f, a);
     }
 
     /** A cloth band around the head at eye level, slightly larger than the head. */

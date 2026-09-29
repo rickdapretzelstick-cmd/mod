@@ -29,6 +29,10 @@ public record CharacterTheme(
     public static final CharacterTheme HAKARI = register("hakari", new CharacterTheme(0xFFFFB0DC, 0xFFD01A78, 0xFF55203C,
             "JACKPOT", "GAMBLE", "IDLE DEATH GAMBLE READY", 0xFFFF3FA0, 0xFFF0C040, 0xFFB8FFD8, 0xFF22D47A, true, 0xFFFF3FA0));
 
+    /** Yuji: cursed-energy cyan on black; the King of Curses runs blood red. */
+    public static final CharacterTheme YUJI = register("yuji", new CharacterTheme(0xFFA8F4FF, 0xFF1C9AD8, 0xFF20343E,
+            "KING OF CURSES", "AWAKENING", "KING OF CURSES READY", 0xFF5CE6FF, 0xFFE01020, 0xFFFF6A6A, 0xFFB00818, false, 0xFFE01020));
+
     public static CharacterTheme register(String characterId, CharacterTheme theme) {
         THEMES.put(characterId, theme);
         return theme;

@@ -52,7 +52,15 @@ public final class ScreenEffects {
 
     /** Impact frame: a hard white flash then a dark hold, for ultimate-level finishes. */
     public static void impact(int duration) {
+        impact(duration, 0);
+    }
+
+    /** 0: white then dark. 1: Black Flash (red, then black). 2: the fourth Black Flash (black, white, red). */
+    private static int impactStyle;
+
+    public static void impact(int duration, int style) {
         if (!JJKConfig.get().client.screenFlashes) return;
+        impactStyle = style;
         impactLength = Math.max(3, duration);
         impactTicks = impactLength;
         shake(1.2f, 14);
@@ -62,6 +70,8 @@ public final class ScreenEffects {
     public static int impactColor() {
         if (impactTicks <= 0) return 0;
         int elapsed = impactLength - impactTicks;
+        if (impactStyle == 1) return elapsed < 2 ? 0xD0E0101A : elapsed < 4 ? 0xC0000000 : 0x50B00010;
+        if (impactStyle == 2) return elapsed < 2 ? 0xE0000000 : elapsed < 4 ? 0xE0FFFFFF : elapsed < 6 ? 0xC0D00012 : 0x60000000;
         if (elapsed < 2) return 0xE0FFFFFF;
         if (elapsed < 4) return 0xB0000000;
         return 0x60FFFFFF;

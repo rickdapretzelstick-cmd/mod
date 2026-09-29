@@ -30,7 +30,9 @@ public final class ModSounds {
             "rushdown_rush", "rushdown_grab", "overwhelm_fist", "overwhelm_swing", "surge_dash", "surge_hit", "surge_launch",
             "clash_music", "twofold_swing1", "twofold_swing2", "twofold_hit1", "twofold_hit2", "face_grater_drag", "face_grater_throw",
             "red_max_blackflash", "unlimited_purple_start", "unlimited_purple_explode", "zero_two_open", "zero_two_music", "zero_two_hit",
-            "zero_two_barrage", "zero_two_boost", "zero_two_slowdown", "zero_two_breathe", "ragdoll_fall"
+            "zero_two_barrage", "zero_two_boost", "zero_two_slowdown", "zero_two_breathe", "ragdoll_fall",
+            // Yuji / Vessel and the King of Curses
+            "cursed_strikes_start", "cursed_strikes_slide", "cursed_strikes_hit", "cursed_strikes_spin", "cursed_strikes_impact", "crushing_charge", "crushing_fist", "crushing_impact", "crushing_hit", "divergent_charge", "divergent", "divergent_hit", "black_flash", "black_flash_chain", "black_flash_windup", "black_flash_heavy", "kokusen", "entrusted_music", "manji_startup", "manji_dodge", "manji_swing", "manji_slam", "manji_crush", "sukuna_awaken", "dismantle_slash", "dismantle_finish", "dismantle_spin", "wcs_line", "wcs_line_1", "wcs_line_2", "wcs_line_3", "open_hands", "open_clap", "open_arrow", "open_idle", "open_fire", "open_explode", "rush_start", "rush_hit", "rush_break", "rush_slam", "shrine_voice", "shrine_expand", "shrine_ring", "shrine_music", "shrine_ready", "shrine_splash"
     };
     private static final Map<String, SoundEvent> SOUNDS = new LinkedHashMap<>();
 

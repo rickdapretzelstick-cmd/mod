@@ -55,7 +55,19 @@ public final class CombatHud {
             java.util.Map.entry("lucky_rushdown", meta("Lucky Rushdown", 0xFF5CFFA8, true, "lucky_rushdown")),
             java.util.Map.entry("overwhelming_luck", meta("Overwhelming Luck", 0xFF5CFFA8, true, "overwhelming_luck")),
             java.util.Map.entry("energy_surge", meta("Energy Surge", 0xFF5CFFA8, true, "energy_surge")),
-            java.util.Map.entry("rhythm", meta("Rhythm", 0xFFF0C040, true, "rhythm")));
+            java.util.Map.entry("rhythm", meta("Rhythm", 0xFFF0C040, true, "rhythm")),
+            // Yuji: Vessel's base kit, and the King of Curses (awakened frames).
+            java.util.Map.entry("cursed_strikes", meta("Cursed Strikes", 0xFFFF4A4A, false, "cursed_strikes")),
+            java.util.Map.entry("crushing_blow", meta("Crushing Blow", 0xFF5CE6FF, false, "crushing_blow")),
+            java.util.Map.entry("divergent_fist", meta("Divergent Fist", 0xFF5CE6FF, false, "divergent_fist")),
+            java.util.Map.entry("manji_kick", meta("Manji Kick", 0xFFE8ECF4, false, "manji_kick")),
+            java.util.Map.entry("combat_instincts", meta("Combat Instincts", 0xFFE8ECF4, false, "combat_instincts")),
+            java.util.Map.entry("king_of_curses", meta("King of Curses", 0xFFE01020, false, "king_of_curses")),
+            java.util.Map.entry("dismantle", meta("Dismantle", 0xFFF4F4FA, true, "dismantle")),
+            java.util.Map.entry("open", meta("Open", 0xFFFF8A20, true, "open")),
+            java.util.Map.entry("rush", meta("Rush", 0xFFE01020, true, "rush")),
+            java.util.Map.entry("malevolent_shrine", meta("Malevolent Shrine", 0xFFE01020, true, "malevolent_shrine")),
+            java.util.Map.entry("cleave", meta("Cleave", 0xFFE01020, true, "cleave")));
     /** The technique column (empty slots are skipped), then the movement/defence pair under it. */
     private static final AbilitySlot[] TECHNIQUES = {AbilitySlot.SKILL_1, AbilitySlot.SKILL_2, AbilitySlot.SKILL_3, AbilitySlot.SKILL_4,
             AbilitySlot.SKILL_5, AbilitySlot.ULTIMATE};
@@ -215,10 +227,11 @@ public final class CombatHud {
         lastCooldown[slot.ordinal()] = cd;
         boolean lackCe = !noCost && ClientState.energy < ceCost(id, cfg);
         boolean lackMeter = meterCost(id) > 0 && ClientState.awakening < meterCost(id) - 0.01f;
-        boolean technique = !id.equals("dash") && !id.equals("guard") && !id.equals("awaken") && !id.equals("door_guard");
+        boolean technique = !id.equals("dash") && !id.equals("guard") && !id.equals("awaken") && !id.equals("door_guard")
+                && !id.equals("king_of_curses") && !id.equals("combat_instincts");
         boolean locked = state != null && state.techniquesLocked() && technique;
         boolean casting = ClientState.activeCast.equals(id);
-        boolean opensUp = id.equals("awaken") || id.equals("idle_death_gamble");
+        boolean opensUp = id.equals("awaken") || id.equals("idle_death_gamble") || id.equals("king_of_curses");
         boolean awakenReady = opensUp && !ClientState.awakened() && ClientState.awakening >= ClientState.awakeningMax;
         boolean counter = awakenReady && now < ClientState.counterUntilTick;
         boolean ready = !cooling && !lackCe && !lackMeter && !locked;
@@ -302,6 +315,11 @@ public final class CombatHud {
             case "rough_energy" -> cfg.hakari.roughCost;
             case "fever_breaker" -> cfg.hakari.feverCost;
             case "idle_death_gamble" -> cfg.hakari.domainCost;
+            case "cursed_strikes" -> cfg.yuji.strikesCost;
+            case "crushing_blow" -> cfg.yuji.crushingCost;
+            case "divergent_fist" -> cfg.yuji.divergentCost;
+            case "manji_kick" -> cfg.yuji.manjiCost;
+            case "malevolent_shrine" -> cfg.yuji.shrineCost;
             default -> 0;
         };
     }
@@ -519,6 +537,23 @@ public final class CombatHud {
                 frac = Mth.clamp(t / cfg.gojo.blueWindup, 0, 1);
                 label = "LAPSE BLUE";
                 color = 0xFF4F9BFF;
+            }
+            case "malevolent_shrine" -> {
+                frac = Mth.clamp(t / cfg.yuji.shrineStartup, 0, 1);
+                label = "DOMAIN EXPANSION: MALEVOLENT SHRINE";
+                color = 0xFFFF3040;
+            }
+            case "open" -> {
+                frac = Mth.clamp(t / cfg.yuji.openWindup, 0, 1);
+                label = "OPEN";
+                color = 0xFFFF8A20;
+            }
+            case "divergent_fist" -> {
+                // The white flash in the bar is the Black Flash window.
+                frac = Mth.clamp(t / cfg.yuji.divergentWindup, 0, 1);
+                boolean window = t >= cfg.yuji.blackFlashWindowStart && t <= cfg.yuji.blackFlashWindowEnd + 1;
+                label = window ? "BLACK FLASH!" : "DIVERGENT FIST";
+                color = window ? 0xFFFFFFFF : 0xFF5CE6FF;
             }
             default -> {
                 return;
