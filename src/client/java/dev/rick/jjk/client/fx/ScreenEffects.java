@@ -15,6 +15,9 @@ public final class ScreenEffects {
     private static long time;
     private static int impactTicks;
     private static int impactLength;
+    private static int tintColor;
+    private static float tintAlpha, tintTarget;
+    private static int tintHold;
 
     private ScreenEffects() {}
 
@@ -39,6 +42,24 @@ public final class ScreenEffects {
         flashDecay = a / Math.max(2, duration);
     }
 
+    /**
+     * A wash of colour over the whole view that stays while something keeps calling this (the world lit magenta by Hollow
+     * Purple, red by Max Red), easing in and, once the calls stop, fading back out over a few ticks.
+     */
+    public static void tint(int argb, int hold) {
+        if (!JJKConfig.get().client.screenFlashes) return;
+        float a = ((argb >>> 24) & 0xFF) / 255f;
+        if (tintHold > 0 && a < tintTarget && (argb & 0xFFFFFF) != tintColor) return;
+        tintColor = argb & 0xFFFFFF;
+        tintTarget = a;
+        tintHold = Math.max(tintHold, hold);
+    }
+
+    /** ARGB of the current tint (0 when none). */
+    public static int tintColor() {
+        return tintAlpha < 0.01f ? 0 : (Math.round(Math.min(1f, tintAlpha) * 255) << 24) | tintColor;
+    }
+
     /** Positive widens the view (impacts), negative narrows it (charging). */
     public static void fovPunch(float amount) {
         if (!JJKConfig.get().client.fovEffects) return;
@@ -55,7 +76,10 @@ public final class ScreenEffects {
         impact(duration, 0);
     }
 
-    /** 0: white then dark. 1: Black Flash (red, then black). 2: the fourth Black Flash (black, white, red). */
+    /**
+     * 0: white then dark. 1: Black Flash (red, then black). 2: the fourth Black Flash (black, white, red). 3: Unlimited
+     * Purple's collision (black, white, then magenta).
+     */
     private static int impactStyle;
 
     public static void impact(int duration, int style) {
@@ -72,6 +96,7 @@ public final class ScreenEffects {
         int elapsed = impactLength - impactTicks;
         if (impactStyle == 1) return elapsed < 2 ? 0xD0E0101A : elapsed < 4 ? 0xC0000000 : 0x50B00010;
         if (impactStyle == 2) return elapsed < 2 ? 0xE0000000 : elapsed < 4 ? 0xE0FFFFFF : elapsed < 6 ? 0xC0D00012 : 0x60000000;
+        if (impactStyle == 3) return elapsed < 2 ? 0xF0000000 : elapsed < 3 ? 0xF0FFFFFF : 0x90E020D0;
         if (elapsed < 2) return 0xE0FFFFFF;
         if (elapsed < 4) return 0xB0000000;
         return 0x60FFFFFF;
@@ -82,6 +107,12 @@ public final class ScreenEffects {
         if (impactTicks > 0) impactTicks--;
         trauma = Math.max(0, trauma - traumaDecay);
         flashAlpha = Math.max(0, flashAlpha - flashDecay);
+        if (tintHold > 0) {
+            tintHold--;
+            tintAlpha += (tintTarget - tintAlpha) * 0.35f;
+        } else {
+            tintAlpha *= 0.8f;
+        }
         fovKick *= 0.78f;
         if (Math.abs(fovKick) < 1e-3) fovKick = 0;
     }
@@ -122,6 +153,7 @@ public final class ScreenEffects {
     }
 
     public static void reset() {
-        trauma = flashAlpha = fovKick = fovTarget = fovCurrent = 0;
+        trauma = flashAlpha = fovKick = fovTarget = fovCurrent = tintAlpha = tintTarget = 0;
+        tintHold = 0;
     }
 }

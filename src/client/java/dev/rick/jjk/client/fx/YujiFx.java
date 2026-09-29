@@ -122,6 +122,8 @@ final class YujiFx {
                     Vec3 fist = pos.add(dir.scale(0.4)).add(0, -0.2, 0);
                     implode(level, fist, 1.0, q(10), CE, 0.12f, 8);
                     for (int i = 0; i < q(6); i++) add(level, fist.add(gauss(0.2), gauss(0.2), gauss(0.2)), randomUnit().scale(0.03), Sprite.SPARK, CE_LIGHT, 1f, 0.12f, 0.02f, 8);
+                    // It crackles as it builds.
+                    for (int i = 0; i < 4; i++) Flashes.bolt(fist, fist.add(randomUnit().scale(0.5 + RNG.nextDouble() * 0.4)), 0.04f, CE_LIGHT, 0.9f, 3, now + i * 2L);
                 }
             }
             case "crushing_dash" -> {
@@ -168,7 +170,11 @@ final class YujiFx {
             // --- Divergent Fist ---
             case "divergent_charge" -> {
                 sound("divergent_charge", pos, 1f, 1f);
-                if (drawn) implode(level, pos.add(dir.scale(-0.3)), 1.1, q(10), CE, 0.12f, 9);
+                if (drawn) {
+                    Vec3 fist = pos.add(dir.scale(-0.3));
+                    implode(level, fist, 1.1, q(10), CE, 0.12f, 9);
+                    for (int i = 0; i < 4; i++) Flashes.bolt(fist, fist.add(randomUnit().scale(0.5 + RNG.nextDouble() * 0.4)), 0.04f, CE_LIGHT, 0.9f, 3, now + i * 2L);
+                }
             }
             case "divergent_flash" -> {
                 // His body flashes white: the moment for a Black Flash.
@@ -182,6 +188,7 @@ final class YujiFx {
                 sound("hit_heavy", pos, 0.9f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 1.2f, 0.3f, WHITE, 1f, 3, now);
+                    impactStar(pos, dir, 6, 1.4f, 0.05f, WHITE, now);
                     // Cyan energy clinging to the fist, splashing on contact.
                     for (int i = 0; i < q(8); i++) add(level, pos, randomUnit().scale(0.12).add(dir.scale(0.1)), Sprite.GLOW, CE, 0.9f, 0.16f, 0.03f, 8);
                 }

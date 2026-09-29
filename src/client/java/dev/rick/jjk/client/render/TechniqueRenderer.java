@@ -29,8 +29,8 @@ import java.util.WeakHashMap;
  *   ring, a tilted accretion disk and huge lensing shells.</li>
  *   <li>Red: an unstable, jittering core throwing jagged spikes <i>outward</i>, with a short hot trail. Max Red is the
  *   same idea at catastrophic size, with bow-shock rings around its flight path.</li>
- *   <li>Purple: a white-violet mass with blue and red ribbons still twisting through it, a bow shock ahead and a very
- *   long trail.</li>
+ *   <li>Purple: the imaginary mass, a white-hot core in a ragged ring of dark magenta crackling with lightning, a bow
+ *   shock ahead, torn wind whipping back and a very long trail.</li>
  * </ul>
  */
 public class TechniqueRenderer<T extends TechniqueEntity> extends EntityRenderer<T, TechniqueRenderer.State> {
@@ -230,35 +230,24 @@ public class TechniqueRenderer<T extends TechniqueEntity> extends EntityRenderer
     private static void purple(State s, PoseStack ps, SubmitNodeCollector c, CameraRenderState cam, Vector3f toCam) {
         ps.translate(0, 0.75f, 0);
         float r = s.scale;
-        float pulse = 1f + 0.05f * Mth.sin(s.age * 1.3f);
         float[] p = ClientFx.PURPLE;
-        // Imaginary mass: a white-hot core wrapped in violet.
-        Glow.sphere(c, ps, r * 0.5f * pulse, 1f, 1f, 1f, 1f, toCam, false);
-        Glow.sphere(c, ps, r * 0.9f * pulse, p[0], p[1], p[2], 0.95f, toCam, false);
-        Glow.sphere(c, ps, r * 1.3f, 0.75f, 0.45f, 1f, 0.45f, toCam, false);
-        Glow.sphere(c, ps, r * 1.7f, 0.6f, 0.3f, 1f, 0.6f, toCam, true);
-        Glow.halo(c, ps, cam.orientation, r * 4.5f, 0.7f, 0.4f, 1f, 0.3f);
-        // Blue and red ribbons still twisting through it: one winds in, the other sprays out.
-        ps.pushPose();
-        ps.rotate(Axis.XP.rotationDegrees(60));
-        ps.rotate(Axis.YP.rotationDegrees(s.age * 12));
-        Glow.spiral(c, ps, 2, r * 1.6f, r * 0.3f, 1.2f, r * 0.14f, ClientFx.BLUE[0], ClientFx.BLUE[1], ClientFx.BLUE[2], 0.8f, s.age * 0.3f);
-        ps.popPose();
-        ps.pushPose();
-        ps.rotate(Axis.XP.rotationDegrees(-50));
-        ps.rotate(Axis.YP.rotationDegrees(-s.age * 15));
-        Glow.spiral(c, ps, 2, r * 1.6f, r * 0.3f, 1.2f, r * 0.14f, ClientFx.RED[0], ClientFx.RED[1], ClientFx.RED[2], 0.8f, -s.age * 0.3f);
-        ps.popPose();
-        Glow.spikes(c, ps, 6, r * 0.8f, r * 2.2f, r * 0.08f, 0.85f, 0.6f, 1f, 0.7f, s.tick * 6151L);
+        // The imaginary mass (JJS): a white-hot, sparkling core in a ragged ring of dark magenta, lightning crackling off it.
+        PurpleMass.draw(c, ps, cam.orientation, toCam, r * 0.55f * PurpleMass.pulse(s.age), s.age, 0x5eedL, 5, 3.2f);
         Vec3 v = s.velocity;
         if (v.lengthSqr() > 1e-4) {
-            // Bow shock ahead of the mass: space being shoved aside.
+            // Space shoved aside ahead of it, and torn wind whipping back along its path.
             ps.pushPose();
             Flashes.orientY(ps, v);
             ps.translate(0, r * 0.9f, 0);
-            Glow.ring(c, ps, r * 1.5f, r * 0.5f, 0.85f, 0.7f, 1f, 0.55f);
+            Glow.ring(c, ps, r * 1.5f, r * 0.35f, 1f, 0.6f, 1f, 0.5f);
             ps.translate(0, -r * 1.2f, 0);
-            Glow.ring(c, ps, r * 2.1f, r * 0.4f, 0.7f, 0.45f, 1f, 0.35f);
+            Glow.ring(c, ps, r * 2.1f, r * 0.3f, p[0], p[1], p[2], 0.35f);
+            for (int i = 0; i < 3; i++) {
+                ps.pushPose();
+                ps.translate(0, -r * (0.6f + i * 0.9f), 0);
+                Glow.swirl(c, ps, r * (1.2f + i * 0.35f), s.age * 0.9f + i * 2.1f, 2.6f, r * 0.12f, 1f, 0.7f, 1f, 0.55f - i * 0.12f, 0);
+                ps.popPose();
+            }
             ps.popPose();
         }
         trail(s, ps, c, 14f * r, r * 1.3f, p, 0.75f);

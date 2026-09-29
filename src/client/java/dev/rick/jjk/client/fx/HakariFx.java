@@ -106,6 +106,8 @@ final class HakariFx {
                     impactStar(pos, dir, 9, 2.4f * s, 0.12f, JADE_LIGHT, now);
                     Flashes.ripple(pos, dir, 0.3f, 2.6f * s, ROUGH, 0.8f, 8, now);
                     Flashes.ground(groundBelow(level, pos), 0.3f, 3f * s, JADE, 0.6f, 10, now + 1);
+                    // Coarse energy crackling off the fist.
+                    for (int i = 0; i < 4; i++) Flashes.bolt(pos, pos.add(randomUnit().scale(1.2 * s).add(dir.scale(1.4 * s))), 0.07f * s, ROUGH, 1f, 5, now + i / 2);
                     sparks(level, pos, dir, q(18), 0.8, ROUGH, 0.14f, 8);
                     debris(level, groundBelow(level, pos.add(dir.scale(0.8))), q(8), 0.5);
                 }
@@ -207,6 +209,10 @@ final class HakariFx {
                 if (drawn) {
                     Flashes.lens(pos, 0.5f, 4f, PINK, 0.7f, 18, now);
                     Flashes.beam(pos, pos.add(0, 12, 0), 0.4f, HOT_PINK, 0.8f, 30, now);
+                    // Riichi: the suspense spirals up round him in pink and gold.
+                    for (int i = 0; i < 5; i++) {
+                        Flashes.swirl(pos.add(0, -0.6 + i * 0.5, 0), up, 1.6f - i * 0.15f, 0.9f, 3.4f, 0.4f, 0.1f, i % 2 == 0 ? PINK : COIN, 0.85f, 20, now + i * 2L);
+                    }
                 }
             }
             case "gamble_signal" -> {
@@ -240,6 +246,12 @@ final class HakariFx {
                     Flashes.lens(pos, 1f, 9f, JADE, 0.9f, 22, now);
                     for (int i = 0; i < 4; i++) Flashes.ground(groundBelow(level, pos), 1f, 5f + i * 2.5f, i % 2 == 0 ? JADE : COIN, 0.9f - i * 0.15f, 18 + i * 4, now + i * 3L);
                     Flashes.beam(groundBelow(level, pos), pos.add(0, 20, 0), 1.6f, JADE, 1f, 30, now);
+                    // His energy erupts: jade wind tearing up round him, lightning lashing off it.
+                    for (int i = 0; i < 6; i++) {
+                        Flashes.swirl(pos.add(0, -0.8 + i * 0.6, 0), up, 1.2f + i * 0.3f, 2.8f + i * 0.4f, 3.6f, 0.45f, 0.16f, i % 2 == 0 ? JADE : JADE_LIGHT, 0.9f, 18,
+                                now + i);
+                    }
+                    for (int i = 0; i < 8; i++) Flashes.bolt(pos, pos.add(randomUnit().scale(3 + RNG.nextDouble() * 3)), 0.12f, JADE_LIGHT, 1f, 7, now + i / 2);
                     sparks(level, pos, up, q(50), 1.2, JADE, 0.2f, 16);
                     // Coins and balls raining down around him.
                     for (int i = 0; i < q(60); i++) {
@@ -269,6 +281,7 @@ final class HakariFx {
                 sound("jackpot_heal", pos, 1.4f, 1f);
                 if (drawn) {
                     Flashes.lens(pos, 2.5f, 0.4f, JADE, 0.9f, 14, now);
+                    for (int i = 0; i < 3; i++) Flashes.swirl(pos, randomUnit(), 2.4f, 0.4f, 3.2f, -0.5f, 0.08f, JADE_LIGHT, 0.85f, 12, now + i * 2L);
                     implode(level, pos, 2.5, q(30), JADE_LIGHT, 0.14f, 12);
                 }
                 if (mine) ScreenEffects.flash(0x5060FFA0, 8);

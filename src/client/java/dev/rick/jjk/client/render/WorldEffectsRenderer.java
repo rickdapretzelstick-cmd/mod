@@ -53,6 +53,7 @@ public final class WorldEffectsRenderer {
         try {
             renderClashFront(c, ps, cam, camRot, now, partial);
             renderInfinity(c, ps, cam, mc, partial);
+            dev.rick.jjk.client.fx.UnlimitedPurpleFx.render(c, ps, cam, camRot, partial);
             Flashes.render(c, ps, cam, camRot, now, partial);
         } finally {
             Glow.ink(0f);
@@ -102,6 +103,12 @@ public final class WorldEffectsRenderer {
                 ps.rotate(camRot);
                 Glow.halo(c, ps, new org.joml.Quaternionf(), 1.2f + 1.5f * charge, 1f, 0.35f, 0.15f, 0.25f);
                 ps.popPose();
+                // JJS: white wind whips round his arm as it winds up, turning red as the charge fills, with red crackling.
+                Vec3 arm = hand(user, partial, false, 0.3);
+                windSwirls(c, ps, cam, arm, 1.1f + 1.1f * charge, totalAge, charge, 6);
+                if (charge > 0.5f) sparkArcs(c, ps, cam, tip, 0.5f + charge, totalAge, user.getId(), 2 + Math.round(charge * 3), ClientFx.RED);
+                Minecraft mc = Minecraft.getInstance();
+                if (charge > 0.4f && mc.player != null && mc.player.distanceTo(user) < 8) ClientFx.tintNear(Math.round(40 * charge) << 24 | 0xFF1810, 3);
             }
             case "awaken" -> {
                 Vec3 base = user.getPosition(partial);
@@ -118,7 +125,9 @@ public final class WorldEffectsRenderer {
             case "red" -> {
                 float charge = Math.min(1f, totalAge / Math.max(1, JJKConfig.get().red.windup));
                 float flicker = 0.85f + 0.3f * Mth.sin(totalAge * 2.3f);
-                orbAt(c, ps, cam, camRot, fingertip(user, partial), (0.07f + 0.16f * charge) * flicker, ClientFx.RED, cast.phase() == 1 ? 1.5f : 1f);
+                Vec3 tip = fingertip(user, partial);
+                orbAt(c, ps, cam, camRot, tip, (0.07f + 0.16f * charge) * flicker, ClientFx.RED, cast.phase() == 1 ? 1.5f : 1f);
+                windSwirls(c, ps, cam, tip, 0.35f + 0.3f * charge, totalAge, charge, 2);
             }
             case HollowPurpleAbility.ID -> renderPurpleCast(c, ps, cam, camRot, user, cast, phaseAge, totalAge, partial);
             case "rough_energy" -> {
@@ -221,12 +230,12 @@ public final class WorldEffectsRenderer {
         switch (cast.phase()) {
             case HollowPurpleAbility.PHASE_BLUE -> {
                 float g = Math.min(1f, phaseAge / cfg.blueFormTicks);
-                orbAt(c, ps, cam, camRot, left, 0.08f + 0.2f * g, ClientFx.BLUE, 1f);
+                blueOrb(c, ps, cam, camRot, left, 0.08f + 0.2f * g, totalAge, user.getId());
             }
             case HollowPurpleAbility.PHASE_RED -> {
                 float g = Math.min(1f, phaseAge / cfg.redFormTicks);
-                orbAt(c, ps, cam, camRot, left, 0.28f, ClientFx.BLUE, 1f);
-                orbAt(c, ps, cam, camRot, right, 0.08f + 0.2f * g, ClientFx.RED, 1f);
+                blueOrb(c, ps, cam, camRot, left, 0.28f, totalAge, user.getId());
+                redOrb(c, ps, cam, camRot, right, 0.08f + 0.2f * g, totalAge);
             }
             case HollowPurpleAbility.PHASE_FUSION -> {
                 // The two are brought together; as they touch, purple bleeds out of the collision.
@@ -236,9 +245,14 @@ public final class WorldEffectsRenderer {
                 Vec3 rr = right.lerp(front, ease);
                 float spin = totalAge * 0.5f;
                 Vec3 wob = new Vec3(Math.cos(spin), Math.sin(spin * 1.3), Math.sin(spin)).scale(0.1 * (1 - ease));
-                orbAt(c, ps, cam, camRot, lb.add(wob), 0.28f * (1 - 0.4f * ease), ClientFx.BLUE, 1f);
-                orbAt(c, ps, cam, camRot, rr.subtract(wob), 0.28f * (1 - 0.4f * ease), ClientFx.RED, 1f);
-                if (ease > 0.6f) orbAt(c, ps, cam, camRot, front, 0.6f * (ease - 0.6f) / 0.4f, ClientFx.PURPLE, 1.3f);
+                blueOrb(c, ps, cam, camRot, lb.add(wob), 0.28f * (1 - 0.4f * ease), totalAge, user.getId());
+                redOrb(c, ps, cam, camRot, rr.subtract(wob), 0.28f * (1 - 0.4f * ease), totalAge);
+                if (ease > 0.6f) {
+                    push(ps, cam, front);
+                    Vector3f toCam = new Vector3f((float) (cam.x - front.x), (float) (cam.y - front.y), (float) (cam.z - front.z));
+                    PurpleMass.draw(c, ps, camRot, toCam, 0.3f * (ease - 0.6f) / 0.4f, totalAge, user.getId(), 2, 3f);
+                    ps.popPose();
+                }
                 // The opposites repel as they meet: jagged arcs crackling between them, more violent the closer they get.
                 java.util.Random arc = new java.util.Random((long) (totalAge * 2));
                 for (int k = 0; k < 1 + (int) (ease * 3); k++) {
@@ -253,16 +267,69 @@ public final class WorldEffectsRenderer {
                 }
             }
             case HollowPurpleAbility.PHASE_CHARGED -> {
+                // The imaginary mass held in front of him, swelling as he holds it, its light turning the world magenta.
                 float g = Math.min(1f, phaseAge / Math.max(1, cfg.maxHoldTicks));
-                float pulse = 1f + 0.1f * Mth.sin(totalAge * 1.1f);
-                orbAt(c, ps, cam, camRot, front, (0.6f + 0.35f * g) * pulse, ClientFx.PURPLE, 1.4f);
                 push(ps, cam, front);
-                ps.rotate(Axis.YP.rotationDegrees(totalAge * 20));
-                ps.rotate(Axis.XP.rotationDegrees(70));
-                Glow.ring(c, ps, 1.3f + 0.4f * g, 0.2f, 0.8f, 0.55f, 1f, 0.6f);
+                Vector3f toCam = new Vector3f((float) (cam.x - front.x), (float) (cam.y - front.y), (float) (cam.z - front.z));
+                PurpleMass.draw(c, ps, camRot, toCam, (0.32f + 0.18f * g) * PurpleMass.pulse(totalAge), totalAge, user.getId(), 3 + Math.round(3 * g), 3.4f);
                 ps.popPose();
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.player != null && mc.player.distanceTo(user) < 10) ClientFx.tintNear(0x38E020C8, 3);
             }
             default -> {}
+        }
+    }
+
+    /**
+     * Wind whipping round a charging technique: comet-tailed arcs at different tilts, white at first and red by the time
+     * {@code charge} is full (JJS Reversal Red).
+     */
+    private static void windSwirls(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Vec3 at, float radius, float t, float charge, int n) {
+        float g = Mth.lerp(charge, 1f, 0.3f), b = Mth.lerp(charge, 1f, 0.25f);
+        for (int i = 0; i < n; i++) {
+            push(ps, cam, at);
+            ps.rotate(Axis.YP.rotationDegrees(i * 67 + t * 3));
+            ps.rotate(Axis.XP.rotationDegrees(55 + i * 38));
+            float rad = radius * (0.75f + 0.25f * ((i * 0.37f) % 1f));
+            Glow.swirl(c, ps, rad, t * (0.7f + 0.15f * i) + i * 1.7f, 3.4f, radius * 0.13f, 1f, g, b, 0.9f, 0);
+            ps.popPose();
+        }
+    }
+
+    /** Short arcs of lightning crackling off a charged point. */
+    private static void sparkArcs(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Vec3 at, float reach, float t, long seed, int n, float[] col) {
+        push(ps, cam, at);
+        java.util.Random rnd = new java.util.Random(seed * 131 + (long) (t / 2f));
+        for (int i = 0; i < n; i++) {
+            Vector3f d = new Vector3f(rnd.nextFloat() - 0.5f, rnd.nextFloat() - 0.5f, rnd.nextFloat() - 0.5f).normalize();
+            Glow.bolt(c, ps, new Vector3f(d).mul(0.15f), new Vector3f(d).mul(reach * (0.6f + rnd.nextFloat() * 0.6f)), 0.06f, col[0], col[1], col[2],
+                    0.9f, rnd.nextLong());
+        }
+        ps.popPose();
+    }
+
+    /** Lapse Blue in his hand (JJS): a cyan orb with lightning crackling round it. */
+    private static void blueOrb(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, Vec3 at, float radius, float t, long seed) {
+        orbAt(c, ps, cam, camRot, at, radius, ClientFx.BLUE, 1.1f);
+        push(ps, cam, at);
+        java.util.Random rnd = new java.util.Random(seed * 31 + (long) (t / 2f));
+        for (int i = 0; i < 3; i++) {
+            Vector3f d = new Vector3f(rnd.nextFloat() - 0.5f, rnd.nextFloat() - 0.5f, rnd.nextFloat() - 0.5f).normalize();
+            Glow.bolt(c, ps, new Vector3f(d).mul(radius * 0.8f), new Vector3f(d).mul(radius * (2.2f + rnd.nextFloat() * 1.5f)), radius * 0.12f,
+                    0.55f, 0.85f, 1f, 0.9f, rnd.nextLong());
+        }
+        ps.popPose();
+    }
+
+    /** Reversal Red in his hand (JJS): a hot red orb with red wind whipping round it. */
+    private static void redOrb(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, Vec3 at, float radius, float t) {
+        orbAt(c, ps, cam, camRot, at, radius, ClientFx.RED, 1.2f);
+        for (int i = 0; i < 2; i++) {
+            push(ps, cam, at);
+            ps.rotate(Axis.XP.rotationDegrees(i == 0 ? 65 : -40));
+            ps.rotate(Axis.ZP.rotationDegrees(i * 70));
+            Glow.swirl(c, ps, radius * 1.9f, t * 0.8f + i * Mth.PI, 3.2f, radius * 0.22f, 1f, 0.35f, 0.25f, 0.85f, 0);
+            ps.popPose();
         }
     }
 

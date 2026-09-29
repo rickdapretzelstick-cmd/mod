@@ -54,9 +54,16 @@ Tuned after the [Jujutsu Shenanigans wiki](https://jujutsu-shenanigans.fandom.co
   distance. Airborne: he hovers and aims freely. Limitless during the charge (free): it rebounds to him — a target it
   caught is pulled in for a Black Flash (10), an empty return hits Gojo (15).
 - **Unlimited Purple**: Red MAX into the orb Lapse Blue MAX left behind after a kill. Three seconds later it erases
-  everything around it (50-100 by distance) and drains the whole Awakening.
+  everything around it (50-100 by distance) and drains the whole Awakening. It plays like the JJS GIF:
+  1. A black impact frame as Red tears into the orb, magenta flares streaking across the view, and the world lit magenta.
+  2. The orb's dark-blue ink turns magenta around a swelling white-hot core. Lightning crackles out across the whole
+     blast radius, and a pink dome marks what it will erase.
+  3. A dark shell collapses in onto the core.
+  4. The detonation whites out everything near it, then pink sparkles drift up out of the crater.
 - **Hollow Purple** (40s): Blue and Red combine and it rushes forward about three seconds in (70, unblockable, erases
-  blocks); airborne he hovers with free aim.
+  blocks); airborne he hovers with free aim. Blue crackles with lightning in one hand while red wind whips round
+  the Red in the other. As they meet, magenta lightning lashes out, and the mass (a white-hot core in a ragged ring
+  of dark magenta) is held, then fired.
 - **Infinite Void** (4 while awakened, 120s): the domain below, 14 seconds; everyone caught is stunned until it ends.
 - **Finishers** (under 20% health): Lapse Blue crushes them in rubble, Red shatters them, Rapid Punches ends in a Black
   Flash, Twofold Kick holds them up for a point-blank Red.
@@ -219,12 +226,29 @@ Infinity is implemented but not currently part of Gojo's moveset; `infinity.inMo
 
 Every technique has its own look, and power reads at a glance:
 
-1. **Basic** — melee: thin swing arcs, sharp impact stars, small ripples.
-2. **Base techniques** — Blue (a compact core with light spiralling *in*), Red (a jittering core throwing spikes *out*,
-   compress → shockwave), Infinity (faint ripples where attacks stop), Teleport (space folds shut, snaps open).
-3. **Awakening** — the reveal pillar and ground waves; Max Blue (event horizon, accretion disk, huge lensing, battlefield
-   pull) and Max Red (catastrophic blast, triple shockwave) as inward/outward equals.
-4. **Hollow Purple and Infinite Void** — the only effects with impact frames; Purple is awakening-only.
+1. **Basic** — melee: thin swing arcs, sharp impact stars, crisp rings, small ripples. A hit flash holds at full
+   strength for its first moments, so even a three-tick flash is seen.
+2. **Base techniques** — Blue (a compact core with light spiralling *in*, arcs of light winding down into it), Red (a
+   jittering core throwing spikes *out*, wind whipping round the finger, then a fireball with smoke rolling off it),
+   Infinity (faint ripples where attacks stop), Teleport (space folds shut, snaps open).
+3. **Awakening** — the reveal pillar and ground waves; Max Blue (event horizon, accretion disk, dark-blue ink, the
+   world's light winding in) and Max Red (white wind turning red round his arm as it charges, red lightning,
+   catastrophic blast, triple shockwave) as inward/outward equals.
+4. **Hollow Purple, Unlimited Purple and Infinite Void** — the only effects with impact frames; Purple is
+   awakening-only and lights the world magenta.
+
+The effects are built from a small set of shapes:
+- Light: glows, rings, beams and crisp shock shells. A shell is bright only at its silhouette, and the bigger it is,
+  the fainter.
+- Lightning bolts that re-fork every tick, so they crackle.
+- Comet-tailed swirls: wind and energy whipping round a charge.
+- Alpha-blended ink: dark energy and smoke, which additive light can't draw.
+- A screen tint that holds while a technique lights the world.
+
+The opt-in `FxGalleryClientTest` plays every one of the ~200 effects in front of a fixed camera, and Unlimited Purple
+shot by shot, for comparing them.
+
+![Unlimited Purple](docs/screenshots/unlimited_purple.png)
 
 ![Base vs Max](docs/screenshots/base_vs_max.png)
 

@@ -639,12 +639,15 @@ public final class CombatHud {
         }
         int impact = ScreenEffects.impactColor();
         float fa = ScreenEffects.flashAlpha();
+        int tint = ScreenEffects.tintColor();
         if (dev.rick.jjk.client.clash.ClashFocus.active()) {
             // Mid-clash the lanes must stay readable: flashes glow in from the edges of the screen instead.
+            if (tint != 0) edgeFlash(g, w, h, tint & 0xFFFFFF, (tint >>> 24) / 255f);
             if (impact != 0) edgeFlash(g, w, h, impact & 0xFFFFFF, (impact >>> 24) / 255f);
             if (fa > 0.01f) edgeFlash(g, w, h, ScreenEffects.flashColor(), fa);
             return;
         }
+        if (tint != 0) g.fill(0, 0, w, h, tint);
         if (impact != 0) g.fill(0, 0, w, h, impact);
         if (fa > 0.01f) g.fill(0, 0, w, h, (Math.round(fa * 255) << 24) | ScreenEffects.flashColor());
     }

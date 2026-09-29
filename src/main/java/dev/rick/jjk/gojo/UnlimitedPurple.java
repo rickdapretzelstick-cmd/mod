@@ -44,7 +44,9 @@ public final class UnlimitedPurple {
         Vec3 at = blue.position();
         blue.consume();
         ACTIVE.add(new UnlimitedPurple(level, owner, at));
-        Fx.play(level, "purple_fusion", at, Vec3.ZERO, 3f, owner.getId());
+        JJKConfig.Gojo cfg = JJKConfig.get().gojo;
+        // The client plays the whole fuse from this: the collision, the mass, its lightning, the dome, the dark shell.
+        Fx.play(level, "unlimited_purple", at, new Vec3(cfg.unlimitedPurpleFuse, 0, 0), (float) cfg.unlimitedPurpleRadius, owner.getId());
         Fx.play(level, "sfx:unlimited_purple_start", at, Vec3.ZERO, 6f, owner.getId());
         Fx.shake(level, at, 60, 0.6f, 20);
         var caster = Casters.getOrNull(owner);
@@ -66,12 +68,10 @@ public final class UnlimitedPurple {
     private boolean tick() {
         JJKConfig.Gojo cfg = JJKConfig.get().gojo;
         age++;
-        if (age % 10 == 0 && age < cfg.unlimitedPurpleFuse) Fx.play(level, "purple_charged", center, Vec3.ZERO, 2.5f, owner.getId());
         if (age < cfg.unlimitedPurpleFuse) return false;
         double r = cfg.unlimitedPurpleRadius;
-        Fx.play(level, "purple_end", center, Vec3.ZERO, (float) (r / 6), owner.getId());
+        Fx.play(level, "unlimited_purple_end", center, Vec3.ZERO, (float) r, owner.getId());
         Fx.play(level, "sfx:unlimited_purple_explode", center, Vec3.ZERO, 8f, owner.getId());
-        Fx.flash(level, center, 96, 0xC0B060FF, 20);
         Fx.shake(level, center, 96, 1.6f, 30);
         for (LivingEntity t : HitboxQuery.targets(owner, HitShape.sphere(center, r), 0, false)) {
             double d = t.getBoundingBox().getCenter().distanceTo(center);

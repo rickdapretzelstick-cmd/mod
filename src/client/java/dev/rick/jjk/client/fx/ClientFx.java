@@ -31,8 +31,9 @@ public final class ClientFx {
     public static final float[] BLUE_LIGHT = {0.75f, 0.9f, 1f};
     public static final float[] RED = {1f, 0.18f, 0.12f};
     public static final float[] ORANGE = {1f, 0.55f, 0.2f};
-    public static final float[] PURPLE = {0.62f, 0.28f, 1f};
-    public static final float[] PURPLE_LIGHT = {0.88f, 0.7f, 1f};
+    /** Hollow Purple's magenta (JJS #db02e3), and its pale, hot edge. */
+    public static final float[] PURPLE = {0.86f, 0.12f, 0.92f};
+    public static final float[] PURPLE_LIGHT = {1f, 0.66f, 1f};
     public static final float[] GOLD = {1f, 0.85f, 0.4f};
     public static final float[] GREY = {0.6f, 0.6f, 0.65f};
     public static final float[] DARK = {0.08f, 0.08f, 0.14f};
@@ -64,7 +65,7 @@ public final class ClientFx {
 
     /** Effects big enough to always be drawn in full, whatever the distance. */
     private static final java.util.Set<String> MAJOR = java.util.Set.of("awaken", "max_blue_spawn", "max_blue_collapse", "max_red_explosion",
-            "purple_fire", "purple_end", "domain_expand", "domain_sealed", "domain_counter", "domain_collapse", "red_explosion", "red_amplified", "finisher", "clash_start",
+            "purple_fire", "purple_end", "unlimited_purple", "unlimited_purple_end", "domain_expand", "domain_sealed", "domain_counter", "domain_collapse", "red_explosion", "red_amplified", "finisher", "clash_start",
             "clash_sudden_death", "clash_perfect", "clash_win", "jackpot", "gamble_riichi", "gamble_hit", "overwhelm_final", "idg_charge");
 
     static float lod = 1f;
@@ -97,8 +98,9 @@ public final class ClientFx {
             case "hit_light" -> {
                 sound("hit_light", pos, 0.9f, 0.9f + RNG.nextFloat() * 0.25f);
                 if (drawn) {
-                    Flashes.flash(pos, 0.9f, 0.2f, WHITE, 1f, 3, now);
-                    impactStar(pos, dir, 4, 0.9f, 0.04f, WHITE, now);
+                    Flashes.flash(pos, 1.1f, 0.25f, WHITE, 1f, 3, now);
+                    impactStar(pos, dir, 5, 1.3f, 0.05f, WHITE, now);
+                    Flashes.ring(pos, 0.2f, 1.1f, WHITE, 0.7f, 4, now);
                     Flashes.ripple(pos, dir, 0.15f, 0.9f, BLUE_LIGHT, 0.5f, 5, now);
                     sparks(level, pos, dir, q(5), 0.35, WHITE, 0.1f, 5);
                 }
@@ -107,8 +109,9 @@ public final class ClientFx {
             case "hit_heavy" -> {
                 sound("hit_heavy", pos, 1f, 0.9f + RNG.nextFloat() * 0.15f);
                 if (drawn) {
-                    Flashes.flash(pos, 1.6f, 0.3f, WHITE, 1f, 4, now);
-                    impactStar(pos, dir, 6, 1.6f, 0.07f, WHITE, now);
+                    Flashes.flash(pos, 1.9f, 0.3f, WHITE, 1f, 4, now);
+                    impactStar(pos, dir, 8, 2.3f, 0.08f, WHITE, now);
+                    Flashes.ring(pos, 0.3f, 2f, WHITE, 0.8f, 5, now);
                     Flashes.ripple(pos, dir, 0.2f, 1.8f, BLUE_LIGHT, 0.7f, 7, now);
                     Flashes.ripple(pos.add(dir.scale(0.4)), dir, 0.1f, 1.1f, WHITE, 0.4f, 6, now + 1);
                     sparks(level, pos, dir, q(10), 0.6, WHITE, 0.14f, 7);
@@ -247,6 +250,8 @@ public final class ClientFx {
                 Vec3 core = pos.add(0, 0.5, 0);
                 Flashes.ring(core, 3.5f * s, 0.2f, BLUE_LIGHT, 0.7f, 9, now);
                 Flashes.lens(core, 3f * s, 0.6f, BLUE, 0.6f, 9, now);
+                // Space dragged in: arcs of light winding down into the point.
+                for (int i = 0; i < 4; i++) Flashes.swirl(core, randomUnit(), 3.2f * s, 0.3f, 3.6f, -0.45f, 0.1f * s, i % 2 == 0 ? BLUE_LIGHT : WHITE, 0.85f, 12, now + i);
                 Flashes.flash(core, 1.4f * s, 0.3f, BLUE_LIGHT, 0.8f, 5, now + 8);
                 if (drawn) implode(level, core, 3.5 * s, q(24), BLUE, 0.16f, 12);
             }
@@ -274,18 +279,25 @@ public final class ClientFx {
             // --- Red: unstable build-up, a compression moment, then an outward shockwave. ---
             case "red_charge" -> {
                 sound("red_charge", pos, 0.9f, 1f);
+                // Wind gathering round the finger (JJS): white arcs whipping in.
+                for (int i = 0; i < 3; i++) Flashes.swirl(pos, randomUnit(), 1.1f, 0.35f, 3.4f, 0.55f, 0.06f, WHITE, 0.8f, 12, now + i * 2L);
                 if (drawn) implode(level, pos, 1.2, q(8), RED, 0.08f, 12);
             }
             case "red_full" -> {
                 sound("red_compress", pos, 0.9f, 1f);
                 Flashes.ring(pos, 1.4f, 0.1f, ORANGE, 0.9f, 5, now);
                 Flashes.flash(pos, 1.2f, 0.2f, RED, 1f, 4, now + 4);
+                for (int i = 0; i < 3; i++) Flashes.swirl(pos, randomUnit(), 0.5f, 1.2f, 3f, -0.6f, 0.07f, RED, 0.9f, 8, now + 4);
+                for (int i = 0; i < 2; i++) Flashes.bolt(pos, pos.add(randomUnit().scale(0.9)), 0.05f, RED, 0.9f, 4, now + 4);
             }
             case "red_fire", "red_pointblank" -> {
                 sound("red_compress", pos, 0.7f, 1.3f);
                 sound("red_fire", pos, 1.2f, 1f);
                 Flashes.flash(pos, 1.6f * s, 0.3f, RED, 1f, 4, now);
+                Flashes.flash(pos, 0.7f * s, 0.2f, WHITE, 1f, 3, now);
                 Flashes.ripple(pos, dir, 0.2f, 1.8f * s, ORANGE, 0.8f, 6, now);
+                Flashes.ring(pos, 0.2f, 1.4f * s, RED, 0.8f, 5, now);
+                for (int i = 0; i < 2; i++) Flashes.swirl(pos.add(dir.scale(0.4 + i * 0.5)), dir, 0.4f * s, 1.1f * s, 2.6f, 0.7f, 0.07f * s, i == 0 ? WHITE : RED, 0.85f, 7, now);
                 if (drawn) sparks(level, pos, dir, q(8), 0.5, ORANGE, 0.1f, 6);
                 if (mine) {
                     ScreenEffects.shake(0.35f, 6);
@@ -309,9 +321,9 @@ public final class ClientFx {
                 Flashes.ring(pos, 0.5f, 6f * s, outer, 0.9f, 10, now + 2);
                 Flashes.ground(groundBelow(level, pos), 0.5f, 7f * s, outer, 0.8f, 14, now + 3);
                 Flashes.ground(groundBelow(level, pos), 0.3f, 4.5f * s, WHITE, 0.5f, 10, now + 5);
+                fireball(pos, s, outer, now + 2);
                 if (drawn) {
                     sparks(level, pos, Vec3.ZERO, q(28), 1.0 * Math.sqrt(s), ORANGE, 0.18f, 9);
-                    burst(level, pos, q(10), 0.2, Sprite.SMOKE, GREY, Math.min(0.9f, 0.6f * s), 30);
                     debris(level, pos, q(14), 0.45 * Math.sqrt(s));
                 }
                 distanceShake(pos, 30 * s, 0.3f);
@@ -324,11 +336,13 @@ public final class ClientFx {
                 sound("purple_form", pos, 0.9f, 0.8f);
                 follow("purple_music", p.entityId(), 3f);
                 Flashes.ring(pos, 1.6f, 0.2f, BLUE_LIGHT, 0.8f, 10, now);
+                for (int i = 0; i < 3; i++) Flashes.swirl(pos, randomUnit(), 1.4f, 0.3f, 3.2f, -0.5f, 0.06f, BLUE_LIGHT, 0.8f, 10, now + i);
                 if (drawn) implode(level, pos, 1.6, q(14), BLUE, 0.12f, 12);
             }
             case "purple_red" -> {
                 sound("purple_form", pos, 0.9f, 1.25f);
                 Flashes.ring(pos, 0.2f, 1.6f, ORANGE, 0.8f, 10, now);
+                for (int i = 0; i < 3; i++) Flashes.swirl(pos, randomUnit(), 0.3f, 1.3f, 3.2f, 0.5f, 0.06f, RED, 0.85f, 10, now + i);
                 if (drawn) sparks(level, pos, Vec3.ZERO, q(10), 0.2, RED, 0.1f, 10);
             }
             case "purple_fusion" -> {
@@ -341,6 +355,11 @@ public final class ClientFx {
                 }
                 Flashes.ring(pos, 2.5f, 0.2f, PURPLE_LIGHT, 0.9f, 12, now);
                 Flashes.flash(pos, 2.5f, 0.5f, WHITE, 1f, 6, now + 12);
+                // As they meet: magenta bursts out of the collision and lightning lashes off it.
+                Flashes.flash(pos, 4f, 1f, PURPLE, 0.8f, 10, now + 12);
+                Flashes.ring(pos, 0.3f, 4.5f, PURPLE, 0.8f, 10, now + 12);
+                for (int i = 0; i < 5; i++) Flashes.bolt(pos, pos.add(randomUnit().scale(1.8 + RNG.nextDouble() * 1.5)), 0.08f, PURPLE_LIGHT, 1f, 5, now + 12 + i / 2);
+                if (mine || (mc.player != null && mc.player.position().distanceTo(pos) < 10)) ScreenEffects.flash(0x70E020C8, 10);
                 if (drawn) {
                     for (int i = 0; i < q(24); i++) {
                         float[] c = i % 2 == 0 ? BLUE : RED;
@@ -367,7 +386,11 @@ public final class ClientFx {
                             10, now + i);
                 }
                 Flashes.beam(pos, pos.add(dir.scale(22)), 1.2f * k, PURPLE, 0.8f, 10, now);
+                for (int i = 0; i < 4; i++) Flashes.swirl(pos.add(dir.scale(1 + i * 1.6)), dir, 1.5f * k, 3.5f * k, 2.8f, 0.5f, 0.2f * k, i % 2 == 0 ? WHITE : PURPLE_LIGHT,
+                        0.8f, 9, now + i);
+                for (int i = 0; i < 6; i++) Flashes.bolt(pos, pos.add(randomUnit().scale(3 * k).add(dir.scale(2 * k))), 0.12f * k, PURPLE_LIGHT, 1f, 6, now + i / 2);
                 if (drawn) sparks(level, pos, dir, q(24), 1.2, PURPLE_LIGHT, 0.22f, 10);
+                if (mc.player != null && mc.player.position().distanceTo(pos) < 14) ScreenEffects.flash(0x80E020C8, 14);
                 if (mine) {
                     ScreenEffects.fovPunch(0.14f);
                     ScreenEffects.shake(0.9f, 16);
@@ -403,6 +426,7 @@ public final class ClientFx {
                 }
                 Flashes.beam(ground, ground.add(0, 38 * k, 0), 2.6f * k, PURPLE_LIGHT, 0.9f, 26, now + 2);
                 Flashes.ring(pos, 1f, 20f * k, PURPLE, 0.9f, 16, now + 2);
+                for (int i = 0; i < 10; i++) Flashes.bolt(pos, pos.add(randomUnit().scale((6 + RNG.nextDouble() * 6) * k)), 0.3f * k, PURPLE_LIGHT, 1f, 8, now + i % 4);
                 if (drawn) {
                     sparks(level, pos, Vec3.ZERO, q(50), 1.5, PURPLE_LIGHT, 0.28f, 14);
                     burst(level, pos, q(24), 0.8, Sprite.GLOW, PURPLE, 0.45f, 26);
@@ -412,6 +436,8 @@ public final class ClientFx {
                 distanceShake(pos, 70, 0.6f);
                 if (mc.player != null && mc.player.position().distanceTo(pos) < 40) ScreenEffects.impact(4);
             }
+            case "unlimited_purple" -> UnlimitedPurpleFx.start(level, pos, s, (int) dir.x, now);
+            case "unlimited_purple_end" -> UnlimitedPurpleFx.detonate(level, pos, s, now);
             // --- Teleport: space folds shut here and opens there. ---
             case "teleport_out" -> {
                 boolean combat = dir.length() < 12;
@@ -443,6 +469,7 @@ public final class ClientFx {
                 sound("domain_charge", pos, 1.5f, 1f);
                 Flashes.lens(pos, 6f, 0.5f, BLUE_LIGHT, 0.6f, 30, now);
                 for (int i = 0; i < 4; i++) Flashes.ring(pos, 5f, 0.3f, i % 2 == 0 ? WHITE : BLUE_LIGHT, 0.5f, 10, now + i * 6L);
+                for (int i = 0; i < 6; i++) Flashes.swirl(pos, randomUnit(), 4.5f, 0.5f, 3.4f, -0.35f, 0.12f, i % 2 == 0 ? WHITE : BLUE_LIGHT, 0.75f, 18, now + i * 4L);
                 if (drawn) {
                     for (int i = 0; i < q(30); i++) {
                         Vec3 from = pos.add(randomUnit().scale(3 + RNG.nextDouble() * 2));
@@ -533,6 +560,7 @@ public final class ClientFx {
                 dev.rick.jjk.client.hud.GojoPresentation.speech(p.entityId(), JJKConfig.get().awakening.transitionTicks);
                 Flashes.lens(pos, 7f, 0.8f, BLUE_LIGHT, 0.6f, 17, now);
                 for (int i = 0; i < 3; i++) Flashes.ring(pos, 6f - i, 0.3f, i == 1 ? WHITE : BLUE_LIGHT, 0.6f, 12, now + i * 5L);
+                for (int i = 0; i < 6; i++) Flashes.swirl(pos, randomUnit(), 5f, 0.6f, 3.4f, -0.4f, 0.14f, i % 2 == 0 ? WHITE : BLUE_LIGHT, 0.8f, 16, now + i * 2L);
                 Flashes.ground(groundBelow(level, pos), 6f, 0.5f, BLUE_LIGHT, 0.6f, 17, now);
                 if (drawn) {
                     for (int i = 0; i < q(40); i++) {
@@ -584,6 +612,7 @@ public final class ClientFx {
                 Vec3 at = pos.add(dir.scale(1.2));
                 Flashes.lens(at, 5f, 0.3f, BLUE, 0.7f, 16, now);
                 for (int i = 0; i < 3; i++) Flashes.ring(at, 4.5f, 0.2f, BLUE_LIGHT, 0.7f, 10, now + i * 5L);
+                for (int i = 0; i < 5; i++) Flashes.swirl(at, randomUnit(), 4.5f, 0.4f, 3.8f, -0.4f, 0.14f, i % 2 == 0 ? BLUE_LIGHT : WHITE, 0.85f, 16, now + i * 2L);
                 if (drawn) implode(level, at, 3.5, q(30), BLUE, 0.2f, 14);
                 if (mine) ScreenEffects.fovPunch(-0.06f);
             }
@@ -596,6 +625,9 @@ public final class ClientFx {
                 for (int i = 0; i < 4; i++) Flashes.ring(core, 18f - i * 2, 0.5f, i % 2 == 0 ? BLUE_LIGHT : WHITE, 0.8f, 14, now + i * 4L);
                 Flashes.ground(groundBelow(level, pos), 18f, 1f, BLUE, 0.8f, 20, now);
                 Flashes.flash(core, 8f, 2f, BLUE_LIGHT, 0.9f, 10, now + 16);
+                // The orb's dark-blue ink boiling round it, and the world's light winding in.
+                for (int i = 0; i < 5; i++) Flashes.ink(core.add(randomUnit().scale(1.6)), 1f, 3f, new float[] {0.02f, 0.07f, 0.42f}, 0.75f, 22, now + 4 + i * 2L);
+                for (int i = 0; i < 6; i++) Flashes.swirl(core, randomUnit(), 14f, 1f, 3.6f, -0.3f, 0.3f, i % 2 == 0 ? BLUE_LIGHT : WHITE, 0.8f, 20, now + i * 2L);
                 if (drawn) {
                     implode(level, core, 14, q(90), BLUE, 0.35f, 22);
                     debris(level, groundBelow(level, pos).add(0, 0.3, 0), q(30), 0.3);
@@ -619,8 +651,8 @@ public final class ClientFx {
             }
             case "max_red_charge" -> {
                 sound("max_red_charge", pos, 1.8f, 1f);
-                Flashes.lens(pos, 0.3f, 2.5f, RED, 0.6f, 14, now);
                 Flashes.ring(pos, 3f, 0.2f, ORANGE, 0.8f, 14, now);
+                for (int i = 0; i < 4; i++) Flashes.swirl(pos, randomUnit(), 2.4f, 0.6f, 3.6f, 0.5f, 0.1f, i < 2 ? WHITE : RED, 0.85f, 14, now + i * 2L);
                 if (drawn) {
                     implode(level, pos, 2.5, q(24), RED, 0.16f, 16);
                     sparks(level, pos, Vec3.ZERO, q(10), 0.4, ORANGE, 0.1f, 6);
@@ -631,6 +663,8 @@ public final class ClientFx {
                 Flashes.ring(pos, 4f, 0.2f, ORANGE, 1f, 3, now);
                 Flashes.flash(pos, 5f, 1f, RED, 1f, 6, now + 2);
                 for (int i = 0; i < 3; i++) Flashes.ripple(pos.add(dir.scale(1 + i * 1.8)), dir, 0.5f, 4f + i * 1.5f, ORANGE, 0.8f - i * 0.2f, 9, now + 2 + i);
+                for (int i = 0; i < 3; i++) Flashes.swirl(pos.add(dir.scale(1 + i * 1.5)), dir, 1.5f, 4f, 3f, 0.6f, 0.2f, i == 0 ? WHITE : RED, 0.85f, 9, now + 2 + i);
+                for (int i = 0; i < 5; i++) Flashes.bolt(pos, pos.add(randomUnit().scale(2.5).add(dir.scale(2))), 0.1f, RED, 1f, 5, now + 2 + i / 2);
                 if (drawn) sparks(level, pos, dir, q(24), 0.9, ORANGE, 0.18f, 9);
                 if (mine) {
                     ScreenEffects.shake(0.7f, 12);
@@ -652,6 +686,8 @@ public final class ClientFx {
                 }
                 Flashes.ring(pos, 1f, 16f * k, ORANGE, 0.9f, 14, now + 3);
                 Flashes.lens(pos, 2f, 12f * k, RED, 0.7f, 14, now + 3);
+                fireball(pos, 3f * k, ORANGE, now + 3);
+                for (int i = 0; i < 8; i++) Flashes.bolt(pos, pos.add(randomUnit().scale((4 + RNG.nextDouble() * 5) * k)), 0.2f * k, RED, 1f, 7, now + 3 + i % 3);
                 if (drawn) {
                     sparks(level, pos, Vec3.ZERO, q(70), 1.8, ORANGE, 0.28f, 14);
                     burst(level, pos, q(30), 1.0, Sprite.GLOW, RED, 0.5f, 18);
@@ -775,6 +811,21 @@ public final class ClientFx {
     }
 
     // --- composite effects ---
+
+    /**
+     * A fireball of about {@code size} blocks: hot light swelling and cooling from white through {@code color}, and dark
+     * smoke rolling up out of it as it goes.
+     */
+    static void fireball(Vec3 pos, float size, float[] color, long start) {
+        Flashes.flash(pos, 1.2f * size, 2.6f * size, WHITE, 0.9f, 6, start);
+        Flashes.flash(pos, 2f * size, 3.2f * size, color, 0.8f, 12, start + 1);
+        Flashes.flash(pos, 1.6f * size, 2.4f * size, RED, 0.6f, 18, start + 3);
+        float[] smoke = {0.16f, 0.13f, 0.13f};
+        for (int i = 0; i < 6; i++) {
+            Vec3 at = pos.add(gauss(0.5 * size), 0.3 * size + RNG.nextDouble() * 0.9 * size, gauss(0.5 * size));
+            Flashes.ink(at, 0.6f * size, (1.3f + RNG.nextFloat() * 0.6f) * size, smoke, 0.55f, 26 + RNG.nextInt(12), start + 3 + i);
+        }
+    }
 
     /** A crisp arc of light across the swing, plus a thin inner edge. */
     static void swingTrail(Vec3 pos, Vec3 dir, float reach, float width, long now) {
@@ -917,6 +968,11 @@ public final class ClientFx {
             add(level, at, new Vec3(0, 0.01, 0), Sprite.GLOW, BLUE_LIGHT, 0.5f, 0.25f, 0.02f, 10);
         }
         flashAt(level, pos, 1.2f, WHITE, 3);
+    }
+
+    /** Lights the local player's whole view with {@code argb} while this keeps being called (see {@link ScreenEffects#tint}). */
+    public static void tintNear(int argb, int hold) {
+        ScreenEffects.tint(argb, hold);
     }
 
     static void victimFeedback(FxPayload p, float strength) {

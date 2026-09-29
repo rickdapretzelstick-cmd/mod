@@ -62,6 +62,9 @@ public class GojoGameTests {
         cfg.clash.notes = 8;
         cfg.clash.countdownTicks = 10;
         cfg.red.range = 12;
+        // Unlimited Purple's blast kept small and harmless to the blocks, so it can't reach the tests next door.
+        cfg.gojo.unlimitedPurpleRadius = 5;
+        cfg.gojo.unlimitedPurpleMaxBlocks = 0;
         JJKConfig.set(cfg);
         testConfig = cfg;
     }
@@ -973,5 +976,30 @@ public class GojoGameTests {
         h.assertValueEqual(r.outcome(), HitResult.Outcome.INVALID, "teammates are not hit");
         level.getScoreboard().removePlayerTeam(team);
         h.succeed();
+    }
+
+    @GameTest(maxTicks = 140)
+    public void unlimitedPurpleErasesItsRadiusWhenTheFuseRunsOut(GameTestHelper h) {
+        floor(h, 4);
+        TrainingDummy target = dummy(h, 6, 4);
+        TrainingDummy g = gojo(h, 1, 4, target);
+        infinityOff(target);
+        awaken(g);
+        int fuse = JJKConfig.get().gojo.unlimitedPurpleFuse;
+        BlueEntity blue = BlueEntity.spawn(h.getLevel(), g, h.absoluteVec(new Vec3(4.5, 1.5, 4.5)), BlueEntity.Params.max());
+        float[] before = new float[1];
+        h.startSequence()
+                .thenExecute(() -> {
+                    // Max Red through the lingering orb: the orb is used up and the fuse starts.
+                    dev.rick.jjk.gojo.UnlimitedPurple.start(h.getLevel(), g, blue);
+                    h.assertTrue(blue.isRemoved(), "the Max Blue orb becomes the purple mass");
+                    before[0] = target.getHealth();
+                })
+                .thenIdle(fuse - 5)
+                .thenExecute(() -> h.assertValueEqual(target.getHealth(), before[0], "nothing is erased before the fuse runs out"))
+                .thenIdle(8)
+                .thenExecute(() -> h.assertTrue(before[0] - target.getHealth() >= JJKConfig.get().gojo.unlimitedPurpleMinDamage * 0.9f,
+                        "the detonation hits for 50-100 inside its radius (took " + (before[0] - target.getHealth()) + ")"))
+                .thenSucceed();
     }
 }
