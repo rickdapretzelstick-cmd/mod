@@ -27,7 +27,10 @@ public final class ModSounds {
             // Per-move sounds from the JJS audio (tools/roblox_sounds.py)
             "side_dash", "purple_music", "uv_music", "awaken_grab", "max_blue_wind", "max_blue_absorb", "max_red_charge", "max_red_fire",
             "shutter_divide", "rough_air", "fever_hit", "fever_crush", "idg_voice", "idg_sealed", "idg_music", "jackpot_music",
-            "rushdown_rush", "rushdown_grab", "overwhelm_fist", "overwhelm_swing", "surge_dash", "surge_hit", "surge_launch"
+            "rushdown_rush", "rushdown_grab", "overwhelm_fist", "overwhelm_swing", "surge_dash", "surge_hit", "surge_launch",
+            "clash_music", "twofold_swing1", "twofold_swing2", "twofold_hit1", "twofold_hit2", "face_grater_drag", "face_grater_throw",
+            "red_max_blackflash", "unlimited_purple_start", "unlimited_purple_explode", "zero_two_open", "zero_two_music", "zero_two_hit",
+            "zero_two_barrage", "zero_two_boost", "zero_two_slowdown", "zero_two_breathe", "ragdoll_fall"
     };
     private static final Map<String, SoundEvent> SOUNDS = new LinkedHashMap<>();
 

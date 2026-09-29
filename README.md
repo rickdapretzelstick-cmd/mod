@@ -247,4 +247,6 @@ destruction limits, particle quality, screen effects, sound volume). `/jjk confi
 - `./gradlew runGameTest` — server GameTests (combat, techniques, Awakening, domain structure restore/crash recovery)
 - `./gradlew runClientGameTest` — drives a real client through the whole kit with real input and takes screenshots
   (headless: run under Xvfb with Mesa; see `src/gametest` for the test-only headless mixin)
-- `tools/gen_sounds.py`, `tools/gen_textures.py` regenerate the synthesized sounds and textures
+- `tools/roblox_sounds.py` rebuilds every sound from the Jujutsu Shenanigans audio (the Roblox IDs per move, fetched from
+  Roblox or the JJS Skill Builder mirror at ossaamm.github.io, plus the wiki's jackpot sound); `tools/gen_textures.py`
+  regenerates the textures

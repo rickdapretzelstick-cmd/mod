@@ -71,6 +71,15 @@ public final class ClientFx {
 
     private static void play(FxPayload p, Minecraft mc, ClientLevel level, Vec3 pos, Vec3 dir, float s, boolean mine, long now) {
         boolean drawn = lod > 0;
+        // A plain JJS sound for a move step ("sfx:<sound>"), or music that follows its entity ("music:<sound>").
+        if (p.id().startsWith("sfx:")) {
+            sound(p.id().substring(4), pos, Math.max(0.6f, s), 1f);
+            return;
+        }
+        if (p.id().startsWith("music:")) {
+            follow(p.id().substring(6), p.entityId(), Math.max(1f, s));
+            return;
+        }
         switch (p.id()) {
             // --- melee: clean, precise, small. Light cuts, not explosions. ---
             case "swing" -> {
@@ -304,7 +313,7 @@ public final class ClientFx {
             // --- Hollow Purple: Blue, Red, collision, the core, the release, the impact. ---
             case "purple_blue" -> {
                 sound("purple_form", pos, 0.9f, 0.8f);
-                sound("purple_music", pos, 3f, 1f);
+                follow("purple_music", p.entityId(), 3f);
                 Flashes.ring(pos, 1.6f, 0.2f, BLUE_LIGHT, 0.8f, 10, now);
                 if (drawn) implode(level, pos, 1.6, q(14), BLUE, 0.12f, 12);
             }
@@ -488,6 +497,7 @@ public final class ClientFx {
             }
             case "domain_collapse" -> {
                 sound("domain_collapse", pos, 5f, 1f);
+                stopSound("clash_music");
                 ClientState.Domain ending = ClientState.domainOwnedBy(p.entityId());
                 if (ending != null) stopSound(dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(ending.definition) ? "idg_music" : "uv_music");
                 Flashes.lens(pos, s, 1f, WHITE, 0.7f, 20, now);
@@ -648,6 +658,11 @@ public final class ClientFx {
             case "clash_start", "clash_sudden_death" -> {
                 boolean sd = p.id().equals("clash_sudden_death");
                 sound("clash_start", pos, 4f, sd ? 1.2f : 1f);
+                // The JJS domain clash track, on everyone watching (it travels with them, not left at the midpoint).
+                if (!sd && mc.player != null && mc.player.position().distanceTo(pos) < 64) {
+                    stopSound("clash_music");
+                    follow("clash_music", mc.player.getId(), 1f);
+                }
                 float r = Math.max(4f, s);
                 Flashes.flash(pos, 3f, r * 0.8f, sd ? RED : WHITE, 1f, 10, now);
                 Flashes.lens(pos, 1f, r, sd ? RED : BLUE_LIGHT, 0.9f, 16, now);
@@ -716,6 +731,7 @@ public final class ClientFx {
                 float r = Math.max(6f, s);
                 float[] c = clashColor(p.entityId());
                 sound("clash_win", pos, 5f, 1f);
+                stopSound("clash_music");
                 Vec3 ground = groundBelow(level, pos);
                 Flashes.flash(pos, 3f, r, WHITE, 1f, 12, now);
                 Flashes.lens(pos, 1f, r * 1.3f, c, 0.95f, 20, now);
@@ -902,6 +918,22 @@ public final class ClientFx {
         if (mc.player == null) return;
         double d = mc.player.position().distanceTo(pos);
         if (d < radius) ScreenEffects.shake((float) (max * (1 - d / radius)), 12);
+    }
+
+    /**
+     * A sound that travels with an entity (music belonging to someone: Jackpot, Hollow Purple, the 0.2 Domain), so it
+     * isn't left behind where it started. Falls back to the local player when the entity isn't known here.
+     */
+    public static void follow(String name, int entityId, float volume) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        float v = volume * JJKConfig.get().client.soundVolume;
+        if (v <= 0 || mc.getSoundManager().getSoundEvent(ModSounds.get(name).location()) == null) return;
+        Entity e = mc.level.getEntity(entityId);
+        if (e == null) e = mc.player;
+        if (e == null) return;
+        mc.getSoundManager().play(new net.minecraft.client.resources.sounds.EntityBoundSoundInstance(ModSounds.get(name), SoundSource.PLAYERS, v, 1f, e,
+                RNG.nextLong()));
     }
 
     /** Cuts a playing sound short (domain music when the domain ends). */

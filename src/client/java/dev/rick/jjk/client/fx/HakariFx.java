@@ -218,7 +218,8 @@ final class HakariFx {
             // --- Jackpot ---
             case "jackpot" -> {
                 sound("jackpot", pos, 2.5f, 1f);
-                sound("jackpot_music", pos, 3f, 1f);
+                ClientFx.stopSound("jackpot_music");
+                ClientFx.follow("jackpot_music", p.entityId(), 3f); // follows Hakari wherever he goes
                 if (drawn) {
                     Flashes.flash(pos, 6f, 0.8f, WHITE, 1f, 12, now);
                     Flashes.lens(pos, 1f, 9f, JADE, 0.9f, 22, now);

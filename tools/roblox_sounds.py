@@ -5,7 +5,7 @@ Builds assets/jjk/sounds/*.ogg from the Jujutsu Shenanigans Roblox audio IDs.
 Each sound event is one or more variants (Minecraft picks one at random); each variant layers clips:
   (id, offset_seconds, speed, start_seconds, gain)
 speed follows Roblox PlaybackSpeed (pitch and tempo together), start follows TimePosition.
-Clips that can't be downloaded (most need a logged-in account) can be dropped into tools/roblox_audio/<id>.ogg|.mp3;
+Clips come from Roblox, then the JJS Skill Builder mirror (ossaamm.github.io/audio), then tools/roblox_audio/<id>.ogg|.mp3;
 the rest are skipped; an event with nothing left keeps its old file.
 
   python3 tools/roblox_sounds.py            # download (cached in build/roblox-cache) and write the oggs
@@ -14,6 +14,7 @@ import gzip
 import json
 import os
 import sys
+import urllib.parse
 import urllib.request
 
 import numpy as np
@@ -24,6 +25,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "src/main/resources/assets/jjk/sounds")
 CACHE = os.path.join(ROOT, "build/roblox-cache")
 MANUAL = os.path.join(ROOT, "tools/roblox_audio")
+MIRROR = "https://ossaamm.github.io/audio"
 RATE = 48000
 
 
@@ -58,7 +60,8 @@ SOUNDS = {
     "red_charge": one(c(6006851551, speed=1.2)),
     "red_fire": one(c(154787303)),
     "red_explosion": one(c(3059775624, speed=1.4)),
-    "red_amplified": one(c(79055523886516)),
+    # "Aka" (79055523886516) is on neither Roblox's public CDN nor the mirror: its own Red clips instead.
+    "red_amplified": one(c(79055523886516), c(3059775624, speed=1.1), c(12764933067, at=0.05, gain=0.7)),
     "purple_music": one(c(14326861262)),
     "purple_fusion": one(c(17018019870)),
     "purple_collision": one(c(15075475525)),
@@ -78,8 +81,60 @@ SOUNDS = {
     "max_red_fire": one(c(16828657180)),
     "max_red_explosion": one(c(3059775624), c(8595975458, speed=1.2, gain=0.8)),
     "finisher": one(c(12764933067, speed=1.5), c(9114314398), c(17520297840, at=0.1)),
-    # --- Domain clash ---
-    "clash_start": one(c(89526560746434)),
+    # --- Domain clash (the JJS domain clash track) ---
+    "clash_music": one(c(89526560746434)),
+    "clash_start": one(c(3059775781), c(7260423115, at=0.1)),
+    "clash_perfect": one(c(12764933067, speed=1.5), c(9114314398, gain=0.6)),
+    "clash_hit": M1_HITS,
+    "clash_miss": one(c(4306994267)),
+    "clash_win": one(c(17520297840), c(6737581507, at=0.2)),
+    "clash_beat": one(c(8595975458, speed=1.2, gain=0.35)),
+    "clash_countdown": one(c(9125615451)),
+    "domain_clash": one(c(3059775781)),
+    "domain_block": one(c(9125669515)),
+    "domain_surehit": one(c(15171602676)),
+    "domain_ambient": one(c(15171602676, gain=0.35)),
+    # --- Remaining Gojo sounds ---
+    "infinity_off": one(c(9066732918, speed=1.25, gain=0.7)),
+    "infinity_ripple": one(c(9066732918, speed=1.4, gain=0.5)),
+    "infinity_hold": one(c(9066732918, speed=0.8, gain=0.5)),
+    "blue_hum": one(c(411286671, speed=0.75, gain=0.6)),
+    "blue_collapse": one(c(2227416952, speed=1.3)),
+    "red_compress": one(c(6006851551, speed=1.4)),
+    "purple_form": one(c(17018019870, gain=0.7)),
+    "purple_travel": one(c(698224146, gain=0.6)),
+    "purple_end": one(c(7602599324), c(4776197442, gain=0.8)),
+    "max_charge": one(c(4299624634)),
+    "max_blue_hum": one(c(9056932358, gain=0.7)),
+    "awaken_end": one(c(4458760518, speed=0.8, gain=0.7)),
+    "no_energy": one(c(9125669515, speed=1.4, gain=0.4)),
+    "teleport": one(c(9118159096)),
+    "twofold_swing1": one(c(3755637186)),
+    "twofold_swing2": one(c(3755636992)),
+    "twofold_hit1": one(c(4086172909)),
+    "twofold_hit2": one(c(7515452875)),
+    "face_grater_drag": one(c(93186173642807)),
+    "face_grater_throw": one(c(82926856324306)),
+    "red_max_blackflash": one(c(17284219852), c(17520297840, at=0.3)),
+    "unlimited_purple_start": one(c(4858918400), c(4299624634, at=0.4), c(14457960806, at=0.6)),
+    "unlimited_purple_explode": one(c(4776197442), c(7602599324, at=0.15)),
+    "zero_two_open": one(c(111507747920000), c(135405966044594, at=0.3)),
+    "zero_two_music": one(c(16071901783)),
+    "zero_two_hit": [[c(130525286637724)], [c(94234054127236)], [c(108671308229639)]],
+    "zero_two_barrage": one(c(127027345708590)),
+    "zero_two_boost": [[c(93070893390347)], [c(126837281119039)]],
+    "zero_two_slowdown": one(c(76523688182264)),
+    "zero_two_breathe": one(c(82179939991290)),
+    "ragdoll_fall": [[c(3784888301)], [c(3784888809)], [c(3784889529)]],
+    # --- Remaining Hakari sounds ---
+    "gamble_riichi": one(c(3299794881, speed=0.9), c(16943255415, at=0.2, gain=0.7)),
+    "gamble_signal": one(c(3299794881, speed=1.3, gain=0.6)),
+    "gamble_stop": one(c(9125669515)),
+    "gamble_miss": one(c(6737581507, gain=0.6)),
+    "jackpot_heal": one(c(17046377464, speed=1.2, gain=0.6)),
+    "jackpot_end": one(c(6737581507)),
+    "rhythm_beat": one(c(17046282624, gain=0.6)),
+    "idg_ambient": one(c(16943255415, gain=0.3)),
     # --- Hakari ---
     "ball_throw": one(c(4059009185), c(9114427348, at=0.08)),
     "ball_hit": one(c(7512928742)),
@@ -103,7 +158,8 @@ SOUNDS = {
     "idg_music": one(c(9039704032)),
     "gamble_spin": one(c(3299794881)),
     "gamble_visual": one(c(16943255415)),
-    "jackpot": one(c(6644505962)),
+    # 6644505962 isn't downloadable; the wiki's upload of the JJS jackpot sound.
+    "jackpot": one(c(6644505962), c("wiki:Jackot.mp3")),
     "jackpot_music": one(c(1841443579)),
     "lucky_hit": M1_HITS + [[c(8595974357)]],
     "lucky_final": one(c(8595974357)),
@@ -129,7 +185,7 @@ FALLBACK = {
 }
 
 # Long tracks: streamed, faded out, and capped (the domain stops them when it ends).
-MUSIC = {"uv_music": 80, "idg_music": 80, "jackpot_music": 100, "purple_music": 14}
+MUSIC = {"uv_music": 80, "idg_music": 80, "jackpot_music": 100, "purple_music": 14, "clash_music": 60, "zero_two_music": 30}
 
 
 def fetch(i):
@@ -139,12 +195,30 @@ def fetch(i):
         if os.path.exists(own):
             return own
     os.makedirs(CACHE, exist_ok=True)
+    if i.startswith("wiki:"):
+        # A file the JJS wiki hosts (fan uploads of the game's music and voice lines).
+        name = i[5:]
+        out = os.path.join(CACHE, "wiki_" + name)
+        if not os.path.exists(out):
+            try:
+                api = "https://jujutsu-shenanigans.fandom.com/api.php?action=query&prop=imageinfo&iiprop=url&format=json&titles=File:" + urllib.parse.quote(name)
+                req = urllib.request.Request(api, headers={"User-Agent": "Mozilla/5.0"})
+                pages = json.load(urllib.request.urlopen(req, timeout=30))["query"]["pages"]
+                url = next(iter(pages.values()))["imageinfo"][0]["url"]
+                data = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=90).read()
+                open(out, "wb").write(data)
+            except Exception as e:
+                print(f"  ! {i}: {e}")
+                return None
+        return out
     out = os.path.join(CACHE, i + ".bin")
     bad = out + ".missing"
     if os.path.exists(out):
         return out
     if os.path.exists(bad):
         return None
+    errors = []
+    # 1) Roblox itself (works for public, unrestricted audio).
     try:
         meta = json.load(urllib.request.urlopen(f"https://assetdelivery.roblox.com/v2/assetId/{i}", timeout=30))
         data = urllib.request.urlopen(meta["locations"][0]["location"], timeout=90).read()
@@ -152,9 +226,20 @@ def fetch(i):
             data = gzip.decompress(data)
         open(out, "wb").write(data)
         return out
-    except Exception as e:  # private or deleted
-        open(bad, "w").write(str(e))
-        return None
+    except Exception as e:
+        errors.append(f"roblox: {e}")
+    # 2) The JJS Skill Builder community's mirror of the game's audio, by the same IDs (ossaamm.github.io).
+    for ext in (".mp3", ".ogg", ".wav"):
+        try:
+            req = urllib.request.Request(f"{MIRROR}/{i}{ext}", headers={"User-Agent": "Mozilla/5.0"})
+            data = urllib.request.urlopen(req, timeout=90).read()
+            if len(data) > 256:
+                open(out, "wb").write(data)
+                return out
+        except Exception as e:
+            errors.append(f"mirror{ext}: {e}")
+    open(bad, "w").write("\n".join(errors))
+    return None
 
 
 def load(i, speed, start):
@@ -163,10 +248,18 @@ def load(i, speed, start):
         return None
     try:
         d, sr = sf.read(f, always_2d=True)
-    except Exception as e:
-        print(f"  ! {i}: can't decode ({e})")
-        return None
-    d = d.mean(axis=1)
+        d = d.mean(axis=1)
+    except Exception:
+        # MP3s with ID3 tags (the mirror's files): decode with ffmpeg (pip install imageio-ffmpeg).
+        try:
+            import subprocess
+            import imageio_ffmpeg
+            raw = subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-v", "error", "-i", f, "-f", "f32le", "-ac", "1", "-ar", str(RATE), "-"],
+                                 capture_output=True, check=True).stdout
+            d, sr = np.frombuffer(raw, dtype=np.float32).astype(np.float64), RATE
+        except Exception as e:
+            print(f"  ! {i}: can't decode ({e})")
+            return None
     d = d[int(start * sr):]
     # Speed: play the samples faster (pitch and tempo), i.e. resample to sr/speed and treat as RATE.
     up, down = RATE, int(round(sr * speed))
@@ -235,6 +328,9 @@ def main():
         report.append(f"{name:18} {status:8} {'missing ' + ','.join(missing) if missing else ''}")
     json.dump(table, open(sounds_json, "w"), indent=2)
     print("\n".join(report))
+    unmapped = [k for k in table if k not in SOUNDS]
+    if unmapped:
+        print("NOT FROM JJS AUDIO:", ", ".join(unmapped))
 
 
 if __name__ == "__main__":

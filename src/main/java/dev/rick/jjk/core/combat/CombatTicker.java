@@ -36,7 +36,11 @@ public final class CombatTicker {
             // Getting up grants a moment of melee immunity so knockdowns can't be looped forever.
             if (state.get(CombatStatus.KNOCKDOWN) == 1) Statuses.apply(e, CombatStatus.WAKEUP, cfg.general.wakeupInvulnerability);
             if (e.onGround() && e.getDeltaMovement().y <= 0.01) {
-                if (state.has(CombatStatus.LAUNCHED)) state.remove(CombatStatus.LAUNCHED);
+                if (state.has(CombatStatus.LAUNCHED)) {
+                    state.remove(CombatStatus.LAUNCHED);
+                    // A ragdoll hitting the floor.
+                    Fx.play(level, "sfx:ragdoll_fall", e.position(), Vec3.ZERO, 1f, e.getId());
+                }
                 if (state.has(CombatStatus.HOVER)) state.remove(CombatStatus.HOVER);
             }
             if (!state.isGuarding()) state.tickGuardRegen(cfg.guard.guardRegenInterval);

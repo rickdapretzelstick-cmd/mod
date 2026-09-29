@@ -144,6 +144,7 @@ public class RedEntity extends TechniqueEntity {
             dev.rick.jjk.core.combat.Statuses.apply(owner, CombatStatus.MELEE_ARMOR, 16);
             dev.rick.jjk.hakari.HakariCombat.faceTowards(owner, caught.getBoundingBox().getCenter());
             dev.rick.jjk.core.anim.Anim.play(owner, "black_flash");
+            Fx.play(level, "sfx:red_max_blackflash", owner.position().add(0, 1, 0), Vec3.ZERO, 2f, owner.getId());
             Hit bf = Hit.builder(owner, "max_red").type(ModDamageTypes.MELEE).damage(cfg.blackFlashDamage)
                     .tag(AttackTag.MELEE, AttackTag.UNBLOCKABLE, AttackTag.ULTIMATE).origin(owner.getEyePosition())
                     .knockback(Knockback.directional(dev.rick.jjk.hakari.HakariCombat.flat(owner), 2.0, 0.6)).hitstun(30)

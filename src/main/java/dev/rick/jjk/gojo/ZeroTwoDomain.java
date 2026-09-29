@@ -56,6 +56,8 @@ final class ZeroTwoDomain {
         }
         targets.sort((a, b) -> Double.compare(a.distanceToSqr(user), b.distanceToSqr(user)));
         Fx.play(level, "domain_sealed", c, Vec3.ZERO, (float) cfg.zeroTwoRadius * 0.5f, user.getId());
+        Fx.play(level, "sfx:zero_two_open", c, Vec3.ZERO, 5f, user.getId());
+        Fx.play(level, "music:zero_two_music", c, Vec3.ZERO, 4f, user.getId());
         Fx.flash(level, c, cfg.zeroTwoRadius + 16, 0xE0FFFFFF, 6);
         phase1End = 8 + cfg.zeroTwoPhase1Hits * 3;
         phase2Start = phase1End + GAP;
@@ -76,6 +78,7 @@ final class ZeroTwoDomain {
         Vec3 spot = TeleportAbility.aroundFront(user, t, (n * 97) % 360);
         if (spot != null) TeleportAbility.arrive(level, user, spot, t);
         Anim.play(user, n % 2 == 0 ? "light_1" : "light_2");
+        Fx.play(level, "sfx:zero_two_hit", t.getBoundingBox().getCenter(), Vec3.ZERO, 1.5f, user.getId());
         Hit hit = Hit.builder(user, "zero_two_domain").type(ModDamageTypes.MELEE).damage(damage)
                 .tag(AttackTag.MELEE, AttackTag.UNBLOCKABLE, AttackTag.OTG, AttackTag.ULTIMATE).origin(user.getEyePosition())
                 .knockback(last ? Knockback.directional(HakariCombat.flat(user), 2.2, 0.8) : Knockback.HOLD).hitstun(last ? 30 : 12)
@@ -91,6 +94,10 @@ final class ZeroTwoDomain {
         age++;
         boolean running = (age >= 8 && age < phase1End) || (age >= phase2Start && age < phase2End) || (age >= finalAt - 4 && age <= finalAt);
         if (running) Statuses.apply(user, CombatStatus.EVADING, 2);
+        // Each run starts with a burst of speed; the second phase is the barrage; the last hit slows everything down.
+        if (age == 8 || age == phase2Start) Fx.play(level, "sfx:zero_two_boost", user.position(), Vec3.ZERO, 2f, user.getId());
+        if (age == phase2Start) Fx.play(level, "sfx:zero_two_barrage", user.position(), Vec3.ZERO, 2f, user.getId());
+        if (age == finalAt - 4) Fx.play(level, "sfx:zero_two_slowdown", user.position(), Vec3.ZERO, 2f, user.getId());
         if (age >= 8 && age < phase1End && (age - 8) % 3 == 0) strike((age - 8) / 3, cfg.zeroTwoPhase1Damage, false);
         if (age >= phase2Start && age < phase2End && (age - phase2Start) % 5 == 0) strike(100 + (age - phase2Start) / 5, cfg.zeroTwoPhase2Damage, false);
         if (age == finalAt) {
@@ -99,6 +106,7 @@ final class ZeroTwoDomain {
                 // Holding the heads of two targets: both are finished, and he gasps for air.
                 Statuses.apply(user, CombatStatus.EVADING, 40);
                 Anim.play(user, "awaken");
+                Fx.play(level, "sfx:zero_two_breathe", user.position(), Vec3.ZERO, 2f, user.getId());
                 GojoCombat.execute(user, targets.get(0), "zero_two_domain", "finisher");
                 GojoCombat.execute(user, targets.get(1), "zero_two_domain", "finisher");
             } else {

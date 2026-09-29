@@ -45,6 +45,7 @@ public final class UnlimitedPurple {
         blue.consume();
         ACTIVE.add(new UnlimitedPurple(level, owner, at));
         Fx.play(level, "purple_fusion", at, Vec3.ZERO, 3f, owner.getId());
+        Fx.play(level, "sfx:unlimited_purple_start", at, Vec3.ZERO, 6f, owner.getId());
         Fx.shake(level, at, 60, 0.6f, 20);
         var caster = Casters.getOrNull(owner);
         if (caster != null && !caster.noCost()) caster.setAwakening(0);
@@ -69,6 +70,7 @@ public final class UnlimitedPurple {
         if (age < cfg.unlimitedPurpleFuse) return false;
         double r = cfg.unlimitedPurpleRadius;
         Fx.play(level, "purple_end", center, Vec3.ZERO, (float) (r / 6), owner.getId());
+        Fx.play(level, "sfx:unlimited_purple_explode", center, Vec3.ZERO, 8f, owner.getId());
         Fx.flash(level, center, 96, 0xC0B060FF, 20);
         Fx.shake(level, center, 96, 1.6f, 30);
         for (LivingEntity t : HitboxQuery.targets(owner, HitShape.sphere(center, r), 0, false)) {

@@ -179,6 +179,7 @@ public final class TeleportAbility extends Ability {
                 }
                 grabbed = true;
                 grabAt = age;
+                Fx.play(level, "sfx:face_grater_drag", victim.position(), Vec3.ZERO, 1.2f, user.getId());
                 Anim.play(user, "rushdown_drag");
                 setPhase(1, cfg.faceGraterDragTicks);
                 return;
@@ -199,6 +200,7 @@ public final class TeleportAbility extends Ability {
             }
             Statuses.remove(victim, CombatStatus.GRABBED);
             Anim.play(user, "rushdown_throw");
+            Fx.play(level, "sfx:face_grater_throw", victim.position(), Vec3.ZERO, 1.2f, user.getId());
             HitResolver.resolve(GojoCombat.strike(user, "face_grater", cfg.faceGraterDamage - 0.5f, false)
                     .knockback(Knockback.directional(f, 1.6, 0.6)).hitstun(28).status(CombatStatus.LAUNCHED, 26).fx("hit_launch", 1.3f).build(), victim);
             Fx.shake(level, victim.position(), 20, 0.8f, 10);

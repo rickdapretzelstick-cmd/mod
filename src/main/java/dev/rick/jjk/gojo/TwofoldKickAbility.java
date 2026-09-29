@@ -67,6 +67,7 @@ public final class TwofoldKickAbility extends Ability {
                 }
                 if (age == cfg.twofoldWindup) {
                     Fx.play(level, "swing", user.position().add(0, 1, 0), new Vec3(0, 1, 0), 1f, user.getId());
+                    Fx.play(level, "sfx:twofold_swing1", user.position().add(0, 1, 0), Vec3.ZERO, 1f, user.getId());
                     LivingEntity t = HakariCombat.firstInFront(user, cfg.twofoldReach, 1.8, 2.4);
                     if (t == null) {
                         endAt = age + 10;
@@ -81,6 +82,7 @@ public final class TwofoldKickAbility extends Ability {
                     }
                     victim = t;
                     firstAt = age;
+                    Fx.play(level, "sfx:twofold_hit1", t.getBoundingBox().getCenter(), Vec3.ZERO, 1f, user.getId());
                     Statuses.apply(user, CombatStatus.MELEE_ARMOR, cfg.twofoldAnchorTicks + 10);
                     setPhase(1, cfg.twofoldAnchorTicks);
                     return;
@@ -98,6 +100,8 @@ public final class TwofoldKickAbility extends Ability {
                 }
                 if (since == cfg.twofoldAnchorTicks) {
                     Anim.play(user, "twofold_2");
+                    Fx.play(level, "sfx:twofold_swing2", user.position().add(0, 1, 0), Vec3.ZERO, 1f, user.getId());
+                    Fx.play(level, "sfx:twofold_hit2", victim.getBoundingBox().getCenter(), Vec3.ZERO, 1f, user.getId());
                     HitResolver.resolve(GojoCombat.strike(user, ID, cfg.twofoldSecondDamage, true)
                             .knockback(Knockback.set(new Vec3(0, 1.15, 0).add(HakariCombat.flat(user).scale(0.2)))).hitstun(30)
                             .status(CombatStatus.LAUNCHED, 30).fx("hit_launch", 1.2f).build(), victim);
