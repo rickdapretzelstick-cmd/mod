@@ -207,6 +207,35 @@ public class ClashTests {
         return b;
     }
 
+    /** Vessel answers Infinite Void with the King of Curses and Malevolent Shrine at once, into a clash. */
+    @GameTest(maxTicks = 200, environment = "jjk-test:clash_b")
+    public void yujiCountersWithMalevolentShrine(GameTestHelper h) {
+        floor(h);
+        TrainingDummy a = opener(h, 2, 4);
+        TrainingDummy b = h.spawn(ModEntities.TRAINING_DUMMY, new Vec3(6, 1, 4));
+        b.setMode(TrainingDummy.Mode.STAND);
+        CharacterService.assign(b, Characters.get(dev.rick.jjk.yuji.YujiCharacter.ID));
+        ClashManager.setBotSkill(b, 0.6f);
+        var ca = dev.rick.jjk.core.ability.Casters.get(a);
+        var cb = dev.rick.jjk.core.ability.Casters.get(b);
+        cb.setAwakening(cb.maxAwakening());
+        h.assertTrue(ca.input(dev.rick.jjk.core.ability.AbilitySlot.SKILL_4, true, 0, 0, null), "Gojo opens Infinite Void");
+        h.startSequence()
+                .thenIdle(3)
+                .thenExecute(() -> {
+                    h.assertTrue(cb.input(dev.rick.jjk.core.ability.AbilitySlot.ULTIMATE, true, 0, 0, null), "Yuji's Awakening button (" + cb.lastRefusal + ")");
+                    h.assertTrue(cb.isAwakened(), "Sukuna takes over at once");
+                    var mine = DomainManager.ownedBy(b);
+                    h.assertTrue(mine != null && dev.rick.jjk.yuji.MalevolentShrine.ID.equals(mine.definition.id()), "and Malevolent Shrine answers");
+                })
+                .thenWaitUntil(() -> h.assertTrue(DomainManager.ownedBy(a) != null, "Infinite Void expands"))
+                .thenExecute(() -> {
+                    ClashSession s = DomainManager.ownedBy(a).clash();
+                    h.assertTrue(s != null && s == DomainManager.ownedBy(b).clash(), "the two domains clash");
+                })
+                .thenSucceed();
+    }
+
     @GameTest(maxTicks = 200, environment = "jjk-test:clash_a")
     public void awakeningButtonCountersAnOpeningDomainIntoAClash(GameTestHelper h) {
         floor(h);

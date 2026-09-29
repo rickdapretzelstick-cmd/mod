@@ -18,7 +18,8 @@ import java.util.List;
  * building itself from the caster's feet) rather than replacing it:
  * <ul>
  *   <li>SOLO (the caster, ~3-4 s): letterbox, the caster's portrait while their energy builds and the domain forms
- *   (camera pulled out to third person so they can watch it), then "DOMAIN EXPANSION / name" as it seals.</li>
+ *   (camera pulled out to third person so they can watch it), then "DOMAIN EXPANSION / name" as it seals. Malevolent
+ *   Shrine has no title: the camera turns to face the caster as it seals, so they watch the shrine rise behind them.</li>
  *   <li>OBSERVE (anyone nearby, ~1.5 s): a small banner; nobody else's camera is touched.</li>
  *   <li>VERSUS (a counter, ~3 s): both duellists' portraits, "DOMAIN EXPANSION VS DOMAIN EXPANSION", then it hands the
  *   screen to the domain clash.</li>
@@ -30,6 +31,8 @@ public final class DomainCinematic {
 
     @Nullable private static Show show;
     @Nullable private static CameraType restoreCamera;
+    /** Malevolent Shrine's reveal: the camera the caster had before it turned to face them. */
+    @Nullable private static CameraType turnedFrom;
 
     private DomainCinematic() {}
 
@@ -43,7 +46,10 @@ public final class DomainCinematic {
         if (kind == DomainCinematicPayload.VERSUS && local < 0) kind = DomainCinematicPayload.OBSERVE;
         // Never let a passing banner replace a duellist's own presentation.
         if (kind == DomainCinematicPayload.OBSERVE && show != null && show.kind != DomainCinematicPayload.OBSERVE && active()) return;
-        show = new Show(kind, p.entities(), p.names(), p.domains(), p.colors(), mc.level.getGameTime(), p.titleAt(), p.duration(), local,
+        // Malevolent Shrine's caster keeps the shot until its colour has flooded in.
+        int duration = kind == DomainCinematicPayload.SOLO && shrine(p.domains())
+                ? Math.max(p.duration(), p.titleAt() + dev.rick.jjk.client.render.ShrineDomainRenderer.REVEAL) : p.duration();
+        show = new Show(kind, p.entities(), p.names(), p.domains(), p.colors(), mc.level.getGameTime(), p.titleAt(), duration, local,
                 opponentSide(mc, p.entities(), local));
         if (kind != DomainCinematicPayload.OBSERVE) {
             // The caster watches their domain build from just behind themselves; restored afterwards.
@@ -72,6 +78,12 @@ public final class DomainCinematic {
 
     public static void tick(Minecraft mc) {
         if (show != null && !active()) end(mc);
+        // As Malevolent Shrine seals the camera turns to face the caster: the shrine rises behind them (JJS GIF).
+        if (show != null && show.kind == DomainCinematicPayload.SOLO && show.local == 0 && turnedFrom == null && shrine(show.domains)
+                && mc.level.getGameTime() - show.start >= show.titleAt && !ClashClient.playing()) {
+            turnedFrom = mc.options.getCameraType();
+            mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+        }
         // The versus card hands over to the clash as its countdown starts: the bands slide out, finishing as it begins.
         if (show != null && show.kind == DomainCinematicPayload.VERSUS && ClashClient.view() != null && ClashClient.view().clock() > -22 - MOVE) {
             int leave = (int) (mc.level.getGameTime() - show.start + MOVE);
@@ -84,15 +96,24 @@ public final class DomainCinematic {
 
     private static void end(Minecraft mc) {
         show = null;
-        if (restoreCamera != null) {
-            if (mc.options.getCameraType() == CameraType.THIRD_PERSON_BACK) mc.options.setCameraType(restoreCamera);
-            restoreCamera = null;
+        CameraType now = mc.options.getCameraType();
+        if (turnedFrom != null) {
+            if (now == CameraType.THIRD_PERSON_FRONT) mc.options.setCameraType(restoreCamera != null ? restoreCamera : turnedFrom);
+        } else if (restoreCamera != null && now == CameraType.THIRD_PERSON_BACK) {
+            mc.options.setCameraType(restoreCamera);
         }
+        restoreCamera = null;
+        turnedFrom = null;
     }
 
     public static void reset() {
         show = null;
         restoreCamera = null;
+        turnedFrom = null;
+    }
+
+    private static boolean shrine(List<String> domains) {
+        return !domains.isEmpty() && dev.rick.jjk.yuji.MalevolentShrine.INSTANCE.displayName().equals(domains.get(0));
     }
 
     public static void render(GuiGraphicsExtractor g, float partial) {
@@ -124,7 +145,9 @@ public final class DomainCinematic {
         if (t < s.titleAt && leave < 1f) {
             CinematicPanels.Band band = new CinematicPanels.Band(h * 0.3f, h * 0.7f);
             float sx = -(1 - slide) * w + leave * w;
-            CinematicPanels.band(g, band, w, color, s.entities[0], w * 0.5f, sx, s.start + t);
+            boolean shrine = dev.rick.jjk.yuji.MalevolentShrine.INSTANCE.displayName().equals(s.domains.get(0));
+            if (shrine) CinematicPanels.shrineBand(g, band, w, s.entities[0], w * 0.5f, sx, s.start + t);
+            else CinematicPanels.band(g, band, w, color, s.entities[0], w * 0.5f, sx, s.start + t);
             if (slide > 0.95f && leave < 0.05f) {
                 CinematicPanels.border(g, band.top(), w, 5);
                 CinematicPanels.border(g, band.bottom(), w, 5);
@@ -134,9 +157,13 @@ public final class DomainCinematic {
             CinematicPanels.label(g, font, "EXPANSION", w * 0.88f + sx, band.bottomAt(w * 0.88f, w) - 28, 2.2f, 0xFFFFFF, txt, true);
             CinematicPanels.label(g, font, s.names.get(0), w * 0.12f + sx, band.topAt(w * 0.12f, w) + 34, 1f, color, txt, false);
         }
-        // Shot 5: the domain has sealed.
+        // Malevolent Shrine opens on a white flash (JJS GIF frame 0).
+        if (dev.rick.jjk.yuji.MalevolentShrine.INSTANCE.displayName().equals(s.domains.get(0)) && t < 5) {
+            g.fill(0, 0, w, h, CinematicPanels.withAlpha(0xFFFFFFFF, 0.85f * (1 - t / 5f)));
+        }
+        // Shot 5: the domain has sealed (Malevolent Shrine has no title card: the shrine itself appears).
         float tt = t - s.titleAt;
-        if (tt >= 0) title(g, font, "DOMAIN EXPANSION", s.domains.get(0).toUpperCase(java.util.Locale.ROOT), w / 2, h / 2 - 8, tt, out, color);
+        if (tt >= 0 && !dev.rick.jjk.yuji.MalevolentShrine.INSTANCE.displayName().equals(s.domains.get(0))) title(g, font, "DOMAIN EXPANSION", s.domains.get(0).toUpperCase(java.util.Locale.ROOT), w / 2, h / 2 - 8, tt, out, color);
     }
 
     /**

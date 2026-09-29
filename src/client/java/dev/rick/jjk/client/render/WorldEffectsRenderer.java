@@ -453,6 +453,7 @@ public final class WorldEffectsRenderer {
         if (progress < 1f) {
             // Idle Death Gamble floods the ground white instead (and the sky with it as it seals).
             if (dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(d.definition)) GambleDomainRenderer.formation(d, progress, now);
+            else if (dev.rick.jjk.yuji.MalevolentShrine.ID.equals(d.definition)) ShrineDomainRenderer.formation(d, progress, now);
             else formationEdge(c, ps, d, progress, now + partial);
         }
         // Until the ceiling has closed the sky is still visible: the void only replaces it once it is sealed over.

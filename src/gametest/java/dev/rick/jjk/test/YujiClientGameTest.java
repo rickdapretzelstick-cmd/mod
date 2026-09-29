@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
+import dev.rick.jjk.config.JJKConfig;
 
 import java.util.Arrays;
 
@@ -102,6 +103,8 @@ public class YujiClientGameTest implements FabricClientGameTest {
             ctx.waitTicks(4);
             ctx.takeScreenshot("y12_sukuna_face");
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
+            // A side-on film camera from here, so the target isn't hidden behind him.
+            ctx.runOnClient(mc -> ShowcaseCamera.set(60, 7f, 2.4f, 3.5f));
             dummy(ctx, server, 7);
             in.pressMouse(0);
             ctx.waitTicks(3);
@@ -145,21 +148,37 @@ public class YujiClientGameTest implements FabricClientGameTest {
             ctx.takeScreenshot("y21_world_cutting_slash");
             ctx.waitTicks(40);
             server.runCommand("execute as @a run jjk restore now");
-            // Malevolent Shrine.
-            dummy(ctx, server, 5);
+            // Malevolent Shrine: the cut-in, the world going black, the grey reveal, the colour, the slashes.
+            dummy(ctx, server, 4);
+            server.runCommand("execute as @a at @s rotated ~ 0 run summon jjk:training_dummy ^2.5 ^ ^3");
+            // In front of him, looking back past him at where the shrine will stand.
+            ctx.runOnClient(mc -> ShowcaseCamera.set(165, 9f, 2.6f, -3f));
             in.pressKey(s4);
-            ctx.waitTicks(12);
-            ctx.takeScreenshot("y22_shrine_sign");
-            ctx.waitTicks(80);
-            ctx.takeScreenshot("y23_malevolent_shrine");
-            ctx.runOnClient(mc -> mc.player.setYRot(mc.player.getYRot() + 180));
+            ctx.waitTicks(8);
+            ctx.takeScreenshot("y22_shrine_cutin");
+            int startup = JJKConfig.get().yuji.shrineStartup, forming = JJKConfig.get().yuji.shrineFormationTicks;
+            ctx.waitTicks(startup - 8 + forming / 2);
+            ctx.takeScreenshot("y23_shrine_forming");
+            ctx.waitTicks(forming / 2 + 6);
+            ctx.takeScreenshot("y24_shrine_grey");
+            ctx.waitTicks(14);
+            ctx.takeScreenshot("y25_shrine_colour");
+            ctx.waitTicks(18);
+            ctx.takeScreenshot("y26_shrine_slashes");
+            ctx.waitTicks(3);
+            ctx.takeScreenshot("y27_shrine_slashes_b");
+            ctx.runOnClient(mc -> ShowcaseCamera.set(150, 14f, 5f, -6f));
             ctx.waitTicks(10);
-            ctx.takeScreenshot("y24_malevolent_shrine_temple");
-            ctx.waitTicks(20);
+            ctx.takeScreenshot("y28_shrine_wide");
+            ctx.runOnClient(mc -> ShowcaseCamera.off());
+            ctx.waitTicks(5);
+            ctx.takeScreenshot("y29_shrine_first_person_view");
+            ctx.waitTicks(10);
             server.runCommand("execute as @a run jjk domain cancel");
             server.runCommand("execute as @a run jjk awakening end");
             ctx.waitTicks(60);
             server.runCommand("execute as @a run jjk restore now");
+            ctx.runOnClient(mc -> ShowcaseCamera.off());
             ctx.waitTicks(10);
         }
     }

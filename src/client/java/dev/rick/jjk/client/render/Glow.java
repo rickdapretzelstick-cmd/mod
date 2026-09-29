@@ -182,6 +182,28 @@ public final class Glow {
         });
     }
 
+    /**
+     * A dark beam (alpha-blended, not additive) from the origin along +Z: solid along its middle, feathered to its edges.
+     * Additive light can't draw black; this can (Sukuna's slashes have black cores).
+     */
+    public static void darkBeam(SubmitNodeCollector c, PoseStack ps, float length, float width, float r, float g, float b, float a) {
+        c.submitCustomGeometry(ps, INK, (pose, buf) -> {
+            for (int k = 0; k < 2; k++) {
+                float wx = k == 0 ? width : 0, wy = k == 0 ? 0 : width;
+                // Taper at both ends so a slash comes to a point.
+                float cut = Math.min(length * 0.15f, width * 6);
+                buf.addVertex(pose, -wx, -wy, cut).setColor(r, g, b, 0f);
+                buf.addVertex(pose, 0, 0, 0).setColor(r, g, b, a);
+                buf.addVertex(pose, 0, 0, length).setColor(r, g, b, a);
+                buf.addVertex(pose, -wx, -wy, length - cut).setColor(r, g, b, 0f);
+                buf.addVertex(pose, 0, 0, 0).setColor(r, g, b, a);
+                buf.addVertex(pose, wx, wy, cut).setColor(r, g, b, 0f);
+                buf.addVertex(pose, wx, wy, length - cut).setColor(r, g, b, 0f);
+                buf.addVertex(pose, 0, 0, length).setColor(r, g, b, a);
+            }
+        });
+    }
+
     /** A glowing beam from the origin along +Z of the current pose, as two crossed soft quads. */
     public static void beam(SubmitNodeCollector c, PoseStack ps, float length, float width, float r, float g, float b, float a) {
         submit(c, ps, (pose, buf) -> {

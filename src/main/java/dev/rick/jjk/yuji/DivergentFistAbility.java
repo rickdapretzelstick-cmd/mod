@@ -166,7 +166,9 @@ public final class DivergentFistAbility extends Ability {
             boolean chaining = t != null && ys.chaining(t, now);
             int link = behind ? (chaining ? ys.chain + 1 : 1) : 0;
             boolean fourth = link >= cfg.blackFlashChainMax;
-            Anim.play(user, link > 0 ? CHAIN_ANIMS[level.getRandom().nextInt(CHAIN_ANIMS.length)] : "black_flash_punch");
+            // From behind it's one of three strikes at random (punch, uppercut, dropkick); the launch follows the strike.
+            int style = link > 0 ? level.getRandom().nextInt(CHAIN_ANIMS.length) : 0;
+            Anim.play(user, CHAIN_ANIMS[style]);
             Motion.set(user, HakariCombat.flat(user).scale(0.5));
             endAt = age + (fourth ? 30 : 12);
             if (t == null) {
@@ -193,7 +195,15 @@ public final class DivergentFistAbility extends Ability {
                 // On their back: stunned where they are, ready for the next one.
                 b.knockback(Knockback.directional(HakariCombat.flat(user), 0.2, 0.05)).hitstun(cfg.blackFlashChainStun).fx("hit_heavy", 1.2f);
             } else {
-                b.knockback(Knockback.directional(HakariCombat.flat(user), fourth ? 3.2 : 2.2, fourth ? 0.7 : 0.5)).hitstun(30)
+                double power = fourth ? 3.2 : 2.2, lift = fourth ? 0.7 : 0.5;
+                if (style == 1) {
+                    power *= 0.35;
+                    lift = fourth ? 1.9 : 1.4;
+                } else if (style == 2) {
+                    power *= 1.25;
+                    lift *= 0.4;
+                }
+                b.knockback(Knockback.directional(HakariCombat.flat(user), power, lift)).hitstun(30)
                         .status(CombatStatus.LAUNCHED, fourth ? 40 : 26).fx("hit_heavy", 1.6f);
             }
             HitResult r = HakariCombat.hit(b.build(), t);

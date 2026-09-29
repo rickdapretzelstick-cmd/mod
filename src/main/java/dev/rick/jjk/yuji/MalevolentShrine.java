@@ -69,7 +69,8 @@ public final class MalevolentShrine implements DomainDefinition {
     @Override
     public void applySureHit(DomainInstance domain, LivingEntity target, int ticksInside) {
         JJKConfig.Yuji cfg = JJKConfig.get().yuji;
-        if (ticksInside % Math.max(1, cfg.shrineSlashInterval) != 0) return;
+        // The shrine rises first; then the slashes never stop.
+        if (ticksInside <= cfg.shrineRevealTicks || ticksInside % Math.max(1, cfg.shrineSlashInterval) != 0) return;
         boolean guarding = Combat.isGuarding(target);
         float damage = guarding ? cfg.shrineBlockedDamage : cfg.shrineSlashDamage;
         // Through a guard the slashes can't finish anyone.
@@ -79,7 +80,8 @@ public final class MalevolentShrine implements DomainDefinition {
         if (damage <= 0) return;
         Hit.Builder b = Hit.builder(domain.owner, ID).type(ModDamageTypes.SURE_HIT).damage(damage)
                 .tag(AttackTag.SURE_HIT, AttackTag.TECHNIQUE, AttackTag.UNBLOCKABLE, AttackTag.BYPASS_INFINITY)
-                .origin(domain.center).knockback(Knockback.NONE).noComboScaling().hitstun(guarding ? 0 : 4);
+                // No stun: they can still move and guard (the only way to blunt it), they just can't escape it.
+                .origin(domain.center).knockback(Knockback.NONE).noComboScaling().hitstun(0);
         if (!guarding) b.tag(AttackTag.ULTIMATE);
         HitResolver.resolve(b.build(), target);
     }

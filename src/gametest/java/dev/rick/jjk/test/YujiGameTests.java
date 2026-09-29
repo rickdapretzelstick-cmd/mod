@@ -65,6 +65,7 @@ public class YujiGameTests {
         cfg.yuji.shrineStartup = 8;
         cfg.yuji.shrineFormationTicks = 20;
         cfg.yuji.shrineDuration = 200;
+        cfg.yuji.shrineRevealTicks = 10;
         // Kept inside one test's area.
         cfg.yuji.worldSlashLength = 13;
         cfg.yuji.worldSlashWidth = 5;
@@ -525,6 +526,7 @@ public class YujiGameTests {
             float open = start[0] - target.getHealth(), guarded = start[1] - guarder.getHealth();
             h.assertTrue(open >= 25, "a stream of Dismantles (" + open + ")");
             h.assertTrue(guarded > 0 && guarded < open * 0.4f, "the guard takes most of it (" + guarded + " vs " + open + ")");
+            h.assertTrue(!Combat.state(target).actionsLocked(), "the slashes don't stun: they can still move and guard");
             h.succeed();
         });
     }

@@ -50,7 +50,7 @@ final class YujiFx {
                     Vec3 side = new Vec3(-dir.z, 0, dir.x);
                     for (int k = -1; k <= 1; k += 2) {
                         Vec3 a = pos.add(0, 0.7, 0).add(side.scale(0.1 * k));
-                        Flashes.beam(a, a.subtract(dir.scale(3.5)).add(0, -0.4, 0), 0.06f, BF_RED, 0.9f, 10, now);
+                        line(a, a.subtract(dir.scale(3.5)).add(0, -0.4, 0), 0.06f, BF_RED, 0.9f, 10, now);
                     }
                     Flashes.ground(groundBelow(level, pos), 0.3f, 2f, CE_LIGHT, 0.5f, 7, now);
                     burst(level, pos.add(0, -0.8, 0), q(6), 0.12, Sprite.SMOKE, GREY, 0.45f, 12);
@@ -81,7 +81,7 @@ final class YujiFx {
                 sound("crushing_impact", pos, 1.2f, 1f);
                 if (drawn) {
                     Flashes.ground(groundBelow(level, pos), 0.4f, 3f, CE, 0.9f, 10, now);
-                    Flashes.beam(pos, pos.add(0, 3, 0), 0.3f, CE_LIGHT, 0.9f, 8, now);
+                    line(pos, pos.add(0, 3, 0), 0.3f, CE_LIGHT, 0.9f, 8, now);
                     debris(level, pos, q(14), 0.4);
                 }
                 distanceShake(pos, 16, 0.5f);
@@ -101,7 +101,7 @@ final class YujiFx {
             }
             case "cursed_strikes_dive" -> {
                 sound("cursed_strikes_slide", pos, 1f, 1.1f);
-                if (drawn) Flashes.beam(pos, pos.subtract(dir.scale(3)), 0.25f, CE_LIGHT, 0.7f, 8, now);
+                if (drawn) line(pos, pos.subtract(dir.scale(3)), 0.25f, CE_LIGHT, 0.7f, 8, now);
             }
             case "cursed_strikes_impact" -> {
                 // The ground-impact vortex off the dropkick (GIF): white whirls and a cyan crater.
@@ -127,7 +127,7 @@ final class YujiFx {
             case "crushing_dash" -> {
                 sound("crushing_fist", pos, 1f, 1f);
                 if (drawn) {
-                    Flashes.beam(pos, pos.subtract(dir.scale(2.5)), 0.2f, CE, 0.8f, 8, now);
+                    line(pos, pos.subtract(dir.scale(2.5)), 0.2f, CE, 0.8f, 8, now);
                     for (int i = 0; i < q(10); i++) add(level, pos.subtract(dir.scale(RNG.nextDouble() * 2)), randomUnit().scale(0.05), Sprite.GLOW, CE, 0.8f, 0.14f, 0.02f, 10);
                 }
             }
@@ -244,7 +244,7 @@ final class YujiFx {
             }
             case "manji_swoop" -> {
                 sound("cursed_strikes_spin", pos, 1f, 1.1f);
-                if (drawn) Flashes.beam(pos, pos.add(dir.normalize().scale(2)), 0.3f, WHITE, 0.5f, 6, now);
+                if (drawn) line(pos, pos.add(dir.normalize().scale(2)), 0.3f, WHITE, 0.5f, 6, now);
             }
             case "manji_hit" -> {
                 sound("manji_swing", pos, 1f, 1f);
@@ -307,7 +307,7 @@ final class YujiFx {
                     for (int i = 0; i < 6; i++) {
                         double a = Math.toRadians(i * 60 + 30), tilt = 0.5 + RNG.nextDouble() * 0.6;
                         Vec3 d = new Vec3(Math.cos(a), tilt, Math.sin(a)).normalize();
-                        Flashes.beam(pos, pos.add(d.scale(2.2 + RNG.nextDouble())), 0.35f, BF_RED, 1f, 14, now);
+                        line(pos, pos.add(d.scale(2.2 + RNG.nextDouble())), 0.35f, BF_RED, 1f, 14, now);
                     }
                     Flashes.flash(pos, 3f, 0.6f, BF_RED, 1f, 8, now);
                     for (int i = 0; i < q(40); i++) {
@@ -319,9 +319,13 @@ final class YujiFx {
                 if (mine) ScreenEffects.flash(0x60800010, 10);
             }
             case "sukuna_aura" -> {
-                if (drawn) for (int i = 0; i < q(4); i++) {
-                    Vec3 at = pos.add(gauss(0.35), -0.8 + RNG.nextDouble() * 1.6, gauss(0.35));
-                    add(level, at, new Vec3(gauss(0.01), 0.03, gauss(0.01)), Sprite.SMOKE, i % 2 == 0 ? AURA : BLOOD, 0.55f, 0.35f, 0.7f, 18).fadeIn();
+                // The red smoke that never stops pouring off him (GIF), following him as he moves.
+                var owner = level.getEntity(p.entityId());
+                Vec3 base = owner != null ? owner.position().add(0, 1, 0) : pos;
+                if (drawn) for (int i = 0; i < q(6); i++) {
+                    Vec3 at = base.add(gauss(0.3), -0.9 + RNG.nextDouble() * 1.8, gauss(0.3));
+                    add(level, at, new Vec3(gauss(0.012), 0.035 + RNG.nextDouble() * 0.02, gauss(0.012)), Sprite.SMOKE, i % 3 == 0 ? BLOOD : AURA,
+                            0.6f, 0.3f, 0.75f, 16 + RNG.nextInt(8)).fadeIn();
                 }
             }
             case "sukuna_end" -> {
@@ -359,11 +363,11 @@ final class YujiFx {
                     // A storm of cuts, and the frame goes red and black (GIF frame 7).
                     for (int i = 0; i < (fin ? 14 : 9); i++) {
                         Vec3 d = randomUnit();
-                        Flashes.beam(pos.subtract(d.scale(1.6)), pos.add(d.scale(1.6)), 0.05f, i % 2 == 0 ? BF_RED : WHITE, 1f, 6, now + i / 3);
+                        line(pos.subtract(d.scale(1.6)), pos.add(d.scale(1.6)), 0.05f, i % 2 == 0 ? BF_RED : WHITE, 1f, 6, now + i / 3);
                     }
                     blood(level, pos, dir, q(fin ? 30 : 16));
                 }
-                if (mc.player != null && mc.player.position().distanceTo(pos) < 24) ScreenEffects.impact(5, 1);
+                if (mc.player != null && mc.player.position().distanceTo(pos) < 24) ScreenEffects.impact(3, 1);
             }
             case "cleave_hit" -> victimFeedback(p, 0.8f);
             case "cleave_dice" -> {
@@ -393,8 +397,8 @@ final class YujiFx {
                 sound("dismantle_finish", pos, 1.5f, 0.8f);
                 sound("dismantle_slash", pos, 1.5f, 0.7f);
                 Vec3 end = pos.add(dir.normalize().scale(s));
-                Flashes.beam(pos, end, 0.25f, WHITE, 1f, 10, now);
-                Flashes.beam(pos, end, 0.1f, INK, 1f, 12, now);
+                line(pos, end, 0.25f, WHITE, 1f, 10, now);
+                line(pos, end, 0.1f, INK, 1f, 12, now);
                 if (drawn) for (int i = 0; i < q(10); i++) debris(level, pos.lerp(end, RNG.nextDouble()), 3, 0.35);
             }
             case "dismantle_finisher", "dismantle_dismember", "dismantle_halve", "world_slash_halve" -> {
@@ -419,11 +423,11 @@ final class YujiFx {
                 Vec3 side = new Vec3(-f.z, 0, f.x).normalize();
                 Vec3 mid = pos.add(f.scale(s * 0.5));
                 float half = s * 0.6f;
-                Flashes.beam(mid.subtract(side.scale(half)), mid.add(side.scale(half)), 0.9f, INK, 1f, 16, now);
-                Flashes.beam(mid.subtract(side.scale(half)), mid.add(side.scale(half)), 0.25f, WHITE, 1f, 10, now);
+                line(mid.subtract(side.scale(half)), mid.add(side.scale(half)), 0.9f, INK, 1f, 16, now);
+                line(mid.subtract(side.scale(half)), mid.add(side.scale(half)), 0.25f, WHITE, 1f, 10, now);
                 for (int i = 0; i < 12; i++) {
                     Vec3 a = mid.add(side.scale((RNG.nextDouble() - 0.5) * half * 2)).add(0, gauss(0.3), 0);
-                    Flashes.beam(a, a.add(f.scale(-2 - RNG.nextDouble() * 4)), 0.08f, WHITE, 0.9f, 8, now + RNG.nextInt(4));
+                    line(a, a.add(f.scale(-2 - RNG.nextDouble() * 4)), 0.08f, WHITE, 0.9f, 8, now + RNG.nextInt(4));
                 }
                 if (mc.player != null && mc.player.position().distanceTo(pos) < s * 1.5) {
                     ScreenEffects.impact(8, 2);
@@ -447,19 +451,19 @@ final class YujiFx {
                 sound("open_arrow", pos, 1.2f, 1f);
                 sound("open_idle", pos, 1f, 1f);
                 if (drawn) {
-                    Flashes.beam(pos, pos.add(dir.scale(1.6)), 0.15f, FIRE_CORE, 1f, 16, now);
+                    line(pos, pos.add(dir.scale(1.6)), 0.15f, FIRE_CORE, 1f, 16, now);
                     fire(level, pos.add(dir.scale(0.8)), q(16), 0.4);
                 }
             }
             case "open_fire" -> {
                 sound("open_fire", pos, 1.6f, 1f);
-                Flashes.beam(pos, pos.add(dir.scale(10)), 0.4f, FIRE_CORE, 1f, 6, now);
+                line(pos, pos.add(dir.scale(10)), 0.4f, FIRE_CORE, 1f, 6, now);
                 if (drawn) fire(level, pos.add(dir), q(30), 1.2);
                 if (mine) ScreenEffects.fovPunch(0.08f);
             }
             case "open_trail" -> {
                 if (drawn) {
-                    Flashes.beam(pos, pos.subtract(dir.scale(3)), 0.3f, FIRE, 0.9f, 5, now);
+                    line(pos, pos.subtract(dir.scale(3)), 0.3f, FIRE, 0.9f, 5, now);
                     fire(level, pos, q(6), 0.15);
                 }
             }
@@ -469,8 +473,8 @@ final class YujiFx {
                 float r = Math.max(1.5f, s);
                 Vec3 g = groundBelow(level, pos);
                 Flashes.flash(pos, r * 1.5f, r * 0.5f, FIRE_CORE, 1f, 10, now);
-                Flashes.beam(g, g.add(0, 14, 0), r * 0.9f, FIRE, 0.95f, 26, now);
-                Flashes.beam(g, g.add(0, 16, 0), r * 0.45f, FIRE_CORE, 1f, 22, now);
+                line(g, g.add(0, 14, 0), r * 0.9f, FIRE, 0.95f, 26, now);
+                line(g, g.add(0, 16, 0), r * 0.45f, FIRE_CORE, 1f, 22, now);
                 Flashes.ground(g, 0.5f, r * 2f, FIRE, 0.9f, 30, now);
                 if (drawn) {
                     for (int i = 0; i < q(90); i++) {
@@ -517,7 +521,7 @@ final class YujiFx {
                 sound("rush_break", pos, 1.3f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 2f, 0.4f, WHITE, 1f, 5, now);
-                    Flashes.beam(pos.add(0, -1, 0), pos.add(0, 3, 0), 0.2f, WHITE, 0.9f, 6, now);
+                    line(pos.add(0, -1, 0), pos.add(0, 3, 0), 0.2f, WHITE, 0.9f, 6, now);
                     for (int i = 0; i < 3; i++) Flashes.ring(pos, 0.4f, 2f + i, WHITE, 0.5f, 8, now + i);
                 }
                 victimFeedback(p, 0.8f);
@@ -555,6 +559,12 @@ final class YujiFx {
         }
     }
 
+    /** A beam; black ones are drawn alpha-blended so they actually show (additive light can't be black). */
+    static void line(Vec3 a, Vec3 b, float width, float[] c, float alpha, int life, long now) {
+        if (c == INK || c == BLOOD) Flashes.darkBeam(a, b, width * 1.2f, c, alpha, life, now);
+        else Flashes.beam(a, b, width, c, alpha, life, now);
+    }
+
     /** A curved slash: an arc of beams across {@code center}, facing along {@code dir}, tilted by {@code tilt}. */
     static void crescent(Vec3 center, Vec3 dir, float radius, float width, float[] c, float alpha, int life, long now, float tilt) {
         Vec3 d = dir.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : dir.normalize();
@@ -568,7 +578,7 @@ final class YujiFx {
         for (int i = 0; i <= 8; i++) {
             double t = (i / 8.0 - 0.5) * 2.4;
             Vec3 at = center.add(axis.scale(Math.sin(t) * radius)).add(bend.scale((Math.cos(t) - 0.7) * radius * 0.35));
-            if (prev != null) Flashes.beam(prev, at, width * (float) Math.max(0.2, Math.cos(t * 0.8)), c, alpha, life, now);
+            if (prev != null) line(prev, at, width * (float) Math.max(0.2, Math.cos(t * 0.8)), c, alpha, life, now);
             prev = at;
         }
     }
@@ -583,7 +593,7 @@ final class YujiFx {
             Vec3 d = randomUnit().add(dir.lengthSqr() > 1e-4 ? dir.normalize().scale(0.5) : Vec3.ZERO).normalize();
             for (int k = 0; k < 3; k++) {
                 Vec3 b = a.add(d.scale((0.5 + RNG.nextDouble() * 0.8) * s)).add(gauss(0.2), gauss(0.2), gauss(0.2));
-                Flashes.beam(a, b, 0.07f * s, i % 3 == 0 ? INK : BF_RED, 1f, 6 + k, now);
+                line(a, b, 0.07f * s, i % 3 == 0 ? INK : BF_RED, 1f, 6 + k, now);
                 a = b;
             }
         }
@@ -594,10 +604,10 @@ final class YujiFx {
             float[][] rainbow = {{1f, 0.2f, 0.2f}, {1f, 0.7f, 0.2f}, {1f, 1f, 0.3f}, {0.3f, 1f, 0.4f}, {0.3f, 0.7f, 1f}, {0.7f, 0.3f, 1f}};
             for (int i = 0; i < rainbow.length; i++) {
                 Vec3 d = randomUnit();
-                Flashes.beam(pos, pos.add(d.scale(5 * s)), 0.12f * s, rainbow[i], 0.9f, 10, now);
+                line(pos, pos.add(d.scale(5 * s)), 0.12f * s, rainbow[i], 0.9f, 10, now);
             }
             Vec3 side = dir.lengthSqr() > 1e-4 ? new Vec3(-dir.z, 0, dir.x).normalize() : new Vec3(1, 0, 0);
-            Flashes.beam(pos.subtract(side.scale(8)), pos.add(side.scale(8)), 0.25f, CE_LIGHT, 1f, 8, now);
+            line(pos.subtract(side.scale(8)), pos.add(side.scale(8)), 0.25f, CE_LIGHT, 1f, 8, now);
             impactStar(pos, dir, 16, 3f * s, 0.1f, CE, now);
         }
     }

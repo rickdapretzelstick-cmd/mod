@@ -76,6 +76,55 @@ public final class CinematicPanels {
     }
 
     /**
+     * Malevolent Shrine's band (JJS GIF): the inside of the shrine's mouth — dark crimson, a red pillar at either end, a row
+     * of teeth hanging from the top edge and another rising from the bottom, gums between — with the caster's close-up.
+     */
+    public static void shrineBand(GuiGraphicsExtractor g, Band b, int w, int entityId, float faceX, float slideX, float time) {
+        Matrix3x2fStack pose = g.pose();
+        pose.pushMatrix();
+        pose.translate(slideX, 0);
+        skew(pose, w);
+        int top = Math.round(b.top), bot = Math.round(b.bottom), ih = bot - top;
+        g.fillGradient(-40, top, w + 40, bot, 0xFF1C0205, 0xFF4A0610);
+        // The throat: a darker hollow in the middle.
+        g.fillGradient(-40, top + ih / 3, w + 40, bot - ih / 3, 0xFF0A0002, 0xFF120104);
+        // Red pillars framing it.
+        for (int px : new int[] {Math.round(w * 0.06f), Math.round(w * 0.9f)}) {
+            g.fill(px, top, px + Math.round(w * 0.04f), bot, 0xFFC0101C);
+            g.fill(px, top, px + 2, bot, 0xFFE83040);
+        }
+        // Gums and two rows of teeth, bigger toward the middle.
+        int gum = Math.max(3, ih / 10);
+        g.fill(-40, top, w + 40, top + gum, 0xFFB85A6E);
+        g.fill(-40, bot - gum, w + 40, bot, 0xFFB85A6E);
+        int n = 16;
+        float tw = (w + 80f) / n;
+        for (int i = 0; i < n; i++) {
+            float x0 = -40 + i * tw + 2, x1 = x0 + tw - 4;
+            float mid = Mth.sin((i + 0.5f) / n * Mth.PI);
+            int th = Math.round(ih * (0.07f + 0.1f * mid));
+            g.fill(Math.round(x0), top + gum, Math.round(x1), top + gum + th, 0xFFF4F0EA);
+            g.fill(Math.round(x1) - 2, top + gum, Math.round(x1), top + gum + th, 0xFFC8BEB6);
+            g.fill(Math.round(x0 + tw * 0.5f), bot - gum - th, Math.round(x1 + tw * 0.5f), bot - gum, 0xFFEAE4DC);
+        }
+        // Red speed lines drifting through the dark.
+        java.util.Random r = new java.util.Random(entityId * 7919L);
+        for (int i = 0; i < 18; i++) {
+            int y = top + ih / 3 + r.nextInt(Math.max(1, ih / 3));
+            float len = w * (0.15f + r.nextFloat() * 0.35f);
+            float x = (r.nextFloat() * (w + len) + time * (18 + r.nextFloat() * 30)) % (w + len) - len;
+            g.fill(Math.round(x), y, Math.round(x + len), y + 1, ((40 + r.nextInt(80)) << 24) | 0xFF4050);
+        }
+        pose.popMatrix();
+        // The close-up in front of the teeth, as in the GIF.
+        int half = Math.round((b.bottom - b.top) * 0.75f);
+        int px0 = Math.round(faceX + slideX) - half, px1 = Math.round(faceX + slideX) + half;
+        int clipTop = (int) Math.ceil(Math.max(b.topAt(px0 - slideX, w), b.topAt(px1 - slideX, w))) + gum;
+        int clipBot = (int) Math.floor(Math.min(b.bottomAt(px0 - slideX, w), b.bottomAt(px1 - slideX, w))) - gum;
+        closeUp(g, entityId, px0, clipTop, px1, clipBot);
+    }
+
+    /**
      * Motion blur for a band sliding sideways: its edges smear out along the direction of travel ({@code dir}, -1 left or
      * 1 right) in proportion to {@code speed} (pixels per tick), with a white cutting edge on the leading side and
      * speed lines streaking ahead of it.

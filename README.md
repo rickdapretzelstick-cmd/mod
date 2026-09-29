@@ -164,7 +164,8 @@ sound is the JJS audio. 85 max HP.
 - **Divergent Fist** (18s): a blow, then the cursed energy lagging behind it launches them a beat later (a stun instead
   if it interrupts what they were doing). **Black Flash**: press it again while his body flashes white (the cast bar
   reads BLACK FLASH!). **Black Flash Chain**: a Black Flash on someone's back stuns them and keeps Divergent Fist off
-  cooldown; up to four in a row, the fourth a heavy one ("KOKUSEN"), and his side dash comes back after each.
+  cooldown; up to four in a row, the fourth a heavy one ("KOKUSEN"), and his side dash comes back after each. Each link
+  is a punch, an uppercut or a dropkick at random, and the last one's launch follows it (away, skyward or far).
   *Finishers*: the body shatters; a finishing Black Flash sends them extremely far.
 - **Manji Kick** (20s): 0.6s counter stance. A melee hit is answered with an upward roundhouse to the side; a bullet is
   dodged and he swoops in on the shooter. *Finisher*: a leg lock, a spin and a slam that crushes them.
@@ -185,8 +186,17 @@ sound is the JJS audio. 85 max HP.
     flame goes up where it lands, lifting everyone in it (30, unblockable).
   - **Rush** (15s): straight ahead at incredible speed; whoever he hits is hurled, chased down, kneed skyward and
     slammed back down.
-  - **Malevolent Shrine** (120s, 18s): a black void over a pool of blood with the shrine in its middle; its sure hit
-    is a ceaseless stream of Dismantles (2 each, 218 over the domain; 0.5 through a guard, which can't be finished).
+  - **Malevolent Shrine** (120s, 18s): played like the JJS GIF. A cut-in of him in a band of teeth and red pillars, the
+    world going black around you, then a white flash as it seals. The camera turns to face him and the shrine rises
+    behind him, grey and colourless. It stands on a stone platform: red pillars, a grinning mouth filling the doorway,
+    brick eaves and a hipped roof. Its colour floods in with a red flash, over a black void and a pool of blood. Then
+    the sure hit: a ceaseless stream of Dismantles, white slashes with black cores tearing through the world and across
+    your screen (2 each, 218 over the domain). The slashes don't stun, so you can still move and guard. Guarding is
+    the only way to blunt them: 0.5 each, and they can't finish you.
+
+![Malevolent Shrine opening](docs/screenshots/yuji_shrine_cutin.png)
+![The shrine rising](docs/screenshots/yuji_shrine_reveal.png)
+![Malevolent Shrine](docs/screenshots/yuji_shrine_interior.png)
 
 ## HUD and Vanilla Minecraft mode
 

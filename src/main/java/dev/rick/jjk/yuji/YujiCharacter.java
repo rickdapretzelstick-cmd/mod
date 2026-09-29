@@ -171,7 +171,7 @@ public final class YujiCharacter extends JJKCharacter {
         CombatState state = Combat.state(e);
         if (caster.isAwakened()) {
             if (state.get(CombatStatus.SUKUNA) < 20) state.set(CombatStatus.SUKUNA, 60);
-            if (e.tickCount % 14 == 0 && e.level() instanceof ServerLevel level) {
+            if (e.tickCount % 5 == 0 && e.level() instanceof ServerLevel level) {
                 Fx.play(level, "sukuna_aura", e.position().add(0, 1, 0), Vec3.ZERO, 1f, e.getId());
             }
         } else if (state.has(CombatStatus.SUKUNA)) {

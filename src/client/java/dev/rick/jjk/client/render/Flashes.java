@@ -26,7 +26,7 @@ import java.util.List;
  * Every effect can start after a delay, so impacts can be sequenced (compression → release → aftershock).
  */
 public final class Flashes {
-    public enum Type { FLASH, RING, RIPPLE, GROUND, LENS, BEAM }
+    public enum Type { FLASH, RING, RIPPLE, GROUND, LENS, BEAM, DARK_BEAM }
 
     private static final List<Effect> ACTIVE = new ArrayList<>();
     private static final int MAX = 160;
@@ -67,6 +67,11 @@ public final class Flashes {
     /** Beam from {@code a} to {@code b}. */
     public static void beam(Vec3 a, Vec3 b, float width, float[] c, float alpha, int life, long start) {
         add(new Effect(Type.BEAM, a, b.subtract(a), c, 1, 1, alpha, life, start, width));
+    }
+
+    /** A dark (alpha-blended, not additive) beam: the black cores of Sukuna's slashes, visible against anything. */
+    public static void darkBeam(Vec3 a, Vec3 b, float width, float[] c, float alpha, int life, long start) {
+        add(new Effect(Type.DARK_BEAM, a, b.subtract(a), c, 1, 1, alpha, life, start, width));
     }
 
     public static void clear() {
@@ -115,6 +120,16 @@ public final class Flashes {
                 case LENS -> {
                     Vector3f toCam = new Vector3f((float) (cam.x - f.pos.x), (float) (cam.y - f.pos.y), (float) (cam.z - f.pos.z));
                     Glow.sphere(c, ps, Math.max(0.05f, size), col[0], col[1], col[2], a, toCam, true);
+                }
+                case DARK_BEAM -> {
+                    Vec3 d = f.dir;
+                    float len = (float) d.length();
+                    if (len > 1e-3) {
+                        Vec3 n = d.scale(1 / len);
+                        ps.rotate(Axis.YP.rotation((float) Math.atan2(n.x, n.z)));
+                        ps.rotate(Axis.XP.rotation((float) Math.asin(Mth.clamp(-n.y, -1, 1))));
+                        Glow.darkBeam(c, ps, len, f.width * (1 - t * 0.4f), col[0], col[1], col[2], Math.min(1f, f.alpha * (1 - t * t)));
+                    }
                 }
                 case BEAM -> {
                     Vec3 d = f.dir;

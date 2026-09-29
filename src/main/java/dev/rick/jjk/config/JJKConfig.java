@@ -837,6 +837,8 @@ public final class JJKConfig {
         public int shrineFormationTicks = 40;
         /** 109 slashes over the 18 seconds, 2 each (0.5 through a guard, which also can't be executed). */
         public int shrineSlashInterval = 3;
+        /** The shrine rises and its colour floods in before the slashes begin (GIF). */
+        public int shrineRevealTicks = 26;
         public float shrineSlashDamage = 2f;
         public float shrineBlockedDamage = 0.5f;
     }
