@@ -100,10 +100,11 @@ public final class PoseLibrary {
         add(AnimDef.builder("infinity_on", 18).blend(2, 5)
                 .key(RIGHT_ARM, 0, -20, 0, 5).key(RIGHT_ARM, 4, -115, -15, 0).key(RIGHT_ARM, 12, -110, -15, 0).key(RIGHT_ARM, 18, -20, 0, 5)
                 .key(HEAD, 4, 5, 0, 0).key(HEAD, 18, 0, 0, 0).build());
-        add(AnimDef.builder("blue_cast", 16).blend(1.5f, 5)
-                .key(RIGHT_ARM, 0, -40, 0, 20).key(RIGHT_ARM, 4, -95, -12, 0).key(RIGHT_ARM, 12, -92, -10, 0).key(RIGHT_ARM, 16, -40, 0, 8)
-                .key(LEFT_ARM, 0, 0, 0, -5).key(LEFT_ARM, 16, 0, 0, -5)
-                .key(BODY, 4, 0, -12, 0).key(BODY, 16, 0, 0, 0).key(HEAD, 4, 3, 0, 0).build());
+        add(AnimDef.builder("blue_cast", 20).blend(1.5f, 5)
+                // Lapse Blue (JJS GIF): the right hand reaches out at the target and stays there through the pull.
+                .key(RIGHT_ARM, 0, -40, 0, 20).key(RIGHT_ARM, 4, -95, -12, 0).key(RIGHT_ARM, 17, -92, -10, 0).key(RIGHT_ARM, 20, -40, 0, 8)
+                .key(LEFT_ARM, 0, 0, 0, -5).key(LEFT_ARM, 20, 0, 0, -5)
+                .key(BODY, 4, 0, -14, 0).key(BODY, 17, 0, -12, 0).key(BODY, 20, 0, 0, 0).key(HEAD, 4, 3, 0, 0).build());
         add(AnimDef.builder("red_charge", 6).hold().blend(1.5f, 3)
                 .key(RIGHT_ARM, 0, -60, 0, 10).key(RIGHT_ARM, 6, -92, -6, 0)
                 .key(LEFT_ARM, 0, -30, 0, -5).key(LEFT_ARM, 6, -78, 42, 0)
@@ -134,12 +135,16 @@ public final class PoseLibrary {
                 .key(RIGHT_ARM, 0, 30, 0, 20).key(RIGHT_ARM, 10, -60, 0, 10).key(LEFT_ARM, 0, -60, 20, -10).key(LEFT_ARM, 10, -30, 0, -5)
                 .key(BODY, 0, 12, 20, 0).key(BODY, 10, 0, 0, 0).build());
         // Awakening: right hand reaches up to the blindfold, drags it down, then the arms throw wide as the energy erupts.
-        add(AnimDef.builder("awaken", 34).blend(2, 6)
-                .key(RIGHT_ARM, 0, -20, 0, 10).key(RIGHT_ARM, 6, -150, -35, 0).key(RIGHT_ARM, 11, -150, -35, 0).key(RIGHT_ARM, 15, -60, -20, 10)
-                .key(RIGHT_ARM, 19, -70, 0, 75).key(RIGHT_ARM, 30, -60, 0, 70).key(RIGHT_ARM, 34, 0, 0, 5)
-                .key(LEFT_ARM, 0, 0, 0, -5).key(LEFT_ARM, 15, 0, 0, -8).key(LEFT_ARM, 19, -70, 0, -75).key(LEFT_ARM, 30, -60, 0, -70).key(LEFT_ARM, 34, 0, 0, -5)
-                .key(HEAD, 0, 0, 0, 0).key(HEAD, 8, 15, 0, 0).key(HEAD, 15, 10, 0, 0).key(HEAD, 19, -25, 0, 0).key(HEAD, 34, 0, 0, 0)
-                .key(BODY, 15, 5, 0, 0).key(BODY, 19, -12, 0, 0).key(BODY, 34, 0, 0, 0).build());
+        add(AnimDef.builder("awaken", 50).blend(2, 6)
+                // Six Eyes (JJS GIF): a hand to the forehead pushes the blindfold up and off, the arm comes down across the chest,
+                // the fist winds back and punches into the open left palm ("...a little crazy."), then back to a relaxed stance.
+                .key(RIGHT_ARM, 0, -10, 0, 8).key(RIGHT_ARM, 7, -168, -20, -28).key(RIGHT_ARM, 12, -175, -10, -20)
+                .key(RIGHT_ARM, 17, -95, 0, -40).key(RIGHT_ARM, 21, -45, 15, 25).key(RIGHT_ARM, 24, -88, 0, -32)
+                .key(RIGHT_ARM, 38, -86, 0, -30).key(RIGHT_ARM, 46, 0, 0, 5)
+                .key(LEFT_ARM, 0, 0, 0, -5).key(LEFT_ARM, 14, 0, 0, -6).key(LEFT_ARM, 19, -82, 0, 30).key(LEFT_ARM, 38, -84, 0, 32).key(LEFT_ARM, 46, 0, 0, -5)
+                .key(HEAD, 0, 0, 0, 0).key(HEAD, 7, 12, 0, 0).key(HEAD, 12, -12, 0, 0).key(HEAD, 24, 4, 0, 0).key(HEAD, 38, 0, 0, 0)
+                .key(BODY, 0, 0, 0, 0).key(BODY, 12, -4, 0, 0).key(BODY, 21, 0, 18, 0).key(BODY, 24, 6, -8, 0).key(BODY, 38, 2, -4, 0).key(BODY, 46, 0, 0, 0)
+                .build());
         // Max Blue: both hands forward, gathering the attraction between them.
         add(AnimDef.builder("max_blue_cast", 22).blend(1.5f, 6)
                 .key(RIGHT_ARM, 0, -40, 0, 30).key(RIGHT_ARM, 8, -100, -25, 0).key(RIGHT_ARM, 14, -95, -15, 0).key(RIGHT_ARM, 22, -30, 0, 8)
@@ -266,10 +271,11 @@ public final class PoseLibrary {
                 .key(BODY, 0, 0, 10, 0).key(BODY, 8, -12, -10, 0).key(BODY, 12, 0, 0, 0)
                 .key(RIGHT_ARM, 0, -60, 0, 20).key(RIGHT_ARM, 8, 20, 0, 40).key(LEFT_ARM, 0, -80, 0, -10).key(LEFT_ARM, 8, -30, 0, -50).build());
         // Rapid Punches: the spinning kick that locks them, the barrage, the heavy punches, the final blow.
-        add(AnimDef.builder("spin_kick", 10).blend(0.5f, 3)
-                .key(BODY, 0, 0, 0, 0).key(BODY, 3, 0, 120, 0).key(BODY, 6, 0, 300, 0).key(BODY, 10, 0, 360, 0)
-                .key(RIGHT_LEG, 0, 0, 0, 0).key(RIGHT_LEG, 3, -70, 0, 60).key(RIGHT_LEG, 7, -70, 0, 60).key(RIGHT_LEG, 10, 0, 0, 0)
-                .key(RIGHT_ARM, 3, 0, 0, 70).key(LEFT_ARM, 3, 0, 0, -70).key(RIGHT_ARM, 10, -40, 0, 10).key(LEFT_ARM, 10, -40, 0, -10).build());
+        add(AnimDef.builder("spin_kick", 13).blend(0.5f, 3)
+                // Rapid Punches (JJS GIF): a full spinning roundhouse, the leg out level, landing on the target at the end.
+                .key(BODY, 0, 0, 0, 0).key(BODY, 4, 0, 90, 0).key(BODY, 8, 0, 250, 0).key(BODY, 11, 0, 360, 0).key(BODY, 13, 0, 360, 0)
+                .key(RIGHT_LEG, 0, 0, 0, 0).key(RIGHT_LEG, 3, -40, 0, 30).key(RIGHT_LEG, 6, -85, 0, 75).key(RIGHT_LEG, 11, -85, 0, 75).key(RIGHT_LEG, 13, 0, 0, 0)
+                .key(RIGHT_ARM, 4, -20, 0, 80).key(LEFT_ARM, 4, -20, 0, -80).key(RIGHT_ARM, 13, -60, 0, 10).key(LEFT_ARM, 13, -60, 0, -10).build());
         AnimDef.Builder barrage = AnimDef.builder("rapid_barrage", 32).blend(1, 2);
         for (int t = 0; t <= 32; t += 2) {
             boolean r = (t / 2) % 2 == 0;
@@ -291,19 +297,22 @@ public final class PoseLibrary {
                 .key(BODY, 0, 5, 40, 0).key(BODY, 4, 12, -40, 0).key(BODY, 14, 0, 0, 0)
                 .key(RIGHT_LEG, 4, 25, 0, 0).key(LEFT_LEG, 4, -25, 0, 0).key(RIGHT_LEG, 14, 0, 0, 0).key(LEFT_LEG, 14, 0, 0, 0).build());
         // Twofold Kick: the rising kick, then the second kick that bounces them higher.
-        add(AnimDef.builder("twofold_1", 12).blend(0.5f, 3)
-                .key(RIGHT_LEG, 0, 15, 0, 0).key(RIGHT_LEG, 5, -160, 0, 0).key(RIGHT_LEG, 12, -60, 0, 0)
-                .key(BODY, 0, 10, 0, 0).key(BODY, 5, -20, 0, 0).key(BODY, 12, -5, 0, 0)
-                .key(RIGHT_ARM, 5, 30, 0, 40).key(LEFT_ARM, 5, 30, 0, -40).build());
-        add(AnimDef.builder("twofold_2", 12).blend(0.5f, 4)
-                .key(LEFT_LEG, 0, 10, 0, 0).key(LEFT_LEG, 3, -170, 0, 0).key(LEFT_LEG, 12, 0, 0, 0)
-                .key(RIGHT_LEG, 0, -60, 0, 0).key(RIGHT_LEG, 12, 0, 0, 0)
-                .key(BODY, 0, 0, 0, 0).key(BODY, 3, -30, 0, 0).key(BODY, 12, 0, 0, 0)
-                .key(RIGHT_ARM, 3, 40, 0, 50).key(LEFT_ARM, 3, 40, 0, -50).key(RIGHT_ARM, 12, 0, 0, 5).key(LEFT_ARM, 12, 0, 0, -5).build());
+        add(AnimDef.builder("twofold_1", 14).blend(0.5f, 3)
+                // Twofold Kick (JJS GIF): the leg whips up from low into a rising kick (contact on the 8th tick).
+                .key(RIGHT_LEG, 0, 25, 0, 0).key(RIGHT_LEG, 5, 30, 0, 0).key(RIGHT_LEG, 8, -165, 0, 0).key(RIGHT_LEG, 14, -60, 0, 0)
+                .key(BODY, 0, 12, 20, 0).key(BODY, 5, 15, 25, 0).key(BODY, 8, -22, -10, 0).key(BODY, 14, -5, 0, 0)
+                .key(RIGHT_ARM, 5, 20, 0, 20).key(RIGHT_ARM, 8, 30, 0, 45).key(LEFT_ARM, 5, -60, 0, -20).key(LEFT_ARM, 8, 30, 0, -45).build());
+        add(AnimDef.builder("twofold_2", 12).blend(0.3f, 4)
+                // The second kick: a spinning hook that meets the anchored target at once, then the follow-through.
+                .key(BODY, 0, -10, -120, 0).key(BODY, 2, -20, 0, 0).key(BODY, 6, -10, 60, 0).key(BODY, 12, 0, 0, 0)
+                .key(LEFT_LEG, 0, -120, 0, 0).key(LEFT_LEG, 2, -175, 0, 0).key(LEFT_LEG, 7, -60, 0, 0).key(LEFT_LEG, 12, 0, 0, 0)
+                .key(RIGHT_LEG, 0, 20, 0, 0).key(RIGHT_LEG, 12, 0, 0, 0)
+                .key(RIGHT_ARM, 2, 40, 0, 60).key(LEFT_ARM, 2, 40, 0, -60).key(RIGHT_ARM, 12, 0, 0, 5).key(LEFT_ARM, 12, 0, 0, -5).build());
         // Limitless: a hand raised, fingers up, until the glass shatters; the air kick; Red's upside-down point blank.
-        add(AnimDef.builder("limitless_raise", 8).blend(1, 3)
-                .key(RIGHT_ARM, 0, -40, 0, 10).key(RIGHT_ARM, 4, -150, -20, -10).key(RIGHT_ARM, 8, -150, -20, -10)
-                .key(HEAD, 4, -10, 0, 0).key(BODY, 4, -4, -8, 0).build());
+        add(AnimDef.builder("limitless_raise", 12).blend(1, 3)
+                // Limitless (JJS GIF): the right hand comes up beside the head, fingers raised, and holds until the glass breaks.
+                .key(RIGHT_ARM, 0, -20, 0, 10).key(RIGHT_ARM, 5, -150, -10, -12).key(RIGHT_ARM, 12, -158, -12, -15)
+                .key(BODY, 5, -3, -12, 0).key(BODY, 12, -3, -14, 0).key(HEAD, 5, -6, 0, 0).key(HEAD, 12, -6, 0, 0).build());
         add(AnimDef.builder("limitless_air_kick", 10).blend(0.5f, 4)
                 .key(RIGHT_LEG, 0, -120, 0, 0).key(RIGHT_LEG, 4, 30, 0, 0).key(RIGHT_LEG, 10, 0, 0, 0)
                 .key(BODY, 0, -20, 0, 0).key(BODY, 4, 30, 0, 0).key(BODY, 10, 0, 0, 0)

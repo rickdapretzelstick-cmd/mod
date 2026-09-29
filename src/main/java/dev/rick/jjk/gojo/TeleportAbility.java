@@ -110,6 +110,8 @@ public final class TeleportAbility extends Ability {
         @Override
         public void tick() {
             JJKConfig.Gojo cfg = JJKConfig.get().gojo;
+            // The glass shatters a tick before he moves (the caster's view breaks on the frame he leaves from).
+            if (age == cfg.limitlessWindup - 1) Fx.play(level, "limitless_shatter", user.getEyePosition(), Vec3.ZERO, 1f, user.getId());
             if (age < cfg.limitlessWindup) return;
             if (!target.isAlive() || target.level() != level) {
                 finish();
@@ -164,6 +166,7 @@ public final class TeleportAbility extends Ability {
                 finish();
                 return;
             }
+            if (age == windup - 1) Fx.play(level, "limitless_shatter", user.getEyePosition(), Vec3.ZERO, 1f, user.getId());
             if (age == windup) {
                 Vec3 dest = aroundFront(user, victim, 0);
                 if (dest == null) {

@@ -143,9 +143,10 @@ public class GojoClientGameTest implements FabricClientGameTest {
             // Rapid Punches, Twofold Kick and Limitless on the dummy in front.
             server.runCommand("execute as @a at @s run tp @s ~ ~ ~ -90 5");
             in.pressKey(r);
-            ctx.waitTicks(8);
+            ctx.waitTicks(7);
             ctx.takeScreenshot("06b_limitless");
-            ctx.waitTicks(4);
+            ctx.waitTicks(5);
+            ctx.takeScreenshot("06b2_limitless_shatter");
             in.pressKey(c);
             ctx.waitTicks(14);
             ctx.takeScreenshot("06c_rapid_punches");

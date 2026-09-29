@@ -21,7 +21,9 @@ import org.jetbrains.annotations.Nullable;
 public final class AwakenAbility extends Ability {
     public static final String ID = "awaken";
     /** Tick of the transition at which the blindfold comes off and the eruption happens. */
-    public static final int REVEAL_FRACTION_NUM = 1, REVEAL_FRACTION_DEN = 2;
+    public static final int REVEAL_FRACTION_NUM = 1, REVEAL_FRACTION_DEN = 4;
+    /** Ticks of the "DOMAIN EXPANSION" cut-in before the 0.2 Domain's sure hit. */
+    private static final int CUT_IN = 14;
 
     public AwakenAbility() {
         super(ID);
@@ -57,6 +59,7 @@ public final class AwakenAbility extends Ability {
         private int reveal;
         private int total;
         private boolean zeroTwo;
+        private int rushAt = -1;
         @Nullable private ZeroTwoDomain rush;
 
         Transformation(Ability ability, AbilityContext ctx) {
@@ -80,8 +83,11 @@ public final class AwakenAbility extends Ability {
 
         @Override
         public boolean pressWhileLocked(dev.rick.jjk.core.ability.AbilitySlot slot) {
-            if (slot != dev.rick.jjk.core.ability.AbilitySlot.SKILL_5 || zeroTwo || age >= reveal) return false;
+            if (slot != dev.rick.jjk.core.ability.AbilitySlot.SKILL_5 || zeroTwo || age >= total - 6) return false;
             zeroTwo = true;
+            // Any time during the sequence: the cut-in, then Infinite Void for two tenths of a second.
+            rushAt = Math.max(reveal, age + CUT_IN);
+            Fx.play(level, "zero_two_cutin", user.position().add(0, 1.2, 0), Vec3.ZERO, 12f, user.getId());
             return true;
         }
 
@@ -99,11 +105,11 @@ public final class AwakenAbility extends Ability {
                 Fx.play(level, "awaken", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
                 Fx.shake(level, user.position(), 48, 1.1f, 24);
                 Fx.flash(level, user.position(), 40, 0xB0D8F0FF, 14);
-                if (zeroTwo) {
-                    rush = new ZeroTwoDomain(level, caster, user);
-                    return;
-                }
-                user.heal(user.getMaxHealth() * JJKConfig.get().gojo.awakenHealShare);
+                if (!zeroTwo) user.heal(user.getMaxHealth() * JJKConfig.get().gojo.awakenHealShare);
+            }
+            if (zeroTwo && age >= rushAt) {
+                rush = new ZeroTwoDomain(level, caster, user);
+                return;
             }
             if (age >= total) finish();
         }

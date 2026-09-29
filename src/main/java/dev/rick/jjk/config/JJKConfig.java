@@ -252,7 +252,7 @@ public final class JJKConfig {
         /** Meter lost per second while awakened. 100 / 3 = about 33 seconds of Awakening if no moves are used. */
         public float drainPerSecond = 3f;
         /** Ticks of the transition (invulnerable, rooted) when awakening. */
-        public int transitionTicks = 34;
+        public int transitionTicks = 50;
         /** Meter consumed by each awakened move. */
         public float maxBlueCost = 18f;
         public float maxRedCost = 20f;
@@ -447,20 +447,21 @@ public final class JJKConfig {
         public float awakenHealShare = 0.25f;
         public int awakeningSeconds = 60;
 
+        // Timings below follow the wiki's GIFs of each move (recorded at 50 fps: 2.5 frames to a tick).
         // --- 1: Lapse Blue (13s) — pull within 35 studs, suspend, unblockable kick ---
         public int blueCooldown = 260;
-        public int blueWindup = 8;
+        public int blueWindup = 11;
         public double blueRange = 9.7;
         public float bluePullDamage = 5f;
         public float blueKickDamage = 7.5f;
-        public int bluePullTicks = 10;
-        public int blueSuspendTicks = 8;
+        public int bluePullTicks = 6;
+        public int blueSuspendTicks = 16;
         public double blueKickKnockback = 1.5;
 
         // --- 3: Rapid Punches (15s) — spin kick lock, 15 punches, 3 heavy, final blow ---
         public float punchesCost = 80f;
         public int punchesCooldown = 300;
-        public int punchesWindup = 6;
+        public int punchesWindup = 11;
         public double punchesReach = 3.0;
         public float punchesGrabDamage = 1.25f;
         public int punchesBarrage = 15;
@@ -477,11 +478,11 @@ public final class JJKConfig {
         // --- 4: Twofold Kick (18s) ---
         public float twofoldCost = 70f;
         public int twofoldCooldown = 360;
-        public int twofoldWindup = 5;
+        public int twofoldWindup = 8;
         public double twofoldReach = 3.0;
         public float twofoldFirstDamage = 6f;
         public float twofoldSecondDamage = 4f;
-        public int twofoldAnchorTicks = 9;
+        public int twofoldAnchorTicks = 14;
         /** The finisher's point-blank Red. */
         public float twofoldRedDamage = 10f;
 
@@ -489,7 +490,7 @@ public final class JJKConfig {
         public int limitlessCooldown = 300;
         public double limitlessRange = 32;
         /** Hand raised until the glass shatters: turning the camera in this time picks where Gojo appears. */
-        public int limitlessWindup = 6;
+        public int limitlessWindup = 11;
         /** 6% of the Awakening meter, in the base kit. */
         public float limitlessMeterCost = 6f;
         public float limitlessAirKickDamage = 8f;

@@ -81,6 +81,13 @@ public final class ClientFx {
             return;
         }
         switch (p.id()) {
+            case "zero_two_cutin" -> dev.rick.jjk.client.hud.GojoPresentation.domainCutIn();
+            case "limitless_shatter" -> {
+                // The caster's view breaks like glass as space folds; everyone else sees the flash where he stood.
+                if (mine) dev.rick.jjk.client.hud.GojoPresentation.shatter();
+                Flashes.flash(pos, 0.3f, 2.2f, WHITE, 0.9f, 5, now);
+                if (drawn) sparks(level, pos, Vec3.ZERO, q(14), 0.5, WHITE, 0.1f, 8);
+            }
             // --- melee: clean, precise, small. Light cuts, not explosions. ---
             case "swing" -> {
                 boolean heavy = s > 1.2f;
@@ -235,6 +242,8 @@ public final class ClientFx {
             }
             case "blue_spawn" -> {
                 sound("blue_spawn", pos, 1.2f, 1f);
+                // Lapse Blue's pull (JJS GIF): the caster's view floods with the blue vortex for a moment.
+                if (mine && s > 0.65f && s < 0.75f) ScreenEffects.flash(0xB070D0FF, 9);
                 Vec3 core = pos.add(0, 0.5, 0);
                 Flashes.ring(core, 3.5f * s, 0.2f, BLUE_LIGHT, 0.7f, 9, now);
                 Flashes.lens(core, 3f * s, 0.6f, BLUE, 0.6f, 9, now);
@@ -517,6 +526,8 @@ public final class ClientFx {
             // --- Awakening: the biggest non-ultimate moment in the kit. ---
             case "awaken_start" -> {
                 sound("awaken_grab", pos, 2f, 1f);
+                // "Let's get... a little crazy."
+                dev.rick.jjk.client.hud.GojoPresentation.speech(p.entityId(), JJKConfig.get().awakening.transitionTicks);
                 Flashes.lens(pos, 7f, 0.8f, BLUE_LIGHT, 0.6f, 17, now);
                 for (int i = 0; i < 3; i++) Flashes.ring(pos, 6f - i, 0.3f, i == 1 ? WHITE : BLUE_LIGHT, 0.6f, 12, now + i * 5L);
                 Flashes.ground(groundBelow(level, pos), 6f, 0.5f, BLUE_LIGHT, 0.6f, 17, now);
