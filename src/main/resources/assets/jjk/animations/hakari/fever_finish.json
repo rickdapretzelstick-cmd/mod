@@ -1,31 +1,19 @@
 {
   "name": "fever_finish",
-  "duration": 700,
-  "blendIn": 25, "blendOut": 250,
+  "reference": "FeverBreaker.gif frames 60-80: the leaping dropkick breaks the suspended target (hard cut onto the impact, both feet driven through), a fall and a rolling crouch landing in the burst.",
+  "duration": 800,
+  "blendIn": 0, "blendOut": 250,
   "priority": "SPECIAL",
   "keys": [
-    {"t": 0, "bones": {
-        "hips": {"rot": [15, 0, 0]},
-        "root": {"pos": [0, 0, 0]}}},
-    {"t": 100, "ease": "EASE_IN", "bones": {
-        "rightArm": {"rot": [-40, 0, 72]},
-        "leftArm": {"rot": [-40, 0, -72]},
-        "rightThigh": {"rot": [-40, 0, 6]},
-        "leftThigh": {"rot": [-36, 0, -6]},
-        "hips": {"rot": [-62, 0, 0]},
-        "root": {"pos": [0, 8, 4]}}},
-    {"t": 350, "bones": {
-        "rightThigh": {"rot": [-40, 0, 6]},
-        "leftThigh": {"rot": [-36, 0, -6]},
-        "hips": {"rot": [-58, 0, 0]}}},
-    {"t": 700, "ease": "EASE_OUT", "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [-8, 0, 6]},
-        "leftArm": {"rot": [-8, 0, -6]},
-        "rightThigh": {"rot": [0, 0, 0]},
-        "leftThigh": {"rot": [0, 0, 0]},
-        "hips": {"rot": [0, 0, 0]},
-        "root": {"pos": [0, 0, 0]}}}
+    {"t": 0, "marker": "impact", "bones": {
+        "root": {"pos": [0, 8, 2]}, "hips": [-70, 0, 0], "chest": [15, 0, 0], "head": [30, 0, 0],
+        "rightThigh": [-95, 0, 6], "rightShin": [0, 0, 0], "rightFoot": [20, 0, 0],
+        "leftThigh": [-85, 0, -6], "leftShin": [10, 0, 0], "leftFoot": [20, 0, 0],
+        "rightArm": [-40, 0, 70], "leftArm": [-40, 0, -70]}},
+    {"t": 140, "marker": "follow-through", "ease": "EASE_OUT", "bones": {"root": {"pos": [0, 6, 3]}, "hips": [-60, 0, 0], "rightThigh": [-100, 0, 6], "leftThigh": [-90, 0, -6]}},
+    {"t": 360, "marker": "land", "ease": "EASE_IN", "pose": "crouch_land", "bones": {
+        "root": {"pos": [0, -3.5, 1]},
+        "rightArm": [-40, 0, 45], "rightForearm": [-40, 0, 0], "leftArm": [-40, 0, -45], "leftForearm": [-40, 0, 0]}},
+    {"t": 750, "marker": "recovery", "ease": "EASE_IN_OUT", "pose": "fight_stance", "bones": {"hips": [0, 0, 0]}}
   ]
 }

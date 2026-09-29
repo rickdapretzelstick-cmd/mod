@@ -1,20 +1,15 @@
 {
   "name": "purple_red",
-  "duration": 500,
+  "reference": "HollowPurple.gif frames 16-40: both arms out wide, Red forming in the right hand, feet set apart; the head comes back to the front.",
+  "duration": 700,
   "hold": true,
-  "blendIn": 25, "blendOut": 150,
+  "blendIn": 220, "blendEase": "EASE_OUT", "blendOut": 200,
   "priority": "SPECIAL",
   "keys": [
-    {"t": 0, "bones": {
-        "rightArm": {"rot": [-10, 0, 12]},
-        "leftArm": {"rot": [-88, 22, -50]}}},
-    {"t": 500, "ease": "OVERSHOOT", "bones": {
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [-88, -22, 55]},
-        "leftArm": {"rot": [-88, 22, -55]},
-        "rightThigh": {"rot": [14, 0, 8]},
-        "leftThigh": {"rot": [-14, 0, -8]},
-        "hips": {"rot": [2, 0, 0]},
-        "root": {"pos": [0, -2.5, 0]}}}
+    {"t": 220, "marker": "reach", "ease": "EASE_OUT", "bones": {
+        "rightArm": [-20, 0, 95], "rightForearm": [-15, 0, 0], "leftArm": [-22, 0, -98], "leftForearm": [-18, 0, 0],
+        "chest": [-4, 0, 0], "head": [0, 25, 0], "root": {"pos": [0, -0.3, 0]},
+        "rightThigh": [0, 0, 8], "leftThigh": [0, 0, -8]}},
+    {"t": 700, "ease": "EASE_IN_OUT", "bones": {"head": [0, 0, 0], "rightArm": [-22, 0, 98], "rightForearm": [-18, 0, 0]}}
   ]
 }

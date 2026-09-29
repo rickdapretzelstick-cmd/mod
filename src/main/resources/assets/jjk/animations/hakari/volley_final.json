@@ -1,30 +1,16 @@
 {
   "name": "volley_final",
-  "duration": 600,
-  "blendIn": 25, "blendOut": 200,
+  "reference": "LuckyVolley.gif frames 85-100: the finishing haymaker lands on the clip's first frame (hard cut), the whole body turned through it, then settling back into the aura.",
+  "duration": 700,
+  "blendIn": 0, "blendOut": 250,
   "priority": "SPECIAL",
   "keys": [
-    {"t": 0, "bones": {
-        "chest": {"rot": [5, 36, 0]},
-        "rightArm": {"rot": [45, 15, 30]},
-        "hips": {"rot": [6, 30, 0]},
-        "root": {"pos": [0, -3, -1]}}},
-    {"t": 100, "ease": "EASE_IN", "bones": {
-        "chest": {"rot": [8, -40, 0]},
-        "rightArm": {"rot": [-106, -6, 0]},
-        "leftArm": {"rot": [35, 0, -25]},
-        "rightThigh": {"rot": [40, 0, 6]},
-        "leftThigh": {"rot": [-38, 0, -6]},
-        "hips": {"rot": [18, -24, 0]},
-        "root": {"pos": [0, -3, 8]}}},
-    {"t": 600, "ease": "EASE_OUT", "bones": {
-        "head": {"rot": [4, 0, 0]},
-        "chest": {"rot": [0, 12, 0]},
-        "rightArm": {"rot": [-62, -22, 12]},
-        "leftArm": {"rot": [-78, 22, -10]},
-        "rightThigh": {"rot": [10, 0, 4]},
-        "leftThigh": {"rot": [-12, 0, -4]},
-        "hips": {"rot": [4, 0, 0]},
-        "root": {"pos": [0, -1, 0]}}}
+    {"t": 0, "marker": "impact", "bones": {
+        "chest": [18, -55, 0], "hips": [10, -25, 0], "head": [-8, 20, 0],
+        "rightArm": [-95, -35, 5], "rightForearm": [-15, 0, 0], "leftArm": [20, 10, -40], "leftForearm": [-40, 0, 0],
+        "rightThigh": [15, 0, 10], "rightShin": [30, 0, 0], "leftThigh": [-40, 0, -8], "leftShin": [50, 0, 0], "leftFoot": [-10, 0, 0],
+        "root": {"pos": [0, -2, 2.5]}}},
+    {"t": 120, "marker": "follow-through", "ease": "EASE_OUT", "bones": {"chest": [20, -65, 0], "rightArm": [-90, -55, 0], "root": {"pos": [0, -2.2, 3]}}},
+    {"t": 650, "marker": "recovery", "ease": "EASE_IN_OUT", "pose": "fight_stance", "bones": {"hips": [0, 0, 0], "root": {"pos": [0, -1, 1]}}}
   ]
 }

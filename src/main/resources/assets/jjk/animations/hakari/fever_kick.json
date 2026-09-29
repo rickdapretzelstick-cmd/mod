@@ -1,33 +1,25 @@
 {
   "name": "fever_kick",
-  "duration": 600,
-  "blendIn": 50, "blendOut": 200,
+  "reference": "FeverBreaker.gif frames 0-36: lean back and chamber the knee while driving forward, a straight front kick (the reference lands it on frame 24; compressed onto the server's hit at 250 ms), the kicking foot held out as the target is suspended, then recovery.",
+  "duration": 900,
+  "blendIn": 40, "blendOut": 200,
   "priority": "SPECIAL",
+  "look": 0.3,
   "keys": [
-    {"t": 0, "bones": {
-        "rightThigh": {"rot": [0, 0, 0]}}},
-    {"t": 150, "bones": {
-        "rightThigh": {"rot": [-75, 0, 0]},
-        "hips": {"rot": [6, 0, 0]},
-        "root": {"pos": [0, 0, 0]}}},
-    {"t": 250, "ease": "EASE_IN", "bones": {
-        "rightArm": {"rot": [28, 0, 32]},
-        "leftArm": {"rot": [-45, 0, -38]},
-        "rightThigh": {"rot": [-98, 0, 0]},
-        "leftThigh": {"rot": [10, 0, 0]},
-        "hips": {"rot": [-22, -6, 0]},
-        "root": {"pos": [0, 1, 3]}}},
-    {"t": 400, "ease": "EASE_OUT", "bones": {
-        "rightThigh": {"rot": [-90, 0, 0]},
-        "hips": {"rot": [-18, -4, 0]}}},
-    {"t": 600, "ease": "EASE_OUT", "bones": {
-        "head": {"rot": [4, 0, 0]},
-        "chest": {"rot": [0, 12, 0]},
-        "rightArm": {"rot": [-62, -22, 12]},
-        "leftArm": {"rot": [-78, 22, -10]},
-        "rightThigh": {"rot": [10, 0, 4]},
-        "leftThigh": {"rot": [-12, 0, -4]},
-        "hips": {"rot": [4, 0, 0]},
-        "root": {"pos": [0, -1, 0]}}}
+    {"t": 0, "pose": "fight_stance"},
+    {"t": 130, "marker": "chamber", "ease": "EASE_OUT", "bones": {
+        "chest": [-10, 10, 0], "hips": [-8, 0, 0], "head": [8, 0, 0],
+        "rightThigh": [-95, 0, 6], "rightShin": [110, 0, 0], "rightFoot": [0, 0, 0],
+        "leftThigh": [6, 0, -6], "leftShin": [20, 0, 0], "leftFoot": [-6, 0, 0],
+        "rightArm": [20, 0, 30], "rightForearm": [-50, 0, 0], "leftArm": [-60, -20, -25], "leftForearm": [-90, 0, 0],
+        "root": {"pos": [0, -0.5, 0.5]}}},
+    {"t": 250, "marker": "impact", "ease": "EASE_IN", "bones": {
+        "chest": [-22, -8, 0], "hips": [-14, 0, 0], "head": [18, 0, 0],
+        "rightThigh": [-90, 0, 4], "rightShin": [0, 0, 0], "rightFoot": [-30, 0, 0],
+        "leftThigh": [14, 0, -6], "leftShin": [12, 0, 0], "leftFoot": [0, 0, 0],
+        "rightArm": [35, 0, 40], "rightForearm": [-20, 0, 0], "leftArm": [30, 0, -40], "leftForearm": [-20, 0, 0],
+        "root": {"pos": [0, 0, 2]}}},
+    {"t": 380, "marker": "hold", "ease": "EASE_OUT", "bones": {"rightThigh": [-85, 0, 4], "rightShin": [8, 0, 0], "chest": [-18, -8, 0]}},
+    {"t": 850, "marker": "recovery", "ease": "EASE_IN_OUT", "pose": "fight_stance", "bones": {"hips": [0, 0, 0], "root": {"pos": [0, -1, 0.5]}}}
   ]
 }

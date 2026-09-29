@@ -1,91 +1,40 @@
 {
   "name": "rhythm_dance",
-  "duration": 3000,
-  "blendIn": 100, "blendOut": 300,
+  "reference": "Rhythm.gif frames 30-120 (Hakari's dance): knees bent and wide, both arms up with the elbows high and the fists by the head, pumping one side then the other with the hips swaying opposite; one sway per beat. The 700 ms lead-in bounces into it and the dance loops on the server's 500 ms beats until the ability ends.",
+  "loop": true, "loopStart": 700, "loopEnd": 1700,
+  "stopAfter": 3000,
+  "blendIn": 120, "blendOut": 300,
   "priority": "AWAKENING",
   "keys": [
-    {"t": 0, "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [-10, 0, 8]},
-        "leftArm": {"rot": [-10, 0, -8]},
-        "rightThigh": {"rot": [0, 0, 0]},
-        "leftThigh": {"rot": [0, 0, 0]}}},
-    {"t": 500, "bones": {
-        "chest": {"rot": [4, 0, 0]},
-        "rightArm": {"rot": [-150, 0, 40]},
-        "leftArm": {"rot": [-150, 0, -40]},
-        "rightThigh": {"rot": [-12, 0, 8]},
-        "leftThigh": {"rot": [-12, 0, -8]}}},
-    {"t": 700, "bones": {
-        "head": {"rot": [-4, -8, -8]},
-        "chest": {"rot": [6, 10, 12]},
-        "rightArm": {"rot": [-165, 0, 30]},
-        "leftArm": {"rot": [-135, 0, -48]},
-        "rightThigh": {"rot": [-6, 0, 4]},
-        "leftThigh": {"rot": [-20, 0, -14]}}},
-    {"t": 950, "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [5, 0, 0]},
-        "rightArm": {"rot": [-150, 0, 40]},
-        "leftArm": {"rot": [-150, 0, -40]},
-        "rightThigh": {"rot": [-14, 0, 8]},
-        "leftThigh": {"rot": [-14, 0, -8]}}},
-    {"t": 1200, "bones": {
-        "head": {"rot": [-4, 8, 8]},
-        "chest": {"rot": [6, -10, -12]},
-        "rightArm": {"rot": [-135, 0, 48]},
-        "leftArm": {"rot": [-165, 0, -30]},
-        "rightThigh": {"rot": [-20, 0, 14]},
-        "leftThigh": {"rot": [-6, 0, -4]}}},
-    {"t": 1450, "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [5, 0, 0]},
-        "rightArm": {"rot": [-150, 0, 40]},
-        "leftArm": {"rot": [-150, 0, -40]},
-        "rightThigh": {"rot": [-14, 0, 8]},
-        "leftThigh": {"rot": [-14, 0, -8]}}},
-    {"t": 1700, "bones": {
-        "head": {"rot": [-4, -8, -8]},
-        "chest": {"rot": [6, 10, 12]},
-        "rightArm": {"rot": [-165, 0, 30]},
-        "leftArm": {"rot": [-135, 0, -48]},
-        "rightThigh": {"rot": [-6, 0, 4]},
-        "leftThigh": {"rot": [-20, 0, -14]}}},
-    {"t": 1950, "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [5, 0, 0]},
-        "rightArm": {"rot": [-150, 0, 40]},
-        "leftArm": {"rot": [-150, 0, -40]},
-        "rightThigh": {"rot": [-14, 0, 8]},
-        "leftThigh": {"rot": [-14, 0, -8]}}},
-    {"t": 2200, "bones": {
-        "head": {"rot": [-4, 8, 8]},
-        "chest": {"rot": [6, -10, -12]},
-        "rightArm": {"rot": [-135, 0, 48]},
-        "leftArm": {"rot": [-165, 0, -30]},
-        "rightThigh": {"rot": [-20, 0, 14]},
-        "leftThigh": {"rot": [-6, 0, -4]}}},
-    {"t": 2450, "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [5, 0, 0]},
-        "rightArm": {"rot": [-150, 0, 40]},
-        "leftArm": {"rot": [-150, 0, -40]},
-        "rightThigh": {"rot": [-14, 0, 8]},
-        "leftThigh": {"rot": [-14, 0, -8]}}},
-    {"t": 2700, "bones": {
-        "head": {"rot": [-6, 0, 0]},
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [-20, 0, 70]},
-        "leftArm": {"rot": [-20, 0, -70]},
-        "rightThigh": {"rot": [0, 0, 4]},
-        "leftThigh": {"rot": [0, 0, -4]}}},
-    {"t": 3000, "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [-15, 0, 60]},
-        "leftArm": {"rot": [-15, 0, -60]},
-        "rightThigh": {"rot": [0, 0, 3]},
-        "leftThigh": {"rot": [0, 0, -3]}}}
+    {"t": 0, "bones": {"root": {"pos": [0, 0, 0]}}},
+    {"t": 350, "marker": "lead-in", "ease": "EASE_OUT", "pose": "wide_legs", "bones": {
+        "rightArm": [-60, 0, 70], "rightForearm": [-90, 0, 0], "leftArm": [-60, 0, -70], "leftForearm": [-90, 0, 0],
+        "chest": [8, 0, 0], "head": [-8, 0, 0], "root": {"pos": [0, -2, 0]}}},
+    {"t": 700, "marker": "beat: right up", "ease": "EASE_OUT", "bones": {
+        "rightArm": [-150, 0, 50], "rightForearm": [-70, 0, 0], "leftArm": [-80, 0, -75], "leftForearm": [-95, 0, 0],
+        "chest": [0, -10, 12], "hips": [0, 8, -8], "head": [-10, 10, 8],
+        "rightThigh": [-28, 0, 16], "rightShin": [48, 0, 0], "rightFoot": [-20, 0, 0],
+        "leftThigh": [-14, 0, -8], "leftShin": [26, 0, 0], "leftFoot": [-12, 0, 0],
+        "root": {"pos": [1, -1.6, 0]}}},
+    {"t": 950, "ease": "EASE_IN_OUT", "bones": {
+        "rightArm": [-110, 0, 62], "rightForearm": [-85, 0, 0], "leftArm": [-110, 0, -62], "leftForearm": [-85, 0, 0],
+        "chest": [4, 0, 0], "hips": [0, 0, 0], "head": [-8, 0, 0], "root": {"pos": [0, -2.4, 0]},
+        "rightThigh": [-22, 0, 12], "rightShin": [40, 0, 0], "leftThigh": [-22, 0, -12], "leftShin": [40, 0, 0]}},
+    {"t": 1200, "marker": "beat: left up", "ease": "EASE_OUT", "bones": {
+        "leftArm": [-150, 0, -50], "leftForearm": [-70, 0, 0], "rightArm": [-80, 0, 75], "rightForearm": [-95, 0, 0],
+        "chest": [0, 10, -12], "hips": [0, -8, 8], "head": [-10, -10, -8],
+        "leftThigh": [-28, 0, -16], "leftShin": [48, 0, 0], "leftFoot": [-20, 0, 0],
+        "rightThigh": [-14, 0, 8], "rightShin": [26, 0, 0], "rightFoot": [-12, 0, 0],
+        "root": {"pos": [-1, -1.6, 0]}}},
+    {"t": 1450, "ease": "EASE_IN_OUT", "bones": {
+        "rightArm": [-110, 0, 62], "rightForearm": [-85, 0, 0], "leftArm": [-110, 0, -62], "leftForearm": [-85, 0, 0],
+        "chest": [4, 0, 0], "hips": [0, 0, 0], "head": [-8, 0, 0], "root": {"pos": [0, -2.4, 0]},
+        "rightThigh": [-22, 0, 12], "rightShin": [40, 0, 0], "leftThigh": [-22, 0, -12], "leftShin": [40, 0, 0]}},
+    {"t": 1700, "marker": "beat: right up", "ease": "EASE_OUT", "bones": {
+        "rightArm": [-150, 0, 50], "rightForearm": [-70, 0, 0], "leftArm": [-80, 0, -75], "leftForearm": [-95, 0, 0],
+        "chest": [0, -10, 12], "hips": [0, 8, -8], "head": [-10, 10, 8],
+        "rightThigh": [-28, 0, 16], "rightShin": [48, 0, 0], "rightFoot": [-20, 0, 0],
+        "leftThigh": [-14, 0, -8], "leftShin": [26, 0, 0], "leftFoot": [-12, 0, 0],
+        "root": {"pos": [1, -1.6, 0]}}}
   ]
 }

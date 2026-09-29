@@ -1,30 +1,18 @@
 {
   "name": "red_release",
-  "duration": 600,
-  "blendIn": 25, "blendOut": 250,
+  "reference": "ReversalRed.gif frames 30-44: the raised hand snaps down and forward to point as Red fires, the body following through, then back to rest.",
+  "duration": 700,
+  "blendIn": 90, "blendEase": "EASE_IN", "blendOut": 250,
   "priority": "SPECIAL",
+  "look": 0.4,
   "keys": [
-    {"t": 0, "bones": {
-        "rightArm": {"rot": [-92, -8, 0]},
-        "leftArm": {"rot": [-80, 44, 0]},
-        "hips": {"rot": [6, -16, 0]},
-        "root": {"pos": [0, -2.5, 0]}}},
-    {"t": 100, "ease": "EASE_OUT", "bones": {
-        "head": {"rot": [-10, 0, 0]},
-        "rightArm": {"rot": [-140, -8, 12]},
-        "leftArm": {"rot": [-40, 20, -25]},
-        "rightThigh": {"rot": [8, 0, 6], "ease": "EASE_IN_OUT"},
-        "leftThigh": {"rot": [-8, 0, -6], "ease": "EASE_IN_OUT"},
-        "hips": {"rot": [-12, -10, 0]},
-        "root": {"pos": [0, -1, -3]}}},
-    {"t": 600, "ease": "EASE_OUT", "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [-8, 0, 6]},
-        "leftArm": {"rot": [-8, 0, -6]},
-        "rightThigh": {"rot": [0, 0, 0]},
-        "leftThigh": {"rot": [0, 0, 0]},
-        "hips": {"rot": [0, 0, 0]},
-        "root": {"pos": [0, 0, 0]}}}
+    {"t": 90, "marker": "release", "ease": "EASE_IN", "bones": {
+        "rightArm": [-92, -8, 2], "rightForearm": [-2, 0, 0], "rightHand": [0, 0, 0],
+        "chest": [6, -26, 0], "hips": [0, -8, 0], "head": [0, -6, 0], "leftArm": [15, 0, -20],
+        "root": {"pos": [0, -0.5, 1.2]}}},
+    {"t": 180, "marker": "follow-through", "ease": "EASE_OUT", "bones": {"rightArm": [-80, -14, 0], "rightForearm": [-6, 0, 0], "root": {"pos": [0, -0.6, 1.4]}}},
+    {"t": 600, "marker": "recovery", "ease": "EASE_IN_OUT", "bones": {
+        "rightArm": [-20, 0, 6], "rightForearm": [-10, 0, 0], "chest": [3, 0, 0], "hips": [0, 0, 0], "head": [0, 0, 0],
+        "leftArm": [-5, 0, -8], "root": {"pos": [0, 0, 0.5]}}}
   ]
 }

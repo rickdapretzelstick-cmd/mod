@@ -1,38 +1,22 @@
 {
   "name": "rapid_final",
+  "reference": "RapidPunches.gif frames 188-200: the two-handed hammer comes down on the hit frame (hard cut from the wind-up), follow-through into a deep crouch, then recovery.",
   "duration": 800,
-  "blendIn": 15, "blendOut": 250,
+  "blendIn": 0, "blendOut": 250,
   "priority": "SPECIAL",
   "keys": [
-    {"t": 0, "bones": {
-        "chest": {"rot": [5, 42, 0]},
-        "rightArm": {"rot": [62, 25, 42]},
-        "leftArm": {"rot": [-95, 35, -8]},
-        "rightThigh": {"rot": [34, 0, 7]},
-        "leftThigh": {"rot": [-30, 0, -7]},
-        "hips": {"rot": [8, 44, 0]},
-        "root": {"pos": [0, -4, -2]}}},
-    {"t": 100, "ease": "EASE_IN", "bones": {
-        "head": {"rot": [12, 0, 0]},
-        "chest": {"rot": [8, -46, 0]},
-        "rightArm": {"rot": [-110, -8, 0]},
-        "leftArm": {"rot": [40, 0, -28]},
-        "rightThigh": {"rot": [48, 0, 7]},
-        "leftThigh": {"rot": [-42, 0, -7]},
-        "hips": {"rot": [22, -30, 0]},
-        "root": {"pos": [0, -4, 11]}}},
-    {"t": 400, "ease": "EASE_OUT", "bones": {
-        "rightArm": {"rot": [-104, -4, 2]},
-        "hips": {"rot": [18, -26, 0]},
-        "root": {"pos": [0, -3.5, 10]}}},
-    {"t": 800, "ease": "EASE_OUT", "bones": {
-        "head": {"rot": [4, 0, 0]},
-        "chest": {"rot": [0, 12, 0]},
-        "rightArm": {"rot": [-62, -22, 12]},
-        "leftArm": {"rot": [-78, 22, -10]},
-        "rightThigh": {"rot": [10, 0, 4]},
-        "leftThigh": {"rot": [-12, 0, -4]},
-        "hips": {"rot": [4, 0, 0]},
-        "root": {"pos": [0, -1, 0]}}}
+    {"t": 0, "marker": "impact", "bones": {
+        "root": {"pos": [0, -4, 1.5]}, "hips": [20, 0, 0], "chest": [40, 0, 0], "head": [-20, 0, 0],
+        "rightArm": [-35, -5, 10], "rightForearm": [-15, 0, 0], "leftArm": [-30, 5, -20], "leftForearm": [-40, 0, 0],
+        "rightThigh": [-72, 0, 14], "rightShin": [110, 0, 0], "rightFoot": [-38, 0, 0],
+        "leftThigh": [-68, 0, -14], "leftShin": [108, 0, 0], "leftFoot": [-38, 0, 0]}},
+    {"t": 100, "marker": "follow-through", "ease": "EASE_OUT", "bones": {
+        "root": {"pos": [0, -4.8, 1.5]}, "chest": [55, 0, 0],
+        "rightArm": [-15, 0, 12], "rightForearm": [-5, 0, 0], "leftArm": [-15, 0, -12], "leftForearm": [-5, 0, 0]}},
+    {"t": 400, "ease": "EASE_IN_OUT", "bones": {"root": {"pos": [0, -4.4, 1.2]}, "chest": [50, 0, 0]}},
+    {"t": 750, "marker": "recovery", "ease": "EASE_IN_OUT", "pose": "arms_relaxed", "bones": {
+        "root": {"pos": [0, -0.5, 0]}, "hips": [0, 0, 0], "chest": [8, 0, 0], "head": [0, 0, 0],
+        "rightThigh": [-8, 0, 5], "rightShin": [14, 0, 0], "rightFoot": [-6, 0, 0],
+        "leftThigh": [-8, 0, -5], "leftShin": [14, 0, 0], "leftFoot": [-6, 0, 0]}}
   ]
 }

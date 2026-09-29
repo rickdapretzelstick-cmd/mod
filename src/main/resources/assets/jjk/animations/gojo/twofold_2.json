@@ -1,34 +1,25 @@
 {
   "name": "twofold_2",
-  "duration": 600,
-  "blendIn": 15, "blendOut": 200,
+  "reference": "TwofoldKick.gif frames 56-72: hard cut onto the second kick as it lands (server hit on the clip's first frame), the kicking leg driving through, dropping to a crouched landing and standing.",
+  "fps": 50,
+  "refStart": 56,
+  "endFrame": 86,
+  "blendIn": 0, "blendOut": 200,
   "priority": "SPECIAL",
   "keys": [
-    {"t": 0, "bones": {
-        "rightThigh": {"rot": [20, 0, 0]},
-        "leftThigh": {"rot": [-110, 0, 0]},
-        "hips": {"rot": [-10, 150, 0]},
-        "root": {"pos": [0, 2, 1]}}},
-    {"t": 100, "ease": "EASE_IN", "bones": {
-        "head": {"rot": [-15, 0, 0]},
-        "rightArm": {"rot": [40, 0, 65]},
-        "leftArm": {"rot": [40, 0, -65]},
-        "rightThigh": {"rot": [25, 0, 0]},
-        "leftThigh": {"rot": [-178, 0, -10]},
-        "hips": {"rot": [-18, 0, -10], "ease": "LINEAR"},
-        "root": {"pos": [0, 3, 2]}}},
-    {"t": 300, "ease": "EASE_OUT", "bones": {
-        "hips": {"rot": [-10, -50, 0]}}},
-    {"t": 350, "ease": "EASE_OUT", "bones": {
-        "leftThigh": {"rot": [-60, 0, 0]}}},
-    {"t": 600, "ease": "EASE_OUT", "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [-8, 0, 6]},
-        "leftArm": {"rot": [-8, 0, -6]},
-        "rightThigh": {"rot": [0, 0, 0]},
-        "leftThigh": {"rot": [0, 0, 0]},
-        "hips": {"rot": [0, 0, 0]},
-        "root": {"pos": [0, 0, 0]}}}
+    {"f": 56, "marker": "impact", "bones": {
+        "root": {"pos": [0, 7, 1]}, "hips": [-10, 0, 0], "chest": [-5, 0, 0], "head": [10, 0, 0],
+        "rightArm": [-150, 0, 40], "rightForearm": [-20, 0, 0], "leftArm": [-150, 0, -40], "leftForearm": [-20, 0, 0],
+        "rightThigh": [-100, 0, 0], "rightShin": [0, 0, 0], "rightFoot": [10, 0, 0],
+        "leftThigh": [20, 0, 0], "leftShin": [70, 0, 0], "leftFoot": [0, 0, 0]}},
+    {"f": 62, "marker": "follow-through", "ease": "EASE_OUT", "bones": {
+        "root": {"pos": [0, 3, 1]}, "rightThigh": [-60, 0, 5], "rightShin": [30, 0, 0],
+        "rightArm": [-100, 0, 60], "leftArm": [-100, 0, -60]}},
+    {"f": 69, "marker": "land", "ease": "EASE_IN", "pose": "crouch_land", "bones": {
+        "root": {"pos": [0, -2.8, 1]}, "rightArm": [-30, 0, 40], "rightForearm": [-40, 0, 0], "leftArm": [-30, 0, -40], "leftForearm": [-40, 0, 0]}},
+    {"f": 82, "marker": "recovery", "ease": "EASE_IN_OUT", "pose": "arms_relaxed", "bones": {
+        "root": {"pos": [0, -0.6, 0.5]}, "hips": [0, 0, 0], "chest": [8, 0, 0], "head": [0, 0, 0],
+        "rightThigh": [-12, 0, 6], "rightShin": [22, 0, 0], "rightFoot": [-10, 0, 0],
+        "leftThigh": [-12, 0, -6], "leftShin": [22, 0, 0], "leftFoot": [-10, 0, 0]}}
   ]
 }

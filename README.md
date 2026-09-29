@@ -224,25 +224,39 @@ Infinity is implemented but not currently part of Gojo's moveset; `infinity.inMo
 
 ## Animation
 
-Moves are animated like JJS moves, not just posed:
-- **Anticipation:** the body coils and dips before a blow.
-- **The hit:** a whip into contact, with the whole body turning, leaning and lunging behind it.
-- **Follow-through:** it carries past the target, then settles back into a fighting stance.
-- **Shoulders:** they ride the torso's twist.
-- **Timing:** each blow lands on the tick its hit resolves.
+Players are jointed and animated from data, JJS-style. The full reference is [docs/ANIMATION.md](docs/ANIMATION.md).
 
-Rapid Punches follows its GIF:
-1. A full 360° spinning roundhouse that locks the target.
-2. Fifteen punches hammering from alternating sides at varying heights, torso snapping side to side.
-3. Three wound-up heavy punches.
-4. A deep coil into the final blow.
+- **A real skeleton:**
+  - 17 bones: root, hips, chest, neck, head, and shoulder/elbow/wrist and hip/knee/ankle on each side.
+  - The skin, its overlays and armour are cut at the joints; at rest the model looks exactly like vanilla.
+  - The root carries the whole body visually: it spins, dips and jumps without moving the hitbox.
+- **Animations are JSON:**
+  - One folder per character (`assets/jjk/animations/gojo/...`), plus shared poses; they hot-reload.
+  - Gameplay only says `Anim.play(user, "rapid_heavy")`.
+  - Keys go in ms, or in the reference GIF's own frame numbers. A key can pose some bones and leave the rest.
+  - Easing per key or per bone: linear, ease in/out, step, overshoot or spring. Clips and poses mirror.
+- **Layered playback:**
+  - Base, lower-body, upper-body and head layers.
+  - Priorities from idle up to ragdoll, and interrupt windows.
+  - Authored blend times, with 0 meaning a hard cut onto an impact frame.
+  - Holds, loops and playback speed.
+  - Bones a clip leaves alone keep vanilla's walk and look.
+  - Hit reactions (flinch, launch, knockdown, guard break) are clips too.
+- **A debugger:**
+  - `/jjkanim ui` gives play, pause, frame step, 0.25x–2x, restart and target.
+  - A skeleton overlay shows joints, bone names and axes.
+  - A readout shows time, frame, key, phase, blend, priority and layer.
 
-Dashes throw the body low and hard into their direction. The block crosses the forearms in front of the face, sunk
-into the knees. Gojo doesn't block: like the Infinity GIF, he floats at ease with a hand raised.
+Rapid Punches, Twofold Kick, Lapse Blue, Reversal Red, Hollow Purple and Infinite Void (Gojo), and Shutter Doors,
+Fever Breaker, Lucky Volley, Jackpot and the Rhythm dance (Hakari), are keyed frame by frame from the JJS GIFs. Their
+contact frames sit on the ticks where the hits resolve. `tools/anim_ref.py` numbers a GIF's frames for that work.
+Everything held in a fist (Blue, Red, Purple's two halves, Divergent Fist) follows the real hand through the elbow and
+wrist.
 
-Anything held in a hand follows the hand through its wind-up and swing: Divergent Fist's cyan energy, Red's orb, Rough
-Energy, Hollow Purple's blue and red. The model records where its arms really are each frame. The opt-in
-`PoseGalleryClientTest` films every animation on a training dummy.
+The client tests:
+- `AnimFrameworkClientTest` checks that every clip gameplay names exists, that the rig reproduces vanilla and bends
+  the way its conventions say, and the blending, priority, loop and interrupt rules.
+- The opt-in `PoseGalleryClientTest` renders exact clip frames for side-by-side comparison with the references.
 
 ## Visual tiers
 

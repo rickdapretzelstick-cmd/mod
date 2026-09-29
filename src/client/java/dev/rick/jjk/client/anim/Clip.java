@@ -24,12 +24,16 @@ public final class Clip {
     public final boolean loop;
     public final float loopStart, loopEnd;
     public final float blendIn, blendOut;
+    /** The shape of the blend in: a clip whose first key comes later eases out of the previous pose along it. */
+    public final Easing blendEase;
     public final Priority priority;
     public final Layer layer;
     public final boolean interruptible;
     /** While interruptible, only between these times (ms); a negative end means until the clip is over. */
     public final float interruptFrom, interruptTo;
     public final float speed;
+    /** A looping or held clip still lets go after this long (ms of clip time); 0 = only when stopped. */
+    public float stopAfter;
     /** 0..1: how much the head keeps looking where the player looks when the clip doesn't pose it. */
     public final float look;
     /** Degrees of shake added to every animated bone (overload, struggling). */
@@ -41,7 +45,7 @@ public final class Clip {
     final Track[][] tracks;
 
     Clip(String name, String group, float duration, float fps, boolean hold, boolean loop, float loopStart, float loopEnd,
-         float blendIn, float blendOut, Priority priority, Layer layer, boolean interruptible, float interruptFrom, float interruptTo,
+         float blendIn, float blendOut, Easing blendEase, Priority priority, Layer layer, boolean interruptible, float interruptFrom, float interruptTo,
          float speed, float look, float tremble, float[] keyTimes, List<Marker> markers, Track[][] tracks) {
         this.name = name;
         this.group = group;
@@ -53,6 +57,7 @@ public final class Clip {
         this.loopEnd = loopEnd;
         this.blendIn = blendIn;
         this.blendOut = blendOut;
+        this.blendEase = blendEase;
         this.priority = priority;
         this.layer = layer;
         this.interruptible = interruptible;
@@ -118,7 +123,9 @@ public final class Clip {
             if (src[POS] != null) dst[POS] = src[POS].mirrored(true);
             dst[SCALE] = src[SCALE];
         }
-        return new Clip(newName, group, duration, fps, hold, loop, loopStart, loopEnd, blendIn, blendOut, priority, layer,
+        Clip c = new Clip(newName, group, duration, fps, hold, loop, loopStart, loopEnd, blendIn, blendOut, blendEase, priority, layer,
                 interruptible, interruptFrom, interruptTo, speed, look, tremble, keyTimes, markers, m);
+        c.stopAfter = stopAfter;
+        return c;
     }
 }

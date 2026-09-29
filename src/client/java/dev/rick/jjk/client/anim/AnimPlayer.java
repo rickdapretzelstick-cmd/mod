@@ -20,6 +20,8 @@ public final class AnimPlayer {
         final long seq;
         public boolean stopping;
         float fadeFrom, fadeMs, fadeTime;
+        /** The clip that took over this one's layer: this stays under it, unfaded, until it shows fully. */
+        @Nullable Instance replacedBy;
 
         Instance(Clip clip, float speed, long seq) {
             this.clip = clip;
@@ -29,8 +31,9 @@ public final class AnimPlayer {
 
         /** 0..1: how much of the pose shows (blending in, then fading out once stopped). */
         public float weight() {
+            if (stopping && replacedBy != null) return fadeFrom;
             if (stopping) return fadeMs <= 0 ? 0 : Math.max(0, fadeFrom * (1 - fadeTime / fadeMs));
-            return clip.blendIn <= 0 ? 1 : Math.min(1, time / clip.blendIn);
+            return clip.blendIn <= 0 ? 1 : clip.blendEase.apply(Math.min(1, time / clip.blendIn));
         }
 
         void stop(float fade) {
@@ -62,18 +65,24 @@ public final class AnimPlayer {
             if (i.stopping || !i.clip.layer.overlaps(clip.layer)) continue;
             if (i.clip.priority.ordinal() > clip.priority.ordinal() && !i.clip.canBeInterruptedAt(i.time)) return false;
         }
+        Instance next = new Instance(clip, speed * clip.speed, seq++);
         for (Instance i : instances) {
             // The new clip takes over its layer; a full-body clip also takes over the other layers it outranks.
             boolean replaces = i.clip.layer == clip.layer
                     || clip.layer == Layer.BASE && i.clip.priority.ordinal() <= clip.priority.ordinal();
-            if (replaces) {
+            if (!replaces) continue;
+            if (clip.blendIn <= 0) {
+                // A hard transition cuts off everything there, including whatever was still fading out.
+                i.stop(0);
+                i.replacedBy = null;
+                i.fadeMs = 0;
+            } else if (!i.stopping) {
                 i.stop(clip.blendIn);
-                // A hard transition also cuts off whatever was still fading out there.
-                if (clip.blendIn <= 0) i.fadeMs = 0;
+                i.replacedBy = next;
             }
         }
         instances.removeIf(i -> i.stopping && i.weight() <= 0);
-        instances.add(new Instance(clip, speed * clip.speed, seq++));
+        instances.add(next);
         return true;
     }
 
@@ -109,13 +118,16 @@ public final class AnimPlayer {
             tick(reaction, dt);
             if (reaction.stopping && reaction.weight() <= 0) reaction = null;
         }
-        instances.removeIf(i -> i.stopping && i.weight() <= 0);
+        instances.removeIf(i -> i.stopping && (i.replacedBy != null
+                ? i.replacedBy.weight() >= 1 && !i.replacedBy.stopping || !instances.contains(i.replacedBy) || i.replacedBy.stopping && i.replacedBy.replacedBy == null
+                : i.weight() <= 0));
     }
 
     private static void tick(Instance i, float dt) {
         if (i.stopping) i.fadeTime += dt;
         i.time += dt * i.speed;
         if (!i.stopping && !i.clip.endless() && i.time >= i.clip.duration) i.stop(i.clip.blendOut);
+        if (!i.stopping && i.clip.stopAfter > 0 && i.time >= i.clip.stopAfter) i.stop(i.clip.blendOut);
     }
 
     /** Moves the clips' clocks by {@code dt} without fading anything (the debugger scrubbing a paused clip). */

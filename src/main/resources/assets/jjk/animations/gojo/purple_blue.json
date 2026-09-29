@@ -1,18 +1,15 @@
 {
   "name": "purple_blue",
-  "duration": 500,
+  "reference": "HollowPurple.gif frames 0-30: the left arm swings out to the side, palm open, and Blue forms in that hand; the head turns to it.",
+  "duration": 700,
   "hold": true,
-  "blendIn": 100, "blendOut": 150,
+  "blendIn": 80, "blendOut": 200,
   "priority": "SPECIAL",
   "keys": [
-    {"t": 500, "ease": "OVERSHOOT", "bones": {
-        "head": {"rot": [2, 0, 0]},
-        "chest": {"rot": [0, 12, 0]},
-        "rightArm": {"rot": [-10, 0, 12]},
-        "leftArm": {"rot": [-88, 22, -50]},
-        "rightThigh": {"rot": [12, 0, 6]},
-        "leftThigh": {"rot": [-12, 0, -6]},
-        "hips": {"rot": [0, 8, 0]},
-        "root": {"pos": [0, -1.5, 0]}}}
+    {"t": 0, "bones": {"leftArm": [-5, 0, -6], "leftForearm": [-8, 0, 0], "head": [0, 0, 0], "root": {"pos": [0, 0, 0]}}},
+    {"t": 220, "marker": "reach", "ease": "EASE_OUT", "bones": {
+        "leftArm": [-20, 0, -95], "leftForearm": [-15, 0, 0], "leftHand": [0, 0, 0],
+        "chest": [-2, 8, 0], "head": [0, -25, 0], "rightArm": [5, 0, 10], "root": {"pos": [0, -0.3, 0]}}},
+    {"t": 700, "ease": "EASE_IN_OUT", "bones": {"leftArm": [-22, 0, -98], "leftForearm": [-18, 0, 0]}}
   ]
 }

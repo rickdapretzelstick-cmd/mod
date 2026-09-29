@@ -1,32 +1,19 @@
 {
   "name": "purple_release",
-  "duration": 900,
-  "blendIn": 25, "blendOut": 300,
+  "reference": "HollowPurple.gif frames 144-160: both arms drive forward as Purple leaves, a lunge into it, recoil, then down to rest.",
+  "duration": 1000,
+  "blendIn": 80, "blendEase": "EASE_IN", "blendOut": 300,
   "priority": "SPECIAL",
   "keys": [
-    {"t": 0, "bones": {
-        "rightArm": {"rot": [-96, 20, 0]},
-        "leftArm": {"rot": [-96, -20, 0]},
-        "hips": {"rot": [10, 0, 0]},
-        "root": {"pos": [0, -3, 0.5]}}},
-    {"t": 150, "ease": "EASE_IN", "bones": {
-        "chest": {"rot": [0, -28, 0]},
-        "rightArm": {"rot": [-102, -4, 0]},
-        "leftArm": {"rot": [30, 0, -28]},
-        "rightThigh": {"rot": [35, 0, 6]},
-        "leftThigh": {"rot": [-35, 0, -6]},
-        "hips": {"rot": [14, -18, 0]},
-        "root": {"pos": [0, -3, 5]}}},
-    {"t": 500, "ease": "EASE_OUT", "bones": {
-        "root": {"pos": [0, -2.5, 4]}}},
-    {"t": 900, "ease": "EASE_OUT", "bones": {
-        "head": {"rot": [4, 0, 0]},
-        "chest": {"rot": [0, 12, 0]},
-        "rightArm": {"rot": [-62, -22, 12]},
-        "leftArm": {"rot": [-78, 22, -10]},
-        "rightThigh": {"rot": [10, 0, 4]},
-        "leftThigh": {"rot": [-12, 0, -4]},
-        "hips": {"rot": [4, 0, 0]},
-        "root": {"pos": [0, -1, 0]}}}
+    {"t": 80, "marker": "fire", "ease": "EASE_IN", "bones": {
+        "rightArm": [-95, -12, 0], "rightForearm": [-2, 0, 0], "leftArm": [-95, 12, 0], "leftForearm": [-2, 0, 0],
+        "chest": [10, 0, 0], "head": [0, 0, 0], "root": {"pos": [0, -1.5, 2]},
+        "rightThigh": [-30, 0, 8], "rightShin": [40, 0, 0], "leftThigh": [20, 0, -8], "leftShin": [10, 0, 0]}},
+    {"t": 300, "marker": "recoil", "ease": "EASE_OUT", "bones": {
+        "rightArm": [-80, -10, 0], "rightForearm": [-10, 0, 0], "leftArm": [-80, 10, 0], "leftForearm": [-10, 0, 0],
+        "chest": [-5, 0, 0], "root": {"pos": [0, -1, 0.5]}}},
+    {"t": 900, "marker": "recovery", "ease": "EASE_IN_OUT", "pose": "arms_relaxed", "bones": {
+        "chest": [0, 0, 0], "root": {"pos": [0, 0, 0]},
+        "rightThigh": [0, 0, 3], "rightShin": [0, 0, 0], "leftThigh": [0, 0, -3], "leftShin": [0, 0, 0]}}
   ]
 }

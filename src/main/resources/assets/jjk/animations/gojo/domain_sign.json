@@ -1,16 +1,17 @@
 {
   "name": "domain_sign",
-  "duration": 400,
+  "reference": "InfiniteVoid.gif cut-in (frames 6-30): the right hand comes up in front of the face with the fingers crossed, head bowed a little, the other arm loose; held through the domain's startup.",
+  "duration": 800,
   "hold": true,
   "blendIn": 100, "blendOut": 200,
   "priority": "AWAKENING",
   "keys": [
-    {"t": 400, "ease": "OVERSHOOT", "bones": {
-        "head": {"rot": [14, 0, 0]},
-        "chest": {"rot": [3, -8, 0]},
-        "rightArm": {"rot": [-112, -38, 0]},
-        "leftArm": {"rot": [5, 0, -8]},
-        "hips": {"rot": [2, -6, 0]},
-        "root": {"pos": [0, -0.5, 0]}}}
+    {"t": 0, "bones": {"rightArm": [-5, 0, 6], "rightForearm": [-8, 0, 0], "head": [0, 0, 0]}},
+    {"t": 150, "marker": "anticipation", "ease": "EASE_OUT", "bones": {"rightArm": [-40, -10, 10], "rightForearm": [-40, 0, 0], "head": [8, 0, 0]}},
+    {"t": 400, "marker": "sign", "ease": "OVERSHOOT", "bones": {
+        "rightArm": [-105, -42, 4], "rightForearm": [-105, 0, 0], "rightHand": [-15, 0, 0],
+        "chest": [3, -8, 0], "head": [12, -4, 0], "leftArm": [4, 0, -10], "leftForearm": [-10, 0, 0],
+        "hips": [0, -6, 0], "root": {"pos": [0, -0.4, 0]}}},
+    {"t": 800, "ease": "EASE_IN_OUT", "bones": {"rightArm": [-108, -44, 4], "rightForearm": [-108, 0, 0], "head": [14, -4, 0]}}
   ]
 }

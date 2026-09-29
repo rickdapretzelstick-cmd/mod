@@ -1,18 +1,17 @@
 {
   "name": "red_charge",
-  "duration": 300,
+  "reference": "ReversalRed.gif frames 0-30: the right arm swings low and back, then rises high in front, hand above the head where Red gathers; held until it fires.",
+  "duration": 600,
   "hold": true,
-  "blendIn": 75, "blendOut": 150,
+  "blendIn": 60, "blendOut": 200,
   "priority": "SPECIAL",
+  "look": 0.4,
   "keys": [
-    {"t": 300, "ease": "OVERSHOOT", "bones": {
-        "head": {"rot": [4, 0, 0]},
-        "chest": {"rot": [0, -14, 0]},
-        "rightArm": {"rot": [-92, -8, 0]},
-        "leftArm": {"rot": [-80, 44, 0]},
-        "rightThigh": {"rot": [20, 0, 6]},
-        "leftThigh": {"rot": [-22, 0, -6]},
-        "hips": {"rot": [6, -16, 0]},
-        "root": {"pos": [0, -2.5, 0]}}}
+    {"t": 0, "bones": {"rightArm": [-5, 0, 6], "chest": [0, 0, 0], "root": {"pos": [0, 0, 0]}}},
+    {"t": 120, "marker": "anticipation", "ease": "EASE_OUT", "bones": {"rightArm": [15, 0, 15], "rightForearm": [-15, 0, 0], "chest": [0, 10, 0], "root": {"pos": [0, -0.6, 0]}}},
+    {"t": 350, "marker": "raise", "ease": "EASE_OUT", "bones": {
+        "rightArm": [-150, -12, 12], "rightForearm": [-50, 0, 0], "rightHand": [-20, 0, 0],
+        "chest": [-6, -8, 0], "head": [-12, -5, 0], "leftArm": [-10, 0, -18], "root": {"pos": [0, 0.3, 0]}}},
+    {"t": 600, "marker": "hold", "ease": "EASE_IN_OUT", "bones": {"rightArm": [-158, -12, 10], "rightForearm": [-55, 0, 0], "rightHand": [-25, 0, 0], "chest": [-8, -10, 0]}}
   ]
 }

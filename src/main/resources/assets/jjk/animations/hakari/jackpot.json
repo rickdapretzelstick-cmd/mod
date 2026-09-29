@@ -1,27 +1,25 @@
 {
   "name": "jackpot",
+  "reference": "Jackpot.gif frames 120-139: after the cut-in, the body tenses in, then straightens with a jolt as the jackpot energy erupts: chest up, fists clenched low and out, standing tall inside the burst.",
   "duration": 1500,
-  "blendIn": 25, "blendOut": 400,
+  "blendIn": 80, "blendOut": 300,
   "priority": "AWAKENING",
+  "interruptible": false,
   "keys": [
-    {"t": 0, "bones": {
-        "rightArm": {"rot": [-60, 0, 20]},
-        "leftArm": {"rot": [-60, 0, -20]}}},
-    {"t": 200, "bones": {
-        "head": {"rot": [-30, 0, 0]},
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [-160, 0, 30]},
-        "leftArm": {"rot": [-160, 0, -30]},
-        "hips": {"rot": [-12, 0, 0]}}},
-    {"t": 1100, "bones": {
-        "head": {"rot": [-25, 0, 0]},
-        "rightArm": {"rot": [-150, 0, 35]},
-        "leftArm": {"rot": [-150, 0, -35]}}},
-    {"t": 1500, "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [0, 0, 5]},
-        "leftArm": {"rot": [0, 0, -5]},
-        "hips": {"rot": [0, 0, 0]}}}
+    {"t": 0, "bones": {"root": {"pos": [0, 0, 0]}}},
+    {"t": 250, "marker": "anticipation", "ease": "EASE_OUT", "bones": {
+        "chest": [22, 0, 0], "head": [18, 0, 0], "hips": [6, 0, 0],
+        "rightArm": [-30, -30, -15], "rightForearm": [-110, 0, 0], "leftArm": [-30, 30, 15], "leftForearm": [-110, 0, 0],
+        "rightThigh": [-30, 0, 10], "rightShin": [55, 0, 0], "rightFoot": [-25, 0, 0],
+        "leftThigh": [-30, 0, -10], "leftShin": [55, 0, 0], "leftFoot": [-25, 0, 0],
+        "root": {"pos": [0, -2, 0]}}},
+    {"t": 400, "marker": "eruption", "ease": "OVERSHOOT", "bones": {
+        "chest": [-14, 0, 0], "head": [-16, 0, 0], "hips": [-3, 0, 0],
+        "rightArm": [10, 0, 28], "rightForearm": [-20, 0, 0], "leftArm": [10, 0, -28], "leftForearm": [-20, 0, 0],
+        "rightThigh": [0, 0, 10], "rightShin": [4, 0, 0], "rightFoot": [0, 0, 0],
+        "leftThigh": [0, 0, -10], "leftShin": [4, 0, 0], "leftFoot": [0, 0, 0],
+        "root": {"pos": [0, 0.5, 0]}}},
+    {"t": 1100, "marker": "hold", "ease": "EASE_IN_OUT", "bones": {"chest": [-8, 0, 0], "head": [-6, 0, 0], "root": {"pos": [0, 0, 0]}}},
+    {"t": 1450, "ease": "EASE_IN_OUT", "pose": "arms_relaxed", "bones": {"chest": [0, 0, 0], "head": [0, 0, 0], "hips": [0, 0, 0]}}
   ]
 }

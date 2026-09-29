@@ -1,24 +1,24 @@
 {
   "name": "shutter_sign",
-  "duration": 700,
-  "blendIn": 50, "blendOut": 200,
+  "reference": "ShutterDoors.gif frames 0-24: a sharp beat down, then both arms flung out wide to the sides, palms forward, feet set apart as the doors slam shut on the target; arms lower by frame 24.",
+  "fps": 50,
+  "endFrame": 34,
+  "blendIn": 40, "blendOut": 200,
   "priority": "SPECIAL",
+  "look": 0.5,
   "keys": [
-    {"t": 0, "bones": {
-        "rightArm": {"rot": [-20, 0, 10]},
-        "leftArm": {"rot": [-20, 0, -10]}}},
-    {"t": 200, "bones": {
-        "head": {"rot": [-8, 0, 0]},
-        "chest": {"rot": [-6, 0, 0]},
-        "rightArm": {"rot": [-15, 0, 95]},
-        "leftArm": {"rot": [-15, 0, -95]}}},
-    {"t": 500, "bones": {
-        "rightArm": {"rot": [-12, 0, 90]},
-        "leftArm": {"rot": [-12, 0, -90]}}},
-    {"t": 700, "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [-10, 0, 10]},
-        "leftArm": {"rot": [-10, 0, -10]}}}
+    {"f": 0, "bones": {"rightArm": [-10, 0, 8], "leftArm": [-10, 0, -8], "root": {"pos": [0, 0, 0]}}},
+    {"f": 3, "marker": "anticipation", "ease": "EASE_OUT", "bones": {
+        "rightArm": [-40, -30, -10], "rightForearm": [-80, 0, 0], "leftArm": [-40, 30, 10], "leftForearm": [-80, 0, 0],
+        "chest": [10, 0, 0], "head": [6, 0, 0], "root": {"pos": [0, -1, 0]}}},
+    {"f": 8, "marker": "doors", "ease": "OVERSHOOT", "bones": {
+        "rightArm": [-30, 0, 88], "rightForearm": [-10, 0, 0], "rightHand": [-20, 0, 0],
+        "leftArm": [-30, 0, -88], "leftForearm": [-10, 0, 0], "leftHand": [-20, 0, 0],
+        "chest": [-8, 0, 0], "head": [-5, 0, 0], "root": {"pos": [0, -0.6, 0]},
+        "rightThigh": [-6, 0, 10], "rightShin": [10, 0, 0], "leftThigh": [-6, 0, -10], "leftShin": [10, 0, 0]}},
+    {"f": 20, "marker": "hold", "ease": "EASE_IN_OUT", "bones": {"rightArm": [-28, 0, 82], "leftArm": [-28, 0, -82], "chest": [-5, 0, 0]}},
+    {"f": 32, "marker": "recovery", "ease": "EASE_IN_OUT", "pose": "arms_relaxed", "bones": {
+        "chest": [0, 0, 0], "head": [0, 0, 0], "root": {"pos": [0, 0, 0]},
+        "rightThigh": [0, 0, 3], "rightShin": [0, 0, 0], "leftThigh": [0, 0, -3], "leftShin": [0, 0, 0]}}
   ]
 }

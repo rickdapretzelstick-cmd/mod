@@ -1,0 +1,47 @@
+{
+  "poses": {
+    "fight_stance": {
+      "bones": {
+        "chest": [8, -8, 0], "head": [-4, 6, 0],
+        "rightArm": [-45, 18, 10], "rightForearm": [-95, 0, 0],
+        "leftArm": [-55, -18, -10], "leftForearm": [-100, 0, 0],
+        "rightThigh": [-16, 0, 8], "rightShin": [30, 0, 0], "rightFoot": [-14, 0, 0],
+        "leftThigh": [6, 0, -8], "leftShin": [22, 0, 0], "leftFoot": [-10, 0, 0],
+        "root": {"pos": [0, -1, 0]}
+      }
+    },
+    "wide_legs": {
+      "bones": {
+        "rightThigh": [-20, 0, 12], "rightShin": [36, 0, 0], "rightFoot": [-16, 0, 0],
+        "leftThigh": [10, 0, -12], "leftShin": [24, 0, 0], "leftFoot": [-12, 0, 0]
+      }
+    },
+    "crouch_land": {
+      "bones": {
+        "hips": [12, 0, 0], "chest": [18, 0, 0], "head": [-14, 0, 0],
+        "rightThigh": [-58, 0, 14], "rightShin": [100, 0, 0], "rightFoot": [-40, 0, 0],
+        "leftThigh": [-52, 0, -14], "leftShin": [96, 0, 0], "leftFoot": [-40, 0, 0],
+        "root": {"pos": [0, -3.5, 0]}
+      }
+    },
+    "fists_chambered": {
+      "bones": {
+        "rightArm": [-50, 22, 10], "rightForearm": [-105, 0, 0],
+        "leftArm": [-50, -22, -10], "leftForearm": [-105, 0, 0]
+      }
+    },
+    "arms_relaxed": {
+      "bones": {
+        "rightArm": [-8, 0, 8], "rightForearm": [-10, 0, 0],
+        "leftArm": [-8, 0, -8], "leftForearm": [-10, 0, 0]
+      }
+    },
+    "straight_right": {
+      "bones": {
+        "chest": [12, -30, 0], "hips": [6, -10, 0],
+        "rightArm": [-88, 2, 22], "rightForearm": [-18, 0, 0], "rightHand": [0, 0, 0],
+        "leftArm": [-45, -10, -30], "leftForearm": [-100, 0, 0]
+      }
+    }
+  }
+}

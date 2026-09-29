@@ -202,6 +202,8 @@ public final class AnimLibrary {
     private static Clip compile(String name, String group, JsonObject o, Registry r) {
         float fps = num(o, "fps", 50);
         float frameMs = 1000f / fps;
+        // Keys may use the reference's own frame numbers: refStart is the reference frame the clip begins on.
+        float refStart = num(o, "refStart", 0);
         List<List<List<Keyed>>> keyed = new ArrayList<>();
         for (int b = 0; b < Bone.COUNT; b++) {
             List<List<Keyed>> ch = new ArrayList<>();
@@ -215,7 +217,7 @@ public final class AnimLibrary {
         if (keys == null) throw new IllegalArgumentException("no keys");
         for (JsonElement ke : keys) {
             JsonObject k = ke.getAsJsonObject();
-            float t = time(k, "t", "f", frameMs, Float.NaN);
+            float t = k.has("f") && !k.has("t") ? (k.get("f").getAsFloat() - refStart) * frameMs : time(k, "t", "f", frameMs, Float.NaN);
             if (Float.isNaN(t)) throw new IllegalArgumentException("a key has neither t (ms) nor f (frame)");
             last = Math.max(last, t);
             keyTimes.add(t);
@@ -242,7 +244,8 @@ public final class AnimLibrary {
         if (o.has("markers")) {
             for (JsonElement me : o.getAsJsonArray("markers")) {
                 JsonObject m = me.getAsJsonObject();
-                markers.add(new Clip.Marker(time(m, "t", "f", frameMs, 0), str(m, "label", "?")));
+                float mt = m.has("f") && !m.has("t") ? (m.get("f").getAsFloat() - refStart) * frameMs : time(m, "t", "f", frameMs, 0);
+                markers.add(new Clip.Marker(mt, str(m, "label", "?")));
             }
         }
         markers.sort((a, b) -> Float.compare(a.time(), b.time()));
@@ -270,9 +273,9 @@ public final class AnimLibrary {
                 tracks[b][c] = new Track(times, values, eases);
             }
         }
-        float duration = time(o, "duration", "frames", frameMs, last);
-        float loopStart = time(o, "loopStart", "loopStartFrame", frameMs, 0);
-        float loopEnd = time(o, "loopEnd", "loopEndFrame", frameMs, duration);
+        float duration = o.has("endFrame") ? (o.get("endFrame").getAsFloat() - refStart) * frameMs : time(o, "duration", "frames", frameMs, last);
+        float loopStart = o.has("loopStartFrame") ? (o.get("loopStartFrame").getAsFloat() - refStart) * frameMs : time(o, "loopStart", "-", frameMs, 0);
+        float loopEnd = o.has("loopEndFrame") ? (o.get("loopEndFrame").getAsFloat() - refStart) * frameMs : time(o, "loopEnd", "-", frameMs, duration);
         float iFrom = 0, iTo = -1;
         JsonArray window = o.has("interruptWindow") ? o.getAsJsonArray("interruptWindow") : null;
         if (window != null && window.size() == 2) {
@@ -286,11 +289,13 @@ public final class AnimLibrary {
         float[] kt = new float[keyTimes.size()];
         keyTimes.sort(null);
         for (int i = 0; i < kt.length; i++) kt[i] = keyTimes.get(i);
-        return new Clip(name, group, duration, fps, bool(o, "hold", false), bool(o, "loop", false), loopStart, loopEnd,
-                num(o, "blendIn", 75), num(o, "blendOut", 150),
+        Clip clip = new Clip(name, group, duration, fps, bool(o, "hold", false), bool(o, "loop", false), loopStart, loopEnd,
+                num(o, "blendIn", 75), num(o, "blendOut", 150), blendEase(o),
                 enumOf(Priority.class, str(o, "priority", "SPECIAL")), enumOf(Layer.class, str(o, "layer", "BASE")),
                 bool(o, "interruptible", true), iFrom, iTo, num(o, "speed", 1), num(o, "look", 0), num(o, "tremble", 0),
                 kt, List.copyOf(markers), tracks);
+        clip.stopAfter = num(o, "stopAfter", 0);
+        return clip;
     }
 
     /** Parses a {@code bones} object: per bone, [x, y, z] (a rotation) or {rot, pos, scale, ease}. */
@@ -370,6 +375,13 @@ public final class AnimLibrary {
         if (o.has(msKey)) return o.get(msKey).getAsFloat();
         if (o.has(frameKey)) return o.get(frameKey).getAsFloat() * frameMs;
         return def;
+    }
+
+    private static Easing blendEase(JsonObject o) {
+        if (!o.has("blendEase")) return Easing.LINEAR;
+        Easing e = Easing.byName(o.get("blendEase").getAsString());
+        if (e == null) throw new IllegalArgumentException("unknown blendEase " + o.get("blendEase"));
+        return e;
     }
 
     @Nullable

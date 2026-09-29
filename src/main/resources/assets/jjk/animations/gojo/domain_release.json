@@ -1,0 +1,22 @@
+{
+  "name": "domain_release",
+  "reference": "InfiniteVoid.gif frames 30-120: the sign breaks and the arms fly open, chest and head thrown back, lifting onto the toes and floating a moment as the void opens, then settling.",
+  "duration": 1200,
+  "blendIn": 120, "blendEase": "EASE_IN", "blendOut": 300,
+  "priority": "AWAKENING",
+  "keys": [
+    {"t": 120, "marker": "expand", "ease": "EASE_IN", "bones": {
+        "rightArm": [-40, 0, 110], "rightForearm": [-10, 0, 0], "rightHand": [0, 0, 0], "leftArm": [-40, 0, -110], "leftForearm": [-10, 0, 0],
+        "chest": [-22, 0, 0], "head": [-25, 0, 0], "hips": [-5, 0, 0], "root": {"pos": [0, 1.5, 0]},
+        "rightFoot": [25, 0, 0], "leftFoot": [25, 0, 0]}},
+    {"t": 420, "marker": "float", "ease": "EASE_OUT", "bones": {
+        "root": {"pos": [0, 2.5, 0]}, "rightArm": [-60, 0, 100], "rightForearm": [-25, 0, 0], "leftArm": [-60, 0, -100], "leftForearm": [-25, 0, 0],
+        "chest": [-12, 0, 0], "head": [-12, 0, 0],
+        "rightThigh": [-20, 0, 10], "rightShin": [35, 0, 0], "rightFoot": [15, 0, 0],
+        "leftThigh": [10, 0, -12], "leftShin": [25, 0, 0], "leftFoot": [15, 0, 0]}},
+    {"t": 1050, "marker": "settle", "ease": "EASE_IN_OUT", "pose": "arms_relaxed", "bones": {
+        "root": {"pos": [0, 0, 0]}, "chest": [0, 0, 0], "head": [0, 0, 0], "hips": [0, 0, 0],
+        "rightThigh": [0, 0, 3], "rightShin": [0, 0, 0], "rightFoot": [0, 0, 0],
+        "leftThigh": [0, 0, -3], "leftShin": [0, 0, 0], "leftFoot": [0, 0, 0]}}
+  ]
+}

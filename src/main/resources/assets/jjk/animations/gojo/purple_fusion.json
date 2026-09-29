@@ -1,22 +1,17 @@
 {
   "name": "purple_fusion",
-  "duration": 700,
+  "reference": "HollowPurple.gif frames 48-72: the arms sweep in and the hands meet in front of the chest, bracing against the collision; held straining while Purple charges.",
+  "duration": 800,
   "hold": true,
-  "blendIn": 25, "blendOut": 150,
+  "blendIn": 400, "blendEase": "EASE_IN_OUT", "blendOut": 200,
   "priority": "SPECIAL",
+  "tremble": 1.2,
+  "look": 0.3,
   "keys": [
-    {"t": 0, "bones": {
-        "rightArm": {"rot": [-88, -22, 55]},
-        "leftArm": {"rot": [-88, 22, -55]},
-        "hips": {"rot": [2, 0, 0]},
-        "root": {"pos": [0, -2.5, 0]}}},
-    {"t": 700, "ease": "EASE_IN", "bones": {
-        "head": {"rot": [10, 0, 0]},
-        "rightArm": {"rot": [-96, 20, 0]},
-        "leftArm": {"rot": [-96, -20, 0]},
-        "rightThigh": {"rot": [18, 0, 8], "ease": "EASE_IN_OUT"},
-        "leftThigh": {"rot": [-18, 0, -8], "ease": "EASE_IN_OUT"},
-        "hips": {"rot": [10, 0, 0]},
-        "root": {"pos": [0, -3, 0.5]}}}
+    {"t": 400, "marker": "hands meet", "ease": "EASE_IN_OUT", "bones": {
+        "rightArm": [-85, -38, 0], "rightForearm": [-20, 0, 0], "leftArm": [-85, 38, 0], "leftForearm": [-20, 0, 0],
+        "chest": [6, 0, 0], "head": [4, 0, 0], "root": {"pos": [0, -1, 0]},
+        "rightThigh": [-12, 0, 10], "rightShin": [20, 0, 0], "leftThigh": [8, 0, -10], "leftShin": [14, 0, 0]}},
+    {"t": 800, "marker": "charged", "ease": "EASE_OUT", "bones": {"rightArm": [-88, -42, 0], "rightForearm": [-28, 0, 0], "leftArm": [-88, 42, 0], "leftForearm": [-28, 0, 0]}}
   ]
 }
