@@ -1,0 +1,10 @@
+{
+  "name": "rika_calibrate",
+  "rig": "rika",
+  "reference": "Axis check: right arm x -90, left arm z +60, head y +40, jaw x +20, tail_3 y +40.",
+  "duration": 400, "hold": true, "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {"right_upper_arm": [0, 0, 0]}},
+    {"t": 300, "bones": {"right_upper_arm": [-90, 0, 0], "left_upper_arm": [0, 0, 60], "head": [0, 40, 0], "jaw": [20, 0, 0], "tail_3": [0, 40, 0]}}
+  ]
+}

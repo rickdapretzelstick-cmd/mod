@@ -66,6 +66,18 @@ public final class CombatStatus {
     public static final CombatStatus SUKUNA = register(builder("sukuna"));
     /** Manji Kick's raised stance (informational: drives the pose's glint). */
     public static final CombatStatus MANJI = register(builder("manji"));
+    /** Cursed Partners (informational: the katana holster, the necklace and its ring, for everyone to see). */
+    public static final CombatStatus CURSED_PARTNERS = register(builder("cursed_partners"));
+    /** Yuta's katana is out of its holster (informational: drawn in his hand rather than at his hip). */
+    public static final CombatStatus KATANA = register(builder("katana"));
+    /** True Love's steel casing wraps Yuta's right arm, and the ring is on his finger (informational). */
+    public static final CombatStatus STEEL_ARM = register(builder("steel_arm"));
+    /** Marked by Clairvoyance: a manga panel hangs over them, and their attacks on the one who marked them miss. */
+    public static final CombatStatus CLAIRVOYANCE = register(builder("clairvoyance"));
+    /** A true ragdoll: the ragdoll can't be cancelled with the dash key (Thin Ice Breaker, a missed Rika Throw). */
+    public static final CombatStatus TRUE_RAGDOLL = register(builder("true_ragdoll"));
+    /** Cursed Speech's "Stop!": frozen where they stand, in the air too. */
+    public static final CombatStatus STOPPED = register(builder("stopped").lockMovement().lockActions().lockTechniques().gravity(0f).interrupts());
 
     public final String id;
     public final int index;

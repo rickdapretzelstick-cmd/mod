@@ -38,6 +38,12 @@ public final class ModEntities {
     public static final EntityType<dev.rick.jjk.entity.FireArrowEntity> FIRE_ARROW = register("fire_arrow",
             EntityType.Builder.<dev.rick.jjk.entity.FireArrowEntity>of(dev.rick.jjk.entity.FireArrowEntity::new, MobCategory.MISC).sized(0.6f, 0.6f).noSave().noSummon().fireImmune()
                     .clientTrackingRange(16).updateInterval(1).noLootTable());
+    public static final EntityType<dev.rick.jjk.yuta.RikaEntity> RIKA = register("rika",
+            EntityType.Builder.<dev.rick.jjk.yuta.RikaEntity>of(dev.rick.jjk.yuta.RikaEntity::new, MobCategory.MISC).sized(1.4f, 3.4f).noSave().noSummon().fireImmune()
+                    .clientTrackingRange(12).updateInterval(1).noLootTable());
+    public static final EntityType<dev.rick.jjk.yuta.DomainBladeEntity> DOMAIN_BLADE = register("domain_blade",
+            EntityType.Builder.<dev.rick.jjk.yuta.DomainBladeEntity>of(dev.rick.jjk.yuta.DomainBladeEntity::new, MobCategory.MISC).sized(0.4f, 1.4f).noSave().noSummon().fireImmune()
+                    .clientTrackingRange(10).updateInterval(1).noLootTable());
     public static final EntityType<TrainingDummy> TRAINING_DUMMY = register("training_dummy",
             EntityType.Builder.<TrainingDummy>of(TrainingDummy::new, MobCategory.MISC).sized(0.6f, 1.95f).clientTrackingRange(10));
 

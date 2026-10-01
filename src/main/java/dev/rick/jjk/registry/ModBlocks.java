@@ -22,6 +22,9 @@ public final class ModBlocks {
     /** Malevolent Shrine: a black void over a shallow pool of blood. */
     public static final Block SHRINE_BARRIER = register("shrine_barrier", 0);
     public static final Block SHRINE_FLOOR = register("shrine_floor", 10);
+    /** Authentic Mutual Love: a pale stone platform under a black sky. */
+    public static final Block AML_BARRIER = register("aml_barrier", 0);
+    public static final Block AML_FLOOR = register("aml_floor", 9);
 
     // Model-only blocks: never placed in the world, only drawn by renderers (Hakari's doors and balls, and the trains and
     // seven-segment counters inside his domain),
@@ -46,7 +49,8 @@ public final class ModBlocks {
     }
 
     public static boolean isDomainBlock(net.minecraft.world.level.block.state.BlockState s) {
-        return s.is(DOMAIN_BARRIER) || s.is(DOMAIN_FLOOR) || s.is(IDG_BARRIER) || s.is(IDG_FLOOR) || s.is(SHRINE_BARRIER) || s.is(SHRINE_FLOOR);
+        return s.is(DOMAIN_BARRIER) || s.is(DOMAIN_FLOOR) || s.is(IDG_BARRIER) || s.is(IDG_FLOOR) || s.is(SHRINE_BARRIER) || s.is(SHRINE_FLOOR)
+                || s.is(AML_BARRIER) || s.is(AML_FLOOR);
     }
 
     /** A prop drawn inside Idle Death Gamble: {@link #TRAIN_CAR}, {@link #LED_SEGMENT} or {@link #KIOSK}. */

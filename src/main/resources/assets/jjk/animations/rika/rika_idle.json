@@ -1,0 +1,123 @@
+{
+ "name": "rika_idle",
+ "rig": "rika",
+ "reference": "converted from rika.bbmodel (animation.rika.idle)",
+ "duration": 4000,
+ "priority": "IDLE",
+ "blendIn": 200,
+ "blendOut": 200,
+ "keys": [
+  {
+   "t": 0,
+   "bones": {
+    "body": {
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "head": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "jaw": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 2000,
+   "bones": {
+    "body": {
+     "pos": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "head": {
+     "rot": [
+      2.0,
+      -2.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "jaw": {
+     "rot": [
+      4.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      -3.0,
+      0.0,
+      2.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 4000,
+   "bones": {
+    "body": {
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "head": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "jaw": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  }
+ ],
+ "loop": true
+}

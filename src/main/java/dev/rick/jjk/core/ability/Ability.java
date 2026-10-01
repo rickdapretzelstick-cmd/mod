@@ -64,6 +64,11 @@ public abstract class Ability {
         return false;
     }
 
+    /** Can be used in the middle of a basic attack (a partner's move: Rika acts while Yuta swings). */
+    public boolean usableDuringMelee() {
+        return false;
+    }
+
     /** Extra activation conditions. Return a short reason to refuse, or null to allow. */
     @Nullable
     public String checkActivation(AbilityContext ctx) {

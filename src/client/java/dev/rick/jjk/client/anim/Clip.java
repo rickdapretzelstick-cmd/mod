@@ -34,6 +34,10 @@ public final class Clip {
     public final float speed;
     /** A looping or held clip still lets go after this long (ms of clip time); 0 = only when stopped. */
     public float stopAfter;
+    /** Which skeleton the clip drives: {@code player}, or a model's own (its bones are then in {@link #named}). */
+    public String rig = AnimLibrary.PLAYER_RIG;
+    /** A model rig's tracks by bone name, [channel]. Empty for player clips. */
+    public java.util.Map<String, Track[]> named = java.util.Map.of();
     /** 0..1: how much the head keeps looking where the player looks when the clip doesn't pose it. */
     public final float look;
     /** Degrees of shake added to every animated bone (overload, struggling). */
@@ -126,6 +130,17 @@ public final class Clip {
         Clip c = new Clip(newName, group, duration, fps, hold, loop, loopStart, loopEnd, blendIn, blendOut, blendEase, priority, layer,
                 interruptible, interruptFrom, interruptTo, speed, look, tremble, keyTimes, markers, m);
         c.stopAfter = stopAfter;
+        c.rig = rig;
+        java.util.Map<String, Track[]> mn = new java.util.LinkedHashMap<>();
+        for (var e : named.entrySet()) {
+            Track[] src = e.getValue();
+            Track[] dst = new Track[3];
+            if (src[ROT] != null) dst[ROT] = src[ROT].mirrored(false);
+            if (src[POS] != null) dst[POS] = src[POS].mirrored(true);
+            dst[SCALE] = src[SCALE];
+            mn.put(AnimLibrary.mirrorName(e.getKey(), rig), dst);
+        }
+        c.named = mn;
         return c;
     }
 }

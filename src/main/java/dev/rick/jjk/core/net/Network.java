@@ -37,6 +37,7 @@ public final class Network {
         s2c.register(DomainCinematicPayload.TYPE, DomainCinematicPayload.CODEC);
         s2c.register(DomainCounterPayload.TYPE, DomainCounterPayload.CODEC);
         s2c.register(GamblePayload.TYPE, GamblePayload.CODEC);
+        s2c.register(YutaPayload.TYPE, YutaPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();

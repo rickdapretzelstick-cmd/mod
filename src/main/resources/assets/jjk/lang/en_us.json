@@ -56,5 +56,9 @@
   "block.jjk.shrine_barrier": "Malevolent Shrine",
   "block.jjk.shrine_floor": "Malevolent Shrine Floor",
   "entity.jjk.thrown_prop": "Thrown Prop",
-  "entity.jjk.fire_arrow": "Open"
+  "entity.jjk.fire_arrow": "Open",
+  "block.jjk.aml_barrier": "Authentic Mutual Love Barrier",
+  "block.jjk.aml_floor": "Authentic Mutual Love Floor",
+  "entity.jjk.rika": "Rika",
+  "entity.jjk.domain_blade": "Katana"
 }

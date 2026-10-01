@@ -238,7 +238,7 @@ public final class TeleportAbility extends Ability {
      * turned his camera. Falls back to nearby free spots; null if there is none with a clear line to the target.
      */
     @Nullable
-    static Vec3 aroundFront(LivingEntity user, LivingEntity target, float turnedDegrees) {
+    public static Vec3 aroundFront(LivingEntity user, LivingEntity target, float turnedDegrees) {
         Vec3 toUser = user.position().subtract(target.position());
         Vec3 dir = new Vec3(toUser.x, 0, toUser.z);
         if (dir.lengthSqr() < 1e-4) dir = HakariCombat.flat(target);

@@ -179,6 +179,21 @@ public final class AnimPlayer {
                     f.add(ch, b, tmp, w);
                 }
             }
+            for (var e : c.named.entrySet()) {
+                for (int ch = 0; ch < 3; ch++) {
+                    Track tr = e.getValue()[ch];
+                    if (tr == null) continue;
+                    tr.sample(t, tmp);
+                    if (ch == Clip.ROT && c.tremble > 0) {
+                        float amp = c.tremble * (float) (Math.PI / 180);
+                        float s = inst.time * 0.047f + e.getKey().hashCode() % 17;
+                        tmp[0] += (float) Math.sin(s * 1.3f) * amp;
+                        tmp[1] += (float) Math.sin(s * 1.7f + 2) * amp * 0.6f;
+                        tmp[2] += (float) Math.sin(s * 2.1f + 4) * amp * 0.6f;
+                    }
+                    f.addNamed(ch, e.getKey(), tmp, w);
+                }
+            }
             f.look += (c.look - f.look) * w;
         }
         return f;

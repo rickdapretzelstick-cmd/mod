@@ -43,6 +43,7 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.RED, TechniqueRenderer.red());
         EntityRendererRegistry.register(ModEntities.HOLLOW_PURPLE, TechniqueRenderer.purple());
         EntityRendererRegistry.register(ModEntities.TRAINING_DUMMY, DummyRenderer::new);
+        EntityRendererRegistry.register(ModEntities.RIKA, dev.rick.jjk.client.render.RikaRenderer::new);
         EntityRendererRegistry.register(ModEntities.PACHINKO_BALL, dev.rick.jjk.client.render.HakariRenderers.ball());
         EntityRendererRegistry.register(ModEntities.HAKARI_DOOR, dev.rick.jjk.client.render.HakariRenderers.door());
         EntityRendererRegistry.register(ModEntities.THROWN_PROP, dev.rick.jjk.client.render.YujiRenderers.prop());
@@ -50,6 +51,7 @@ public class JJKClient implements ClientModInitializer {
 
         InputHandler.init();
         dev.rick.jjk.client.anim.AnimLibrary.init();
+        dev.rick.jjk.client.model.BbModels.init();
         dev.rick.jjk.client.anim.AnimDebug.init();
         dev.rick.jjk.client.render.DummyRenderer.registerLayer();
         net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, ctx) -> {

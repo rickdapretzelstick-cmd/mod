@@ -26,7 +26,7 @@ public final class JJKConfig {
      * The gameplay tuning this file was written for. When the mod's defaults change (the JJS wiki pass), older files have
      * their gameplay sections reset to the new defaults; the player's client settings are kept.
      */
-    public static final int CURRENT_VERSION = 3;
+    public static final int CURRENT_VERSION = 4;
     public int version;
 
     public General general = new General();
@@ -49,6 +49,7 @@ public final class JJKConfig {
     public Hakari hakari = new Hakari();
     public Gojo gojo = new Gojo();
     public Yuji yuji = new Yuji();
+    public Yuta yuta = new Yuta();
 
     public static JJKConfig get() {
         return instance;
@@ -843,6 +844,174 @@ public final class JJKConfig {
         public float shrineBlockedDamage = 0.5f;
     }
 
+    /**
+     * Yuta Okkotsu and Rika (Cursed Partners), after the Jujutsu Shenanigans wiki: damage as written (of a 100 HP
+     * scale), cooldowns and durations its seconds in ticks, distances its studs in blocks (about 3.6 studs to a block).
+     */
+    public static class Yuta {
+        public float maxCursedEnergy = 800f;
+        public float regenPerSecond = 20f;
+        /** Cursed Partners has 90 max HP (of the usual 100). */
+        public float maxHealthShare = 0.9f;
+        public float finisherThreshold = 0.2f;
+        /** Swordsmanship: the katana goes back in its holster after 8 seconds without a katana move or M1. */
+        public int katanaHolsterTicks = 160;
+
+        // --- 1: Severing Path (15s) — slide 18 studs sweeping, lock, 3 swings, the last launches ---
+        public int severingCooldown = 300;
+        public float severingCost = 60f;
+        public int severingWindup = 6;
+        public int severingSlideTicks = 9;
+        public double severingSlide = 5.0;
+        public float severingSweepDamage = 4f;
+        public float severingSwingDamage = 2.3f;
+        /** Veilstep: a back roll of 27 studs, melee i-frames, launching whoever is in the way. */
+        public double veilstepDistance = 7.5;
+        public int veilstepTicks = 12;
+        public float veilstepDamage = 9f;
+
+        // --- 2: Resolute Slash (15s) — vanish, reappear at a spot within 25 studs, slash at the neck ---
+        public int resoluteCooldown = 300;
+        public float resoluteCost = 60f;
+        public double resoluteRange = 7.0;
+        public int resoluteVanishTicks = 10;
+        public float resoluteDamage = 12f;
+        /** The window to use it again as he reappears (Resolute Black Flash). */
+        public int resoluteAgainWindow = 6;
+        public float resoluteBlackFlashDamage = 12f;
+
+        // --- 3: Outburst (16s) — swing 2, burst 4 (+2 per stage, up to +6), 13 stud radius (+2 per stage) ---
+        public int outburstCooldown = 320;
+        public float outburstCost = 60f;
+        public int outburstWindup = 8;
+        public int outburstStageTicks = 12;
+        public float outburstSwingDamage = 2f;
+        public float outburstBurstDamage = 4f;
+        public float outburstStageDamage = 2f;
+        public double outburstRadius = 3.6;
+        public double outburstStageRadius = 0.55;
+        /** Parry: hit within 0.25 s of using it. */
+        public int outburstParryTicks = 5;
+        public int outburstParryCooldown = 80;
+        public int outburstParryStun = 30;
+        /** A melee parry takes 2 s off Rika's cooldowns. */
+        public int outburstRikaRefund = 40;
+
+        // --- 4: Second Wind (16s) — rush 20 studs, grab 2, slam 8; a second try if it whiffs ---
+        public int secondWindCooldown = 320;
+        public float secondWindCost = 60f;
+        public double secondWindDistance = 5.5;
+        public int secondWindTicks = 10;
+        public float secondWindGrabDamage = 2f;
+        public float secondWindSlamDamage = 8f;
+        /** The Severing Path variant: a pummelling, 3 per hit, five hits. */
+        public float secondWindPummelDamage = 3f;
+
+        // --- Special: Rika ---
+        public float rikaSummonCost = 40f;
+        /** Base Rika's moves share one cooldown: 10 s (6 s for a Rika Launch feint). */
+        public int rikaSmashCooldown = 200;
+        public int rikaLaunchCooldown = 200;
+        public int rikaLaunchFeintCooldown = 120;
+        public int rikaHaymakerCooldown = 200;
+        public float rikaSmashDamage = 10f;
+        public float rikaSmashAirDamage = 8f;
+        public float rikaHaymakerDamage = 12f;
+        public float rikaHaymakerBlockedDamage = 18f;
+        /** Haymaker: she hovers over to a target within 10 studs of her. */
+        public double rikaHaymakerReach = 2.8;
+        /** How far she reaches for a target when she attacks (she flies there). */
+        public double rikaAttackRange = 14;
+        public double rikaLaunchSpeed = 1.6;
+
+        // --- Awakening: True Love (60 s, heals 25) ---
+        public int awakeningSeconds = 60;
+        public float trueLoveHeal = 25f;
+        public int trueLoveTicks = 60;
+
+        // --- Awakened 1: Elbow Rush (15s) — dash 38.5 studs; elbow 4, flurry 5 (8 with Rika), last 6 ---
+        public int elbowCooldown = 300;
+        public double elbowDistance = 10.7;
+        public int elbowDashTicks = 10;
+        public float elbowDamage = 4f;
+        public float elbowFlurryDamage = 5f;
+        public float elbowFlurryRikaDamage = 8f;
+        public float elbowFinalDamage = 6f;
+
+        // --- Awakened 2: Copy (15s; 25s for an Awakening move) ---
+        public int copyCooldown = 300;
+        public int copyAwakenedCooldown = 500;
+        /** Cursed Speech, "Don't move!": everyone within 35 studs, 2.5 s. */
+        public double speechRadius = 9.7;
+        public int speechStun = 50;
+        public int copySlots = 8;
+
+        // --- Awakened 3: Energy Ripple (18s) — 19, a 27 stud field; Fakeout 7 + 12 ---
+        public int rippleCooldown = 360;
+        public int rippleWindup = 14;
+        public double rippleRadius = 7.5;
+        public float rippleDamage = 19f;
+        public float fakeoutSwingDamage = 7f;
+        public float fakeoutBurstDamage = 12f;
+
+        // --- Awakened 4: Authentic Mutual Love (120s, 45s) ---
+        public int domainCooldown = 2400;
+        public float domainCost = 200f;
+        /** "A longer windup than normal". */
+        public int domainStartup = 36;
+        public double domainRadius = 18;
+        public int domainDuration = 900;
+        public int domainFormationTicks = 40;
+        /** Four blades land within reach; another falls after every pickup. */
+        public int domainBlades = 4;
+        public double bladePickupRange = 1.6;
+        /** With a blade he runs about 55 studs before he swings. */
+        public double bladeRun = 15;
+        public int bladeRunTicks = 16;
+        public float bladeDamage = 8f;
+        public float shrineSlashDamage = 5f;
+        public float shrineMissDamage = 20f;
+        public float thinIceDamage = 20f;
+        public float thinIceMissDamage = 15f;
+        public int clairvoyanceTicks = 200;
+        public int clairvoyanceMissTicks = 100;
+        public float plummetDamage = 15f;
+        public int stopTicks = 60;
+        public float shikigamiDamage = 27f;
+        public int shikigamiTicks = 60;
+        /** Jacob's Ladder: unlocked by 4 direct katana swings; 62.5, drains 35% of the Awakening meter (50% if awakened). */
+        public int ladderHits = 4;
+        public float ladderDamage = 62.5f;
+        public float ladderDrain = 0.35f;
+        public float ladderDrainAwakened = 0.5f;
+        public int ladderTicks = 60;
+
+        // --- Awakened Rika (separate cooldowns) ---
+        public int downslamCooldown = 260;
+        public float downslamDamage = 8f;
+        public float downslamSecondDamage = 4f;
+        public float downslamAirDamage = 8f;
+        public int rikaSlamCooldown = 260;
+        public float rikaSlamGrabDamage = 1f;
+        public float rikaSlamDamage = 2f;
+        public float rikaSlamLastDamage = 3f;
+        public int beamCooldown = 800;
+        public int beamQuickCooldown = 300;
+        public int beamWindup = 60;
+        public int beamTicks = 30;
+        public double beamRange = 40;
+        public double beamWidth = 2.2;
+        public float beamDamage = 100f;
+        public float beamQuickDamage = 22.4f;
+        public int throwCooldown = 260;
+        public int throwMaxAirtime = 26;
+        public double throwSpeed = 1.5;
+        public float throwMinDamage = 8f;
+        public float throwMaxDamage = 18f;
+        public float throwMissMinDamage = 0.5f;
+        public float throwMissMaxDamage = 22f;
+    }
+
     public static Path path() {
         return FabricLoader.getInstance().getConfigDir().resolve("jjk.json");
     }
@@ -906,5 +1075,6 @@ public final class JJKConfig {
         if (hakari == null) hakari = new Hakari();
         if (gojo == null) gojo = new Gojo();
         if (yuji == null) yuji = new Yuji();
+        if (yuta == null) yuta = new Yuta();
     }
 }

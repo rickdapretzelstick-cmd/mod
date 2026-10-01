@@ -39,11 +39,12 @@ public final class AbilityCaster {
     @Nullable private JJKCharacter character;
     private float energy;
     private int regenDelay;
-    // Indexed by idx(): base-mode slots first, then awakened-mode slots (abilities shared by both use the base index).
-    private final int[] cooldowns = new int[SLOTS * 2];
-    private final int[] maxCooldowns = new int[SLOTS * 2];
-    private final int[] charges = new int[SLOTS * 2];
-    private final int[] lockout = new int[SLOTS * 2];
+    private static final int MODES = JJKCharacter.MODES;
+    // Indexed by idx(): one block of slots per moveset (an ability bound in several movesets uses its first block).
+    private final int[] cooldowns = new int[SLOTS * MODES];
+    private final int[] maxCooldowns = new int[SLOTS * MODES];
+    private final int[] charges = new int[SLOTS * MODES];
+    private final int[] lockout = new int[SLOTS * MODES];
     // Awakening.
     private float awakening;
     private boolean awakened;
@@ -96,28 +97,54 @@ public final class AbilityCaster {
 
     @Nullable
     public Ability ability(AbilitySlot slot) {
-        return character == null ? null : character.ability(slot, awakened);
+        return character == null ? null : character.ability(slot, mode());
+    }
+
+    /** The moveset in use right now (0 base, 1 awakened, others the character's own). */
+    public int mode() {
+        return character == null ? 0 : Math.max(0, Math.min(MODES - 1, character.mode(this)));
     }
 
     /** Cooldown array index for a slot in the current mode. */
     private int idx(AbilitySlot slot) {
-        return idx(slot, awakened);
+        return idx(slot, mode());
     }
 
-    private int idx(AbilitySlot slot, boolean awk) {
-        if (!awk || character == null) return slot.ordinal();
-        Ability a = character.ability(slot, true);
-        return a != null && a == character.ability(slot, false) ? slot.ordinal() : slot.ordinal() + SLOTS;
+    private int idx(AbilitySlot slot, int mode) {
+        if (character == null) return slot.ordinal();
+        Ability a = character.ability(slot, mode);
+        // An ability bound in several movesets keeps one cooldown: the first moveset's.
+        for (int m = 0; m < mode; m++) if (a != null && character.ability(slot, m) == a) return m * SLOTS + slot.ordinal();
+        return mode * SLOTS + slot.ordinal();
     }
 
     @Nullable
     private Ability abilityAt(int index) {
         if (character == null) return null;
-        return character.ability(AbilitySlot.values()[index % SLOTS], index >= SLOTS);
+        return character.ability(AbilitySlot.values()[index % SLOTS], index / SLOTS);
+    }
+
+    /** The cooldown left on a slot of any moveset. */
+    public int cooldown(AbilitySlot slot, int mode) {
+        return cooldowns[idx(slot, mode)];
+    }
+
+    /** Starts (or extends) the cooldown of a slot in any moveset. */
+    public void startCooldown(AbilitySlot slot, int mode, int ticks) {
+        startCooldownAt(idx(slot, mode), character == null ? null : character.ability(slot, mode), ticks);
+    }
+
+    /** Shortens a moveset's running cooldowns by {@code ticks} (never finishing them outright). */
+    public void reduceCooldowns(int mode, int ticks) {
+        for (AbilitySlot s : AbilitySlot.values()) {
+            int i = idx(s, mode);
+            if (cooldowns[i] > 0) cooldowns[i] = Math.max(1, cooldowns[i] - ticks);
+        }
+        dirty = true;
     }
 
     private void refillCharges() {
-        for (int i = 0; i < SLOTS * 2; i++) {
+        for (int i = 0; i < SLOTS * MODES; i++) {
             Ability a = abilityAt(i);
             charges[i] = a == null ? 0 : a.maxCharges(this);
         }
@@ -228,12 +255,15 @@ public final class AbilityCaster {
         return charges[idx(slot)];
     }
 
-    /** Starts the cooldown of whichever slot (in either mode) holds this ability. */
+    /** Starts the cooldown of whichever slot (the current moveset first, then the others) holds this ability. */
     public void startCooldown(Ability ability, int ticks) {
-        for (boolean awk : new boolean[]{awakened, !awakened}) {
+        if (character == null) return;
+        int cur = mode();
+        for (int k = 0; k < MODES; k++) {
+            int m = k == 0 ? cur : (k <= cur ? k - 1 : k);
             for (AbilitySlot s : AbilitySlot.values()) {
-                if (character != null && character.ability(s, awk) == ability) {
-                    startCooldownAt(idx(s, awk), ability, ticks);
+                if (character.ability(s, m) == ability) {
+                    startCooldownAt(idx(s, m), ability, ticks);
                     return;
                 }
             }
@@ -259,8 +289,14 @@ public final class AbilityCaster {
     }
 
     public void resetSlot(AbilitySlot slot) {
-        cooldowns[idx(slot)] = 0;
-        lockout[idx(slot)] = 0;
+        resetSlot(slot, mode());
+    }
+
+    /** Clears the cooldown of a slot in any moveset. */
+    public void resetSlot(AbilitySlot slot, int mode) {
+        int i = idx(slot, mode);
+        cooldowns[i] = 0;
+        lockout[i] = 0;
         dirty = true;
     }
 
@@ -368,7 +404,7 @@ public final class AbilityCaster {
             // Pressing the same hold ability again is not an error, just ignored.
             return refuse(cast.ability == ability ? "already_casting" : "busy");
         }
-        if (melee.isCommitted() && slot != AbilitySlot.GUARD) return refuse("attacking");
+        if (melee.isCommitted() && slot != AbilitySlot.GUARD && !ability.usableDuringMelee()) return refuse("attacking");
         if (!isReady(slot)) return refuse("cooldown");
         float meterCost = ability.awakeningCost(this);
         if (meterCost > 0 && !canAffordAwakening(meterCost)) {
@@ -414,6 +450,29 @@ public final class AbilityCaster {
         inst.start();
         if (inst.isFinished()) removeInstance(inst);
         return true;
+    }
+
+    /**
+     * Starts a cast directly, replacing the current one (a "use again" follow-up a character starts itself: Resolute
+     * Black Flash, Fakeout, Jacob's Ladder...). The replaced cast ends without firing.
+     */
+    public void begin(AbilityInstance inst) {
+        if (cast != null && !cast.isFinished()) {
+            cast.finish();
+            removeInstance(cast);
+        }
+        melee.cancel();
+        cast = inst;
+        dirty = true;
+        inst.start();
+        if (inst.isFinished()) removeInstance(inst);
+    }
+
+    /** Runs an instance alongside whatever is going on (a lingering effect a move leaves behind: a swarm, a mark). */
+    public void addOverlay(AbilityInstance inst) {
+        overlays.add(inst);
+        inst.start();
+        if (inst.isFinished()) removeInstance(inst);
     }
 
     private boolean refuse(String reason) {
@@ -480,7 +539,7 @@ public final class AbilityCaster {
             else if (owner.tickCount % 5 == 0) dirty = true;
         }
 
-        for (int i = 0; i < SLOTS * 2; i++) {
+        for (int i = 0; i < SLOTS * MODES; i++) {
             if (lockout[i] > 0) lockout[i]--;
             if (cooldowns[i] > 0 && --cooldowns[i] == 0) {
                 Ability a = abilityAt(i);
@@ -523,6 +582,7 @@ public final class AbilityCaster {
         if (cast != null && !cast.isFinished()) slow = Math.min(slow, cast.movementMultiplier());
         for (AbilityInstance o : overlays) slow = Math.min(slow, o.movementMultiplier());
         slow = Math.min(slow, melee.movementMultiplier());
+        slow = Math.min(slow, character.movementMultiplier(this));
         applySlow(slow);
 
         if (owner instanceof ServerPlayer sp) sync(sp, cfg);

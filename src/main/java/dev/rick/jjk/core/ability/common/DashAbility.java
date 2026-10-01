@@ -62,7 +62,7 @@ public class DashAbility extends Ability {
         boolean ragdolled = state.has(CombatStatus.LAUNCHED) || state.has(CombatStatus.SPIKED) || state.has(CombatStatus.KNOCKDOWN);
         if (!ragdolled) return false;
         for (CombatStatus hold : new CombatStatus[] {CombatStatus.GRABBED, CombatStatus.PULLED, CombatStatus.OVERLOAD, CombatStatus.GUARD_BROKEN,
-                CombatStatus.CLASHING, CombatStatus.AWAKENING, CombatStatus.GAMBLING}) {
+                CombatStatus.CLASHING, CombatStatus.AWAKENING, CombatStatus.GAMBLING, CombatStatus.TRUE_RAGDOLL, CombatStatus.STOPPED}) {
             if (state.has(hold)) return false;
         }
         long now = user.level().getGameTime();

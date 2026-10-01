@@ -31,6 +31,16 @@ public final class Anim {
         Fx.toTrackers(entity, new AnimPayload(entity.getId(), anim, speed), true);
     }
 
+    /** Plays a clip on any entity (a manifestation like Rika, which animates a model of its own). */
+    public static void playOn(net.minecraft.world.entity.Entity entity, String anim, float speed) {
+        if (entity.level().isClientSide()) return;
+        Fx.toTrackers(entity, new AnimPayload(entity.getId(), anim, speed), true);
+    }
+
+    public static void playOn(net.minecraft.world.entity.Entity entity, String anim) {
+        playOn(entity, anim, 1f);
+    }
+
     public static void stop(LivingEntity entity) {
         play(entity, "", 1f);
     }

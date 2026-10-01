@@ -6,47 +6,78 @@ import dev.rick.jjk.core.ability.AbilitySlot;
 import dev.rick.jjk.core.combat.melee.MeleeMoveset;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
-/** A playable sorcerer: resources, a melee moveset and abilities bound to input slots. */
+/**
+ * A playable sorcerer: resources, a melee moveset and abilities bound to input slots.
+ *
+ * <p>A character has up to {@link #MODES} movesets ("modes"): the base kit (mode 0), the awakened kit (mode 1), and any
+ * others it switches between itself (Cursed Partners' Rika movesets, modes 2 and 3). {@link #mode} says which one a caster
+ * is using right now; each mode's slots keep their own cooldowns, except an ability bound in several modes, which shares
+ * one.
+ */
 public abstract class JJKCharacter {
+    public static final int MODES = 4;
+    public static final int BASE = 0, AWAKENED = 1;
     public final String id;
-    private final Map<AbilitySlot, Ability> abilities = new EnumMap<>(AbilitySlot.class);
-    private final Map<AbilitySlot, Ability> awakenedAbilities = new EnumMap<>(AbilitySlot.class);
+    private final List<Map<AbilitySlot, Ability>> modes = new ArrayList<>();
 
     protected JJKCharacter(String id) {
         this.id = id;
+        for (int i = 0; i < MODES; i++) modes.add(new EnumMap<>(AbilitySlot.class));
     }
 
     protected void bind(AbilitySlot slot, Ability ability) {
-        abilities.put(slot, ability);
+        bindMode(BASE, slot, ability);
     }
 
     /** Binds an ability in the awakened moveset. Slots not bound here are empty while awakened. */
     protected void bindAwakened(AbilitySlot slot, Ability ability) {
-        awakenedAbilities.put(slot, ability);
+        bindMode(AWAKENED, slot, ability);
+    }
+
+    /** Binds an ability in any moveset (0 base, 1 awakened, 2 and 3 the character's own). */
+    protected void bindMode(int mode, AbilitySlot slot, Ability ability) {
+        modes.get(mode).put(slot, ability);
+    }
+
+    /** Which moveset this caster is using right now. */
+    public int mode(AbilityCaster caster) {
+        return caster.isAwakened() ? AWAKENED : BASE;
     }
 
     @Nullable
     public Ability ability(AbilitySlot slot) {
-        return abilities.get(slot);
+        return modes.get(BASE).get(slot);
     }
 
     @Nullable
     public Ability ability(AbilitySlot slot, boolean awakened) {
-        return awakened ? awakenedAbilities.get(slot) : abilities.get(slot);
+        return modes.get(awakened ? AWAKENED : BASE).get(slot);
     }
 
-    /** Every ability in either moveset (for cleanup of toggles etc.). */
+    @Nullable
+    public Ability ability(AbilitySlot slot, int mode) {
+        return mode >= 0 && mode < MODES ? modes.get(mode).get(slot) : null;
+    }
+
+    /** Every ability in every moveset (for cleanup of toggles etc.). */
     public java.util.Collection<Ability> abilitiesAllModes() {
-        java.util.Set<Ability> all = new java.util.LinkedHashSet<>(abilities.values());
-        all.addAll(awakenedAbilities.values());
+        java.util.Set<Ability> all = new java.util.LinkedHashSet<>();
+        for (Map<AbilitySlot, Ability> m : modes) all.addAll(m.values());
         return all;
     }
 
     public Map<AbilitySlot, Ability> abilities() {
-        return abilities;
+        return modes.get(BASE);
+    }
+
+    /** Multiplier on the caster's movement from the character's own state (1 = unaffected). */
+    public float movementMultiplier(AbilityCaster caster) {
+        return 1f;
     }
 
     /** Called when the caster enters or leaves its awakened state. */

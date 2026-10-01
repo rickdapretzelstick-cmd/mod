@@ -98,6 +98,23 @@ public final class ClientAnimations {
         return f.any() ? f : null;
     }
 
+    /**
+     * This frame's pose for any entity (a model like Rika, which has no hit reactions of its own), or null when nothing
+     * is playing on it.
+     */
+    @Nullable
+    public static PoseFrame computeModel(net.minecraft.world.entity.Entity e, float now) {
+        AnimPlayer p = PLAYERS.get(e.getId());
+        if (p == null) return null;
+        advance(e.getId(), p, now);
+        if (p.idle()) {
+            PLAYERS.remove(e.getId());
+            return null;
+        }
+        PoseFrame f = p.sample(new PoseFrame());
+        return f.any() ? f : null;
+    }
+
     private static void advance(int id, AnimPlayer p, float now) {
         float ms = now * 50f;
         if (Float.isNaN(p.lastNow)) p.lastNow = ms;

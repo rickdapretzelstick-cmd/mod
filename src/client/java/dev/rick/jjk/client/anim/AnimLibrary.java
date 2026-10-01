@@ -34,8 +34,14 @@ import java.util.TreeMap;
 public final class AnimLibrary {
     private static volatile Registry current = new Registry();
 
-    /** A reusable partial pose: per bone, any of rotation (degrees), position (pixels) and scale. */
-    public record Pose(Map<Bone, float[][]> bones) {}
+    /**
+     * A reusable partial pose: per bone (by its canonical name), any of rotation (degrees), position (pixels) and scale.
+     * Player bones are canonicalised to {@link Bone#id}; another rig's bones keep the names its model gives them.
+     */
+    public record Pose(Map<String, float[][]> bones) {}
+
+    /** The rig player clips animate; any other value names a model's own skeleton (e.g. "rika"). */
+    public static final String PLAYER_RIG = "player";
 
     private record Registry(Map<String, Clip> clips, Map<String, Pose> poses, List<String> errors) {
         Registry() {
@@ -180,15 +186,16 @@ public final class AnimLibrary {
             errors.add("pose " + name + (o == null ? ": unknown" : ": extends itself"));
             return null;
         }
-        Map<Bone, float[][]> bones = new LinkedHashMap<>();
+        Map<String, float[][]> bones = new LinkedHashMap<>();
+        String rig = str(o, "rig", PLAYER_RIG);
         if (o.has("extends")) {
             for (String parent : strings(o.get("extends"))) {
                 Pose p = resolvePose(stripMirror(parent), json, done, visiting, errors);
-                if (p != null) merge(bones, isMirror(parent) ? mirror(p.bones) : p.bones);
+                if (p != null) merge(bones, isMirror(parent) ? mirror(p.bones, rig) : p.bones);
             }
         }
         try {
-            merge(bones, bones(o.getAsJsonObject("bones"), null));
+            merge(bones, bones(o.getAsJsonObject("bones"), null, rig));
         } catch (Exception ex) {
             errors.add("pose " + name + ": " + ex.getMessage());
         }
@@ -204,12 +211,9 @@ public final class AnimLibrary {
         float frameMs = 1000f / fps;
         // Keys may use the reference's own frame numbers: refStart is the reference frame the clip begins on.
         float refStart = num(o, "refStart", 0);
-        List<List<List<Keyed>>> keyed = new ArrayList<>();
-        for (int b = 0; b < Bone.COUNT; b++) {
-            List<List<Keyed>> ch = new ArrayList<>();
-            for (int c = 0; c < 3; c++) ch.add(new ArrayList<>());
-            keyed.add(ch);
-        }
+        String rig = str(o, "rig", PLAYER_RIG);
+        // Per bone (canonical name), per channel.
+        Map<String, List<List<Keyed>>> keyed = new LinkedHashMap<>();
         List<Clip.Marker> markers = new ArrayList<>();
         List<Float> keyTimes = new ArrayList<>();
         float last = 0;
@@ -222,21 +226,22 @@ public final class AnimLibrary {
             last = Math.max(last, t);
             keyTimes.add(t);
             Easing keyEase = ease(k, Easing.EASE_IN_OUT);
-            Map<Bone, float[][]> pose = new LinkedHashMap<>();
+            Map<String, float[][]> pose = new LinkedHashMap<>();
             if (k.has("pose")) {
                 for (String p : strings(k.get("pose"))) {
                     Pose def = r.poses.get(stripMirror(p));
                     if (def == null) r.errors.add("clip " + name + ": unknown pose " + p);
-                    else merge(pose, isMirror(p) ? mirror(def.bones) : def.bones);
+                    else merge(pose, isMirror(p) ? mirror(def.bones, rig) : def.bones);
                 }
             }
-            Map<Bone, Easing> boneEase = new HashMap<>();
-            if (k.has("bones")) merge(pose, bones(k.getAsJsonObject("bones"), boneEase));
+            Map<String, Easing> boneEase = new HashMap<>();
+            if (k.has("bones")) merge(pose, bones(k.getAsJsonObject("bones"), boneEase, rig));
             for (var e : pose.entrySet()) {
                 Easing ease = boneEase.getOrDefault(e.getKey(), keyEase);
+                List<List<Keyed>> ch = keyed.computeIfAbsent(e.getKey(), x -> List.of(new ArrayList<>(), new ArrayList<>(), new ArrayList<>()));
                 for (int c = 0; c < 3; c++) {
                     float[] v = e.getValue()[c];
-                    if (v != null) keyed.get(e.getKey().ordinal()).get(c).add(new Keyed(t, v, ease));
+                    if (v != null) ch.get(c).add(new Keyed(t, v, ease));
                 }
             }
             if (k.has("marker")) markers.add(new Clip.Marker(t, k.get("marker").getAsString()));
@@ -251,9 +256,12 @@ public final class AnimLibrary {
         markers.sort((a, b) -> Float.compare(a.time(), b.time()));
 
         Track[][] tracks = new Track[Bone.COUNT][3];
-        for (int b = 0; b < Bone.COUNT; b++) {
+        Map<String, Track[]> named = new LinkedHashMap<>();
+        boolean player = rig.equals(PLAYER_RIG);
+        for (var be : keyed.entrySet()) {
+            Track[] dst = player ? tracks[Bone.byName(be.getKey()).ordinal()] : named.computeIfAbsent(be.getKey(), x -> new Track[3]);
             for (int c = 0; c < 3; c++) {
-                List<Keyed> list = keyed.get(b).get(c);
+                List<Keyed> list = be.getValue().get(c);
                 if (list.isEmpty()) continue;
                 list.sort((x, y) -> Float.compare(x.time, y.time));
                 // A later key at the same time replaces an earlier one.
@@ -270,7 +278,7 @@ public final class AnimLibrary {
                     values[i] = c == Clip.ROT ? toRadians(dedup.get(i).value) : dedup.get(i).value;
                     eases[i] = dedup.get(i).ease;
                 }
-                tracks[b][c] = new Track(times, values, eases);
+                dst[c] = new Track(times, values, eases);
             }
         }
         float duration = o.has("endFrame") ? (o.get("endFrame").getAsFloat() - refStart) * frameMs : time(o, "duration", "frames", frameMs, last);
@@ -295,16 +303,25 @@ public final class AnimLibrary {
                 bool(o, "interruptible", true), iFrom, iTo, num(o, "speed", 1), num(o, "look", 0), num(o, "tremble", 0),
                 kt, List.copyOf(markers), tracks);
         clip.stopAfter = num(o, "stopAfter", 0);
+        clip.rig = rig;
+        clip.named = named;
         return clip;
     }
 
-    /** Parses a {@code bones} object: per bone, [x, y, z] (a rotation) or {rot, pos, scale, ease}. */
-    private static Map<Bone, float[][]> bones(@Nullable JsonObject o, @Nullable Map<Bone, Easing> eases) {
-        Map<Bone, float[][]> out = new LinkedHashMap<>();
+    /**
+     * Parses a {@code bones} object: per bone, [x, y, z] (a rotation) or {rot, pos, scale, ease}. Player bone names (and
+     * their aliases) are checked and canonicalised; another rig's names are taken as they are.
+     */
+    private static Map<String, float[][]> bones(@Nullable JsonObject o, @Nullable Map<String, Easing> eases, String rig) {
+        Map<String, float[][]> out = new LinkedHashMap<>();
         if (o == null) return out;
         for (var e : o.entrySet()) {
-            Bone b = Bone.byName(e.getKey());
-            if (b == null) throw new IllegalArgumentException("unknown bone " + e.getKey());
+            String b = e.getKey();
+            if (rig.equals(PLAYER_RIG)) {
+                Bone bone = Bone.byName(e.getKey());
+                if (bone == null) throw new IllegalArgumentException("unknown bone " + e.getKey());
+                b = bone.id;
+            }
             float[][] v = new float[3][];
             JsonElement j = e.getValue();
             if (j.isJsonArray()) {
@@ -325,21 +342,34 @@ public final class AnimLibrary {
         return out;
     }
 
-    private static void merge(Map<Bone, float[][]> into, Map<Bone, float[][]> from) {
+    private static void merge(Map<String, float[][]> into, Map<String, float[][]> from) {
         for (var e : from.entrySet()) {
             float[][] dst = into.computeIfAbsent(e.getKey(), k -> new float[3][]);
             for (int c = 0; c < 3; c++) if (e.getValue()[c] != null) dst[c] = e.getValue()[c];
         }
     }
 
-    static Map<Bone, float[][]> mirror(Map<Bone, float[][]> bones) {
-        Map<Bone, float[][]> out = new LinkedHashMap<>();
+    /** The other side's bone: the player's own pairs, or a model's right_/left_ names swapped. */
+    static String mirrorName(String bone, String rig) {
+        if (rig.equals(PLAYER_RIG)) {
+            Bone b = Bone.byName(bone);
+            return b == null ? bone : b.mirror().id;
+        }
+        if (bone.startsWith("right")) return "left" + bone.substring(5);
+        if (bone.startsWith("left")) return "right" + bone.substring(4);
+        if (bone.endsWith("_right")) return bone.substring(0, bone.length() - 6) + "_left";
+        if (bone.endsWith("_left")) return bone.substring(0, bone.length() - 5) + "_right";
+        return bone;
+    }
+
+    static Map<String, float[][]> mirror(Map<String, float[][]> bones, String rig) {
+        Map<String, float[][]> out = new LinkedHashMap<>();
         for (var e : bones.entrySet()) {
             float[][] s = e.getValue(), d = new float[3][];
             if (s[Clip.ROT] != null) d[Clip.ROT] = new float[]{s[Clip.ROT][0], -s[Clip.ROT][1], -s[Clip.ROT][2]};
             if (s[Clip.POS] != null) d[Clip.POS] = new float[]{-s[Clip.POS][0], s[Clip.POS][1], s[Clip.POS][2]};
             d[Clip.SCALE] = s[Clip.SCALE];
-            out.put(e.getKey().mirror(), d);
+            out.put(mirrorName(e.getKey(), rig), d);
         }
         return out;
     }
