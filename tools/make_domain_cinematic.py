@@ -341,10 +341,10 @@ def layout(text, w, h, size):
     return im
 
 
-def card_part(rec, seconds, paras, fps):
+def card_part(rec, seconds, paras, fps, size=None):
     """A black card: each paragraph fades up at its own time, the whole card in and out."""
     w, h = rec.w, rec.h
-    size = int(h * 0.0525)
+    size = size or int(h * 0.0525)
     blocks = [(layout(text, w, h, size), at) for text, at in paras]
     gap = int(size * 0.9)
     total = sum(b.height for b, _ in blocks) + gap * (len(blocks) - 1)
