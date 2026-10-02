@@ -318,7 +318,8 @@ SOUNDS = {
     "aml_clairvoyance": one(c(125025280611426)),
     "aml_mini_rika": one(c(112205395048785), c(80705570218040, at=0.3)),
     "aml_mini_fly": one(c(112981074280224)),
-    "jacobs_ladder": one(c(129174925057034, start=1.5)),
+    # Played as the ray comes down; trimmed so its swell lands on the final blow 3.3s later.
+    "jacobs_ladder": one(c(129174925057034, start=2.2)),
 }
 
 # New events whose clips can't be fetched borrow an existing sound instead (music has none: it just stays quiet).

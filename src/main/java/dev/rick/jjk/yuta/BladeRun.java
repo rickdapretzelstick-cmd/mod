@@ -116,6 +116,8 @@ public final class BladeRun extends AbilityInstance {
             if (landed) {
                 YutaState s = YutaState.of(user);
                 s.ladderHits++;
+                // The fourth: Jacob's Ladder is ready (a gold burst round him, for everyone to see).
+                if (s.ladderHits == cfg.ladderHits && !s.ladderUsed) Fx.play(level, "ladder_ready", user.position().add(0, 1, 0), Vec3.ZERO, 1f, user.getId());
                 YutaSync.send(user);
             }
         }

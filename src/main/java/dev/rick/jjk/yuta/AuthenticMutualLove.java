@@ -99,6 +99,10 @@ public final class AuthenticMutualLove implements DomainDefinition {
             // Blades that land out of reach, for the look of it.
             Fx.play(domain.level, "blade_rain", domain.center.add(0, domain.radius * 0.7, 0), Vec3.ZERO, (float) domain.radius, owner.getId());
         }
+        // Jacob's Ladder ready: a gold light keeps rising round him until he uses it.
+        if (AuthenticMutualLoveAbility.ladderReady(owner) && domain.age() % 8 == 0) {
+            Fx.play(domain.level, "ladder_ready_glow", owner.position(), Vec3.ZERO, 1f, owner.getId());
+        }
         AbilityCaster c = Casters.getOrNull(owner);
         if (c == null || c.isBusy() || dev.rick.jjk.core.combat.Combat.actionsLocked(owner)) return;
         double reach = JJKConfig.get().yuta.bladePickupRange;

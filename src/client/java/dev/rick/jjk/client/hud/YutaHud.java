@@ -22,7 +22,8 @@ import java.util.List;
  *   <li>the newest copied technique, revealed at his right for a moment;</li>
  *   <li>Outburst's 3-segment bar at his right while it is held;</li>
  *   <li>Jacob's Ladder: direct katana hits so far, on the domain's box;</li>
- *   <li>Rika's moveset being up: the ring's faint glow at the bottom of the screen.</li>
+ *   <li>Rika's moveset being up: the ring's faint glow at the bottom of the screen;</li>
+ *   <li>Jacob's Ladder ready: a pulsing gold banner above the hotbar with its key.</li>
  * </ul>
  */
 public final class YutaHud {
@@ -82,6 +83,19 @@ public final class YutaHud {
         if (outburstStage >= 0) outburstBar(g, w, h, time);
         if (now - newestAt < 80 && !newest.isEmpty()) newestCopy(g, font, w, h, now - newestAt + partial);
         if (wheelOpen) wheel(g, font, w, h, now, time);
+        if (ladderReady() && ladderHits > 0) ladderPrompt(g, font, w, h, time);
+    }
+
+    /** Jacob's Ladder is ready: a gold banner above the hotbar naming the key, impossible to miss. */
+    private static void ladderPrompt(GuiGraphicsExtractor g, Font font, int w, int h, float time) {
+        float a = 0.75f + 0.25f * Mth.sin(time * 0.3f);
+        int al = Math.round(a * 255) << 24;
+        int cx = w / 2, y = h - 78;
+        g.fillGradient(cx - 90, y - 3, cx + 90, y + 15, al | 0x3A2A00, al | 0x1A1200);
+        g.fill(cx - 90, y - 3, cx + 90, y - 2, al | 0xFFE27A);
+        g.fill(cx - 90, y + 14, cx + 90, y + 15, al | 0xFFE27A);
+        String key = InputHandler.keyLabel(AbilitySlot.SKILL_4);
+        smallText(g, font, "JACOB'S LADDER READY" + (key.isEmpty() ? "" : "  [" + key + "]"), cx, y + 2, 1f, pulse(0xFFFFE27A, 0xFFFFFFFF, time));
     }
 
     /** The ring's faint glow: Rika's moveset is up (her keys, his movement flies her). */

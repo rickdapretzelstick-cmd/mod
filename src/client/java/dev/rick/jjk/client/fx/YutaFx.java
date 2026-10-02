@@ -819,24 +819,85 @@ final class YutaFx {
                 sound("yuta_crush", pos, 1.3f, 1f);
                 if (drawn) YujiFx.blood(level, pos, up, q(24));
             }
+            case "ladder_mark" -> {
+                // Jacob's Ladder aimed: a gold circle closing on the target's ground.
+                int life = Math.max(6, (int) s);
+                Vec3 g = groundBelow(level, pos).add(0, 0.08, 0);
+                Flashes.ground(g, 4f, 1.2f, GOLD_RAY, 0.9f, life, now);
+                Flashes.ground(g, 2.4f, 0.6f, WHITE, 0.7f, life, now + 2);
+                sound("true_love_ring", pos, 1.2f, 0.7f);
+            }
             case "jacobs_ladder" -> {
-                // A divine ray from the sky.
+                // A divine ray coming down from the sky onto them (JacobsLadder GIF 109-218), then holding.
                 sound("jacobs_ladder", pos, 2.5f, 1f);
+                int life = Math.max(20, (int) s);
+                Vec3 top = pos.add(0, 48, 0);
+                Vec3 bottom = pos.add(0, -0.5, 0);
+                // It descends over the first few ticks: segments lit one after another from the top.
+                for (int k = 0; k < 6; k++) {
+                    Vec3 a0 = top.add(0, -k * 8, 0), a1 = top.add(0, -(k + 1) * 8, 0);
+                    if (k == 5) a1 = bottom;
+                    long at = now + k;
+                    Flashes.beam(a0, a1, 5.5f, GOLD_RAY, 0.45f, life - k, at);
+                    Flashes.beam(a0, a1, 3.0f, WHITE, 0.7f, life - k, at);
+                    Flashes.beam(a0, a1, 1.2f, WHITE, 1f, life - k, at);
+                }
+                Flashes.ground(pos, 0.5f, 5f, GOLD_RAY, 0.8f, life, now + 6);
+                Flashes.flash(pos.add(0, 1, 0), 1f, 6f, WHITE, 0.9f, 12, now + 6);
                 if (drawn) {
-                    // A blinding column of light from the sky (JacobsLadder GIF 109-218).
-                    Vec3 top = pos.add(0, 48, 0);
-                    int life = Math.max(20, (int) s);
-                    Flashes.beam(top, pos.add(0, -0.5, 0), 5.5f, GOLD_RAY, 0.45f, life, now);
-                    Flashes.beam(top, pos.add(0, -0.5, 0), 3.0f, WHITE, 0.75f, life, now);
-                    Flashes.beam(top, pos.add(0, -0.5, 0), 1.2f, WHITE, 1f, life, now);
-                    Flashes.ground(pos, 0.5f, 5f, GOLD_RAY, 0.8f, life, now);
-                    Flashes.flash(pos.add(0, 1, 0), 1f, 6f, WHITE, 0.9f, 12, now);
                     for (int i = 0; i < q(40); i++) {
                         Vec3 at = pos.add(gauss(1.0), RNG.nextDouble() * 12, gauss(1.0));
                         add(level, at, new Vec3(0, 0.12 + RNG.nextDouble() * 0.1, 0), Sprite.GLOW, i % 2 == 0 ? WHITE : GOLD_RAY, 0.9f, 0.25f, 0.05f, 40 + RNG.nextInt(20));
                     }
                 }
-                if (mc.player != null && mc.player.position().distanceTo(pos) < 40) ScreenEffects.flash(0xA0FFFDE8, 14);
+                if (mc.player != null && mc.player.position().distanceTo(pos) < 40) ScreenEffects.flash(0x80FFFDE8, 10);
+            }
+            case "ladder_impact" -> {
+                // The one blow: a flare of white-gold and a shockwave as the light takes its toll.
+                Flashes.flash(pos, 1f, 7f, WHITE, 1f, 10, now);
+                Flashes.flash(pos, 0.5f, 3f, GOLD_RAY, 1f, 14, now);
+                Flashes.ripple(pos, up, 0.5f, 9f, GOLD_RAY, 0.9f, 14, now);
+                Flashes.ring(pos, 0.5f, 6f, WHITE, 0.8f, 10, now);
+                Flashes.beam(pos.add(0, 30, 0), pos, 7f, WHITE, 0.9f, 8, now);
+                if (drawn) sparks(level, pos, up, q(30), 0.6, GOLD_RAY, 0.1f, 18);
+                sound("yuta_heavy_hit", pos, 1.6f, 0.8f);
+                if (mc.player != null && mc.player.position().distanceTo(pos) < 30) {
+                    ScreenEffects.flash(0xC0FFFDE8, 8);
+                    ScreenEffects.shake(0.9f, 14);
+                }
+                victimFeedback(p, 1f);
+            }
+            case "aml_shatter" -> {
+                // The domain gives way: the black sky cracks into shards of glass falling away.
+                sound("aml_glass", pos, 3f, 0.8f);
+                Flashes.lens(pos, s * 0.95f, s * 1.1f, PINK_LIGHT, 0.8f, 16, now);
+                for (int i = 0; i < 18; i++) {
+                    Vec3 v = randomUnit();
+                    if (v.y < 0) v = new Vec3(v.x, -v.y, v.z);
+                    Vec3 at = pos.add(v.scale(s * 0.9));
+                    line(at, at.add(randomUnit().scale(1.5 + RNG.nextDouble() * 2)), 0.06f, i % 2 == 0 ? WHITE : PINK_LIGHT, 1f, 12, now + i / 3);
+                }
+                if (drawn) burst(level, pos.add(0, s * 0.5, 0), q(30), 0.4, Sprite.SHARD, PINK_LIGHT, 0.2f, 30);
+                if (mc.player != null && mc.player.position().distanceTo(pos) < s + 4) ScreenEffects.flash(0x90FFFFFF, 6);
+            }
+            case "ladder_ready" -> {
+                // The fourth direct hit: Jacob's Ladder is ready. A gold burst and a ring rising round him.
+                sound("true_love_ring", pos, 1.5f, 0.6f);
+                sound("aml_pickup", pos, 1f, 0.8f);
+                Flashes.flash(pos, 0.5f, 3f, GOLD_RAY, 1f, 12, now);
+                for (int i = 0; i < 3; i++) Flashes.ripple(pos.add(0, -0.9 + i * 0.7, 0), up, 0.4f, 2f, i == 1 ? WHITE : GOLD_RAY, 0.9f, 14, now + i * 2);
+                Flashes.beam(pos.add(0, -1, 0), pos.add(0, 12, 0), 0.8f, GOLD_RAY, 0.6f, 14, now);
+                if (drawn) sparks(level, pos, up, q(20), 0.3, GOLD_RAY, 0.07f, 16);
+            }
+            case "ladder_ready_glow" -> {
+                // Still ready: motes of gold rising round him, and a thin halo at his feet.
+                Flashes.ground(groundBelow(level, pos).add(0, 0.06, 0), 0.9f, 1.3f, GOLD_RAY, 0.55f, 10, now);
+                if (drawn) {
+                    for (int i = 0; i < q(4); i++) {
+                        Vec3 at = pos.add(gauss(0.4), RNG.nextDouble() * 1.6, gauss(0.4));
+                        add(level, at, new Vec3(0, 0.07, 0), Sprite.GLOW, GOLD_RAY, 0.85f, 0.12f, 0.03f, 20);
+                    }
+                }
             }
             case "ladder_hit" -> {
                 if (drawn) sparks(level, pos, up, q(6), 0.2, GOLD_RAY, 0.08f, 12);

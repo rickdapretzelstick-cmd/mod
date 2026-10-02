@@ -71,7 +71,7 @@ public class YutaGameTests {
         cfg.yuji.worldSlashLength = 13;
         cfg.yuji.worldSlashWidth = 5;
         // Authentic Mutual Love kept inside one test's area.
-        cfg.yuta.domainRadius = 7;
+        cfg.yuta.domainRadius = 6;
         cfg.yuta.domainStartup = 8;
         cfg.yuta.domainFormationTicks = 20;
         cfg.yuta.domainDuration = 400;
@@ -538,11 +538,11 @@ public class YutaGameTests {
         });
     }
 
-    @GameTest(maxTicks = 200)
+    @GameTest(maxTicks = 260)
     public void bladesFallAndJacobsLadderShattersTheDomain(GameTestHelper h) {
         floor(h, 18);
-        TrainingDummy target = dummy(h, 11, 8);
-        TrainingDummy y = yuta(h, 6, 8, target);
+        TrainingDummy target = dummy(h, 9.5, 8.5);
+        TrainingDummy y = yuta(h, 6.5, 8.5, target);
         awaken(y);
         CharacterService.assign(target, Characters.get(HakariCharacter.ID));
         AbilityCaster tc = Casters.get(target);
@@ -550,6 +550,8 @@ public class YutaGameTests {
         float hp = target.getHealth();
         h.assertTrue(press(y, AbilitySlot.SKILL_4), "Authentic Mutual Love");
         boolean[] ladder = new boolean[1];
+        long[] pressedAt = {0};
+        int impact = 14 + 6 + JJKConfig.get().yuta.ladderTicks;
         h.succeedWhen(() -> {
             var d = DomainManager.ownedBy(y);
             if (!ladder[0]) {
@@ -562,12 +564,22 @@ public class YutaGameTests {
                 face(y, target.getBoundingBox().getCenter());
                 h.assertTrue(press(y, AbilitySlot.SKILL_4, target), "Jacob's Ladder (" + Casters.get(y).lastRefusal + ")");
                 ladder[0] = true;
+                pressedAt[0] = h.getTick();
                 h.fail("waiting for the ladder");
+            }
+            long t = h.getTick() - pressedAt[0];
+            // One blow at the end of the lift: nothing before it, and the domain holds until then.
+            if (t < impact - 1) {
+                h.assertValueEqual(target.getHealth(), hp, "no damage before the final blow (t=" + t + ")");
+                h.assertTrue(DomainManager.ownedBy(y) != null, "the domain holds through the lift");
+                h.fail("lifting");
             }
             h.assertTrue(DomainManager.ownedBy(y) == null, "the domain shattered");
             h.assertTrue(!Casters.get(y).isBusy(), "the ladder is over");
-            h.assertTrue(hp - target.getHealth() >= 40 || !target.isAlive(), "their health drained away (" + (hp - target.getHealth()) + ")");
-            h.assertTrue(tc.awakening() <= tc.maxAwakening() * 0.66f, "and a share of their Awakening meter (" + tc.awakening() + ")");
+            float dealt = hp - target.getHealth();
+            h.assertTrue(!target.isAlive() || Math.abs(dealt - JJKConfig.get().yuta.ladderDamage) < 0.6f, "one blow of its damage (" + dealt + ")");
+            float left = tc.awakening() / tc.maxAwakening();
+            h.assertTrue(Math.abs(left - (1 - JJKConfig.get().yuta.ladderDrain)) < 0.02f, "and its share of their Awakening meter, once (" + left + ")");
         });
     }
 }
