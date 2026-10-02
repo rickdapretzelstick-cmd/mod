@@ -1,0 +1,45 @@
+{
+  "name": "yuta_steel_air_2",
+  "duration": 400,
+  "blendIn": 30,
+  "blendOut": 150,
+  "priority": "ATTACK",
+  "keys": [
+    {"t": 0, "bones": {
+        "head": {"rot": [8, 0, 0]},
+        "chest": {"rot": [10, -30, 0]},
+        "hips": {"rot": [4, 8, 0]},
+        "rightArm": {"rot": [-56, -18, 14]},
+        "rightForearm": {"rot": [-78, 0, 0]},
+        "rightHand": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [-74, 26, -10]},
+        "leftForearm": {"rot": [-86, 0, 0]},
+        "rightThigh": {"rot": [-48, 0, 6]},
+        "leftThigh": {"rot": [-24, 0, -6]},
+        "rightShin": {"rot": [70, 0, 0]},
+        "leftShin": {"rot": [50, 0, 0]},
+        "root": {"pos": [0, -1.4, 0]}}},
+    {"t": 100, "ease": "EASE_IN", "marker": "impact", "bones": {
+        "rightThigh": {"rot": [-48, 0, 6]},
+        "rightShin": {"rot": [70, 0, 0]},
+        "leftThigh": {"rot": [-24, 0, -6]},
+        "leftShin": {"rot": [50, 0, 0]},
+        "chest": {"rot": [16, 26, 0]},
+        "rightArm": {"rot": [-100, 8, 0]},
+        "rightForearm": {"rot": [-4, 0, 0]}}},
+    {"t": 400, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [8, 0, 0]},
+        "chest": {"rot": [4, 16, 0]},
+        "hips": {"rot": [4, 8, 0]},
+        "rightArm": {"rot": [-56, -18, 14]},
+        "rightForearm": {"rot": [-78, 0, 0]},
+        "rightHand": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [-74, 26, -10]},
+        "leftForearm": {"rot": [-86, 0, 0]},
+        "rightThigh": {"rot": [-48, 0, 6]},
+        "leftThigh": {"rot": [-24, 0, -6]},
+        "rightShin": {"rot": [70, 0, 0]},
+        "leftShin": {"rot": [50, 0, 0]},
+        "root": {"pos": [0, -1.4, 0]}}}
+  ]
+}

@@ -62,6 +62,30 @@ public class PoseGalleryClientTest implements FabricClientGameTest {
             server.runCommand("execute as @a at @s run tp @s ~ ~ ~ 0 " + view[1]);
             server.runCommand("execute as @a at @s run summon jjk:training_dummy ~ ~ ~" + view[2] + " {NoAI:1b,Rotation:[" + view[0] + "f,0f]}");
             ctx.waitTicks(20);
+            // build/posegallery_gear.txt: "katana", "sheathed" or "steel" dresses the dummy as Cursed Partners.
+            try {
+                java.nio.file.Path g = java.nio.file.Path.of("../../posegallery_gear.txt");
+                if (java.nio.file.Files.exists(g)) {
+                    String gear = java.nio.file.Files.readString(g).trim();
+                    server.runCommand("jjk character yuta @e[type=jjk:training_dummy]");
+                    server.runOnServer(srv -> {
+                        for (var level : srv.getAllLevels()) {
+                            for (var e : level.getEntities(ModEntities.TRAINING_DUMMY, x -> true)) {
+                                if (gear.contains("katana")) dev.rick.jjk.core.combat.Statuses.apply(e, dev.rick.jjk.core.combat.CombatStatus.KATANA, 20 * 3000);
+                                if (gear.contains("steel")) {
+                                    var c = dev.rick.jjk.core.ability.Casters.get(e);
+                                    c.setNoCost(true);
+                                    c.enterAwakening();
+                                    dev.rick.jjk.core.combat.Statuses.apply(e, dev.rick.jjk.core.combat.CombatStatus.STEEL_ARM, 20 * 3000);
+                                }
+                            }
+                        }
+                    });
+                    ctx.waitTicks(10);
+                }
+            } catch (java.io.IOException e) {
+                throw new RuntimeException(e);
+            }
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
             List<String> names = only.isEmpty() ? ctx.computeOnClient(mc -> AnimLibrary.names()) : List.copyOf(only);
             for (String name : names) {

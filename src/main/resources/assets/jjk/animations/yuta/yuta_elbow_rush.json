@@ -1,0 +1,45 @@
+{
+  "name": "yuta_elbow_rush",
+  "reference": "ElbowRush.gif frames 20-60",
+  "duration": 600,
+  "blendIn": 30,
+  "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightThigh": {"rot": [-60, 0, 10]},
+        "rightShin": {"rot": [80, 0, 0]},
+        "leftThigh": {"rot": [20, 0, -8]},
+        "leftShin": {"rot": [70, 0, 0]},
+        "chest": {"rot": [20, -20, 0]},
+        "rightArm": {"rot": [-40, 30, 40]},
+        "rightForearm": {"rot": [-120, 0, 0]},
+        "root": {"pos": [0, -4, -1]}}},
+    {"t": 120, "ease": "EASE_IN", "marker": "elbow", "bones": {
+        "rightThigh": {"rot": [-46, 0, 6]},
+        "rightShin": {"rot": [40, 0, 0]},
+        "leftThigh": {"rot": [32, 0, -6]},
+        "leftShin": {"rot": [22, 0, 0]},
+        "head": {"rot": [6, 20, 0]},
+        "chest": {"rot": [14, 40, 0]},
+        "hips": {"rot": [10, 20, 0]},
+        "rightArm": {"rot": [-86, -60, 30]},
+        "rightForearm": {"rot": [-130, 0, 0]},
+        "leftArm": {"rot": [30, 0, -30]},
+        "leftForearm": {"rot": [-40, 0, 0]},
+        "root": {"pos": [0, -3, 6]}}},
+    {"t": 600, "bones": {
+        "rightThigh": {"rot": [-46, 0, 6]},
+        "rightShin": {"rot": [40, 0, 0]},
+        "leftThigh": {"rot": [32, 0, -6]},
+        "leftShin": {"rot": [22, 0, 0]},
+        "head": {"rot": [6, 20, 0]},
+        "chest": {"rot": [14, 40, 0]},
+        "hips": {"rot": [10, 20, 0]},
+        "rightArm": {"rot": [-86, -60, 30]},
+        "rightForearm": {"rot": [-130, 0, 0]},
+        "leftArm": {"rot": [30, 0, -30]},
+        "leftForearm": {"rot": [-40, 0, 0]},
+        "root": {"pos": [0, -3, 5]}}}
+  ]
+}

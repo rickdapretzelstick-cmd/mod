@@ -1,0 +1,58 @@
+{
+  "name": "yuta_cursed_speech",
+  "reference": "Copy.gif",
+  "duration": 1200,
+  "blendIn": 50,
+  "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "head": {"rot": [8, 0, 0]},
+        "chest": {"rot": [4, 16, 0]},
+        "hips": {"rot": [4, 8, 0]},
+        "rightArm": {"rot": [-56, -18, 14]},
+        "rightForearm": {"rot": [-78, 0, 0]},
+        "rightHand": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [-74, 26, -10]},
+        "leftForearm": {"rot": [-86, 0, 0]},
+        "rightThigh": {"rot": [12, 0, 4]},
+        "leftThigh": {"rot": [-14, 0, -4]},
+        "rightShin": {"rot": [8, 0, 0]},
+        "leftShin": {"rot": [10, 0, 0]},
+        "root": {"pos": [0, -1.4, 0]}}},
+    {"t": 300, "ease": "EASE_OUT", "marker": "collar", "bones": {
+        "head": {"rot": [-6, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [-130, -10, 4]},
+        "leftForearm": {"rot": [-110, 0, 0]},
+        "rightArm": {"rot": [-10, 0, 10]},
+        "rightForearm": {"rot": [-10, 0, 0]}}},
+    {"t": 600, "ease": "EASE_IN", "marker": "command", "bones": {
+        "head": {"rot": [-14, 0, 0]},
+        "chest": {"rot": [-12, 0, 0]},
+        "hips": {"rot": [-4, 0, 0]},
+        "leftArm": {"rot": [-40, 0, -30]},
+        "leftForearm": {"rot": [-20, 0, 0]},
+        "rightArm": {"rot": [10, 0, 30]},
+        "rightForearm": {"rot": [-10, 0, 0]},
+        "rightThigh": {"rot": [-14, 0, 6]},
+        "leftThigh": {"rot": [14, 0, -6]},
+        "root": {"pos": [0, -1, 0]}}},
+    {"t": 900, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [-10, 0, 0]}}},
+    {"t": 1200, "ease": "EASE_IN_OUT", "bones": {
+        "head": {"rot": [8, 0, 0]},
+        "chest": {"rot": [4, 16, 0]},
+        "hips": {"rot": [4, 8, 0]},
+        "rightArm": {"rot": [-56, -18, 14]},
+        "rightForearm": {"rot": [-78, 0, 0]},
+        "rightHand": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [-74, 26, -10]},
+        "leftForearm": {"rot": [-86, 0, 0]},
+        "rightThigh": {"rot": [12, 0, 4]},
+        "leftThigh": {"rot": [-14, 0, -4]},
+        "rightShin": {"rot": [8, 0, 0]},
+        "leftShin": {"rot": [10, 0, 0]},
+        "root": {"pos": [0, -1.4, 0]}}}
+  ]
+}

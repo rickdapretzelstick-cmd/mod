@@ -1,0 +1,52 @@
+{
+  "name": "yuta_resolute_slash",
+  "reference": "ResoluteSlash.gif frames 21-62",
+  "duration": 900,
+  "blendIn": 0,
+  "blendOut": 200,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "leftThigh": {"rot": [-46, 0, -6]},
+        "leftShin": {"rot": [40, 0, 0]},
+        "rightThigh": {"rot": [32, 0, 6]},
+        "rightShin": {"rot": [22, 0, 0]},
+        "chest": {"rot": [-6, 50, -8]},
+        "hips": {"rot": [4, 26, 0]},
+        "rightArm": {"rot": [-150, 80, 30]},
+        "rightForearm": {"rot": [-10, 0, 0]},
+        "rightHand": {"rot": [76, 0, 0]},
+        "root": {"pos": [0, -2, 0]}}},
+    {"t": 150, "ease": "EASE_IN", "marker": "slash", "bones": {
+        "rightThigh": {"rot": [-46, 0, 6]},
+        "rightShin": {"rot": [40, 0, 0]},
+        "leftThigh": {"rot": [32, 0, -6]},
+        "leftShin": {"rot": [22, 0, 0]},
+        "head": {"rot": [10, -14, 0]},
+        "chest": {"rot": [24, -50, 6]},
+        "hips": {"rot": [10, -28, 0]},
+        "rightArm": {"rot": [-60, -70, -24]},
+        "rightForearm": {"rot": [-2, 0, 0]},
+        "rightHand": {"rot": [88, 0, 0]},
+        "leftArm": {"rot": [-20, 40, -10]},
+        "root": {"pos": [0, -4, 5]}}},
+    {"t": 400, "ease": "EASE_OUT", "bones": {
+        "chest": {"rot": [26, -58, 6]},
+        "rightArm": {"rot": [-44, -80, -30]},
+        "root": {"pos": [0, -4, 4.4]}}},
+    {"t": 900, "ease": "EASE_IN_OUT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [2, 14, 0]},
+        "hips": {"rot": [3, 6, 0]},
+        "rightArm": {"rot": [-48, -12, 8]},
+        "rightForearm": {"rot": [-28, 0, 0]},
+        "rightHand": {"rot": [18, 0, 0]},
+        "leftArm": {"rot": [-22, 18, -14]},
+        "leftForearm": {"rot": [-22, 0, 0]},
+        "rightThigh": {"rot": [10, 0, 4]},
+        "leftThigh": {"rot": [-12, 0, -4]},
+        "rightShin": {"rot": [6, 0, 0]},
+        "leftShin": {"rot": [10, 0, 0]},
+        "root": {"pos": [0, -1, 0]}}}
+  ]
+}

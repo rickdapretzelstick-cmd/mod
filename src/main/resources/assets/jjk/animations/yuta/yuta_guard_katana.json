@@ -1,0 +1,24 @@
+{
+  "name": "yuta_guard_katana",
+  "duration": 150,
+  "hold": true,
+  "blendIn": 50,
+  "blendOut": 100,
+  "priority": "COMBAT",
+  "keys": [
+    {"t": 150, "ease": "OVERSHOOT", "bones": {
+        "head": {"rot": [12, 0, 0]},
+        "chest": {"rot": [4, 10, 0]},
+        "hips": {"rot": [8, 4, 0]},
+        "rightArm": {"rot": [-104, 24, 4]},
+        "rightForearm": {"rot": [-34, 0, 0]},
+        "rightHand": {"rot": [0, -84, 0]},
+        "leftArm": {"rot": [-112, -38, -6]},
+        "leftForearm": {"rot": [-36, 0, 0]},
+        "rightThigh": {"rot": [16, 0, 5]},
+        "leftThigh": {"rot": [-18, 0, -5]},
+        "rightShin": {"rot": [14, 0, 0]},
+        "leftShin": {"rot": [16, 0, 0]},
+        "root": {"pos": [0, -2.5, -0.5]}}}
+  ]
+}

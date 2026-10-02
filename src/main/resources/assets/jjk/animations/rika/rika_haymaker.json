@@ -1,0 +1,55 @@
+{
+  "name": "rika_haymaker",
+  "rig": "rika",
+  "reference": "RikaHaymaker.gif",
+  "duration": 1800,
+  "blendIn": 80,
+  "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0]},
+        "head": {"rot": [0, 0, 0]},
+        "jaw": {"rot": [0, 0, 0]},
+        "right_upper_arm": {"rot": [0, 0, 0]},
+        "right_forearm": {"rot": [0, 0, 0]},
+        "right_hand": {"rot": [0, 0, 0], "scale": 1},
+        "left_upper_arm": {"rot": [0, 0, 0]},
+        "left_forearm": {"rot": [0, 0, 0]},
+        "left_hand": {"rot": [0, 0, 0], "scale": 1}}},
+    {"t": 900, "ease": "EASE_OUT", "marker": "wound back", "bones": {
+        "body": {"rot": [-6, 40, 0], "pos": [0, 0, 6]},
+        "head": {"rot": [0, -30, 0]},
+        "jaw": {"rot": [12, 0, 0]},
+        "right_upper_arm": {"rot": [50, 0, -30]},
+        "right_forearm": {"rot": [-70, 0, 0]},
+        "right_hand": {"scale": 1.4},
+        "left_upper_arm": {"rot": [-70, 0, 20]},
+        "left_forearm": {"rot": [-20, 0, 0]}}},
+    {"t": 1060, "ease": "EASE_IN_OUT", "bones": {
+        "body": {"rot": [-8, 46, 0], "pos": [0, 0, 8]},
+        "right_upper_arm": {"rot": [56, 0, -34]}}},
+    {"t": 1100, "ease": "EASE_IN", "marker": "punch", "bones": {
+        "body": {"rot": [18, -36, 0], "pos": [0, -2, -10]},
+        "head": {"rot": [6, 20, 0]},
+        "jaw": {"rot": [30, 0, 0]},
+        "right_upper_arm": {"rot": [-92, 0, 0]},
+        "right_forearm": {"rot": [0, 0, 0]},
+        "right_hand": {"scale": 1.6},
+        "left_upper_arm": {"rot": [30, 0, 30]},
+        "left_forearm": {"rot": [-40, 0, 0]}}},
+    {"t": 1350, "ease": "EASE_OUT", "bones": {
+        "body": {"rot": [16, -40, 0], "pos": [0, -2, -11]},
+        "right_upper_arm": {"rot": [-90, 0, 2]}}},
+    {"t": 1800, "ease": "EASE_IN_OUT", "bones": {
+        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0]},
+        "head": {"rot": [0, 0, 0]},
+        "jaw": {"rot": [0, 0, 0]},
+        "right_upper_arm": {"rot": [0, 0, 0]},
+        "right_forearm": {"rot": [0, 0, 0]},
+        "right_hand": {"rot": [0, 0, 0], "scale": 1},
+        "left_upper_arm": {"rot": [0, 0, 0]},
+        "left_forearm": {"rot": [0, 0, 0]},
+        "left_hand": {"rot": [0, 0, 0], "scale": 1}}}
+  ]
+}

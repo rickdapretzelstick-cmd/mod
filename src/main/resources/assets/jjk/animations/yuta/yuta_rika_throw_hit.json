@@ -1,0 +1,50 @@
+{
+  "name": "yuta_rika_throw_hit",
+  "duration": 700,
+  "blendIn": 0,
+  "blendOut": 200,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-80, -40, -10]},
+        "rightForearm": {"rot": [-90, 30, 0]},
+        "leftArm": {"rot": [-80, 40, 10]},
+        "leftForearm": {"rot": [-90, -30, 0]},
+        "hips": {"rot": [74, 0, 0]},
+        "root": {"pos": [0, 6, 0]}}},
+    {"t": 300, "ease": "EASE_OUT", "marker": "rebound", "bones": {
+        "hips": {"rot": [-300, 0, 0]},
+        "chest": {"rot": [30, 0, 0]},
+        "rightThigh": {"rot": [-100, 0, 6]},
+        "rightShin": {"rot": [110, 0, 0]},
+        "leftThigh": {"rot": [-100, 0, -6]},
+        "leftShin": {"rot": [110, 0, 0]},
+        "rightArm": {"rot": [-40, 0, 20]},
+        "leftArm": {"rot": [-40, 0, -20]},
+        "root": {"pos": [0, 2, 0]}}},
+    {"t": 500, "ease": "EASE_OUT", "bones": {
+        "rightThigh": {"rot": [-60, 0, 10]},
+        "rightShin": {"rot": [80, 0, 0]},
+        "leftThigh": {"rot": [20, 0, -8]},
+        "leftShin": {"rot": [70, 0, 0]},
+        "hips": {"rot": [-360, 0, 0]},
+        "chest": {"rot": [20, 0, 0]},
+        "root": {"pos": [0, -4, 0]}}},
+    {"t": 501, "ease": "STEP", "bones": {
+        "hips": {"rot": [0, 0, 0]}}},
+    {"t": 700, "ease": "EASE_IN_OUT", "bones": {
+        "head": {"rot": [8, 0, 0]},
+        "chest": {"rot": [4, 16, 0]},
+        "hips": {"rot": [4, 8, 0]},
+        "rightArm": {"rot": [-56, -18, 14]},
+        "rightForearm": {"rot": [-78, 0, 0]},
+        "rightHand": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [-74, 26, -10]},
+        "leftForearm": {"rot": [-86, 0, 0]},
+        "rightThigh": {"rot": [12, 0, 4]},
+        "leftThigh": {"rot": [-14, 0, -4]},
+        "rightShin": {"rot": [8, 0, 0]},
+        "leftShin": {"rot": [10, 0, 0]},
+        "root": {"pos": [0, -1.4, 0]}}}
+  ]
+}

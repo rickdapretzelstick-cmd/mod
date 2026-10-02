@@ -1,0 +1,44 @@
+{
+  "name": "yuta_steel_downslam",
+  "duration": 580,
+  "blendIn": 40,
+  "blendOut": 180,
+  "priority": "ATTACK",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightThigh": {"rot": [-48, 0, 6]},
+        "rightShin": {"rot": [70, 0, 0]},
+        "leftThigh": {"rot": [-24, 0, -6]},
+        "leftShin": {"rot": [50, 0, 0]},
+        "chest": {"rot": [-22, 0, 0]},
+        "rightArm": {"rot": [-176, -14, 6]},
+        "rightForearm": {"rot": [-20, 0, 0]},
+        "leftArm": {"rot": [-176, 14, -6]},
+        "leftForearm": {"rot": [-20, 0, 0]}}},
+    {"t": 130, "ease": "EASE_IN", "marker": "impact", "bones": {
+        "rightThigh": {"rot": [-48, 0, 6]},
+        "rightShin": {"rot": [70, 0, 0]},
+        "leftThigh": {"rot": [-24, 0, -6]},
+        "leftShin": {"rot": [50, 0, 0]},
+        "head": {"rot": [20, 0, 0]},
+        "chest": {"rot": [36, 0, 0]},
+        "rightArm": {"rot": [-50, -16, 4]},
+        "rightForearm": {"rot": [-6, 0, 0]},
+        "leftArm": {"rot": [-50, 16, -4]},
+        "leftForearm": {"rot": [-6, 0, 0]}}},
+    {"t": 580, "ease": "EASE_IN_OUT", "bones": {
+        "head": {"rot": [8, 0, 0]},
+        "chest": {"rot": [4, 16, 0]},
+        "hips": {"rot": [4, 8, 0]},
+        "rightArm": {"rot": [-56, -18, 14]},
+        "rightForearm": {"rot": [-78, 0, 0]},
+        "rightHand": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [-74, 26, -10]},
+        "leftForearm": {"rot": [-86, 0, 0]},
+        "rightThigh": {"rot": [-48, 0, 6]},
+        "leftThigh": {"rot": [-24, 0, -6]},
+        "rightShin": {"rot": [70, 0, 0]},
+        "leftShin": {"rot": [50, 0, 0]},
+        "root": {"pos": [0, -1.4, 0]}}}
+  ]
+}

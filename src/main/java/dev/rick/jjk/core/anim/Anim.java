@@ -20,7 +20,10 @@ public final class Anim {
             "cursed_strikes_ready", "cursed_strikes_slide", "cursed_strikes_hop", "cursed_strikes_dropkick", "crushing_blow_charge",
             "crushing_blow_air", "crushing_blow_dash", "divergent_windup", "manji_stance", "manji_swoop", "sukuna_faint", "shrine_heavy_charge",
             "cleave_reach", "cleave_hold", "dismantle_windup", "dismantle_air", "wcs_chant_1", "wcs_chant_2", "wcs_chant_3", "open_flames",
-            "open_clap", "open_draw", "open_aim", "rush_run", "rush_chase", "rush_leap", "shrine_sign");
+            "open_clap", "open_draw", "open_aim", "rush_run", "rush_chase", "rush_leap", "shrine_sign",
+            // Cursed Partners
+            "yuta_guard_katana", "yuta_heavy_charge", "yuta_steel_heavy_charge", "yuta_outburst_grip", "yuta_domain_sign",
+            "yuta_jacobs_ladder");
     /** Entities currently showing a held pose. */
     private static final java.util.Set<LivingEntity> HOLDING = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
 

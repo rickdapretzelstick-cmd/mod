@@ -1,0 +1,28 @@
+{
+  "name": "yuta_rika_command",
+  "duration": 650,
+  "layer": "UPPER_BODY",
+  "blendIn": 40,
+  "blendOut": 200,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [0, 16, 0]},
+        "rightArm": {"rot": [-60, 30, 20]},
+        "rightForearm": {"rot": [-60, 0, 0]}}},
+    {"t": 120, "ease": "EASE_IN", "marker": "point", "bones": {
+        "head": {"rot": [4, -4, 0]},
+        "chest": {"rot": [2, -20, 0]},
+        "rightArm": {"rot": [-96, -6, 0]},
+        "rightForearm": {"rot": [-2, 0, 0]},
+        "rightHand": {"rot": [10, 0, 0]},
+        "leftArm": {"rot": [-20, 10, -30]}}},
+    {"t": 420, "ease": "EASE_OUT", "bones": {
+        "rightArm": {"rot": [-92, -8, 0]}}},
+    {"t": 650, "ease": "EASE_IN_OUT", "bones": {
+        "chest": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [0, 0, 0]},
+        "rightForearm": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [0, 0, 0]}}}
+  ]
+}

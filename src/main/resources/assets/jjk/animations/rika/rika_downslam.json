@@ -1,0 +1,52 @@
+{
+  "name": "rika_downslam",
+  "rig": "rika",
+  "reference": "RikaDownslam.gif",
+  "duration": 1500,
+  "blendIn": 80,
+  "blendOut": 250,
+  "priority": "SPECIAL",
+  "tremble": 0.4,
+  "keys": [
+    {"t": 0, "bones": {
+        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0]},
+        "head": {"rot": [0, 0, 0]},
+        "jaw": {"rot": [0, 0, 0]},
+        "right_upper_arm": {"rot": [0, 0, 0]},
+        "right_forearm": {"rot": [0, 0, 0]},
+        "right_hand": {"rot": [0, 0, 0], "scale": 1},
+        "left_upper_arm": {"rot": [0, 0, 0]},
+        "left_forearm": {"rot": [0, 0, 0]},
+        "left_hand": {"rot": [0, 0, 0], "scale": 1}}},
+    {"t": 380, "ease": "EASE_OUT", "marker": "raised", "bones": {
+        "body": {"rot": [-10, 16, 0], "pos": [0, 4, 0]},
+        "jaw": {"rot": [16, 0, 0]},
+        "right_upper_arm": {"rot": [-168, 0, -8]},
+        "right_forearm": {"rot": [-24, 0, 0]}}},
+    {"t": 500, "ease": "EASE_IN", "marker": "slam", "bones": {
+        "body": {"rot": [40, 0, 0], "pos": [0, -8, -8]},
+        "head": {"rot": [24, 0, 0]},
+        "jaw": {"rot": [26, 0, 0]},
+        "right_upper_arm": {"rot": [-34, 0, -4]},
+        "right_forearm": {"rot": [-2, 0, 0]},
+        "right_hand": {"rot": [40, 0, 0]},
+        "left_upper_arm": {"rot": [10, 0, 30]}}},
+    {"t": 950, "ease": "EASE_IN_OUT", "marker": "pressing", "bones": {
+        "body": {"rot": [46, 0, 0], "pos": [0, -9, -9]},
+        "right_upper_arm": {"rot": [-30, 0, -4]}}},
+    {"t": 1000, "ease": "EASE_IN", "marker": "second impact", "bones": {
+        "body": {"rot": [50, 0, 0], "pos": [0, -10, -9]},
+        "jaw": {"rot": [34, 0, 0]},
+        "right_upper_arm": {"rot": [-26, 0, -4]}}},
+    {"t": 1500, "ease": "EASE_IN_OUT", "bones": {
+        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0]},
+        "head": {"rot": [0, 0, 0]},
+        "jaw": {"rot": [0, 0, 0]},
+        "right_upper_arm": {"rot": [0, 0, 0]},
+        "right_forearm": {"rot": [0, 0, 0]},
+        "right_hand": {"rot": [0, 0, 0], "scale": 1},
+        "left_upper_arm": {"rot": [0, 0, 0]},
+        "left_forearm": {"rot": [0, 0, 0]},
+        "left_hand": {"rot": [0, 0, 0], "scale": 1}}}
+  ]
+}

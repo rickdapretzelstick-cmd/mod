@@ -1,0 +1,22 @@
+{
+  "name": "yuta_domain_sign",
+  "reference": "AuthenticMutualLove.gif frames 0-100",
+  "duration": 600,
+  "hold": true,
+  "blendIn": 80,
+  "blendOut": 200,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 600, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [16, 0, 0]},
+        "chest": {"rot": [4, 0, 0]},
+        "rightArm": {"rot": [-70, -40, 0]},
+        "rightForearm": {"rot": [-60, 0, 0]},
+        "rightHand": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [-70, 40, 0]},
+        "leftForearm": {"rot": [-60, 0, 0]},
+        "rightThigh": {"rot": [4, 0, 6]},
+        "leftThigh": {"rot": [-4, 0, -6]},
+        "root": {"pos": [0, -0.5, 0]}}}
+  ]
+}

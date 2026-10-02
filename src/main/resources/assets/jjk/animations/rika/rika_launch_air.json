@@ -1,0 +1,42 @@
+{
+  "name": "rika_launch_air",
+  "rig": "rika",
+  "reference": "RikaLaunchVariant.gif",
+  "duration": 800,
+  "blendIn": 40,
+  "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0]},
+        "head": {"rot": [0, 0, 0]},
+        "jaw": {"rot": [0, 0, 0]},
+        "right_upper_arm": {"rot": [0, 0, 0]},
+        "right_forearm": {"rot": [0, 0, 0]},
+        "right_hand": {"rot": [0, 0, 0], "scale": 1},
+        "left_upper_arm": {"rot": [0, 0, 0]},
+        "left_forearm": {"rot": [0, 0, 0]},
+        "left_hand": {"rot": [0, 0, 0], "scale": 1}}},
+    {"t": 200, "ease": "EASE_OUT", "marker": "under him", "bones": {
+        "body": {"rot": [40, 0, 0], "pos": [0, -4, 0]},
+        "right_upper_arm": {"rot": [-30, 0, 20]},
+        "left_upper_arm": {"rot": [-30, 0, -20]}}},
+    {"t": 260, "ease": "EASE_IN", "marker": "heave", "bones": {
+        "body": {"rot": [-20, 0, 0], "pos": [0, 6, 0]},
+        "head": {"rot": [-20, 0, 0]},
+        "right_upper_arm": {"rot": [-176, 0, 10]},
+        "left_upper_arm": {"rot": [-176, 0, -10]},
+        "right_forearm": {"rot": [0, 0, 0]},
+        "left_forearm": {"rot": [0, 0, 0]}}},
+    {"t": 800, "ease": "EASE_IN_OUT", "bones": {
+        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0]},
+        "head": {"rot": [0, 0, 0]},
+        "jaw": {"rot": [0, 0, 0]},
+        "right_upper_arm": {"rot": [0, 0, 0]},
+        "right_forearm": {"rot": [0, 0, 0]},
+        "right_hand": {"rot": [0, 0, 0], "scale": 1},
+        "left_upper_arm": {"rot": [0, 0, 0]},
+        "left_forearm": {"rot": [0, 0, 0]},
+        "left_hand": {"rot": [0, 0, 0], "scale": 1}}}
+  ]
+}

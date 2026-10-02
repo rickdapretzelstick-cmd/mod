@@ -1,0 +1,23 @@
+{
+  "name": "yuta_steel_jab",
+  "reference": "MetalArm.gif (JJS Steel Arm M1s)",
+  "duration": 260,
+  "layer": "UPPER_BODY",
+  "blendIn": 20,
+  "blendOut": 90,
+  "priority": "ATTACK",
+  "keys": [
+    {"t": 0, "bones": {
+        "chest": {"rot": [4, 20, 0]},
+        "rightArm": {"rot": [-60, -20, 16]},
+        "rightForearm": {"rot": [-90, 0, 0]}}},
+    {"t": 60, "ease": "EASE_IN", "marker": "impact", "bones": {
+        "chest": {"rot": [6, -14, 0]},
+        "rightArm": {"rot": [-94, 2, 2]},
+        "rightForearm": {"rot": [-3, 0, 0]}}},
+    {"t": 260, "ease": "EASE_OUT", "bones": {
+        "chest": {"rot": [4, 16, 0]},
+        "rightArm": {"rot": [-56, -18, 14]},
+        "rightForearm": {"rot": [-78, 0, 0]}}}
+  ]
+}

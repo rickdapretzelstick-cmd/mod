@@ -1,0 +1,25 @@
+{
+  "name": "yuta_heavy_charge",
+  "duration": 260,
+  "hold": true,
+  "blendIn": 60,
+  "blendOut": 120,
+  "priority": "ATTACK",
+  "tremble": 0.3,
+  "keys": [
+    {"t": 260, "ease": "EASE_OUT", "bones": {
+        "leftThigh": {"rot": [-46, 0, -6]},
+        "leftShin": {"rot": [40, 0, 0]},
+        "rightThigh": {"rot": [32, 0, 6]},
+        "rightShin": {"rot": [22, 0, 0]},
+        "head": {"rot": [6, -16, 0]},
+        "chest": {"rot": [6, 40, 0]},
+        "hips": {"rot": [4, 22, 0]},
+        "rightArm": {"rot": [-150, 46, 30]},
+        "rightForearm": {"rot": [-64, 0, 0]},
+        "rightHand": {"rot": [30, 0, 0]},
+        "leftArm": {"rot": [-96, -10, -10]},
+        "leftForearm": {"rot": [-40, 0, 0]},
+        "root": {"pos": [0, -3.5, -1]}}}
+  ]
+}

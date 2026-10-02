@@ -1,0 +1,50 @@
+{
+  "name": "rika_throw",
+  "rig": "rika",
+  "reference": "RikaThrow.gif",
+  "duration": 1500,
+  "blendIn": 80,
+  "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0]},
+        "head": {"rot": [0, 0, 0]},
+        "jaw": {"rot": [0, 0, 0]},
+        "right_upper_arm": {"rot": [0, 0, 0]},
+        "right_forearm": {"rot": [0, 0, 0]},
+        "right_hand": {"rot": [0, 0, 0], "scale": 1},
+        "left_upper_arm": {"rot": [0, 0, 0]},
+        "left_forearm": {"rot": [0, 0, 0]},
+        "left_hand": {"rot": [0, 0, 0], "scale": 1}}},
+    {"t": 350, "ease": "EASE_OUT", "marker": "pick up", "bones": {
+        "body": {"rot": [30, 0, 0], "pos": [0, -6, 0]},
+        "right_upper_arm": {"rot": [-50, 0, -10]},
+        "right_forearm": {"rot": [-30, 0, 0]},
+        "right_hand": {"rot": [40, 0, 0]}}},
+    {"t": 850, "ease": "EASE_IN_OUT", "marker": "wound back", "bones": {
+        "body": {"rot": [-16, 40, 0], "pos": [0, 2, 6]},
+        "head": {"rot": [-6, -20, 0]},
+        "jaw": {"rot": [16, 0, 0]},
+        "right_upper_arm": {"rot": [-200, 0, -20]},
+        "right_forearm": {"rot": [-40, 0, 0]},
+        "left_upper_arm": {"rot": [-60, 0, 20]}}},
+    {"t": 920, "ease": "EASE_IN", "marker": "throw", "bones": {
+        "body": {"rot": [26, -30, 0], "pos": [0, -2, -8]},
+        "head": {"rot": [10, 16, 0]},
+        "jaw": {"rot": [30, 0, 0]},
+        "right_upper_arm": {"rot": [-70, 0, 0]},
+        "right_forearm": {"rot": [0, 0, 0]},
+        "left_upper_arm": {"rot": [20, 0, 30]}}},
+    {"t": 1500, "ease": "EASE_IN_OUT", "bones": {
+        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0]},
+        "head": {"rot": [0, 0, 0]},
+        "jaw": {"rot": [0, 0, 0]},
+        "right_upper_arm": {"rot": [0, 0, 0]},
+        "right_forearm": {"rot": [0, 0, 0]},
+        "right_hand": {"rot": [0, 0, 0], "scale": 1},
+        "left_upper_arm": {"rot": [0, 0, 0]},
+        "left_forearm": {"rot": [0, 0, 0]},
+        "left_hand": {"rot": [0, 0, 0], "scale": 1}}}
+  ]
+}

@@ -65,8 +65,8 @@ public final class YutaGear {
 
     /** The sheath along -z from its mouth at the origin (the katana's handle sits behind the mouth when holstered). */
     public static void sheath(PoseStack.Pose pose, VertexConsumer buf, int light) {
-        box(pose, buf, -0.6f, -1.1f, -18.5f, 0.6f, 1.0f, 0f, SHEATH, light);
+        box(pose, buf, -0.6f, -1.1f, -15.5f, 0.6f, 1.0f, 0f, SHEATH, light);
         box(pose, buf, -0.65f, -1.15f, -0.8f, 0.65f, 1.05f, 0f, SHEATH_TRIM, light);
-        box(pose, buf, -0.65f, -1.15f, -19.0f, 0.65f, 1.05f, -18.2f, SHEATH_TRIM, light);
+        box(pose, buf, -0.65f, -1.15f, -16.0f, 0.65f, 1.05f, -15.2f, SHEATH_TRIM, light);
     }
 }

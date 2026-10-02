@@ -1,0 +1,51 @@
+{
+  "name": "yuta_blade_swing",
+  "reference": "SwordShrine.gif frames 82-110",
+  "duration": 800,
+  "blendIn": 0,
+  "blendOut": 220,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "leftThigh": {"rot": [-46, 0, -6]},
+        "leftShin": {"rot": [40, 0, 0]},
+        "rightThigh": {"rot": [32, 0, 6]},
+        "rightShin": {"rot": [22, 0, 0]},
+        "chest": {"rot": [6, 60, 0]},
+        "hips": {"rot": [4, 30, 0]},
+        "rightArm": {"rot": [-72, 104, 24]},
+        "rightForearm": {"rot": [-20, 0, 0]},
+        "rightHand": {"rot": [80, 0, 0]},
+        "root": {"pos": [0, -2.6, 0]}}},
+    {"t": 110, "ease": "EASE_IN", "marker": "swing", "bones": {
+        "rightThigh": {"rot": [-46, 0, 6]},
+        "rightShin": {"rot": [40, 0, 0]},
+        "leftThigh": {"rot": [32, 0, -6]},
+        "leftShin": {"rot": [22, 0, 0]},
+        "head": {"rot": [8, -14, 0]},
+        "chest": {"rot": [12, -58, 0]},
+        "hips": {"rot": [8, -32, 0]},
+        "rightArm": {"rot": [-88, -82, -4]},
+        "rightForearm": {"rot": [-2, 0, 0]},
+        "rightHand": {"rot": [88, 0, 0]},
+        "leftArm": {"rot": [-20, 40, -6]},
+        "root": {"pos": [0, -4.2, 6]}}},
+    {"t": 350, "ease": "EASE_OUT", "bones": {
+        "chest": {"rot": [12, -66, 0]},
+        "rightArm": {"rot": [-74, -96, -12]}}},
+    {"t": 800, "ease": "EASE_IN_OUT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [2, 14, 0]},
+        "hips": {"rot": [3, 6, 0]},
+        "rightArm": {"rot": [-48, -12, 8]},
+        "rightForearm": {"rot": [-28, 0, 0]},
+        "rightHand": {"rot": [18, 0, 0]},
+        "leftArm": {"rot": [-22, 18, -14]},
+        "leftForearm": {"rot": [-22, 0, 0]},
+        "rightThigh": {"rot": [10, 0, 4]},
+        "leftThigh": {"rot": [-12, 0, -4]},
+        "rightShin": {"rot": [6, 0, 0]},
+        "leftShin": {"rot": [10, 0, 0]},
+        "root": {"pos": [0, -1, 0]}}}
+  ]
+}

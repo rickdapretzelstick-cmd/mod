@@ -1,0 +1,45 @@
+{
+  "name": "yuta_rika_launch",
+  "reference": "RikaLaunch.gif frames 76-101",
+  "duration": 900,
+  "blendIn": 30,
+  "blendOut": 200,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightThigh": {"rot": [-60, 0, 10]},
+        "rightShin": {"rot": [80, 0, 0]},
+        "leftThigh": {"rot": [20, 0, -8]},
+        "leftShin": {"rot": [70, 0, 0]},
+        "chest": {"rot": [26, 0, 0]},
+        "rightArm": {"rot": [20, 0, 20]},
+        "leftArm": {"rot": [20, 0, -20]},
+        "root": {"pos": [0, -5, 0]}}},
+    {"t": 240, "ease": "EASE_OUT", "marker": "boost", "bones": {
+        "head": {"rot": [-20, 0, 0]},
+        "chest": {"rot": [30, 0, 0]},
+        "hips": {"rot": [30, 0, 0]},
+        "rightArm": {"rot": [50, 0, 24]},
+        "leftArm": {"rot": [50, 0, -24]},
+        "rightThigh": {"rot": [20, 0, 4]},
+        "leftThigh": {"rot": [30, 0, -4]},
+        "rightShin": {"rot": [30, 0, 0]},
+        "leftShin": {"rot": [40, 0, 0]},
+        "root": {"pos": [0, -1, 0]}}},
+    {"t": 600, "bones": {
+        "hips": {"rot": [20, 0, 0]}}},
+    {"t": 900, "ease": "EASE_IN_OUT", "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [0, 0, 0]},
+        "rightForearm": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [0, 0, 0]},
+        "leftForearm": {"rot": [0, 0, 0]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "rightShin": {"rot": [0, 0, 0]},
+        "leftShin": {"rot": [0, 0, 0]},
+        "root": {"pos": [0, 0, 0]}}}
+  ]
+}

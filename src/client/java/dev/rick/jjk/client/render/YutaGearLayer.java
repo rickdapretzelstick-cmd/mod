@@ -35,7 +35,7 @@ public class YutaGearLayer<S extends HumanoidRenderState, M extends HumanoidMode
         ps.pushPose();
         model.body.translateAndRotate(ps);
         ps.translate(4.6f / 16f, 10.5f / 16f, -2.5f / 16f);
-        ps.rotate(Axis.XP.rotationDegrees(-158f));
+        ps.rotate(Axis.XP.rotationDegrees(142f));
         ps.rotate(Axis.YP.rotationDegrees(8f));
         c.submitCustomGeometry(ps, TYPE, (pose, buf) -> {
             sheath(pose, buf, light);
@@ -65,9 +65,8 @@ public class YutaGearLayer<S extends HumanoidRenderState, M extends HumanoidMode
         if (drawn) {
             ps.pushPose();
             model.translateToHand(state, HumanoidArm.RIGHT, ps);
-            // In the fist, pointing forward from the hand like a held item.
-            ps.translate(-1f / 16f, 9.5f / 16f, -0.5f / 16f);
-            ps.rotate(Axis.XP.rotationDegrees(90f));
+            // In the fist, pointing forward out of it like a held item (the hand's own rotation angles the blade).
+            ps.translate(-1f / 16f, 10f / 16f, -0.2f / 16f);
             c.submitCustomGeometry(ps, TYPE, (pose, buf) -> katana(pose, buf, light, true));
             ps.popPose();
         }

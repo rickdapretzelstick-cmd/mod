@@ -1,0 +1,30 @@
+{
+  "name": "rika_slam_reach",
+  "rig": "rika",
+  "reference": "RikaSlam.gif frames 0-32",
+  "duration": 800,
+  "blendIn": 80,
+  "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0]},
+        "head": {"rot": [0, 0, 0]},
+        "jaw": {"rot": [0, 0, 0]},
+        "right_upper_arm": {"rot": [0, 0, 0]},
+        "right_forearm": {"rot": [0, 0, 0]},
+        "right_hand": {"rot": [0, 0, 0], "scale": 1},
+        "left_upper_arm": {"rot": [0, 0, 0]},
+        "left_forearm": {"rot": [0, 0, 0]},
+        "left_hand": {"rot": [0, 0, 0], "scale": 1}}},
+    {"t": 400, "ease": "EASE_OUT", "marker": "reach", "bones": {
+        "body": {"rot": [26, 0, 0], "pos": [0, -4, -8]},
+        "head": {"rot": [10, 0, 0]},
+        "jaw": {"rot": [20, 0, 0]},
+        "right_upper_arm": {"rot": [-80, 0, -4]},
+        "right_forearm": {"rot": [-4, 0, 0]},
+        "right_hand": {"rot": [20, 0, 0], "scale": 1.3}}},
+    {"t": 800, "bones": {
+        "right_upper_arm": {"rot": [-84, 0, -4]}}}
+  ]
+}

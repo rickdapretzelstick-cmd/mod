@@ -1,0 +1,78 @@
+{
+  "name": "yuta_true_love",
+  "reference": "TrueLove.gif",
+  "duration": 3000,
+  "blendIn": 80,
+  "blendOut": 300,
+  "priority": "AWAKENING",
+  "keys": [
+    {"t": 0, "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "chest": {"rot": [0, 0, 0]},
+        "hips": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [0, 0, 0]},
+        "rightForearm": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [0, 0, 0]},
+        "leftForearm": {"rot": [0, 0, 0]},
+        "rightThigh": {"rot": [0, 0, 0]},
+        "leftThigh": {"rot": [0, 0, 0]},
+        "rightShin": {"rot": [0, 0, 0]},
+        "leftShin": {"rot": [0, 0, 0]},
+        "root": {"pos": [0, 0, 0]}}},
+    {"t": 320, "ease": "EASE_IN_OUT", "marker": "necklace", "bones": {
+        "head": {"rot": [14, 0, 0]},
+        "chest": {"rot": [6, 0, 0]},
+        "rightArm": {"rot": [-40, -36, -20]},
+        "rightForearm": {"rot": [-112, 0, 0]},
+        "rightHand": {"rot": [0, 0, 0]}}},
+    {"t": 520, "ease": "EASE_IN", "marker": "torn off", "bones": {
+        "head": {"rot": [4, 10, 0]},
+        "chest": {"rot": [0, 16, 0]},
+        "rightArm": {"rot": [-70, 40, 34]},
+        "rightForearm": {"rot": [-20, 0, 0]}}},
+    {"t": 720, "ease": "EASE_OUT", "marker": "the ring", "bones": {
+        "head": {"rot": [10, -6, 0]},
+        "chest": {"rot": [-2, -6, 0]},
+        "rightArm": {"rot": [-118, -24, 10]},
+        "rightForearm": {"rot": [-96, 0, 0]},
+        "leftArm": {"rot": [-100, 30, -10]},
+        "leftForearm": {"rot": [-90, 0, 0]}}},
+    {"t": 1100, "ease": "EASE_OUT", "marker": "Rika", "bones": {
+        "head": {"rot": [-12, 0, 0]},
+        "chest": {"rot": [-10, 0, 0]},
+        "rightArm": {"rot": [-126, -20, 12]},
+        "rightForearm": {"rot": [-90, 0, 0]},
+        "leftArm": {"rot": [-20, 0, -26]},
+        "leftForearm": {"rot": [-10, 0, 0]},
+        "rightThigh": {"rot": [6, 0, 8]},
+        "leftThigh": {"rot": [-6, 0, -8]},
+        "root": {"pos": [0, -0.6, 0]}}},
+    {"t": 1500, "ease": "EASE_IN_OUT", "marker": "arm out", "bones": {
+        "head": {"rot": [0, 30, 0]},
+        "chest": {"rot": [0, 10, 0]},
+        "rightArm": {"rot": [-10, 0, 88]},
+        "rightForearm": {"rot": [0, 0, 0]},
+        "rightHand": {"rot": [0, 0, 0]}}},
+    {"t": 2000, "ease": "SPRING", "marker": "casing", "bones": {
+        "rightArm": {"rot": [-8, 0, 92]},
+        "chest": {"rot": [2, 12, 0]}}},
+    {"t": 2450, "ease": "EASE_IN_OUT", "bones": {
+        "head": {"rot": [0, 0, 0]},
+        "rightArm": {"rot": [-60, -10, 20]},
+        "rightForearm": {"rot": [-80, 0, 0]}}},
+    {"t": 3000, "ease": "EASE_IN_OUT", "bones": {
+        "head": {"rot": [8, 0, 0]},
+        "chest": {"rot": [4, 16, 0]},
+        "hips": {"rot": [4, 8, 0]},
+        "rightArm": {"rot": [-56, -18, 14]},
+        "rightForearm": {"rot": [-78, 0, 0]},
+        "rightHand": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [-74, 26, -10]},
+        "leftForearm": {"rot": [-86, 0, 0]},
+        "rightThigh": {"rot": [12, 0, 4]},
+        "leftThigh": {"rot": [-14, 0, -4]},
+        "rightShin": {"rot": [8, 0, 0]},
+        "leftShin": {"rot": [10, 0, 0]},
+        "root": {"pos": [0, -1.4, 0]}}}
+  ]
+}

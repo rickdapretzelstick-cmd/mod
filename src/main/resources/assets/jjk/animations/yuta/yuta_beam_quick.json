@@ -1,0 +1,42 @@
+{
+  "name": "yuta_beam_quick",
+  "reference": "TrueLoveBeamVariant.gif",
+  "duration": 700,
+  "blendIn": 20,
+  "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 0, "bones": {
+        "rightArm": {"rot": [-60, 20, 0]},
+        "rightForearm": {"rot": [-60, 0, 0]},
+        "leftArm": {"rot": [-60, -20, 0]},
+        "leftForearm": {"rot": [-60, 0, 0]}}},
+    {"t": 100, "ease": "EASE_IN", "marker": "release", "bones": {
+        "rightThigh": {"rot": [-46, 0, 6]},
+        "rightShin": {"rot": [40, 0, 0]},
+        "leftThigh": {"rot": [32, 0, -6]},
+        "leftShin": {"rot": [22, 0, 0]},
+        "chest": {"rot": [10, 0, 0]},
+        "rightArm": {"rot": [-94, 10, 0]},
+        "rightForearm": {"rot": [-2, 0, 0]},
+        "leftArm": {"rot": [-94, -10, 0]},
+        "leftForearm": {"rot": [-2, 0, 0]},
+        "root": {"pos": [0, -2.5, 3]}}},
+    {"t": 400, "ease": "EASE_OUT", "bones": {
+        "root": {"pos": [0, -2.2, 1]}}},
+    {"t": 700, "ease": "EASE_IN_OUT", "bones": {
+        "head": {"rot": [8, 0, 0]},
+        "chest": {"rot": [4, 16, 0]},
+        "hips": {"rot": [4, 8, 0]},
+        "rightArm": {"rot": [-56, -18, 14]},
+        "rightForearm": {"rot": [-78, 0, 0]},
+        "rightHand": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [-74, 26, -10]},
+        "leftForearm": {"rot": [-86, 0, 0]},
+        "rightThigh": {"rot": [12, 0, 4]},
+        "leftThigh": {"rot": [-14, 0, -4]},
+        "rightShin": {"rot": [8, 0, 0]},
+        "leftShin": {"rot": [10, 0, 0]},
+        "root": {"pos": [0, -1.4, 0]}}}
+  ]
+}

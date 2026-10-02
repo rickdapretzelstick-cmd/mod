@@ -32,7 +32,12 @@ public class GuardAbility extends Ability {
                 Combat.state(user).startGuard(level.getGameTime());
                 // Gojo doesn't need to block (JJS): Infinity lets him just float there at ease.
                 var character = dev.rick.jjk.core.ability.Casters.get(user).character();
-                Anim.play(user, character != null && dev.rick.jjk.gojo.GojoCharacter.ID.equals(character.id) ? "guard_gojo" : "guard");
+                String anim = "guard";
+                if (character != null && dev.rick.jjk.gojo.GojoCharacter.ID.equals(character.id)) anim = "guard_gojo";
+                // Swordsmanship: with the katana out, Yuta blocks with the blade.
+                else if (character != null && dev.rick.jjk.yuta.YutaCharacter.ID.equals(character.id)
+                        && Combat.has(user, dev.rick.jjk.core.combat.CombatStatus.KATANA)) anim = "yuta_guard_katana";
+                Anim.play(user, anim);
             }
 
             @Override

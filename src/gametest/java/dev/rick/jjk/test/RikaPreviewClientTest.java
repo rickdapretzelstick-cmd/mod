@@ -38,6 +38,48 @@ public class RikaPreviewClientTest implements FabricClientGameTest {
                 rika[0] = r.getId();
             });
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
+            // build/rikapreview.txt: "clip:ms,ms,..." lines scrub her clips at exact times (front three-quarter view);
+            // a line "base" first shows her partly manifested instead.
+            java.nio.file.Path list = java.nio.file.Path.of("../../rikapreview.txt");
+            if (java.nio.file.Files.exists(list)) {
+                java.util.List<String> lines;
+                try {
+                    lines = java.nio.file.Files.readAllLines(list);
+                } catch (java.io.IOException e) {
+                    throw new RuntimeException(e);
+                }
+                server.runOnServer(s -> {
+                    for (var e : s.overworld().getAllEntities()) {
+                        if (e instanceof dev.rick.jjk.entity.TrainingDummy d) {
+                            d.setYRot(160);
+                            d.setYHeadRot(160);
+                            d.setYBodyRot(160);
+                        }
+                        if (e instanceof RikaEntity r && lines.contains("base")) r.set(RikaEntity.FULL, false);
+                    }
+                });
+                ctx.waitTicks(30);
+                for (String l : lines) {
+                    if (l.isBlank() || l.equals("base")) continue;
+                    String[] kv = l.trim().split(":");
+                    String name = kv[0];
+                    for (String t : kv[1].split(",")) {
+                        int shot = Integer.parseInt(t);
+                        ctx.runOnClient(mc -> {
+                            dev.rick.jjk.client.anim.AnimDebug.target = rika[0];
+                            dev.rick.jjk.client.anim.AnimDebug.hud = false;
+                            dev.rick.jjk.client.anim.AnimDebug.paused = true;
+                            ClientAnimations.forget(rika[0]);
+                            dev.rick.jjk.client.anim.AnimDebug.play(name);
+                            var top = ClientAnimations.player(rika[0]).top();
+                            if (top != null) top.time = shot;
+                        });
+                        ctx.waitTicks(1);
+                        ctx.takeScreenshot(String.format("rika_%s_%04d", name, shot));
+                    }
+                }
+                return;
+            }
             float[] yaws = {180, 90, 0, -45};
             String[] views = {"front", "side", "back", "threequarter"};
             for (int pose = 0; pose < 2; pose++) {

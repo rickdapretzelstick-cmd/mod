@@ -1,0 +1,21 @@
+{
+  "name": "yuta_jacobs_ladder",
+  "reference": "JacobsLadder.gif frames 91-236",
+  "duration": 500,
+  "hold": true,
+  "blendIn": 60,
+  "blendOut": 250,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 500, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [-30, 0, 0]},
+        "chest": {"rot": [-10, 0, 0]},
+        "rightArm": {"rot": [-174, -6, 4]},
+        "rightForearm": {"rot": [-4, 0, 0]},
+        "rightHand": {"rot": [0, 0, 0]},
+        "leftArm": {"rot": [-10, 0, -24]},
+        "rightThigh": {"rot": [6, 0, 6]},
+        "leftThigh": {"rot": [-6, 0, -6]},
+        "root": {"pos": [0, 0, 0]}}}
+  ]
+}

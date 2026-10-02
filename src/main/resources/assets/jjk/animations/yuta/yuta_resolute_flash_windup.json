@@ -1,0 +1,37 @@
+{
+  "name": "yuta_resolute_flash_windup",
+  "reference": "ResoluteSlashUseTwice.gif frames 19-47",
+  "duration": 500,
+  "blendIn": 30,
+  "blendOut": 100,
+  "priority": "SPECIAL",
+  "tremble": 0.6,
+  "keys": [
+    {"t": 0, "bones": {
+        "leftThigh": {"rot": [-46, 0, -6]},
+        "leftShin": {"rot": [40, 0, 0]},
+        "rightThigh": {"rot": [32, 0, 6]},
+        "rightShin": {"rot": [22, 0, 0]},
+        "chest": {"rot": [10, 30, 0]},
+        "rightArm": {"rot": [-60, 40, 20]},
+        "rightForearm": {"rot": [-30, 0, 0]},
+        "rightHand": {"rot": [60, 0, 0]}}},
+    {"t": 300, "ease": "EASE_OUT", "bones": {
+        "leftThigh": {"rot": [-46, 0, -6]},
+        "leftShin": {"rot": [40, 0, 0]},
+        "rightThigh": {"rot": [32, 0, 6]},
+        "rightShin": {"rot": [22, 0, 0]},
+        "head": {"rot": [6, -24, 0]},
+        "chest": {"rot": [12, 70, 0]},
+        "hips": {"rot": [8, 34, 0]},
+        "rightArm": {"rot": [-30, 80, 40]},
+        "rightForearm": {"rot": [-80, 0, 0]},
+        "rightHand": {"rot": [40, 0, 0]},
+        "leftArm": {"rot": [-90, -20, -10]},
+        "leftForearm": {"rot": [-40, 0, 0]},
+        "root": {"pos": [0, -4.5, -2]}}},
+    {"t": 500, "bones": {
+        "chest": {"rot": [14, 74, 0]},
+        "root": {"pos": [0, -4.8, -2.2]}}}
+  ]
+}
