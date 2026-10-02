@@ -377,10 +377,14 @@ def main():
     ap.add_argument('--plain', action='store_true', help='just the scenes: no hook, disclaimer or end hold')
     ap.add_argument('--parts', default='hook,title,cards,scenes,end', help='which parts to build (to iterate on one)')
     ap.add_argument('--timeline')
+    ap.add_argument('--no-captions', action='store_true', help='leave the scene captions off (for the vertical Short, which crops them)')
     ap.add_argument('--crf', type=int, default=23)
     ap.add_argument('--preset', default='slow')
     args = ap.parse_args()
     fps = args.fps
+    if args.no_captions:
+        global CAPTION_SECONDS
+        CAPTION_SECONDS = 0
     rec = Recording(args.dirs)
     print('%d frames, %d scenes' % (len(rec.rows), len(rec.groups)))
     wr = Writer(args.out, rec.w, rec.h, fps, args.crf, args.preset)
