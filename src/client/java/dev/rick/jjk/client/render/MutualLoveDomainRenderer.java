@@ -125,7 +125,7 @@ public final class MutualLoveDomainRenderer {
         float s = RikaRenderer.SCALE * Mth.clamp(r / 6f, 1.5f, 4f);
         ps.scale(s, s, s);
         c.submitCustomGeometry(ps, GHOST,
-                (pose, buf) -> model.render(pose, buf, BbModel.Posing.REST, 0xF000F0, 0x8C9A9AA6));
+                (pose, buf) -> model.render(pose, buf, BbModel.Posing.REST, 0xF000F0, 0xB8DCDCE4));
         ps.popPose();
     }
 }

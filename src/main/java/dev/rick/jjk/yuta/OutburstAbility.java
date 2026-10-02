@@ -154,7 +154,7 @@ public final class OutburstAbility extends Ability {
             YutaSync.send(user);
             LivingEntity t = HakariCombat.firstInFront(user, 2.6, 2.4, 2.2);
             if (t == null) return;
-            if (YutaCombat.finishable(t)) {
+            if (YutaCombat.finishable(t) && (!dev.rick.jjk.core.combat.Combat.isGuarding(t) || fixedStage >= 3 && !wasHit)) {
                 swung = t;
                 return;
             }
@@ -175,7 +175,7 @@ public final class OutburstAbility extends Ability {
             Fx.play(level, "outburst_burst", at, HakariCombat.flat(user), (float) radius, user.getId());
             Fx.shake(level, at, radius * 4, 0.6f + st * 0.15f, 10);
             for (LivingEntity t : HitboxQuery.targets(user, HitShape.sphere(at, radius), 0.3, false)) {
-                if (t == swung && YutaCombat.finishable(t)) {
+                if (t == swung && YutaCombat.finishable(t) && (unblockable || !dev.rick.jjk.core.combat.Combat.isGuarding(t))) {
                     // Cut in half, and the burst guts the pieces.
                     YutaCombat.execute(user, t, ID, "outburst_finisher");
                     continue;

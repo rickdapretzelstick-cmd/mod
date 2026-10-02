@@ -28,6 +28,7 @@ public final class AwakeningGain {
 
     private static void onHit(HitResult r) {
         JJKConfig.Awakening cfg = JJKConfig.get().awakening;
+        if (r.hit().has(dev.rick.jjk.core.combat.AttackTag.NO_METER)) return;
         LivingEntity attacker = r.hit().attacker;
         LivingEntity target = r.target();
         switch (r.outcome()) {

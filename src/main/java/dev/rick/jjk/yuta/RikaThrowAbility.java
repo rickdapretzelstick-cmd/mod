@@ -68,6 +68,8 @@ public final class RikaThrowAbility extends Ability {
 
     static final class Instance extends AbilityInstance {
         @Nullable private final RikaEntity rika;
+        /** Where he stood: she picks him up and winds back relative to it. */
+        private Vec3 anchor = Vec3.ZERO;
         private Vec3 start = Vec3.ZERO;
         private Vec3 vel = Vec3.ZERO;
         private int flying = -1;
@@ -81,6 +83,7 @@ public final class RikaThrowAbility extends Ability {
         @Override
         public void start() {
             YutaCombat.busy(user, THROW + 4);
+            anchor = user.position();
             Anim.play(user, "yuta_rika_throw");
             if (rika != null) Anim.playOn(rika, "rika_throw");
             setPhase(0, THROW);
@@ -97,11 +100,10 @@ public final class RikaThrowAbility extends Ability {
                 // In her hand: picked up, then wound back over her shoulder.
                 Statuses.apply(user, CombatStatus.HOVER, 3);
                 Vec3 f = HakariCombat.flat(user);
-                if (rika != null) {
-                    rika.moveTo(user.position().subtract(f.scale(1.2)).add(0, age < PICKUP ? -0.8 : -1.2, 0), 1.6, 2);
-                    Vec3 hand = rika.position().add(f.scale(0.9)).add(0, age < PICKUP ? 1.6 : 2.8, 0).subtract(f.scale(age < PICKUP ? 0 : 1.0));
-                    if (age >= 4) Motion.set(user, hand.subtract(user.position()).scale(0.5));
-                }
+                if (rika != null) rika.moveTo(anchor.subtract(f.scale(1.4)).add(0, -0.4, 0), 1.6, 2);
+                // In her hand: lifted a little, then drawn back over her shoulder.
+                Vec3 hand = age < PICKUP ? anchor.add(0, 0.2 + 0.1 * age, 0) : anchor.subtract(f.scale(0.9)).add(0, 1.6, 0);
+                if (age >= 2) Motion.set(user, hand.subtract(user.position()).scale(0.5));
                 if (age == PICKUP) setPhase(1, THROW - PICKUP);
                 return;
             }

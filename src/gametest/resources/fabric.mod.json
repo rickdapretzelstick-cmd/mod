@@ -12,13 +12,15 @@
       "dev.rick.jjk.test.ClashTests",
       "dev.rick.jjk.test.HakariGameTests",
       "dev.rick.jjk.test.YujiGameTests",
+      "dev.rick.jjk.test.YutaGameTests",
       "dev.rick.jjk.test.MovesetAuditTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.AnimFrameworkClientTest",
       "dev.rick.jjk.test.GojoClientGameTest",
       "dev.rick.jjk.test.HakariClientGameTest",
-      "dev.rick.jjk.test.YujiClientGameTest"
+      "dev.rick.jjk.test.YujiClientGameTest",
+      "dev.rick.jjk.test.YutaClientGameTest"
     ]
   },
   "depends": {

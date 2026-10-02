@@ -524,3 +524,259 @@ for x in range(5, 11, 2):
     i.set(x + 1, 12, 0xFFFFFF)
 i.outline()
 i.save('malevolent_shrine')
+
+
+# ---------------------------------------------------------------- Cursed Partners (Yuta and Rika)
+PINK_ = 0xF569FF
+PINK_L = 0xFFC8FF
+MAG_ = 0xB01ABA
+STEEL_ = 0xD8DCE6
+STEEL_D = 0x8C929C
+RIKA_ = 0xE8E8F0
+RIKA_D = 0x9A9AA6
+SMOKE_ = 0x16141C
+
+
+def katana(i, x0, y0, x1, y1, guard=True):
+    """A katana from the handle end (x0, y0) to the tip (x1, y1)."""
+    n = int(max(abs(x1 - x0), abs(y1 - y0)))
+    for k in range(n + 1):
+        t = k / max(1, n)
+        x, y = round(x0 + (x1 - x0) * t), round(y0 + (y1 - y0) * t)
+        i.set(x, y, 0x7A1418 if t < 0.28 else STEEL_)
+    if guard:
+        gx, gy = x0 + (x1 - x0) * 0.3, y0 + (y1 - y0) * 0.3
+        i.set(round(gx) - 1, round(gy) + 1, 0x2A2420)
+        i.set(round(gx) + 1, round(gy) - 1, 0x2A2420)
+        i.set(round(gx), round(gy), 0x2A2420)
+
+
+# Severing Path: the blade sweeping low along the ground, a pink wake behind it.
+i = Icon()
+for x in range(0, 14):
+    i.set(x, 13, PINK_ if x % 2 == 0 else MAG_)
+    i.set(x, 12, PINK_L if x > 6 else PINK_)
+katana(i, 1, 9, 15, 11)
+i.outline()
+i.save('severing_path')
+
+# Resolute Slash: a long diagonal cut through a pink-black vanishing smear.
+i = Icon()
+i.disk(4.5, SMOKE_, 5, 10)
+i.disk(2.5, 0x2E1838, 5, 10)
+i.line(2, 14, 14, 1, PINK_)
+i.line(3, 14, 15, 2, PINK_L)
+i.line(2, 13, 13, 1, 0xFFFFFF)
+i.outline()
+i.save('resolute_slash')
+
+# Outburst: a pink burst round the gripped handle.
+i = Icon()
+for k in range(10):
+    a = k * math.pi / 5
+    r1 = 7.4 if k % 2 == 0 else 5.8
+    i.line(C + math.cos(a) * 2.5, C + math.sin(a) * 2.5, C + math.cos(a) * r1, C + math.sin(a) * r1, PINK_ if k % 2 == 0 else MAG_)
+i.disk(3.2, PINK_)
+i.disk(2.0, PINK_L)
+i.disk(0.9, 0xFFFFFF)
+katana(i, 4, 11, 9, 6, guard=True)
+i.outline()
+i.save('outburst')
+
+# Second Wind: a grabbing hand rushing forward on pink-lit feet.
+i = Icon()
+for y in (4, 7, 10):
+    i.line(0, y, 4, y, PINK_L)
+for y in range(4, 11):
+    for x in range(7, 12):
+        i.set(x, y, 0xF0CCA8)
+for x in (7, 9, 11):
+    for y in range(1, 4):
+        i.set(x, y, 0xF0CCA8)
+for x in range(12, 14):
+    i.set(x, 7, 0xF0CCA8)
+i.ring(6.6, 7.6, PINK_, when=lambda a: a > 0.4)
+i.outline()
+i.save('second_wind')
+
+# Rika: her grinning face out of black smoke.
+i = Icon()
+i.disk(7.2, SMOKE_)
+i.disk(5.0, RIKA_, 7.5, 6.5)
+for x in range(4, 12):
+    i.set(x, 9, 0x101014)
+    i.set(x, 10, 0x101014)
+for x in range(4, 12, 2):
+    i.set(x, 9, 0xFFFFFF)
+    i.set(x + 1, 10, 0xFFFFFF)
+i.set(5, 5, 0x101014)
+i.set(10, 5, 0x101014)
+i.outline()
+i.save('rika')
+
+# True Love: the ring, shining pink.
+i = Icon()
+i.ring(3.6, 5.6, STEEL_)
+i.ring(3.6, 4.4, STEEL_D, when=lambda a: a > 0)
+for k in range(4):
+    a = k * math.pi / 2 + math.pi / 4
+    i.line(C + math.cos(a) * 6.2, C + math.sin(a) * 6.2, C + math.cos(a) * 7.6, C + math.sin(a) * 7.6, PINK_)
+i.set(5, 3, 0xFFFFFF)
+i.set(6, 3, PINK_L)
+i.outline()
+i.save('true_love')
+
+# Rika Smash: a huge pale fist coming down out of smoke.
+i = Icon()
+i.disk(4.0, SMOKE_, 7.5, 2.5)
+for y in range(4, 13):
+    for x in range(3, 13):
+        i.set(x, y, RIKA_ if y < 11 else RIKA_D)
+for x in (5, 8, 11):
+    i.set(x, 5, RIKA_D)
+for x in range(0, 16):
+    i.set(x, 15, 0x6A6A74 if x % 3 else 0xA8A8B0)
+i.outline()
+i.save('rika_smash')
+
+# Rika Launch: a figure flung forward off her pale hands.
+i = Icon()
+for y in range(9, 14):
+    for x in range(1, 7):
+        i.set(x, y, RIKA_)
+i.line(6, 10, 13, 4, 0xF0CCA8)
+i.line(6, 11, 13, 5, 0xF0CCA8)
+i.disk(1.6, 0xF0CCA8, 13.5, 3.5)
+for x, y in ((8, 12), (10, 11), (12, 10)):
+    i.set(x, y, PINK_L)
+i.outline()
+i.save('rika_launch')
+
+# Rika Haymaker: her pale fist driving straight out with impact lines.
+i = Icon()
+i.disk(3.5, SMOKE_, 3, 8)
+for y in range(5, 11):
+    for x in range(4, 12):
+        i.set(x, y, RIKA_)
+for y in (5, 7, 9):
+    i.set(11, y, RIKA_D)
+for (a, b) in ((12, 3), (13, 8), (12, 13)):
+    i.line(12, 8, a + 2, b, 0xFFFFFF)
+i.outline()
+i.save('rika_haymaker')
+
+# Elbow Rush: a steel-cased elbow leading, speed lines behind.
+i = Icon()
+for y in (3, 6, 9, 12):
+    i.line(0, y, 5, y, PINK_L)
+for k in range(7):
+    for w in range(3):
+        i.set(6 + k, 12 - k + w, STEEL_D if w == 0 else STEEL_)
+for y in range(5, 9):
+    for x in range(11, 15):
+        i.set(x, y, STEEL_)
+i.outline()
+i.save('elbow_rush')
+
+# Copy: a pink wheel of four slots, one lit.
+i = Icon()
+i.ring(5.2, 7.2, 0x4A3050)
+for k in range(4):
+    a = k * math.pi / 2 - math.pi / 4
+    i.disk(1.8, PINK_ if k == 0 else 0x8A5C9A, C + math.cos(a) * 6.2, C + math.sin(a) * 6.2)
+i.disk(2.6, 0x101014)
+i.disk(1.2, PINK_L)
+i.outline()
+i.save('copy')
+
+# Energy Ripple: the katana driven point-down, a pink dome rising round it.
+i = Icon()
+i.ring(5.6, 7.0, PINK_, when=lambda a: a < 0.1)
+i.ring(3.0, 4.0, PINK_L, when=lambda a: a < 0.1)
+for x in range(0, 16):
+    i.set(x, 13, MAG_)
+katana(i, 7, 1, 7, 13)
+i.outline()
+i.save('energy_ripple')
+
+# Authentic Mutual Love: a grave cross on pale stone under a black sky, rope looping overhead.
+i = Icon()
+for y in range(0, 10):
+    for x in range(0, 16):
+        i.set(x, y, 0x0A080E)
+for x in range(0, 16):
+    i.set(x, 2 + (1 if x % 5 in (1, 2) else 0), 0x7A4E30)
+for y in range(10, 16):
+    for x in range(0, 16):
+        i.set(x, y, 0xD0CCD6)
+for y in range(4, 14):
+    i.set(7, y, 0xA8A8B4)
+    i.set(8, y, 0xC8C8D0)
+for x in range(5, 11):
+    i.set(x, 7, 0xC8C8D0)
+i.set(12, 6, PINK_)
+i.outline()
+i.save('authentic_mutual_love')
+
+# Copy Wheel: the wheel itself, two pages.
+i = Icon()
+i.ring(5.0, 7.4, 0x6A4A78)
+for k in range(8):
+    a = k * math.pi / 4
+    i.set(round(C + math.cos(a) * 6.2), round(C + math.sin(a) * 6.2), PINK_ if k < 4 else PINK_L)
+i.disk(3.0, 0x2A1A30)
+i.line(5, 7, 10, 7, 0xFFFFFF)
+i.line(7, 5, 7, 10, 0xFFFFFF)
+i.outline()
+i.save('copy_wheel')
+
+# Rika Downslam: her arm pressing straight down on someone flat on the ground.
+i = Icon()
+for y in range(0, 10):
+    for x in range(6, 11):
+        i.set(x, y, RIKA_)
+for x in range(4, 13):
+    i.set(x, 10, RIKA_D)
+for x in range(2, 15):
+    i.set(x, 12, 0xF0CCA8)
+    i.set(x, 13, 0x6A6A74)
+i.outline()
+i.save('rika_downslam')
+
+# Rika Slam: a leg held by her hand, swung down in an arc.
+i = Icon()
+i.ring(5.5, 6.5, RIKA_D, when=lambda a: a < 0.4)
+for y in range(2, 6):
+    for x in range(2, 6):
+        i.set(x, y, RIKA_)
+i.line(5, 5, 11, 11, 0xF0CCA8)
+i.line(6, 5, 12, 11, 0xF0CCA8)
+for x in range(0, 16):
+    i.set(x, 14, 0x6A6A74)
+i.outline()
+i.save('rika_slam')
+
+# True Love Beam: a huge pink beam out of a white-hot orb.
+i = Icon()
+for x in range(4, 16):
+    for y in range(4, 12):
+        d = abs(y - 7.5)
+        i.set(x, y, 0xFFFFFF if d < 1 else PINK_L if d < 2.5 else PINK_)
+i.disk(4.0, PINK_, 3.5, 7.5)
+i.disk(2.4, PINK_L, 3.5, 7.5)
+i.disk(1.2, 0xFFFFFF, 3.5, 7.5)
+i.outline()
+i.save('true_love_beam')
+
+# Rika Throw: a figure flying out of her pale hand.
+i = Icon()
+for y in range(10, 15):
+    for x in range(0, 6):
+        i.set(x, y, RIKA_)
+i.line(5, 10, 12, 4, 0xF0CCA8)
+i.line(6, 11, 13, 5, 0xF0CCA8)
+i.disk(1.6, 0xF0CCA8, 13.5, 3.0)
+for (x, y) in ((4, 6), (6, 4), (8, 2)):
+    i.line(x, y, x + 2, y + 2, 0xFFFFFF)
+i.outline()
+i.save('rika_throw')

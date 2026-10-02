@@ -196,7 +196,7 @@ public final class AuthenticMutualLoveAbility extends Ability implements dev.ric
                 }
                 // It bypasses every i-frame.
                 Hit hit = Hit.builder(user, ID).type(ModDamageTypes.SURE_HIT).damage(per)
-                        .tag(AttackTag.SURE_HIT, AttackTag.UNBLOCKABLE, AttackTag.TECHNIQUE, AttackTag.BYPASS_INFINITY, AttackTag.OTG)
+                        .tag(AttackTag.SURE_HIT, AttackTag.UNBLOCKABLE, AttackTag.TECHNIQUE, AttackTag.BYPASS_INFINITY, AttackTag.OTG, AttackTag.NO_METER)
                         .origin(victim.position().add(0, 6, 0)).knockback(Knockback.HOLD).hitstun(20).noComboScaling().fx("ladder_hit", 1f).build();
                 HitResolver.resolve(hit, victim);
             }

@@ -88,7 +88,7 @@ public final class YutaHud {
     private static void ringGlow(GuiGraphicsExtractor g, Font font, int w, int h, float time) {
         float a = 0.55f + 0.25f * Mth.sin(time * 0.15f);
         int al = Math.round(a * 255) << 24;
-        int cx = w / 2, y = h - 58;
+        int cx = w / 2, y = h / 2 + 40;
         g.fillGradient(cx - 46, y - 1, cx + 46, y + 11, al | 0x2A0A30, al | 0x14041A);
         g.fill(cx - 46, y - 1, cx + 46, y, al | 0xF76BFF);
         smallText(g, font, "RIKA", cx, y + 2, 0.75f, al | 0xF7C8FF);

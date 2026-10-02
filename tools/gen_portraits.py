@@ -3,6 +3,7 @@
 One simple symbol per character, readable at any size (the screen draws them at textures/gui/portrait/<id>.png):
   - gojo: his blindfold
   - hakari: a slot machine
+  - yuta: Rika's ring, the cursed ring of their promise
 """
 import os
 
@@ -127,3 +128,28 @@ def yuji():
 
 
 yuji()
+
+
+# Yuta: the ring (seen at an angle), silver, with a pink glint of Rika's cursed energy.
+def yuta():
+    import math
+    img = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
+    for y in range(32):
+        for x in range(32):
+            dx, dy = (x - 15.5) / 12.5, (y - 16.5) / 8.5
+            r = math.hypot(dx, dy)
+            if 0.62 <= r <= 1.0:
+                top = dy < 0
+                lit = math.atan2(dy, dx)
+                col = 0xF0F2F8 if (top and -2.4 < lit < -1.0) else 0xC8CCD8 if top else 0x8C92A0 if r > 0.8 else 0xA8AEBC
+                img.putpixel((x, y), rgb(col))
+            elif 0.56 <= r < 0.62 or 1.0 < r <= 1.08:
+                img.putpixel((x, y), rgb(0x2A2A34))
+    for (x, y, c) in ((8, 9, 0xFFFFFF), (9, 9, 0xFFC8FF), (8, 10, 0xFFC8FF), (7, 9, 0xF569FF), (8, 8, 0xF569FF), (10, 9, 0xF569FF), (8, 11, 0xF569FF)):
+        img.putpixel((x, y), rgb(c))
+    for (x, y) in ((25, 22), (26, 21), (24, 23)):
+        img.putpixel((x, y), rgb(0xF569FF))
+    img.save(os.path.join(OUT, 'yuta.png'))
+
+
+yuta()

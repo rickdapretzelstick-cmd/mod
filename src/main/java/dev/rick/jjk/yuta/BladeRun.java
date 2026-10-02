@@ -110,7 +110,7 @@ public final class BladeRun extends AbilityInstance {
         LivingEntity hit = HakariCombat.firstInFront(user, 2.8, 2.4, 2.4);
         boolean landed = false;
         if (hit != null) {
-            HitResult r = HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.bladeDamage, true).tag(AttackTag.OTG)
+            HitResult r = HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.bladeDamage, true).tag(AttackTag.NO_METER).tag(AttackTag.OTG)
                     .knockback(Knockback.HOLD).hitstun(20).noComboScaling().fx("severing_swing", 1.2f).build(), hit);
             landed = r.connected();
             if (landed) {
@@ -136,7 +136,7 @@ public final class BladeRun extends AbilityInstance {
                 }
                 for (int i = 0; i < 4; i++) {
                     boolean last = i == 3;
-                    HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.shrineSlashDamage, true).tag(AttackTag.TECHNIQUE, AttackTag.OTG)
+                    HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.shrineSlashDamage, true).tag(AttackTag.NO_METER).tag(AttackTag.TECHNIQUE, AttackTag.OTG)
                             .knockback(last ? Knockback.directional(dir, 1.3, 0.35) : Knockback.HOLD).hitstun(last ? 30 : 12)
                             .noComboScaling().fx("shrine_slash", 1f).build(), t);
                 }
@@ -144,7 +144,7 @@ public final class BladeRun extends AbilityInstance {
             case THIN_ICE_BREAKER -> {
                 Fx.play(level, "thin_ice_breaker", at, dir, 1f, user.getId());
                 Fx.shake(level, at, 24, 0.9f, 10);
-                HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.thinIceDamage, true).tag(AttackTag.TECHNIQUE, AttackTag.OTG, AttackTag.SURE_HIT)
+                HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.thinIceDamage, true).tag(AttackTag.NO_METER).tag(AttackTag.TECHNIQUE, AttackTag.OTG, AttackTag.SURE_HIT)
                         .knockback(Knockback.set(dir.scale(1.0).add(0, 0.7, 0))).hitstun(40).status(CombatStatus.LAUNCHED, 40)
                         .status(CombatStatus.TRUE_RAGDOLL, 60).noComboScaling().fx("hit_heavy", 1.4f).build(), t);
             }
@@ -162,7 +162,7 @@ public final class BladeRun extends AbilityInstance {
                 }
                 // "Plummet!"
                 Fx.play(level, "speech_plummet", user.getEyePosition(), dir, 1f, user.getId());
-                HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.plummetDamage, true).tag(AttackTag.TECHNIQUE, AttackTag.OTG)
+                HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.plummetDamage, true).tag(AttackTag.NO_METER).tag(AttackTag.TECHNIQUE, AttackTag.OTG)
                         .knockback(Knockback.set(new Vec3(0, -1.6, 0))).hitstun(30).status(CombatStatus.SPIKED, 30)
                         .noComboScaling().fx("hit_slam", 1.3f).build(), t);
             }
@@ -182,7 +182,7 @@ public final class BladeRun extends AbilityInstance {
                         YutaCombat.execute(user, t, AuthenticMutualLoveAbility.ID, "aml_bisect_finisher");
                         continue;
                     }
-                    HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.shrineMissDamage, true).tag(AttackTag.TECHNIQUE, AttackTag.EXPLOSION, AttackTag.OTG)
+                    HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.shrineMissDamage, true).tag(AttackTag.NO_METER).tag(AttackTag.TECHNIQUE, AttackTag.EXPLOSION, AttackTag.OTG)
                             .knockback(Knockback.directional(dir, 1.6, 0.4)).hitstun(26).status(CombatStatus.LAUNCHED, 24)
                             .noComboScaling().fx("shrine_slash", 1.4f).build(), t);
                 }
@@ -191,7 +191,7 @@ public final class BladeRun extends AbilityInstance {
                 Vec3 from = user.position().add(0, 1.1, 0);
                 Fx.play(level, "thin_ice_breaker", from.add(dir.scale(3)), dir, 1.4f, user.getId());
                 for (LivingEntity t : HitboxQuery.targets(user, HitShape.orientedBox(from, dir, 9, 4, 3), 0.3, false)) {
-                    HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.thinIceMissDamage, true).tag(AttackTag.TECHNIQUE, AttackTag.OTG)
+                    HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.thinIceMissDamage, true).tag(AttackTag.NO_METER).tag(AttackTag.TECHNIQUE, AttackTag.OTG)
                             .knockback(Knockback.directional(dir, 1.1, 0.5)).hitstun(26).status(CombatStatus.LAUNCHED, 26)
                             .noComboScaling().fx("hit_heavy", 1.1f).build(), t);
                 }
@@ -210,7 +210,7 @@ public final class BladeRun extends AbilityInstance {
                 Fx.play(level, "speech_stop", user.getEyePosition(), dir, d != null ? (float) d.radius : 12f, user.getId());
                 if (d != null) {
                     for (LivingEntity t : AuthenticMutualLove.enemies(d)) {
-                        HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, 0, false).tag(AttackTag.BLOCKABLE_360, AttackTag.TECHNIQUE, AttackTag.OTG)
+                        HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, 0, false).tag(AttackTag.NO_METER).tag(AttackTag.BLOCKABLE_360, AttackTag.TECHNIQUE, AttackTag.OTG)
                                 .knockback(Knockback.set(Vec3.ZERO)).status(CombatStatus.STOPPED, cfg.stopTicks).noComboScaling()
                                 .fx("speech_bound", 1f).build(), t);
                     }
@@ -279,7 +279,7 @@ public final class BladeRun extends AbilityInstance {
             }
             if (per <= 0) return;
             HakariCombat.hit(dev.rick.jjk.core.combat.Hit.builder(user, AuthenticMutualLoveAbility.ID).type(dev.rick.jjk.registry.ModDamageTypes.TECHNIQUE)
-                    .damage(per).tag(AttackTag.TECHNIQUE, AttackTag.OTG, AttackTag.UNBLOCKABLE).origin(victim.position().add(0, 2, 0))
+                    .damage(per).tag(AttackTag.TECHNIQUE, AttackTag.OTG, AttackTag.UNBLOCKABLE, AttackTag.NO_METER).origin(victim.position().add(0, 2, 0))
                     .knockback(Knockback.HOLD).hitstun(12).noComboScaling().fx("shikigami_bite", 1f).build(), victim);
         }
 

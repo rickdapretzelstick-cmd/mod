@@ -35,6 +35,8 @@ public final class AttackTag {
     public static final AttackTag LIMITLESS = of("limitless");
     /** JJS "360 blockable": a guard stops it from any side, not only the front (Shrine's slashes, Dismantle...). */
     public static final AttackTag BLOCKABLE_360 = of("blockable_360");
+    /** Builds nobody's Awakening meter, the attacker's or the target's (Authentic Mutual Love's blades, Jacob's Ladder). */
+    public static final AttackTag NO_METER = of("no_meter");
 
     public final String id;
 
