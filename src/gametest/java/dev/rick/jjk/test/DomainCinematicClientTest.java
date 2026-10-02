@@ -243,7 +243,8 @@ public class DomainCinematicClientTest extends PresentationClientTest {
     /** Yuta awakened with Rika; her True Love Beam fired straight at the camera, which is set on the beam's axis. */
     private void finale() {
         stage("yuta");
-        cmd("execute as @a at @s run tp @s ~ ~ ~ -60 0");
+        // Out on the open grass, past the arena's wall, so the camera can sit 26 blocks down the beam's axis.
+        cmd("execute as @a at @s run tp @s ~90 ~ ~ -60 0");
         ctx.waitTicks(4);
         KeyMapping ult = key("key.jjk.ultimate"), s3 = key("key.jjk.skill_3"), s5 = key("key.jjk.skill_5");
         server.runCommand("execute as @a run jjk awakening 100");
@@ -258,11 +259,11 @@ public class DomainCinematicClientTest extends PresentationClientTest {
         ctx.waitTicks(2);
         freeze();
         section("FINALE;TRUE LOVE;RIKA AND YUTA;255,170,255;1");
-        int charge = 54;
+        int charge = 57;
         for (int i = 0; i < charge; i++) {
             float k = Mth.clamp(i / (float) (charge - 6), 0, 1);
             float e = k * k * (3 - 2 * k);
-            ShowcaseCamera.set(Mth.lerp(e, 70, 180), Mth.lerp(e, 8f, 19f), Mth.lerp(e, 2.4f, 1.3f), Mth.lerp(e, 0f, 2f));
+            ShowcaseCamera.set(Mth.lerp(e, 70, 180), Mth.lerp(e, 8f, 24f), Mth.lerp(e, 2.4f, 1.15f), Mth.lerp(e, 0f, 2f));
             film(1);
         }
         // It fires: slowed to a quarter speed as the front rushes down its length at the lens.
