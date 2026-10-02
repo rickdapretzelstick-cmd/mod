@@ -110,16 +110,25 @@ public final class Flashes {
     public record LoveBeam(Vec3 origin, Vec3 dir, double length, double radius, int grow, int collapse, int life, long start, boolean quick) {}
 
     private static final java.util.Map<Integer, LoveBeam> LOVE_BEAMS = new java.util.HashMap<>();
+    /** When each beam was first drawn: its grow-in counts from there (the packet's own tick can be a couple of ticks stale). */
+    private static final java.util.Map<Integer, Float> LOVE_SEEN = new java.util.HashMap<>();
 
     public static void loveBeam(int key, LoveBeam b) {
         LOVE_BEAMS.put(key, b);
+        LOVE_SEEN.remove(key);
+    }
+
+    /** The beam's age in ticks at {@code time}: from the later of its stamp and its first drawn frame. */
+    private static float loveAge(int key, LoveBeam b, float time) {
+        float seen = LOVE_SEEN.computeIfAbsent(key, k -> time);
+        return time - Math.max(b.start(), Math.min(seen, b.start() + 4));
     }
 
     /** Stops a beam early: it collapses over the next few ticks instead of holding. */
     public static void stopLoveBeam(int key, long now) {
         LoveBeam b = LOVE_BEAMS.get(key);
         if (b == null) return;
-        int at = (int) (now - b.start());
+        int at = (int) loveAge(key, b, now);
         int quickEnd = Math.min(3, b.collapse());
         if (at + quickEnd < b.life()) {
             LOVE_BEAMS.put(key, new LoveBeam(b.origin(), b.dir(), b.length(), b.radius(), b.grow(), quickEnd, at + quickEnd, b.start(), b.quick()));
@@ -130,7 +139,7 @@ public final class Flashes {
     public static double[] loveBeamState(int key, long now, float partial) {
         LoveBeam b = LOVE_BEAMS.get(key);
         if (b == null) return null;
-        float t = now - b.start() + partial;
+        float t = loveAge(key, b, now + partial);
         return new double[] {dev.rick.jjk.yuta.TrueLoveBeamProfile.front(b.length(), b.grow(), t),
                 dev.rick.jjk.yuta.TrueLoveBeamProfile.scale(t, b.life(), b.collapse())};
     }
@@ -138,15 +147,18 @@ public final class Flashes {
     public static void clear() {
         ACTIVE.clear();
         LOVE_BEAMS.clear();
+        LOVE_SEEN.clear();
     }
 
     private static void renderLoveBeams(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, long now, float partial) {
-        var it = LOVE_BEAMS.values().iterator();
+        var it = LOVE_BEAMS.entrySet().iterator();
         while (it.hasNext()) {
-            LoveBeam b = it.next();
-            float t = now - b.start() + partial;
+            var entry = it.next();
+            LoveBeam b = entry.getValue();
+            float t = loveAge(entry.getKey(), b, now + partial);
             if (t >= b.life() || t > 400) {
                 it.remove();
+                LOVE_SEEN.remove(entry.getKey());
                 continue;
             }
             if (t < 0) continue;
