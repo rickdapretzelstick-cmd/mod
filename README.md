@@ -455,3 +455,8 @@ destruction limits, particle quality, screen effects, sound volume). `/jjk confi
 - `tools/roblox_sounds.py` rebuilds every sound from the Jujutsu Shenanigans audio (the Roblox IDs per move, fetched from
   Roblox or the JJS Skill Builder mirror at ossaamm.github.io, plus the wiki's jackpot sound); `tools/gen_textures.py`
   regenerates the textures
+- `DomainCinematicClientTest` (opt-in, with `build/cinematic.txt` choosing the scenes) records every domain, both clashes
+  and the True Love Beam into the camera with the game frozen and each tick drawn at several sub-tick moments;
+  `tools/make_domain_cinematic.py` rebuilds that into a 60 fps film (a hook, the disclaimer cards, each scene, the beam
+  out to white) and `tools/make_domain_soundtrack.py` scores it with the JJS soundtrack, each theme and hit landing on
+  the picture's flashes. Mux them with ffmpeg: the film itself is silent.

@@ -16,3 +16,5 @@ gojo_short.mp4
 gojo_short_v1.mp4
 *.mp4
 !release/jujutsu-0.1.0.jar
+*.m4a
+__pycache__/
