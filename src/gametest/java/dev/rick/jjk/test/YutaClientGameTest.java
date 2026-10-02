@@ -217,7 +217,8 @@ public class YutaClientGameTest implements FabricClientGameTest {
             ctx.takeScreenshot("t26_true_love_beam_charge");
             ctx.waitTicks(34);
             ctx.takeScreenshot("t27_true_love_beam");
-            ctx.waitTicks(40);
+            // The blast holds for 5 seconds; Rika is busy until it's over.
+            ctx.waitTicks(110);
             dummy(ctx, server, 8);
             in.pressKey(s5);
             ctx.waitTicks(6);

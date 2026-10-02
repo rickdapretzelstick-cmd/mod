@@ -515,8 +515,17 @@ public final class Glow {
      */
     public static void tube(SubmitNodeCollector c, PoseStack ps, Vector3f n, Vector3f u, Vector3f v, float length, Radius radius,
                             int rings, int sides, float r, float g, float b, float a, Vector3f cam, float edge) {
+        tube(c, ps, n, u, v, length, radius, rings, sides, r, g, b, a, cam, edge, false);
+    }
+
+    /**
+     * As {@link #tube}; {@code solid} draws it alpha-blended instead of as added light, densest where it faces the camera,
+     * so a beam's body reads as a solid mass of energy even against a bright sky (additive light alone washes out there).
+     */
+    public static void tube(SubmitNodeCollector c, PoseStack ps, Vector3f n, Vector3f u, Vector3f v, float length, Radius radius,
+                            int rings, int sides, float r, float g, float b, float a, Vector3f cam, float edge, boolean solid) {
         if (length <= 0.01f || a <= 0.003f) return;
-        submit(c, ps, (pose, buf) -> {
+        SubmitNodeCollector.CustomGeometryRenderer geo = (pose, buf) -> {
             float[][] px = new float[rings + 1][], py = new float[rings + 1][], pz = new float[rings + 1][], al = new float[rings + 1][];
             for (int i = 0; i <= rings; i++) {
                 float sAt = length * i / rings;
@@ -531,7 +540,7 @@ public final class Glow {
                     float tx = cam.x - x, ty = cam.y - y, tz = cam.z - z;
                     float inv = Mth.invSqrt(tx * tx + ty * ty + tz * tz + 1e-6f);
                     float face = Math.abs((nx * tx + ny * ty + nz * tz) * inv);
-                    al[i][j] = rad < 0.01f ? 0f : a * (edge + (1 - edge) * face * face);
+                    al[i][j] = rad < 0.01f ? 0f : a * (edge + (1 - edge) * (solid ? face : face * face));
                 }
             }
             for (int i = 0; i < rings; i++) {
@@ -541,9 +550,16 @@ public final class Glow {
                     buf.addVertex(pose, px[i + 1][j], py[i + 1][j], pz[i + 1][j]).setColor(r, g, b, al[i + 1][j]);
                     buf.addVertex(pose, px[i + 1][k], py[i + 1][k], pz[i + 1][k]).setColor(r, g, b, al[i + 1][k]);
                     buf.addVertex(pose, px[i][k], py[i][k], pz[i][k]).setColor(r, g, b, al[i][k]);
+                    // Both sides: seen end-on (or from inside its aura) a beam is mostly the far side of its walls.
+                    buf.addVertex(pose, px[i][k], py[i][k], pz[i][k]).setColor(r, g, b, al[i][k]);
+                    buf.addVertex(pose, px[i + 1][k], py[i + 1][k], pz[i + 1][k]).setColor(r, g, b, al[i + 1][k]);
+                    buf.addVertex(pose, px[i + 1][j], py[i + 1][j], pz[i + 1][j]).setColor(r, g, b, al[i + 1][j]);
+                    buf.addVertex(pose, px[i][j], py[i][j], pz[i][j]).setColor(r, g, b, al[i][j]);
                 }
             }
-        });
+        };
+        if (solid) c.submitCustomGeometry(ps, INK, geo);
+        else submit(c, ps, geo);
     }
 
     /** A dark (alpha-blended) band wrapped round a beam, {@code from} to {@code to} along it at radius {@code rad}. */
@@ -561,6 +577,34 @@ public final class Glow {
                 buf.addVertex(pose, n.x * to + x0, n.y * to + y0, n.z * to + z0).setColor(r, g, b, a);
                 buf.addVertex(pose, n.x * to + x1, n.y * to + y1, n.z * to + z1).setColor(r, g, b, a);
                 buf.addVertex(pose, n.x * from + x1, n.y * from + y1, n.z * from + z1).setColor(r, g, b, a);
+                buf.addVertex(pose, n.x * from + x1, n.y * from + y1, n.z * from + z1).setColor(r, g, b, a);
+                buf.addVertex(pose, n.x * to + x1, n.y * to + y1, n.z * to + z1).setColor(r, g, b, a);
+                buf.addVertex(pose, n.x * to + x0, n.y * to + y0, n.z * to + z0).setColor(r, g, b, a);
+                buf.addVertex(pose, n.x * from + x0, n.y * from + y0, n.z * from + z0).setColor(r, g, b, a);
+            }
+        });
+    }
+
+    /** A glowing strip through {@code pts} (relative to the pose), always turned to face {@code cam}: arcs and spirals. */
+    public static void strip(SubmitNodeCollector c, PoseStack ps, Vector3f[] pts, float width, float r, float g, float b, float a, Vector3f cam) {
+        if (pts.length < 2 || a <= 0.003f) return;
+        submit(c, ps, (pose, buf) -> {
+            for (int i = 0; i + 1 < pts.length; i++) {
+                Vector3f p0 = pts[i], p1 = pts[i + 1];
+                Vector3f seg = new Vector3f(p1).sub(p0);
+                Vector3f toCam = new Vector3f(cam).sub(p0);
+                Vector3f side = seg.cross(toCam, new Vector3f());
+                if (side.lengthSquared() < 1e-8f) continue;
+                side.normalize(width);
+                float a0 = a * (float) Math.sin(Math.PI * i / (pts.length - 1)), a1 = a * (float) Math.sin(Math.PI * (i + 1) / (pts.length - 1));
+                buf.addVertex(pose, p0.x - side.x, p0.y - side.y, p0.z - side.z).setColor(r, g, b, 0f);
+                buf.addVertex(pose, p0.x, p0.y, p0.z).setColor(r, g, b, a0);
+                buf.addVertex(pose, p1.x, p1.y, p1.z).setColor(r, g, b, a1);
+                buf.addVertex(pose, p1.x - side.x, p1.y - side.y, p1.z - side.z).setColor(r, g, b, 0f);
+                buf.addVertex(pose, p0.x, p0.y, p0.z).setColor(r, g, b, a0);
+                buf.addVertex(pose, p0.x + side.x, p0.y + side.y, p0.z + side.z).setColor(r, g, b, 0f);
+                buf.addVertex(pose, p1.x + side.x, p1.y + side.y, p1.z + side.z).setColor(r, g, b, 0f);
+                buf.addVertex(pose, p1.x, p1.y, p1.z).setColor(r, g, b, a1);
             }
         });
     }

@@ -35,8 +35,9 @@ import java.util.Set;
  * True Love Beam (JJS awakened Rika, 40s). With their combined cursed energy Yuta and Rika conjure a small pink orb while
  * he aims; then Rika takes over, planting herself behind him, growing, her jaw opening wide over his head as she charges
  * it, the path it will take traced on the ground; and from her mouth comes an overwhelming beam that erases everything in
- * its path (100, less the more players it catches). Unblockable, bypasses ragdoll; an explosion and a beam. Once she is in
- * place he can move again, though she is busy until it's over. The finisher atomizes them into black mist.
+ * its path (100, less the more players it catches): a 3-block-thick torrent that holds for 5 seconds, boring into
+ * whatever it strikes. Unblockable, bypasses ragdoll; an explosion and a beam. Once she is in place he can move again,
+ * though she is busy until it's over. The finisher atomizes them into black mist.
  *
  * <p>The beam's shape ({@link TrueLoveBeamProfile}) is the hitbox: it shoots out over a few ticks, holds, collapses, and
  * only does damage while it is drawn, once to each target. Its path is fixed once Rika is in place (no tracking).
@@ -177,7 +178,16 @@ public final class TrueLoveBeamAbility extends Ability {
             Vec3 end = block.getType() == HitResult.Type.MISS ? far : block.getLocation();
             var ent = ProjectileUtil.getEntityHitResult(level, user, eye, end, new AABB(eye, end).inflate(1),
                     e -> e instanceof LivingEntity && e.isAlive() && e != rika && !e.isSpectator(), 0.3f);
-            if (ent != null) end = ent.getEntity().getBoundingBox().getCenter();
+            if (ent != null) return ent.getEntity().getBoundingBox().getCenter();
+            if (block.getType() == HitResult.Type.BLOCK && block.getDirection() == net.minecraft.core.Direction.UP) {
+                // Aimed at the floor: it would plunge into the ground a few blocks out (it fires from high up, at Rika's
+                // mouth). Instead it sweeps out level, a body's height over the ground, the way he faces.
+                Vec3 flat = new Vec3(look.x, 0, look.z);
+                if (flat.lengthSqr() > 1e-4) {
+                    double out = Math.max(20, Math.min(reach, end.distanceTo(eye) * 2.5));
+                    end = new Vec3(eye.x, end.y + 1.0, eye.z).add(flat.normalize().scale(out));
+                }
+            }
             // Aiming at the ground right in front would send it into the floor at his feet: never closer than 8 blocks.
             if (end.distanceTo(from) < 8) end = from.add(end.subtract(from).normalize().scale(8));
             return end;
@@ -268,6 +278,15 @@ public final class TrueLoveBeamAbility extends Ability {
                 destroyedTo = front;
             }
             if (scale <= 0) return;
+            // Every few ticks: where it is striking now (the first thing in its path, or its end), so every client draws
+            // the impact there, and it keeps boring into whatever it hits.
+            if (t % 3 == 0) {
+                Vec3 end = origin.add(dir.scale(front));
+                var clip = level.clip(new ClipContext(origin.add(dir.scale(2)), end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, user));
+                Vec3 strike = clip.getType() == HitResult.Type.MISS ? end : clip.getLocation();
+                Fx.play(level, quick ? "beam_quick_pulse" : "beam_pulse", strike, dir, t, user.getId());
+                if (!quick && clip.getType() != HitResult.Type.MISS) Destruction.sphere(level, strike, radius, 60f, 24, user, null);
+            }
             AABB box = new AABB(origin, origin.add(dir.scale(front))).inflate(radius + 1);
             for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, e -> Targeting.canTarget(user, e))) {
                 if (hit.contains(e) || !inside(e, front, scale)) continue;

@@ -431,13 +431,13 @@ public class YutaGameTests {
         });
     }
 
-    @GameTest(maxTicks = 160)
+    @GameTest(maxTicks = 260)
     public void trueLoveBeamHitsExactlyWhatItDrawsOnce(GameTestHelper h) {
         floor(h, 16);
         JJKConfig.Yuta cfg = JJKConfig.get().yuta;
         TrainingDummy onAxis = dummy(h, 3.5, 13.5);
-        TrainingDummy edge = dummy(h, 5.3, 13.5);      // 1.8 off the axis: inside the full radius
-        TrainingDummy wide = dummy(h, 9.5, 13.5);      // 6 off: outside it
+        TrainingDummy edge = dummy(h, 4.7, 13.5);      // 1.2 off the axis: inside its 3-block body
+        TrainingDummy wide = dummy(h, 7.5, 13.5);      // 4 off: outside it
         TrainingDummy behind = dummy(h, 3.5, 0.5);     // behind Yuta and Rika
         TrainingDummy y = yuta(h, 3.5, 4.5, onAxis);
         TrainingDummy[] all = {onAxis, edge, wide, behind};
@@ -472,7 +472,7 @@ public class YutaGameTests {
         });
     }
 
-    @GameTest(maxTicks = 140)
+    @GameTest(maxTicks = 240)
     public void trueLoveBeamIsCancelledIfYutaDiesInTheWindup(GameTestHelper h) {
         floor(h, 16);
         JJKConfig.Yuta cfg = JJKConfig.get().yuta;

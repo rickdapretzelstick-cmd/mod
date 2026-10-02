@@ -5,9 +5,10 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * The shape of True Love Beam over its life, shared by the server's hit test and the client's drawing so what you see is
- * exactly what hits. Along its length it swells from Rika's mouth to its full radius over the first few blocks and
- * ends in a rounded nose (JJS: a huge pink bullet with a white-hot core). Over time it shoots out to its full length in
- * {@code grow} ticks, holds, and collapses to nothing over its last {@code collapse} ticks.
+ * exactly what hits. It is a cannon blast, not a laser: its full body (3 blocks across at the default radius of 1.5)
+ * fills the whole hitbox from a couple of blocks out of Rika's mouth, and ends in a short rounded nose. Over time it
+ * shoots out to its full length in {@code grow} ticks, holds at full thickness for the whole blast, and only collapses
+ * over its last {@code collapse} ticks.
  */
 public final class TrueLoveBeamProfile {
     /** Rika's open mouth in her beam pose, from her feet (measured on her rig at the "fire" frame of rika_beam). */
@@ -15,7 +16,7 @@ public final class TrueLoveBeamProfile {
     /** Where she plants herself: this far behind Yuta, so the beam clears his head. */
     public static final double BEHIND = 1.4;
     /** The swell from the mouth, in blocks, and the nose's length. */
-    static final double SWELL = 5, NOSE = 3;
+    static final double SWELL = 2, NOSE = 1.5;
 
     private TrueLoveBeamProfile() {}
 
@@ -35,7 +36,7 @@ public final class TrueLoveBeamProfile {
     /** The radius {@code s} blocks from the mouth, when the front is at {@code front}. */
     public static double radius(double s, double front, double radius) {
         if (s < 0 || s > front) return 0;
-        double swell = 0.35 + 0.65 * smooth(Math.min(1, s / SWELL));
+        double swell = 0.6 + 0.4 * smooth(Math.min(1, s / SWELL));
         double left = front - s;
         double nose = left >= NOSE ? 1 : Math.sqrt(Math.max(0, left / NOSE));
         return radius * swell * nose;

@@ -26,7 +26,7 @@ public final class JJKConfig {
      * The gameplay tuning this file was written for. When the mod's defaults change (the JJS wiki pass), older files have
      * their gameplay sections reset to the new defaults; the player's client settings are kept.
      */
-    public static final int CURRENT_VERSION = 4;
+    public static final int CURRENT_VERSION = 5;
     public int version;
 
     public General general = new General();
@@ -1003,13 +1003,13 @@ public final class JJKConfig {
         public int beamConjureTicks = 22;
         /** Ticks from the start until the beam fires (the rest of it is Rika's charge, the path telegraphed). */
         public int beamWindup = 60;
-        /** How long the beam lasts, including its grow-in and collapse; it only does damage while it is drawn. */
-        public int beamTicks = 30;
-        public int beamGrowTicks = 4;
-        public int beamCollapseTicks = 8;
+        /** How long the blast lasts (5 seconds), including its grow-in and collapse; it only does damage while drawn. */
+        public int beamTicks = 100;
+        public int beamGrowTicks = 3;
+        public int beamCollapseTicks = 6;
         public double beamRange = 40;
-        /** The beam's full radius (blocks), and the quick beam's. */
-        public double beamRadius = 2.6;
+        /** The beam's full radius: 1.5 makes it the 3x3-block torrent its hitbox is (the quick beam's is thinner). */
+        public double beamRadius = 1.5;
         public float beamDamage = 100f;
         /** The quick beam: the orb let go from his hands at once (pressed again in the wind-up, or Rika is busy). */
         public int beamQuickWindup = 8;

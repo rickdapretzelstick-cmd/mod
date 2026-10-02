@@ -32,7 +32,7 @@ public final class Flashes {
     public enum Type { FLASH, RING, RIPPLE, GROUND, LENS, BEAM, DARK_BEAM, BOLT, SWIRL, INK }
 
     private static final List<Effect> ACTIVE = new ArrayList<>();
-    private static final int MAX = 160;
+    private static final int MAX = 320;
 
     private record Effect(Type type, Vec3 pos, Vec3 dir, float[] color, float from, float to, float alpha, int life, long start, float width,
                           float spin, int seed) {
@@ -140,7 +140,7 @@ public final class Flashes {
         LOVE_BEAMS.clear();
     }
 
-    private static void renderLoveBeams(SubmitNodeCollector c, PoseStack ps, Vec3 cam, long now, float partial) {
+    private static void renderLoveBeams(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, long now, float partial) {
         var it = LOVE_BEAMS.values().iterator();
         while (it.hasNext()) {
             LoveBeam b = it.next();
@@ -163,24 +163,52 @@ public final class Flashes {
             // A slow throb along it, like the JJS beam's pulsing body.
             float throb = 1f + 0.05f * Mth.sin(t * 1.3f);
             double R = b.radius() * scale * throb;
-            int rings = b.quick() ? 14 : 30, sides = b.quick() ? 12 : 18;
+            int rings = b.quick() ? 14 : 36, sides = b.quick() ? 12 : 20;
             float len = (float) front;
-            // Outer glow, pink body, hot inner body, white core (references: a huge pink bullet, white-hot at its heart).
-            Glow.tube(c, ps, n, u, v, len, s -> dev.rick.jjk.yuta.TrueLoveBeamProfile.radius(s, front, R * 1.28), rings, sides,
-                    0.97f, 0.36f, 1f, 0.28f * fade, camRel, 0.05f);
-            Glow.tube(c, ps, n, u, v, len, s -> dev.rick.jjk.yuta.TrueLoveBeamProfile.radius(s, front, R), rings, sides,
-                    1f, 0.5f, 1f, 0.5f * fade, camRel, 0.1f);
-            Glow.tube(c, ps, n, u, v, len, s -> dev.rick.jjk.yuta.TrueLoveBeamProfile.radius(s, front, R * 0.62), rings, sides,
-                    1f, 0.82f, 1f, 0.75f * fade, camRel, 0.2f);
-            Glow.tube(c, ps, n, u, v, len, s -> dev.rick.jjk.yuta.TrueLoveBeamProfile.radius(s, front, R * 0.3), rings, sides,
-                    1f, 1f, 1f, 1f * fade, camRel, 0.45f);
+            java.util.function.DoubleUnaryOperator at = s -> dev.rick.jjk.yuta.TrueLoveBeamProfile.radius(s, front, 1.0);
+            // A cannon blast, not a laser. Its solid body fills the whole hitbox (radius R: 3 blocks across), opaque so it
+            // reads as a mass of energy even against a bright sky.
+            Glow.tube(c, ps, n, u, v, len, s -> at.applyAsDouble(s) * R * 0.98, rings, sides, 0.86f, 0.22f, 0.92f, 0.85f * fade, camRel, 0.5f, true);
+            // A churning outer aura past it: lumps rolling along, swelling the whole thing to 4 blocks and more at moments.
+            Glow.tube(c, ps, n, u, v, len, s -> at.applyAsDouble(s) * R * (1.32 + 0.14 * Math.sin(s * 0.9 - t * 0.8) + 0.08 * Math.sin(s * 2.3 + t * 1.7)),
+                    rings, sides, 0.97f, 0.36f, 1f, 0.3f * fade, camRel, 0.04f);
+            Glow.tube(c, ps, n, u, v, len, s -> at.applyAsDouble(s) * R * (1.6 + 0.2 * Math.sin(s * 0.5 - t * 0.5)), rings, sides,
+                    0.9f, 0.3f, 1f, 0.12f * fade, camRel, 0.02f);
+            // The pink body, the hot inner body, and a near-white core a block and a quarter thick.
+            Glow.tube(c, ps, n, u, v, len, s -> at.applyAsDouble(s) * R, rings, sides, 1f, 0.45f, 1f, 0.6f * fade, camRel, 0.3f);
+            Glow.tube(c, ps, n, u, v, len, s -> at.applyAsDouble(s) * R * 0.7, rings, sides, 1f, 0.78f, 1f, 0.85f * fade, camRel, 0.45f);
+            Glow.tube(c, ps, n, u, v, len, s -> at.applyAsDouble(s) * R * 0.42, rings, sides, 1f, 0.97f, 1f, 1f * fade, camRel, 0.65f);
+            Glow.tube(c, ps, n, u, v, len, s -> at.applyAsDouble(s) * R * 0.28, rings, sides, 1f, 1f, 1f, 1f * fade, camRel, 0.9f);
+            // Glow masses along its axis, always facing the camera: head-on they stack into a disc of energy the beam's
+            // full width (a tube seen end-on is only its rim), from the side they churn inside the body.
+            float step = b.quick() ? 2.5f : 2f;
+            for (float sAt = 1f + (t * 0.9f) % step; sAt < len - 0.5f; sAt += step) {
+                float rad = (float) (at.applyAsDouble(sAt) * R);
+                ps.pushPose();
+                ps.translate(n.x * sAt, n.y * sAt, n.z * sAt);
+                Glow.halo(c, ps, camRot, rad * 1.3f, 1f, 0.4f, 1f, 0.28f * fade);
+                Glow.halo(c, ps, camRot, rad * 0.55f, 1f, 0.92f, 1f, 0.4f * fade);
+                ps.popPose();
+            }
             if (!b.quick()) {
                 // Dark bands rolling out along it (the black rings round the JJS beam).
-                float gap = 6.5f;
+                float gap = 5.5f;
                 float off = (t * 1.8f) % gap;
-                for (float sAt = 2.5f + off; sAt + 1f < len - 2.5f; sAt += gap) {
-                    float rad = (float) (dev.rick.jjk.yuta.TrueLoveBeamProfile.radius(sAt, front, R) * 1.03);
-                    Glow.inkBand(c, ps, n, u, v, sAt, sAt + 0.9f, rad, sides, 0.24f, 0.02f, 0.3f, 0.42f * fade);
+                for (float sAt = 2f + off; sAt + 1f < len - 1.5f; sAt += gap) {
+                    float rad = (float) (at.applyAsDouble(sAt) * R * 1.03);
+                    Glow.inkBand(c, ps, n, u, v, sAt, sAt + 0.8f, rad, sides, 0.24f, 0.02f, 0.3f, 0.42f * fade);
+                }
+                // Two arcs of light spiralling round it, turning as it pours forward.
+                for (int k = 0; k < 2; k++) {
+                    int m = Math.max(8, (int) (len * 1.5f));
+                    Vector3f[] pts = new Vector3f[m + 1];
+                    for (int i = 0; i <= m; i++) {
+                        float sAt = len * i / m;
+                        float ang = sAt * 0.55f - t * 0.6f + k * Mth.PI;
+                        float rad = (float) (at.applyAsDouble(sAt) * R * 1.12);
+                        pts[i] = new Vector3f(n).mul(sAt).add(new Vector3f(u).mul(Mth.cos(ang) * rad)).add(new Vector3f(v).mul(Mth.sin(ang) * rad));
+                    }
+                    Glow.strip(c, ps, pts, 0.18f, 1f, 0.85f, 1f, 0.7f * fade, camRel);
                 }
             }
             ps.popPose();
@@ -188,7 +216,7 @@ public final class Flashes {
     }
 
     public static void render(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, long now, float partial) {
-        renderLoveBeams(c, ps, cam, now, partial);
+        renderLoveBeams(c, ps, cam, camRot, now, partial);
         Iterator<Effect> it = ACTIVE.iterator();
         while (it.hasNext()) {
             Effect f = it.next();
