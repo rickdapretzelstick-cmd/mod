@@ -119,8 +119,10 @@ public final class Flashes {
     }
 
     /** The beam's age in ticks at {@code time}: from the later of its stamp and its first drawn frame. */
-    private static float loveAge(int key, LoveBeam b, float time) {
-        float seen = LOVE_SEEN.computeIfAbsent(key, k -> time);
+    private static float loveAge(int key, LoveBeam b, float time, boolean drawing) {
+        Float seen = drawing ? LOVE_SEEN.computeIfAbsent(key, k -> time) : LOVE_SEEN.get(key);
+        // Not drawn yet: it is brand new (its first frame will be age 0).
+        if (seen == null) return 0;
         return time - Math.max(b.start(), Math.min(seen, b.start() + 4));
     }
 
@@ -128,7 +130,7 @@ public final class Flashes {
     public static void stopLoveBeam(int key, long now) {
         LoveBeam b = LOVE_BEAMS.get(key);
         if (b == null) return;
-        int at = (int) loveAge(key, b, now);
+        int at = (int) loveAge(key, b, now, false);
         int quickEnd = Math.min(3, b.collapse());
         if (at + quickEnd < b.life()) {
             LOVE_BEAMS.put(key, new LoveBeam(b.origin(), b.dir(), b.length(), b.radius(), b.grow(), quickEnd, at + quickEnd, b.start(), b.quick()));
@@ -139,7 +141,7 @@ public final class Flashes {
     public static double[] loveBeamState(int key, long now, float partial) {
         LoveBeam b = LOVE_BEAMS.get(key);
         if (b == null) return null;
-        float t = loveAge(key, b, now + partial);
+        float t = loveAge(key, b, now + partial, false);
         return new double[] {dev.rick.jjk.yuta.TrueLoveBeamProfile.front(b.length(), b.grow(), t),
                 dev.rick.jjk.yuta.TrueLoveBeamProfile.scale(t, b.life(), b.collapse())};
     }
@@ -155,7 +157,7 @@ public final class Flashes {
         while (it.hasNext()) {
             var entry = it.next();
             LoveBeam b = entry.getValue();
-            float t = loveAge(entry.getKey(), b, now + partial);
+            float t = loveAge(entry.getKey(), b, now + partial, true);
             if (t >= b.life() || t > 400) {
                 it.remove();
                 LOVE_SEEN.remove(entry.getKey());
