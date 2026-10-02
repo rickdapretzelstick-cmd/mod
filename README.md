@@ -1,6 +1,7 @@
 # Jujutsu — Gojo Satoru, Kinji Hakari, Yuji Itadori and Yuta Okkotsu
 
-Fabric mod for **Minecraft 26.3** (Java 25, Fabric API). Install the jar plus Fabric API.
+Fabric mod for **Minecraft 26.3** (Java 25, Fabric API). Install the jar plus Fabric API. The latest build is
+[`release/jujutsu-0.1.0.jar`](release/jujutsu-0.1.0.jar).
 
 ## Controls
 
