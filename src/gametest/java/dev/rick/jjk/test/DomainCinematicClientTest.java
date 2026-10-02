@@ -24,7 +24,7 @@ import net.minecraft.util.Mth;
  * Not registered by default: point the {@code fabric-client-gametest} entrypoint at this class to record.
  */
 public class DomainCinematicClientTest extends PresentationClientTest {
-    /** Sub-tick moments drawn per game tick: 3 per tick is 60 fps at real speed, 12 is a quarter-speed slow motion at 60 fps. */
+    /** Sub-tick moments drawn per game tick: 3 per tick is 60 fps at real speed, 24 is an eighth-speed slow motion at 60 fps. */
     private int sub = 3;
 
     @Override
@@ -259,20 +259,20 @@ public class DomainCinematicClientTest extends PresentationClientTest {
         ctx.waitTicks(2);
         freeze();
         section("FINALE;TRUE LOVE;RIKA AND YUTA;255,170,255;1");
-        int charge = 57;
+        int charge = 56;
         for (int i = 0; i < charge; i++) {
             float k = Mth.clamp(i / (float) (charge - 6), 0, 1);
             float e = k * k * (3 - 2 * k);
             ShowcaseCamera.set(Mth.lerp(e, 70, 180), Mth.lerp(e, 8f, 24f), Mth.lerp(e, 2.4f, 1.15f), Mth.lerp(e, 0f, 2f));
             film(1);
         }
-        // It fires: slowed to a quarter speed as the front rushes down its length at the lens.
-        section("FIRE;;;;0.25");
-        sub = 12;
-        film(5);
+        // It fires a tick in: slowed to an eighth speed as its front rushes down the 26 blocks to the lens.
+        section("FIRE;;;;0.125");
+        sub = 24;
+        film(4);
         sub = 3;
         section("ENGULFED;;;;1");
-        film(34);
+        film(14);
     }
 
     private void save() {
