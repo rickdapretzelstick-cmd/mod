@@ -267,14 +267,18 @@ config). 90 max HP. Rika is the new model, animated with the same clip framework
   - **Awakened Rika** (R): her moves each have their own cooldown.
     - **Rika Downslam** (13s): her arm slams down on them (8 + 4).
     - **Rika Slam** (13s): she grabs a leg and slams them five times.
-    - **True Love Beam** (40s): a pink orb conjured together. Rika places herself before it, reveals her eye and fires
-      a beam that erases everything in its path (100, less the more it hits). Press it again in the wind-up for the
-      quick beam (22.4, 15s).
+    - **True Love Beam** (40s): a pink orb conjured together while he aims. Rika then plants herself behind him, jaw
+      opening wide over his head, and charges it while its path is traced on the ground. From her mouth comes a
+      3-block-thick torrent of cursed energy that holds for 5 seconds, boring into whatever it strikes (100, less the
+      more players it catches). Its drawn shape is its hitbox, and it hits each target once. Press it again in the
+      wind-up for the quick beam from his hands (22.4, 15s). It stops for everyone if he dies or Rika is gone.
     - **Rika Throw** (13s): she picks him up and hurls him. An enemy he crashes into takes 8-18 by airtime. If he hits
       no one, he takes it himself and is truly ragdolled.
   - **Authentic Mutual Love** (4 while awakened; 120s, 45s): a pale stone platform under a black sky, grave crosses,
-    rope knots circling overhead and Rika looming. Blades rain down and four land within reach, each carrying a
-    technique. Standing by one, he takes it up, runs about 55 studs at the nearest enemy and swings (8), and the
+    rope knots circling overhead and Rika looming; the crosses rise out of the stone as it seals. Blades rain down and
+    four land within reach, each carrying a technique you can read from across the arena: a column of its colour, a
+    ring on the stone and its name (Shrine crimson, Thin Ice Breaker ice blue, Clairvoyance gold, Cursed Speech violet,
+    Shikigami white). Standing by one, he takes it up, runs about 55 studs at the nearest enemy and swings (8), and the
     technique goes off:
     - **Shrine**: four Cleaves; missed, a horizontal Dismantle.
     - **Thin Ice Breaker**: the sky breaks like ice and their ragdoll can't be cancelled.
@@ -282,9 +286,11 @@ config). 90 max HP. Rika is the new model, animated with the same clip framework
     - **Cursed Speech**: "落ちれ!" ("Plummet!"); missed, "止まれ!" ("Stop!") freezes everyone.
     - **Shikigami**: three flying Rika heads swarm them.
 
-    It breaks if no enemy is inside, and gives no Awakening progress. **Jacob's Ladder** (4 again after four direct
-    blade hits): a ray from the sky lifts the target while draining 62.5 HP and 35% of their Awakening meter (50% if
-    awakened). It shatters the domain.
+    It breaks if no enemy is inside, and gives no Awakening progress. **Jacob's Ladder** unlocks after four direct
+    blade hits: a gold burst round him, a gold glow while it's ready, and a banner above the hotbar naming the key.
+    Press 4 again with a target in front of you inside the domain. A gold circle marks them, a ray comes down from
+    the sky, and they are lifted and held. Then one blow takes 62.5 HP and 35% of their Awakening meter (50% if
+    awakened), once, and the domain shatters with it.
 - **Finishers** (under 20% health): Severing Path beheads, Resolute Slash cuts through the head, and Outburst bisects.
   Rika Smash leaves a puddle. True Love Beam atomizes into black mist. Jacob's Ladder lifts the soul while the body
   falls.
