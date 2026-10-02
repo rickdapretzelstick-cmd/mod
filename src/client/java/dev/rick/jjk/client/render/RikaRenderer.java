@@ -77,7 +77,21 @@ public class RikaRenderer extends EntityRenderer<RikaEntity, RikaRenderer.State>
         fade.put(e.getId(), a);
         if (fade.size() > 64) fade.clear();
         s.alpha = a;
+        // Partly manifested she is mostly black smoke, pale limbs showing through it (JJS): a constant smoky aura.
+        if (!s.solid && a > 0.15f && smokedAt.getOrDefault(e.getId(), -1) != e.tickCount && dev.rick.jjk.client.fx.ClientFx.q(2) > 0) {
+            smokedAt.put(e.getId(), e.tickCount);
+            if (smokedAt.size() > 64) smokedAt.clear();
+            var level = e.level();
+            for (int i = 0; i < 3; i++) {
+                double gx = (level.getRandom().nextDouble() - 0.5) * 1.4, gy = 1.4 + level.getRandom().nextDouble() * 1.6, gz = (level.getRandom().nextDouble() - 0.5) * 1.4;
+                dev.rick.jjk.client.fx.ClientFx.add((net.minecraft.client.multiplayer.ClientLevel) level, e.position().add(gx, gy, gz),
+                        new net.minecraft.world.phys.Vec3(0, 0.02, 0), dev.rick.jjk.client.particle.EnergyParticle.Sprite.SMOKE,
+                        new float[] {0f, 0f, 0f}, 0.75f * a, 0.9f, 1.7f, 14);
+            }
+        }
     }
+
+    private final java.util.Map<Integer, Integer> smokedAt = new java.util.HashMap<>();
 
     /** Her idle loop always runs underneath (a move on her base layer replaces it, and it comes back after). */
     static void ensureIdle(int id, float now) {
@@ -97,7 +111,8 @@ public class RikaRenderer extends EntityRenderer<RikaEntity, RikaRenderer.State>
         ps.rotate(Axis.YP.rotationDegrees(180f - s.yaw));
         ps.scale(SCALE, SCALE, SCALE);
         int alpha = Math.round(Mth.clamp(s.alpha, 0, 1) * 255);
-        int argb = s.solid ? 0xFFFFFFFF : (alpha << 24) | 0xF4F4FF;
+        // Partly manifested: grey and see-through; fully manifested: solid and pale.
+        int argb = s.solid ? 0xFFFFFFFF : (alpha << 24) | 0xA8A8B4;
         BbModel.Posing pose = posing(s.pose);
         int light = s.solid ? s.lightCoords : 0xF000F0;
         c.submitCustomGeometry(ps, s.solid ? SOLID : GHOST, (p, buf) -> model.render(p, buf, pose, light, argb));

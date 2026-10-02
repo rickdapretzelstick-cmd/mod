@@ -76,13 +76,23 @@ public class FxGalleryClientTest implements FabricClientGameTest {
 
     @Override
     public void runTest(ClientGameTestContext ctx) {
-        java.util.Set<String> only = new java.util.HashSet<>();
+        java.util.Set<String> only = new java.util.LinkedHashSet<>();
+        // "id", "id:scale" or "id:scale:far" (any effect id, shot in the order listed).
+        java.util.Map<String, Float> scales = new java.util.HashMap<>();
+        java.util.Set<String> farIds = new java.util.HashSet<>(FAR);
         try {
             java.nio.file.Path list = java.nio.file.Path.of("../../fxgallery.txt");
-            if (java.nio.file.Files.exists(list)) for (String l : java.nio.file.Files.readAllLines(list)) if (!l.isBlank()) only.add(l.trim());
+            if (java.nio.file.Files.exists(list)) for (String l : java.nio.file.Files.readAllLines(list)) {
+                if (l.isBlank()) continue;
+                String[] kv = l.trim().split(":");
+                only.add(kv[0]);
+                if (kv.length > 1) scales.put(kv[0], Float.parseFloat(kv[1]));
+                if (kv.length > 2 && kv[2].equals("far")) farIds.add(kv[0]);
+            }
         } catch (java.io.IOException e) {
             throw new RuntimeException(e);
         }
+        String[] ids = only.isEmpty() ? IDS : only.stream().filter(x -> !java.util.Arrays.asList(SEQUENCES).stream().anyMatch(q -> q[0].equals(x))).toArray(String[]::new);
         try (TestSingleplayerContext sp = ctx.worldBuilder().create()) {
             TestServerContext server = sp.getServer();
             server.runCommand("time set noon");
@@ -99,19 +109,15 @@ public class FxGalleryClientTest implements FabricClientGameTest {
             ctx.waitTicks(10);
             int n = 0;
             String near = "near";
-            for (String id : IDS) {
-                if (!only.isEmpty() && !only.contains(id)) {
-                    n++;
-                    continue;
-                }
-                boolean far = FAR.contains(id);
+            for (String id : ids) {
+                boolean far = farIds.contains(id);
                 String place = far ? "far" : "near";
                 if (!place.equals(near)) {
                     near = place;
                     dummyAt(server, far ? 16 : 4);
                     ctx.waitTicks(6);
                 }
-                float scale = SCALE.getOrDefault(id, 1f);
+                float scale = scales.getOrDefault(id, SCALE.getOrDefault(id, 1f));
                 int index = n++;
                 ctx.runOnClient(mc -> {
                     Flashes.clear();
