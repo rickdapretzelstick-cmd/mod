@@ -8,7 +8,8 @@ hitboxes, timing, effects, sounds or the camera.
 animations/
   poses/combat.json        reusable poses (fight_stance, crouch_land, straight_right, ...)
   common/*.json            M1s, dashes, guard, sprint
-  gojo/*.json  hakari/*.json  yuji/*.json
+  gojo/*.json  hakari/*.json  yuji/*.json  yuta/*.json
+  rika/*.json              Rika's own skeleton ("rig": "rika")
   reactions/*.json         hitstun, launched, knockdown, guard break, pulled, overload
 ```
 
@@ -110,6 +111,25 @@ flips each rotation's turn and roll (y, z), and flips each position sideways.
 
 **Markers.** `marker` on a key, or a top-level `markers: [{"t": .., "label": ..}]`, names a moment: anticipation,
 impact, follow-through, recovery. The debugger shows the current one.
+
+## Model rigs (Rika)
+
+A clip with `"rig": "<model>"` animates a Blockbench model's own skeleton instead of the player's. Rika
+(`models/bb/rika.bbmodel`) is the only one so far; her clips live in `animations/rika/` and gameplay plays them on
+her entity with `Anim.playOn(rika, "rika_smash")`. Everything above applies: keys, easing, markers, poses, mirroring,
+layers and priorities. The differences:
+
+- **Bones keep the model's names**, unchecked and without aliases: `body`, `neck`, `head`, `jaw`,
+  `right_upper_arm` → `right_forearm` → `right_hand` and the same on the left, and `tail_*`. Mirroring swaps
+  `right_`/`left_` (or `_right`/`_left`).
+- **Axes follow the model.** `x-` raises an arm forward (-90 is straight out), `body` x+ leans her forward, and
+  `pos` z- is forward.
+- **`scale` is a number** (or `[x, y, z]`) and is hierarchical, so a swelling `right_hand` grows the fist and
+  everything under it (Rika Smash).
+- **Her idle loop** (`rika_idle`) runs underneath every move, so a move clip only needs the bones it changes.
+
+`RikaPreviewClientTest` is the pose gallery for her. Put `clip:ms,ms,...` lines in `build/rikapreview.txt` and it
+renders her at each of those times. `rika_calibrate` raises each limb in turn to check the axes against the model.
 
 ## Playback rules
 

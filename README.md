@@ -1,4 +1,4 @@
-# Jujutsu — Gojo Satoru, Kinji Hakari and Yuji Itadori
+# Jujutsu — Gojo Satoru, Kinji Hakari, Yuji Itadori and Yuta Okkotsu
 
 Fabric mod for **Minecraft 26.3** (Java 25, Fabric API). Install the jar plus Fabric API.
 
@@ -89,6 +89,18 @@ kit's techniques, toggles and states are cleared and the new moveset, HUD icons 
 | 4 | Twofold Kick | Fever Breaker | Energy Surge | Manji Kick | Malevolent Shrine |
 | R (Special) | Limitless | Door Guard (hold) | Rhythm | Combat Instincts | Cleave |
 | G | Awakening (Six Eyes) | Idle Death Gamble | — | Awakening (King of Curses) | counter |
+
+Yuta has four movesets: his own and Rika's, each in base and awakened form. R with Rika out switches between his and
+hers.
+
+| Key | Yuta (Cursed Partners) | Rika | True Love (awakened) | Awakened Rika |
+|---|---|---|---|---|
+| 1 | Severing Path | Rika Smash | Elbow Rush | Rika Downslam |
+| 2 | Resolute Slash | Rika Launch | Copy | Rika Slam |
+| 3 | Outburst (hold) | Rika Haymaker | Energy Ripple | True Love Beam |
+| 4 | Second Wind | — | Authentic Mutual Love | Rika Throw |
+| R (Special) | Rika | Rika (back to Yuta) | Rika | Rika (back to Yuta) |
+| G | Awakening (True Love) | True Love | Copy Wheel | Copy Wheel |
 
 ![Hakari](docs/screenshots/hakari_showcase.png)
 ![Idle Death Gamble opening](docs/screenshots/hakari_idg_cutin.png)
@@ -205,6 +217,81 @@ sound is the JJS audio. 85 max HP.
 ![The shrine rising](docs/screenshots/yuji_shrine_reveal.png)
 ![Malevolent Shrine](docs/screenshots/yuji_shrine_interior.png)
 
+### Yuta Okkotsu — Cursed Partners
+
+Tuned after the [Jujutsu Shenanigans wiki](https://jujutsu-shenanigans.fandom.com/wiki/Cursed_Partners) and its GIFs:
+the wiki's damage, cooldowns and durations, studs as blocks, every move keyed from its GIF (the `yuta` section of the
+config). 90 max HP. Rika is the new model, animated with the same clip framework as the players.
+
+- **Swordsmanship**: his M1s draw the katana from the sheath at his left hip. It stays out for 8 seconds after his last
+  katana move or M1, then goes back in. The necklace with Rika's ring hangs on his chest.
+- **Severing Path** (15s): an 18-stud slide sweeping the floor with the blade (4). Whoever it catches is locked in
+  front of him for three quick swings (2.3 each), the last launching them. A guard pushes him off. *Finisher*: the last
+  slash beheads them. **Veilstep** (walking backwards): a 27-stud back roll with melee i-frames that launches anyone in
+  the way (9).
+- **Resolute Slash** (15s): he vanishes mid-swing and reappears at a spot within 25 studs to cut at the target's neck
+  (12, unblockable). **Resolute Black Flash**: press it again the moment he reappears (the cast bar reads BLACK FLASH!).
+  He vanishes once more and lands a heavy blow amplified by a Black Flash (12), with i-frames.
+- **Outburst** (hold, 16s): a hand on the holstered katana, energy pouring in. The draw (2) sets off a burst (4) in
+  a 13-stud radius that throws everyone upward. It deals its damage through a guard but can't kill through one. Held,
+  it grows through three stages (the bar at his right), each adding 2 damage and about 2 studs of radius. The last
+  stage is fully unblockable unless he was hit first. *Counter*: hit in the first 0.25s, the swing parries. A melee
+  attacker is stunned, and a projectile is sent back.
+- **Second Wind** (16s): a 20-stud rush with melee i-frames. He grabs the face (2) and slams them into the floor (8).
+  A whiff leaves a second try. *Variant*: Severing Path right as he collides turns it into a pummelling. That is five
+  blows; with the katana out, a few swings and a spinning axe kick.
+- **Rika** (Special): the first press manifests her partly at his side. After that, R switches to her moveset (the
+  ring glows under the crosshair) and his movement keys fly her about, up to 100 studs from him. Press R again, or use
+  one of her moves, and his moveset comes back while she returns to his side. Hold R instead and she stays where she
+  is. A double press dismisses her. Whoever the crosshair is on when R is pressed becomes her target. Her three moves
+  share one 10s cooldown:
+  - **Rika Smash**: her fist swells over the target and slams down (10). A target in the air is dunked into the
+    ground (8).
+  - **Rika Launch**: a boost forward, or upward in the air. Used mid-move it **feints** that move (6s).
+  - **Rika Haymaker**: a slow, heavy blow that knocks them far back (12; 18 through a guard).
+- **True Love** (G on a full meter; 60s, heals 25): "Come, Rika. Give me everything." He tears off the necklace and
+  puts the ring on. Rika manifests fully behind him and wraps a steel casing around his right arm. **Steel Arm**: his
+  fists, each of the first three M1s followed by a quick jab of the casing.
+  - **Elbow Rush** (15s): a 38.5-stud dash into an elbow (4). Then he appears behind them with Rika in front, and both
+    barrage them (5; 8 with Rika). A last blow launches them (6).
+  - **Copy** (15s; 25s for an Awakening move): the technique picked on the Copy Wheel. His own is **Cursed Speech**:
+    "動くな!" ("Don't move!") stuns everyone within 35 studs for 2.5 seconds. The rest are taken from whoever Rika
+    attacks or kills, and play that sorcerer's move with Yuta as its user: Limitless from Gojo (Reversal Red MAX),
+    Doors from Hakari (Shutter Doors), Shrine from Yuji (Dismantle), and Dismantle from Sukuna (Strong Dismantle).
+  - **Copy Wheel** (G while awakened): two pages of four around the crosshair, each with its own cooldown. 1-4 pick
+    one, R turns the page, and G closes it. Copies are lost on death.
+  - **Energy Ripple** (18s): the katana driven into the floor sends out a dome of energy that pushes every enemy within
+    27 studs away (19, unblockable). **Fakeout** (press again before the blade lands): a sudden swing instead (7) whose
+    energy bursts inside them (12).
+  - **Awakened Rika** (R): her moves each have their own cooldown.
+    - **Rika Downslam** (13s): her arm slams down on them (8 + 4).
+    - **Rika Slam** (13s): she grabs a leg and slams them five times.
+    - **True Love Beam** (40s): a pink orb conjured together. Rika places herself before it, reveals her eye and fires
+      a beam that erases everything in its path (100, less the more it hits). Press it again in the wind-up for the
+      quick beam (22.4, 15s).
+    - **Rika Throw** (13s): she picks him up and hurls him. An enemy he crashes into takes 8-18 by airtime. If he hits
+      no one, he takes it himself and is truly ragdolled.
+  - **Authentic Mutual Love** (4 while awakened; 120s, 45s): a pale stone platform under a black sky, grave crosses,
+    rope knots circling overhead and Rika looming. Blades rain down and four land within reach, each carrying a
+    technique. Standing by one, he takes it up, runs about 55 studs at the nearest enemy and swings (8), and the
+    technique goes off:
+    - **Shrine**: four Cleaves; missed, a horizontal Dismantle.
+    - **Thin Ice Breaker**: the sky breaks like ice and their ragdoll can't be cancelled.
+    - **Clairvoyance**: a manga panel marks them, and their attacks on him are dodged for 10 seconds.
+    - **Cursed Speech**: "落ちれ!" ("Plummet!"); missed, "止まれ!" ("Stop!") freezes everyone.
+    - **Shikigami**: three flying Rika heads swarm them.
+
+    It breaks if no enemy is inside, and gives no Awakening progress. **Jacob's Ladder** (4 again after four direct
+    blade hits): a ray from the sky lifts the target while draining 62.5 HP and 35% of their Awakening meter (50% if
+    awakened). It shatters the domain.
+- **Finishers** (under 20% health): Severing Path beheads, Resolute Slash cuts through the head, and Outburst bisects.
+  Rika Smash leaves a puddle. True Love Beam atomizes into black mist. Jacob's Ladder lifts the soul while the body
+  falls.
+
+![Cursed Partners](docs/screenshots/yuta_showcase.png)
+![True Love Beam](docs/screenshots/yuta_true_love_beam.png)
+![Authentic Mutual Love](docs/screenshots/yuta_domain.png)
+
 ## HUD and Vanilla Minecraft mode
 
 CE is a slim vertical bar on the left edge. It eases between values, what you just spent lingers as a pale ghost, it
@@ -248,7 +335,8 @@ Players are jointed and animated from data, JJS-style. The full reference is [do
   - A readout shows time, frame, key, phase, blend, priority and layer.
 
 Rapid Punches, Twofold Kick, Lapse Blue, Reversal Red, Hollow Purple and Infinite Void (Gojo), and Shutter Doors,
-Fever Breaker, Lucky Volley, Jackpot and the Rhythm dance (Hakari), are keyed frame by frame from the JJS GIFs. Their
+Fever Breaker, Lucky Volley, Jackpot and the Rhythm dance (Hakari), and Yuta's whole kit with Rika's, are keyed
+frame by frame from the JJS GIFs. Their
 contact frames sit on the ticks where the hits resolve. `tools/anim_ref.py` numbers a GIF's frames for that work.
 Everything held in a fist (Blue, Red, Purple's two halves, Divergent Fist) follows the real hand through the elbow and
 wrist.
@@ -343,7 +431,7 @@ Domain structures are separate and restore as soon as the domain ends. `/jjk res
 ## Commands (op)
 
 `/jjk arena` test arena with dummies · `/jjk dummy [stand|jump|fight] [n]` · `/jjk dummy domain <void|idg|shrine> [skill]` (solo clash practice: the nearest dummy opens that domain; press Awakening in the counter window to clash it; skill 0–1 is how well it plays) · `/jjk nocooldown true|false` ·
-`/jjk awakening <amount>|end` · `/jjk reset` · `/jjk character gojo|none` · `/jjk domain cancel [all]` ·
+`/jjk awakening <amount>|end` · `/jjk reset` · `/jjk character gojo|hakari|yuji|yuta|none` · `/jjk domain cancel [all]` ·
 `/jjk status [target]` · `/jjk config reload`
 
 ## Config

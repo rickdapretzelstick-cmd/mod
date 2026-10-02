@@ -309,8 +309,10 @@ public final class CombatHud {
             if (t != null) smallText(g, font, t.name().toUpperCase(java.util.Locale.ROOT), x + size / 2f, y + size + 1, 0.45f, 0xFFF7C8FF, true);
         }
         // Just came off cooldown: a quick white pop.
+        // (A flash stamped in another world, whose clock ran further, is stale: never draw a negative age.)
         long flash = now - readyFlash[slot.ordinal()];
-        if (ready && flash < 6) g.fill(x, y, x + size, y + size, (Math.round((1 - (flash + partial) / 6f) * 150) << 24) | 0xFFFFFF);
+        if (flash < 0) readyFlash[slot.ordinal()] = Long.MIN_VALUE / 2;
+        if (ready && flash >= 0 && flash < 6) g.fill(x, y, x + size, y + size, (Math.round((1 - (flash + partial) / 6f) * 150) << 24) | 0xFFFFFF);
         pose.popMatrix();
 
         // The key, in a badge to the left of the icon (whatever the player has bound it to).
