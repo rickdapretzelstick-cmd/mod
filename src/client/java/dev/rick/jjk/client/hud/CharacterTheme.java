@@ -33,6 +33,10 @@ public record CharacterTheme(
     public static final CharacterTheme YUJI = register("yuji", new CharacterTheme(0xFFA8F4FF, 0xFF1C9AD8, 0xFF20343E,
             "KING OF CURSES", "AWAKENING", "KING OF CURSES READY", 0xFF5CE6FF, 0xFFE01020, 0xFFFF6A6A, 0xFFB00818, false, 0xFFE01020));
 
+    /** Yuta: black and white like Rika, with True Love's pink. */
+    public static final CharacterTheme YUTA = register("yuta", new CharacterTheme(0xFFFFFFFF, 0xFF8A8A9A, 0xFF2A2A34,
+            "TRUE LOVE", "AWAKENING", "TRUE LOVE READY", 0xFFE8E8F0, 0xFFF76BFF, 0xFFFFC8F4, 0xFFF76BFF, false, 0xFFF76BFF));
+
     public static CharacterTheme register(String characterId, CharacterTheme theme) {
         THEMES.put(characterId, theme);
         return theme;

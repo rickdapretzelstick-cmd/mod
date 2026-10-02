@@ -562,7 +562,7 @@ final class YujiFx {
                 }
                 if (mine) ScreenEffects.shake(0.15f, 3);
             }
-            default -> {}
+            default -> YutaFx.play(p, mc, level, pos, dir, s, mine, now);
         }
     }
 
@@ -591,7 +591,7 @@ final class YujiFx {
     }
 
     /** Red lightning and black sparks: the Black Flash (GIF). */
-    private static void blackFlash(ClientLevel level, Vec3 pos, Vec3 dir, float s, long now, boolean heavy) {
+    static void blackFlash(ClientLevel level, Vec3 pos, Vec3 dir, float s, long now, boolean heavy) {
         Flashes.flash(pos, 2.5f * s, 0.6f, BF_RED, 1f, 6, now);
         Flashes.flash(pos, 1.4f * s, 0.3f, INK, 1f, 8, now + 1);
         for (int i = 0; i < 10 + (heavy ? 10 : 0); i++) {
@@ -619,7 +619,7 @@ final class YujiFx {
         }
     }
 
-    private static void blood(ClientLevel level, Vec3 pos, Vec3 dir, int n) {
+    static void blood(ClientLevel level, Vec3 pos, Vec3 dir, int n) {
         for (int i = 0; i < n; i++) {
             Vec3 v = randomUnit().scale(0.2).add(dir.lengthSqr() > 1e-4 ? dir.normalize().scale(0.15) : Vec3.ZERO);
             add(level, pos, v.add(0, 0.1, 0), Sprite.SHARD, BLOOD, 1f, 0.12f + RNG.nextFloat() * 0.08f, 0.06f, 24).gravity(1f).physics();

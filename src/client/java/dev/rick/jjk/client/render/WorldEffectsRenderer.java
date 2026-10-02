@@ -532,6 +532,12 @@ public final class WorldEffectsRenderer {
             ps.popPose();
             return;
         }
+        if (dev.rick.jjk.yuta.AuthenticMutualLove.ID.equals(d.definition)) {
+            boolean sealed = progress >= DomainFormation.SEALED;
+            MutualLoveDomainRenderer.render(c, ps, cam, camRot, d, r, shared ? 0 : edgeGlow, inside && sealed, now, partial);
+            ps.popPose();
+            return;
+        }
         if (dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(d.definition)) {
             boolean sealed = progress >= DomainFormation.SEALED;
             GambleDomainRenderer.render(c, ps, cam, camRot, d, r, shared ? 0 : edgeGlow, inside && sealed, now, partial);

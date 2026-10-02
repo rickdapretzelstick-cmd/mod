@@ -67,7 +67,26 @@ public final class CombatHud {
             java.util.Map.entry("open", meta("Open", 0xFFFF8A20, true, "open")),
             java.util.Map.entry("rush", meta("Rush", 0xFFE01020, true, "rush")),
             java.util.Map.entry("malevolent_shrine", meta("Malevolent Shrine", 0xFFE01020, true, "malevolent_shrine")),
-            java.util.Map.entry("cleave", meta("Cleave", 0xFFE01020, true, "cleave")));
+            java.util.Map.entry("cleave", meta("Cleave", 0xFFE01020, true, "cleave")),
+            // Yuta: Cursed Partners' base kit, Rika's movesets, and True Love (awakened frames).
+            java.util.Map.entry("severing_path", meta("Severing Path", 0xFFF76BFF, false, "severing_path")),
+            java.util.Map.entry("resolute_slash", meta("Resolute Slash", 0xFFF76BFF, false, "resolute_slash")),
+            java.util.Map.entry("outburst", meta("Outburst", 0xFFF76BFF, false, "outburst")),
+            java.util.Map.entry("second_wind", meta("Second Wind", 0xFFFFC8F4, false, "second_wind")),
+            java.util.Map.entry("rika", meta("Rika", 0xFFE8E8F0, false, "rika")),
+            java.util.Map.entry("true_love", meta("True Love", 0xFFF76BFF, false, "true_love")),
+            java.util.Map.entry("rika_smash", meta("Rika Smash", 0xFFE8E8F0, false, "rika_smash")),
+            java.util.Map.entry("rika_launch", meta("Rika Launch", 0xFFE8E8F0, false, "rika_launch")),
+            java.util.Map.entry("rika_haymaker", meta("Rika Haymaker", 0xFFE8E8F0, false, "rika_haymaker")),
+            java.util.Map.entry("elbow_rush", meta("Elbow Rush", 0xFFF76BFF, true, "elbow_rush")),
+            java.util.Map.entry("copy", meta("Copy", 0xFFFFFFFF, true, "copy")),
+            java.util.Map.entry("energy_ripple", meta("Energy Ripple", 0xFFF76BFF, true, "energy_ripple")),
+            java.util.Map.entry("authentic_mutual_love", meta("Authentic Mutual Love", 0xFFF76BFF, true, "authentic_mutual_love")),
+            java.util.Map.entry("copy_wheel", meta("Copy Wheel", 0xFFE8E8F0, true, "copy_wheel")),
+            java.util.Map.entry("rika_downslam", meta("Rika Downslam", 0xFFE8E8F0, true, "rika_downslam")),
+            java.util.Map.entry("rika_slam", meta("Rika Slam", 0xFFE8E8F0, true, "rika_slam")),
+            java.util.Map.entry("true_love_beam", meta("True Love Beam", 0xFFF76BFF, true, "true_love_beam")),
+            java.util.Map.entry("rika_throw", meta("Rika Throw", 0xFFE8E8F0, true, "rika_throw")));
     /** The technique column (empty slots are skipped), then the movement/defence pair under it. */
     private static final AbilitySlot[] TECHNIQUES = {AbilitySlot.SKILL_1, AbilitySlot.SKILL_2, AbilitySlot.SKILL_3, AbilitySlot.SKILL_4,
             AbilitySlot.SKILL_5, AbilitySlot.ULTIMATE};
@@ -95,6 +114,7 @@ public final class CombatHud {
         castBar(g, font, w, h, partial);
         if (JJKConfig.get().client.showComboCounter) comboCounter(g, font, mc, w, h);
         statusBanner(g, font, state, w, h);
+        YutaHud.render(g, font, mc, w, h, partial);
     }
 
     // --- CE: a slim vertical bar hugging the left edge ---
@@ -228,10 +248,11 @@ public final class CombatHud {
         boolean lackCe = !noCost && ClientState.energy < ceCost(id, cfg);
         boolean lackMeter = meterCost(id) > 0 && ClientState.awakening < meterCost(id) - 0.01f;
         boolean technique = !id.equals("dash") && !id.equals("guard") && !id.equals("awaken") && !id.equals("door_guard")
-                && !id.equals("king_of_curses") && !id.equals("combat_instincts");
+                && !id.equals("king_of_curses") && !id.equals("combat_instincts") && !id.equals("true_love") && !id.equals("copy_wheel")
+                && !id.equals("rika_launch") && !id.equals("rika_throw");
         boolean locked = state != null && state.techniquesLocked() && technique;
         boolean casting = ClientState.activeCast.equals(id);
-        boolean opensUp = id.equals("awaken") || id.equals("idle_death_gamble") || id.equals("king_of_curses");
+        boolean opensUp = id.equals("awaken") || id.equals("idle_death_gamble") || id.equals("king_of_curses") || id.equals("true_love");
         boolean awakenReady = opensUp && !ClientState.awakened() && ClientState.awakening >= ClientState.awakeningMax;
         boolean counter = awakenReady && now < ClientState.counterUntilTick;
         boolean ready = !cooling && !lackCe && !lackMeter && !locked;
@@ -277,6 +298,16 @@ public final class CombatHud {
             smallText(g, font, lackCe ? "CE" : "AWK", x + size / 2f, y + size - 8, 0.5f, lackCe ? 0xFFFF8A8A : 0xFFD8C8FF, true);
         }
         if (locked) padlock(g, x + size - 7, y + size - 8);
+        if (id.equals("authentic_mutual_love") && YutaHud.ladderHits > 0) {
+            // Jacob's Ladder: direct katana hits toward it, gold once it's ready.
+            smallText(g, font, YutaHud.ladderReady() ? "LADDER" : YutaHud.ladderLabel(), x + size / 2f, y + 1, 0.5f,
+                    YutaHud.ladderReady() ? pulse(0xFFFDFA72, 0xFFFFFFFF, time, 0.4f) : 0xFFFDFA72, true);
+        }
+        if (id.equals("copy")) {
+            // The technique Copy will use.
+            dev.rick.jjk.yuta.Copies.Technique t = dev.rick.jjk.yuta.Copies.ALL.get(YutaHud.selected);
+            if (t != null) smallText(g, font, t.name().toUpperCase(java.util.Locale.ROOT), x + size / 2f, y + size + 1, 0.45f, 0xFFF7C8FF, true);
+        }
         // Just came off cooldown: a quick white pop.
         long flash = now - readyFlash[slot.ordinal()];
         if (ready && flash < 6) g.fill(x, y, x + size, y + size, (Math.round((1 - (flash + partial) / 6f) * 150) << 24) | 0xFFFFFF);
@@ -320,6 +351,11 @@ public final class CombatHud {
             case "divergent_fist" -> cfg.yuji.divergentCost;
             case "manji_kick" -> cfg.yuji.manjiCost;
             case "malevolent_shrine" -> cfg.yuji.shrineCost;
+            case "severing_path" -> cfg.yuta.severingCost;
+            case "resolute_slash" -> cfg.yuta.resoluteCost;
+            case "outburst" -> cfg.yuta.outburstCost;
+            case "second_wind" -> cfg.yuta.secondWindCost;
+            case "authentic_mutual_love" -> cfg.yuta.domainCost;
             default -> 0;
         };
     }
@@ -554,6 +590,28 @@ public final class CombatHud {
                 boolean window = t >= cfg.yuji.blackFlashWindowStart && t <= cfg.yuji.blackFlashWindowEnd + 1;
                 label = window ? "BLACK FLASH!" : "DIVERGENT FIST";
                 color = window ? 0xFFFFFFFF : 0xFF5CE6FF;
+            }
+            case "authentic_mutual_love" -> {
+                frac = Mth.clamp(t / cfg.yuta.domainStartup, 0, 1);
+                label = "DOMAIN EXPANSION: AUTHENTIC MUTUAL LOVE";
+                color = 0xFFF76BFF;
+            }
+            case "resolute_slash" -> {
+                // The moment he reappears is the window for the Black Flash.
+                frac = Mth.clamp(t / cfg.yuta.resoluteVanishTicks, 0, 1);
+                boolean window = t >= cfg.yuta.resoluteVanishTicks - 2 && t <= cfg.yuta.resoluteVanishTicks + cfg.yuta.resoluteAgainWindow;
+                label = window ? "BLACK FLASH!" : "RESOLUTE SLASH";
+                color = window ? 0xFFFFFFFF : 0xFFF76BFF;
+            }
+            case "energy_ripple" -> {
+                frac = Mth.clamp(t / cfg.yuta.rippleWindup, 0, 1);
+                label = "ENERGY RIPPLE";
+                color = 0xFFF76BFF;
+            }
+            case "true_love_beam" -> {
+                frac = Mth.clamp(t / cfg.yuta.beamWindup, 0, 1);
+                label = "TRUE LOVE BEAM";
+                color = 0xFFF76BFF;
             }
             default -> {
                 return;

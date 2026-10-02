@@ -28,6 +28,9 @@ public abstract class EntityRendererMixin {
             if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.BLINDFOLD)) visual |= PoseKeys.BLINDFOLD;
             if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.AWAKENED)) visual |= PoseKeys.AWAKENED;
             if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.SUKUNA)) visual |= PoseKeys.SUKUNA;
+            if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.CURSED_PARTNERS)) visual |= PoseKeys.CURSED_PARTNERS;
+            if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.KATANA)) visual |= PoseKeys.KATANA;
+            if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.STEEL_ARM)) visual |= PoseKeys.STEEL_ARM;
             state.setData(PoseKeys.VISUAL, visual);
             float t = ClientAnimations.elapsed(le.getId(), "awaken", now);
             state.setData(PoseKeys.BLINDFOLD_OFF, t < 0 ? 0f : net.minecraft.util.Mth.clamp((t - 6f) / 8f, 0f, 1f));

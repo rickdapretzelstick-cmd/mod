@@ -44,6 +44,7 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.HOLLOW_PURPLE, TechniqueRenderer.purple());
         EntityRendererRegistry.register(ModEntities.TRAINING_DUMMY, DummyRenderer::new);
         EntityRendererRegistry.register(ModEntities.RIKA, dev.rick.jjk.client.render.RikaRenderer::new);
+        EntityRendererRegistry.register(ModEntities.DOMAIN_BLADE, dev.rick.jjk.client.render.DomainBladeRenderer::new);
         EntityRendererRegistry.register(ModEntities.PACHINKO_BALL, dev.rick.jjk.client.render.HakariRenderers.ball());
         EntityRendererRegistry.register(ModEntities.HAKARI_DOOR, dev.rick.jjk.client.render.HakariRenderers.door());
         EntityRendererRegistry.register(ModEntities.THROWN_PROP, dev.rick.jjk.client.render.YujiRenderers.prop());
@@ -57,6 +58,7 @@ public class JJKClient implements ClientModInitializer {
         net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, ctx) -> {
             if (renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>) {
                 helper.register(new dev.rick.jjk.client.render.BlindfoldLayer(renderer));
+                helper.register(new dev.rick.jjk.client.render.YutaGearLayer(renderer));
             }
         });
         // The animation debugger works in either mode (it only shows once turned on).
@@ -100,6 +102,7 @@ public class JJKClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             InputHandler.releaseAll(null);
             ClientState.reset();
+            dev.rick.jjk.client.hud.YutaHud.reset();
             ClientAnimations.clear();
             ScreenEffects.reset();
             dev.rick.jjk.client.render.Flashes.clear();
@@ -113,6 +116,7 @@ public class JJKClient implements ClientModInitializer {
     private static void registerReceivers() {
         ClientPlayNetworking.registerGlobalReceiver(FxPayload.TYPE, (p, ctx) -> ClientFx.handle(p));
         ClientPlayNetworking.registerGlobalReceiver(CasterSyncPayload.TYPE, (p, ctx) -> ClientState.apply(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.YutaPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.YutaHud.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.GamblePayload.TYPE, (p, ctx) -> {
             if (ctx.client().level != null) ClientState.applyGamble(p, ctx.client().level.getGameTime());
         });

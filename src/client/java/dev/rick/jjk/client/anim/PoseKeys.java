@@ -10,7 +10,7 @@ public final class PoseKeys {
     public static final RenderStateDataKey<Float> BLINDFOLD_OFF = RenderStateDataKey.create(() -> "jjk:blindfold_off");
     /** The entity a humanoid render state was extracted from (so the model can record where its hands ended up). */
     public static final RenderStateDataKey<Integer> ENTITY = RenderStateDataKey.create(() -> "jjk:entity");
-    public static final int BLINDFOLD = 1, AWAKENED = 2, SUKUNA = 4;
+    public static final int BLINDFOLD = 1, AWAKENED = 2, SUKUNA = 4, CURSED_PARTNERS = 8, KATANA = 16, STEEL_ARM = 32;
 
     private PoseKeys() {}
 }
