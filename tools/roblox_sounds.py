@@ -3,8 +3,9 @@
 Builds assets/jjk/sounds/*.ogg from the Jujutsu Shenanigans Roblox audio IDs.
 
 Each sound event is one or more variants (Minecraft picks one at random); each variant layers clips:
-  (id, offset_seconds, speed, start_seconds, gain)
-speed follows Roblox PlaybackSpeed (pitch and tempo together), start follows TimePosition.
+  (id, offset_seconds, speed, start_seconds, gain, length_seconds)
+speed follows Roblox PlaybackSpeed (pitch and tempo together), start follows TimePosition; length (optional) cuts a long
+clip short with a quick fade, so it ends with the move.
 Clips come from Roblox, then the JJS Skill Builder mirror (ossaamm.github.io/audio), then tools/roblox_audio/<id>.ogg|.mp3;
 the rest are skipped; an event with nothing left keeps its old file.
 
@@ -29,8 +30,8 @@ MIRROR = "https://ossaamm.github.io/audio"
 RATE = 48000
 
 
-def c(i, at=0.0, speed=1.0, start=0.0, gain=1.0):
-    return (str(i), at, speed, start, gain)
+def c(i, at=0.0, speed=1.0, start=0.0, gain=1.0, length=None):
+    return (str(i), at, speed, start, gain, length)
 
 
 def one(*clips):
@@ -222,6 +223,102 @@ SOUNDS = {
     "shrine_music": one(c(15583493700)),
     "shrine_ready": one(c(8181034930)),
     "shrine_splash": one(c(9120548819)),
+    # --- Yuta / Cursed Partners (the JJS Skill Builder's Cursed Partners list; its "NEW" sets where there are two) ---
+    # Swordsmanship M1s: four swings and hits in order (the 4th hit is the shared heavy hit), the downslam and uppercut.
+    "yuta_swing_1": one(c(90045339954472)),
+    "yuta_swing_2": one(c(101012088379497)),
+    "yuta_swing_3": one(c(86863533715011)),
+    "yuta_swing_4": one(c(4571259077, speed=1.1), c(75487544146387)),
+    "yuta_hit_1": one(c(85608110116893)),
+    "yuta_hit_2": one(c(71064172624438)),
+    "yuta_hit_3": one(c(119908133360580)),
+    "yuta_hit_down": one(c(105620422413126)),
+    "yuta_hit_up": one(c(78554756765213)),
+    # True Love's steel-cased fists ring on every hit.
+    "yuta_metal_hit_1": one(c(113344342875514)),
+    "yuta_metal_hit_2": one(c(108742052808505)),
+    "yuta_metal_hit_3": one(c(104021116814815)),
+    # Shared heavy impacts of his moves and Rika's (VeilstepHit and Impact are on most of them).
+    "yuta_heavy_hit": one(c(8595974357), c(90439756216771, gain=0.9)),
+    "yuta_slam": one(c(8595974357), c(90439756216771, gain=0.9), c(3778609188, at=0.02, gain=0.8)),
+    "yuta_crush": one(c(90439756216771), c(71472197762839, at=0.03), c(3778609188, at=0.05, gain=0.8)),
+    # Severing Path and Veilstep
+    "severing_start": one(c(95876856890836)),
+    "severing_swing_1": one(c(120714154715812)),
+    "severing_swing_2": one(c(129682722005190)),
+    "severing_swing_3": one(c(73434180515706)),
+    "severing_hit_1": one(c(137337069510286)),
+    "severing_hit_2": one(c(86231967919037)),
+    "severing_hit_3": one(c(97003333926852)),
+    "severing_hit_4": one(c(117756899811635)),
+    "veilstep": one(c(121354995604661)),
+    # Resolute Slash and its Black Flash
+    "resolute_grab": one(c(122209095269858)),
+    "resolute_leap": one(c(128763907862260)),
+    "resolute_swing": one(c(86506412325620)),
+    "resolute_slash": one(c(14427790767)),
+    "resolute_bf_windup": one(c(85972589629135, start=0.45), c(126598851794168, start=0.4, gain=0.8)),
+    "resolute_bf_land": one(c(132879779265336, length=3.5), c(12764933067, speed=1.5)),
+    "resolute_bf_finish": one(c(132472285449398), c(12764933067, speed=1.5)),
+    # Outburst
+    "outburst_start": one(c(115816722667586), c(86752717770401, at=0.3)),
+    "outburst_charge": one(c(86752717770401, start=0.3, length=0.9)),
+    "outburst_swing": one(c(83164718262698)),
+    "outburst_explosion": one(c(83796511190884)),
+    "outburst_hit": one(c(82314797872585)),
+    "outburst_parry": one(c(74854125236607)),
+    # Second Wind
+    "second_wind_dash": one(c(122018900711660)),
+    "second_wind_grab": one(c(80892604094179)),
+    # Rika
+    "rika_summon": one(c(81914373674135)),
+    "rika_voice": one(c(136734180743874)),
+    "rika_move": one(c(94504796493417)),
+    "rika_launch": one(c(72050513112942)),
+    "rika_haymaker": one(c(92653689754693, at=0.27)),
+    "rika_throw_start": one(c(121746815389545, start=0.66)),
+    "rika_throw_finish": one(c(91266524334221)),
+    # True Love
+    "true_love_start": one(c(96210507614652), c(120155303418484), c(87637812190192, at=0.1)),
+    "true_love_ring": one(c(82858286583983)),
+    "true_love_arm": one(c(82010180737404), c(96857444594355, at=0.6)),
+    # Elbow Rush
+    "elbow_dash": one(c(76842997698748), c(90282304902568, at=0.22), c(84493401750489, at=0.05)),
+    "elbow_hit": one(c(96377525338185), c(9118612945, gain=0.8), c(108742052808505, gain=0.8)),
+    "elbow_teleport": one(c(106463408823054)),
+    "elbow_barrage": one(c(118844796311667, length=1.1)),
+    "elbow_final": one(c(8595974357), c(90439756216771, gain=0.9), c(113344342875514, gain=0.8)),
+    # Cursed Speech
+    "speech_start": one(c(76485051513534)),
+    "speech_dont_move": one(c(91630012293502), c(88080590196375, gain=0.7)),
+    "speech_plummet": one(c(128573990774413), c(88080590196375, gain=0.6)),
+    "speech_die": one(c(129151959162409), c(88080590196375, gain=0.6)),
+    # Energy Ripple and its Fakeout
+    "ripple_start": one(c(102285974755522)),
+    "ripple_bomb": one(c(73393411828542), c(72879767828886, at=0.1)),
+    "fakeout_swing": one(c(86382772357027), c(77514337135425, at=0.03)),
+    "fakeout_hit": one(c(128669563112488)),
+    "fakeout_burst": one(c(102450195424013, start=0.45), c(129389928559036)),
+    # True Love Beam
+    "tlb_charge": one(c(82962697738747), c(114265785065488, at=0.1)),
+    # tlb_power plays as Rika takes her place (1.9s before the beam): its peak lands on the release.
+    "tlb_power": one(c(118689694101518, at=0.26), c(117663808507739, gain=0.55, length=6)),
+    "tlb_small": one(c(111645361582005)),
+    # Authentic Mutual Love
+    "aml_voice": one(c(8098966252)),
+    "aml_start": one(c(121842315815683)),
+    "aml_music": one(c(84395583379130)),
+    "aml_sword_ground": [[c(72417515043142)], [c(95363686354809)], [c(128908669459793)]],
+    "aml_pickup": one(c(81157826243193)),
+    "aml_run_slash": one(c(93748708419116, start=0.3)),
+    "aml_cleave": one(c(935843979)),
+    "aml_dismantle": one(c(140388769343703)),
+    # Thin Ice Breaker: Uro's opening crack (her other clips aren't mirrored) with the domain's glass.
+    "aml_glass": one(c(140527314975641), c(7140152893, at=0.03), c(6737582452, at=0.08, gain=0.7)),
+    "aml_clairvoyance": one(c(125025280611426)),
+    "aml_mini_rika": one(c(112205395048785), c(80705570218040, at=0.3)),
+    "aml_mini_fly": one(c(112981074280224)),
+    "jacobs_ladder": one(c(129174925057034, start=1.5)),
 }
 
 # New events whose clips can't be fetched borrow an existing sound instead (music has none: it just stays quiet).
@@ -234,7 +331,7 @@ FALLBACK = {
 }
 
 # Long tracks: streamed, faded out, and capped (the domain stops them when it ends).
-MUSIC = {"shrine_music": 40, "entrusted_music": 30, "uv_music": 80, "idg_music": 80, "jackpot_music": 100, "purple_music": 14, "clash_music": 60, "zero_two_music": 30}
+MUSIC = {"aml_music": 46, "shrine_music": 40, "entrusted_music": 30, "uv_music": 80, "idg_music": 80, "jackpot_music": 100, "purple_music": 14, "clash_music": 60, "zero_two_music": 30}
 
 
 def fetch(i):
@@ -320,11 +417,15 @@ def build(name, variants):
     made, missing = [], []
     for vi, layers in enumerate(variants):
         parts = []
-        for (i, at, speed, start, gain) in layers:
+        for (i, at, speed, start, gain, length) in layers:
             a = load(i, speed, start)
             if a is None:
                 missing.append(i)
                 continue
+            if length is not None and len(a) > length * RATE:
+                a = a[:int(length * RATE)].copy()
+                fade = min(len(a), int(0.12 * RATE))
+                a[-fade:] *= np.linspace(1, 0, fade)
             parts.append((int(at * RATE), a * gain))
         if not parts:
             continue

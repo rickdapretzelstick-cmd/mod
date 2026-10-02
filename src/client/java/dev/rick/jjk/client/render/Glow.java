@@ -502,4 +502,66 @@ public final class Glow {
         sphere(c, ps, radius * 1.6f, color[0], color[1], color[2], 0.25f * intensity, toCamera, false);
         halo(c, ps, camOrientation, radius * 3.2f, color[0], color[1], color[2], 0.28f * intensity);
     }
+
+    /** A beam's radius at a distance along it (for {@link #tube}). */
+    public interface Radius {
+        double at(double s);
+    }
+
+    /**
+     * A glowing tube from the origin along {@code n} ({@code u}, {@code v} complete the frame), {@code length} long, its
+     * radius given along it. Each vertex is as bright as the surface faces the camera ({@code cam}, relative to the
+     * origin), so it reads as a volume with soft edges from any side rather than as crossed ribbons.
+     */
+    public static void tube(SubmitNodeCollector c, PoseStack ps, Vector3f n, Vector3f u, Vector3f v, float length, Radius radius,
+                            int rings, int sides, float r, float g, float b, float a, Vector3f cam, float edge) {
+        if (length <= 0.01f || a <= 0.003f) return;
+        submit(c, ps, (pose, buf) -> {
+            float[][] px = new float[rings + 1][], py = new float[rings + 1][], pz = new float[rings + 1][], al = new float[rings + 1][];
+            for (int i = 0; i <= rings; i++) {
+                float sAt = length * i / rings;
+                float rad = (float) radius.at(sAt);
+                px[i] = new float[sides]; py[i] = new float[sides]; pz[i] = new float[sides]; al[i] = new float[sides];
+                for (int j = 0; j < sides; j++) {
+                    float ang = Mth.TWO_PI * j / sides;
+                    float cs = Mth.cos(ang), sn = Mth.sin(ang);
+                    float nx = u.x * cs + v.x * sn, ny = u.y * cs + v.y * sn, nz = u.z * cs + v.z * sn;
+                    float x = n.x * sAt + nx * rad, y = n.y * sAt + ny * rad, z = n.z * sAt + nz * rad;
+                    px[i][j] = x; py[i][j] = y; pz[i][j] = z;
+                    float tx = cam.x - x, ty = cam.y - y, tz = cam.z - z;
+                    float inv = Mth.invSqrt(tx * tx + ty * ty + tz * tz + 1e-6f);
+                    float face = Math.abs((nx * tx + ny * ty + nz * tz) * inv);
+                    al[i][j] = rad < 0.01f ? 0f : a * (edge + (1 - edge) * face * face);
+                }
+            }
+            for (int i = 0; i < rings; i++) {
+                for (int j = 0; j < sides; j++) {
+                    int k = (j + 1) % sides;
+                    buf.addVertex(pose, px[i][j], py[i][j], pz[i][j]).setColor(r, g, b, al[i][j]);
+                    buf.addVertex(pose, px[i + 1][j], py[i + 1][j], pz[i + 1][j]).setColor(r, g, b, al[i + 1][j]);
+                    buf.addVertex(pose, px[i + 1][k], py[i + 1][k], pz[i + 1][k]).setColor(r, g, b, al[i + 1][k]);
+                    buf.addVertex(pose, px[i][k], py[i][k], pz[i][k]).setColor(r, g, b, al[i][k]);
+                }
+            }
+        });
+    }
+
+    /** A dark (alpha-blended) band wrapped round a beam, {@code from} to {@code to} along it at radius {@code rad}. */
+    public static void inkBand(SubmitNodeCollector c, PoseStack ps, Vector3f n, Vector3f u, Vector3f v, float from, float to, float rad,
+                               int sides, float r, float g, float b, float a) {
+        if (rad <= 0.02f || a <= 0.01f) return;
+        c.submitCustomGeometry(ps, INK, (pose, buf) -> {
+            for (int j = 0; j < sides; j++) {
+                float a0 = Mth.TWO_PI * j / sides, a1 = Mth.TWO_PI * (j + 1) / sides;
+                float x0 = (u.x * Mth.cos(a0) + v.x * Mth.sin(a0)) * rad, y0 = (u.y * Mth.cos(a0) + v.y * Mth.sin(a0)) * rad,
+                        z0 = (u.z * Mth.cos(a0) + v.z * Mth.sin(a0)) * rad;
+                float x1 = (u.x * Mth.cos(a1) + v.x * Mth.sin(a1)) * rad, y1 = (u.y * Mth.cos(a1) + v.y * Mth.sin(a1)) * rad,
+                        z1 = (u.z * Mth.cos(a1) + v.z * Mth.sin(a1)) * rad;
+                buf.addVertex(pose, n.x * from + x0, n.y * from + y0, n.z * from + z0).setColor(r, g, b, a);
+                buf.addVertex(pose, n.x * to + x0, n.y * to + y0, n.z * to + z0).setColor(r, g, b, a);
+                buf.addVertex(pose, n.x * to + x1, n.y * to + y1, n.z * to + z1).setColor(r, g, b, a);
+                buf.addVertex(pose, n.x * from + x1, n.y * from + y1, n.z * from + z1).setColor(r, g, b, a);
+            }
+        });
+    }
 }

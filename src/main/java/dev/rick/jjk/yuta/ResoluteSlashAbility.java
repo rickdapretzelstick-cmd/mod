@@ -207,7 +207,7 @@ public final class ResoluteSlashAbility extends Ability {
             }
             HitResult r = HakariCombat.hit(YutaCombat.strike(user, ID, cfg.resoluteBlackFlashDamage, true).tag(AttackTag.OTG, AttackTag.HEAVY)
                     .knockback(Knockback.set(HakariCombat.flat(user).scale(2.2).add(0, 0.55, 0))).hitstun(30)
-                    .status(CombatStatus.LAUNCHED, 30).noComboScaling().fx("black_flash", 1.3f).build(), t);
+                    .status(CombatStatus.LAUNCHED, 30).noComboScaling().fx("yuta_impact", 1.3f).build(), t);
             if (r.connected()) Fx.flash(level, t.position(), 20, 0xA0000000, 6);
         }
 

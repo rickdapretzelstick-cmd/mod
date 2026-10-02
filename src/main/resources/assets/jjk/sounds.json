@@ -958,5 +958,405 @@
     "sounds": [
       "jjk:shrine_splash"
     ]
+  },
+  "yuta_swing_1": {
+    "sounds": [
+      "jjk:yuta_swing_1"
+    ]
+  },
+  "yuta_swing_2": {
+    "sounds": [
+      "jjk:yuta_swing_2"
+    ]
+  },
+  "yuta_swing_3": {
+    "sounds": [
+      "jjk:yuta_swing_3"
+    ]
+  },
+  "yuta_swing_4": {
+    "sounds": [
+      "jjk:yuta_swing_4"
+    ]
+  },
+  "yuta_hit_1": {
+    "sounds": [
+      "jjk:yuta_hit_1"
+    ]
+  },
+  "yuta_hit_2": {
+    "sounds": [
+      "jjk:yuta_hit_2"
+    ]
+  },
+  "yuta_hit_3": {
+    "sounds": [
+      "jjk:yuta_hit_3"
+    ]
+  },
+  "yuta_hit_down": {
+    "sounds": [
+      "jjk:yuta_hit_down"
+    ]
+  },
+  "yuta_hit_up": {
+    "sounds": [
+      "jjk:yuta_hit_up"
+    ]
+  },
+  "yuta_metal_hit_1": {
+    "sounds": [
+      "jjk:yuta_metal_hit_1"
+    ]
+  },
+  "yuta_metal_hit_2": {
+    "sounds": [
+      "jjk:yuta_metal_hit_2"
+    ]
+  },
+  "yuta_metal_hit_3": {
+    "sounds": [
+      "jjk:yuta_metal_hit_3"
+    ]
+  },
+  "yuta_heavy_hit": {
+    "sounds": [
+      "jjk:yuta_heavy_hit"
+    ]
+  },
+  "yuta_slam": {
+    "sounds": [
+      "jjk:yuta_slam"
+    ]
+  },
+  "yuta_crush": {
+    "sounds": [
+      "jjk:yuta_crush"
+    ]
+  },
+  "severing_start": {
+    "sounds": [
+      "jjk:severing_start"
+    ]
+  },
+  "severing_swing_1": {
+    "sounds": [
+      "jjk:severing_swing_1"
+    ]
+  },
+  "severing_swing_2": {
+    "sounds": [
+      "jjk:severing_swing_2"
+    ]
+  },
+  "severing_swing_3": {
+    "sounds": [
+      "jjk:severing_swing_3"
+    ]
+  },
+  "severing_hit_1": {
+    "sounds": [
+      "jjk:severing_hit_1"
+    ]
+  },
+  "severing_hit_2": {
+    "sounds": [
+      "jjk:severing_hit_2"
+    ]
+  },
+  "severing_hit_3": {
+    "sounds": [
+      "jjk:severing_hit_3"
+    ]
+  },
+  "severing_hit_4": {
+    "sounds": [
+      "jjk:severing_hit_4"
+    ]
+  },
+  "veilstep": {
+    "sounds": [
+      "jjk:veilstep"
+    ]
+  },
+  "resolute_grab": {
+    "sounds": [
+      "jjk:resolute_grab"
+    ]
+  },
+  "resolute_leap": {
+    "sounds": [
+      "jjk:resolute_leap"
+    ]
+  },
+  "resolute_swing": {
+    "sounds": [
+      "jjk:resolute_swing"
+    ]
+  },
+  "resolute_slash": {
+    "sounds": [
+      "jjk:resolute_slash"
+    ]
+  },
+  "resolute_bf_windup": {
+    "sounds": [
+      "jjk:resolute_bf_windup"
+    ]
+  },
+  "resolute_bf_land": {
+    "sounds": [
+      "jjk:resolute_bf_land"
+    ]
+  },
+  "resolute_bf_finish": {
+    "sounds": [
+      "jjk:resolute_bf_finish"
+    ]
+  },
+  "outburst_start": {
+    "sounds": [
+      "jjk:outburst_start"
+    ]
+  },
+  "outburst_charge": {
+    "sounds": [
+      "jjk:outburst_charge"
+    ]
+  },
+  "outburst_swing": {
+    "sounds": [
+      "jjk:outburst_swing"
+    ]
+  },
+  "outburst_explosion": {
+    "sounds": [
+      "jjk:outburst_explosion"
+    ]
+  },
+  "outburst_hit": {
+    "sounds": [
+      "jjk:outburst_hit"
+    ]
+  },
+  "outburst_parry": {
+    "sounds": [
+      "jjk:outburst_parry"
+    ]
+  },
+  "second_wind_dash": {
+    "sounds": [
+      "jjk:second_wind_dash"
+    ]
+  },
+  "second_wind_grab": {
+    "sounds": [
+      "jjk:second_wind_grab"
+    ]
+  },
+  "rika_summon": {
+    "sounds": [
+      "jjk:rika_summon"
+    ]
+  },
+  "rika_voice": {
+    "sounds": [
+      "jjk:rika_voice"
+    ]
+  },
+  "rika_move": {
+    "sounds": [
+      "jjk:rika_move"
+    ]
+  },
+  "rika_launch": {
+    "sounds": [
+      "jjk:rika_launch"
+    ]
+  },
+  "rika_haymaker": {
+    "sounds": [
+      "jjk:rika_haymaker"
+    ]
+  },
+  "rika_throw_start": {
+    "sounds": [
+      "jjk:rika_throw_start"
+    ]
+  },
+  "rika_throw_finish": {
+    "sounds": [
+      "jjk:rika_throw_finish"
+    ]
+  },
+  "true_love_start": {
+    "sounds": [
+      "jjk:true_love_start"
+    ]
+  },
+  "true_love_ring": {
+    "sounds": [
+      "jjk:true_love_ring"
+    ]
+  },
+  "true_love_arm": {
+    "sounds": [
+      "jjk:true_love_arm"
+    ]
+  },
+  "elbow_dash": {
+    "sounds": [
+      "jjk:elbow_dash"
+    ]
+  },
+  "elbow_hit": {
+    "sounds": [
+      "jjk:elbow_hit"
+    ]
+  },
+  "elbow_teleport": {
+    "sounds": [
+      "jjk:elbow_teleport"
+    ]
+  },
+  "elbow_barrage": {
+    "sounds": [
+      "jjk:elbow_barrage"
+    ]
+  },
+  "elbow_final": {
+    "sounds": [
+      "jjk:elbow_final"
+    ]
+  },
+  "speech_start": {
+    "sounds": [
+      "jjk:speech_start"
+    ]
+  },
+  "speech_dont_move": {
+    "sounds": [
+      "jjk:speech_dont_move"
+    ]
+  },
+  "speech_plummet": {
+    "sounds": [
+      "jjk:speech_plummet"
+    ]
+  },
+  "speech_die": {
+    "sounds": [
+      "jjk:speech_die"
+    ]
+  },
+  "ripple_start": {
+    "sounds": [
+      "jjk:ripple_start"
+    ]
+  },
+  "ripple_bomb": {
+    "sounds": [
+      "jjk:ripple_bomb"
+    ]
+  },
+  "fakeout_swing": {
+    "sounds": [
+      "jjk:fakeout_swing"
+    ]
+  },
+  "fakeout_hit": {
+    "sounds": [
+      "jjk:fakeout_hit"
+    ]
+  },
+  "fakeout_burst": {
+    "sounds": [
+      "jjk:fakeout_burst"
+    ]
+  },
+  "tlb_charge": {
+    "sounds": [
+      "jjk:tlb_charge"
+    ]
+  },
+  "tlb_power": {
+    "sounds": [
+      "jjk:tlb_power"
+    ]
+  },
+  "tlb_small": {
+    "sounds": [
+      "jjk:tlb_small"
+    ]
+  },
+  "aml_voice": {
+    "sounds": [
+      "jjk:aml_voice"
+    ]
+  },
+  "aml_start": {
+    "sounds": [
+      "jjk:aml_start"
+    ]
+  },
+  "aml_music": {
+    "sounds": [
+      {
+        "name": "jjk:aml_music",
+        "stream": true
+      }
+    ]
+  },
+  "aml_sword_ground": {
+    "sounds": [
+      "jjk:aml_sword_ground",
+      "jjk:aml_sword_ground_2",
+      "jjk:aml_sword_ground_3"
+    ]
+  },
+  "aml_pickup": {
+    "sounds": [
+      "jjk:aml_pickup"
+    ]
+  },
+  "aml_run_slash": {
+    "sounds": [
+      "jjk:aml_run_slash"
+    ]
+  },
+  "aml_cleave": {
+    "sounds": [
+      "jjk:aml_cleave"
+    ]
+  },
+  "aml_dismantle": {
+    "sounds": [
+      "jjk:aml_dismantle"
+    ]
+  },
+  "aml_glass": {
+    "sounds": [
+      "jjk:aml_glass"
+    ]
+  },
+  "aml_clairvoyance": {
+    "sounds": [
+      "jjk:aml_clairvoyance"
+    ]
+  },
+  "aml_mini_rika": {
+    "sounds": [
+      "jjk:aml_mini_rika"
+    ]
+  },
+  "aml_mini_fly": {
+    "sounds": [
+      "jjk:aml_mini_fly"
+    ]
+  },
+  "jacobs_ladder": {
+    "sounds": [
+      "jjk:jacobs_ladder"
+    ]
   }
 }

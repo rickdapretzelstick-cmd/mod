@@ -87,6 +87,7 @@ public final class RikaThrowAbility extends Ability {
             Anim.play(user, "yuta_rika_throw");
             if (rika != null) Anim.playOn(rika, "rika_throw");
             setPhase(0, THROW);
+            Fx.play(level, "rika_throw_pickup", user.position().add(0, 1, 0), HakariCombat.flat(user), 1f, user.getId());
         }
 
         @Override
@@ -150,7 +151,7 @@ public final class RikaThrowAbility extends Ability {
             float dmg = Mth.lerp(t, cfg.throwMinDamage, cfg.throwMaxDamage);
             HitResult r = HakariCombat.hit(YutaCombat.strike(user, ID, dmg, false).tag(AttackTag.OTG, AttackTag.HEAVY)
                     .knockback(Knockback.set(d.scale(1.2 + t).add(0, 0.5, 0))).hitstun(30).status(CombatStatus.LAUNCHED, 30)
-                    .noComboScaling().fx("hit_heavy", 1.2f + t * 0.6f).build(), v);
+                    .noComboScaling().fx("rika_throw_hit", 1.2f + t * 0.6f).build(), v);
             if (r.outcome() == HitResult.Outcome.BLOCKED) Motion.set(user, d.scale(-0.6).add(0, 0.3, 0));
             Anim.play(user, "yuta_rika_throw_hit");
             endAt = age + 12;

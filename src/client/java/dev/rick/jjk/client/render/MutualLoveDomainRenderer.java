@@ -54,13 +54,18 @@ public final class MutualLoveDomainRenderer {
         ps.scale(1, 0.25f, 1);
         Glow.sphere(c, ps, r * 0.7f, 0.45f, 0.1f, 0.5f, 0.18f, new Vector3f(0, -50, 0), false);
         ps.popPose();
-        crosses(c, ps, d, r);
+        crosses(c, ps, d, r, time);
         ropes(c, ps, d, r, time);
         rika(c, ps, d, r, level, time);
     }
 
-    /** Grave crosses scattered over the platform, leaning a little, none right by the center. */
-    private static void crosses(SubmitNodeCollector c, PoseStack ps, ClientState.Domain d, float r) {
+    /**
+     * Grave crosses scattered over the platform, leaning a little, none right by the center. They rise out of the stone,
+     * one after another, as the domain seals (and stay risen for the rest of it).
+     */
+    private static void crosses(SubmitNodeCollector c, PoseStack ps, ClientState.Domain d, float r, float time) {
+        float since = d.phase == dev.rick.jjk.core.domain.DomainInstance.Phase.FORMING.ordinal() ? 0f
+                : d.prevPhase == dev.rick.jjk.core.domain.DomainInstance.Phase.FORMING.ordinal() ? time - d.phaseStartTick : 999f;
         Random rnd = new Random(d.id * 131L);
         int n = 18;
         for (int i = 0; i < n; i++) {
@@ -70,8 +75,12 @@ public final class MutualLoveDomainRenderer {
             if (!DomainSpace.onSide(d, d.center.add(at))) continue;
             float scale = 1.2f + rnd.nextFloat() * 1.3f;
             float lean = (rnd.nextFloat() - 0.5f) * 14f, turn = rnd.nextFloat() * 360f;
+            float rise = Mth.clamp((since - i * 1.5f) / 14f, 0f, 1f);
+            if (rise <= 0f) continue;
+            rise = 1 - (1 - rise) * (1 - rise) * (1 - rise);
             ps.pushPose();
-            ps.translate(at.x, at.y, at.z);
+            // Rising: up out of the floor from fully buried (30 px tall at this scale).
+            ps.translate(at.x, at.y - (1 - rise) * scale * 30f / 16f, at.z);
             ps.rotate(Axis.YP.rotationDegrees(turn));
             ps.rotate(Axis.ZP.rotationDegrees(lean));
             ps.scale(scale, scale, scale);

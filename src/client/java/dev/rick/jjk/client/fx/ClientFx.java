@@ -479,7 +479,11 @@ public final class ClientFx {
             }
             case "domain_expand" -> {
                 // The domain starts at the sorcerer's feet: a burst of energy into the ground that the structure grows from.
-                sound("max_charge", pos, 2f, 0.7f);
+                // (Authentic Mutual Love's own opening, aml_start, is already playing for Yuta.)
+                if (!(level.getEntity(p.entityId()) instanceof net.minecraft.world.entity.LivingEntity owner
+                        && dev.rick.jjk.core.combat.Combat.has(owner, dev.rick.jjk.core.combat.CombatStatus.CURSED_PARTNERS))) {
+                    sound("max_charge", pos, 2f, 0.7f);
+                }
                 Vec3 feet = pos.add(0, -0.5, 0);
                 Flashes.flash(feet.add(0, 0.6, 0), 2.5f, 0.5f, WHITE, 1f, 8, now);
                 Flashes.ground(feet, 0.3f, 4f, WHITE, 0.9f, 10, now);
@@ -515,8 +519,10 @@ public final class ClientFx {
                 ClientState.Domain sealed = ClientState.domainOwnedBy(p.entityId());
                 boolean idg = sealed != null && dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(sealed.definition);
                 boolean shrine = sealed != null && dev.rick.jjk.yuji.MalevolentShrine.ID.equals(sealed.definition);
-                sound(idg ? "idg_sealed" : shrine ? "shrine_expand" : "domain_expand", pos, 6f, 1f);
-                sound(idg ? "idg_music" : shrine ? "shrine_music" : "uv_music", pos, 4f, 1f);
+                boolean aml = sealed != null && dev.rick.jjk.yuta.AuthenticMutualLove.ID.equals(sealed.definition);
+                // Authentic Mutual Love's opening already carries its expansion (aml_start); here its OST begins.
+                if (!aml) sound(idg ? "idg_sealed" : shrine ? "shrine_expand" : "domain_expand", pos, 6f, 1f);
+                sound(idg ? "idg_music" : shrine ? "shrine_music" : aml ? "aml_music" : "uv_music", pos, 4f, 1f);
                 if (shrine) sound("shrine_splash", pos, 3f, 1f);
                 Flashes.lens(pos, r * 0.85f, r * 1.08f, WHITE, 0.9f, 12, now);
                 Flashes.ground(pos.add(0, -0.45, 0), r * 0.2f, r * 1.1f, BLUE_LIGHT, 0.8f, 14, now);
@@ -538,7 +544,8 @@ public final class ClientFx {
                 stopSound("clash_music");
                 ClientState.Domain ending = ClientState.domainOwnedBy(p.entityId());
                 if (ending != null) stopSound(dev.rick.jjk.hakari.IdleDeathGamble.ID.equals(ending.definition) ? "idg_music"
-                        : dev.rick.jjk.yuji.MalevolentShrine.ID.equals(ending.definition) ? "shrine_music" : "uv_music");
+                        : dev.rick.jjk.yuji.MalevolentShrine.ID.equals(ending.definition) ? "shrine_music"
+                        : dev.rick.jjk.yuta.AuthenticMutualLove.ID.equals(ending.definition) ? "aml_music" : "uv_music");
                 Flashes.lens(pos, s, 1f, WHITE, 0.7f, 20, now);
                 if (drawn) sphereShell(level, pos, s * 0.9, q(60), WHITE, 0.3f, 20, -0.08).forEach(x -> x.gravity(0.3f));
             }

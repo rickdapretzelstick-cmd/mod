@@ -170,10 +170,10 @@ public final class YutaCharacter extends JJKCharacter {
         if (ability instanceof ResoluteSlashAbility && cast instanceof ResoluteSlashAbility.Instance r && r.againPress()) return true;
         if (ability instanceof SeveringPathAbility && cast instanceof SecondWindAbility.Instance sw && sw.pummelPress(caster, slot)) return true;
         if (ability instanceof EnergyRippleAbility && cast instanceof EnergyRippleAbility.Instance er && er.fakeoutPress()) return true;
-        if (ability instanceof TrueLoveBeamAbility) {
-            for (var o : caster.overlays()) if (o instanceof TrueLoveBeamAbility.Instance b && !b.isFinished() && b.quickPress()) return true;
-            if (cast instanceof TrueLoveBeamAbility.Instance b && b.quickPress()) return true;
-        }
+        // True Love Beam's key again in its wind-up: the quick beam. Firing it put Rika's moveset away, so the key now
+        // shows his own move; it is the beam's own slot that counts.
+        for (var o : caster.overlays()) if (o instanceof TrueLoveBeamAbility.Instance b && !b.isFinished() && b.slot() == slot && b.quickPress()) return true;
+        if (cast instanceof TrueLoveBeamAbility.Instance b && b.slot() == slot && b.quickPress()) return true;
         if (ability instanceof AuthenticMutualLoveAbility && AuthenticMutualLoveAbility.ladderPress(caster, targetHint)) return true;
         if (ability instanceof RikaLaunchAbility && user.level() instanceof ServerLevel level) {
             AbilityContext ctx = new AbilityContext(caster, user, level, slot, 0, 0, targetHint);

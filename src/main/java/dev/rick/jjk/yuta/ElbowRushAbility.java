@@ -108,7 +108,7 @@ public final class ElbowRushAbility extends Ability {
         private void elbow(JJKConfig.Yuta cfg, LivingEntity t) {
             Motion.set(user, Vec3.ZERO);
             HitResult r = HakariCombat.hit(YutaCombat.strike(user, ID, cfg.elbowDamage, true)
-                    .knockback(Knockback.set(dir.scale(0.7).add(0, 0.25, 0))).hitstun(40).fx("hit_heavy", 1.2f).build(), t);
+                    .knockback(Knockback.set(dir.scale(0.7).add(0, 0.25, 0))).hitstun(40).fx("yuta_impact", 1.2f).build(), t);
             if (!r.connected()) {
                 endAt = age + 20;
                 return;
@@ -161,7 +161,7 @@ public final class ElbowRushAbility extends Ability {
                 flurryHits++;
                 float total = rika != null ? cfg.elbowFlurryRikaDamage : cfg.elbowFlurryDamage;
                 var b = (rika != null && flurryHits % 2 == 0 ? YutaCombat.rika(user, rika, ID, total / 6f, false) : YutaCombat.strike(user, ID, total / 6f, true))
-                        .tag(AttackTag.UNBLOCKABLE).knockback(Knockback.HOLD).hitstun(14).noComboScaling().fx("hit_light", 0.8f);
+                        .tag(AttackTag.UNBLOCKABLE).knockback(Knockback.HOLD).hitstun(14).noComboScaling().fx("elbow_barrage_hit", 0.8f);
                 HitResult r = HakariCombat.hit(b.build(), victim);
                 if (rika != null && flurryHits == 1) YutaCombat.copyFrom(user, r.target());
             }
@@ -170,11 +170,11 @@ public final class ElbowRushAbility extends Ability {
                 Anim.play(user, "yuta_elbow_final");
                 Vec3 ahead = HakariCombat.flat(user);
                 if (YutaCombat.finishable(victim)) {
-                    YutaCombat.execute(user, victim, ID, "hit_heavy");
+                    YutaCombat.execute(user, victim, ID, "elbow_final");
                 } else {
                     HakariCombat.hit(YutaCombat.strike(user, ID, cfg.elbowFinalDamage, true)
                             .knockback(Knockback.set(ahead.scale(2.4).add(0, 0.6, 0))).hitstun(30).status(CombatStatus.LAUNCHED, 30)
-                            .noComboScaling().fx("hit_launch", 1.4f).build(), victim);
+                            .noComboScaling().fx("elbow_final", 1.4f).build(), victim);
                 }
                 Fx.shake(level, victim.position(), 20, 0.7f, 8);
                 if (rika != null) YutaCombat.free(user);

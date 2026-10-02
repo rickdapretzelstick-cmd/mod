@@ -80,9 +80,9 @@ public final class RikaSmashAbility extends RikaMove {
                     var b = YutaCombat.rika(user, rika, ID, air ? cfg.rikaSmashAirDamage : cfg.rikaSmashDamage, true)
                             .tag(AttackTag.BLOCKABLE_360, AttackTag.OTG).noComboScaling();
                     if (air) {
-                        b.knockback(Knockback.set(new Vec3(0, -1.6, 0))).hitstun(34).status(CombatStatus.SPIKED, 50).fx("hit_slam", 1.4f);
+                        b.knockback(Knockback.set(new Vec3(0, -1.6, 0))).hitstun(34).status(CombatStatus.SPIKED, 50).fx("yuta_impact", 1.4f);
                     } else {
-                        b.knockback(Knockback.set(new Vec3(0, 0.85, 0))).hitstun(28).status(CombatStatus.LAUNCHED, 30).fx("hit_slam", 1.3f);
+                        b.knockback(Knockback.set(new Vec3(0, 0.85, 0))).hitstun(28).status(CombatStatus.LAUNCHED, 30).fx("yuta_impact", 1.3f);
                     }
                     HitResult r = HakariCombat.hit(b.build(), t);
                     copyOnKill(r);

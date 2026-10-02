@@ -995,13 +995,27 @@ public final class JJKConfig {
         public float rikaSlamGrabDamage = 1f;
         public float rikaSlamDamage = 2f;
         public float rikaSlamLastDamage = 3f;
+        // True Love Beam (40s): Yuta conjures the orb (aiming), Rika plants herself and charges, then the beam.
         public int beamCooldown = 800;
         public int beamQuickCooldown = 300;
+        public float beamCost = 120f;
+        /** Ticks Yuta spends conjuring the orb, aiming; after this the path is locked and he can move. */
+        public int beamConjureTicks = 22;
+        /** Ticks from the start until the beam fires (the rest of it is Rika's charge, the path telegraphed). */
         public int beamWindup = 60;
+        /** How long the beam lasts, including its grow-in and collapse; it only does damage while it is drawn. */
         public int beamTicks = 30;
+        public int beamGrowTicks = 4;
+        public int beamCollapseTicks = 8;
         public double beamRange = 40;
-        public double beamWidth = 2.2;
+        /** The beam's full radius (blocks), and the quick beam's. */
+        public double beamRadius = 2.6;
         public float beamDamage = 100f;
+        /** The quick beam: the orb let go from his hands at once (pressed again in the wind-up, or Rika is busy). */
+        public int beamQuickWindup = 8;
+        public int beamQuickTicks = 7;
+        public double beamQuickRange = 28;
+        public double beamQuickRadius = 0.9;
         public float beamQuickDamage = 22.4f;
         public int throwCooldown = 260;
         public int throwMaxAirtime = 26;

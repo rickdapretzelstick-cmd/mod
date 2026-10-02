@@ -111,7 +111,7 @@ public final class BladeRun extends AbilityInstance {
         boolean landed = false;
         if (hit != null) {
             HitResult r = HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.bladeDamage, true).tag(AttackTag.NO_METER).tag(AttackTag.OTG)
-                    .knockback(Knockback.HOLD).hitstun(20).noComboScaling().fx("severing_swing", 1.2f).build(), hit);
+                    .knockback(Knockback.HOLD).hitstun(20).noComboScaling().fx("blade_hit", 1.2f).build(), hit);
             landed = r.connected();
             if (landed) {
                 YutaState s = YutaState.of(user);
@@ -138,7 +138,7 @@ public final class BladeRun extends AbilityInstance {
                     boolean last = i == 3;
                     HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.shrineSlashDamage, true).tag(AttackTag.NO_METER).tag(AttackTag.TECHNIQUE, AttackTag.OTG)
                             .knockback(last ? Knockback.directional(dir, 1.3, 0.35) : Knockback.HOLD).hitstun(last ? 30 : 12)
-                            .noComboScaling().fx("shrine_slash", 1f).build(), t);
+                            .noComboScaling().fx("aml_cleave_hit", 1f).build(), t);
                 }
             }
             case THIN_ICE_BREAKER -> {
@@ -146,7 +146,7 @@ public final class BladeRun extends AbilityInstance {
                 Fx.shake(level, at, 24, 0.9f, 10);
                 HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.thinIceDamage, true).tag(AttackTag.NO_METER).tag(AttackTag.TECHNIQUE, AttackTag.OTG, AttackTag.SURE_HIT)
                         .knockback(Knockback.set(dir.scale(1.0).add(0, 0.7, 0))).hitstun(40).status(CombatStatus.LAUNCHED, 40)
-                        .status(CombatStatus.TRUE_RAGDOLL, 60).noComboScaling().fx("hit_heavy", 1.4f).build(), t);
+                        .status(CombatStatus.TRUE_RAGDOLL, 60).noComboScaling().fx("yuta_impact", 1.4f).build(), t);
             }
             case CLAIRVOYANCE -> {
                 Fx.play(level, "clairvoyance_mark", at, dir, 1f, t.getId());
@@ -164,7 +164,7 @@ public final class BladeRun extends AbilityInstance {
                 Fx.play(level, "speech_plummet", user.getEyePosition(), dir, 1f, user.getId());
                 HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.plummetDamage, true).tag(AttackTag.NO_METER).tag(AttackTag.TECHNIQUE, AttackTag.OTG)
                         .knockback(Knockback.set(new Vec3(0, -1.6, 0))).hitstun(30).status(CombatStatus.SPIKED, 30)
-                        .noComboScaling().fx("hit_slam", 1.3f).build(), t);
+                        .noComboScaling().fx("yuta_impact", 1.3f).build(), t);
             }
             case SHIKIGAMI -> caster.addOverlay(new ShikigamiSwarm(caster, user, t, false));
         }
@@ -184,7 +184,7 @@ public final class BladeRun extends AbilityInstance {
                     }
                     HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.shrineMissDamage, true).tag(AttackTag.NO_METER).tag(AttackTag.TECHNIQUE, AttackTag.EXPLOSION, AttackTag.OTG)
                             .knockback(Knockback.directional(dir, 1.6, 0.4)).hitstun(26).status(CombatStatus.LAUNCHED, 24)
-                            .noComboScaling().fx("shrine_slash", 1.4f).build(), t);
+                            .noComboScaling().fx("yuta_impact", 1.4f).build(), t);
                 }
             }
             case THIN_ICE_BREAKER -> {
@@ -193,7 +193,7 @@ public final class BladeRun extends AbilityInstance {
                 for (LivingEntity t : HitboxQuery.targets(user, HitShape.orientedBox(from, dir, 9, 4, 3), 0.3, false)) {
                     HakariCombat.hit(YutaCombat.strike(user, AuthenticMutualLoveAbility.ID, cfg.thinIceMissDamage, true).tag(AttackTag.NO_METER).tag(AttackTag.TECHNIQUE, AttackTag.OTG)
                             .knockback(Knockback.directional(dir, 1.1, 0.5)).hitstun(26).status(CombatStatus.LAUNCHED, 26)
-                            .noComboScaling().fx("hit_heavy", 1.1f).build(), t);
+                            .noComboScaling().fx("yuta_impact", 1.1f).build(), t);
                 }
             }
             case CLAIRVOYANCE -> {

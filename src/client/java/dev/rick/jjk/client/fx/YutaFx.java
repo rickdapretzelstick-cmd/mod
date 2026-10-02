@@ -27,7 +27,63 @@ final class YutaFx {
     static final float[] BLOOD = YujiFx.BLOOD;
     static final float[] GOLD_RAY = {1f, 0.98f, 0.6f};
 
+    /** Each attacker's place in the M1 string: {last swing tick, index 0-3}. The swing effects carry no index. */
+    private static final java.util.Map<Integer, long[]> CHAIN = new java.util.HashMap<>();
+    private static int lastSwing;
+    private static long lastSwingAt = -100;
+
+    /** True Love Beam: each caster's shape (radius, grow, collapse), sent just before it fires. */
+    private static final java.util.Map<Integer, double[]> SHAPES = new java.util.HashMap<>();
+
     private YutaFx() {}
+
+    /** Where a beam from {@code from} along {@code d} first meets the world (it goes on through: this is where it strikes). */
+    private static Vec3 beamStrike(ClientLevel level, Vec3 from, Vec3 d, double reach) {
+        Vec3 end = from.add(d.scale(reach));
+        var hit = level.clip(new net.minecraft.world.level.ClipContext(from, end, net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Fluid.NONE, net.minecraft.world.phys.shapes.CollisionContext.empty()));
+        return hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS ? end : hit.getLocation();
+    }
+
+    /** Within {@code margin} of the beam's axis. */
+    private static boolean closeTo(Vec3 p, Vec3 from, Vec3 d, double reach, double margin) {
+        Vec3 rel = p.subtract(from);
+        double s = Math.max(0, Math.min(reach, rel.dot(d)));
+        return rel.subtract(d.scale(s)).length() < margin;
+    }
+
+    /** The next swing of this attacker's string (a heavy or the 4th is swing 4; a pause starts it over). */
+    private static int swingIndex(int attacker, long now, boolean heavy) {
+        if (CHAIN.size() > 64) CHAIN.values().removeIf(c -> now - c[0] > 200 || now < c[0]);
+        long[] c = CHAIN.computeIfAbsent(attacker, k -> new long[] {-100, -1});
+        int i = now - c[0] > 30 || now < c[0] ? 0 : (int) ((c[1] + 1) % 4);
+        if (heavy) i = 3;
+        c[0] = now;
+        c[1] = i;
+        lastSwing = i;
+        lastSwingAt = now;
+        return i;
+    }
+
+    /** The hit that goes with the latest swing (hit effects name the victim, not the attacker). */
+    private static int hitIndex(long now) {
+        return now - lastSwingAt <= 12 && now >= lastSwingAt ? lastSwing : 0;
+    }
+
+    /** A melee hit's visuals, for the hits whose sound comes from the move itself. */
+    private static void impact(FxPayload p, ClientLevel level, Vec3 pos, Vec3 d, boolean heavy, boolean drawn, long now) {
+        if (drawn) {
+            if (heavy) {
+                Flashes.flash(pos, 1.4f, 0.3f, PINK_LIGHT, 1f, 4, now);
+                impactStar(pos, d, 8, 1.4f, 0.05f, PINK, now);
+                sparks(level, pos, d, q(10), 0.45, PINK, 0.08f, 7);
+            } else {
+                Flashes.flash(pos, 0.7f, 0.2f, WHITE, 1f, 3, now);
+                sparks(level, pos, d, q(5), 0.3, PINK, 0.06f, 5);
+            }
+        }
+        victimFeedback(p, heavy ? 0.5f : 0.25f);
+    }
 
     static void play(FxPayload p, Minecraft mc, ClientLevel level, Vec3 pos, Vec3 dir, float s, boolean mine, long now) {
         boolean drawn = lod > 0;
@@ -36,16 +92,21 @@ final class YutaFx {
         switch (p.id()) {
             // --- Swordsmanship M1s and the steel arm ---
             case "yuta_swing" -> {
-                sound("swing", pos, 0.9f, 1.1f + RNG.nextFloat() * 0.2f);
+                // Swordsmanship's four swings, in order (JJS Yuta M1 Swing1-4).
+                sound("yuta_swing_" + (swingIndex(p.entityId(), now, s >= 1.5f) + 1), pos, 1f, 0.95f + RNG.nextFloat() * 0.1f);
                 // The katana's arc: a broad pink band with a white edge (Swordsmanship GIF).
                 if (drawn) slash(pos.add(d.scale(0.5)), d, 1.7f * s, RNG.nextFloat() * 1.4f - 0.7f, 5, now);
             }
             case "yuta_steel_swing" -> {
+                // The steel-cased fist: the plain punch swing.
+                swingIndex(p.entityId(), now, s >= 1.5f);
                 sound("swing", pos, 0.9f, 0.9f + RNG.nextFloat() * 0.2f);
                 if (drawn) line(pos, pos.add(d.scale(1.2)), 0.08f, PINK_LIGHT, 0.5f, 3, now);
             }
             case "yuta_hit_light", "yuta_steel_hit_light" -> {
-                sound("hit_light", pos, 1f, 1f + RNG.nextFloat() * 0.2f);
+                int i = hitIndex(now);
+                sound(i >= 3 ? "hit_heavy" : "yuta_hit_" + (i + 1), pos, 1f, 0.95f + RNG.nextFloat() * 0.1f);
+                if (p.id().startsWith("yuta_steel")) sound("yuta_metal_hit_" + (i % 3 + 1), pos, 0.8f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 0.7f, 0.2f, WHITE, 1f, 3, now);
                     sparks(level, pos, d, q(5), 0.3, PINK, 0.06f, 5);
@@ -53,7 +114,9 @@ final class YutaFx {
                 victimFeedback(p, 0.25f);
             }
             case "yuta_hit_heavy", "yuta_steel_hit_heavy", "yuta_hit_launch", "yuta_steel_hit_launch", "yuta_hit_slam", "yuta_steel_hit_slam" -> {
-                sound(p.id().endsWith("slam") ? "hit_slam" : "hit_heavy", pos, 1f, 1f);
+                // The 4th hit; the uppercut and the downslam have their own (JJS HitUp, HitDown).
+                sound(p.id().endsWith("slam") ? "yuta_hit_down" : p.id().endsWith("launch") ? "yuta_hit_up" : "hit_heavy", pos, 1f, 1f);
+                if (p.id().startsWith("yuta_steel")) sound("yuta_metal_hit_2", pos, 0.9f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 1.4f, 0.3f, PINK_LIGHT, 1f, 4, now);
                     impactStar(pos, d, 8, 1.4f, 0.05f, PINK, now);
@@ -62,14 +125,13 @@ final class YutaFx {
                 victimFeedback(p, 0.5f);
             }
             case "yuta_steel_jab" -> {
-                sound("hit_light", pos, 0.9f, 1.3f);
+                sound("yuta_metal_hit_3", pos, 0.7f, 1.2f);
                 if (drawn) line(pos, pos.add(d.scale(1.0)), 0.06f, GREY, 0.8f, 3, now);
             }
             // --- Severing Path / Veilstep ---
             case "severing_ready" -> {
                 // The blade raised and cursed energy bursting off it, pink with black rims (GIF frame 12).
-                sound("heavy_charge", pos, 0.8f, 1.4f);
-                sound("rough_charge", pos, 0.7f, 1.5f);
+                sound("severing_start", pos, 1.2f, 1f);
                 if (drawn) {
                     Vec3 tip = pos.add(0, 1.4, 0);
                     Flashes.flash(tip, 0.4f, 2.4f, PINK, 0.9f, 7, now);
@@ -78,7 +140,6 @@ final class YutaFx {
                 }
             }
             case "severing_slide" -> {
-                sound("dash", pos, 1f, 1.1f);
                 if (drawn) {
                     // The blade sweeping the floor: a broad pink wake along the ground, sparks thrown back.
                     Vec3 g = groundBelow(level, pos).add(0, 0.12, 0);
@@ -90,7 +151,7 @@ final class YutaFx {
                 }
             }
             case "severing_sweep" -> {
-                sound("dismantle_slash", pos, 1f, 1.2f);
+                sound("severing_hit_1", pos, 1.1f, 1f);
                 if (drawn) {
                     slash(pos.add(0, -0.5, 0), d, 2.0f, 0.05f, 6, now);
                     splat(level, pos, q(10), 0.25);
@@ -98,16 +159,40 @@ final class YutaFx {
                 }
                 victimFeedback(p, 0.4f);
             }
-            case "severing_swing", "fakeout_swing" -> {
-                sound("dismantle_slash", pos, 1f, 1f + RNG.nextFloat() * 0.3f);
+            case "severing_swing_1", "severing_swing_2", "severing_swing_3", "fakeout_swing" -> {
+                sound(p.id().equals("fakeout_swing") ? "fakeout_swing" : p.id(), pos, 1.1f, 1f);
                 if (drawn) {
                     slash(pos, d, 1.6f * s, RNG.nextFloat() * 1.8f - 0.9f, 6, now);
                     splat(level, pos, q(8), 0.3);
                     impactStar(pos, d, 6, 1.2f * s, 0.04f, WHITE, now);
                 }
             }
+            case "severing_hit_2", "severing_hit_3", "severing_hit_4", "veilstep_hit", "blade_hit", "outburst_draw_hit", "fakeout_hit",
+                 "pummel_hit", "pummel_slash", "pummel_kick", "pummel_final", "second_wind_grab", "rika_throw_hit", "elbow_final" -> {
+                String id = p.id();
+                boolean heavy = id.equals("severing_hit_4") || id.equals("veilstep_hit") || id.equals("pummel_kick") || id.equals("pummel_final")
+                        || id.equals("rika_throw_hit") || id.equals("elbow_final");
+                switch (id) {
+                    case "veilstep_hit", "pummel_final", "rika_throw_hit" -> sound("yuta_heavy_hit", pos, 1.2f, 1f);
+                    case "blade_hit" -> sound("yuta_hit_3", pos, 1.1f, 1f);
+                    case "outburst_draw_hit" -> sound("yuta_hit_1", pos, 1f, 1f);
+                    case "pummel_hit" -> sound("yuta_hit_" + (RNG.nextInt(3) + 1), pos, 1f, 1f);
+                    case "pummel_slash" -> sound("severing_hit_" + (RNG.nextInt(3) + 1), pos, 1f, 1f);
+                    case "pummel_kick" -> sound("yuta_hit_down", pos, 1.1f, 1f);
+                    case "elbow_final" -> sound("elbow_final", pos, 1.3f, 1f);
+                    default -> sound(id, pos, 1.1f, 1f);
+                }
+                impact(p, level, pos, d, heavy, drawn, now);
+            }
+            case "yuta_impact", "yuta_impact_light", "elbow_barrage_hit", "rika_grab", "aml_cleave_hit" -> {
+                // The move's own effect already carries the sound (or, for the barrage, its own long clip does).
+                if (p.id().equals("aml_cleave_hit")) sound("aml_cleave", pos, 1f, 0.95f + RNG.nextFloat() * 0.1f);
+                if (p.id().equals("rika_grab")) sound("yuta_hit_1", pos, 0.8f, 0.8f);
+                impact(p, level, pos, d, p.id().equals("yuta_impact"), drawn, now);
+            }
             case "severing_finisher" -> {
-                sound("dismantle_finish", pos, 1.4f, 1f);
+                sound("severing_hit_4", pos, 1.4f, 0.9f);
+                sound("yuta_crush", pos, 0.8f, 1.1f);
                 if (drawn) {
                     // The beheading: a last wide pink arc at neck height and a burst of blood.
                     slash(pos.add(0, 0.6, 0), d, 2.4f, 0.1f, 9, now);
@@ -117,7 +202,7 @@ final class YutaFx {
                 if (mine) ScreenEffects.flash(0x70F76BFF, 5);
             }
             case "veilstep" -> {
-                sound("side_dash", pos, 1f, 0.9f);
+                sound("veilstep", pos, 1.1f, 1f);
                 if (drawn) {
                     afterimage(level, pos);
                     burst(level, pos, q(10), 0.15, Sprite.SMOKE, GREY, 0.5f, 14);
@@ -125,14 +210,15 @@ final class YutaFx {
             }
             // --- Resolute Slash ---
             case "resolute_vanish", "resolute_appear", "elbow_appear" -> {
-                sound(p.id().equals("resolute_vanish") ? "teleport_out" : "teleport_in", pos, 0.8f, 1.2f);
+                sound(p.id().equals("resolute_vanish") ? "resolute_grab" : p.id().equals("elbow_appear") ? "elbow_teleport" : "resolute_leap", pos, 1f, 1f);
+                if (p.id().equals("elbow_appear")) sound("elbow_barrage", pos, 1.1f, 1f);
                 if (drawn) {
                     smoke(level, pos, q(16), 0.6, 0.9f, 1.8f, 16);
                     Flashes.flash(pos, 0.4f, 1.8f, PINK, 0.6f, 5, now);
                 }
             }
             case "resolute_slash" -> {
-                sound("dismantle_spin", pos, 1f, 1.2f);
+                sound("resolute_swing", pos, 1.1f, 1f);
                 if (drawn) {
                     // The long slash aimed at the neck: a tall diagonal arc.
                     slash(pos.add(d.scale(1.0)), d, 2.5f, 0.85f, 7, now);
@@ -140,7 +226,7 @@ final class YutaFx {
                 }
             }
             case "resolute_hit" -> {
-                sound("hit_heavy", pos, 1.2f, 1.1f);
+                sound("resolute_slash", pos, 1.3f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 1.6f, 0.3f, WHITE, 1f, 4, now);
                     shards(level, pos, d, q(10));
@@ -148,24 +234,25 @@ final class YutaFx {
                 victimFeedback(p, 0.6f);
             }
             case "resolute_finisher" -> {
-                sound("dismantle_finish", pos, 1.4f, 1.1f);
+                sound("resolute_slash", pos, 1.4f, 0.9f);
+                sound("yuta_crush", pos, 0.8f, 1.1f);
                 if (drawn) {
                     line(pos.add(d.cross(up).scale(-1.5)), pos.add(d.cross(up).scale(1.5)), 0.08f, WHITE, 1f, 8, now);
                     YujiFx.blood(level, pos.add(0, 0.6, 0), up, q(18));
                 }
             }
             case "resolute_flash_ready" -> {
-                sound("black_flash_windup", pos, 1f, 1f);
+                sound("resolute_bf_windup", pos, 1.2f, 1f);
                 if (drawn) Flashes.flash(pos, 0.3f, 1.4f, YujiFx.BF_RED, 0.8f, 6, now);
             }
             case "resolute_black_flash" -> {
-                sound("black_flash", pos, 1.4f, 1f);
+                sound("resolute_bf_land", pos, 1.5f, 1f);
                 if (drawn) YujiFx.blackFlash(level, pos, d, Math.max(1f, s), now, false);
                 if (mine || isAttackerClose(mc, pos)) ScreenEffects.flash(0x90000000, 3);
                 distanceShake(pos, 24, 0.7f);
             }
             case "resolute_flash_finisher", "rika_throw_finisher" -> {
-                sound("kokusen", pos, 1.4f, 1f);
+                sound(p.id().equals("rika_throw_finisher") ? "rika_throw_finish" : "resolute_bf_finish", pos, 1.6f, 1f);
                 if (drawn) {
                     YujiFx.blackFlash(level, pos, d, 1.6f, now, true);
                     YujiFx.blood(level, pos, d, q(12));
@@ -175,8 +262,7 @@ final class YutaFx {
             // --- Outburst ---
             case "outburst_grip" -> {
                 // Cursed energy gathering round the gripped handle and swirling about his feet.
-                sound("heavy_charge", pos, 1f, 0.8f);
-                sound("rough_charge", pos, 0.8f, 1.2f);
+                sound("outburst_start", pos, 1.2f, 1f);
                 if (drawn) {
                     Vec3 g = groundBelow(level, pos).add(0, 0.1, 0);
                     Flashes.swirl(g, up, 0.6f, 1.8f, 4f, 2.5f, 0.1f, PINK, 0.8f, 30, now);
@@ -189,20 +275,19 @@ final class YutaFx {
                 }
             }
             case "outburst_stage" -> {
-                sound("gamble_signal", pos, 0.6f, 1f + s * 0.15f);
+                sound("outburst_charge", pos, 0.7f, 1f + s * 0.12f);
                 if (drawn) {
                     Flashes.ring(pos, 0.5f, 1.2f + s * 0.5f, PINK, 0.8f, 8, now);
                     sparks(level, pos, up, q(4 + (int) s * 2), 0.2, PINK_LIGHT, 0.06f, 8);
                 }
             }
             case "outburst_swing" -> {
-                sound("swing_heavy", pos, 1f, 1f);
+                sound("outburst_swing", pos, 1.2f, 1f);
                 if (drawn) crescent(pos.add(d.scale(0.8)), d, 2f * s, 0.12f, PINK, 1f, 5, now, -0.3f);
             }
             case "outburst_burst" -> {
                 // A giant pink-white burst, whiting out everything nearby (GIF frame 52).
-                sound("red_explosion", pos, 1.4f, 1.3f);
-                sound("dismantle_finish", pos, 1f, 0.8f);
+                sound("outburst_explosion", pos, 1.8f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 0.6f, s * 1.2f, PINK_LIGHT, 1f, 8, now);
                     Flashes.flash(pos, 0.3f, s * 0.8f, WHITE, 1f, 5, now);
@@ -214,12 +299,12 @@ final class YutaFx {
                 distanceShake(pos, s * 4, 0.7f);
             }
             case "outburst_hit" -> {
-                sound("hit_heavy", pos, 0.9f, 1.2f);
+                sound("outburst_hit", pos, 1f, 0.95f + RNG.nextFloat() * 0.1f);
                 if (drawn) sparks(level, pos, up, q(8), 0.4, PINK, 0.08f, 7);
                 victimFeedback(p, 0.5f);
             }
             case "outburst_parry" -> {
-                sound("parry", pos, 1.3f, 1.1f);
+                sound("outburst_parry", pos, 1.4f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 2f, 0.3f, WHITE, 1f, 5, now);
                     crescent(pos, d, 1.4f, 0.1f, PINK, 1f, 5, now, -0.2f);
@@ -228,7 +313,8 @@ final class YutaFx {
                 if (mine) ScreenEffects.fovPunch(-0.06f);
             }
             case "outburst_finisher" -> {
-                sound("dismantle_finish", pos, 1.5f, 0.9f);
+                sound("outburst_hit", pos, 1.5f, 0.85f);
+                sound("yuta_crush", pos, 1f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 3f, 0.4f, PINK, 1f, 6, now);
                     YujiFx.blood(level, pos, up, q(24));
@@ -236,7 +322,7 @@ final class YutaFx {
             }
             // --- Second Wind ---
             case "second_wind" -> {
-                sound("surge_dash", pos, 1f, 1.1f);
+                sound("second_wind_dash", pos, 1.2f, 1f);
                 if (drawn) {
                     Vec3 g = groundBelow(level, pos);
                     Flashes.ground(g, 0.3f, 2.2f, PINK, 0.7f, 8, now);
@@ -245,7 +331,7 @@ final class YutaFx {
                 }
             }
             case "second_wind_slam" -> {
-                sound("rush_slam", pos, 1.2f, 1f);
+                sound("yuta_slam", pos, 1.4f, 1f);
                 if (drawn) {
                     Flashes.ground(pos, 0.5f, 3f, PINK, 0.8f, 10, now);
                     debris(level, pos, q(10), 0.3);
@@ -253,7 +339,7 @@ final class YutaFx {
                 distanceShake(pos, 14, 0.5f);
             }
             case "second_wind_finisher" -> {
-                sound("crushing_impact", pos, 1.4f, 1f);
+                sound("yuta_crush", pos, 1.5f, 0.9f);
                 if (drawn) {
                     debris(level, pos, q(16), 0.4);
                     YujiFx.blood(level, pos, up, q(16));
@@ -262,28 +348,29 @@ final class YutaFx {
             // --- Rika ---
             case "rika_summon", "rika_voice" -> {
                 if (p.id().equals("rika_voice")) {
-                    sound("shrine_voice", pos, 0.5f, 1.6f);
+                    // "Yuu-taa!"
+                    sound("rika_voice", pos, 1.2f, 1f);
                     return;
                 }
-                sound("domain_charge", pos, 0.9f, 1.4f);
+                sound("rika_summon", pos, 1.3f, 1f);
                 // She billows out of a cloud of black smoke (RikaSummon GIF 9-28).
                 if (drawn) smoke(level, pos, q(36), 0.8, 1.2f, 2.6f, 30);
             }
             case "rika_dismiss", "true_love_end" -> {
-                sound("infinity_off", pos, 0.8f, 0.6f);
+                sound("rika_move", pos, 1f, 0.85f);
                 if (drawn) smoke(level, pos, q(28), 0.9, 1.0f, 2.2f, 26);
             }
             case "rika_ring_glow", "rika_station" -> {
-                sound("infinity_on", pos, 0.5f, 1.6f);
+                if (p.id().equals("rika_station")) sound("rika_move", pos, 0.8f, 1f);
+                else if (mine) sound("true_love_ring", pos, 0.45f, 1.3f);
                 if (drawn) Flashes.flash(pos, 0.2f, 0.7f, PINK, 0.8f, 8, now);
             }
             case "rika_fist_grow", "rika_haymaker_windup" -> {
-                sound("crushing_charge", pos, 1f, 0.7f);
+                sound(p.id().equals("rika_haymaker_windup") ? "rika_haymaker" : "rika_move", pos, 1.3f, 1f);
                 if (drawn) burst(level, pos, q(10), 0.06, Sprite.SMOKE, SMOKE, 0.6f, 14);
             }
             case "rika_smash", "rika_dunk", "rika_downslam", "rika_double_slam", "rika_slam" -> {
-                sound("ground_impact", pos, 1.3f, 0.8f);
-                sound("crushing_impact", pos, 1f, 0.7f);
+                sound("yuta_slam", pos, 1.5f, 0.95f);
                 if (drawn) {
                     // Her fist coming down: a shockwave, the floor thrown up, dust and her black smoke.
                     Flashes.flash(pos.add(0, 0.5, 0), 2.6f * s, 0.4f, WHITE, 1f, 4, now);
@@ -296,7 +383,7 @@ final class YutaFx {
                 distanceShake(pos, 20, 0.7f);
             }
             case "rika_haymaker" -> {
-                sound("overwhelm_fist", pos, 1.3f, 0.7f);
+                sound("yuta_heavy_hit", pos, 1.5f, 0.9f);
                 if (drawn) {
                     Flashes.flash(pos, 2.2f, 0.4f, WHITE, 1f, 5, now);
                     Flashes.ripple(pos, d, 0.5f, 3f, GREY, 0.7f, 8, now);
@@ -305,31 +392,33 @@ final class YutaFx {
                 distanceShake(pos, 20, 0.6f);
             }
             case "rika_launch" -> {
-                sound("surge_launch", pos, 1f, 1f);
+                sound("rika_launch", pos, 1.3f, 1f);
                 if (drawn) {
                     burst(level, pos, q(12), 0.2, Sprite.SMOKE, GREY, 0.6f, 14);
                     Flashes.ripple(pos, d, 0.3f, 2f, WHITE, 0.6f, 6, now);
                 }
             }
             case "rika_smash_finisher", "rika_crush_finisher" -> {
-                sound("manji_crush", pos, 1.5f, 0.8f);
+                sound("yuta_crush", pos, 1.6f, 0.85f);
                 if (drawn) {
                     YujiFx.blood(level, pos, up, q(30));
                     Flashes.ground(groundBelow(level, pos), 0.5f, 2.5f, BLOOD, 0.9f, 60, now);
                 }
             }
+            case "rika_throw_pickup" -> sound("rika_throw_start", pos, 1.3f, 1f);
             case "rika_throw" -> {
-                sound("swing_heavy", pos, 1.3f, 0.6f);
                 if (drawn) burst(level, pos, q(12), 0.25, Sprite.SMOKE, GREY, 0.6f, 12);
             }
             case "rika_throw_crash" -> {
-                sound("ragdoll_fall", pos, 1.2f, 1f);
+                // Nobody there: he crashes into the floor himself.
+                sound("yuta_crush", pos, 1.2f, 1f);
+                sound("ragdoll_fall", pos, 1f, 1f);
                 if (drawn) debris(level, pos, q(12), 0.35);
             }
             // --- True Love ---
             case "true_love_start" -> {
-                // "Come, Rika. Give me everything."
-                sound("awaken", pos, 1.2f, 0.9f);
+                // "Come, Rika. Give me everything." The necklace's chain snapping.
+                sound("true_love_start", pos, 1.6f, 1f);
                 if (drawn) {
                     Vec3 g = groundBelow(level, pos).add(0, 0.1, 0);
                     Flashes.swirl(g, up, 0.5f, 2.8f, 4f, 1.5f, 0.14f, PINK, 0.9f, 40, now);
@@ -342,7 +431,7 @@ final class YutaFx {
                 }
             }
             case "true_love_ring" -> {
-                sound("gamble_signal", pos, 1f, 1.6f);
+                sound("true_love_ring", pos, 1.3f, 1f);
                 if (drawn) {
                     // The ring on his finger catches the light.
                     Flashes.flash(pos, 0.3f, 1.4f, PINK_LIGHT, 1f, 12, now);
@@ -352,8 +441,7 @@ final class YutaFx {
                 }
             }
             case "true_love_manifest" -> {
-                sound("sukuna_awaken", pos, 1.3f, 1.2f);
-                sound("domain_expand", pos, 0.8f, 1.4f);
+                sound("rika_summon", pos, 1.8f, 0.9f);
                 if (drawn) {
                     Flashes.flash(pos, 1f, 6f, PINK, 0.9f, 14, now);
                     Flashes.ripple(pos, up, 0.5f, 9f, PINK_LIGHT, 0.8f, 16, now);
@@ -364,8 +452,7 @@ final class YutaFx {
             }
             case "steel_arm" -> {
                 // The casing clamps shut round his arm.
-                sound("door_slam", pos, 0.8f, 1.6f);
-                sound("guard_break", pos, 0.5f, 1.8f);
+                sound("true_love_arm", pos, 1.3f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 1.6f, 0.3f, WHITE, 1f, 4, now);
                     impactStar(pos, d, 10, 1.4f, 0.05f, GREY, now);
@@ -375,11 +462,11 @@ final class YutaFx {
             }
             // --- Elbow Rush ---
             case "elbow_dash" -> {
-                sound("surge_dash", pos, 1f, 1f);
+                sound("elbow_dash", pos, 1.2f, 1f);
                 if (drawn) line(pos, pos.add(d.scale(6)), 0.12f, PINK, 0.6f, 8, now);
             }
             case "elbow_hit" -> {
-                sound("crushing_fist", pos, 1.2f, 1f);
+                sound("elbow_hit", pos, 1.4f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 2f, 0.3f, WHITE, 1f, 5, now);
                     impactStar(pos, d, 10, 2f, 0.07f, PINK, now);
@@ -389,7 +476,7 @@ final class YutaFx {
             // --- Copy ---
             case "copy_learn" -> {
                 // A technique taken: a pink ring rising round him.
-                sound("gamble_visual", pos, 0.8f, 1.4f);
+                sound("true_love_ring", pos, 1f, 1.2f);
                 if (drawn) {
                     Flashes.flash(pos, 0.3f, 1.6f, PINK_LIGHT, 0.9f, 12, now);
                     for (int i = 0; i < 3; i++) Flashes.ripple(pos.add(0, -0.8 + i * 0.6, 0), up, 0.3f, 1.4f, i == 1 ? WHITE : PINK, 0.8f, 12 + i * 3, now + i * 2);
@@ -400,16 +487,17 @@ final class YutaFx {
                 if (drawn) Flashes.ring(pos, 0.3f, 1.4f, PINK_LIGHT, 0.6f, 8, now);
             }
             case "copy_wheel_open", "copy_wheel_close", "copy_wheel_tick" -> {
-                if (mine) sound("rhythm_tick", pos, 0.6f, p.id().endsWith("open") ? 1.3f : p.id().endsWith("close") ? 0.9f : 1.6f);
+                if (mine) mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                        net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(), p.id().endsWith("open") ? 1.2f : p.id().endsWith("close") ? 0.8f : 1.5f, 0.4f));
             }
             case "speech_marks" -> {
-                sound("shrine_ready", pos, 0.6f, 1.5f);
+                sound("speech_start", pos, 1.1f, 1f);
                 if (drawn) Flashes.flash(pos, 0.1f, 0.5f, WHITE, 0.9f, 10, now);
             }
             case "speech_dont_move", "speech_stop", "speech_plummet", "speech_die" -> {
                 // Cursed Speech: the command rolls out from his mouth in shockwaves of white and ink.
-                sound("shrine_voice", pos, 1.2f, p.id().equals("speech_die") ? 0.7f : 1.1f);
-                sound("infinity_ripple", pos, 1f, 0.6f);
+                // 動くな! (Don't move!) / 止まれ! (Stop!) / 落ちれ! / 死ね! (Die!)
+                sound(p.id().equals("speech_stop") ? "speech_dont_move" : p.id(), pos, 2f, 1f);
                 if (drawn) {
                     boolean close = p.id().equals("speech_plummet") || p.id().equals("speech_die");
                     float r = close ? 4f : Math.max(4f, s);
@@ -440,19 +528,17 @@ final class YutaFx {
                 }
             }
             case "speech_die_finisher" -> {
-                sound("manji_crush", pos, 1.4f, 1f);
+                sound("yuta_crush", pos, 1.4f, 0.9f);
                 if (drawn) YujiFx.blood(level, pos, up, q(36));
             }
             // --- Energy Ripple / Fakeout ---
             case "ripple_charge" -> {
-                sound("blue_cast", pos, 1f, 1.3f);
+                sound("ripple_start", pos, 1.2f, 1f);
                 if (drawn) Flashes.swirl(pos, up, 0.3f, 1.2f, 3f, 2.5f, 0.08f, PINK, 0.8f, 14, now);
             }
             case "energy_ripple" -> {
                 // The blade driven into the floor: a dome of pink cursed energy swelling out over everyone (GIF 47-56).
-                sound("rough_impact", pos, 1.4f, 1f);
-                sound("red_explosion", pos, 1.2f, 1.2f);
-                sound("infinity_ripple", pos, 1.2f, 0.7f);
+                sound("ripple_bomb", pos, 2f, 1f);
                 if (drawn) {
                     Flashes.flash(pos.add(0, s * 0.25, 0), 1f, s * 1.15f, PINK, 0.75f, 14, now);
                     Flashes.flash(pos.add(0, 0.5, 0), 0.5f, s * 0.6f, PINK_LIGHT, 0.9f, 8, now);
@@ -493,13 +579,13 @@ final class YutaFx {
                 distanceShake(pos, s * 3, 0.9f);
             }
             case "ripple_hit" -> {
-                sound("hit_heavy", pos, 1f, 1.1f);
+                sound("hit_heavy", pos, 0.9f, 1f);
                 if (drawn) sparks(level, pos, d, q(8), 0.4, PINK, 0.08f, 7);
                 victimFeedback(p, 0.6f);
             }
             case "fakeout_burst" -> {
                 // The imbued energy let go inside them: pink rays converging, then the burst.
-                sound("red_explosion", pos, 1.2f, 1.4f);
+                sound("fakeout_burst", pos, 1.5f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 0.5f, 3.5f, PINK_LIGHT, 1f, 8, now);
                     for (int i = 0; i < 14; i++) {
@@ -512,7 +598,8 @@ final class YutaFx {
                 victimFeedback(p, 0.8f);
             }
             case "fakeout_finisher" -> {
-                sound("dismantle_finish", pos, 1.4f, 1f);
+                sound("fakeout_burst", pos, 1.6f, 0.85f);
+                sound("yuta_crush", pos, 1f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 0.5f, 4f, PINK, 1f, 8, now);
                     YujiFx.blood(level, pos, up, q(28));
@@ -521,7 +608,7 @@ final class YutaFx {
             // --- True Love Beam ---
             case "beam_orb" -> {
                 // The small pink orb they conjure between them.
-                sound("red_charge", pos, 1f, 1.4f);
+                sound("tlb_charge", pos, 1.4f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 0.1f, 0.7f, PINK, 1f, 30, now);
                     Flashes.flash(pos, 0.05f, 0.3f, WHITE, 1f, 30, now);
@@ -530,60 +617,95 @@ final class YutaFx {
                 }
             }
             case "beam_rika_eye" -> {
-                sound("max_red_charge", pos, 1.2f, 1.2f);
+                // Rika in place, jaw wide over his head: the charge swelling at her mouth, and the path it will take
+                // traced out (a faint line and a marker where it first strikes), so it can be read and dodged.
+                sound("tlb_power", pos, 2f, 1f);
+                int charge = Math.max(10, (int) s);
+                double reach = dir.length();
+                Vec3 strike = beamStrike(level, pos, d, reach);
                 if (drawn) {
-                    // Rika's eye revealed and the orb swelling as she powers it.
-                    Flashes.flash(pos, 0.6f, 2.2f, PINK, 1f, 40, now);
-                    Flashes.flash(pos, 0.3f, 1.0f, WHITE, 1f, 40, now);
-                    Flashes.lens(pos, 0.5f, 5f, PINK, 0.6f, 40, now);
-                    for (int i = 0; i < 3; i++) Flashes.swirl(pos, d, 0.5f + i * 0.3f, 2.6f + i * 0.4f, 4f, 3f - i * 2f, 0.07f, i == 1 ? WHITE : PINK_LIGHT, 0.8f, 36, now + i * 3);
+                    Flashes.flash(pos, 0.3f, 2.4f, PINK, 1f, charge, now);
+                    Flashes.flash(pos, 0.2f, 1.1f, WHITE, 1f, charge, now);
+                    Flashes.lens(pos, 6f, 0.6f, PINK, 0.55f, charge, now);
+                    for (int i = 0; i < 3; i++) Flashes.swirl(pos, d, 0.5f + i * 0.3f, 2.6f + i * 0.4f, 4f, 3f - i * 2f, 0.07f, i == 1 ? WHITE : PINK_LIGHT, 0.8f, charge, now + i * 3);
                     implode(level, pos, 4.0, q(40), PINK, 0.16f, 20);
+                    Flashes.beam(pos, pos.add(d.scale(reach)), 0.12f, PINK, 0.5f, charge, now);
+                    Flashes.ground(strike, 0.6f, 2.8f, PINK, 0.7f, charge, now);
+                    Flashes.flash(strike, 0.4f, 1.2f, PINK_LIGHT, 0.7f, charge, now);
                 }
             }
+            case "beam_shape" -> SHAPES.put(p.entityId(), new double[] {dir.x, dir.y, dir.z});
             case "true_love_beam", "beam_quick" -> {
                 boolean big = p.id().equals("true_love_beam");
-                sound(big ? "purple_fire" : "red_fire", pos, 1.6f, big ? 1.2f : 1.4f);
+                // The full beam's roar is in tlb_power, timed to its release; the quick one is its own.
+                if (!big) sound("tlb_small", pos, 1.8f, 1f);
+                double reach = dir.length();
+                int life = Math.max(2, (int) s);
+                double[] shape = SHAPES.remove(p.entityId());
+                double radius = shape != null ? shape[0] : big ? 2.6 : 0.9;
+                int grow = shape != null ? (int) shape[1] : big ? 4 : 2, collapse = shape != null ? (int) shape[2] : big ? 8 : 3;
+                // The beam itself: the exact shape the server hits with, until it ends or is cut short.
+                Flashes.loveBeam(p.entityId(), new Flashes.LoveBeam(pos, d, reach, radius, grow, collapse, life, now, !big));
                 if (drawn) {
-                    Vec3 end = pos.add(d.scale(s));
-                    int life = big ? 30 : 8;
-                    Flashes.beam(pos, end, big ? 3.6f : 1.0f, PINK, 0.85f, life, now);
-                    Flashes.beam(pos, end, big ? 2.0f : 0.5f, PINK_LIGHT, 1f, life, now);
-                    Flashes.beam(pos, end, big ? 0.9f : 0.2f, WHITE, 1f, life, now);
-                    Flashes.flash(pos, 1f, big ? 6f : 2.2f, PINK_LIGHT, 1f, big ? 18 : 6, now);
-                    // Shock rings running down its length.
-                    for (double t = 2; t < s; t += big ? 5 : 4) {
-                        Flashes.ripple(pos.add(d.scale(t)), d, big ? 2f : 0.6f, big ? 4.5f : 1.4f, PINK_LIGHT, 0.7f, big ? 14 : 6, now + (long) (t / 6));
-                    }
-                    for (int i = 0; i < q(big ? 30 : 10); i++) {
-                        Vec3 at = pos.add(d.scale(RNG.nextDouble() * s));
-                        add(level, at, randomUnit().scale(0.15), Sprite.GLOW, PINK, 0.8f, big ? 0.6f : 0.25f, 0.05f, 16);
+                    // The release at her mouth (or his hands), and where it first strikes.
+                    Flashes.flash(pos, 1f, big ? 6f : 2.2f, PINK_LIGHT, 1f, big ? 14 : 6, now);
+                    Flashes.flash(pos, 0.5f, big ? 2.5f : 1f, WHITE, 1f, big ? 8 : 4, now);
+                    Flashes.ripple(pos, d, 0.5f, (float) radius * 2.4f, PINK_LIGHT, 0.85f, big ? 10 : 6, now);
+                    Vec3 strike = beamStrike(level, pos, d, reach);
+                    long hitAt = now + Math.max(0, Math.round(strike.distanceTo(pos) / reach * grow) - 1);
+                    Flashes.flash(strike, 1f, (float) radius * 2.5f, PINK_LIGHT, 1f, Math.max(6, life - 2), hitAt);
+                    Flashes.ground(strike, 0.5f, (float) radius * 3.5f, PINK, 0.8f, life, hitAt);
+                    Flashes.ripple(strike, d, 0.5f, (float) radius * 3f, WHITE, 0.8f, 10, hitAt);
+                    if (big) {
+                        // Shock rings running down it as the front passes, and sparks thrown off its sides.
+                        for (double t = 4; t < reach; t += 6) {
+                            Flashes.ripple(pos.add(d.scale(t)), d, (float) radius, (float) radius * 1.9f, PINK_LIGHT, 0.6f, 12, now + Math.round(t / reach * grow));
+                        }
+                        for (int i = 0; i < q(36); i++) {
+                            Vec3 at = pos.add(d.scale(RNG.nextDouble() * reach)).add(randomUnit().scale(radius * 0.9));
+                            add(level, at, randomUnit().scale(0.25).add(d.scale(0.4)), Sprite.GLOW, i % 3 == 0 ? WHITE : PINK, 0.85f, 0.5f, 0.04f, 10 + RNG.nextInt(life));
+                        }
+                        debris(level, strike, q(20), 0.6);
                     }
                 }
-                if (big && mc.player != null && mc.player.position().distanceTo(pos) < s) ScreenEffects.flash(0x80FF9CFF, 10);
+                if (big && mc.player != null && closeTo(mc.player.position(), pos, d, reach, radius + 6)) ScreenEffects.flash(0x80FF9CFF, 10);
                 distanceShake(pos, big ? 64 : 24, big ? 1.2f : 0.5f);
             }
+            case "beam_stop", "beam_fizzle" -> {
+                // Cut short (he fell, left, or Rika is gone): the beam collapses now, the charge drains away.
+                Flashes.stopLoveBeam(p.entityId(), now);
+                if (drawn) {
+                    Flashes.flash(pos, 1.6f, 0.2f, PINK, 0.8f, 8, now);
+                    burst(level, pos, q(16), 0.2, Sprite.SMOKE, SMOKE, 0.7f, 16);
+                }
+                if (p.id().equals("beam_fizzle")) sound("rika_move", pos, 1f, 0.8f);
+            }
             case "beam_hit" -> {
-                sound("hit_heavy", pos, 1f, 0.8f);
+                sound("yuta_heavy_hit", pos, 1f, 0.9f);
                 victimFeedback(p, 0.9f);
             }
             case "beam_finisher" -> {
                 // Atomized into black mist.
-                sound("purple_end", pos, 1.4f, 1.2f);
+                sound("yuta_crush", pos, 1.3f, 0.8f);
                 if (drawn) burst(level, pos, q(40), 0.15, Sprite.SMOKE, SMOKE, 1f, 30);
             }
             // --- Authentic Mutual Love ---
             case "aml_charge" -> {
-                sound("domain_charge", pos, 1.2f, 1.1f);
+                // "Domain Expansion." and the JJS opening.
+                sound("aml_voice", pos, 2f, 1f);
+                sound("aml_start", pos, 2.5f, 1f);
                 if (drawn) Flashes.swirl(pos, up, 0.5f, 3f, 4f, 1.2f, 0.1f, PINK, 0.7f, 36, now);
             }
             case "blade_land" -> {
-                sound("door_block", pos, 0.6f, 1.6f);
+                sound("aml_sword_ground", pos, 1.2f, 0.95f + RNG.nextFloat() * 0.1f);
                 if (drawn) {
                     Flashes.ground(pos, 0.2f, 1f, WHITE, 0.6f, 8, now);
                     debris(level, pos, q(4), 0.15);
                 }
             }
             case "blade_rain" -> {
+                // Far off: swords striking the stone, out of reach.
+                if (RNG.nextInt(3) == 0) sound("aml_sword_ground", pos.add(gauss(s * 0.6), -s * 0.6, gauss(s * 0.6)), 0.5f, 0.9f + RNG.nextFloat() * 0.2f);
                 if (drawn) {
                     // Swords falling far off, out of reach.
                     for (int i = 0; i < 2; i++) {
@@ -594,11 +716,10 @@ final class YutaFx {
                 }
             }
             case "blade_pickup" -> {
-                sound("shrine_ready", pos, 0.9f, 1.2f);
+                sound("aml_pickup", pos, 1.3f, 1f);
                 if (drawn) {
                     // The blade taken up: its technique flares round him in its own colour.
                     float[] c = techColor((int) s);
-                    if (c == INK) c = GREY;
                     Flashes.flash(pos, 0.3f, 2.0f, c, 0.9f, 10, now);
                     line(pos.add(0, -1, 0), pos.add(0, 3, 0), 0.5f, c, 0.6f, 8, now);
                     Flashes.ripple(groundBelow(level, pos).add(0, 0.1, 0), up, 0.3f, 2.2f, c, 0.8f, 10, now);
@@ -606,16 +727,16 @@ final class YutaFx {
                 }
             }
             case "blade_swing" -> {
-                sound("dismantle_slash", pos, 1.2f, 1f);
+                sound("aml_run_slash", pos, 1.4f, 1f);
                 if (drawn) {
                     float[] c = techColor((int) s);
-                    crescent(pos.add(d.scale(0.9)), d, 2f, 0.1f, c == INK ? PINK : c, 1f, 6, now, -0.2f);
+                    crescent(pos.add(d.scale(0.9)), d, 2f, 0.1f, c, 1f, 6, now, -0.2f);
                     crescent(pos.add(d.scale(0.9)), d, 1.9f, 0.03f, WHITE, 1f, 5, now, -0.2f);
                 }
             }
             case "aml_cleave" -> {
                 // Shrine's Cleave through the one the blade hit: four clean white cuts with black cores.
-                sound("dismantle_spin", pos, 1.3f, 1f);
+                sound("aml_cleave", pos, 1.3f, 1f);
                 if (drawn) {
                     for (int i = 0; i < 4; i++) {
                         Vec3 r = randomUnit();
@@ -627,8 +748,7 @@ final class YutaFx {
             }
             case "aml_dismantle" -> {
                 // A large horizontal Dismantle out ahead: a wide white blade flying the length of it.
-                sound("dismantle_finish", pos, 1.4f, 1f);
-                sound("dismantle_slash", pos, 1.2f, 0.8f);
+                sound("aml_dismantle", pos, 1.8f, 1f);
                 if (drawn) {
                     Vec3 side = d.cross(up).normalize();
                     for (int k = 0; k < 4; k++) {
@@ -640,12 +760,13 @@ final class YutaFx {
                 }
             }
             case "aml_shrine_finisher", "aml_bisect_finisher" -> {
-                sound("dismantle_finish", pos, 1.5f, 0.9f);
+                sound("aml_dismantle", pos, 1.5f, 0.85f);
+                sound("yuta_crush", pos, 1f, 1f);
                 if (drawn) YujiFx.blood(level, pos, up, q(30));
             }
             case "thin_ice_breaker" -> {
                 // The sky breaks like a thin veil of ice.
-                sound("purple_collision", pos, 1.2f, 1.6f);
+                sound("aml_glass", pos, 1.8f, 1f);
                 if (drawn) {
                     for (int i = 0; i < 14; i++) {
                         Vec3 a = pos.add(gauss(0.3), gauss(0.3), gauss(0.3));
@@ -657,7 +778,7 @@ final class YutaFx {
                 if (mine) ScreenEffects.flash(0x80CFF4FF, 4);
             }
             case "clairvoyance_mark" -> {
-                sound("gamble_stop", pos, 1f, 1.3f);
+                sound("aml_clairvoyance", pos, 1.2f, 1f);
                 if (drawn) {
                     // A manga panel drawn in their blood hangs over them: a white frame with a black border.
                     var cam = mc.gameRenderer.mainCamera();
@@ -676,11 +797,12 @@ final class YutaFx {
                 }
             }
             case "shikigami_swarm" -> {
-                sound("blue_hum", pos, 0.8f, 1.6f);
+                sound("aml_mini_rika", pos, 1.4f, 1f);
                 if (drawn) burst(level, pos, q(12), 0.15, Sprite.SMOKE, SMOKE, 0.5f, 16);
             }
             case "shikigami_bite" -> {
-                sound("hit_light", pos, 0.9f, 1.3f);
+                if (RNG.nextInt(3) == 0) sound("aml_mini_fly", pos, 0.6f, 0.9f + RNG.nextFloat() * 0.3f);
+                sound("hit_light", pos, 0.5f, 1.2f);
                 if (drawn) {
                     // Three winged Rika heads darting in: pale heads, black wings.
                     for (int i = 0; i < 3; i++) {
@@ -694,12 +816,12 @@ final class YutaFx {
                 }
             }
             case "shikigami_finisher" -> {
-                sound("manji_crush", pos, 1.2f, 1.2f);
+                sound("yuta_crush", pos, 1.3f, 1f);
                 if (drawn) YujiFx.blood(level, pos, up, q(24));
             }
             case "jacobs_ladder" -> {
                 // A divine ray from the sky.
-                sound("jackpot", pos, 1.2f, 1.4f);
+                sound("jacobs_ladder", pos, 2.5f, 1f);
                 if (drawn) {
                     // A blinding column of light from the sky (JacobsLadder GIF 109-218).
                     Vec3 top = pos.add(0, 48, 0);
@@ -721,7 +843,7 @@ final class YutaFx {
                 victimFeedback(p, 0.3f);
             }
             case "jacobs_ladder_finisher" -> {
-                sound("jackpot_end", pos, 1.3f, 1.4f);
+                // The ladder's own sound swells to its end here.
                 if (drawn) {
                     // The soul keeps rising while the body falls.
                     for (int i = 0; i < q(20); i++) {
@@ -734,13 +856,11 @@ final class YutaFx {
         }
     }
 
+    /** The colour a technique's blade glows (the same as its light column and name). */
     private static float[] techColor(int index) {
-        return switch (index) {
-            case 1 -> ICE;
-            case 2 -> BLOOD;
-            case 3 -> INK;
-            default -> WHITE;
-        };
+        var all = dev.rick.jjk.yuta.DomainTechnique.values();
+        int c = all[Math.floorMod(index, all.length)].color;
+        return new float[] {(c >> 16 & 255) / 255f, (c >> 8 & 255) / 255f, (c & 255) / 255f};
     }
 
     /**

@@ -75,6 +75,9 @@ public class YutaGameTests {
         cfg.yuta.domainStartup = 8;
         cfg.yuta.domainFormationTicks = 20;
         cfg.yuta.domainDuration = 400;
+        // True Love Beam kept inside one test's area.
+        cfg.yuta.beamRange = 13;
+        cfg.yuta.beamQuickRange = 11;
         JJKConfig.set(cfg);
         testConfig = cfg;
     }
@@ -414,6 +417,109 @@ public class YutaGameTests {
             h.assertTrue(press(y, AbilitySlot.SKILL_4), "Rika Throw (" + Casters.get(y).lastRefusal + ")");
         });
         h.succeedWhen(() -> h.assertTrue(hp - target.getHealth() >= 8, "he crashed into them (" + (hp - target.getHealth()) + ")"));
+    }
+
+    // --- True Love Beam ---
+
+    /** Awakened, Rika out and her moveset up: the beam is on skill 3. */
+    private static void rikaAwakened(GameTestHelper h, TrainingDummy y, Runnable then) {
+        awaken(y);
+        h.assertTrue(press(y, AbilitySlot.SKILL_5), "Rika (fully manifested: she comes out)");
+        h.runAfterDelay(10, () -> {
+            h.assertTrue(press(y, AbilitySlot.SKILL_5), "her moveset");
+            then.run();
+        });
+    }
+
+    @GameTest(maxTicks = 160)
+    public void trueLoveBeamHitsExactlyWhatItDrawsOnce(GameTestHelper h) {
+        floor(h, 16);
+        JJKConfig.Yuta cfg = JJKConfig.get().yuta;
+        TrainingDummy onAxis = dummy(h, 3.5, 13.5);
+        TrainingDummy edge = dummy(h, 5.3, 13.5);      // 1.8 off the axis: inside the full radius
+        TrainingDummy wide = dummy(h, 9.5, 13.5);      // 6 off: outside it
+        TrainingDummy behind = dummy(h, 3.5, 0.5);     // behind Yuta and Rika
+        TrainingDummy y = yuta(h, 3.5, 4.5, onAxis);
+        TrainingDummy[] all = {onAxis, edge, wide, behind};
+        float[] hp = new float[4];
+        long[] pressed = {-1};
+        rikaAwakened(h, y, () -> {
+            face(y, onAxis.getBoundingBox().getCenter());
+            // Health from the moment it is cast (Rika coming out can jostle whoever stands behind him).
+            for (int i = 0; i < 4; i++) hp[i] = all[i].getHealth();
+            h.assertTrue(press(y, AbilitySlot.SKILL_3), "True Love Beam (" + Casters.get(y).lastRefusal + ")");
+            pressed[0] = h.getTick();
+        });
+        h.onEachTick(() -> {
+            if (pressed[0] < 0) return;
+            long t = h.getTick() - pressed[0];
+            // Nothing is hit before it fires (the charge is only a telegraph).
+            // (Only the beam's scale of damage counts: Rika planting herself beside someone can jostle them a little.)
+            if (t < cfg.beamWindup) for (int i = 0; i < 4; i++) h.assertTrue(hp[i] - all[i].getHealth() < 5, "hit before it fired: " + i + " by " + (all[i].getLastDamageSource() == null ? "?" : all[i].getLastDamageSource().getMsgId() + "/" + all[i].getLastDamageSource().getEntity()) + " t=" + t);
+            // Rika is planted behind him while she charges it.
+            if (t == cfg.beamConjureTicks + 4) {
+                RikaEntity r = YutaState.of(y).rika();
+                h.assertTrue(r != null && r.position().distanceTo(y.position()) < 2.5, "Rika planted behind him");
+            }
+        });
+        h.succeedWhen(() -> {
+            h.assertTrue(pressed[0] >= 0 && h.getTick() - pressed[0] > cfg.beamWindup + cfg.beamTicks + 2, "the beam is over");
+            float a = hp[0] - onAxis.getHealth(), b = hp[1] - edge.getHealth();
+            h.assertTrue(a > 50 && a <= cfg.beamDamage + 0.5f, "on the axis: hit once for its full damage (" + a + ")");
+            h.assertTrue(b > 50 && b <= cfg.beamDamage + 0.5f, "inside its radius: hit once (" + b + ")");
+            h.assertTrue(hp[2] - wide.getHealth() < 5, "outside its radius: untouched by it (" + (hp[2] - wide.getHealth()) + ")");
+            h.assertTrue(hp[3] - behind.getHealth() < 5, "behind: untouched by it (" + (hp[3] - behind.getHealth()) + ")");
+        });
+    }
+
+    @GameTest(maxTicks = 140)
+    public void trueLoveBeamIsCancelledIfYutaDiesInTheWindup(GameTestHelper h) {
+        floor(h, 16);
+        JJKConfig.Yuta cfg = JJKConfig.get().yuta;
+        TrainingDummy target = dummy(h, 2.5, 11.5);
+        TrainingDummy y = yuta(h, 2.5, 2.5, target);
+        float hp = target.getHealth();
+        long[] pressed = {-1};
+        rikaAwakened(h, y, () -> {
+            face(y, target.getBoundingBox().getCenter());
+            h.assertTrue(press(y, AbilitySlot.SKILL_3), "True Love Beam");
+            pressed[0] = h.getTick();
+        });
+        h.onEachTick(() -> {
+            if (pressed[0] >= 0 && h.getTick() - pressed[0] == cfg.beamConjureTicks + 6 && y.isAlive()) {
+                y.kill((net.minecraft.server.level.ServerLevel) h.getLevel());
+            }
+        });
+        h.succeedWhen(() -> {
+            h.assertTrue(pressed[0] >= 0 && h.getTick() - pressed[0] > cfg.beamWindup + cfg.beamTicks + 4, "past when it would have fired");
+            h.assertValueEqual(target.getHealth(), hp, "no beam once he was dead");
+        });
+    }
+
+    @GameTest(maxTicks = 120)
+    public void trueLoveBeamPressedAgainIsTheQuickBeam(GameTestHelper h) {
+        floor(h, 16);
+        JJKConfig.Yuta cfg = JJKConfig.get().yuta;
+        TrainingDummy target = dummy(h, 2.5, 10.5);
+        TrainingDummy y = yuta(h, 2.5, 2.5, target);
+        float hp = target.getHealth();
+        long[] pressed = {-1};
+        rikaAwakened(h, y, () -> {
+            face(y, target.getBoundingBox().getCenter());
+            h.assertTrue(press(y, AbilitySlot.SKILL_3), "True Love Beam");
+            pressed[0] = h.getTick();
+            h.runAfterDelay(6, () -> {
+                face(y, target.getBoundingBox().getCenter());
+                h.assertTrue(press(y, AbilitySlot.SKILL_3), "pressed again in the wind-up");
+            });
+        });
+        h.succeedWhen(() -> {
+            float dealt = hp - target.getHealth();
+            h.assertTrue(pressed[0] >= 0 && h.getTick() - pressed[0] < cfg.beamWindup, "it fired long before the full beam would");
+            h.assertTrue(Math.abs(dealt - cfg.beamQuickDamage) < 0.6f, "the quick beam's damage, once (" + dealt + ")");
+            int cd = Casters.get(y).cooldown(AbilitySlot.SKILL_3);
+            h.assertTrue(cd > 0 && cd <= cfg.beamQuickCooldown, "on the quick beam's shorter cooldown (" + cd + ")");
+        });
     }
 
     // --- Authentic Mutual Love ---

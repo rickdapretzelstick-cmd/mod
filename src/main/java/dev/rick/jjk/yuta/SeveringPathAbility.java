@@ -144,7 +144,7 @@ public final class SeveringPathAbility extends Ability {
             if (since == 6 || since == 12 || since == 18) {
                 swings++;
                 boolean last = swings == 3;
-                Fx.play(level, "severing_swing", victim.getBoundingBox().getCenter(), dir, last ? 1.4f : 1f, user.getId());
+                Fx.play(level, "severing_swing_" + swings, victim.getBoundingBox().getCenter(), dir, last ? 1.4f : 1f, user.getId());
                 if (last && YutaCombat.finishable(victim)) {
                     Statuses.remove(victim, CombatStatus.GRABBED);
                     YutaCombat.execute(user, victim, ID, "severing_finisher");
@@ -154,9 +154,9 @@ public final class SeveringPathAbility extends Ability {
                 var b = YutaCombat.strike(user, ID, cfg.severingSwingDamage, false).tag(AttackTag.OTG).noComboScaling();
                 if (last) {
                     Statuses.remove(victim, CombatStatus.GRABBED);
-                    b.knockback(Knockback.set(new Vec3(0, 1.05, 0).add(dir.scale(0.15)))).hitstun(28).status(CombatStatus.LAUNCHED, 30).fx("hit_launch", 1.1f);
+                    b.knockback(Knockback.set(new Vec3(0, 1.05, 0).add(dir.scale(0.15)))).hitstun(28).status(CombatStatus.LAUNCHED, 30).fx("severing_hit_4", 1.1f);
                 } else {
-                    b.knockback(Knockback.HOLD).hitstun(16).fx("hit_light", 0.8f);
+                    b.knockback(Knockback.HOLD).hitstun(16).fx("severing_hit_" + (swings + 1), 0.8f);
                 }
                 HitResult r = HakariCombat.hit(b.build(), victim);
                 if (r.outcome() == HitResult.Outcome.BLOCKED) {
@@ -208,7 +208,7 @@ public final class SeveringPathAbility extends Ability {
                 for (LivingEntity t : HitboxQuery.targets(user, HitShape.sphere(user.position().add(0, 0.9, 0), 1.3), 0.3, false)) {
                     if (!hit.add(t)) continue;
                     HakariCombat.hit(YutaCombat.strike(user, ID, cfg.veilstepDamage, false).tag(AttackTag.BLOCKABLE_360, AttackTag.OTG)
-                            .knockback(Knockback.set(new Vec3(0, 1.0, 0))).hitstun(26).status(CombatStatus.LAUNCHED, 28).fx("hit_launch", 1f).build(), t);
+                            .knockback(Knockback.set(new Vec3(0, 1.0, 0))).hitstun(26).status(CombatStatus.LAUNCHED, 28).fx("veilstep_hit", 1f).build(), t);
                     YutaCombat.setTarget(user, t);
                 }
             } else {

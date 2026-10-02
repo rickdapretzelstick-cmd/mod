@@ -103,11 +103,92 @@ public final class Flashes {
         add(new Effect(Type.INK, pos, Vec3.ZERO, c, from, to, alpha, life, start, 0));
     }
 
+    /**
+     * True Love Beam: drawn from {@link dev.rick.jjk.yuta.TrueLoveBeamProfile}, the same shape the server hits with, keyed by
+     * its caster so a beam cut short on the server is cut short here too. {@code dir} is a unit vector.
+     */
+    public record LoveBeam(Vec3 origin, Vec3 dir, double length, double radius, int grow, int collapse, int life, long start, boolean quick) {}
+
+    private static final java.util.Map<Integer, LoveBeam> LOVE_BEAMS = new java.util.HashMap<>();
+
+    public static void loveBeam(int key, LoveBeam b) {
+        LOVE_BEAMS.put(key, b);
+    }
+
+    /** Stops a beam early: it collapses over the next few ticks instead of holding. */
+    public static void stopLoveBeam(int key, long now) {
+        LoveBeam b = LOVE_BEAMS.get(key);
+        if (b == null) return;
+        int at = (int) (now - b.start());
+        int quickEnd = Math.min(3, b.collapse());
+        if (at + quickEnd < b.life()) {
+            LOVE_BEAMS.put(key, new LoveBeam(b.origin(), b.dir(), b.length(), b.radius(), b.grow(), quickEnd, at + quickEnd, b.start(), b.quick()));
+        }
+    }
+
+    /** How far a beam's front has got and how thick it is right now (0 once it is over), for effects that follow it. */
+    public static double[] loveBeamState(int key, long now, float partial) {
+        LoveBeam b = LOVE_BEAMS.get(key);
+        if (b == null) return null;
+        float t = now - b.start() + partial;
+        return new double[] {dev.rick.jjk.yuta.TrueLoveBeamProfile.front(b.length(), b.grow(), t),
+                dev.rick.jjk.yuta.TrueLoveBeamProfile.scale(t, b.life(), b.collapse())};
+    }
+
     public static void clear() {
         ACTIVE.clear();
+        LOVE_BEAMS.clear();
+    }
+
+    private static void renderLoveBeams(SubmitNodeCollector c, PoseStack ps, Vec3 cam, long now, float partial) {
+        var it = LOVE_BEAMS.values().iterator();
+        while (it.hasNext()) {
+            LoveBeam b = it.next();
+            float t = now - b.start() + partial;
+            if (t >= b.life() || t > 400) {
+                it.remove();
+                continue;
+            }
+            if (t < 0) continue;
+            double front = dev.rick.jjk.yuta.TrueLoveBeamProfile.front(b.length(), b.grow(), t);
+            float scale = dev.rick.jjk.yuta.TrueLoveBeamProfile.scale(t, b.life(), b.collapse());
+            if (scale <= 0.01f) continue;
+            Vector3f n = new Vector3f((float) b.dir().x, (float) b.dir().y, (float) b.dir().z).normalize();
+            Vector3f u = Math.abs(n.y) < 0.95f ? new Vector3f(0, 1, 0).cross(n, new Vector3f()).normalize() : new Vector3f(1, 0, 0).cross(n, new Vector3f()).normalize();
+            Vector3f v = n.cross(u, new Vector3f()).normalize();
+            Vector3f camRel = new Vector3f((float) (cam.x - b.origin().x), (float) (cam.y - b.origin().y), (float) (cam.z - b.origin().z));
+            ps.pushPose();
+            ps.translate(b.origin().x - cam.x, b.origin().y - cam.y, b.origin().z - cam.z);
+            float fade = Math.min(1f, scale * 1.4f);
+            // A slow throb along it, like the JJS beam's pulsing body.
+            float throb = 1f + 0.05f * Mth.sin(t * 1.3f);
+            double R = b.radius() * scale * throb;
+            int rings = b.quick() ? 14 : 30, sides = b.quick() ? 12 : 18;
+            float len = (float) front;
+            // Outer glow, pink body, hot inner body, white core (references: a huge pink bullet, white-hot at its heart).
+            Glow.tube(c, ps, n, u, v, len, s -> dev.rick.jjk.yuta.TrueLoveBeamProfile.radius(s, front, R * 1.28), rings, sides,
+                    0.97f, 0.36f, 1f, 0.28f * fade, camRel, 0.05f);
+            Glow.tube(c, ps, n, u, v, len, s -> dev.rick.jjk.yuta.TrueLoveBeamProfile.radius(s, front, R), rings, sides,
+                    1f, 0.5f, 1f, 0.5f * fade, camRel, 0.1f);
+            Glow.tube(c, ps, n, u, v, len, s -> dev.rick.jjk.yuta.TrueLoveBeamProfile.radius(s, front, R * 0.62), rings, sides,
+                    1f, 0.82f, 1f, 0.75f * fade, camRel, 0.2f);
+            Glow.tube(c, ps, n, u, v, len, s -> dev.rick.jjk.yuta.TrueLoveBeamProfile.radius(s, front, R * 0.3), rings, sides,
+                    1f, 1f, 1f, 1f * fade, camRel, 0.45f);
+            if (!b.quick()) {
+                // Dark bands rolling out along it (the black rings round the JJS beam).
+                float gap = 6.5f;
+                float off = (t * 1.8f) % gap;
+                for (float sAt = 2.5f + off; sAt + 1f < len - 2.5f; sAt += gap) {
+                    float rad = (float) (dev.rick.jjk.yuta.TrueLoveBeamProfile.radius(sAt, front, R) * 1.03);
+                    Glow.inkBand(c, ps, n, u, v, sAt, sAt + 0.9f, rad, sides, 0.24f, 0.02f, 0.3f, 0.42f * fade);
+                }
+            }
+            ps.popPose();
+        }
     }
 
     public static void render(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, long now, float partial) {
+        renderLoveBeams(c, ps, cam, now, partial);
         Iterator<Effect> it = ACTIVE.iterator();
         while (it.hasNext()) {
             Effect f = it.next();

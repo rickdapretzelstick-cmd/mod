@@ -135,7 +135,7 @@ public final class EnergyRippleAbility extends Ability {
                 swung = v;
                 if (YutaCombat.finishable(v)) return;
                 HakariCombat.hit(YutaCombat.strike(user, ID, cfg.fakeoutSwingDamage, true).tag(AttackTag.OTG)
-                        .knockback(Knockback.HOLD).hitstun(16).fx("severing_swing", 1.2f).build(), v);
+                        .knockback(Knockback.HOLD).hitstun(16).fx("fakeout_hit", 1.2f).build(), v);
             }
             if (t == 6) {
                 endAt = age + 12;
@@ -148,7 +148,7 @@ public final class EnergyRippleAbility extends Ability {
                 }
                 HakariCombat.hit(YutaCombat.strike(user, ID, cfg.fakeoutBurstDamage, true).tag(AttackTag.EXPLOSION, AttackTag.OTG)
                         .knockback(Knockback.set(ahead.scale(1.8).add(0, 0.5, 0))).hitstun(28).status(CombatStatus.LAUNCHED, 30)
-                        .noComboScaling().fx("ripple_hit", 1.2f).build(), swung);
+                        .noComboScaling().fx("yuta_impact", 1.2f).build(), swung);
             }
         }
 

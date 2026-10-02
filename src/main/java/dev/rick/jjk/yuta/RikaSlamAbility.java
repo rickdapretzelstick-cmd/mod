@@ -93,7 +93,7 @@ public final class RikaSlamAbility extends RikaMove {
 
             private void grab(JJKConfig.Yuta cfg) {
                 HitResult r = HakariCombat.hit(YutaCombat.rika(user, rika, ID, cfg.rikaSlamGrabDamage, false)
-                        .tag(AttackTag.UNBLOCKABLE, AttackTag.OTG).knockback(Knockback.HOLD).hitstun(20).fx("hit_light", 0.8f).build(), target);
+                        .tag(AttackTag.UNBLOCKABLE, AttackTag.OTG).knockback(Knockback.HOLD).hitstun(20).fx("rika_grab", 0.8f).build(), target);
                 copyOnHit(r);
                 if (!r.connected()) {
                     endAt = age + 6;
@@ -112,7 +112,7 @@ public final class RikaSlamAbility extends RikaMove {
                 Fx.play(level, "rika_slam", at, new Vec3(0, -1, 0), last ? 1.3f : 1f, rika.getId());
                 Fx.shake(level, at, 16, last ? 0.8f : 0.5f, 6);
                 var b = YutaCombat.rika(user, rika, ID, last ? cfg.rikaSlamLastDamage : cfg.rikaSlamDamage, false)
-                        .tag(AttackTag.UNBLOCKABLE, AttackTag.OTG).noComboScaling().fx("hit_slam", last ? 1.3f : 0.9f);
+                        .tag(AttackTag.UNBLOCKABLE, AttackTag.OTG).noComboScaling().fx("yuta_impact", last ? 1.3f : 0.9f);
                 if (last) {
                     Statuses.remove(held, CombatStatus.GRABBED);
                     b.knockback(Knockback.set(facing().scale(0.6).add(0, 0.3, 0))).hitstun(30).status(CombatStatus.KNOCKDOWN, 30);

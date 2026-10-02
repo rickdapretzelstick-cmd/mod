@@ -159,7 +159,7 @@ public final class OutburstAbility extends Ability {
                 return;
             }
             HitResult r = HakariCombat.hit(YutaCombat.strike(user, ID, cfg.outburstSwingDamage, false).tag(AttackTag.OTG)
-                    .knockback(Knockback.HOLD).hitstun(10).fx("severing_swing", 1f).build(), t);
+                    .knockback(Knockback.HOLD).hitstun(10).fx("outburst_draw_hit", 1f).build(), t);
             if (r.outcome().contacted()) {
                 swung = t;
                 YutaCombat.setTarget(user, t);

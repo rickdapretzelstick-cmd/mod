@@ -75,6 +75,21 @@ public class RikaPreviewClientTest implements FabricClientGameTest {
                             if (top != null) top.time = shot;
                         });
                         ctx.waitTicks(1);
+                        // A third field names a bone: log where it is, in her own frame (right, up, forward, in blocks).
+                        if (kv.length > 2) {
+                            String bone = kv[2];
+                            ctx.runOnClient(mc -> {
+                                var e = (RikaEntity) mc.level.getEntity(rika[0]);
+                                var at = dev.rick.jjk.client.render.RikaRenderer.bone(e, bone, new org.joml.Vector3f(), 0f);
+                                if (at == null) return;
+                                var rel = at.subtract(e.position());
+                                double yaw = Math.toRadians(e.getYRot());
+                                var fwd = new net.minecraft.world.phys.Vec3(-Math.sin(yaw), 0, Math.cos(yaw));
+                                var right = new net.minecraft.world.phys.Vec3(-fwd.z, 0, fwd.x);
+                                System.out.printf("[rikabone] %s %d %s right=%.2f up=%.2f forward=%.2f%n", name, shot, bone,
+                                        rel.dot(right), rel.y, rel.dot(fwd));
+                            });
+                        }
                         ctx.takeScreenshot(String.format("rika_%s_%04d", name, shot));
                     }
                 }
