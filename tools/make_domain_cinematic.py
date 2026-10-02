@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Builds the domain cinematic from DomainCinematicClientTest's screenshots.
 
-Usage: python3 tools/make_domain_cinematic.py build/run/clientGameTest/screenshots domains.mp4 [fps]
+Usage: python3 tools/make_domain_cinematic.py domains.mp4 [fps] DIR [DIR ...]
+
+Each DIR is one recording run's screenshots folder (with its frames.txt); the runs are joined in the order given. A long
+run can run out of memory, so the scenes are recorded in several runs (build/cinematic.txt picks the scenes) and each
+run's folder is kept apart, since every run numbers its frames from zero.
 
 The recording ran the game frozen, one tick at a time, each tick drawn at several sub-tick moments (frames.txt logs the
 game time each frame shows and the section it belongs to). The video is rebuilt on an exact 60 fps grid at real speed
@@ -30,17 +34,18 @@ def parse(section):
 
 
 def main():
-    src, out = sys.argv[1], sys.argv[2]
-    fps = int(sys.argv[3]) if len(sys.argv) > 3 else 60
-    names = {}
-    for f in glob.glob(os.path.join(src, '*.png')) + glob.glob(os.path.join(src, '*.jpg')):
-        names[os.path.basename(f).split('_', 1)[-1].rsplit('.', 1)[0]] = f
+    out = sys.argv[1]
+    fps = int(sys.argv[2])
     rows = []
-    for line in open(os.path.join(src, 'frames.txt')):
-        parts = line.rstrip('\n').split(' ', 2)
-        if len(parts) < 3 or parts[0] not in names:
-            continue
-        rows.append((float(parts[1]), names[parts[0]], parts[2].strip()))
+    for src in sys.argv[3:]:
+        names = {}
+        for f in glob.glob(os.path.join(src, '*.png')) + glob.glob(os.path.join(src, '*.jpg')):
+            names[os.path.basename(f).split('_', 1)[-1].rsplit('.', 1)[0]] = f
+        for line in open(os.path.join(src, 'frames.txt')):
+            parts = line.rstrip('\n').split(' ', 2)
+            if len(parts) < 3 or parts[0] not in names:
+                continue
+            rows.append((float(parts[1]), names[parts[0]], parts[2].strip()))
     # Game time restarts per scene (each is staged afresh): keep the recording order, not the clock.
     uniq = []
     for r in rows:
