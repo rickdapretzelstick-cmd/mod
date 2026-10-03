@@ -4,6 +4,7 @@ One simple symbol per character, readable at any size (the screen draws them at 
   - gojo: his blindfold
   - hakari: a slot machine
   - yuta: Rika's ring, the cursed ring of their promise
+  - ryu: the comb for his pompadour
 """
 import os
 
@@ -155,34 +156,36 @@ def yuta():
 yuta()
 
 
-# Ryu: his towering pompadour, its tip glowing with True Cannon's blue.
+# Ryu: the comb he keeps his pompadour in shape with, a glint of True Cannon's blue on its spine.
 def ryu():
-    import math
     img = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
-    for y in range(32):
-        for x in range(32):
-            # The swept-forward pompadour: a long rounded wedge.
-            dx, dy = (x - 14) / 13.0, (y - 14) / 7.5
-            t = (x - 3) / 26.0
-            top = 6 + 10 * (1 - t) ** 0.5
-            if 3 <= x <= 29 and 21 - 16 * t ** 0.7 >= y >= 21 - 16 * t ** 0.7 - (5 + 5 * (1 - t)):
-                col = 0x2A2A36 if y < 21 - 16 * t ** 0.7 - 3 else 0x14141C
-                img.putpixel((x, y), rgb(col))
-    # The head beneath it.
-    for y in range(18, 31):
-        for x in range(4, 18):
-            if math.hypot((x - 10.5) / 7, (y - 24) / 7) <= 1:
-                img.putpixel((x, y), rgb(0x14141C if y < 22 else 0xE6C2A0 if x > 6 else 0xC89A74))
-    # The cannon's glow at the tip.
-    for y in range(32):
-        for x in range(32):
-            d = math.hypot(x - 28, y - 6)
-            if d < 1.5:
-                img.putpixel((x, y), rgb(0xFFFFFF))
-            elif d < 3:
-                img.putpixel((x, y), rgb(0xA8D8FF))
-            elif d < 4 and img.getpixel((x, y))[3] == 0:
-                img.putpixel((x, y), rgb(0x3A86E8))
+    px = {}
+    # The spine: a long bar with rounded ends, its top edge lit.
+    for x in range(3, 29):
+        for y in range(8, 14):
+            if (x in (3, 28)) and y in (8, 13):
+                continue
+            px[(x, y)] = 0x5A6478 if y == 8 else 0x2E3440 if y < 12 else 0x1E222C
+    # The teeth: one every other column, all the same length but the end ones, which are a little shorter.
+    for i, x in enumerate(range(4, 28, 2)):
+        length = 9 if 0 < i < 11 else 7
+        for y in range(14, 14 + length):
+            px[(x, y)] = 0x2E3440 if y < 14 + length - 1 else 0x454D5E
+    # True Cannon's glint along the spine.
+    for x in range(6, 13):
+        px[(x, 9)] = 0xA8D8FF
+    px[(7, 10)] = 0x3A86E8
+    px[(8, 10)] = 0x3A86E8
+    for (x, y) in ((24, 9), (25, 9)):
+        px[(x, y)] = 0x7FA6D8
+    # A pale outline so it reads on the dark screen.
+    for (x, y) in list(px):
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            q = (x + dx, y + dy)
+            if 0 <= q[0] < 32 and 0 <= q[1] < 32 and q not in px:
+                img.putpixel(q, rgb(0x8A93A8))
+    for (x, y), c in px.items():
+        img.putpixel((x, y), rgb(c))
     img.save(os.path.join(OUT, 'ryu.png'))
 
 
