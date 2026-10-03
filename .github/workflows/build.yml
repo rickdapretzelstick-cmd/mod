@@ -1,0 +1,36 @@
+# Builds the mod and runs the server gametests on every push and pull request, so a commit from a session that
+# couldn't compile (blocked network, wrong JDK) is caught before anyone ships it.
+name: build
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Check the gametest list isn't a trimmed copy
+        run: |
+          for c in $(ls src/gametest/java/dev/rick/jjk/test/*GameTests.java src/gametest/java/dev/rick/jjk/test/*Tests.java 2>/dev/null | xargs -n1 basename | sed 's/\.java$//' | sort -u); do
+            grep -q "dev.rick.jjk.test.$c\"" src/gametest/resources/fabric.mod.json || { echo "::error::$c missing from src/gametest/resources/fabric.mod.json"; exit 1; }
+          done
+      - name: Build and run gametests
+        run: ./gradlew build --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jar
+          path: build/libs/*.jar
+          if-no-files-found: ignore
