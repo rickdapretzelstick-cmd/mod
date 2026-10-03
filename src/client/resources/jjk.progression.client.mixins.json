@@ -1,0 +1,7 @@
+{
+  "required": false,
+  "package": "dev.rick.jjk.client.progression.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["CurseRenderMixin"],
+  "injectors": { "defaultRequire": 0 }
+}

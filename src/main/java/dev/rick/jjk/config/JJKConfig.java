@@ -52,6 +52,7 @@ public final class JJKConfig {
     public Yuta yuta = new Yuta();
     public Ryu ryu = new Ryu();
     public BeamClash beamClash = new BeamClash();
+    public Progression progression = new Progression();
 
     public static JJKConfig get() {
         return instance;
@@ -1113,6 +1114,25 @@ public final class JJKConfig {
         public double invitedWallRange = 27.8, invitedWallHeldRange = 69.4;
     }
 
+    /**
+     * Survival progression: Survival players start with no technique and earn kits in the world, each kit belonging to one
+     * player per world. Creative stays the free-select sandbox. Turning {@link #enabled} off brings back free selection
+     * everywhere (the ownership registry is kept, just not enforced).
+     */
+    public static final class Progression {
+        public boolean enabled = true;
+        /** Cursed Soul Sand: the chance each bone block standing on soul sand/soil turns the block under it, and a per-chunk cap. */
+        public float cursedSoulSandChance = 0.18f;
+        public int cursedSoulSandPerChunk = 4;
+        /** Ticks the cauldron ritual takes from the glasses landing in the energy to the Cursed Glasses rising out. */
+        public int infusionTicks = 60;
+        /** How long (seconds) a curse remembers someone it turned hostile on after it last had them as a target. */
+        public int curseHostilityMemorySeconds = 600;
+        /** Battle rooms under Woodland Mansions and Igloos. */
+        public boolean mansionBattleRooms = true;
+        public boolean iglooBattleRooms = true;
+    }
+
     /** Beam clashes (True Love Beam against Every Last Drop): the duel's tuning lives in the session; these are reach. */
     public static final class BeamClash {
         public boolean enabled = true;
@@ -1183,5 +1203,6 @@ public final class JJKConfig {
         if (gojo == null) gojo = new Gojo();
         if (yuji == null) yuji = new Yuji();
         if (yuta == null) yuta = new Yuta();
+        if (progression == null) progression = new Progression();
     }
 }

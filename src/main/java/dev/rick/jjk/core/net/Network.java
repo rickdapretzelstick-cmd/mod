@@ -44,6 +44,7 @@ public final class Network {
         s2c.register(BeamClashStatePayload.TYPE, BeamClashStatePayload.CODEC);
         s2c.register(BeamClashCheckPayload.TYPE, BeamClashCheckPayload.CODEC);
         s2c.register(BeamClashJudgePayload.TYPE, BeamClashJudgePayload.CODEC);
+        s2c.register(ProgressionPayload.TYPE, ProgressionPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
@@ -62,6 +63,11 @@ public final class Network {
         });
         ServerPlayNetworking.registerGlobalReceiver(CharacterSelectPayload.TYPE, (p, ctx) -> {
             String why = dev.rick.jjk.core.character.CharacterService.select(ctx.player(), p.character());
+            // Survival with nothing earned: the quiet answer, not an error.
+            if (dev.rick.jjk.progression.TechniqueProgression.NOT_AWAKENED.equals(why)) {
+                ctx.player().sendOverlayMessage(net.minecraft.network.chat.Component.literal(why).withStyle(net.minecraft.ChatFormatting.GRAY));
+                return;
+            }
             var c = dev.rick.jjk.core.character.Characters.get(p.character());
             ctx.player().sendOverlayMessage(why != null
                     ? net.minecraft.network.chat.Component.literal(why).withStyle(net.minecraft.ChatFormatting.RED)

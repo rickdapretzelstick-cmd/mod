@@ -60,5 +60,14 @@
   "block.jjk.aml_barrier": "Authentic Mutual Love Barrier",
   "block.jjk.aml_floor": "Authentic Mutual Love Floor",
   "entity.jjk.rika": "Rika",
-  "entity.jjk.domain_blade": "Katana"
+  "entity.jjk.domain_blade": "Katana",
+  "death.attack.jjk.cursed_overload": "%1$s was consumed by overwhelming cursed energy",
+  "block.jjk.cursed_soul_sand": "Cursed Soul Sand",
+  "block.jjk.cursed_energy_cauldron": "Cursed Energy Cauldron",
+  "block.jjk.cursed_seal": "Cursed Seal",
+  "item.jjk.soul_in_a_bottle": "Soul in a Bottle",
+  "item.jjk.cursed_energy_bottle": "Cursed Energy in a Bottle",
+  "item.jjk.glasses": "Glasses",
+  "item.jjk.cursed_glasses": "Cursed Glasses",
+  "item.jjk.cursed_finger": "Cursed Finger"
 }

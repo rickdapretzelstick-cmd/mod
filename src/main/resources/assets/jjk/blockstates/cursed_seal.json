@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "site=0": {
+      "model": "jjk:block/cursed_seal"
+    },
+    "site=1": {
+      "model": "jjk:block/cursed_seal"
+    }
+  }
+}

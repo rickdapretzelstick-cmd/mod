@@ -121,7 +121,8 @@ public final class InputHandler {
         if (player == null) return;
         while (modeKey.consumeClick()) dev.rick.jjk.client.CombatMode.toggle();
         while (characterKey.consumeClick()) {
-            if (mc.gui.screen() == null) mc.gui.setScreen(new dev.rick.jjk.client.hud.CharacterSelectScreen(null));
+            // Survival progression decides what the screen may offer (Creative: everything).
+            if (mc.gui.screen() == null) dev.rick.jjk.client.ClientProgression.openCharacterSelect(null);
         }
         if (!dev.rick.jjk.client.CombatMode.enabled()) {
             // Vanilla Minecraft mode: none of this mod's keys do anything. Swallow their presses so nothing fires later.

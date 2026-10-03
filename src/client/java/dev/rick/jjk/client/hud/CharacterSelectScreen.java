@@ -41,7 +41,11 @@ public class CharacterSelectScreen extends Screen {
     @Override
     protected void init() {
         characters.clear();
-        for (String id : Characters.ids()) characters.add(Characters.get(id));
+        // In Survival (progression on) only the kits this player has earned are offered.
+        boolean governed = dev.rick.jjk.client.ClientProgression.governed();
+        for (String id : Characters.ids()) {
+            if (!governed || dev.rick.jjk.client.ClientProgression.owned().contains(id)) characters.add(Characters.get(id));
+        }
         openedAt = System.currentTimeMillis();
         addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose()).bounds(width / 2 - 60, height - 28, 120, 20).build());
     }

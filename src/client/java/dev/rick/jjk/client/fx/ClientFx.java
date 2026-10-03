@@ -83,6 +83,11 @@ public final class ClientFx {
             follow(p.id().substring(6), p.entityId(), Math.max(1f, s));
             return;
         }
+        // Survival progression (extraction, the cauldron, the Cursed Finger).
+        if (p.id().startsWith("prog_")) {
+            ProgressionFx.play(p, mc, level, pos, dir, s, mine, now);
+            return;
+        }
         switch (p.id()) {
             case "zero_two_cutin" -> dev.rick.jjk.client.hud.GojoPresentation.domainCutIn();
             case "limitless_shatter" -> {

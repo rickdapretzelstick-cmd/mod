@@ -1,0 +1,32 @@
+{
+  "textures": {
+    "particle": "jjk:block/cursed_energy_still",
+    "content": "jjk:block/cursed_energy_still"
+  },
+  "elements": [
+    {
+      "from": [
+        2,
+        4,
+        2
+      ],
+      "to": [
+        14,
+        8.25,
+        14
+      ],
+      "light_emission": 6,
+      "faces": {
+        "up": {
+          "uv": [
+            2,
+            2,
+            14,
+            14
+          ],
+          "texture": "#content"
+        }
+      }
+    }
+  ]
+}
