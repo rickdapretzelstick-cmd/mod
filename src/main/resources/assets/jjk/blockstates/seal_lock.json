@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "lock=0": {
+      "model": "jjk:block/seal_lock_closed"
+    },
+    "lock=1": {
+      "model": "jjk:block/seal_lock_open"
+    },
+    "lock=2": {
+      "model": "jjk:block/seal_lock_broken"
+    }
+  }
+}

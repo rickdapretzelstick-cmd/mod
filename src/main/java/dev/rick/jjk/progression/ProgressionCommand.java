@@ -28,6 +28,9 @@ import java.util.Map;
  * /jjk kit release &lt;kit&gt;             free a kit
  * /jjk kit repair                     re-check every online player's record against the world's
  * /jjk kit rooms                      the cursed battle rooms found so far and their encounter state
+ * /jjk prison status                  the world's Prison Realm: where it is, who is inside, their escape
+ * /jjk prison free                    let the captive out (grants nothing)
+ * /jjk prison reset                   forget the realm entirely (a cube lost beyond recovery); frees any captive
  * </pre>
  */
 public final class ProgressionCommand {
@@ -47,7 +50,32 @@ public final class ProgressionCommand {
                                 .executes(c -> transfer(c, kit(c), EntityArgument.getPlayer(c, "player"))))))
                         .then(Commands.literal("release").then(kitArg().executes(c -> release(c, kit(c)))))
                         .then(Commands.literal("repair").executes(ProgressionCommand::repair))
-                        .then(Commands.literal("rooms").executes(ProgressionCommand::rooms))));
+                        .then(Commands.literal("rooms").executes(ProgressionCommand::rooms)))
+                .then(Commands.literal("prison")
+                        .then(Commands.literal("status").executes(ProgressionCommand::prisonStatus))
+                        .then(Commands.literal("free").executes(c -> {
+                            boolean ok = dev.rick.jjk.progression.prison.PrisonRealm.adminFree(c.getSource().getServer());
+                            c.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal(ok ? "Releasing the Prison Realm's captive (nothing granted)."
+                                    : "Nobody is sealed in the Prison Realm."), true);
+                            return ok ? 1 : 0;
+                        }))
+                        .then(Commands.literal("reset").executes(c -> {
+                            dev.rick.jjk.progression.prison.PrisonRealm.adminReset(c.getSource().getServer());
+                            c.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal("The Prison Realm is forgotten: another may be forged."), true);
+                            return 1;
+                        }))));
+    }
+
+    private static int prisonStatus(CommandContext<CommandSourceStack> c) {
+        var st = dev.rick.jjk.progression.prison.PrisonRealm.state(c.getSource().getServer());
+        String where = st.pos() == null ? "" : " at " + st.dimension() + " " + st.pos().toShortString();
+        String who = st.captive() == null ? "" : ", captive " + st.captiveName() + " (" + st.captive() + ")";
+        String esc = st.phase() == dev.rick.jjk.progression.prison.PrisonRealmState.Phase.SEALED
+                ? ", escape stage " + Math.min(st.stage() + 1, 3) + "/3 with " + Integer.bitCount(st.broken()) + "/4 seals" + (st.stage() >= 3 ? " (core open)" : "") : "";
+        String owed = st.pending().isEmpty() ? "" : ", " + st.pending().size() + " release(s) owed to offline players";
+        String msg = "Prison Realm: " + st.phase() + (st.realmId() == null ? " (none forged)" : " " + st.realmId()) + where + who + esc + owed;
+        c.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal(msg), false);
+        return 1;
     }
 
     private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String> kitArg() {

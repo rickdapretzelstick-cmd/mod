@@ -38,6 +38,13 @@ public abstract class CameraMixin {
             setPosition(new net.minecraft.world.phys.Vec3(beams[0], beams[1], beams[2]));
             setRotation((float) beams[3], (float) beams[4]);
         }
+        // The Prison Realm's outside view: around the grounded realm, watching only (last: it is a different place).
+        double[] prison = dev.rick.jjk.client.prison.PrisonClient.apply(yRot, xRot);
+        if (prison != null) {
+            setPosition(new net.minecraft.world.phys.Vec3(prison[0], prison[1], prison[2]));
+            setRotation((float) prison[3], (float) prison[4]);
+            return;
+        }
         float dy = ScreenEffects.yawOffset(partialTicks), dx = ScreenEffects.pitchOffset(partialTicks);
         if (dy != 0 || dx != 0) setRotation(yRot + dy, xRot + dx);
     }

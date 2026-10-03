@@ -129,6 +129,43 @@ final class ProgressionFx {
                     ScreenEffects.shake(1.2f, 24);
                 }
             }
+            case "prog_prison_throw", "prog_prison_open" -> {
+                // The cube unfolds: a dark burst and a ring of flesh-red light at its feet.
+                if (drawn) {
+                    ring3d(level, pos, up, 0.5, q(16), 0.12, BLOOD, 0.14f, 16);
+                    burst(level, pos, q(10), 0.08, Sprite.SMOKE, DARK, 0.5f, 22);
+                    Flashes.ink(pos, 0.3f, 1.8f, DARK, 0.6f, 10, now);
+                }
+            }
+            case "prog_prison_restrain" -> {
+                // The restraints lash out toward the target.
+                if (drawn && dir.lengthSqr() > 1e-4) {
+                    Vec3 to = pos.add(dir);
+                    for (int i = 0; i < 4; i++) Flashes.bolt(pos, to.add(randomUnit().scale(0.6)), 0.05f, BLOOD, 0.85f, 10, now + i);
+                }
+                if (mine) ScreenEffects.shake(0.35f, 10);
+            }
+            case "prog_prison_lock" -> {
+                // A seal breaks: a bright crack and sparks.
+                if (drawn) {
+                    burst(level, pos, q(14), 0.18, Sprite.SPARK, SOUL_LIGHT, 0.14f, 12);
+                    Flashes.flash(pos, 0.3f, 1.4f, SOUL_LIGHT, 0.8f, 6, now);
+                }
+            }
+            case "prog_prison_backlash" -> {
+                if (drawn) burst(level, pos, q(12), 0.22, Sprite.SPARK, BLOOD, 0.16f, 10);
+                if (mine) {
+                    ScreenEffects.flash(0x70300010, 8);
+                    ScreenEffects.shake(0.45f, 8);
+                }
+            }
+            case "prog_prison_release", "prog_prison_gojo" -> {
+                if (drawn) {
+                    ring3d(level, pos, up, 0.4, q(20), 0.14, p.id().equals("prog_prison_gojo") ? SOUL_LIGHT : BLOOD, 0.14f, 18);
+                    burst(level, pos, q(10), 0.1, Sprite.GLOW, SOUL_LIGHT, 0.3f, 18);
+                }
+                if (mine) ScreenEffects.flash(p.id().equals("prog_prison_gojo") ? 0x9080D0FF : 0x60FFFFFF, 14);
+            }
             default -> {}
         }
     }

@@ -45,6 +45,7 @@ public final class Network {
         s2c.register(BeamClashCheckPayload.TYPE, BeamClashCheckPayload.CODEC);
         s2c.register(BeamClashJudgePayload.TYPE, BeamClashJudgePayload.CODEC);
         s2c.register(ProgressionPayload.TYPE, ProgressionPayload.CODEC);
+        s2c.register(PrisonPayload.TYPE, PrisonPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();

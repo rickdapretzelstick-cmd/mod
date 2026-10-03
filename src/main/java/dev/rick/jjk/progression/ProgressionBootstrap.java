@@ -21,6 +21,7 @@ public final class ProgressionBootstrap {
         CurseAggro.init();
         CursedEncounters.init();
         dev.rick.jjk.progression.curse.FingerBearerEncounter.init();
+        dev.rick.jjk.progression.prison.PrisonRealm.init();
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> ProgressionCommand.register(dispatcher));
     }
 }

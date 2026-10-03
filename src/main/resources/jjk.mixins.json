@@ -4,6 +4,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "BlockDropMixin",
+    "EntityBelowWorldMixin",
     "LevelSetBlockMixin",
     "LivingEntityMixin",
     "MobMixin",

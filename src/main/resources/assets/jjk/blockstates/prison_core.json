@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "open=false": {
+      "model": "jjk:block/prison_core"
+    },
+    "open=true": {
+      "model": "jjk:block/prison_core_open"
+    }
+  }
+}

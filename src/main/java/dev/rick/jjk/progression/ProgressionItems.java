@@ -34,6 +34,12 @@ public final class ProgressionItems {
             .food(new FoodProperties.Builder().nutrition(1).saturationModifier(0.1f).alwaysEdible().build(),
                     Consumables.defaultFood().consumeSeconds(3.2f).build()));
 
+    /** Four shulker shells round a nether star: the Prison Realm, still empty of cursed energy. */
+    public static final Item DORMANT_PRISON_REALM = item("dormant_prison_realm", Item::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
+    /** The Prison Realm itself (only ever one live in a world: dipped in a full cauldron of cursed energy). */
+    public static final Item PRISON_REALM = item("prison_realm", dev.rick.jjk.progression.prison.PrisonRealmItem::new,
+            new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant());
+
     public static final Item CURSED_SOUL_SAND = item("cursed_soul_sand", p -> new BlockItem(ProgressionBlocks.CURSED_SOUL_SAND, p),
             new Item.Properties().useBlockDescriptionPrefix());
 
@@ -51,6 +57,7 @@ public final class ProgressionItems {
             e.accept(SOUL_IN_A_BOTTLE);
             e.accept(CURSED_ENERGY_BOTTLE);
             e.accept(CURSED_FINGER);
+            e.accept(DORMANT_PRISON_REALM);
         });
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(e -> {
             e.accept(GLASSES);

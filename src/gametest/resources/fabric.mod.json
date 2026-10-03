@@ -19,7 +19,8 @@
       "dev.rick.jjk.test.FingerBearerTests",
       "dev.rick.jjk.test.BeamClashMatchupTests",
       "dev.rick.jjk.test.StabilityTests",
-      "dev.rick.jjk.test.BlastRadiusTests"
+      "dev.rick.jjk.test.BlastRadiusTests",
+      "dev.rick.jjk.test.PrisonRealmTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.AnimFrameworkClientTest",
@@ -30,7 +31,8 @@
       "dev.rick.jjk.test.FingerBearerClientGameTest",
       "dev.rick.jjk.test.BeamClashCameraClientTest",
       "dev.rick.jjk.test.RikaViewClientTest",
-      "dev.rick.jjk.test.NoKitClientTest"
+      "dev.rick.jjk.test.NoKitClientTest",
+      "dev.rick.jjk.test.PrisonRealmClientTest"
     ]
   },
   "depends": {

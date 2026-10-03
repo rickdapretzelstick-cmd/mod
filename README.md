@@ -448,6 +448,61 @@ paths define their own.
 release <kit> | repair | rooms`. `/jjk character` is still an admin override; under progression it lasts until the
 player relogs or leaves Creative (a Creative K pick is the test kit above).
 
+## The Prison Realm
+
+**Only one Prison Realm can exist in a world.** Craft a **Dormant Prison Realm** (four shulker shells round a nether
+star: one above, one below, one each side) and use it on a **full** cauldron of cursed energy (4/4). The energy is
+spent into it and the **Prison Realm** rises out, but only while the world has none: while one exists the cauldron
+refuses the cube. The realm is fire-proof and never despawns on the ground; if it is ever destroyed (a cactus, an
+explosion, the void) another may be forged. Every cube carries the world's id for it, so a copy or an old cube is inert.
+`/jjk prison reset` (op) forgets a realm that was lost for good (say, in a deleted player's inventory).
+
+**Sealing.** Use it on a player in front of you (within 8 blocks). **Sneak-use it with nobody in front of you to seal
+yourself** (so a solo player can earn Gojo). The cube lands at their feet and plays its whole sequence: it opens, the
+restraints reach out at 2.6 s, they are drawn in, and the seal closes at 5.15 s. Until the restraints reach out they can
+get away by getting more than 6 blocks from it. Dying, logging out or leaving the dimension before it closes also fails
+the seal. A failed seal drops the cube where it lay, and only one seal can run at a time.
+
+**Sealed.** The cube lies closed where it caught them: invulnerable, anchored, glowing through walls, with a crimson beam
+rising from it so it can be found from far away. It is saved with the world, and if its body is ever removed (a
+command) it comes back. Hitting it, moving it, killing it or picking at it never releases anyone. The captive is in a
+cell built high above it in the same column, out of unbreakable flesh (anything it replaced is given back exactly
+afterwards). There is no way out but the two below:
+- Leaving the cell any way at all (an ender pearl, a command, a portal, another dimension, dying and respawning,
+  logging out and back in) puts them straight back.
+- Their techniques are sealed in there.
+- Their inventory follows the normal rules: a death drops it in the cell, where it never despawns, and it comes out with
+  them on release.
+- Other players can't get in.
+
+**Escaping alone** (deterministic, repeatable, saved through death, logout and restarts):
+1. Four seal locks, one in the middle of each wall, glow open in turn on a fixed rhythm: every 2 seconds, each a
+   quarter-beat after the last.
+2. **Use a lock while it glows** to break it. Using a dark one lashes back (a little damage, a shove) and re-forms that
+   stage's broken locks.
+3. Break all four to clear a stage. There are three stages, and the glow is shorter each time (0.7 s, 0.45 s, 0.3 s).
+4. Then the **core** in the floor opens: use it.
+
+The action bar always shows the stage and the seals broken.
+
+**Rescue from outside.** Anyone else can open the grounded cube: **sneak and hold use on it for 5 seconds**, staying
+within 3.5 blocks. Letting go, walking off or taking damage interrupts it, and the cube closes again. The rescuer and
+the captive both see the progress, and the cube shudders more as it gives.
+
+**Outside view.** While sealed, **V** (rebindable: "Prison Realm: look outside") swings the camera out to the grounded
+realm, turned with the mouse like F5. It is watching only: movement, jumping, attacking and using do nothing while it is
+on. V again, the release, death or a disconnect puts your own camera back.
+
+**Release and Gojo.** The cube opens, the captive steps out beside it, and the cube is an item again (the same realm,
+ready to use again). **The first player in the world to be genuinely sealed and then released, by their own escape or a
+rescue, becomes Gojo.** It goes through the same atomic one-owner kit claim as the Cursed Finger, so nothing can make a
+second Gojo this way. Capture alone grants nothing, everyone released after that is simply let out, and an admin
+release (`/jjk prison free`) grants nothing. A captive who is offline or dead at the moment of their release gets it
+(with the claim, if it is owed) the moment they are back. In Creative the release lets you try Gojo without claiming
+him. A restart during a seal fails it (the cube drops); a restart during a release finishes it.
+
+`/jjk prison status` (op) shows where the realm is, who is inside and how far they've got.
+
 ## HUD and Vanilla Minecraft mode
 
 CE is a slim vertical bar on the left edge. It eases between values, what you just spent lingers as a pale ghost, it

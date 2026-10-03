@@ -22,6 +22,19 @@ public final class ProgressionBlocks {
     public static final CursedSealBlock CURSED_SEAL = (CursedSealBlock) Blocks.register(key("cursed_seal"), CursedSealBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.POLISHED_BLACKSTONE).strength(-1.0f, 3600000.0f).noLootTable().lightLevel(s -> 3));
 
+    /** The Prison Realm's cell (built only while someone is sealed; given back to the world on release). */
+    public static final Block PRISON_WALL = Blocks.register(key("prison_wall"), dev.rick.jjk.progression.prison.PrisonCellBlocks.Wall::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.OBSIDIAN).strength(-1.0f, 3600000.0f).noLootTable().lightLevel(s -> 6)
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.IMMOVEABLE).isValidSpawn((s, l, p, t) -> false));
+    public static final Block SEAL_LOCK = Blocks.register(key("seal_lock"), dev.rick.jjk.progression.prison.PrisonCellBlocks.SealLock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.OBSIDIAN).strength(-1.0f, 3600000.0f).noLootTable()
+                    .lightLevel(s -> s.getValue(dev.rick.jjk.progression.prison.PrisonCellBlocks.SealLock.STATE) == 1 ? 15 : 5)
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.IMMOVEABLE));
+    public static final Block PRISON_CORE = Blocks.register(key("prison_core"), dev.rick.jjk.progression.prison.PrisonCellBlocks.Core::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.OBSIDIAN).strength(-1.0f, 3600000.0f).noLootTable()
+                    .lightLevel(s -> s.getValue(dev.rick.jjk.progression.prison.PrisonCellBlocks.Core.OPEN) ? 15 : 7)
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.IMMOVEABLE).isValidSpawn((s, l, p, t) -> false));
+
     private ProgressionBlocks() {}
 
     private static ResourceKey<Block> key(String name) {

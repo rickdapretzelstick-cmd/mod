@@ -43,6 +43,11 @@ public final class InputHandler {
 
     private InputHandler() {}
 
+    /** This mod's key category (for keys registered elsewhere, like the Prison Realm's outside view). */
+    public static KeyMapping.Category category() {
+        return CATEGORY;
+    }
+
     public static void init() {
         // Jujutsu Shenanigans' PC controls: M1 attack, 1-4 moves, R special, G awakening, F block, Q dash / ragdoll
         // escape (double-tap W sprint and Space jump are Minecraft's own). In combat mode these keys belong to the mod:

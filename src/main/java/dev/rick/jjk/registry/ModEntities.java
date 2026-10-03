@@ -51,6 +51,10 @@ public final class ModEntities {
     public static final EntityType<dev.rick.jjk.progression.curse.CursedEnergyShotEntity> CURSED_ENERGY_SHOT = register("cursed_energy_shot",
             EntityType.Builder.<dev.rick.jjk.progression.curse.CursedEnergyShotEntity>of(dev.rick.jjk.progression.curse.CursedEnergyShotEntity::new, MobCategory.MISC).sized(0.5f, 0.5f).noSave().noSummon().fireImmune()
                     .clientTrackingRange(10).updateInterval(1).noLootTable());
+    /** The Prison Realm in the world (saved: it lies where it sealed someone). */
+    public static final EntityType<dev.rick.jjk.progression.prison.PrisonRealmEntity> PRISON_REALM = register("prison_realm",
+            EntityType.Builder.<dev.rick.jjk.progression.prison.PrisonRealmEntity>of(dev.rick.jjk.progression.prison.PrisonRealmEntity::new, MobCategory.MISC)
+                    .sized(1.1f, 1.1f).noSummon().fireImmune().clientTrackingRange(16).updateInterval(2).noLootTable());
     public static final EntityType<TrainingDummy> TRAINING_DUMMY = register("training_dummy",
             EntityType.Builder.<TrainingDummy>of(TrainingDummy::new, MobCategory.MISC).sized(0.6f, 1.95f).clientTrackingRange(10));
 

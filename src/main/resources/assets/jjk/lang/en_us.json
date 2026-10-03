@@ -71,5 +71,12 @@
   "item.jjk.cursed_energy_bottle": "Cursed Energy in a Bottle",
   "item.jjk.glasses": "Glasses",
   "item.jjk.cursed_glasses": "Cursed Glasses",
-  "item.jjk.cursed_finger": "Cursed Finger"
+  "item.jjk.cursed_finger": "Cursed Finger",
+  "item.jjk.dormant_prison_realm": "Dormant Prison Realm",
+  "item.jjk.prison_realm": "Prison Realm",
+  "entity.jjk.prison_realm": "Prison Realm",
+  "block.jjk.prison_wall": "Prison Realm Flesh",
+  "block.jjk.seal_lock": "Seal Lock",
+  "block.jjk.prison_core": "Prison Realm Core",
+  "key.jjk.prison_view": "Prison Realm: look outside"
 }

@@ -46,6 +46,9 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
     /** 0 = still; 1..STAGES while glasses are being infused. */
     public static final int STAGES = 5;
     public static final IntegerProperty INFUSION = IntegerProperty.create("infusion", 0, STAGES);
+    /** While infusing: true when what it holds is a Dormant Prison Realm (not glasses). */
+    public static final net.minecraft.world.level.block.state.properties.BooleanProperty REALM =
+            net.minecraft.world.level.block.state.properties.BooleanProperty.create("realm");
     /** How often a full cauldron looks for glasses in it. */
     private static final int WATCH_TICKS = 5;
 
@@ -54,7 +57,7 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
 
     public CursedCauldronBlock(Properties properties) {
         super(properties, INTERACTIONS);
-        registerDefaultState(stateDefinition.any().setValue(LEVEL, 1).setValue(INFUSION, 0));
+        registerDefaultState(stateDefinition.any().setValue(LEVEL, 1).setValue(INFUSION, 0).setValue(REALM, false));
     }
 
     /**
@@ -79,6 +82,26 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
         if (stack.is(ProgressionItems.CURSED_ENERGY_BOTTLE)) {
             if (state.getValue(LEVEL) >= MAX_LEVEL || state.getValue(INFUSION) > 0) return InteractionResult.TRY_WITH_EMPTY_HAND;
             return pour(level, pos, player, hand, stack, state.getValue(LEVEL));
+        }
+        if (stack.is(ProgressionItems.DORMANT_PRISON_REALM)) {
+            if (state.getValue(LEVEL) < MAX_LEVEL || state.getValue(INFUSION) > 0) return InteractionResult.TRY_WITH_EMPTY_HAND;
+            if (level instanceof ServerLevel server) {
+                // Only one Prison Realm can exist in a world: while it does, the energy won't take another cube.
+                if (!dev.rick.jjk.progression.prison.PrisonRealm.canForge(server.getServer())) {
+                    player.sendOverlayMessage(net.minecraft.network.chat.Component.literal("The energy recoils: a Prison Realm already exists in this world.")
+                            .withStyle(net.minecraft.ChatFormatting.GRAY));
+                    Fx.sound(server, Vec3.atCenterOf(pos), SoundEvents.SHULKER_HURT_CLOSED, 0.8f, 0.6f);
+                    return InteractionResult.FAIL;
+                }
+                stack.consume(1, player);
+                server.setBlock(pos, state.setValue(INFUSION, 1).setValue(REALM, true), Block.UPDATE_ALL);
+                Vec3 core = Vec3.atBottomCenterOf(pos).add(0, contentY(MAX_LEVEL) + 0.05, 0);
+                Fx.play(server, "prog_infuse", core, Vec3.ZERO, 1, -1);
+                Fx.sound(server, core, SoundEvents.SHULKER_BOX_OPEN, 0.8f, 0.4f);
+                Fx.sound(server, core, SoundEvents.SCULK_SHRIEKER_SHRIEK, 0.6f, 0.5f);
+                server.scheduleTick(pos, this, stageTicks());
+            }
+            return InteractionResult.SUCCESS;
         }
         if (stack.is(ProgressionItems.GLASSES)) {
             if (state.getValue(LEVEL) < MAX_LEVEL || state.getValue(INFUSION) > 0) return InteractionResult.TRY_WITH_EMPTY_HAND;
@@ -127,7 +150,7 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> b) {
-        b.add(LEVEL, INFUSION);
+        b.add(LEVEL, INFUSION, REALM);
     }
 
     @Override
@@ -192,9 +215,16 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
             level.scheduleTick(pos, this, stageTicks());
             return;
         }
-        // Collapse: the energy is spent into the glasses, and Cursed Glasses rise out.
+        // Collapse: the energy is spent into what it held, and that rises out awakened.
         level.setBlock(pos, Blocks.CAULDRON.defaultBlockState(), Block.UPDATE_ALL);
-        ItemEntity out = new ItemEntity(level, core.x, core.y + 0.4, core.z, new ItemStack(ProgressionItems.CURSED_GLASSES));
+        ItemStack result = new ItemStack(ProgressionItems.CURSED_GLASSES);
+        if (state.getValue(REALM)) {
+            // The world gives the cube its one id now (or, if another realm appeared meanwhile, it stays dormant).
+            java.util.UUID id = dev.rick.jjk.progression.prison.PrisonRealm.forge(level.getServer());
+            result = id != null ? dev.rick.jjk.progression.prison.PrisonRealmItem.create(id) : new ItemStack(ProgressionItems.DORMANT_PRISON_REALM);
+            if (id != null) Fx.sound(level, core, SoundEvents.ENDER_DRAGON_GROWL, 0.5f, 1.6f);
+        }
+        ItemEntity out = new ItemEntity(level, core.x, core.y + 0.4, core.z, result);
         out.setDeltaMovement(0, 0.3, 0);
         out.setPickUpDelay(20);
         level.addFreshEntity(out);
@@ -208,7 +238,7 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
     protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean moved) {
         super.affectNeighborsAfterRemoval(state, level, pos, moved);
         if (state.getValue(INFUSION) > 0 && !level.getBlockState(pos).is(this)) {
-            Block.popResource(level, pos, new ItemStack(ProgressionItems.GLASSES));
+            Block.popResource(level, pos, new ItemStack(state.getValue(REALM) ? ProgressionItems.DORMANT_PRISON_REALM : ProgressionItems.GLASSES));
         }
     }
 
