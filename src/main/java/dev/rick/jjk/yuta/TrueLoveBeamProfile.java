@@ -74,6 +74,45 @@ public final class TrueLoveBeamProfile {
         return Math.abs(rel.dot(f[0])) <= h + body && Math.abs(rel.dot(f[1])) <= h + body;
     }
 
+    /**
+     * The blocks a beam of this shape carves, nearest first, as {@code positions} with how far along each lies in
+     * {@code along}: the whole square, and a ragged edge {@code edge} blocks deep round it (each block in that band goes
+     * or stays by a fixed noise, so the tunnel is torn, not cut).
+     */
+    public static void carve(Vec3 origin, Vec3 dir, double range, double half, double edge, java.util.List<net.minecraft.core.BlockPos> positions,
+                             java.util.List<Double> along) {
+        Vec3[] f = frame(dir);
+        java.util.Map<net.minecraft.core.BlockPos, Double> cells = new java.util.LinkedHashMap<>();
+        for (double s = 1.5; s <= range; s += 0.6) {
+            double h = half(s, range, half);
+            if (h <= 0) continue;
+            Vec3 c = origin.add(dir.scale(s));
+            double reach = h + edge;
+            for (double a = -reach; a <= reach; a += 0.6) {
+                for (double b = -reach; b <= reach; b += 0.6) {
+                    double out = Math.max(Math.abs(a), Math.abs(b)) - h;
+                    net.minecraft.core.BlockPos bp = net.minecraft.core.BlockPos.containing(c.add(f[0].scale(a)).add(f[1].scale(b)));
+                    if (out > 0 && noise(bp) * edge < out) continue;
+                    cells.putIfAbsent(bp, s);
+                }
+            }
+        }
+        java.util.List<java.util.Map.Entry<net.minecraft.core.BlockPos, Double>> list = new java.util.ArrayList<>(cells.entrySet());
+        list.sort(java.util.Map.Entry.comparingByValue());
+        for (var e : list) {
+            positions.add(e.getKey());
+            along.add(e.getValue());
+        }
+    }
+
+    private static double noise(net.minecraft.core.BlockPos p) {
+        long h = p.asLong() * 0x9E3779B97F4A7C15L;
+        h ^= h >>> 29;
+        h *= 0xBF58476D1CE4E5B9L;
+        h ^= h >>> 32;
+        return (h & 0xFFFF) / 65535.0;
+    }
+
     private static double smooth(double x) {
         return x * x * (3 - 2 * x);
     }

@@ -31,6 +31,27 @@ import java.util.Random;
  * out with distance.
  */
 public final class LoveBeams {
+    /**
+     * A beam's colours: its main hue, tinted toward white by {@code t} for the hotter layers, the dense body under the
+     * light, and the dark bands rolling down it. Every Last Drop is the same square torrent in True Cannon's blue.
+     */
+    public record Palette(float r, float g, float b, float[] solid, float[] band) {
+        float r(float t) {
+            return r + (1 - r) * t;
+        }
+
+        float g(float t) {
+            return g + (1 - g) * t;
+        }
+
+        float b(float t) {
+            return b + (1 - b) * t;
+        }
+    }
+
+    public static final Palette PINK = new Palette(1f, 0.4f, 1f, new float[] {0.78f, 0.16f, 0.86f}, new float[] {0.24f, 0.02f, 0.3f});
+    public static final Palette BLUE = new Palette(0.22f, 0.58f, 1f, new float[] {0.1f, 0.3f, 0.88f}, new float[] {0.02f, 0.07f, 0.3f});
+
     private static final Map<Integer, ClientBeam> BEAMS = new HashMap<>();
     private static final Random RNG = new Random();
 
@@ -76,11 +97,11 @@ public final class LoveBeams {
             if (t < 0) continue;
             float scale = b.scale(t);
             if (scale <= 0.01f) continue;
-            draw(c, ps, cam, camRot, e.getKey(), b, t, time, scale);
+            draw(c, ps, cam, camRot, e.getKey(), b, t, time, scale, PINK);
         }
     }
 
-    private static void draw(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, int key, ClientBeam b, float t, float time, float scale) {
+    static void draw(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, int key, ClientBeam b, float t, float time, float scale, Palette P) {
         double cap = BeamClashClient.reach(key);
         boolean capped = cap < b.front(t);
         final double front = Math.min(b.front(t), cap);
@@ -113,34 +134,34 @@ public final class LoveBeams {
 
         // 1. The main body, filling the square: dense deep magenta (alpha-blended), then the pink light over it with bands
         // of brightness racing forward along it.
-        Glow.prism(c, ps, n, u, w, 0, len, s -> at.at(s) * 0.985, s -> 1f, rings, 0.78f, 0.16f, 0.86f, 0.72f * fade, camRel, 0.6f, true);
+        Glow.prism(c, ps, n, u, w, 0, len, s -> at.at(s) * 0.985, s -> 1f, rings, P.solid()[0], P.solid()[1], P.solid()[2], 0.72f * fade, camRel, 0.6f, true);
         Glow.Shade race = s -> bright * (0.72f + 0.2f * Mth.sin((float) s * 0.55f - t * 2.2f) + 0.1f * Mth.sin((float) s * 1.4f - t * 3.9f)
                 + bump((float) s, wave, 3f) * 0.9f);
-        Glow.prism(c, ps, n, u, w, 0, len, at, race, rings, 1f, 0.36f, 0.95f, 0.42f * fade, camRel, 0.35f, false);
+        Glow.prism(c, ps, n, u, w, 0, len, at, race, rings, P.r(0), P.g(0), P.b(0), 0.42f * fade, camRel, 0.35f, false);
         // 2. The hot inner body and the near-white core (2.5 blocks across), churning fast and surging.
-        Glow.prism(c, ps, n, u, w, 0, len, s -> at.at(s) * 0.72, race, rings, 1f, 0.55f, 1f, 0.42f * fade, camRel, 0.5f, false);
+        Glow.prism(c, ps, n, u, w, 0, len, s -> at.at(s) * 0.72, race, rings, P.r(0.25f), P.g(0.25f), P.b(0.25f), 0.42f * fade, camRel, 0.5f, false);
         Glow.Shade churn = s -> bright * (0.85f + 0.15f * Mth.sin((float) s * 1.7f - t * 3.4f)) + bump((float) s, wave, 2f);
-        Glow.prism(c, ps, n, u, w, 0, len, s -> at.at(s) * (0.5 + 0.03 * Math.sin(s * 2.1 - t * 4.1)), churn, rings, 1f, 0.85f, 1f, 0.7f * fade, camRel,
+        Glow.prism(c, ps, n, u, w, 0, len, s -> at.at(s) * (0.5 + 0.03 * Math.sin(s * 2.1 - t * 4.1)), churn, rings, P.r(0.75f), P.g(0.75f), P.b(0.75f), 0.7f * fade, camRel,
                 0.7f, false);
         Glow.prism(c, ps, n, u, w, 0, len, s -> at.at(s) * 0.26, churn, rings, 1f, 1f, 1f, 1f * fade, camRel, 0.9f, false);
         // 3. Square sheets across it, moving with the flow: head-on they stack into a solid square of energy.
         float gap = b.quick ? 3f : 2.2f;
         for (float sAt = 0.8f + (t * 1.8f) % gap; sAt < len - 0.3f; sAt += gap) {
             float h = (float) at.at(sAt);
-            Glow.slice(c, ps, n, u, w, sAt, h * 0.98f, 1f, 0.45f, 1f, 0.06f * fade * bright, 3.2f);
+            Glow.slice(c, ps, n, u, w, sAt, h * 0.98f, P.r(0.08f), P.g(0.08f), P.b(0.08f), 0.06f * fade * bright, 3.2f);
         }
         if (!b.quick) {
             // 4. The unstable aura: a looser square that heaves and bulges at its edges, and a faint wide haze.
             Glow.prism(c, ps, n, u, w, 0, len, s -> at.at(s) * (1.13 + 0.07 * Math.sin(s * 0.9 - t * 1.1) + 0.05 * Math.sin(s * 2.7 + t * 2.3)),
-                    s -> bright, rings, 0.97f, 0.36f, 1f, 0.24f * fade, camRel, 0.05f, false);
+                    s -> bright, rings, P.r(0.02f), P.g(0.02f), P.b(0.02f), 0.24f * fade, camRel, 0.05f, false);
             if (mid) {
-                Glow.prism(c, ps, n, u, w, 0, len, s -> at.at(s) * (1.36 + 0.16 * Math.sin(s * 0.45 - t * 0.6)), s -> 1f, rings, 0.9f, 0.3f, 1f,
+                Glow.prism(c, ps, n, u, w, 0, len, s -> at.at(s) * (1.36 + 0.16 * Math.sin(s * 0.45 - t * 0.6)), s -> 1f, rings, P.r(0), P.g(0), P.b(0),
                         0.09f * fade, camRel, 0.02f, false);
             }
             // Dark bands rolling down it.
             float band = 6f, off = (t * 2.1f) % band;
             for (float sAt = 2.5f + off; sAt + 1f < len - 1.5f; sAt += band) {
-                Glow.prism(c, ps, n, u, w, sAt, sAt + 0.7f, s -> at.at(s) * 1.035, s -> 1f, 1, 0.24f, 0.02f, 0.3f, 0.4f * fade, camRel, 0.4f, true);
+                Glow.prism(c, ps, n, u, w, sAt, sAt + 0.7f, s -> at.at(s) * 1.035, s -> 1f, 1, P.band()[0], P.band()[1], P.band()[2], 0.4f * fade, camRel, 0.4f, true);
             }
             if (near) {
                 // Streaks racing along its edges and faces, from the source to the impact.
@@ -157,7 +178,7 @@ public final class LoveBeams {
                         float h = (float) at.at(sAt) * 1.04f;
                         pts[i] = new Vector3f(n).mul(sAt).add(new Vector3f(u).mul(cu * h)).add(new Vector3f(w).mul(cv * h));
                     }
-                    Glow.strip(c, ps, pts, 0.13f, 1f, k % 3 == 0 ? 1f : 0.82f, 1f, 0.75f * fade * bright, camRel);
+                    Glow.strip(c, ps, pts, 0.13f, P.r(k % 3 == 0 ? 1f : 0.7f), P.g(k % 3 == 0 ? 1f : 0.7f), P.b(k % 3 == 0 ? 1f : 0.7f), 0.75f * fade * bright, camRel);
                 }
                 // Two arcs spiralling round it on a squared path, turning as it pours forward.
                 for (int k = 0; k < 2; k++) {
@@ -171,7 +192,7 @@ public final class LoveBeams {
                         float qx = Math.signum(cs) * (float) Math.sqrt(Math.abs(cs)), qy = Math.signum(sn) * (float) Math.sqrt(Math.abs(sn));
                         pts[i] = new Vector3f(n).mul(sAt).add(new Vector3f(u).mul(qx * h)).add(new Vector3f(w).mul(qy * h));
                     }
-                    Glow.strip(c, ps, pts, 0.17f, 1f, 0.86f, 1f, 0.6f * fade, camRel);
+                    Glow.strip(c, ps, pts, 0.17f, P.r(0.77f), P.g(0.77f), P.b(0.77f), 0.6f * fade, camRel);
                 }
                 // Lightning cracking off its faces, re-forked every tick.
                 RNG.setSeed(key * 7919L + (long) t * 31L);
@@ -187,49 +208,49 @@ public final class LoveBeams {
                     Vector3f from = new Vector3f(n).mul(sAt).add(new Vector3f(u).mul(cu * h)).add(new Vector3f(w).mul(cv * h));
                     Vector3f out = new Vector3f(u).mul(cu).add(new Vector3f(w).mul(cv)).normalize().mul(1.5f + RNG.nextFloat() * 2.5f)
                             .add(new Vector3f(n).mul((RNG.nextFloat() - 0.3f) * 2f));
-                    Glow.bolt(c, ps, from, new Vector3f(from).add(out), 0.07f, 1f, 0.8f, 1f, 0.9f * fade, RNG.nextLong());
+                    Glow.bolt(c, ps, from, new Vector3f(from).add(out), 0.07f, P.r(0.67f), P.g(0.67f), P.b(0.67f), 0.9f * fade, RNG.nextLong());
                 }
             }
             // 5. The surge itself: a band of white running down it, and a square shock front with it.
             if (wave > -50 && wave < len) {
                 float w0 = Math.max(0, wave - 2.5f), w1 = Math.min(len, wave + 1f);
                 float a = 0.85f * (1 - since / 6f);
-                Glow.prism(c, ps, n, u, w, w0, w1, s -> at.at(s) * 1.16, s -> 1f, 3, 1f, 0.92f, 1f, a * fade, camRel, 0.3f, false);
-                Glow.squareRing(c, ps, n, u, w, wave, (float) at.at(wave) * 1.45f, 0.6f, 0, 1f, 0.75f, 1f, a * fade);
+                Glow.prism(c, ps, n, u, w, w0, w1, s -> at.at(s) * 1.16, s -> 1f, 3, P.r(0.87f), P.g(0.87f), P.b(0.87f), a * fade, camRel, 0.3f, false);
+                Glow.squareRing(c, ps, n, u, w, wave, (float) at.at(wave) * 1.45f, 0.6f, 0, P.r(0.58f), P.g(0.58f), P.b(0.58f), a * fade);
             }
             // 6. The source: Rika pouring everything into it, a flare as wide as the beam and a turning square frame.
             ps.pushPose();
             ps.translate(n.x * 0.4f, n.y * 0.4f, n.z * 0.4f);
-            Glow.halo(c, ps, camRot, (float) (4.6 * scale) * bright, 1f, 0.42f, 1f, 0.42f * fade);
-            Glow.halo(c, ps, camRot, (float) (2.2 * scale) * bright, 1f, 0.95f, 1f, 0.8f * fade);
+            Glow.halo(c, ps, camRot, (float) (4.6 * scale) * bright, P.r(0.03f), P.g(0.03f), P.b(0.03f), 0.42f * fade);
+            Glow.halo(c, ps, camRot, (float) (2.2 * scale) * bright, P.r(0.92f), P.g(0.92f), P.b(0.92f), 0.8f * fade);
             ps.popPose();
-            Glow.squareRing(c, ps, n, u, w, 0.3f, (float) (b.half * 1.5 * scale), 0.5f, t * 0.08f, 1f, 0.6f, 1f, 0.6f * fade);
-            Glow.squareRing(c, ps, n, u, w, 0.6f, (float) (b.half * 1.15 * scale), 0.35f, -t * 0.13f, 1f, 0.95f, 1f, 0.7f * fade);
+            Glow.squareRing(c, ps, n, u, w, 0.3f, (float) (b.half * 1.5 * scale), 0.5f, t * 0.08f, P.r(0.33f), P.g(0.33f), P.b(0.33f), 0.6f * fade);
+            Glow.squareRing(c, ps, n, u, w, 0.6f, (float) (b.half * 1.15 * scale), 0.35f, -t * 0.13f, P.r(0.92f), P.g(0.92f), P.b(0.92f), 0.7f * fade);
         }
         // 7. The impact: where it strikes now (unless a clash has it, which draws its own collision).
         if (!capped) {
             double sImp = Mth.clamp(b.strike.subtract(b.origin).dot(b.dir), 1, front);
-            impact(c, ps, camRot, n, u, w, (float) sImp, (float) H, t, since, fade * bright, b.quick, near);
+            impact(c, ps, camRot, n, u, w, (float) sImp, (float) H, t, since, fade * bright, b.quick, near, P);
         }
         ps.popPose();
     }
 
     /** The impact: a mass of energy 7-9 blocks across, square shock fronts, arcs splashing sideways, every surge harder. */
     private static void impact(SubmitNodeCollector c, PoseStack ps, Quaternionf camRot, Vector3f n, Vector3f u, Vector3f w, float s, float H, float t,
-                               float since, float a, boolean quick, boolean near) {
+                               float since, float a, boolean quick, boolean near, Palette P) {
         float k = quick ? 0.45f : 1f;
         float hit = since >= 0 && since < 7 ? 1 - since / 7f : 0;
         ps.pushPose();
         ps.translate(n.x * s, n.y * s, n.z * s);
         float pulse = 1f + 0.08f * Mth.sin(t * 2.3f) + 0.25f * hit;
-        Glow.halo(c, ps, camRot, 4.6f * k * pulse, 1f, 0.4f, 1f, 0.5f * a);
-        Glow.halo(c, ps, camRot, 2.6f * k * pulse, 1f, 0.8f, 1f, 0.75f * a);
+        Glow.halo(c, ps, camRot, 4.6f * k * pulse, P.r(0.00f), P.g(0.00f), P.b(0.00f), 0.5f * a);
+        Glow.halo(c, ps, camRot, 2.6f * k * pulse, P.r(0.67f), P.g(0.67f), P.b(0.67f), 0.75f * a);
         Glow.halo(c, ps, camRot, 1.3f * k * pulse, 1f, 1f, 1f, 0.95f * a);
         ps.popPose();
         // Square shock fronts round the impact, and one thrown out wide on every surge.
-        Glow.squareRing(c, ps, n, u, w, s - 0.2f, H * 1.5f * pulse, 0.6f, t * 0.21f, 1f, 0.6f, 1f, 0.55f * a);
-        Glow.squareRing(c, ps, n, u, w, s - 0.4f, H * 1.85f * pulse, 0.4f, -t * 0.17f, 1f, 0.85f, 1f, 0.35f * a);
-        if (hit > 0) Glow.squareRing(c, ps, n, u, w, s - 0.6f, H * (1.6f + 3.2f * (1 - hit)), 0.9f, 0, 1f, 0.9f, 1f, 0.7f * hit * a);
+        Glow.squareRing(c, ps, n, u, w, s - 0.2f, H * 1.5f * pulse, 0.6f, t * 0.21f, P.r(0.33f), P.g(0.33f), P.b(0.33f), 0.55f * a);
+        Glow.squareRing(c, ps, n, u, w, s - 0.4f, H * 1.85f * pulse, 0.4f, -t * 0.17f, P.r(0.75f), P.g(0.75f), P.b(0.75f), 0.35f * a);
+        if (hit > 0) Glow.squareRing(c, ps, n, u, w, s - 0.6f, H * (1.6f + 3.2f * (1 - hit)), 0.9f, 0, P.r(0.83f), P.g(0.83f), P.b(0.83f), 0.7f * hit * a);
         if (!near) return;
         // Energy splashing out sideways off whatever it is boring into.
         RNG.setSeed((long) (t * 1.7f) * 977L + 13);
@@ -238,7 +259,7 @@ public final class LoveBeams {
             Vector3f side = new Vector3f(u).mul(Mth.cos(ang)).add(new Vector3f(w).mul(Mth.sin(ang)));
             Vector3f from = new Vector3f(n).mul(s - 0.5f).add(new Vector3f(side).mul(H * 0.6f));
             Vector3f to = new Vector3f(from).add(new Vector3f(side).mul((2.5f + RNG.nextFloat() * 3.5f) * k)).add(new Vector3f(n).mul(-RNG.nextFloat() * 2.5f));
-            Glow.bolt(c, ps, from, to, 0.08f, 1f, 0.82f, 1f, 0.9f * a, RNG.nextLong());
+            Glow.bolt(c, ps, from, to, 0.08f, P.r(0.70f), P.g(0.70f), P.b(0.70f), 0.9f * a, RNG.nextLong());
         }
     }
 

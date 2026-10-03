@@ -126,6 +126,21 @@ public final class RyuCombat {
         return clip.getType() == Type.MISS ? from.add(d.scale(range)) : clip.getLocation();
     }
 
+    // --- Sound ---
+
+    /**
+     * One of his own JJS sounds at a beat of a move that has no effect of its own (a startup, a dash, a wind-up),
+     * heard by everyone near through the effect channel (so the client's volume setting applies).
+     */
+    public static void sfx(LivingEntity user, String sound, float volume) {
+        if (user.level() instanceof ServerLevel level) Fx.play(level, "sfx:" + sound, user.getEyePosition(), Vec3.ZERO, volume, user.getId());
+    }
+
+    /** The effect of a landed blow that plays {@code sound}: heavy ("ryuh:") or light ("ryul:") visuals. */
+    public static String hitFx(String sound, boolean heavy) {
+        return (heavy ? "ryuh:" : "ryul:") + sound;
+    }
+
     // --- Strikes ---
 
     public static Hit.Builder strike(LivingEntity user, String id, float damage, boolean unblockable) {

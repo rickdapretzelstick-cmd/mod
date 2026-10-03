@@ -484,7 +484,24 @@ final class RyuFx {
                 if (mc.player != null && mc.player.position().distanceTo(pos) < 30) ScreenEffects.flash(0xB0FFFFFF, 10);
                 distanceShake(pos, 100, 2f);
             }
-            default -> {}
+            default -> {
+                String id = p.id();
+                if (id.startsWith("sfx:")) {
+                    // One of his own JJS sounds at a beat of a move (the server names it).
+                    sound(id.substring(4), pos, Math.max(0.1f, s), 1f);
+                } else if (id.startsWith("ryuh:") || id.startsWith("ryul:")) {
+                    // A landed blow with its own JJS hit sound.
+                    boolean heavy = id.startsWith("ryuh:");
+                    String snd = id.substring(5);
+                    if (!snd.equals("none")) sound(snd, pos, 1.1f, 1f);
+                    if (drawn) {
+                        Flashes.flash(pos, heavy ? 1.3f : 0.7f, heavy ? 0.4f : 0.25f, heavy ? RYU_LIGHT : WHITE, 1f, heavy ? 5 : 3, now);
+                        if (heavy) impactStar(pos, d, 10, 1.6f * s, 0.06f, RYU, now);
+                        sparks(level, pos, d, q(heavy ? 12 : 6), heavy ? 0.5 : 0.35, RYU_LIGHT, 0.07f, heavy ? 8 : 5);
+                    }
+                    victimFeedback(p, heavy ? 0.6f : 0.3f);
+                }
+            }
         }
     }
 }

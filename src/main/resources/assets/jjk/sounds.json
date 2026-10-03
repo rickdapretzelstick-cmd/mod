@@ -1358,5 +1358,267 @@
     "sounds": [
       "jjk:jacobs_ladder"
     ]
+  },
+  "ryu_granite_charge": {
+    "sounds": [
+      "jjk:ryu_granite_charge"
+    ]
+  },
+  "ryu_granite_fire": {
+    "sounds": [
+      "jjk:ryu_granite_fire"
+    ]
+  },
+  "ryu_granite_fire_hard": {
+    "sounds": [
+      "jjk:ryu_granite_fire_hard"
+    ]
+  },
+  "ryu_granite_hit": {
+    "sounds": [
+      "jjk:ryu_granite_hit"
+    ]
+  },
+  "ryu_weave": {
+    "sounds": [
+      "jjk:ryu_weave"
+    ]
+  },
+  "ryu_unsat_dash": {
+    "sounds": [
+      "jjk:ryu_unsat_dash"
+    ]
+  },
+  "ryu_hit_1": {
+    "sounds": [
+      "jjk:ryu_hit_1"
+    ]
+  },
+  "ryu_hit_2": {
+    "sounds": [
+      "jjk:ryu_hit_2"
+    ]
+  },
+  "ryu_hit_3": {
+    "sounds": [
+      "jjk:ryu_hit_3"
+    ]
+  },
+  "ryu_final_hit_1": {
+    "sounds": [
+      "jjk:ryu_final_hit_1"
+    ]
+  },
+  "ryu_final_hit_2": {
+    "sounds": [
+      "jjk:ryu_final_hit_2"
+    ]
+  },
+  "ryu_helping_start": {
+    "sounds": [
+      "jjk:ryu_helping_start"
+    ]
+  },
+  "ryu_helping_slam": {
+    "sounds": [
+      "jjk:ryu_helping_slam"
+    ]
+  },
+  "ryu_helping_hit": {
+    "sounds": [
+      "jjk:ryu_helping_hit"
+    ]
+  },
+  "ryu_helping_air": {
+    "sounds": [
+      "jjk:ryu_helping_air"
+    ]
+  },
+  "ryu_helping_air_2": {
+    "sounds": [
+      "jjk:ryu_helping_air_2"
+    ]
+  },
+  "ryu_comb": {
+    "sounds": [
+      "jjk:ryu_comb"
+    ]
+  },
+  "ryu_hair": {
+    "sounds": [
+      "jjk:ryu_hair"
+    ]
+  },
+  "ryu_sweet_comb": {
+    "sounds": [
+      "jjk:ryu_sweet_comb"
+    ]
+  },
+  "ryu_sweet": {
+    "sounds": [
+      "jjk:ryu_sweet"
+    ]
+  },
+  "ryu_recovery": {
+    "sounds": [
+      "jjk:ryu_recovery"
+    ]
+  },
+  "ryu_ult_start": {
+    "sounds": [
+      "jjk:ryu_ult_start"
+    ]
+  },
+  "ryu_ult_fire": {
+    "sounds": [
+      "jjk:ryu_ult_fire"
+    ]
+  },
+  "ryu_ult_hit": {
+    "sounds": [
+      "jjk:ryu_ult_hit"
+    ]
+  },
+  "ryu_jingle": {
+    "sounds": [
+      "jjk:ryu_jingle"
+    ]
+  },
+  "ryu_music": {
+    "sounds": [
+      {
+        "name": "jjk:ryu_music",
+        "stream": true
+      },
+      {
+        "name": "jjk:ryu_music_2",
+        "stream": true
+      }
+    ]
+  },
+  "ryu_after_swing": {
+    "sounds": [
+      "jjk:ryu_after_swing"
+    ]
+  },
+  "ryu_after_slam": {
+    "sounds": [
+      "jjk:ryu_after_slam"
+    ]
+  },
+  "ryu_after_dash": {
+    "sounds": [
+      "jjk:ryu_after_dash"
+    ]
+  },
+  "ryu_after_hit": {
+    "sounds": [
+      "jjk:ryu_after_hit"
+    ]
+  },
+  "ryu_after_first_hit": {
+    "sounds": [
+      "jjk:ryu_after_first_hit"
+    ]
+  },
+  "ryu_after_dismember": {
+    "sounds": [
+      "jjk:ryu_after_dismember"
+    ]
+  },
+  "ryu_noidea_start": {
+    "sounds": [
+      "jjk:ryu_noidea_start"
+    ]
+  },
+  "ryu_noidea_second": {
+    "sounds": [
+      "jjk:ryu_noidea_second"
+    ]
+  },
+  "ryu_noidea_hit_1": {
+    "sounds": [
+      "jjk:ryu_noidea_hit_1"
+    ]
+  },
+  "ryu_dessert_start": {
+    "sounds": [
+      "jjk:ryu_dessert_start"
+    ]
+  },
+  "ryu_dessert_dash": {
+    "sounds": [
+      "jjk:ryu_dessert_dash"
+    ]
+  },
+  "ryu_dessert_hit": {
+    "sounds": [
+      "jjk:ryu_dessert_hit"
+    ]
+  },
+  "ryu_dessert_slide": {
+    "sounds": [
+      "jjk:ryu_dessert_slide"
+    ]
+  },
+  "ryu_dessert_long_hit": {
+    "sounds": [
+      "jjk:ryu_dessert_long_hit"
+    ]
+  },
+  "ryu_dodge": {
+    "sounds": [
+      "jjk:ryu_dodge"
+    ]
+  },
+  "ryu_dessert_impact": {
+    "sounds": [
+      "jjk:ryu_dessert_impact"
+    ]
+  },
+  "ryu_dessert_final": {
+    "sounds": [
+      "jjk:ryu_dessert_final"
+    ]
+  },
+  "ryu_invited_windup": {
+    "sounds": [
+      "jjk:ryu_invited_windup"
+    ]
+  },
+  "ryu_invited_swing": {
+    "sounds": [
+      "jjk:ryu_invited_swing"
+    ]
+  },
+  "ryu_invited_charge": {
+    "sounds": [
+      "jjk:ryu_invited_charge"
+    ]
+  },
+  "ryu_invited_power_dash": {
+    "sounds": [
+      "jjk:ryu_invited_power_dash"
+    ]
+  },
+  "ryu_invited_full_charge": {
+    "sounds": [
+      "jjk:ryu_invited_full_charge"
+    ]
+  },
+  "ryu_invited_dash": {
+    "sounds": [
+      "jjk:ryu_invited_dash"
+    ]
+  },
+  "ryu_invited_hit": {
+    "sounds": [
+      "jjk:ryu_invited_hit"
+    ]
+  },
+  "ryu_noidea_hit": {
+    "sounds": [
+      "jjk:ryu_noidea_hit"
+    ]
   }
 }

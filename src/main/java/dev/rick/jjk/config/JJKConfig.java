@@ -26,7 +26,7 @@ public final class JJKConfig {
      * The gameplay tuning this file was written for. When the mod's defaults change (the JJS wiki pass), older files have
      * their gameplay sections reset to the new defaults; the player's client settings are kept.
      */
-    public static final int CURRENT_VERSION = 6;
+    public static final int CURRENT_VERSION = 7;
     public int version;
 
     public General general = new General();
@@ -1086,7 +1086,8 @@ public final class JJKConfig {
         // Every Last Drop.: 104 (less the more it catches, and the farther), 100% overheat; awakening heals 25.
         public int eldCharge = 50;
         public int eldTicks = 40;
-        public double eldRange = 46, eldRadius = 1.3;
+        /** Its length, and the half-width of its square: the same five-by-five as True Love Beam. */
+        public double eldRange = 46, eldRadius = 2.5;
         public float eldDamage = 104f, eldMinDamage = 45f, eldHeal = 25f;
         public int eldCooldown = 600;
         public float eldCost = 150f;

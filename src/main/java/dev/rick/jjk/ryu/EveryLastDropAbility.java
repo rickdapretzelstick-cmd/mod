@@ -85,7 +85,7 @@ public final class EveryLastDropAbility extends Ability {
     public static final class Instance extends AbilityInstance implements ClashBeam {
         @Nullable private final Vec3 counterAt;
         private final float heatBefore;
-        private int lockAt, fireAt, fireEnd, hold, grow = 3, collapse = 6;
+        private int lockAt, fireAt, fireEnd, hold, grow = 3, collapse = 8;
         private Vec3 origin = Vec3.ZERO, dir = Vec3.ZERO;
         private double range, radius;
         private boolean drawn, locked, awakenDone;
@@ -168,23 +168,18 @@ public final class EveryLastDropAbility extends Ability {
             Fx.play(level, "eld_fire", origin, dir.scale(range), hold, user.getId());
             Fx.shake(level, origin, 80, 1.5f, 30);
             players = Math.max(1, level.getEntitiesOfClass(Player.class, new AABB(origin, origin.add(dir.scale(range))).inflate(radius + 1),
-                    p -> Targeting.canTarget(user, p) && inside(p, range)).size());
+                    p -> Targeting.canTarget(user, p) && inside(p, range, 1f)).size());
             planCarve();
             BeamClashManager.fired(this);
         }
 
+        /** The same five-by-five square tunnel True Love Beam tears, torn at its edge. */
         private void planCarve() {
-            Map<BlockPos, Double> cells = new LinkedHashMap<>();
-            for (double s = 1.5; s <= range; s += 0.6) {
-                Vec3 c = origin.add(dir.scale(s));
-                double r = radius + 0.5;
-                for (double a = -r; a <= r; a += 0.6) for (double b = -r; b <= r; b += 0.6) for (double z = -r; z <= r; z += 0.6) {
-                    if (a * a + b * b + z * z > r * r) continue;
-                    cells.putIfAbsent(BlockPos.containing(c.add(a, b, z)), s);
-                }
-            }
-            carve = new ArrayList<>(cells.keySet());
-            carveAt = new ArrayList<>(cells.values());
+            List<BlockPos> cells = new ArrayList<>();
+            List<Double> at = new ArrayList<>();
+            TrueLoveBeamProfile.carve(origin, dir, range, radius, JJKConfig.get().yuta.beamCarveEdge, cells, at);
+            carve = cells;
+            carveAt = at;
             carved = 0;
         }
 
@@ -214,9 +209,10 @@ public final class EveryLastDropAbility extends Ability {
             }
             if (!live) return;
             JJKConfig.Ryu cfg = RyuCombat.cfg();
-            AABB box = new AABB(origin, origin.add(dir.scale(front))).inflate(radius + 1);
+            AABB box = new AABB(origin, origin.add(dir.scale(front))).inflate(radius + 1.5);
+            float scale = TrueLoveBeamProfile.scale(t, hold, collapse);
             for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, e -> Targeting.canTarget(user, e))) {
-                if (hit.contains(e) || !inside(e, front)) continue;
+                if (hit.contains(e) || !inside(e, front, scale)) continue;
                 // Held in a clash, the collision stands between it and the other contestant.
                 if (clash != null && clash.sideOf(e) != null) continue;
                 hit.add(e);
@@ -234,13 +230,11 @@ public final class EveryLastDropAbility extends Ability {
             }
         }
 
-        private boolean inside(LivingEntity e, double front) {
-            double body = e.getBbWidth() / 2 + 0.2;
+        /** Inside the square, exactly as it is drawn (the same profile as True Love Beam). */
+        private boolean inside(LivingEntity e, double front, float scale) {
+            double body = e.getBbWidth() / 2 + 0.15;
             for (Vec3 p : new Vec3[] {e.position().add(0, 0.2, 0), e.getBoundingBox().getCenter(), e.getEyePosition()}) {
-                Vec3 rel = p.subtract(origin);
-                double s = rel.dot(dir);
-                if (s < -body || s > front + body) continue;
-                if (rel.subtract(dir.scale(s)).length() <= radius + body) return true;
+                if (TrueLoveBeamProfile.contains(origin, dir, front, radius, scale, p, body)) return true;
             }
             return false;
         }

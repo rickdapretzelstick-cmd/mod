@@ -70,6 +70,7 @@ public final class NoIdeaAbility extends Ability {
             windup = RyuCombat.cfg().noIdeaWindup;
             lastHealth = user.getHealth();
             Anim.play(user, "ryu_no_idea_windup");
+            RyuCombat.sfx(user, "ryu_noidea_start", 1f);
             setPhase(0, windup);
         }
 
@@ -96,7 +97,7 @@ public final class NoIdeaAbility extends Ability {
                     return;
                 }
                 HitResult r = HakariCombat.hit(RyuCombat.strike(user, ID, cfg.noIdeaGrab, true).knockback(Knockback.HOLD).hitstun(40)
-                        .fx("ryu_punch_heavy", 1f).build(), t);
+                        .fx(RyuCombat.hitFx("ryu_noidea_hit", true), 1f).build(), t);
                 if (!r.connected()) {
                     endAt = age + 12;
                     return;
@@ -106,6 +107,7 @@ public final class NoIdeaAbility extends Ability {
                 RyuCombat.selfDamage(user, cfg.noIdeaSelfGrab);
                 Statuses.apply(t, CombatStatus.GRABBED, 40);
                 Anim.play(user, "ryu_no_idea_exchange");
+                RyuCombat.sfx(user, "ryu_weave", 1f);
                 setPhase(1, 34);
                 return;
             }
@@ -120,14 +122,14 @@ public final class NoIdeaAbility extends Ability {
                 // Fist against fist: he gives as good as he gets, and his output wins.
                 punches++;
                 HakariCombat.hit(RyuCombat.strike(user, ID, cfg.noIdeaPunch, true).knockback(Knockback.HOLD).hitstun(12)
-                        .fx("ryu_punch", 0.8f).noComboScaling().build(), victim);
+                        .fx(RyuCombat.hitFx("ryu_noidea_second", false), 0.8f).noComboScaling().build(), victim);
                 RyuCombat.selfDamage(user, cfg.noIdeaSelfPunch);
                 Fx.play(level, "ryu_fist_clash", user.getEyePosition().add(HakariCombat.flat(user).scale(0.8)), HakariCombat.flat(user), 1f, user.getId());
             }
             if (punches >= 7 && k >= 32) {
                 Statuses.remove(victim, CombatStatus.GRABBED);
                 HakariCombat.hit(RyuCombat.strike(user, ID, cfg.noIdeaPush, true)
-                        .knockback(Knockback.directional(HakariCombat.flat(user), 0.9, 0.2)).hitstun(16).fx("ryu_punch_heavy", 1.1f).build(), victim);
+                        .knockback(Knockback.directional(HakariCombat.flat(user), 0.9, 0.2)).hitstun(16).fx(RyuCombat.hitFx("ryu_noidea_hit_1", true), 1.1f).build(), victim);
                 victim = null;
                 endAt = age + 8;
             }

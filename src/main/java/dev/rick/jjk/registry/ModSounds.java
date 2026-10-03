@@ -11,6 +11,7 @@ import java.util.Map;
 /** Every custom sound. Files live in assets/jjk/sounds/<name>.ogg (see sounds.json). */
 public final class ModSounds {
     public static final String[] NAMES = {
+            "ryu_granite_charge", "ryu_granite_fire", "ryu_granite_fire_hard", "ryu_granite_hit", "ryu_weave", "ryu_unsat_dash", "ryu_hit_1", "ryu_hit_2", "ryu_hit_3", "ryu_final_hit_1", "ryu_final_hit_2", "ryu_helping_start", "ryu_helping_slam", "ryu_helping_hit", "ryu_helping_air", "ryu_helping_air_2", "ryu_comb", "ryu_hair", "ryu_sweet_comb", "ryu_sweet", "ryu_recovery", "ryu_ult_start", "ryu_ult_fire", "ryu_ult_hit", "ryu_jingle", "ryu_music", "ryu_after_swing", "ryu_after_slam", "ryu_after_dash", "ryu_after_hit", "ryu_after_first_hit", "ryu_after_dismember", "ryu_noidea_start", "ryu_noidea_hit", "ryu_noidea_second", "ryu_noidea_hit_1", "ryu_dessert_start", "ryu_dessert_dash", "ryu_dessert_hit", "ryu_dessert_slide", "ryu_dessert_long_hit", "ryu_dodge", "ryu_dessert_impact", "ryu_dessert_final", "ryu_invited_windup", "ryu_invited_swing", "ryu_invited_charge", "ryu_invited_power_dash", "ryu_invited_full_charge", "ryu_invited_dash", "ryu_invited_hit",
             "swing", "swing_heavy", "hit_light", "hit_heavy", "hit_slam", "block", "parry", "guard_break", "dash", "ground_impact",
             "heavy_charge", "no_energy",
             "infinity_on", "infinity_off", "infinity_ripple", "infinity_hold",

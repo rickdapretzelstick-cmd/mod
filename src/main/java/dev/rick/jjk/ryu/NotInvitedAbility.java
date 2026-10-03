@@ -62,6 +62,7 @@ public final class NotInvitedAbility extends Ability {
             @Override
             public void start() {
                 Anim.play(user, "ryu_invited_windup");
+                RyuCombat.sfx(user, "ryu_invited_windup", 1f);
                 setPhase(0, RyuCombat.cfg().invitedHoldTicks);
             }
 
@@ -74,6 +75,8 @@ public final class NotInvitedAbility extends Ability {
                 }
                 if (releasedAt < 0) {
                     Motion.set(user, user.getDeltaMovement().multiply(0.3, 1, 0.3));
+                    // Held past the tap: it charges.
+                    if (held && age == 6) RyuCombat.sfx(user, "ryu_invited_charge", 1f);
                     if (!full && age >= cfg.invitedHoldTicks) {
                         full = true;
                         Fx.play(level, "ryu_invited_charged", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
@@ -82,6 +85,7 @@ public final class NotInvitedAbility extends Ability {
                         releasedAt = age;
                         target = HakariCombat.aim(user, 7, null);
                         Anim.play(user, "ryu_invited_lunge");
+                        RyuCombat.sfx(user, full ? "ryu_invited_power_dash" : "ryu_invited_dash", 1f);
                     }
                     return;
                 }

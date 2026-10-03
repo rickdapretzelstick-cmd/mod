@@ -223,6 +223,60 @@ SOUNDS = {
     "shrine_music": one(c(15583493700)),
     "shrine_ready": one(c(8181034930)),
     "shrine_splash": one(c(9120548819)),
+    # --- Ryu / True Cannon (the JJS Skill Builder's Ryu list, ossaamm.github.io) ---
+    "ryu_granite_charge": one(c(107571923469306)),
+    "ryu_granite_fire": one(c(126461458989078)),
+    "ryu_granite_fire_hard": one(c(135255751694953)),
+    "ryu_granite_hit": one(c(106260518361457)),
+    "ryu_weave": one(c(135700558246306)),
+    "ryu_unsat_dash": one(c(128456835641035)),
+    "ryu_hit_1": one(c(95723598539974)),
+    "ryu_hit_2": one(c(81751127529448)),
+    "ryu_hit_3": one(c(102321170538785)),
+    "ryu_final_hit_1": one(c(70449756871810)),
+    "ryu_final_hit_2": one(c(74324781247417)),
+    "ryu_helping_start": one(c(122087651309441)),
+    "ryu_helping_slam": one(c(3778609188), c(71472197762839, at=0.02)),
+    "ryu_helping_hit": one(c(77586579310356)),
+    "ryu_helping_air": one(c(110428188752548)),
+    "ryu_helping_air_2": one(c(91193070042368)),
+    "ryu_comb": one(c(77417792700571)),
+    "ryu_hair": one(c(140476433079342)),
+    "ryu_sweet_comb": one(c(82086397349945)),
+    "ryu_sweet": one(c(77659919167587)),
+    "ryu_recovery": one(c(120486776927289)),
+    "ryu_ult_start": one(c(89655786683392)),
+    "ryu_ult_fire": one(c(117201550249538)),
+    "ryu_ult_hit": one(c(8595975878)),
+    "ryu_jingle": one(c(129375015802470)),
+    # Decadence's music: the instrumental with one of its two vocal takes (JJS picks one).
+    "ryu_music": [[c(137364280179144), c(73905683100406)], [c(137364280179144), c(92475178445200)]],
+    "ryu_after_swing": one(c(100606314590244)),
+    "ryu_after_slam": one(c(110146716041793), c(3778609188, at=0.02)),
+    "ryu_after_dash": one(c(17046281380)),
+    "ryu_after_hit": one(c(128041696595076)),
+    "ryu_after_first_hit": one(c(132856141242580)),
+    "ryu_after_dismember": one(c(125624703041853)),
+    "ryu_noidea_start": one(c(116742641261240)),
+    # Its Hit (107716907231014) is on neither Roblox's CDN nor the mirror: the move's own SecondHit, slower, instead.
+    "ryu_noidea_hit": one(c(107716907231014), c(73629332494583, speed=0.85)),
+    "ryu_noidea_second": one(c(73629332494583)),
+    "ryu_noidea_hit_1": one(c(17169365111)),
+    "ryu_dessert_start": one(c(119992343011162)),
+    "ryu_dessert_dash": one(c(80805627087578)),
+    "ryu_dessert_hit": one(c(95762461473174)),
+    "ryu_dessert_slide": one(c(138870212952178)),
+    "ryu_dessert_long_hit": one(c(95356764606940)),
+    "ryu_dodge": one(c(6470740758)),
+    "ryu_dessert_impact": one(c(105961802014473)),
+    "ryu_dessert_final": one(c(17169365111)),
+    "ryu_invited_windup": one(c(125360177222726)),
+    "ryu_invited_swing": one(c(79379409212286)),
+    "ryu_invited_charge": one(c(114191015848865)),
+    "ryu_invited_power_dash": one(c(110086889584801)),
+    "ryu_invited_full_charge": one(c(85164048354891)),
+    "ryu_invited_dash": one(c(71672117204710)),
+    "ryu_invited_hit": one(c(100409424308279)),
     # --- Yuta / Cursed Partners (the JJS Skill Builder's Cursed Partners list; its "NEW" sets where there are two) ---
     # Swordsmanship M1s: four swings and hits in order (the 4th hit is the shared heavy hit), the downslam and uppercut.
     "yuta_swing_1": one(c(90045339954472)),
@@ -332,7 +386,7 @@ FALLBACK = {
 }
 
 # Long tracks: streamed, faded out, and capped (the domain stops them when it ends).
-MUSIC = {"aml_music": 46, "shrine_music": 40, "entrusted_music": 30, "uv_music": 80, "idg_music": 80, "jackpot_music": 100, "purple_music": 14, "clash_music": 60, "zero_two_music": 30}
+MUSIC = {"ryu_music": 90, "aml_music": 46, "shrine_music": 40, "entrusted_music": 30, "uv_music": 80, "idg_music": 80, "jackpot_music": 100, "purple_music": 14, "clash_music": 60, "zero_two_music": 30}
 
 
 def fetch(i):

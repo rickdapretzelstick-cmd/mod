@@ -50,12 +50,15 @@ public final class RestyleAbility extends Ability {
             public void start() {
                 Anim.play(user, awakened ? "ryu_restyle_knuckles" : comb ? "ryu_restyle_comb" : "ryu_restyle_pose");
                 Fx.play(level, comb ? "ryu_comb" : "ryu_sweet", user.getEyePosition(), Vec3.ZERO, length, user.getId());
+                // JJS: the comb, then his hair settling; or the quick comb and "SWEEET"; awakened, the recovery.
+                RyuCombat.sfx(user, awakened ? "ryu_recovery" : comb ? "ryu_comb" : "ryu_sweet_comb", 1f);
                 setPhase(0, length);
             }
 
             @Override
             public void tick() {
                 Motion.set(user, new Vec3(0, Math.min(0, user.getDeltaMovement().y), 0));
+                if (!awakened && age == (comb ? length / 2 : 10)) RyuCombat.sfx(user, comb ? "ryu_hair" : "ryu_sweet", 1f);
                 if (age < length) return;
                 if (awakened) {
                     if (caster.isAwakened()) {

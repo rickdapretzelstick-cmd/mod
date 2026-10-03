@@ -66,6 +66,8 @@ public final class DessertAbility extends Ability {
         @Override
         public void start() {
             Anim.play(user, "ryu_dessert_run");
+            RyuCombat.sfx(user, "ryu_dessert_start", 1f);
+            RyuCombat.sfx(user, "ryu_dessert_dash", 0.9f);
             setPhase(0, 24);
         }
 
@@ -87,11 +89,12 @@ public final class DessertAbility extends Ability {
                     Anim.play(user, "ryu_dessert_kick");
                     boolean acting = dev.rick.jjk.gojo.GojoCombat.acting(t);
                     HitResult r = HakariCombat.hit(RyuCombat.strike(user, ID, cfg.dessertKick, false)
-                            .knockback(Knockback.directional(HakariCombat.flat(user), 0.55, 0)).hitstun(acting ? 22 : 14).fx("ryu_kick", 1f).build(), t);
+                            .knockback(Knockback.directional(HakariCombat.flat(user), 0.55, 0)).hitstun(acting ? 22 : 14).fx(RyuCombat.hitFx("ryu_dessert_hit", true), 1f).build(), t);
                     if (r.connected()) victim = t;
                 } else if (age > 22) {
                     endAt = age + 8;
                     Anim.play(user, "ryu_dessert_miss");
+                    RyuCombat.sfx(user, "ryu_dodge", 1f);
                 }
                 return;
             }
@@ -105,7 +108,7 @@ public final class DessertAbility extends Ability {
                     return;
                 }
                 HitResult r = HakariCombat.hit(RyuCombat.strike(user, ID, cfg.dessertSwing, true).knockback(Knockback.HOLD).hitstun(30)
-                        .fx("ryu_punch_heavy", 1f).build(), t);
+                        .fx(RyuCombat.hitFx("ryu_dessert_slide", true), 1f).build(), t);
                 if (!r.connected()) {
                     endAt = age + 12;
                     return;
@@ -130,7 +133,8 @@ public final class DessertAbility extends Ability {
             if (k > 0 && k % 6 == 0 && blows < 4) {
                 blows++;
                 HakariCombat.hit(RyuCombat.strike(user, ID, cfg.dessertBlow, true).knockback(Knockback.HOLD).hitstun(14).noComboScaling()
-                        .fx("ryu_punch_heavy", 1f).build(), victim);
+                        .fx(RyuCombat.hitFx("ryu_hit_" + (1 + blows % 3), false), 1f).build(), victim);
+                if (blows % 2 == 0) RyuCombat.sfx(user, "ryu_dodge", 0.8f);
                 RyuCombat.selfDamage(user, cfg.dessertSelf);
                 Fx.play(level, "ryu_fist_clash", victim.getBoundingBox().getCenter(), HakariCombat.flat(user), 1.2f, user.getId());
                 Fx.shake(level, user.position(), 20, 0.5f, 6);
@@ -140,7 +144,8 @@ public final class DessertAbility extends Ability {
                 Vec3 away = victim.position().subtract(user.position()).normalize();
                 if (RyuCombat.finishable(victim)) RyuCombat.execute(user, victim, ID, "ryu_punch_heavy");
                 else HakariCombat.hit(RyuCombat.strike(user, ID, cfg.dessertPush, true).knockback(Knockback.set(away.scale(1.1).add(0, 0.3, 0)))
-                        .hitstun(20).status(CombatStatus.LAUNCHED, 16).fx("ryu_punch_heavy", 1.3f).build(), victim);
+                        .hitstun(20).status(CombatStatus.LAUNCHED, 16).fx(RyuCombat.hitFx("ryu_dessert_impact", true), 1.3f).build(), victim);
+                RyuCombat.sfx(user, "ryu_dessert_final", 1f);
                 victim = null;
                 endAt = age + 10;
             }

@@ -106,11 +106,11 @@ public final class SecondHelpingAbility extends Ability {
                     } else if (air) {
                         // The punch, its impact delayed: they go down to the floor.
                         r = HakariCombat.hit(RyuCombat.strike(user, ID, cfg.secondHelpingAirPunch, true).tag(AttackTag.OTG)
-                                .knockback(Knockback.HOLD).hitstun(14).fx("ryu_punch_heavy", 1f).build(), target);
+                                .knockback(Knockback.HOLD).hitstun(14).fx(RyuCombat.hitFx("ryu_helping_air", true), 1f).build(), target);
                     } else {
                         r = HakariCombat.hit(RyuCombat.strike(user, ID, cfg.secondHelpingDamage, true).tag(AttackTag.OTG)
                                 .knockback(Knockback.set(new Vec3(0, 1.15, 0))).hitstun(30).status(CombatStatus.LAUNCHED, 30)
-                                .fx("ryu_slam", 1.4f).build(), target);
+                                .fx(RyuCombat.hitFx("ryu_helping_hit", true), 1.4f).build(), target);
                         Fx.play(level, "ryu_slam_ground", target.position(), Vec3.ZERO, 1f, user.getId());
                         Fx.shake(level, target.position(), 24, 0.9f, 10);
                     }
@@ -121,7 +121,7 @@ public final class SecondHelpingAbility extends Ability {
                     Fx.play(level, "ryu_delayed_impact", target.getBoundingBox().getCenter(), new Vec3(0, -1, 0), 1f, user.getId());
                     HakariCombat.hit(RyuCombat.strike(user, ID, cfg.secondHelpingAirImpact, true).tag(AttackTag.OTG)
                             .knockback(Knockback.set(new Vec3(0, -1.6, 0))).hitstun(24).status(CombatStatus.SPIKED, 24)
-                            .fx("ryu_slam", 1.2f).build(), target);
+                            .fx(RyuCombat.hitFx("none", true), 1.2f).build(), target);
                     Fx.shake(level, target.position(), 24, 0.8f, 10);
                     endAt = age + 10;
                 }
