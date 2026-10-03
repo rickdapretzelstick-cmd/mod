@@ -37,6 +37,7 @@ public final class Bootstrap {
         ModEntities.init();
         ModAttachments.init();
         Network.init();
+        dev.rick.jjk.progression.ProgressionBootstrap.init();
 
         Characters.register(new GojoCharacter());
         Characters.register(new dev.rick.jjk.hakari.HakariCharacter());

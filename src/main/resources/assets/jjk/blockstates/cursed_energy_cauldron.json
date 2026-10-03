@@ -1,0 +1,51 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "minecraft:block/cauldron"
+      }
+    },
+    {
+      "when": {
+        "level": "1"
+      },
+      "apply": {
+        "model": "jjk:block/cursed_energy_cauldron_level1"
+      }
+    },
+    {
+      "when": {
+        "level": "2"
+      },
+      "apply": {
+        "model": "jjk:block/cursed_energy_cauldron_level2"
+      }
+    },
+    {
+      "when": {
+        "level": "3"
+      },
+      "apply": {
+        "model": "jjk:block/cursed_energy_cauldron_level3"
+      }
+    },
+    {
+      "when": {
+        "level": "4",
+        "infusion": "0"
+      },
+      "apply": {
+        "model": "jjk:block/cursed_energy_cauldron_level4"
+      }
+    },
+    {
+      "when": {
+        "level": "4",
+        "infusion": "1|2|3|4|5"
+      },
+      "apply": {
+        "model": "jjk:block/cursed_energy_cauldron_level4_active"
+      }
+    }
+  ]
+}

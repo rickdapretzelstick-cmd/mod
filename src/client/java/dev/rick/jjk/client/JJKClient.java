@@ -105,6 +105,7 @@ public class JJKClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             InputHandler.releaseAll(null);
             ClientState.reset();
+            ClientProgression.reset();
             dev.rick.jjk.client.hud.YutaHud.reset();
             ClientAnimations.clear();
             ScreenEffects.reset();
@@ -124,6 +125,7 @@ public class JJKClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(CasterSyncPayload.TYPE, (p, ctx) -> ClientState.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.YutaPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.YutaHud.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.RyuPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.RyuHud.apply(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ProgressionPayload.TYPE, (p, ctx) -> ClientProgression.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.BeamClashStatePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.BeamClashClient.state(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.BeamClashCheckPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.BeamClashClient.check(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.BeamClashJudgePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.BeamClashClient.judge(p));

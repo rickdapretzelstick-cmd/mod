@@ -363,6 +363,53 @@ from Every Last Drop, so the Awakening key never transforms him on its own.
 ![Appetizer](docs/screenshots/ryu_appetizer.png)
 ![Decadence](docs/screenshots/ryu_decadence.png)
 
+## Survival progression
+
+In **Survival** you start as an ordinary person: no technique, no kit, and the K screen doesn't hand one out (it just
+says *"You have not awakened a cursed technique."*). Kits are earned in the world, and **each kit belongs to one
+player per world**. **Creative** is the sandbox: K picks any character, even one somebody owns, but a Creative pick is
+never ownership and is dropped when you go back to Survival. `progression.enabled: false` in the config turns all of
+this off (free selection everywhere).
+
+The path so far:
+
+1. **Cursed Soul Sand** forms in Soul Sand Valleys, directly under the bone blocks of fossils (a few per chunk, never
+   whole areas). It looks like soul sand gone cold, split by faintly pulsing violet cracks. Mined, it drops plain soul
+   sand.
+2. **Soul in a Bottle**: use an empty glass bottle on it. The soul streams out into the bottle and the block becomes
+   plain soul sand.
+3. **Cursed Energy in a Bottle**: brew Soul in a Bottle with a **Ghast Tear** in a brewing stand.
+4. **Glasses**: `Glass · Iron Ingot · Glass` in a row. Worn on the face (head slot), drawn as a small frame on the
+   head. They show nothing that isn't there.
+5. **The cauldron**: pour four Cursed Energy bottles into a cauldron (1/4 … 4/4; the surface rises and glows). Throw
+   the Glasses into the full cauldron: the energy reacts, spirals into them and collapses with a flash, all four
+   units are spent, and **Cursed Glasses** rise out.
+6. **Cursed Glasses** let their wearer perceive curses.
+7. **Battle rooms**: Woodland Mansions and Igloos hide a cursed chamber far below them, reached by a trapdoor set
+   into the building's lowest floor under a carpet and a ladder shaft. Each has a seal at its heart where the
+   **Finger Bearer** will wait (not implemented yet: the rooms are empty for now).
+8. **Cursed Finger**: the first player to eat one becomes the world's **Yuji**, permanently (death, logout and
+   dimension changes don't release it). Anyone else who eats one afterwards is consumed by it and dies, whatever
+   protects them. Nobody is told in advance whether Yuji is taken. The Finger Bearer will drop the fingers; for now
+   they only come from Creative or commands.
+
+**Curses and perception.** A curse that needs perception (entities implementing `CursedSpirit`, or in the
+`jjk:requires_curse_perception` entity tag) is drawn only for players who can perceive curses, decided per player by
+the server: the same entity, seen by one player and not another. It can't start a fight with someone who can't see
+it. Once it has turned on someone, though, it remembers: taking the glasses off hides it again, but it keeps
+attacking. Perception comes from sources registered in `CursePerception` (today: anything worn from the
+`jjk:grants_curse_perception` item tag), and hostility lives in `CurseAggro`, kept apart from it.
+
+**For kit acquisition paths.** Every path calls `TechniqueProgression.acquire(player, KitAcquisition)`. That claims the
+kit atomically in `KitOwnership` (the world's `kit → owner` record, `<world>/jjk_progression/kit_ownership.dat`), records
+it in the player's own progression data (checked against the world's record on every join), and runs the path's own
+outcome for *claimed*, *already yours* and *someone else's*. The fatal outcome belongs to the Cursed Finger; other
+paths define their own.
+
+**Admin** (op): `/jjk kit list | owner <kit> | info [player] | grant <kit> <player> | transfer <kit> <player> |
+release <kit> | repair | rooms`. `/jjk character` is still an admin override; under progression it lasts until the
+player relogs or leaves Creative.
+
 ## HUD and Vanilla Minecraft mode
 
 CE is a slim vertical bar on the left edge. It eases between values, what you just spent lingers as a pale ghost, it
@@ -552,7 +599,7 @@ Domain structures are separate and restore as soon as the domain ends. `/jjk res
 
 `/jjk arena` test arena with dummies · `/jjk dummy [stand|jump|fight] [n]` · `/jjk dummy domain <void|idg|shrine> [skill]` (solo clash practice: the nearest dummy opens that domain; press Awakening in the counter window to clash it; skill 0–1 is how well it plays) · `/jjk nocooldown true|false` ·
 `/jjk awakening <amount>|end` · `/jjk reset` · `/jjk character gojo|hakari|yuji|yuta|none` · `/jjk domain cancel [all]` ·
-`/jjk status [target]` · `/jjk config reload`
+`/jjk status [target]` · `/jjk config reload` · `/jjk kit ...` (Survival kit ownership, see Survival progression)
 
 ## Config
 

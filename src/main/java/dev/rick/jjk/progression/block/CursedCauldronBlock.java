@@ -1,0 +1,194 @@
+package dev.rick.jjk.progression.block;
+
+import com.mojang.serialization.MapCodec;
+import dev.rick.jjk.config.JJKConfig;
+import dev.rick.jjk.core.fx.Fx;
+import dev.rick.jjk.progression.ProgressionBlocks;
+import dev.rick.jjk.progression.ProgressionItems;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.cauldron.CauldronInteraction;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUtils;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.AbstractCauldronBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+
+import java.util.List;
+
+/**
+ * A cauldron holding cursed energy, poured in one Cursed Energy in a Bottle at a time: 1/4 up to 4/4 (full). Once full,
+ * Glasses thrown into it are taken by the energy: it reacts, spirals into them, collapses inward with a flash, all four
+ * units are spent, and Cursed Glasses rise out. The cauldron is left empty (a plain cauldron again).
+ *
+ * <p>Everything runs on the server through scheduled block ticks (they are saved with the chunk), so a ritual in
+ * progress survives the chunk unloading; if the glasses are gone when it resumes, it stops with the energy intact.
+ */
+public class CursedCauldronBlock extends AbstractCauldronBlock {
+    public static final MapCodec<CursedCauldronBlock> CODEC = simpleCodec(CursedCauldronBlock::new);
+    public static final int MAX_LEVEL = 4;
+    public static final IntegerProperty LEVEL = IntegerProperty.create("level", 1, MAX_LEVEL);
+    /** 0 = still; 1..STAGES while glasses are being infused. */
+    public static final int STAGES = 5;
+    public static final IntegerProperty INFUSION = IntegerProperty.create("infusion", 0, STAGES);
+    /** How often a full cauldron looks for glasses in it. */
+    private static final int WATCH_TICKS = 5;
+
+    public static final CauldronInteraction.InteractionMap INTERACTIONS = CauldronInteraction.newInteractionMap("jjk_cursed_energy");
+
+    public CursedCauldronBlock(Properties properties) {
+        super(properties, INTERACTIONS);
+        registerDefaultState(stateDefinition.any().setValue(LEVEL, 1).setValue(INFUSION, 0));
+    }
+
+    /** Pouring rules: a bottle into an empty cauldron starts it at 1/4, into this one adds a level. */
+    public static void registerInteractions() {
+        CauldronInteraction.EMPTY.map().put(ProgressionItems.CURSED_ENERGY_BOTTLE,
+                (state, level, pos, player, hand, stack) -> pour(level, pos, player, hand, stack, 0));
+        INTERACTIONS.map().put(ProgressionItems.CURSED_ENERGY_BOTTLE, (state, level, pos, player, hand, stack) -> {
+            if (state.getValue(LEVEL) >= MAX_LEVEL || state.getValue(INFUSION) > 0) return InteractionResult.TRY_WITH_EMPTY_HAND;
+            return pour(level, pos, player, hand, stack, state.getValue(LEVEL));
+        });
+    }
+
+    private static InteractionResult pour(Level level, BlockPos pos, net.minecraft.world.entity.player.Player player,
+                                          net.minecraft.world.InteractionHand hand, ItemStack stack, int from) {
+        if (level instanceof ServerLevel server) {
+            BlockState now = server.getBlockState(pos);
+            // Re-read on the server: two bottles in one tick can't both land on the same level.
+            int current = now.is(ProgressionBlocks.CURSED_CAULDRON) ? now.getValue(LEVEL) : now.is(Blocks.CAULDRON) ? 0 : -1;
+            if (current != from || current >= MAX_LEVEL) return InteractionResult.PASS;
+            int next = current + 1;
+            server.setBlock(pos, ProgressionBlocks.CURSED_CAULDRON.defaultBlockState().setValue(LEVEL, next), Block.UPDATE_ALL);
+            player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player, new ItemStack(Items.GLASS_BOTTLE)));
+            Vec3 c = Vec3.atCenterOf(pos);
+            Fx.play(server, "prog_pour", c.add(0, contentY(next) - 0.5, 0), Vec3.ZERO, next, -1);
+            Fx.sound(server, c, SoundEvents.BOTTLE_EMPTY, 1f, 0.8f);
+            Fx.sound(server, c, SoundEvents.SCULK_CATALYST_BLOOM, 0.6f + next * 0.15f, 0.6f + next * 0.08f);
+            if (next == MAX_LEVEL) {
+                Fx.play(server, "prog_cauldron_full", c, Vec3.ZERO, 1f, -1);
+                Fx.sound(server, c, SoundEvents.RESPAWN_ANCHOR_CHARGE, 1f, 0.5f);
+                server.scheduleTick(pos, ProgressionBlocks.CURSED_CAULDRON, WATCH_TICKS);
+            }
+        }
+        return InteractionResult.SUCCESS;
+    }
+
+    /** Height of the energy's surface above the block's floor (blocks). */
+    public static double contentY(int level) {
+        return (6.0 + level * 2.25) / 16.0;
+    }
+
+    @Override
+    protected MapCodec<? extends AbstractCauldronBlock> codec() {
+        return CODEC;
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> b) {
+        b.add(LEVEL, INFUSION);
+    }
+
+    @Override
+    public boolean isFull(BlockState state) {
+        return state.getValue(LEVEL) >= MAX_LEVEL;
+    }
+
+    @Override
+    protected double getContentHeight(BlockState state) {
+        return contentY(state.getValue(LEVEL));
+    }
+
+    // --- The ritual ---
+
+    /** A full cauldron missing its watch (placed by a command, a world from before...) picks it back up. */
+    @Override
+    protected boolean isRandomlyTicking(BlockState state) {
+        return state.getValue(LEVEL) >= MAX_LEVEL;
+    }
+
+    @Override
+    protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        if (!level.getBlockTicks().hasScheduledTick(pos, this)) level.scheduleTick(pos, this, WATCH_TICKS);
+    }
+
+    @Override
+    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        if (state.getValue(LEVEL) < MAX_LEVEL) return;
+        int stage = state.getValue(INFUSION);
+        ItemEntity glasses = glassesIn(level, pos);
+        Vec3 core = Vec3.atBottomCenterOf(pos).add(0, contentY(MAX_LEVEL) + 0.05, 0);
+        if (glasses == null) {
+            // Nothing in it (or the glasses were taken away mid-ritual): the energy settles, nothing is spent.
+            if (stage > 0) {
+                level.setBlock(pos, state.setValue(INFUSION, 0), Block.UPDATE_ALL);
+                Fx.play(level, "prog_infuse_abort", core, Vec3.ZERO, 1f, -1);
+            }
+            level.scheduleTick(pos, this, WATCH_TICKS);
+            return;
+        }
+        // Held in the energy for the whole ritual: nobody picks them back out, and they don't drift.
+        int stageTicks = Math.max(4, JJKConfig.get().progression.infusionTicks / STAGES);
+        glasses.setPickUpDelay(stageTicks * 2 + 10);
+        glasses.setNoGravity(true);
+        glasses.setDeltaMovement(Vec3.ZERO);
+        glasses.setPos(core.x, core.y + 0.08 * stage, core.z);
+        if (stage < STAGES) {
+            int next = stage + 1;
+            level.setBlock(pos, state.setValue(INFUSION, next), Block.UPDATE_ALL);
+            Fx.play(level, "prog_infuse", core, Vec3.ZERO, next, glasses.getId());
+            if (next == 1) Fx.sound(level, core, SoundEvents.SCULK_SHRIEKER_SHRIEK, 0.5f, 1.6f);
+            Fx.sound(level, core, SoundEvents.BEACON_AMBIENT, 0.8f, 0.5f + next * 0.15f);
+            if (next == STAGES - 1) Fx.sound(level, core, SoundEvents.RESPAWN_ANCHOR_DEPLETE, 1f, 0.6f);
+            level.scheduleTick(pos, this, stageTicks);
+            return;
+        }
+        // Collapse: the energy is spent into the glasses.
+        ItemStack held = glasses.getItem();
+        if (held.getCount() > 1) {
+            ItemStack rest = held.copy();
+            rest.shrink(1);
+            glasses.setItem(rest);
+            glasses.setNoGravity(false);
+        } else {
+            glasses.discard();
+        }
+        level.setBlock(pos, Blocks.CAULDRON.defaultBlockState(), Block.UPDATE_ALL);
+        ItemEntity out = new ItemEntity(level, core.x, core.y + 0.2, core.z, new ItemStack(ProgressionItems.CURSED_GLASSES));
+        out.setDeltaMovement(0, 0.32, 0);
+        out.setPickUpDelay(20);
+        level.addFreshEntity(out);
+        Fx.play(level, "prog_infuse_done", core, Vec3.ZERO, 1f, out.getId());
+        Fx.sound(level, core, SoundEvents.ZOMBIE_VILLAGER_CURE, 0.7f, 1.4f);
+        Fx.sound(level, core, SoundEvents.AMETHYST_BLOCK_RESONATE, 1.2f, 0.5f);
+    }
+
+    /** Glasses lying in the energy. */
+    private static ItemEntity glassesIn(ServerLevel level, BlockPos pos) {
+        AABB inside = new AABB(pos.getX() + 0.1, pos.getY() + 0.2, pos.getZ() + 0.1, pos.getX() + 0.9, pos.getY() + 1.1, pos.getZ() + 0.9);
+        List<ItemEntity> found = level.getEntitiesOfClass(ItemEntity.class, inside, e -> e.isAlive() && e.getItem().is(ProgressionItems.GLASSES));
+        return found.isEmpty() ? null : found.get(0);
+    }
+
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+        int lv = state.getValue(LEVEL);
+        if (random.nextInt(MAX_LEVEL + 2 - lv) != 0) return;
+        double y = pos.getY() + contentY(lv) + 0.02;
+        double x = pos.getX() + 0.2 + random.nextDouble() * 0.6, z = pos.getZ() + 0.2 + random.nextDouble() * 0.6;
+        level.addParticle(lv >= MAX_LEVEL && random.nextInt(3) == 0 ? ParticleTypes.REVERSE_PORTAL : ParticleTypes.SQUID_INK, x, y, z, 0, 0.02, 0);
+        if (lv >= MAX_LEVEL && random.nextInt(4) == 0) level.addParticle(ParticleTypes.SOUL_FIRE_FLAME, x, y, z, 0, 0.01, 0);
+    }
+}
