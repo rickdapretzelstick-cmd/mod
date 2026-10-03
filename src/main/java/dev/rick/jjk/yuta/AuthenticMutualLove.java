@@ -92,7 +92,8 @@ public final class AuthenticMutualLove implements DomainDefinition {
         if (domain.phase() != DomainInstance.Phase.ACTIVE) return;
         // Nobody to fight the moment it opens: the domain breaks at once. Once someone was caught, walking out of it
         // (or Yuta stepping out himself) doesn't break it: it runs its course.
-        if (domain.activeAge() == 2 && enemies(domain).isEmpty()) {
+        // (Only a fresh opening: won from a clash, the space it conquered reaches past its own sphere.)
+        if (domain.activeAge() == 2 && !domain.clashed() && enemies(domain).isEmpty()) {
             DomainManager.cancel(domain, DomainInstance.EndReason.CANCELLED);
             return;
         }

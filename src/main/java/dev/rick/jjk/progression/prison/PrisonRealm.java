@@ -31,8 +31,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
@@ -71,7 +71,8 @@ import java.util.UUID;
  *   pearl, a command, a portal, dying and respawning, logging out and back in) puts them straight back. Their
  *   techniques are sealed; their inventory follows the game's normal rules (deaths drop in the cell; those items are
  *   kept from despawning and come out with them).</li>
- *   <li><b>Escaping alone.</b> Four seal locks, one in each wall, glow open in turn on a fixed rhythm (every
+ *   <li><b>Escaping alone</b> (only for someone who sealed themselves: anyone sealed by another player is trapped
+ *   until someone outside opens it, and their cell has no locks at all). Four seal locks, one in each wall, glow open in turn on a fixed rhythm (every
  *   {@value #PERIOD} ticks, each a quarter-beat after the last). Use a lock while it glows to break it; using one while
  *   it is dark lashes back and re-forms that stage's broken locks. Break all four to clear a stage: three stages, the
  *   glow shorter each time (0.7 s, 0.45 s, 0.3 s). Then the core in the floor opens: use it. Progress is saved, so a
@@ -122,6 +123,8 @@ public final class PrisonRealm {
     private static boolean rescueHurt;
     private static long releaseStartedAt = -1;
     private static int missingChecks;
+    /** Checks in a row a creature captive wasn't found in its loaded cell. */
+    private static int captiveMissing;
 
     private PrisonRealm() {}
 
@@ -217,7 +220,7 @@ public final class PrisonRealm {
             user.sendOverlayMessage(Component.literal("The cube is lifeless: this isn't the world's Prison Realm.").withStyle(ChatFormatting.GRAY));
             return false;
         }
-        ServerPlayer target = aimed(user);
+        LivingEntity target = aimed(user);
         if (target == null) {
             if (!user.isShiftKeyDown()) {
                 user.sendOverlayMessage(Component.literal("Nobody in front of you to seal (sneak and use it to seal yourself).").withStyle(ChatFormatting.GRAY));
@@ -225,8 +228,8 @@ public final class PrisonRealm {
             }
             target = user;
         }
-        if (!target.isAlive() || target.isSpectator() || isCaptive(target)) return false;
-        ServerLevel level = target.level();
+        if (!target.isAlive() || target.isSpectator() || target.getUUID().equals(st.captive)) return false;
+        ServerLevel level = (ServerLevel) target.level();
         Vec3 at = ground(level, target.position());
         PrisonRealmEntity e = ModEntities.PRISON_REALM.create(level, EntitySpawnReason.TRIGGERED);
         if (e == null) return false;
@@ -243,6 +246,8 @@ public final class PrisonRealm {
         st.captive = target.getUUID();
         st.captiveName = target.getName().getString();
         st.capturedAt = -1;
+        st.selfSealed = target == user;
+        st.wasPlayer = target instanceof ServerPlayer;
         if (!st.save()) {
             e.discard();
             st.toItem();
@@ -253,19 +258,20 @@ public final class PrisonRealm {
         Fx.sound(level, at, SoundEvents.ENDER_EYE_DEATH, 1.2f, 0.4f);
         Fx.sound(level, at, SoundEvents.SCULK_SHRIEKER_SHRIEK, 0.8f, 0.5f);
         Fx.play(level, "prog_prison_throw", at.add(0, 0.6, 0), Vec3.ZERO, 1f, e.getId());
-        target.sendSystemMessage(Component.literal("The Prison Realm opens at your feet. Get away before its restraints reach you!")
+        if (target instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("The Prison Realm opens at your feet. Get away before its restraints reach you!")
                 .withStyle(ChatFormatting.DARK_RED));
         JJK.LOGGER.info("{} opened the Prison Realm on {} at {} {}", user.getName().getString(), st.captiveName, st.dimension, st.pos.toShortString());
         return true;
     }
 
-    /** The player in front of the user within range and in sight, or null. */
+    /** The player or creature in front of the user within range and in sight, or null. */
     @Nullable
-    private static ServerPlayer aimed(ServerPlayer user) {
+    private static LivingEntity aimed(ServerPlayer user) {
         Vec3 eye = user.getEyePosition(), look = user.getLookAngle();
-        ServerPlayer best = null;
+        LivingEntity best = null;
         double bestDot = 0.965;
-        for (ServerPlayer p : user.level().players()) {
+        for (LivingEntity p : user.level().getEntitiesOfClass(LivingEntity.class, user.getBoundingBox().inflate(RANGE + 1),
+                e -> !(e instanceof net.minecraft.world.entity.decoration.ArmorStand))) {
             if (p == user || !p.isAlive() || p.isSpectator()) continue;
             Vec3 to = p.getBoundingBox().getCenter().subtract(eye);
             double d = to.length();
@@ -310,8 +316,18 @@ public final class PrisonRealm {
         if (st.phase == PrisonRealmState.Phase.SEALED && !e.hasGlowingTag()) e.setGlowingTag(true);
     }
 
+    /** The captive (a player anywhere, or a creature in the realm's dimension), if they are in the world right now. */
+    @Nullable
+    static LivingEntity captive(MinecraftServer server, PrisonRealmState st) {
+        if (st.captive == null) return null;
+        ServerPlayer p = server.getPlayerList().getPlayer(st.captive);
+        if (p != null) return p;
+        ServerLevel level = level(server, st.dimension);
+        return level != null && level.getEntity(st.captive) instanceof LivingEntity le && !le.isRemoved() ? le : null;
+    }
+
     private static void sequenceTick(ServerLevel level, PrisonRealmEntity e, PrisonRealmState st) {
-        ServerPlayer t = st.captive == null ? null : level.getServer().getPlayerList().getPlayer(st.captive);
+        LivingEntity t = captive(level.getServer(), st);
         int a = e.phaseAge;
         if (t == null || !t.isAlive() || t.isSpectator() || t.level() != level) {
             failSeal(level, e, st, t, "The seal found nobody to hold and closed on nothing.");
@@ -328,32 +344,32 @@ public final class PrisonRealm {
             e.caughtAt = t.position();
             Fx.sound(level, c, SoundEvents.CHAIN_PLACE, 1.4f, 0.5f);
             Fx.play(level, "prog_prison_restrain", c.add(0, 0.7, 0), t.position().subtract(c), 1f, e.getId());
-            t.sendSystemMessage(Component.literal("The restraints have you.").withStyle(ChatFormatting.DARK_RED));
+            if (t instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal("The restraints have you.").withStyle(ChatFormatting.DARK_RED));
         }
         // Held, and drawn into the cube.
         double k = Mth.clamp((a - RESTRAIN_AT) / (double) (CAPTURE_AT - RESTRAIN_AT), 0, 1);
         k = k * k * (3 - 2 * k);
         Vec3 to = e.caughtAt.lerp(c.add(0, 0.1, 0), k);
-        t.teleportTo(level, to.x, to.y, to.z, Set.of(), t.getYRot(), t.getXRot(), false);
+        moveTo(t, level, to);
         Motion.set(t, Vec3.ZERO);
         t.resetFallDistance();
         if (a >= CAPTURE_AT) capture(level, e, st, t);
     }
 
-    private static void failSeal(ServerLevel level, PrisonRealmEntity e, PrisonRealmState st, @Nullable ServerPlayer t, String why) {
+    private static void failSeal(ServerLevel level, PrisonRealmEntity e, PrisonRealmState st, @Nullable LivingEntity t, String why) {
         Vec3 at = e.position();
         e.discard();
         dropRealm(level, at, st.realmId);
         st.toItem();
         st.save();
-        if (t != null) t.sendSystemMessage(Component.literal(why).withStyle(ChatFormatting.GRAY));
+        if (t instanceof ServerPlayer tp) tp.sendSystemMessage(Component.literal(why).withStyle(ChatFormatting.GRAY));
         Fx.sound(level, at, SoundEvents.SHULKER_BOX_CLOSE, 1f, 0.6f);
         JJK.LOGGER.info("The Prison Realm's seal failed at {}: {}", BlockPos.containing(at).toShortString(), why);
     }
 
-    private static void capture(ServerLevel level, PrisonRealmEntity e, PrisonRealmState st, ServerPlayer t) {
+    private static void capture(ServerLevel level, PrisonRealmEntity e, PrisonRealmState st, LivingEntity t) {
         BlockPos cell = cellOrigin(level, st.pos);
-        List<PrisonRealmState.Saved> saved = buildCell(level, cell);
+        List<PrisonRealmState.Saved> saved = buildCell(level, cell, st.selfSealed);
         st.cell = cell;
         st.replaced.clear();
         st.replaced.addAll(saved);
@@ -372,8 +388,10 @@ public final class PrisonRealm {
         Fx.sound(level, e.position(), SoundEvents.SHULKER_BOX_CLOSE, 1.6f, 0.3f);
         Fx.sound(level, e.position(), SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), 1f, 0.5f);
         Fx.shake(level, e.position(), 16, 0.6f, 10);
+        // A creature stays put in there (it is never despawned while sealed).
+        if (t instanceof net.minecraft.world.entity.Mob mob) mob.setPersistenceRequired();
         putInCell(t, level, st);
-        explain(t);
+        if (t instanceof ServerPlayer tp) explain(tp, st.selfSealed);
         JJK.LOGGER.info("{} sealed in the Prison Realm at {} {}", st.captiveName, st.dimension, st.pos.toShortString());
     }
 
@@ -400,7 +418,7 @@ public final class PrisonRealm {
             for (int cz = o.getZ() >> 4; cz <= (o.getZ() + CELL_W) >> 4; cz++) level.getChunk(cx, cz);
     }
 
-    private static List<PrisonRealmState.Saved> buildCell(ServerLevel level, BlockPos o) {
+    private static List<PrisonRealmState.Saved> buildCell(ServerLevel level, BlockPos o, boolean locks) {
         loadArea(level, o);
         List<PrisonRealmState.Saved> saved = new ArrayList<>();
         BlockState wall = ProgressionBlocks.PRISON_WALL.defaultBlockState();
@@ -415,6 +433,8 @@ public final class PrisonRealm {
                 }
             }
         }
+        // Sealed by someone else: nothing in here to break. Only someone outside can open it.
+        if (!locks) return saved;
         for (int[] l : LOCKS) level.setBlock(o.offset(l[0], l[1], l[2]), ProgressionBlocks.SEAL_LOCK.defaultBlockState(), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
         level.setBlock(o.offset(CORE[0], CORE[1], CORE[2]), ProgressionBlocks.PRISON_CORE.defaultBlockState(), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
         return saved;
@@ -446,12 +466,19 @@ public final class PrisonRealm {
         return new Vec3(o.getX() + 6.5, o.getY() + 1, o.getZ() + 4.5);
     }
 
-    private static void putInCell(ServerPlayer p, ServerLevel level, PrisonRealmState st) {
+    private static void putInCell(LivingEntity p, ServerLevel level, PrisonRealmState st) {
         Vec3 s = cellSpawn(st.cell);
-        p.teleportTo(level, s.x, s.y, s.z, Set.of(), p.getYRot(), 10f, false);
+        moveTo(p, level, s);
         Motion.set(p, Vec3.ZERO);
         p.resetFallDistance();
-        sync(p, st);
+        if (p instanceof ServerPlayer sp) sync(sp, st);
+    }
+
+    /** Moves a player (across dimensions if need be) or a creature (in its own dimension). */
+    private static void moveTo(LivingEntity e, ServerLevel level, Vec3 to) {
+        if (e instanceof ServerPlayer p) p.teleportTo(level, to.x, to.y, to.z, Set.of(), p.getYRot(), p.getXRot(), false);
+        else if (e.level() == level) e.teleportTo(to.x, to.y, to.z);
+        else e.teleportTo(level, to.x, to.y, to.z, Set.of(), e.getYRot(), e.getXRot(), false);
     }
 
     @Nullable
@@ -462,7 +489,7 @@ public final class PrisonRealm {
     }
 
     /** Whether this player is the one sealed in the realm right now. */
-    public static boolean isCaptive(ServerPlayer p) {
+    public static boolean isCaptive(LivingEntity p) {
         PrisonRealmState st = state(p.level().getServer());
         return st.phase == PrisonRealmState.Phase.SEALED && p.getUUID().equals(st.captive);
     }
@@ -482,17 +509,30 @@ public final class PrisonRealm {
             if (now - releaseStartedAt > OPEN_TICKS + 40) finishRelease(server, st);
             return;
         }
-        ServerPlayer captive = st.captive == null ? null : server.getPlayerList().getPlayer(st.captive);
+        LivingEntity held = captive(server, st);
+        ServerPlayer captive = held instanceof ServerPlayer sp ? sp : null;
         AABB box = cellBox(st.cell);
-        if (captive != null && captive.isAlive()) {
+        if (held != null && held.isAlive()) {
             // Held: anywhere but the cell (another dimension, a pearl out, a command, a respawn) puts them back.
-            if (captive.level() != level || !box.contains(captive.position())) putInCell(captive, level, st);
-            if (now % 10 == 0) progressHud(captive, st, now);
-            if (now % 20 == 0) sync(captive, st);
+            if (held.level() != level || !box.contains(held.position())) putInCell(held, level, st);
+            if (captive != null && now % 10 == 0) progressHud(captive, st, now);
+            if (captive != null && now % 20 == 0) sync(captive, st);
+            captiveMissing = 0;
+        } else if (now % 20 == 0 && st.captive != null && server.getPlayerList().getPlayer(st.captive) == null && level.isLoaded(st.cell)
+                && level.areEntitiesLoaded(net.minecraft.world.level.ChunkPos.containing(st.cell).pack())) {
+            // A creature captive that died or vanished in there (a player only logs off): nothing left to hold.
+            if (held == null || !held.isAlive()) {
+                if (++captiveMissing >= 3) {
+                    captiveMissing = 0;
+                    JJK.LOGGER.info("The Prison Realm's captive {} is gone; the realm opens", st.captiveName);
+                    release(server, Release.ADMIN);
+                    return;
+                }
+            }
         }
         if (now % 10 == 0) {
             for (ServerPlayer p : level.players()) {
-                if (p != captive && box.contains(p.position())) {
+                if (p != held && box.contains(p.position())) {
                     Vec3 out = safeSpot(level, st.pos);
                     p.teleportTo(level, out.x, out.y, out.z, Set.of(), p.getYRot(), p.getXRot(), false);
                     p.sendOverlayMessage(Component.literal("The Prison Realm admits only its captive.").withStyle(ChatFormatting.GRAY));
@@ -501,7 +541,7 @@ public final class PrisonRealm {
             // Whatever the captive drops in there is kept for them (nothing despawns inside).
             for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class, box)) item.setUnlimitedLifetime();
         }
-        if (level.isLoaded(st.cell)) updateLocks(level, st, now);
+        if (st.selfSealed && level.isLoaded(st.cell)) updateLocks(level, st, now);
         if (rescuer != null) rescueTick(server, level, st, captive, now);
         if (now % 40 == 0) checkBody(level, st);
     }
@@ -582,6 +622,10 @@ public final class PrisonRealm {
     public static void useLock(ServerPlayer p, BlockPos pos) {
         PrisonRealmState st = state(p.level().getServer());
         if (!isCaptive(p) || !st.releasing.isEmpty() || st.cell == null) return;
+        if (!st.selfSealed) {
+            trapped(p);
+            return;
+        }
         int idx = -1;
         for (int i = 0; i < 4; i++) if (st.cell.offset(LOCKS[i][0], LOCKS[i][1], LOCKS[i][2]).equals(pos)) idx = i;
         if (idx < 0) return;
@@ -634,12 +678,21 @@ public final class PrisonRealm {
     public static void useCore(ServerPlayer p) {
         PrisonRealmState st = state(p.level().getServer());
         if (!isCaptive(p) || !st.releasing.isEmpty()) return;
+        if (!st.selfSealed) {
+            trapped(p);
+            return;
+        }
         if (st.stage < STAGES) {
             p.sendOverlayMessage(Component.literal("The core is sealed: break the four glowing seals, three times over (stage "
                     + (st.stage + 1) + " of " + STAGES + ").").withStyle(ChatFormatting.GRAY));
             return;
         }
         release(p.level().getServer(), Release.ESCAPE);
+    }
+
+    private static void trapped(ServerPlayer p) {
+        p.sendOverlayMessage(Component.literal("Someone else sealed you in: there is no way out from inside. Only someone outside can open the realm.")
+                .withStyle(ChatFormatting.GRAY));
     }
 
     // --- The rescue from outside ---
@@ -759,14 +812,17 @@ public final class PrisonRealm {
         }
         level.getChunk(st.pos.getX() >> 4, st.pos.getZ() >> 4);
         Vec3 spot = safeSpot(level, st.pos);
-        ServerPlayer captive = server.getPlayerList().getPlayer(who);
+        LivingEntity captive = captive(server, st);
         boolean present = captive != null && captive.isAlive();
+        // Only a player can be owed a release later (a creature that is gone is simply gone), and only a player claims.
+        boolean wasPlayer = st.wasPlayer;
+        genuine &= wasPlayer;
         if (st.cell != null) {
             loadArea(level, st.cell);
             AABB box = cellBox(st.cell);
             // Everything that was in the cell comes out with them (their dropped items, orbs, anything else).
-            for (Entity x : level.getEntitiesOfClass(Entity.class, box, x -> !(x instanceof ServerPlayer))) {
-                if (x instanceof ItemEntity || x instanceof ExperienceOrb || !(x instanceof PrisonRealmEntity)) x.teleportTo(spot.x, spot.y + 0.3, spot.z);
+            for (Entity x : level.getEntitiesOfClass(Entity.class, box, x -> !(x instanceof ServerPlayer) && !(x instanceof PrisonRealmEntity))) {
+                x.teleportTo(spot.x, spot.y + 0.3, spot.z);
             }
             if (present) leaveCell(captive, level, spot);
             restoreCell(level, st.cell, st.replaced);
@@ -777,19 +833,19 @@ public final class PrisonRealm {
         if (body != null) body.discard();
         dropRealm(level, Vec3.atBottomCenterOf(st.pos).add(0, 0.3, 0), st.realmId);
         st.toItem();
-        if (!present) st.pending.add(new PrisonRealmState.Pending(who, level.dimension().identifier().toString(), spot, genuine));
+        if (!present && wasPlayer) st.pending.add(new PrisonRealmState.Pending(who, level.dimension().identifier().toString(), spot, genuine));
         st.save();
         releaseStartedAt = -1;
         Fx.sound(level, spot, SoundEvents.SHULKER_BOX_CLOSE, 1f, 1.2f);
         JJK.LOGGER.info("{} released from the Prison Realm ({}{})", name, kind, present ? "" : ", applied when they are back");
-        if (present) arrive(captive, genuine);
+        if (present && captive instanceof ServerPlayer p) arrive(p, genuine);
     }
 
-    private static void leaveCell(ServerPlayer p, ServerLevel level, Vec3 spot) {
-        p.teleportTo(level, spot.x, spot.y, spot.z, Set.of(), p.getYRot(), p.getXRot(), false);
+    private static void leaveCell(LivingEntity p, ServerLevel level, Vec3 spot) {
+        moveTo(p, level, spot);
         Motion.set(p, Vec3.ZERO);
         p.resetFallDistance();
-        ServerPlayNetworking.send(p, new PrisonPayload(false, 0L, 0, 0, 0));
+        if (p instanceof ServerPlayer sp) ServerPlayNetworking.send(sp, new PrisonPayload(false, 0L, 0, 0, 0));
     }
 
     /** Out: Gojo if this was a genuine seal and release (the claim decides whether he is still free). */
@@ -875,7 +931,12 @@ public final class PrisonRealm {
     private static void progressHud(ServerPlayer p, PrisonRealmState st, long now) {
         if (rescuer != null) return;
         MutableComponent m;
-        if (st.stage >= STAGES) {
+        if (!st.selfSealed) {
+            m = Component.literal("Prison Realm  sealed in by another: only someone outside can open it  ").withStyle(ChatFormatting.DARK_PURPLE)
+                    .append(Component.literal("[").withStyle(ChatFormatting.DARK_GRAY))
+                    .append(Component.keybind("key.jjk.prison_view").withStyle(ChatFormatting.WHITE))
+                    .append(Component.literal("] look outside").withStyle(ChatFormatting.DARK_GRAY));
+        } else if (st.stage >= STAGES) {
             m = Component.literal("Every seal is broken: use the core in the floor").withStyle(ChatFormatting.AQUA);
         } else {
             m = Component.literal("Prison Realm  stage " + (st.stage + 1) + "/" + STAGES + "  seals " + Integer.bitCount(st.broken) + "/4")
@@ -888,9 +949,16 @@ public final class PrisonRealm {
         p.sendOverlayMessage(m);
     }
 
-    private static void explain(ServerPlayer p) {
+    private static void explain(ServerPlayer p, boolean self) {
         p.sendSystemMessage(Component.literal("You are sealed in the Prison Realm.").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD));
-        p.sendSystemMessage(Component.literal("To escape alone: the four seals in the walls glow open in turn, on a steady rhythm. Use a seal "
+        if (!self) {
+            p.sendSystemMessage(Component.literal("Someone else sealed you in: there is no way out from inside. Only someone outside can open "
+                    + "the realm (sneak and hold use on it for 5 seconds).").withStyle(ChatFormatting.GRAY));
+            p.sendSystemMessage(Component.literal("Press ").withStyle(ChatFormatting.GRAY).append(Component.keybind("key.jjk.prison_view").withStyle(ChatFormatting.WHITE))
+                    .append(Component.literal(" to look outside (watching only).").withStyle(ChatFormatting.GRAY)));
+            return;
+        }
+        p.sendSystemMessage(Component.literal("You sealed yourself in, so you can break out. To escape alone: the four seals in the walls glow open in turn, on a steady rhythm. Use a seal "
                 + "while it glows to break it; using one while it's dark lashes back and the stage's seals re-form. Break all four, three times "
                 + "(the glow gets shorter each time), then use the core in the floor.").withStyle(ChatFormatting.GRAY));
         p.sendSystemMessage(Component.literal("Anyone outside can open the realm: sneak and hold use on it for 5 seconds.").withStyle(ChatFormatting.GRAY));
@@ -920,7 +988,7 @@ public final class PrisonRealm {
 
     /** Applies a sealed player's techniques lock: they can't cast while sealed. */
     public static boolean techniquesSealed(Entity e) {
-        return e instanceof ServerPlayer p && isCaptive(p);
+        return e instanceof LivingEntity le && !le.level().isClientSide() && isCaptive(le);
     }
 
     /** True if {@code level} is a server level and the realm's world entity is {@code e}. */

@@ -27,6 +27,8 @@ public final class DomainInstance {
     int phaseAge;
     int activeAge;
     @Nullable DomainInstance clashWith;
+    /** It has been in a clash (its opening rules, like breaking on an empty space, don't apply after one). */
+    boolean clashed;
     @Nullable dev.rick.jjk.core.domain.clash.ClashSession clash;
     /** onActivated has run (a domain that expands straight into a clash activates only if it wins). */
     boolean activated;
@@ -121,6 +123,10 @@ public final class DomainInstance {
 
     public boolean isVictim(LivingEntity e) {
         return victims.containsKey(e.getUUID());
+    }
+
+    public boolean clashed() {
+        return clashed;
     }
 
     public boolean isLive() {

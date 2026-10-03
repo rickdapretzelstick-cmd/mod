@@ -88,7 +88,8 @@ public final class IdleDeathGamble implements DomainDefinition {
     @Override
     public void onTick(DomainInstance domain) {
         Gamble g = GAMBLES.get(domain.id);
-        if (g != null && domain.isLive()) g.tick();
+        // The reels run only while the domain runs its own rules (paused through a clash, resumed after).
+        if (g != null && domain.phase() == DomainInstance.Phase.ACTIVE) g.tick();
         // The casino hums: lights sweep and balls pour down every so often.
         if (domain.age() % 30 == 0) Fx.play(domain.level, "idg_ambient", domain.center, Vec3.ZERO, (float) domain.radius, domain.owner.getId());
     }

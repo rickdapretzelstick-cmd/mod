@@ -70,6 +70,10 @@ public final class PrisonRealmState {
     /** Escape progress: the stage (0-2 locks, 3 = core open) and which of the four locks are broken this stage. */
     int stage;
     int broken;
+    /** The captive sealed themselves: only then can they escape alone (anyone sealed by another waits for a rescue). */
+    boolean selfSealed;
+    /** The captive is a player (not a creature): only a player can be owed a release later, or claim anything. */
+    boolean wasPlayer;
     /** The cell's lower corner (SEALED) and what it replaced. */
     @Nullable BlockPos cell;
     final List<Saved> replaced = new ArrayList<>();
@@ -138,6 +142,10 @@ public final class PrisonRealmState {
         return broken;
     }
 
+    public boolean selfSealed() {
+        return selfSealed;
+    }
+
     public long capturedAt() {
         return capturedAt;
     }
@@ -157,6 +165,8 @@ public final class PrisonRealmState {
         capturedAt = -1;
         stage = 0;
         broken = 0;
+        selfSealed = false;
+        wasPlayer = false;
         cell = null;
         replaced.clear();
         releasing = "";
@@ -188,6 +198,8 @@ public final class PrisonRealmState {
             t.putLong("CapturedAt", capturedAt);
             t.putInt("Stage", stage);
             t.putInt("Broken", broken);
+            t.putBoolean("SelfSealed", selfSealed);
+            t.putBoolean("Player", wasPlayer);
             if (cell != null) t.putLong("Cell", cell.asLong());
             ListTag blocks = new ListTag();
             for (Saved s : replaced) {
@@ -240,6 +252,8 @@ public final class PrisonRealmState {
             capturedAt = t.getLongOr("CapturedAt", -1L);
             stage = Math.max(0, Math.min(3, t.getIntOr("Stage", 0)));
             broken = t.getIntOr("Broken", 0) & 15;
+            selfSealed = t.getBooleanOr("SelfSealed", false);
+            wasPlayer = t.getBooleanOr("Player", true);
             cell = t.contains("Cell") ? BlockPos.of(t.getLongOr("Cell", 0L)) : null;
             var blocks = server.registryAccess().lookupOrThrow(Registries.BLOCK);
             for (net.minecraft.nbt.Tag tag : t.getListOrEmpty("Replaced")) {

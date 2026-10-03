@@ -354,10 +354,10 @@ public class PrisonRealmTests {
                     other.attack(body);
                     body.setPos(body.getX() + 5, body.getY() + 3, body.getZ());
                 })
-                .thenIdle(2)
+                .thenWaitUntil(() -> h.assertTrue(PrisonRealm.body(level).position().distanceTo(Vec3.atBottomCenterOf(st(h).pos())) < 0.01,
+                        "it is anchored where it lies (on its next tick)"))
                 .thenExecute(() -> {
                     PrisonRealmEntity body = PrisonRealm.body(level);
-                    h.assertTrue(body.position().distanceTo(Vec3.atBottomCenterOf(st(h).pos())) < 0.01, "it is anchored where it lies");
                     h.assertTrue(sealed(h) && inCell(h, captive), "nobody was released");
                     // Killed outright (a command): its body comes back; the seal holds.
                     body.kill(level);
@@ -473,6 +473,112 @@ public class PrisonRealmTests {
                     h.assertTrue(!KitOwnership.get(level.getServer()).isClaimed(GojoCharacter.ID), "nothing granted");
                     cleanUp(h, user, target);
                 })
+                .thenSucceed();
+    }
+
+    // 4, 6, 8. Sealed by someone else: no way out from inside; only a rescue lets them out (and they are the first: Gojo).
+    @GameTest(maxTicks = 1000, environment = "jjk-test:prison_i")
+    public void aPlayerSealedBySomeoneElseIsTrappedUntilRescued(GameTestHelper h) {
+        fresh(h);
+        ServerLevel level = h.getLevel();
+        ServerPlayer user = survivor(h, 1.5, 3.5);
+        ServerPlayer target = survivor(h, 5.5, 3.5);
+        ItemStack cube = forged(h);
+        int[] held = new int[1];
+        h.startSequence()
+                .thenExecute(() -> {
+                    Vec3 u = user.position();
+                    user.teleportTo(level, u.x, u.y, u.z, Set.of(), -90f, 10f, false);
+                    user.setItemInHand(InteractionHand.MAIN_HAND, cube);
+                    h.assertTrue(PrisonRealm.use(user, InteractionHand.MAIN_HAND), "thrown at the player in front");
+                })
+                .thenWaitUntil(() -> h.assertTrue(sealed(h) && target.getUUID().equals(st(h).captive()), "the target is sealed"))
+                .thenExecute(() -> {
+                    h.assertTrue(inCell(h, target) && !inCell(h, user), "the target is the one inside");
+                    h.assertTrue(!st(h).selfSealed(), "sealed by someone else");
+                    BlockPos lock = PrisonRealm.lockPos(level.getServer(), 0);
+                    h.assertTrue(!level.getBlockState(lock).is(ProgressionBlocks.SEAL_LOCK), "their cell has no seal locks to break");
+                })
+                // Trying to break out anyway (every lock position, the core, for a good while): nothing.
+                .thenExecute(() -> {
+                    for (int t = 0; t < 4; t++) {
+                        PrisonRealm.useLock(target, PrisonRealm.lockPos(level.getServer(), t));
+                        PrisonRealm.useCore(target);
+                    }
+                })
+                .thenIdle(120)
+                .thenExecute(() -> {
+                    h.assertTrue(sealed(h) && st(h).stage() == 0 && inCell(h, target), "no way out from inside");
+                    Vec3 next = PrisonRealm.body(level).position().add(1.6, 0, 0);
+                    user.teleportTo(level, next.x, next.y, next.z, Set.of(), 90f, 20f, false);
+                    user.setShiftKeyDown(true);
+                })
+                .thenWaitUntil(() -> {
+                    if (held[0]++ % 4 == 0 && PrisonRealm.body(level) != null) PrisonRealm.interact(user, PrisonRealm.body(level));
+                    h.assertTrue(st(h).phase() == PrisonRealmState.Phase.ITEM, "opened from outside");
+                })
+                .thenExecute(() -> {
+                    h.assertTrue(gojo(h, target) && !gojo(h, user), "the rescued captive is the first: Gojo");
+                    user.setShiftKeyDown(false);
+                    cleanUp(h, user, target);
+                })
+                .thenSucceed();
+    }
+
+    // Mobs can be sealed too (never Gojo, no escape of their own); a rescue lets them out; a captive that vanishes frees the realm.
+    @GameTest(maxTicks = 900, environment = "jjk-test:prison_j")
+    public void mobsCanBeSealedAndLetOut(GameTestHelper h) {
+        fresh(h);
+        ServerLevel level = h.getLevel();
+        ServerPlayer user = survivor(h, 1.5, 3.5);
+        var cow = h.spawn(net.minecraft.world.entity.EntityTypes.COW, new Vec3(5.5, 1, 3.5));
+        cow.setNoAi(true);
+        ItemStack cube = forged(h);
+        int[] held = new int[1];
+        h.startSequence()
+                .thenExecute(() -> {
+                    Vec3 u = user.position();
+                    user.teleportTo(level, u.x, u.y, u.z, Set.of(), -90f, 10f, false);
+                    user.setItemInHand(InteractionHand.MAIN_HAND, cube);
+                    h.assertTrue(PrisonRealm.use(user, InteractionHand.MAIN_HAND), "thrown at the cow");
+                    h.assertTrue(cow.getUUID().equals(st(h).captive()), "it opens on the cow");
+                })
+                .thenWaitUntil(() -> h.assertTrue(sealed(h), "the cow is sealed"))
+                .thenExecute(() -> {
+                    BlockPos c = st(h).cell();
+                    h.assertTrue(new AABB(c.getX(), c.getY(), c.getZ(), c.getX() + 13, c.getY() + 8, c.getZ() + 13).contains(cow.position()), "in the cell");
+                    Vec3 out = h.absoluteVec(new Vec3(6, 1, 6));
+                    cow.teleportTo(out.x, out.y, out.z);
+                })
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    BlockPos c = st(h).cell();
+                    h.assertTrue(new AABB(c.getX(), c.getY(), c.getZ(), c.getX() + 13, c.getY() + 8, c.getZ() + 13).contains(cow.position()), "held: put back");
+                    Vec3 next = PrisonRealm.body(level).position().add(1.6, 0, 0);
+                    user.teleportTo(level, next.x, next.y, next.z, Set.of(), 90f, 20f, false);
+                    user.setShiftKeyDown(true);
+                })
+                .thenWaitUntil(() -> {
+                    if (held[0]++ % 4 == 0 && PrisonRealm.body(level) != null) PrisonRealm.interact(user, PrisonRealm.body(level));
+                    h.assertTrue(st(h).phase() == PrisonRealmState.Phase.ITEM, "let out by a rescue");
+                })
+                .thenExecute(() -> {
+                    h.assertTrue(cow.isAlive() && cow.position().distanceTo(h.absoluteVec(new Vec3(5.5, 1, 3.5))) < 8, "the cow is back beside the realm");
+                    h.assertTrue(!KitOwnership.get(level.getServer()).isClaimed(GojoCharacter.ID), "a mob never claims anything (nor does its rescuer)");
+                    user.setShiftKeyDown(false);
+                    // Sealed again, then it dies inside: the realm frees itself.
+                    user.setItemInHand(InteractionHand.MAIN_HAND, PrisonRealmItem.create(st(h).realmId()));
+                    Vec3 u = h.absoluteVec(new Vec3(1.5, 1, 3.5));
+                    user.teleportTo(level, u.x, u.y, u.z, Set.of(), -90f, 10f, false);
+                    cow.teleportTo(h.absoluteVec(new Vec3(5.5, 1, 3.5)).x, h.absoluteVec(new Vec3(5.5, 1, 3.5)).y, h.absoluteVec(new Vec3(5.5, 1, 3.5)).z);
+                    for (ItemEntity e : level.getEntitiesOfClass(ItemEntity.class, new AABB(h.absolutePos(BlockPos.ZERO)).inflate(24),
+                            e -> e.getItem().is(ProgressionItems.PRISON_REALM))) e.discard();
+                    h.assertTrue(PrisonRealm.use(user, InteractionHand.MAIN_HAND), "thrown at the cow again");
+                })
+                .thenWaitUntil(() -> h.assertTrue(sealed(h), "sealed again"))
+                .thenExecute(() -> cow.kill(level))
+                .thenWaitUntil(() -> h.assertTrue(st(h).phase() == PrisonRealmState.Phase.ITEM, "a captive that died inside frees the realm"))
+                .thenExecute(() -> cleanUp(h, user))
                 .thenSucceed();
     }
 }

@@ -457,8 +457,8 @@ refuses the cube. The realm is fire-proof and never despawns on the ground; if i
 explosion, the void) another may be forged. Every cube carries the world's id for it, so a copy or an old cube is inert.
 `/jjk prison reset` (op) forgets a realm that was lost for good (say, in a deleted player's inventory).
 
-**Sealing.** Use it on a player in front of you (within 8 blocks). **Sneak-use it with nobody in front of you to seal
-yourself** (so a solo player can earn Gojo). The cube lands at their feet and plays its whole sequence: it opens, the
+**Sealing.** Use it on a player in front of you (within 8 blocks), or on any creature, just for fun. **Sneak-use it with
+nobody in front of you to seal yourself** (so a solo player can earn Gojo). The cube lands at their feet and plays its whole sequence: it opens, the
 restraints reach out at 2.6 s, they are drawn in, and the seal closes at 5.15 s. Until the restraints reach out they can
 get away by getting more than 6 blocks from it. Dying, logging out or leaving the dimension before it closes also fails
 the seal. A failed seal drops the cube where it lay, and only one seal can run at a time.
@@ -475,7 +475,9 @@ afterwards). There is no way out but the two below:
   them on release.
 - Other players can't get in.
 
-**Escaping alone** (deterministic, repeatable, saved through death, logout and restarts):
+**Escaping alone: only if you sealed yourself.** Anyone sealed by someone else is trapped: their cell has no locks, and
+only someone outside can open the realm (or an admin). Escaping alone is deterministic, repeatable, and saved through
+death, logout and restarts:
 1. Four seal locks, one in the middle of each wall, glow open in turn on a fixed rhythm: every 2 seconds, each a
    quarter-beat after the last.
 2. **Use a lock while it glows** to break it. Using a dark one lashes back (a little damage, a shove) and re-forms that
@@ -500,6 +502,10 @@ second Gojo this way. Capture alone grants nothing, everyone released after that
 release (`/jjk prison free`) grants nothing. A captive who is offline or dead at the moment of their release gets it
 (with the claim, if it is owed) the moment they are back. In Creative the release lets you try Gojo without claiming
 him. A restart during a seal fails it (the cube drops); a restart during a release finishes it.
+
+**Creatures** can be sealed as well: held in the cell the same way, never despawned while inside, let out by a
+rescue. A creature never earns Gojo (nor does its rescuer), and if it dies or vanishes in there the realm opens on its
+own.
 
 `/jjk prison status` (op) shows where the realm is, who is inside and how far they've got.
 
@@ -616,6 +622,11 @@ breaks at once if it opens on nobody.)
 **Always ends:** no domain lasts forever. Whatever phase it is stuck in (forming, clashing, a clash that never
 settles), it expires once its life passes its forming time + duration + a 60-second clash allowance, and never later
 than 4 minutes (`domain.maxLifetimeTicks`, `domain.clashAllowanceTicks`).
+
+**After a clash:** the winner runs by its own rules, however it got into the clash (countered while still forming, or
+already open). Authentic Mutual Love plants its blades, and doesn't break as if it had opened on nobody. Idle Death
+Gamble's reels run, paused through the clash itself and resumed after. Malevolent Shrine slices and Infinite Void
+overloads whoever is inside. The same holds when a clash is called off or the other side vanishes mid-duel.
 
 **Counter:** when someone nearby starts opening a domain and your Awakening meter is full, your Awakening key becomes
 a counter for a moment — instant Awakening, your domain opens at once, a "DOMAIN EXPANSION VS DOMAIN EXPANSION" card

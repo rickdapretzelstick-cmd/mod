@@ -544,9 +544,17 @@ public class YutaGameTests {
         awaken(y);
         boolean[] opened = new boolean[1];
         h.assertTrue(press(y, AbilitySlot.SKILL_4), "Authentic Mutual Love");
-        h.onEachTick(() -> opened[0] |= DomainManager.ownedBy(y) != null);
+        StringBuilder trace = new StringBuilder();
+        String[] last = {""};
+        h.onEachTick(() -> {
+            opened[0] |= DomainManager.ownedBy(y) != null;
+            var c = Casters.get(y);
+            String now = (c.cast() == null ? "-" : c.cast().ability.id + (c.cast().isFinished() ? "(done)" : "")) + " startup=" + JJKConfig.get().yuta.domainStartup;
+            if (!now.equals(last[0])) trace.append(" @").append(h.getTick()).append(':').append(now);
+            last[0] = now;
+        });
         h.succeedWhen(() -> {
-            h.assertTrue(opened[0], "it opened");
+            h.assertTrue(opened[0], "it opened (" + trace + ", refusal " + Casters.get(y).lastRefusal + ")");
             h.assertTrue(DomainManager.ownedBy(y) == null, "and broke at once with no enemy inside");
         });
     }

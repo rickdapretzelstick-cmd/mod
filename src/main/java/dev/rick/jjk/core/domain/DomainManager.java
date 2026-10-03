@@ -240,6 +240,8 @@ public final class DomainManager {
     private static void startClash(DomainInstance a, DomainInstance b) {
         a.clashWith = b;
         b.clashWith = a;
+        a.clashed = true;
+        b.clashed = true;
         if (b.phase == DomainInstance.Phase.ACTIVE) setPhase(b, DomainInstance.Phase.CLASHING);
         // Both domains pause (no sure-hit) while their owners duel for control. The duel decides the winner.
         // Participants in expansion order (b was already standing).
@@ -263,7 +265,7 @@ public final class DomainManager {
             ClashManager.cancel(d.clash);
             d.clash = null;
             d.clashWith = null;
-            setPhase(d, DomainInstance.Phase.ACTIVE);
+            resume(d);
         }
     }
 
@@ -330,7 +332,7 @@ public final class DomainManager {
             if (d == winner) continue;
             d.clashWith = null;
             if (winner != null) end(d, DomainInstance.EndReason.CLASH_LOST);
-            else if (d.phase == DomainInstance.Phase.CLASHING) setPhase(d, DomainInstance.Phase.ACTIVE);
+            else if (d.phase == DomainInstance.Phase.CLASHING) resume(d);
         }
         if (winner == null) return;
         crown(winner);
@@ -340,14 +342,7 @@ public final class DomainManager {
     /** The clash is won: the winner's domain takes over and runs by its normal rules. */
     private static void crown(DomainInstance winner) {
         winner.clashWith = null;
-        if (winner.phase == DomainInstance.Phase.CLASHING || winner.phase == DomainInstance.Phase.FORMING) {
-            setPhase(winner, DomainInstance.Phase.ACTIVE);
-            // A domain that expanded straight into the clash activates now, for the first time.
-            if (!winner.activated) {
-                winner.activated = true;
-                winner.definition.onActivated(winner);
-            }
-        }
+        if (winner.phase == DomainInstance.Phase.CLASHING || winner.phase == DomainInstance.Phase.FORMING) resume(winner);
         Fx.play(winner.level, "domain_clash_end", winner.center, Vec3.ZERO, (float) winner.radius, winner.owner.getId());
         Fx.shake(winner.level, winner.center, winner.radius * 3, 1.0f, 20);
     }
@@ -374,7 +369,7 @@ public final class DomainManager {
         if (partner != null) {
             partner.clashWith = null;
             partner.clash = null;
-            if (partner.phase == DomainInstance.Phase.CLASHING) setPhase(partner, DomainInstance.Phase.ACTIVE);
+            if (partner.phase == DomainInstance.Phase.CLASHING) resume(partner);
         }
         for (UUID id : List.copyOf(d.victims.keySet())) {
             if (d.level.getEntity(id) instanceof LivingEntity le) d.definition.onRelease(d, le);
@@ -384,6 +379,18 @@ public final class DomainManager {
         if (d.owner.isAlive() && d.definition.burnoutOnCollapse(d, reason)) Statuses.apply(d.owner, CombatStatus.BURNOUT, JJKConfig.get().resources.domainBurnout);
         setPhase(d, DomainInstance.Phase.COLLAPSING);
         Fx.play(d.level, "domain_collapse", d.center, Vec3.ZERO, (float) d.radius, d.owner.getId());
+    }
+
+    /**
+     * Back under its own rules after a clash, however the clash ended (won, called off, the other side gone): a domain
+     * that expanded straight into the clash was never activated, so it is now (Yuta's blades fall, Hakari's reels start).
+     */
+    private static void resume(DomainInstance d) {
+        setPhase(d, DomainInstance.Phase.ACTIVE);
+        if (!d.activated) {
+            d.activated = true;
+            d.definition.onActivated(d);
+        }
     }
 
     private static void setPhase(DomainInstance d, DomainInstance.Phase phase) {

@@ -20,7 +20,8 @@
       "dev.rick.jjk.test.BeamClashMatchupTests",
       "dev.rick.jjk.test.StabilityTests",
       "dev.rick.jjk.test.BlastRadiusTests",
-      "dev.rick.jjk.test.PrisonRealmTests"
+      "dev.rick.jjk.test.PrisonRealmTests",
+      "dev.rick.jjk.test.DomainClashRulesTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.AnimFrameworkClientTest",

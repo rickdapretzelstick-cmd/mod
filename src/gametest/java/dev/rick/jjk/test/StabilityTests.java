@@ -422,21 +422,32 @@ public class StabilityTests {
      * needs long enough to walk out) and put back as it was when the test ends, for the classes that rely on defaults.
      */
     private static Runnable domainConfig() {
+        // These tests run at the same time: the first in saves the shared values, the last out puts them back (each saving
+        // and restoring its own copy would let one restore the other's settings and leak them into later batches).
         JJKConfig.Domain d = JJKConfig.get().domain;
-        double radius = d.radius;
-        int duration = d.duration, startup = d.startup;
-        boolean structure = d.physicalStructure;
+        if (DOMAIN_USERS++ == 0) {
+            savedDomain = d;
+            saved = new Object[] {d.radius, d.duration, d.startup, d.physicalStructure};
+        }
         d.physicalStructure = true;
         d.radius = 6;
         d.duration = 200;
         d.startup = 10;
+        boolean[] done = {false};
         return () -> {
-            d.radius = radius;
-            d.duration = duration;
-            d.startup = startup;
-            d.physicalStructure = structure;
+            if (done[0]) return;
+            done[0] = true;
+            if (--DOMAIN_USERS > 0) return;
+            savedDomain.radius = (double) saved[0];
+            savedDomain.duration = (int) saved[1];
+            savedDomain.startup = (int) saved[2];
+            savedDomain.physicalStructure = (boolean) saved[3];
         };
     }
+
+    private static int DOMAIN_USERS;
+    private static JJKConfig.Domain savedDomain;
+    private static Object[] saved;
 
     @GameTest(maxTicks = 700, padding = 16, environment = ENV)
     public void anOpenDomainOutlastsItsOwnerAndVictimWalkingOut(GameTestHelper h) {
@@ -499,7 +510,8 @@ public class StabilityTests {
                 .thenSucceed();
     }
 
-    @GameTest(maxTicks = 600, padding = 16, environment = ENV)
+    // Its own batch: it sets the shared domain length to "for ever", which the other domain tests here mustn't see.
+    @GameTest(maxTicks = 600, padding = 16, environment = "jjk-test:domain_ceiling")
     public void noDomainOutlivesItsCeiling(GameTestHelper h) {
         Runnable restore = domainConfig();
         JJKConfig.Domain cfg = JJKConfig.get().domain;
