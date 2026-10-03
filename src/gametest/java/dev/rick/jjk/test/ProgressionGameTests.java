@@ -88,7 +88,8 @@ public class ProgressionGameTests {
         });
     }
 
-    @GameTest(maxTicks = 60, environment = ENV)
+    /** Mock players can't be hurt until their (absent) client counts as loaded, a few seconds in: the death waits for it. */
+    @GameTest(maxTicks = 260, environment = ENV)
     public void cursedFingerMakesTheFirstEaterYujiAndKillsTheNext(GameTestHelper h) {
         ServerPlayer a = survivor(h);
         ServerPlayer b = survivor(h);
@@ -96,14 +97,13 @@ public class ProgressionGameTests {
         h.assertValueEqual(TechniqueProgression.acquire(a, CursedFingerAcquisition.INSTANCE), KitOwnership.ClaimResult.CLAIMED, "A claims Yuji");
         h.assertValueEqual(TechniqueProgression.acquire(b, CursedFingerAcquisition.INSTANCE), KitOwnership.ClaimResult.TAKEN, "B finds Yuji taken");
         h.assertValueEqual(TechniqueProgression.acquire(a, CursedFingerAcquisition.INSTANCE), KitOwnership.ClaimResult.ALREADY_OWNER, "A again: their own case");
-        h.runAfterDelay(3, () -> {
-            h.assertTrue(a.isAlive() && Casters.get(a).character() == Characters.get(YujiCharacter.ID), "A survives as Yuji");
-            h.assertTrue(TechniqueProgression.progression(a).counter(CursedFingerAcquisition.FINGERS_EATEN) == 2, "A's fingers are counted");
+        h.assertTrue(TechniqueProgression.progression(a).counter(CursedFingerAcquisition.FINGERS_EATEN) == 2, "A's fingers are counted");
+        h.succeedWhen(() -> {
             h.assertTrue(!b.isAlive(), "B is consumed by the finger");
+            h.assertTrue(a.isAlive() && Casters.get(a).character() == Characters.get(YujiCharacter.ID), "A survives as Yuji");
             h.assertTrue(ownership(h).isOwner(YujiCharacter.ID, a.getUUID()), "Yuji still belongs to A");
             ownership(h).release(YujiCharacter.ID);
             done(a, b);
-            h.succeed();
         });
     }
 

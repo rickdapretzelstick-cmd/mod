@@ -61,7 +61,7 @@ public final class CursedFingerAcquisition implements KitAcquisition {
         ServerLevel level = player.level();
         Fx.play(level, "sfx:kokusen", player.getEyePosition(), Vec3.ZERO, 1f, player.getId());
         // Once the eating has finished, so the rest of their fingers drop with everything else.
-        TechniqueProgression.endOfTick(() -> overwhelm(player));
+        TechniqueProgression.endOfTick(() -> overwhelm(player, OVERWHELM_TICKS));
     }
 
     @Override
@@ -76,16 +76,21 @@ public final class CursedFingerAcquisition implements KitAcquisition {
         player.sendOverlayMessage(Component.literal("The finger crumbles to dust.").withStyle(ChatFormatting.GRAY));
     }
 
+    /** How long (ticks) the finger keeps trying if the player can't be hurt yet (just joined or respawned). */
+    static final int OVERWHELM_TICKS = 200;
+
     /**
      * Kills the player outright. The damage type bypasses armour, effects, enchantments, shields, cooldown and
      * invulnerability (data/minecraft/tags/damage_type), and CharacterService never lets a character's state refuse this
-     * death (Jackpot, Decadence).
+     * death (Jackpot, Decadence). A player the game won't let be hurt at all yet (the protection right after joining,
+     * which no damage type gets through) is tried again every tick until it lands.
      */
-    public static void overwhelm(ServerPlayer player) {
-        if (!player.isAlive()) return;
+    public static void overwhelm(ServerPlayer player, int triesLeft) {
+        if (!player.isAlive() || player.isRemoved()) return;
         ServerLevel level = player.level();
         DamageSource source = ModDamageTypes.source(level, ModDamageTypes.CURSED_OVERLOAD, null, null);
         player.hurtServer(level, source, player.getMaxHealth() + player.getAbsorptionAmount() + 1000f);
+        if (player.isAlive() && triesLeft > 0) TechniqueProgression.endOfTick(() -> overwhelm(player, triesLeft - 1));
         // TODO(26.3 API): need a guaranteed-kill call (e.g. LivingEntity.die(DamageSource) or a kill helper) as a fallback
         //  in case another mod cancels the damage; nothing in src/ kills an entity outright yet.
     }
