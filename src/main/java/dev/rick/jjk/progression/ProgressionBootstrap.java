@@ -15,7 +15,7 @@ public final class ProgressionBootstrap {
         ProgressionBlocks.init();
         ProgressionItems.init();
         CursedCauldronBlock.registerInteractions();
-        CursedBrewing.init();
+        // Brewing Soul in a Bottle with a Ghast Tear is a 26.3 data recipe: data/jjk/recipe/brewing/cursed_energy_bottle.json.
         ProgressionWorldgen.init();
         TechniqueProgression.init();
         CurseAggro.init();

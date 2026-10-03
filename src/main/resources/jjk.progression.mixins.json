@@ -3,10 +3,9 @@
   "package": "dev.rick.jjk.progression.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "BrewingPotionSlotMixin",
-    "BrewingStandBlockEntityMixin",
-    "MobTargetMixin",
-    "PotionBrewingMixin"
+    "MobTargetMixin"
   ],
-  "injectors": { "defaultRequire": 0 }
+  "injectors": {
+    "defaultRequire": 0
+  }
 }

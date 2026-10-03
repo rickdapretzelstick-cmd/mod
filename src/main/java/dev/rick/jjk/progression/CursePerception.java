@@ -62,6 +62,6 @@ public final class CursePerception {
     /** Whether this entity is a curse that only the perceptive can see. */
     public static boolean requiresPerception(Entity entity) {
         if (entity instanceof CursedSpirit spirit) return spirit.requiresCursePerception();
-        return entity.getType().is(REQUIRES_PERCEPTION);
+        return entity.getType().builtInRegistryHolder().is(REQUIRES_PERCEPTION);
     }
 }

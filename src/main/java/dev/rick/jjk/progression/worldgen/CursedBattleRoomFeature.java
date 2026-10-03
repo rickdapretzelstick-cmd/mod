@@ -1,6 +1,6 @@
 package dev.rick.jjk.progression.worldgen;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import dev.rick.jjk.JJK;
 import dev.rick.jjk.config.JJKConfig;
 import dev.rick.jjk.progression.ProgressionBlocks;
@@ -22,8 +22,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Half;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
@@ -43,18 +42,19 @@ import java.util.Map;
  * keep working; under an igloo with a basement the way down starts from the basement floor). Everything is written
  * inside the start chunk, so generation never reaches into chunks that aren't ready.
  */
-public class CursedBattleRoomFeature extends Feature<NoneFeatureConfiguration> {
+public record CursedBattleRoomFeature() implements Feature {
+    public static final MapCodec<CursedBattleRoomFeature> CODEC = MapCodec.unit(new CursedBattleRoomFeature());
+
     /** Interior half-width (the room is 13x13 inside, centred on the chunk) and height. */
     private static final int HALF = 6, HEIGHT = 7;
 
-    public CursedBattleRoomFeature(Codec<NoneFeatureConfiguration> codec) {
-        super(codec);
+    @Override
+    public MapCodec<CursedBattleRoomFeature> codec() {
+        return CODEC;
     }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        WorldGenLevel level = context.level();
-        BlockPos origin = context.origin();
+    public boolean place(WorldGenLevel level, ChunkGenerator generator, RandomSource random, BlockPos origin) {
         ChunkAccess chunk = level.getChunk(origin);
         Map<Structure, StructureStart> starts = chunk.getAllStarts();
         if (starts.isEmpty()) return false;
@@ -70,7 +70,7 @@ public class CursedBattleRoomFeature extends Feature<NoneFeatureConfiguration> {
             if (id.getPath().equals("mansion") && cfg.mansionBattleRooms) site = 0;
             else if (id.getPath().equals("igloo") && cfg.iglooBattleRooms) site = 1;
             else continue;
-            placed |= build(level, context.random(), origin.getX() & ~15, origin.getZ() & ~15, start.getBoundingBox(), site);
+            placed |= build(level, random, origin.getX() & ~15, origin.getZ() & ~15, start.getBoundingBox(), site);
         }
         return placed;
     }
@@ -147,8 +147,8 @@ public class CursedBattleRoomFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     private enum Palette {
-        MANSION(Blocks.DARK_OAK_LOG, Blocks.DARK_OAK_TRAPDOOR, Blocks.GRAY_CARPET, Blocks.STRIPPED_DARK_OAK_LOG),
-        IGLOO(Blocks.PACKED_ICE, Blocks.SPRUCE_TRAPDOOR, Blocks.WHITE_CARPET, Blocks.BLUE_ICE);
+        MANSION(Blocks.DARK_OAK_LOG, Blocks.DARK_OAK_TRAPDOOR, Blocks.CARPET.gray(), Blocks.STRIPPED_DARK_OAK_LOG),
+        IGLOO(Blocks.PACKED_ICE, Blocks.SPRUCE_TRAPDOOR, Blocks.CARPET.white(), Blocks.BLUE_ICE);
 
         final Block pillar, trapdoor, carpet, accent;
 
@@ -226,7 +226,7 @@ public class CursedBattleRoomFeature extends Feature<NoneFeatureConfiguration> {
             int n = random.nextInt(4);
             if (n == 0) s = Blocks.SKELETON_SKULL.defaultBlockState().setValue(SkullBlock.ROTATION, random.nextInt(16));
             else if (n == 1) s = Blocks.BONE_BLOCK.defaultBlockState();
-            else s = Blocks.BLACK_CANDLE.defaultBlockState().setValue(CandleBlock.CANDLES, 1 + random.nextInt(4)).setValue(CandleBlock.LIT, true);
+            else s = Blocks.DYED_CANDLE.black().defaultBlockState().setValue(CandleBlock.CANDLES, 1 + random.nextInt(4)).setValue(CandleBlock.LIT, true);
             set(level, x, floor + 1, z, s);
         }
         // Accents from the building above, set into the walls at eye height.

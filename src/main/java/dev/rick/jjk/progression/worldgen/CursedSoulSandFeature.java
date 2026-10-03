@@ -1,6 +1,6 @@
 package dev.rick.jjk.progression.worldgen;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import dev.rick.jjk.config.JJKConfig;
 import dev.rick.jjk.progression.ProgressionBlocks;
 import net.minecraft.core.BlockPos;
@@ -9,8 +9,7 @@ import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,17 +20,18 @@ import java.util.List;
  * naturally generated bone blocks count. A few such spots per chunk turn, never whole areas; a chunk with any fossil
  * resting on the ground gets at least one, so a fossil is always worth looking under.
  */
-public class CursedSoulSandFeature extends Feature<NoneFeatureConfiguration> {
-    public CursedSoulSandFeature(Codec<NoneFeatureConfiguration> codec) {
-        super(codec);
+public record CursedSoulSandFeature() implements Feature {
+    public static final MapCodec<CursedSoulSandFeature> CODEC = MapCodec.unit(new CursedSoulSandFeature());
+
+    @Override
+    public MapCodec<CursedSoulSandFeature> codec() {
+        return CODEC;
     }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        WorldGenLevel level = context.level();
-        BlockPos origin = context.origin();
+    public boolean place(WorldGenLevel level, ChunkGenerator generator, RandomSource random, BlockPos origin) {
         int minY = level.getMinY() + 1, maxY = Math.min(level.getMaxY(), level.getMinY() + 256);
-        return decorate(level, context.random(), origin.getX() & ~15, origin.getZ() & ~15, minY, maxY) > 0;
+        return decorate(level, random, origin.getX() & ~15, origin.getZ() & ~15, minY, maxY) > 0;
     }
 
     /**

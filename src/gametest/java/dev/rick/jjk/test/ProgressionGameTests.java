@@ -60,6 +60,10 @@ public class ProgressionGameTests {
         applyConfig();
         ServerPlayer p = h.makeMockServerPlayerInLevel();
         p.setGameMode(GameType.SURVIVAL);
+        // The mock player keeps creative abilities whatever its mode; a real Survival player has none.
+        p.getAbilities().instabuild = false;
+        p.getAbilities().invulnerable = false;
+        p.getAbilities().mayfly = false;
         p.setPos(h.absoluteVec(new Vec3(x, 1, z)));
         return p;
     }
@@ -107,11 +111,14 @@ public class ProgressionGameTests {
         p.setGameMode(GameType.CREATIVE);
         h.assertTrue(CharacterService.select(p, "ryu") == null && Casters.get(p).character() == Characters.get("ryu"), "Creative picks freely");
         h.assertTrue(!ownership(h).isClaimed("ryu"), "a Creative pick claims nothing");
-        p.setGameMode(GameType.SURVIVAL);
-        h.runAfterDelay(3, () -> {
-            h.assertTrue(Casters.get(p).character() == null, "back in Survival the Creative pick is gone");
-            p.discard();
-            h.succeed();
+        // (A tick or two in Creative first: a real player can't switch there and back within one tick.)
+        h.runAfterDelay(2, () -> {
+            p.setGameMode(GameType.SURVIVAL);
+            h.runAfterDelay(3, () -> {
+                h.assertTrue(Casters.get(p).character() == null, "back in Survival the Creative pick is gone");
+                p.discard();
+                h.succeed();
+            });
         });
     }
 
@@ -163,16 +170,14 @@ public class ProgressionGameTests {
                 new BlockHitResult(Vec3.atCenterOf(sand), Direction.UP, sand, false));
         h.assertTrue(level.getBlockState(sand).is(Blocks.SOUL_SAND), "the sand is plain again");
         h.assertTrue(p.getItemInHand(InteractionHand.MAIN_HAND).is(ProgressionItems.SOUL_IN_A_BOTTLE), "Soul in a Bottle");
-        // Brewing: Soul in a Bottle + Ghast Tear.
-        ItemStack soul = new ItemStack(ProgressionItems.SOUL_IN_A_BOTTLE), tear = new ItemStack(Items.GHAST_TEAR);
-        h.assertTrue(level.potionBrewing().hasMix(soul, tear), "the brewing stand accepts the mix");
-        h.assertTrue(level.potionBrewing().mix(tear, soul).is(ProgressionItems.CURSED_ENERGY_BOTTLE), "Cursed Energy in a Bottle");
+        // (Brewing Soul in a Bottle with a Ghast Tear runs on a real brewing stand: soulInABottleBrewsIntoCursedEnergy.)
         // The cauldron: four bottles, 1/4 to 4/4.
         BlockPos pot = h.absolutePos(new BlockPos(3, 1, 3));
         level.setBlock(pot, Blocks.CAULDRON.defaultBlockState(), 3);
         for (int i = 1; i <= 4; i++) {
             p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ProgressionItems.CURSED_ENERGY_BOTTLE));
-            level.getBlockState(pot).useItemOn(p.getItemInHand(InteractionHand.MAIN_HAND), level, p, InteractionHand.MAIN_HAND,
+            // Through the player's real use path (a click: Fabric's use-block event, then the block).
+            p.gameMode.useItemOn(p, level, p.getItemInHand(InteractionHand.MAIN_HAND), InteractionHand.MAIN_HAND,
                     new BlockHitResult(Vec3.atCenterOf(pot), Direction.UP, pot, false));
             h.assertTrue(level.getBlockState(pot).is(ProgressionBlocks.CURSED_CAULDRON)
                     && level.getBlockState(pot).getValue(CursedCauldronBlock.LEVEL) == i, "level " + i + "/4");
@@ -180,10 +185,15 @@ public class ProgressionGameTests {
         // Normal glasses perceive nothing; thrown into the full cauldron they come out cursed.
         p.setItemSlot(EquipmentSlot.HEAD, new ItemStack(ProgressionItems.GLASSES));
         h.assertTrue(!CursePerception.canPerceive(p), "plain glasses show nothing");
-        ItemEntity thrown = new ItemEntity(level, pot.getX() + 0.5, pot.getY() + 0.9, pot.getZ() + 0.5, new ItemStack(ProgressionItems.GLASSES));
-        level.addFreshEntity(thrown);
+        // The plain glasses, used on the full cauldron (they must be wearable before: they were worn just now).
+        p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ProgressionItems.GLASSES));
+        p.gameMode.useItemOn(p, level, p.getItemInHand(InteractionHand.MAIN_HAND), InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(pot), Direction.UP, pot, false));
+        h.assertTrue(p.getItemInHand(InteractionHand.MAIN_HAND).isEmpty(), "the cauldron took the glasses");
         h.succeedWhen(() -> {
-            h.assertTrue(level.getBlockState(pot).is(Blocks.CAULDRON), "the energy is spent");
+            h.assertTrue(level.getBlockState(pot).is(Blocks.CAULDRON), "the energy is spent (" + level.getBlockState(pot) + ", glasses at "
+                    + level.getEntitiesOfClass(ItemEntity.class, new AABB(pot).inflate(3)).stream().map(e -> e.getItem() + "@" + e.position().subtract(Vec3.atLowerCornerOf(pot))).toList()
+                    + ", scheduled " + level.getBlockTicks().hasScheduledTick(pot, ProgressionBlocks.CURSED_CAULDRON) + ")");
             List<ItemEntity> out = level.getEntitiesOfClass(ItemEntity.class, new AABB(pot).inflate(3), e -> e.getItem().is(ProgressionItems.CURSED_GLASSES));
             h.assertTrue(!out.isEmpty(), "Cursed Glasses rose out");
             p.setItemSlot(EquipmentSlot.HEAD, out.get(0).getItem().copy());
@@ -191,40 +201,49 @@ public class ProgressionGameTests {
         });
     }
 
-    /** Husks stand in for curses here: the test datapack tags them jjk:requires_curse_perception. */
-    @GameTest(maxTicks = 200, environment = ENV)
+    /** A real brewing stand, fuelled: Soul in a Bottle and a Ghast Tear brew into Cursed Energy in a Bottle (a 26.3 data recipe). */
+    @GameTest(maxTicks = 520, environment = ENV)
+    public void soulInABottleBrewsIntoCursedEnergy(GameTestHelper h) {
+        applyConfig();
+        BlockPos at = h.absolutePos(new BlockPos(2, 1, 2));
+        h.getLevel().setBlock(at, Blocks.BREWING_STAND.defaultBlockState(), 3);
+        var stand = (net.minecraft.world.level.block.entity.BrewingStandBlockEntity) h.getLevel().getBlockEntity(at);
+        h.assertTrue(stand != null, "the stand");
+        h.assertTrue(stand.canPlaceItem(0, new ItemStack(ProgressionItems.SOUL_IN_A_BOTTLE)), "its bottle slot takes a Soul in a Bottle");
+        stand.setItem(0, new ItemStack(ProgressionItems.SOUL_IN_A_BOTTLE));
+        stand.setItem(3, new ItemStack(Items.GHAST_TEAR));
+        stand.setItem(4, new ItemStack(Items.BLAZE_POWDER));
+        h.succeedWhen(() -> {
+            h.assertTrue(stand.getItem(0).is(ProgressionItems.CURSED_ENERGY_BOTTLE), "Cursed Energy in a Bottle (" + stand.getItem(0) + ")");
+            h.assertTrue(stand.getItem(3).isEmpty(), "the tear was used");
+        });
+    }
+
+    /**
+     * Husks stand in for curses here: the test datapack tags them jjk:requires_curse_perception. The game's mock player
+     * always reports itself as creative, and 26.3's Mob.setTarget refuses creative targets on its own, so this checks the
+     * rules the setTarget guard applies ({@link CurseAggro#mayTarget}, {@link CurseAggro#onTargeted}) rather than vanilla
+     * targeting.
+     */
+    @GameTest(maxTicks = 40, environment = ENV)
     public void unseenCursesDontStartFightsButDontForgetThem(GameTestHelper h) {
         ServerPlayer p = survivor(h, 2, 2);
         floor(h, 8);
-        Mob curse = h.spawn(EntityType.HUSK, new Vec3(5, 1, 5));
+        Mob curse = h.spawn(net.minecraft.world.entity.EntityTypes.HUSK, new Vec3(5, 1, 5));
         h.assertTrue(CursePerception.requiresPerception(curse), "the test curse needs perception");
-        int[] phase = {0};
-        h.onEachTick(() -> {
-            switch (phase[0]) {
-                case 0 -> {
-                    if (h.getTick() >= 40) {
-                        h.assertTrue(curse.getTarget() == null, "an unseen curse ignores someone who can't perceive it");
-                        p.setItemSlot(EquipmentSlot.HEAD, new ItemStack(ProgressionItems.CURSED_GLASSES));
-                        phase[0] = 1;
-                    }
-                }
-                case 1 -> {
-                    if (curse.getTarget() == p) {
-                        h.assertTrue(CurseAggro.isHostileTo(curse, p), "it turned hostile");
-                        p.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
-                        phase[0] = 2;
-                    }
-                }
-                case 2 -> {
-                    if (h.getTick() >= 160) {
-                        h.assertTrue(CurseAggro.isHostileTo(curse, p) && CurseAggro.mayTarget(curse, p), "taking the glasses off doesn't calm it");
-                        p.discard();
-                        h.succeed();
-                    }
-                }
-                default -> {}
-            }
-        });
+        h.assertTrue(!CurseAggro.mayTarget(curse, p), "an unseen curse can't start a fight with someone who can't perceive it");
+        p.setItemSlot(EquipmentSlot.HEAD, new ItemStack(ProgressionItems.CURSED_GLASSES));
+        h.assertTrue(CurseAggro.mayTarget(curse, p), "perceived, it may take them");
+        CurseAggro.onTargeted(curse, p);
+        h.assertTrue(CurseAggro.isHostileTo(curse, p), "taking them makes it hostile");
+        // Glasses off mid-fight: it keeps going (no cheesing the curse by hiding from it).
+        p.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+        h.assertTrue(CurseAggro.mayTarget(curse, p), "taking the glasses off doesn't calm it");
+        CurseAggro.calm(curse);
+        h.assertTrue(!CurseAggro.mayTarget(curse, p), "calmed, it can't take an unperceiving player again");
+        curse.discard();
+        p.discard();
+        h.succeed();
     }
 
     @GameTest(maxTicks = 100, environment = ENV)

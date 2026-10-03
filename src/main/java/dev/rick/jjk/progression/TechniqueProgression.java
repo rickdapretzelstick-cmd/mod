@@ -66,7 +66,8 @@ public final class TechniqueProgression {
 
     /** Creative: the testing sandbox where any kit can be picked and nothing counts as ownership. */
     public static boolean isSandbox(ServerPlayer player) {
-        return player.isCreative();
+        // The game mode itself, not isCreative() (26.3 answers that from the player's abilities, which can disagree).
+        return player.gameMode.getGameModeForPlayer() == net.minecraft.world.level.GameType.CREATIVE;
     }
 
     /** Whether Survival progression decides this player's kit right now (progression on, not in the sandbox). */

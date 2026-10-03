@@ -317,7 +317,8 @@ public class ClashTests {
                 .thenSucceed();
     }
 
-    @GameTest(maxTicks = 200, environment = "jjk-test:clash_a")
+    // Padded past the 34-block counter range: a neighbouring plot opening its own domain would offer this test a fresh window.
+    @GameTest(maxTicks = 200, padding = 40, environment = "jjk-test:clash_a")
     public void aLateOrUnchargedPressIsANormalAwakening(GameTestHelper h) {
         floor(h);
         TrainingDummy a = opener(h, 2, 4);

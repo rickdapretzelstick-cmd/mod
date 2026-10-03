@@ -1,12 +1,15 @@
 package dev.rick.jjk.progression.block;
 
-import com.mojang.serialization.MapCodec;
 import dev.rick.jjk.config.JJKConfig;
 import dev.rick.jjk.core.fx.Fx;
 import dev.rick.jjk.progression.ProgressionBlocks;
 import dev.rick.jjk.progression.ProgressionItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.cauldron.CauldronInteraction;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -34,10 +37,10 @@ import java.util.List;
  * units are spent, and Cursed Glasses rise out. The cauldron is left empty (a plain cauldron again).
  *
  * <p>Everything runs on the server through scheduled block ticks (they are saved with the chunk), so a ritual in
- * progress survives the chunk unloading; if the glasses are gone when it resumes, it stops with the energy intact.
+ * progress survives the chunk unloading. The glasses are held by the block's own state (INFUSION) from the moment they go
+ * in, so nothing loose can be picked out or pushed away mid-ritual; breaking the cauldron gives them back.
  */
 public class CursedCauldronBlock extends AbstractCauldronBlock {
-    public static final MapCodec<CursedCauldronBlock> CODEC = simpleCodec(CursedCauldronBlock::new);
     public static final int MAX_LEVEL = 4;
     public static final IntegerProperty LEVEL = IntegerProperty.create("level", 1, MAX_LEVEL);
     /** 0 = still; 1..STAGES while glasses are being infused. */
@@ -46,21 +49,52 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
     /** How often a full cauldron looks for glasses in it. */
     private static final int WATCH_TICKS = 5;
 
-    public static final CauldronInteraction.InteractionMap INTERACTIONS = CauldronInteraction.newInteractionMap("jjk_cursed_energy");
+    /** No vanilla interactions (26.3 keeps the dispatcher's registration private): {@link #useItemOn} handles its items. */
+    private static final CauldronInteraction.Dispatcher INTERACTIONS = new CauldronInteraction.Dispatcher();
 
     public CursedCauldronBlock(Properties properties) {
         super(properties, INTERACTIONS);
         registerDefaultState(stateDefinition.any().setValue(LEVEL, 1).setValue(INFUSION, 0));
     }
 
-    /** Pouring rules: a bottle into an empty cauldron starts it at 1/4, into this one adds a level. */
+    /**
+     * Pouring rules: a bottle into an empty (vanilla) cauldron starts it at 1/4; into this one it adds a level. The empty
+     * cauldron's side goes through Fabric's use-block event, since 26.3's cauldron dispatchers can't be added to.
+     */
     public static void registerInteractions() {
-        CauldronInteraction.EMPTY.map().put(ProgressionItems.CURSED_ENERGY_BOTTLE,
-                (state, level, pos, player, hand, stack) -> pour(level, pos, player, hand, stack, 0));
-        INTERACTIONS.map().put(ProgressionItems.CURSED_ENERGY_BOTTLE, (state, level, pos, player, hand, stack) -> {
+        UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
+            ItemStack stack = player.getItemInHand(hand);
+            if (!stack.is(ProgressionItems.CURSED_ENERGY_BOTTLE) || !level.getBlockState(hit.getBlockPos()).is(Blocks.CAULDRON)) return InteractionResult.PASS;
+            return pour(level, hit.getBlockPos(), player, hand, stack, 0);
+        });
+    }
+
+    /**
+     * A bottle poured in adds a level; the plain glasses, used on a full cauldron, are lowered into the energy and the
+     * ritual takes them (Cursed Glasses rise out).
+     */
+    @Override
+    protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
+                                          BlockHitResult hit) {
+        if (stack.is(ProgressionItems.CURSED_ENERGY_BOTTLE)) {
             if (state.getValue(LEVEL) >= MAX_LEVEL || state.getValue(INFUSION) > 0) return InteractionResult.TRY_WITH_EMPTY_HAND;
             return pour(level, pos, player, hand, stack, state.getValue(LEVEL));
-        });
+        }
+        if (stack.is(ProgressionItems.GLASSES)) {
+            if (state.getValue(LEVEL) < MAX_LEVEL || state.getValue(INFUSION) > 0) return InteractionResult.TRY_WITH_EMPTY_HAND;
+            if (level instanceof ServerLevel server) {
+                // The cauldron takes the glasses itself (its INFUSION state holds them), so nothing loose can drift out.
+                stack.consume(1, player);
+                server.setBlock(pos, state.setValue(INFUSION, 1), Block.UPDATE_ALL);
+                Vec3 core = Vec3.atBottomCenterOf(pos).add(0, contentY(MAX_LEVEL) + 0.05, 0);
+                Fx.play(server, "prog_infuse", core, Vec3.ZERO, 1, -1);
+                Fx.sound(server, core, SoundEvents.BOTTLE_EMPTY, 0.8f, 0.5f);
+                Fx.sound(server, core, SoundEvents.SCULK_SHRIEKER_SHRIEK, 0.5f, 1.6f);
+                server.scheduleTick(pos, this, stageTicks());
+            }
+            return InteractionResult.SUCCESS;
+        }
+        return super.useItemOn(stack, state, level, pos, player, hand, hit);
     }
 
     private static InteractionResult pour(Level level, BlockPos pos, net.minecraft.world.entity.player.Player player,
@@ -92,11 +126,6 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
     }
 
     @Override
-    protected MapCodec<? extends AbstractCauldronBlock> codec() {
-        return CODEC;
-    }
-
-    @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> b) {
         b.add(LEVEL, INFUSION);
     }
@@ -124,55 +153,63 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
         if (!level.getBlockTicks().hasScheduledTick(pos, this)) level.scheduleTick(pos, this, WATCH_TICKS);
     }
 
+    private static int stageTicks() {
+        return Math.max(4, JJKConfig.get().progression.infusionTicks / STAGES);
+    }
+
     @Override
     protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (state.getValue(LEVEL) < MAX_LEVEL) return;
         int stage = state.getValue(INFUSION);
-        ItemEntity glasses = glassesIn(level, pos);
         Vec3 core = Vec3.atBottomCenterOf(pos).add(0, contentY(MAX_LEVEL) + 0.05, 0);
-        if (glasses == null) {
-            // Nothing in it (or the glasses were taken away mid-ritual): the energy settles, nothing is spent.
-            if (stage > 0) {
-                level.setBlock(pos, state.setValue(INFUSION, 0), Block.UPDATE_ALL);
-                Fx.play(level, "prog_infuse_abort", core, Vec3.ZERO, 1f, -1);
+        if (stage == 0) {
+            // Glasses tossed in are taken too (the cauldron holds them from here).
+            ItemEntity thrown = glassesIn(level, pos);
+            if (thrown != null) {
+                ItemStack held = thrown.getItem();
+                if (held.getCount() > 1) {
+                    ItemStack rest = held.copy();
+                    rest.shrink(1);
+                    thrown.setItem(rest);
+                } else {
+                    thrown.discard();
+                }
+                level.setBlock(pos, state.setValue(INFUSION, 1), Block.UPDATE_ALL);
+                Fx.play(level, "prog_infuse", core, Vec3.ZERO, 1, -1);
+                Fx.sound(level, core, SoundEvents.SCULK_SHRIEKER_SHRIEK, 0.5f, 1.6f);
+                level.scheduleTick(pos, this, stageTicks());
+                return;
             }
             level.scheduleTick(pos, this, WATCH_TICKS);
             return;
         }
-        // Held in the energy for the whole ritual: nobody picks them back out, and they don't drift.
-        int stageTicks = Math.max(4, JJKConfig.get().progression.infusionTicks / STAGES);
-        glasses.setPickUpDelay(stageTicks * 2 + 10);
-        glasses.setNoGravity(true);
-        glasses.setDeltaMovement(Vec3.ZERO);
-        glasses.setPos(core.x, core.y + 0.08 * stage, core.z);
         if (stage < STAGES) {
             int next = stage + 1;
             level.setBlock(pos, state.setValue(INFUSION, next), Block.UPDATE_ALL);
-            Fx.play(level, "prog_infuse", core, Vec3.ZERO, next, glasses.getId());
-            if (next == 1) Fx.sound(level, core, SoundEvents.SCULK_SHRIEKER_SHRIEK, 0.5f, 1.6f);
+            Fx.play(level, "prog_infuse", core, Vec3.ZERO, next, -1);
             Fx.sound(level, core, SoundEvents.BEACON_AMBIENT, 0.8f, 0.5f + next * 0.15f);
             if (next == STAGES - 1) Fx.sound(level, core, SoundEvents.RESPAWN_ANCHOR_DEPLETE, 1f, 0.6f);
-            level.scheduleTick(pos, this, stageTicks);
+            level.scheduleTick(pos, this, stageTicks());
             return;
         }
-        // Collapse: the energy is spent into the glasses.
-        ItemStack held = glasses.getItem();
-        if (held.getCount() > 1) {
-            ItemStack rest = held.copy();
-            rest.shrink(1);
-            glasses.setItem(rest);
-            glasses.setNoGravity(false);
-        } else {
-            glasses.discard();
-        }
+        // Collapse: the energy is spent into the glasses, and Cursed Glasses rise out.
         level.setBlock(pos, Blocks.CAULDRON.defaultBlockState(), Block.UPDATE_ALL);
-        ItemEntity out = new ItemEntity(level, core.x, core.y + 0.2, core.z, new ItemStack(ProgressionItems.CURSED_GLASSES));
-        out.setDeltaMovement(0, 0.32, 0);
+        ItemEntity out = new ItemEntity(level, core.x, core.y + 0.4, core.z, new ItemStack(ProgressionItems.CURSED_GLASSES));
+        out.setDeltaMovement(0, 0.3, 0);
         out.setPickUpDelay(20);
         level.addFreshEntity(out);
         Fx.play(level, "prog_infuse_done", core, Vec3.ZERO, 1f, out.getId());
         Fx.sound(level, core, SoundEvents.ZOMBIE_VILLAGER_CURE, 0.7f, 1.4f);
         Fx.sound(level, core, SoundEvents.AMETHYST_BLOCK_RESONATE, 1.2f, 0.5f);
+    }
+
+    /** Broken mid-ritual: the glasses it was holding come back out (nothing is lost). */
+    @Override
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean moved) {
+        super.affectNeighborsAfterRemoval(state, level, pos, moved);
+        if (state.getValue(INFUSION) > 0 && !level.getBlockState(pos).is(this)) {
+            Block.popResource(level, pos, new ItemStack(ProgressionItems.GLASSES));
+        }
     }
 
     /** Glasses lying in the energy. */

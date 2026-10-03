@@ -2,14 +2,16 @@ package dev.rick.jjk.progression;
 
 import dev.rick.jjk.JJK;
 import dev.rick.jjk.progression.item.CursedFingerItem;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.component.Consumables;
 
@@ -32,22 +34,25 @@ public final class ProgressionItems {
             .food(new FoodProperties.Builder().nutrition(1).saturationModifier(0.1f).alwaysEdible().build(),
                     Consumables.defaultFood().consumeSeconds(3.2f).build()));
 
-    public static final Item CURSED_SOUL_SAND = Items.registerBlock(ProgressionBlocks.CURSED_SOUL_SAND);
+    public static final Item CURSED_SOUL_SAND = item("cursed_soul_sand", p -> new BlockItem(ProgressionBlocks.CURSED_SOUL_SAND, p),
+            new Item.Properties().useBlockDescriptionPrefix());
 
     private ProgressionItems() {}
 
     private static Item item(String name, java.util.function.Function<Item.Properties, Item> factory, Item.Properties properties) {
-        return Items.registerItem(ResourceKey.create(Registries.ITEM, JJK.id(name)), factory, properties);
+        // 26.3: the properties carry the item's id; vanilla's Items.register* helpers are private.
+        ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, JJK.id(name));
+        return Registry.register(BuiltInRegistries.ITEM, key, factory.apply(properties.setId(key)));
     }
 
     public static void init() {
-        ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.NATURAL_BLOCKS).register(e -> e.accept(CURSED_SOUL_SAND));
-        ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.INGREDIENTS).register(e -> {
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.NATURAL_BLOCKS).register(e -> e.accept(CURSED_SOUL_SAND));
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.INGREDIENTS).register(e -> {
             e.accept(SOUL_IN_A_BOTTLE);
             e.accept(CURSED_ENERGY_BOTTLE);
             e.accept(CURSED_FINGER);
         });
-        ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(e -> {
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(e -> {
             e.accept(GLASSES);
             e.accept(CURSED_GLASSES);
         });

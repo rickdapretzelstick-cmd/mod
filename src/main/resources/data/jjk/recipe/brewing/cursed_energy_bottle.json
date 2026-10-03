@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:brewing",
+  "input": {
+    "item": "jjk:soul_in_a_bottle"
+  },
+  "reagent": {
+    "item": "minecraft:ghast_tear"
+  },
+  "output": {
+    "id": "jjk:cursed_energy_bottle"
+  }
+}
