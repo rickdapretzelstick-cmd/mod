@@ -143,14 +143,14 @@ final class FingerBearerFx {
             }
             case "fb_death" -> {
                 Flashes.flash(pos, 0.6f, 3f, VIOLET, 0.6f, 12, now);
-                burst(level, pos, q(20), 0.06, Sprite.SMOKE, CORE, 0.9f, 40);
+                burst(level, pos, q(12), 0.05, Sprite.SMOKE, CORE, 0.45f, 30);
             }
             case "fb_dissolve" -> {
                 // The body comes apart into black smoke and motes that rise and fade.
-                for (int i = 0; i < q(60); i++) {
-                    Vec3 o = new Vec3(RNG.nextGaussian() * 0.9, RNG.nextDouble() * 1.2, RNG.nextGaussian() * 1.6);
-                    add(level, pos.add(o), new Vec3(0, 0.03 + RNG.nextDouble() * 0.04, 0), i % 4 == 0 ? Sprite.GLOW : Sprite.SMOKE,
-                            i % 4 == 0 ? VIOLET : CORE, 0.8f, i % 4 == 0 ? 0.08f : 0.6f, 0.2f, 30 + RNG.nextInt(20));
+                for (int i = 0; i < q(40); i++) {
+                    Vec3 o = new Vec3(RNG.nextGaussian() * 0.6, RNG.nextDouble() * 0.8, RNG.nextGaussian() * 1.2);
+                    add(level, pos.add(o), new Vec3(0, 0.025 + RNG.nextDouble() * 0.03, 0), i % 3 == 0 ? Sprite.GLOW : Sprite.SMOKE,
+                            i % 3 == 0 ? VIOLET : CORE, 0.7f, i % 3 == 0 ? 0.07f : 0.32f, 0.1f, 26 + RNG.nextInt(16));
                 }
             }
             case "fb_finger" -> {

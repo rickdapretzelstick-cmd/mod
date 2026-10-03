@@ -386,12 +386,38 @@ The path so far:
    units are spent, and **Cursed Glasses** rise out.
 6. **Cursed Glasses** let their wearer perceive curses.
 7. **Battle rooms**: Woodland Mansions and Igloos hide a cursed chamber far below them, reached by a trapdoor set
-   into the building's lowest floor under a carpet and a ladder shaft. Each has a seal at its heart where the
-   **Finger Bearer** will wait (not implemented yet: the rooms are empty for now).
-8. **Cursed Finger**: the first player to eat one becomes the world's **Yuji**, permanently (death, logout and
-   dimension changes don't release it). Anyone else who eats one afterwards is consumed by it and dies, whatever
-   protects them. Nobody is told in advance whether Yuji is taken. The Finger Bearer will drop the fingers; for now
-   they only come from Creative or commands.
+   into the building's lowest floor under a carpet and a ladder shaft. The first time anyone enters, the **Finger
+   Bearer** takes shape over the seal at its heart (below).
+8. **Cursed Finger**: each room's Finger Bearer leaves exactly one when it dies, and a cleared room never fills again.
+   The first player to eat one becomes the world's **Yuji**, permanently (death, logout and dimension changes don't
+   release it). Anyone else who eats one afterwards is consumed by it and dies, whatever protects them. Nobody is told
+   in advance whether Yuji is taken.
+
+### The Finger Bearer
+
+![Finger Bearer](docs/screenshots/finger_bearer.png)
+
+A gaunt, long-armed curse (the supplied `cursed_spirit` model) that fights the way the anime's finger bearer does: raw
+cursed energy and sudden brute force, no technique and no domain. **Without Cursed Glasses you can't see it, and it
+won't touch you**: it can't take you as a target, and its blows, shots, blasts and bursts pass through you (every hit
+goes through the same rule). Wearing the glasses, you see it, and the moment it sees you it roars and the fight begins.
+**Taking the glasses off after that doesn't save you**: it keeps hunting someone it has turned on (you just can't see
+it). Leaving the room ends the chase; left alone, it slowly heals.
+
+It runs one move at a time. Each has a readable windup, lands at most once, and leaves a recovery and a cooldown:
+
+| Move | Tell | Avoid it | Punish |
+|---|---|---|---|
+| **Cursed Energy Shot** | draws its palm back to the shoulder (0.6 s), then thrusts | step sideways: the shot flies straight at where you were | short recovery |
+| **Charged Blast** | sinks low, energy gathering between its claws for 2 s | sidestep the slow orb; it bursts where it lands | winded for ~1.8 s on a miss (0.8 s on a hit) |
+| **Point-Blank Burst** | used when you crowd it or stand close while it charges: curls up, and a ring on the floor shows the radius for 0.9 s | get out of the ring | short pause after |
+| **Brutal Rush** | crouches with its arms swept back (0.7 s), then charges in a straight line | step out of the line | a miss or a wall leaves it staggered ~1.8 s |
+| **Heavy Follow-Up Smash** | both arms overhead (1.1 s); a ring marks the spot | step off the mark, or guard / raise a shield | bent over the floor ~1 s |
+
+The smash follows a rush that connected, but never so fast that you can't move first. Walls stop its shots, its rush and
+its area damage. It has 150 health and 4 armour, and no single hit takes more than 12 health from an unarmoured
+player (`progression.fingerBearerHealth`, `progression.fingerBearerDamage`). Mid-move it shrugs off hitstun; between moves
+a hit makes it flinch.
 
 **Curses and perception.** A curse that needs perception (entities implementing `CursedSpirit`, or in the
 `jjk:requires_curse_perception` entity tag) is drawn only for players who can perceive curses, decided per player by
