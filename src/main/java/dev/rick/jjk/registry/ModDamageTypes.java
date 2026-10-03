@@ -17,6 +17,8 @@ public final class ModDamageTypes {
     public static final ResourceKey<DamageType> RED = key("red");
     public static final ResourceKey<DamageType> HOLLOW_PURPLE = key("hollow_purple");
     public static final ResourceKey<DamageType> SURE_HIT = key("sure_hit");
+    /** A cursed object too strong for the one who ate it (a Cursed Finger when Yuji is already someone else). Always lethal. */
+    public static final ResourceKey<DamageType> CURSED_OVERLOAD = key("cursed_overload");
 
     private ModDamageTypes() {}
 
@@ -26,6 +28,11 @@ public final class ModDamageTypes {
 
     public static DamageSource source(Level level, ResourceKey<DamageType> key, @Nullable Entity direct, @Nullable Entity attacker) {
         return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(key), direct, attacker);
+    }
+
+    /** Whether {@code source} is of damage type {@code key}. */
+    public static boolean is(DamageSource source, ResourceKey<DamageType> key) {
+        return source.typeHolder().unwrapKey().map(k -> k.equals(key)).orElse(false);
     }
 
     /** Damage produced by this mod's hit system (already went through defenses). */

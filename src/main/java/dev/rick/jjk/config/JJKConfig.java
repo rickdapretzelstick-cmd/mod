@@ -52,6 +52,7 @@ public final class JJKConfig {
     public Yuta yuta = new Yuta();
     public Ryu ryu = new Ryu();
     public BeamClash beamClash = new BeamClash();
+    public Progression progression = new Progression();
 
     public static JJKConfig get() {
         return instance;
@@ -1113,6 +1114,15 @@ public final class JJKConfig {
         public double invitedWallRange = 27.8, invitedWallHeldRange = 69.4;
     }
 
+    /**
+     * Survival progression: Survival players start with no technique and earn kits in the world, each kit belonging to one
+     * player per world. Creative stays the free-select sandbox. Off: free selection everywhere (ownership is kept, just
+     * not enforced).
+     */
+    public static final class Progression {
+        public boolean enabled = true;
+    }
+
     /** Beam clashes (True Love Beam against Every Last Drop): the duel's tuning lives in the session; these are reach. */
     public static final class BeamClash {
         public boolean enabled = true;
@@ -1183,5 +1193,6 @@ public final class JJKConfig {
         if (gojo == null) gojo = new Gojo();
         if (yuji == null) yuji = new Yuji();
         if (yuta == null) yuta = new Yuta();
+        if (progression == null) progression = new Progression();
     }
 }

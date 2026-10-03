@@ -28,7 +28,7 @@ public class JJKSettingsScreen extends Screen {
             CombatMode.toggle();
             b.setMessage(modeText());
         }).bounds(x, y, bw, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Choose Character..."), b -> minecraft.gui.setScreen(new CharacterSelectScreen(this)))
+        addRenderableWidget(Button.builder(Component.literal("Choose Character..."), b -> dev.rick.jjk.client.ClientProgression.openCharacterSelect(this))
                 .bounds(x, y + 24, bw, 20).build());
         addRenderableWidget(Button.builder(toggleText("CE numbers", JJKConfig.get().client.showCeNumbers), b -> {
             JJKConfig.get().client.showCeNumbers = !JJKConfig.get().client.showCeNumbers;

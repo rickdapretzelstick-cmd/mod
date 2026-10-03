@@ -363,6 +363,24 @@ from Every Last Drop, so the Awakening key never transforms him on its own.
 ![Appetizer](docs/screenshots/ryu_appetizer.png)
 ![Decadence](docs/screenshots/ryu_decadence.png)
 
+## Survival progression (in progress)
+
+In **Survival** you start as an ordinary person: no technique, and the K screen doesn't hand one out (it says *"You have
+not awakened a cursed technique."*). Kits are earned in the world, and **each kit belongs to one player per world**:
+the record is kept in `<world>/jjk_progression/kit_ownership.dat`, and death, logout and dimension changes don't
+release a kit. **Creative** is the sandbox: K picks any character, even one somebody owns, but a Creative pick is
+never ownership and is dropped when you go back to Survival. `progression.enabled: false` turns it off.
+
+Every way of earning a kit calls `TechniqueProgression.acquire(player, KitAcquisition)`, which claims it in
+`KitOwnership` and runs that path's outcome for *claimed*, *already yours* and *someone else's*. The first path is
+the **Cursed Finger**: the first player to eat one becomes the world's Yuji; anyone else who eats one afterwards
+dies (`jjk:cursed_overload`), and nobody is warned. The finger item and the rest of the path (Cursed Soul Sand, the
+bottles, Cursed Glasses, curse perception, the battle rooms) are still to come.
+
+Admin (op): `/jjk kit list | owner <kit> | info [player] | grant <kit> <player> | transfer <kit> <player> |
+release <kit> | repair | acquire cursed_finger <player>`. `/jjk character` is still an admin override; under
+progression it lasts until the player relogs or leaves Creative.
+
 ## HUD and Vanilla Minecraft mode
 
 CE is a slim vertical bar on the left edge. It eases between values, what you just spent lingers as a pale ghost, it

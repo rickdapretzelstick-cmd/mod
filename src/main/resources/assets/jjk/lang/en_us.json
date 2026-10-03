@@ -60,5 +60,6 @@
   "block.jjk.aml_barrier": "Authentic Mutual Love Barrier",
   "block.jjk.aml_floor": "Authentic Mutual Love Floor",
   "entity.jjk.rika": "Rika",
-  "entity.jjk.domain_blade": "Katana"
+  "entity.jjk.domain_blade": "Katana",
+  "death.attack.jjk.cursed_overload": "%1$s was consumed by overwhelming cursed energy"
 }
