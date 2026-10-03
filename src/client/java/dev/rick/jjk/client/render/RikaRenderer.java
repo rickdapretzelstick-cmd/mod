@@ -40,6 +40,8 @@ public class RikaRenderer extends EntityRenderer<RikaEntity, RikaRenderer.State>
         public float yaw;
         public float alpha;
         public boolean solid;
+        /** 0-1: how far she is faded out of the way of her own owner's view (she's between their camera and them). */
+        public float clear;
         @Nullable public PoseFrame pose;
     }
 
@@ -77,6 +79,7 @@ public class RikaRenderer extends EntityRenderer<RikaEntity, RikaRenderer.State>
         fade.put(e.getId(), a);
         if (fade.size() > 64) fade.clear();
         s.alpha = a;
+        s.clear = viewFade(e, partial);
         // Partly manifested she is mostly black smoke, pale limbs showing through it (JJS): a constant smoky aura.
         if (!s.solid && a > 0.15f && smokedAt.getOrDefault(e.getId(), -1) != e.tickCount && dev.rick.jjk.client.fx.ClientFx.q(2) > 0) {
             smokedAt.put(e.getId(), e.tickCount);
@@ -92,6 +95,35 @@ public class RikaRenderer extends EntityRenderer<RikaEntity, RikaRenderer.State>
     }
 
     private final java.util.Map<Integer, Integer> smokedAt = new java.util.HashMap<>();
+    private final java.util.Map<Integer, Float> clearFade = new java.util.HashMap<>();
+    /** How faded the local player's own Rika is right now (tests). */
+    public static float ownViewClear;
+
+    /**
+     * She's twice a player's height: planted behind Yuta (the beam, True Love) she would fill his own third-person view.
+     * On her owner's screen only, whenever she sits between the camera and Yuta (or the camera is inside her), she fades
+     * to a faint outline so he can always see himself and what is in front of him. Everyone else sees her as she is.
+     */
+    private float viewFade(RikaEntity e, float partial) {
+        Minecraft mc = Minecraft.getInstance();
+        float want = 0;
+        var owner = e.owner();
+        if (mc.player != null && owner == mc.player && !mc.options.getCameraType().isFirstPerson()) {
+            var cam = mc.gameRenderer.mainCamera().position();
+            var eye = mc.player.getEyePosition(partial);
+            var box = e.getBoundingBox().move(e.getPosition(partial).subtract(e.position())).inflate(0.4);
+            // The camera inside her or her in the line to him: gone from his screen. Close by: lighter.
+            if (box.contains(cam)) want = 1;
+            else if (box.clip(cam, eye).isPresent()) want = 1;
+            else if (box.inflate(1.5).contains(cam)) want = 0.6f;
+        }
+        float f = clearFade.getOrDefault(e.getId(), 0f);
+        f += (want - f) * 0.25f;
+        clearFade.put(e.getId(), f);
+        if (owner == mc.player) ownViewClear = f;
+        if (clearFade.size() > 64) clearFade.clear();
+        return f;
+    }
 
     /** Her idle loop always runs underneath (a move on her base layer replaces it, and it comes back after). */
     static void ensureIdle(int id, float now) {
@@ -110,12 +142,20 @@ public class RikaRenderer extends EntityRenderer<RikaEntity, RikaRenderer.State>
         // Her model faces -z in Blockbench: turn it to face where the entity faces.
         ps.rotate(Axis.YP.rotationDegrees(180f - s.yaw));
         ps.scale(SCALE, SCALE, SCALE);
-        int alpha = Math.round(Mth.clamp(s.alpha, 0, 1) * 255);
+        // Out of her owner's way: faded down to a faint see-through shape (drawn translucent, even when solid).
+        // (Also while she is still billowing into her full form: no pop from the see-through apparition to solid.)
+        boolean faded = s.clear > 0.05f || s.solid && s.alpha < 0.97f;
+        float shown = Mth.clamp(s.alpha, 0, 1) * (faded ? 1 - 0.94f * Mth.clamp(s.clear, 0, 1) - (s.clear > 0.97f ? 0.06f : 0) : 1);
+        if (shown < 0.02f) {
+            ps.popPose();
+            return;
+        }
+        int alpha = Math.round(shown * 255);
         // Partly manifested: grey and see-through; fully manifested: solid and pale.
-        int argb = s.solid ? 0xFFFFFFFF : (alpha << 24) | 0xA8A8B4;
+        int argb = s.solid ? (faded ? (alpha << 24) | 0xFFFFFF : 0xFFFFFFFF) : (alpha << 24) | 0xA8A8B4;
         BbModel.Posing pose = posing(s.pose);
         int light = s.solid ? s.lightCoords : 0xF000F0;
-        c.submitCustomGeometry(ps, s.solid ? SOLID : GHOST, (p, buf) -> model.render(p, buf, pose, light, argb));
+        c.submitCustomGeometry(ps, s.solid && !faded ? SOLID : GHOST, (p, buf) -> model.render(p, buf, pose, light, argb));
         ps.popPose();
     }
 

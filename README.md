@@ -219,7 +219,8 @@ sound is the JJS audio. 85 max HP.
   - **Open** (40s): fire in his hands, a clap, a bow drawn; with i-frames he looses an arrow of fire and a pillar of
     flame goes up where it lands, lifting everyone in it (30, unblockable). A firestorm runs out from the pillar to
     Unlimited Purple's original radius (16 blocks), hitting everyone in it once, from 18 next to the pillar down to 8
-    at the rim, and throwing them outward. The drawn blast is that same zone.
+    at the rim, and throwing them outward. The drawn blast is that same zone, and so is the crater: the whole 16-block
+    radius is blown out of the terrain (carved over a few ticks, restored later with the rest of the battle damage).
   - **Rush** (15s): straight ahead at incredible speed; whoever he hits is hurled, chased down, kneed skyward and
     slammed back down.
   - **Malevolent Shrine** (120s, 18s): played like the JJS GIF. A cut-in of him in a band of teeth and red pillars, the
@@ -267,7 +268,10 @@ config). 90 max HP. Rika is the new model, animated with the same clip framework
   - **Rika Launch**: a boost forward, or upward in the air. Used mid-move it **feints** that move (6s).
   - **Rika Haymaker**: a slow, heavy blow that knocks them far back (12; 18 through a guard).
 - **True Love** (G on a full meter; 60s, heals 25): "Come, Rika. Give me everything." He tears off the necklace and
-  puts the ring on. Rika manifests fully behind him and wraps a steel casing around his right arm. **Steel Arm**: his
+  puts the ring on. Rika manifests fully and wraps a steel casing around his right arm. She stands off his right
+  shoulder, out of his own camera's line, and eases after him when he turns or jumps; when she has to plant behind him
+  (True Love Beam) she drops out of *his own* view so she never fills his screen (everyone else still sees her).
+  **Steel Arm**: his
   fists, each of the first three M1s followed by a quick jab of the casing.
   - **Elbow Rush** (15s): a 38.5-stud dash into an elbow (4). Then he appears behind them with Rika in front, and both
     barrage them (5; 8 with Rika). A last blow launches them (6).
@@ -373,7 +377,10 @@ from Every Last Drop, so the Awakening key never transforms him on its own.
 In **Survival** you start as an ordinary person: no technique, no kit, and the K screen doesn't hand one out (it just
 says *"You have not awakened a cursed technique."*). Kits are earned in the world, and **each kit belongs to one
 player per world**. **Creative** is the sandbox: K picks any character, even one somebody owns, but a Creative pick is
-never ownership and is dropped when you go back to Survival. `progression.enabled: false` in the config turns all of
+never ownership. It is your *test kit*: it stays when you go back to Survival (and through death and relogging) so you
+can try it there, until you pick something else in Creative, choose one of your own kits on K, or earn a kit. Survival
+alone still can't swap: there K only switches between kits you own. In Creative (or with progression off) the first card
+on K is **No kit**: an ordinary person with no technique (in Creative it also puts any test kit away). `progression.enabled: false` in the config turns all of
 this off (free selection everywhere).
 
 The path so far:
@@ -439,7 +446,7 @@ paths define their own.
 
 **Admin** (op): `/jjk kit list | owner <kit> | info [player] | grant <kit> <player> | transfer <kit> <player> |
 release <kit> | repair | rooms`. `/jjk character` is still an admin override; under progression it lasts until the
-player relogs or leaves Creative.
+player relogs or leaves Creative (a Creative K pick is the test kit above).
 
 ## HUD and Vanilla Minecraft mode
 
@@ -551,6 +558,10 @@ victims can leave it (its sure-hit applies only inside), without collapsing it; 
 cancels it or dies, or when it loses a clash, and its structure is restored as always. (Authentic Mutual Love still
 breaks at once if it opens on nobody.)
 
+**Always ends:** no domain lasts forever. Whatever phase it is stuck in (forming, clashing, a clash that never
+settles), it expires once its life passes its forming time + duration + a 60-second clash allowance, and never later
+than 4 minutes (`domain.maxLifetimeTicks`, `domain.clashAllowanceTicks`).
+
 **Counter:** when someone nearby starts opening a domain and your Awakening meter is full, your Awakening key becomes
 a counter for a moment — instant Awakening, your domain opens at once, a "DOMAIN EXPANSION VS DOMAIN EXPANSION" card
 presents both of you, and the domains collide into the clash below. Miss the window and the key is a normal Awakening.
@@ -647,7 +658,11 @@ winning beam plus the burst. On a tie both beams detonate together with balanced
 Height a move creates never turns into fall damage. Launched by a move (Shutter Doors, an uppercut, a juggle, a leap of
 your own), only how far you land *below the point you were launched from* counts as a fall: thrown 20 blocks up and
 landing back where you started, nothing; thrown 20 up and landing 10 blocks lower (30 in all), a 10-block fall. Being
-juggled again in the air keeps the first launch point. Ordinary jumps and falls work as always.
+juggled again in the air keeps the first launch point. The same goes for height a move gives without a push: a
+teleport upward (Gojo's Teleport, a blink behind an airborne target, Energy Surge) counts from where you teleported
+from, and anyone left in the air mid-move or mid-combo (casting, in hitstun, launched, spiked, hovering) counts from the
+ground they last stood on. So Sukuna's Rush (knee, leap, slam) never hurts him or his victim on the way down. Ordinary
+jumps and falls work as always.
 
 ## Temporary battle damage
 

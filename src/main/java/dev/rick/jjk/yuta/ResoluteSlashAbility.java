@@ -118,6 +118,8 @@ public final class ResoluteSlashAbility extends Ability {
                 Vec3 face = target != null && target.isAlive() ? target.getBoundingBox().getCenter() : dest.add(HakariCombat.flat(user).scale(2)).add(0, 1.2, 0);
                 Vec3 look = face.subtract(dest.add(0, user.getEyeHeight(), 0));
                 float yaw = (float) (Mth.atan2(look.z, look.x) * Mth.RAD_TO_DEG) - 90f;
+                // Height the teleport gives is never fall damage (only falling below where they left counts).
+                dev.rick.jjk.core.combat.LaunchHeight.displaced(user, user.getY());
                 user.teleportTo(level, dest.x, dest.y, dest.z, Set.of(), yaw, user.getXRot(), false);
                 user.resetFallDistance();
             }

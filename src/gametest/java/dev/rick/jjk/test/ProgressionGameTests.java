@@ -101,10 +101,11 @@ public class ProgressionGameTests {
         h.succeed();
     }
 
-    @GameTest(maxTicks = 40, environment = ENV)
-    public void survivalStartsWithNothingAndCreativePicksAreTemporary(GameTestHelper h) {
+    @GameTest(maxTicks = 60, environment = ENV)
+    public void survivalStartsWithNothingAndACreativePickIsKeptForTesting(GameTestHelper h) {
         ServerPlayer p = survivor(h, 1, 1);
         ownership(h).release("ryu");
+        ownership(h).release("hakari");
         TechniqueProgression.restore(p);
         h.assertTrue(Casters.get(p).character() == null, "a new Survival player has no kit");
         h.assertValueEqual(CharacterService.select(p, "ryu"), TechniqueProgression.NOT_AWAKENED, "the select screen can't hand one out");
@@ -112,14 +113,42 @@ public class ProgressionGameTests {
         h.assertTrue(CharacterService.select(p, "ryu") == null && Casters.get(p).character() == Characters.get("ryu"), "Creative picks freely");
         h.assertTrue(!ownership(h).isClaimed("ryu"), "a Creative pick claims nothing");
         // (A tick or two in Creative first: a real player can't switch there and back within one tick.)
-        h.runAfterDelay(2, () -> {
-            p.setGameMode(GameType.SURVIVAL);
-            h.runAfterDelay(3, () -> {
-                h.assertTrue(Casters.get(p).character() == null, "back in Survival the Creative pick is gone");
-                p.discard();
-                h.succeed();
-            });
-        });
+        h.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> p.setGameMode(GameType.SURVIVAL))
+                .thenIdle(3)
+                .thenExecute(() -> {
+                    h.assertTrue(Casters.get(p).character() == Characters.get("ryu"), "back in Survival the Creative pick is kept to test with");
+                    h.assertTrue(!ownership(h).isClaimed("ryu") && !TechniqueProgression.progression(p).owns("ryu"), "and it is still not theirs");
+                    h.assertValueEqual(CharacterService.select(p, "gojo"), TechniqueProgression.NOT_AWAKENED, "Survival alone still can't swap");
+                    // Through a respawn or a relog (restore runs on both) it stays too.
+                    TechniqueProgression.restore(p);
+                    h.assertTrue(Casters.get(p).character() == Characters.get("ryu"), "kept through a respawn/relog");
+                    // Earning a kit replaces it at once.
+                    h.assertValueEqual(TechniqueProgression.tryClaimKit(p, "hakari", "test"), KitOwnership.ClaimResult.CLAIMED, "earns Hakari");
+                })
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    h.assertTrue(Casters.get(p).character() == Characters.get("hakari"), "the earned kit replaces the test kit");
+                    h.assertTrue(TechniqueProgression.progression(p).testKit().isEmpty(), "the test kit is put away");
+                    // Back to Creative, picking nothing: the next Survival trip has only their own kit.
+                    p.setGameMode(GameType.CREATIVE);
+                })
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    h.assertTrue(CharacterService.select(p, "ryu") == null, "Creative test pick");
+                    p.setGameMode(GameType.SURVIVAL);
+                })
+                .thenIdle(3)
+                .thenExecute(() -> {
+                    h.assertTrue(Casters.get(p).character() == Characters.get("ryu"), "testing Ryu in Survival again");
+                    h.assertTrue(CharacterService.select(p, "hakari") == null && Casters.get(p).character() == Characters.get("hakari"),
+                            "choosing their own kit in Survival works");
+                    h.assertTrue(TechniqueProgression.progression(p).testKit().isEmpty(), "and puts the test kit away");
+                    ownership(h).release("hakari");
+                    p.discard();
+                })
+                .thenSucceed();
     }
 
     @GameTest(maxTicks = 60, environment = ENV)

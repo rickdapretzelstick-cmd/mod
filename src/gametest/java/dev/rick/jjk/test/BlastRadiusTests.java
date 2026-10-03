@@ -102,6 +102,8 @@ public class BlastRadiusTests {
         TrainingDummy pillar = dummy(h, at.add(1, 0, 0));
         TrainingDummy edge = dummy(h, at.add(0, 0, blast - 3));
         TrainingDummy beyond = dummy(h, at.add(0, 0, -(blast + 4)));
+        // Held where they stand: the crater opens under them, and a fall would blur the damage being measured.
+        for (TrainingDummy d : new TrainingDummy[] {pillar, edge, beyond}) d.setNoGravity(true);
         float[] hp = {pillar.getHealth(), edge.getHealth(), beyond.getHealth()};
         OpenAbility.pillar(level, y, at);
         h.runAfterDelay(2, () -> {
@@ -116,5 +118,33 @@ public class BlastRadiusTests {
                 h.succeed();
             });
         });
+    }
+
+    @GameTest(maxTicks = 200, padding = 60, environment = ENV)
+    public void openBlowsOutTheWholeBlastRadius(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        Vec3 at = h.absoluteVec(new Vec3(4.5, 1, 4.5));
+        List<ChunkPos> chunks = forceLoad(level, at, 30);
+        double blast = OpenAbility.blastRadius();
+        net.minecraft.core.BlockPos c = net.minecraft.core.BlockPos.containing(at);
+        // Stone markers: inside the radius at several distances and directions, and just outside it.
+        net.minecraft.core.BlockPos[] inside = {c.offset(2, 0, 0), c.offset(0, 0, 9), c.offset(-11, 0, 0), c.offset(0, 3, -14), c.offset(10, -6, 6)};
+        net.minecraft.core.BlockPos[] outside = {c.offset(0, 0, 18), c.offset(-18, 0, 0), c.offset(12, 0, 12)};
+        for (var p : inside) level.setBlockAndUpdate(p, Blocks.STONE.defaultBlockState());
+        for (var p : outside) level.setBlockAndUpdate(p, Blocks.STONE.defaultBlockState());
+        TrainingDummy y = dummy(h, h.absoluteVec(new Vec3(1, 1, 1)));
+        CharacterService.assign(y, Characters.get(YujiCharacter.ID));
+        y.setNoGravity(true);
+        h.startSequence()
+                .thenExecute(() -> OpenAbility.pillar(level, y, at))
+                .thenWaitUntil(() -> h.assertTrue(!dev.rick.jjk.util.Crater.busy(), "the crater finishes carving"))
+                .thenExecute(() -> {
+                    for (var p : inside) h.assertTrue(level.getBlockState(p).isAir(), "blown out at " + p.subtract(c).toShortString()
+                            + " (" + Math.sqrt(p.distToCenterSqr(at)) + " of " + blast + ")");
+                    for (var p : outside) h.assertTrue(level.getBlockState(p).is(Blocks.STONE), "beyond the radius untouched at " + p.subtract(c).toShortString());
+                    y.discard();
+                    release(level, chunks);
+                })
+                .thenSucceed();
     }
 }

@@ -139,6 +139,8 @@ public final class ElbowRushAbility extends Ability {
                 if (behind != null) {
                     Vec3 look = victim.getBoundingBox().getCenter().subtract(behind.add(0, user.getEyeHeight(), 0));
                     float yaw = (float) (Mth.atan2(look.z, look.x) * Mth.RAD_TO_DEG) - 90f;
+                    // Height the teleport gives is never fall damage (only falling below where they left counts).
+                    dev.rick.jjk.core.combat.LaunchHeight.displaced(user, user.getY());
                     user.teleportTo(level, behind.x, behind.y, behind.z, Set.of(), yaw, user.getXRot(), false);
                 }
                 Fx.play(level, "elbow_appear", user.position().add(0, 1, 0), dir, 1f, user.getId());

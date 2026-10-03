@@ -28,8 +28,10 @@ import java.util.UUID;
  *   <li><b>Survival</b> (and Adventure) players start as ordinary people. Their kit is only ever one they permanently
  *   acquired in the world ({@link PlayerProgression}, validated against {@link KitOwnership}); the character select
  *   screen can't hand them one.</li>
- *   <li><b>Creative</b> is the sandbox: the K menu picks any character, even one someone else owns. That pick is
- *   temporary and never ownership; leaving Creative puts back the player's legitimate kit (or none).</li>
+ *   <li><b>Creative</b> is the sandbox: the K menu picks any character, even one someone else owns. That pick is a
+ *   <i>test kit</i>, never ownership: it stays when the player goes back to Survival (and through death and relogging)
+ *   so they can test it there, until they pick something else in Creative, choose one of their own kits, or earn a
+ *   kit. Survival alone can never swap: there the K menu only switches between kits the player owns.</li>
  * </ul>
  *
  * Kits are earned through {@link #acquire} (or {@link #tryClaimKit} directly), which every acquisition path calls with
@@ -97,6 +99,17 @@ public final class TechniqueProgression {
     }
 
     /**
+     * What the player plays in Survival: the test kit they last picked in Creative if any (never ownership), otherwise
+     * their legitimate kit, or nothing.
+     */
+    @Nullable
+    public static JJKCharacter playableCharacter(ServerPlayer player) {
+        String test = progression(player).testKit();
+        JJKCharacter t = test.isEmpty() ? null : Characters.get(test);
+        return t != null ? t : legitimateCharacter(player);
+    }
+
+    /**
      * Why the character select screen can't switch this player to {@code id}, or null if it can. In the sandbox anything
      * goes; under progression only kits the player owns, and with none owned the screen has nothing to give.
      */
@@ -111,9 +124,17 @@ public final class TechniqueProgression {
 
     /** A governed player switched between kits they own on the select screen: that becomes their Survival kit. */
     public static void onSelected(ServerPlayer player, String id) {
-        if (!governs(player) || id.isEmpty()) return;
+        if (!enabled()) return;
         PlayerProgression p = progression(player);
-        if (p.owns(id) && !p.kit().equals(id)) setProgression(player, p.withCurrent(id));
+        if (isSandbox(player)) {
+            // A Creative pick is the test kit carried back into Survival (picking nothing clears it).
+            if (!p.testKit().equals(id)) setProgression(player, p.withTestKit(id));
+            sync(player, true);
+            return;
+        }
+        if (id.isEmpty()) return;
+        // Choosing one of their own kits in Survival puts the test kit away.
+        if (p.owns(id) && (!p.kit().equals(id) || !p.testKit().isEmpty())) setProgression(player, p.withCurrent(id).withTestKit(""));
         sync(player, true);
     }
 
@@ -147,7 +168,7 @@ public final class TechniqueProgression {
      */
     public static void restore(ServerPlayer player) {
         validate(player);
-        CharacterService.assign(player, legitimateCharacter(player));
+        CharacterService.assign(player, playableCharacter(player));
         WAS_SANDBOX.put(player.getUUID(), isSandbox(player));
         sync(player, true);
     }
@@ -156,9 +177,9 @@ public final class TechniqueProgression {
     public static void enforce(ServerPlayer player) {
         if (!governs(player)) return;
         validate(player);
-        JJKCharacter legit = legitimateCharacter(player);
+        JJKCharacter playable = playableCharacter(player);
         AbilityCaster c = Casters.get(player);
-        if (c.character() != legit) CharacterService.assign(player, legit);
+        if (c.character() != playable) CharacterService.assign(player, playable);
     }
 
     /** Runs {@code r} at the end of this server tick, after whatever is happening now (eating, using) has completed. */
@@ -182,7 +203,7 @@ public final class TechniqueProgression {
         for (ServerPlayer p : players) {
             boolean sandbox = isSandbox(p);
             Boolean was = WAS_SANDBOX.put(p.getUUID(), sandbox);
-            // Out of Creative: the temporary pick goes, the legitimate kit (if any) comes back.
+            // Out of Creative: they keep playing the test kit they picked there (or their legitimate kit, or none).
             if (was != null && was && !sandbox) enforce(p);
             sync(p, false);
         }
@@ -205,7 +226,8 @@ public final class TechniqueProgression {
         KitOwnership.ClaimResult r = ownership(player).tryClaim(player.getUUID(), player.getName().getString(), kit, source);
         if (r == KitOwnership.ClaimResult.CLAIMED || r == KitOwnership.ClaimResult.ALREADY_OWNER) {
             PlayerProgression p = progression(player);
-            PlayerProgression next = r == KitOwnership.ClaimResult.CLAIMED ? p.withKit(kit).withCurrent(kit) : p.withKit(kit);
+            // An earned kit replaces any test kit at once.
+            PlayerProgression next = r == KitOwnership.ClaimResult.CLAIMED ? p.withKit(kit).withCurrent(kit).withTestKit("") : p.withKit(kit);
             if (!next.equals(p)) setProgression(player, next);
             if (r == KitOwnership.ClaimResult.CLAIMED && governs(player)) CharacterService.assign(player, Characters.get(kit));
             sync(player, true);
@@ -275,7 +297,7 @@ public final class TechniqueProgression {
                 sync(prev, true);
             }
         }
-        setProgression(to, validate(to).withCurrent(kit));
+        setProgression(to, validate(to).withCurrent(kit).withTestKit(""));
         enforce(to);
         sync(to, true);
         return true;

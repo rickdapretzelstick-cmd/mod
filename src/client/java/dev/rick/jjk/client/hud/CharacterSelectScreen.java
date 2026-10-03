@@ -24,11 +24,13 @@ import java.util.List;
  * The one character select screen. It builds a card for every registered character from the character's own identity
  * (name, title, description) and theme, with its portrait from {@code textures/gui/portrait/<id>.png}, so adding a
  * character never means touching this screen. The server decides whether the switch is allowed (neutral state only) and
- * says why not.
+ * says why not. Where switching is free (Creative, or progression off) the first card is <b>No kit</b>: an ordinary
+ * person, no cursed technique.
  */
 public class CharacterSelectScreen extends Screen {
     @Nullable private final Screen parent;
-    private final List<JJKCharacter> characters = new ArrayList<>();
+    /** The cards, in order; a null entry is the No kit card. */
+    private final List<@Nullable JJKCharacter> characters = new ArrayList<>();
     private int hovered = -1;
     private int selectedAt = -1;
     private long openedAt;
@@ -43,6 +45,8 @@ public class CharacterSelectScreen extends Screen {
         characters.clear();
         // In Survival (progression on) only the kits this player has earned are offered.
         boolean governed = dev.rick.jjk.client.ClientProgression.governed();
+        // Being nobody in particular is always an option where any kit can be picked (not in Survival: no swapping there).
+        if (!governed) characters.add(null);
         for (String id : Characters.ids()) {
             if (!governed || dev.rick.jjk.client.ClientProgression.owned().contains(id)) characters.add(Characters.get(id));
         }
@@ -71,8 +75,8 @@ public class CharacterSelectScreen extends Screen {
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         int i = cardAt(event.x(), event.y());
         if (i >= 0) {
-            JJKCharacter c = characters.get(i);
-            if (!c.id.equals(ClientState.character)) ClientPlayNetworking.send(new CharacterSelectPayload(c.id));
+            String id = idOf(characters.get(i));
+            if (!id.equals(ClientState.character)) ClientPlayNetworking.send(new CharacterSelectPayload(id));
             selectedAt = i;
             return true;
         }
@@ -82,9 +86,14 @@ public class CharacterSelectScreen extends Screen {
     /** Where a character's card is (GUI coordinates), or null. */
     public int @Nullable [] cardCenter(String id) {
         for (int i = 0; i < characters.size(); i++) {
-            if (characters.get(i).id.equals(id)) return new int[] {cardX(i) + cardW() / 2, cardY() + cardH() / 2};
+            if (idOf(characters.get(i)).equals(id)) return new int[] {cardX(i) + cardW() / 2, cardY() + cardH() / 2};
         }
         return null;
+    }
+
+    /** A card's character id ("" for the No kit card). */
+    private static String idOf(@Nullable JJKCharacter c) {
+        return c == null ? "" : c.id;
     }
 
     private int cardAt(double mx, double my) {
@@ -107,31 +116,34 @@ public class CharacterSelectScreen extends Screen {
 
     private void card(GuiGraphicsExtractor g, int i, float time) {
         JJKCharacter c = characters.get(i);
-        CharacterTheme theme = CharacterTheme.of(c.id);
+        String id = idOf(c);
+        CharacterTheme theme = CharacterTheme.of(id);
         int x = cardX(i), y = cardY(), cw = cardW(), ch = cardH();
-        boolean current = c.id.equals(ClientState.character);
+        boolean current = id.equals(ClientState.character);
         boolean hover = hovered == i;
         // Slide in, staggered.
         float in = Mth.clamp((time - i * 3) / 6f, 0, 1);
         int dy = Math.round((1 - in) * 30);
         y += dy - (hover ? 3 : 0);
-        int accent = theme.accent();
+        int accent = c == null ? 0xFFB8B8C4 : theme.accent();
         // Card: dark body with the character's colour washed up from the bottom, a slanted title band, a frame.
         g.fill(x - 2, y - 2, x + cw + 2, y + ch + 2, current ? accent : hover ? 0xFFFFFFFF : 0xFF2A2A34);
-        g.fillGradient(x, y, x + cw, y + ch, 0xFF0C0C12, (theme.ceBottom() & 0xFFFFFF) | 0x90000000);
+        g.fillGradient(x, y, x + cw, y + ch, 0xFF0C0C12, c == null ? 0x90404048 : (theme.ceBottom() & 0xFFFFFF) | 0x90000000);
         // Portrait.
-        Identifier portrait = JJK.id("textures/gui/portrait/" + c.id + ".png");
+        Identifier portrait = JJK.id("textures/gui/portrait/" + (c == null ? "none" : c.id) + ".png");
         // The portrait takes what the text below it leaves (name, title, a few description lines, the tag).
         int ps = Mth.clamp(Math.min(cw - 24, ch - 100), 32, 96);
         int px = x + cw / 2 - ps / 2, py = y + 10;
         g.fill(px - 2, py - 2, px + ps + 2, py + ps + 2, 0xFF000000);
-        g.fillGradient(px, py, px + ps, py + ps, (theme.ceTop() & 0xFFFFFF) | 0x50000000, 0xFF101018);
+        g.fillGradient(px, py, px + ps, py + ps, c == null ? 0x50808088 : (theme.ceTop() & 0xFFFFFF) | 0x50000000, 0xFF101018);
         g.blit(RenderPipelines.GUI_TEXTURED, portrait, px, py, 0, 0, ps, ps, 32, 32, 32, 32, 0xFFFFFFFF);
         // Name, title, description.
         int ty = py + ps + 8;
-        CinematicPanels.labelCentered(g, font, c.displayName().toUpperCase(java.util.Locale.ROOT), x + cw / 2f, ty, 1.6f, 0xFFFFFFFF, in);
-        CinematicPanels.labelCentered(g, font, c.title(), x + cw / 2f, ty + 16, 0.9f, accent, in);
-        List<net.minecraft.util.FormattedCharSequence> lines = font.split(Component.literal(c.description()), cw - 12);
+        String name = c == null ? "No kit" : c.displayName(), title = c == null ? "No technique" : c.title();
+        String description = c == null ? "No cursed technique: plain Minecraft combat and no JJK moves." : c.description();
+        CinematicPanels.labelCentered(g, font, name.toUpperCase(java.util.Locale.ROOT), x + cw / 2f, ty, 1.6f, 0xFFFFFFFF, in);
+        CinematicPanels.labelCentered(g, font, title, x + cw / 2f, ty + 16, 0.9f, accent, in);
+        List<net.minecraft.util.FormattedCharSequence> lines = font.split(Component.literal(description), cw - 12);
         int ly = ty + 30;
         var pose = g.pose();
         for (var line : lines) {

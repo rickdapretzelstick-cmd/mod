@@ -837,6 +837,9 @@ public final class JJKConfig {
          */
         public double openBlastRadius = 16;
         public float openBlastEdgeDamage = 8f;
+        /** The crater Open blows out of the terrain: the whole blast radius, up to this many blocks, this hard. */
+        public int openBlastMaxBlocks = 18000;
+        public float openBlastMaxHardness = 50f;
         public double openLift = 1.4;
 
         // --- 3: Rush (15s) ---

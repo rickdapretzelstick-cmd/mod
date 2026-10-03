@@ -5,6 +5,7 @@ One simple symbol per character, readable at any size (the screen draws them at 
   - hakari: a slot machine
   - yuta: Rika's ring, the cursed ring of their promise
   - ryu: the comb for his pompadour
+  - none: a plain grey silhouette (the No kit card)
 """
 import os
 
@@ -190,3 +191,27 @@ def ryu():
 
 
 ryu()
+
+
+# No kit: a plain grey silhouette, an ordinary person with no technique.
+def none():
+    import math
+    img = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
+    px = {}
+    for y in range(32):
+        for x in range(32):
+            head = math.hypot(x - 15.5, y - 10) <= 5.2
+            shoulders = y >= 18 and y <= 29 and abs(x - 15.5) <= 4 + (y - 18) * 0.75 and math.hypot((x - 15.5) / 11, (y - 30) / 12) <= 1
+            if head or shoulders:
+                px[(x, y)] = 0x9A9AA6 if (head and y < 8) or (shoulders and y < 21) else 0x6E6E7A
+    for (x, y) in list(px):
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            q = (x + dx, y + dy)
+            if 0 <= q[0] < 32 and 0 <= q[1] < 32 and q not in px:
+                img.putpixel(q, rgb(0x2A2A32))
+    for (x, y), c in px.items():
+        img.putpixel((x, y), rgb(c))
+    img.save(os.path.join(OUT, 'none.png'))
+
+
+none()

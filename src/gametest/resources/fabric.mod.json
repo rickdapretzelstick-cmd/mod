@@ -28,7 +28,9 @@
       "dev.rick.jjk.test.YujiClientGameTest",
       "dev.rick.jjk.test.YutaClientGameTest",
       "dev.rick.jjk.test.FingerBearerClientGameTest",
-      "dev.rick.jjk.test.BeamClashCameraClientTest"
+      "dev.rick.jjk.test.BeamClashCameraClientTest",
+      "dev.rick.jjk.test.RikaViewClientTest",
+      "dev.rick.jjk.test.NoKitClientTest"
     ]
   },
   "depends": {

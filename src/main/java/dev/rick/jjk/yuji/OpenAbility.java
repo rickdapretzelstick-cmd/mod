@@ -139,7 +139,8 @@ public final class OpenAbility extends Ability {
                     .fx("open_hit", 1f).build(), t);
             if (f < 0.6f) t.igniteForSeconds(2);
         }
-        dev.rick.jjk.util.Destruction.sphere(level, at, 2.5, 5f, 60, owner, null, "jjk:open");
+        // The ground goes with it: the whole blast radius is blown out (carved over a few ticks, restored later).
+        dev.rick.jjk.util.Crater.start(level, owner, at, blast, cfg.openBlastMaxHardness, cfg.openBlastMaxBlocks, "jjk:open");
     }
 
     /** How far the blast reaches: Unlimited Purple's original radius (16), never inside the pillar itself. */

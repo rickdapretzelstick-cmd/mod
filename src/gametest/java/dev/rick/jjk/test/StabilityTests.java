@@ -334,6 +334,87 @@ public class StabilityTests {
         });
     }
 
+    /** Fall damage each entity took (by id), recorded from the damage event so other damage doesn't blur it. */
+    private static final java.util.Map<Integer, Float> FALLS = new java.util.concurrent.ConcurrentHashMap<>();
+    private static boolean fallsHooked;
+
+    private static void trackFalls() {
+        if (fallsHooked) return;
+        fallsHooked = true;
+        net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register((e, source, base, taken, blocked) -> {
+            if (source.is(net.minecraft.tags.DamageTypeTags.IS_FALL)) FALLS.merge(e.getId(), taken, Float::sum);
+        });
+    }
+
+    private static float fell(LivingEntity e) {
+        return FALLS.getOrDefault(e.getId(), 0f);
+    }
+
+    @GameTest(maxTicks = 200, padding = 12, skyAccess = true, environment = ENV)
+    public void sukunasRushNeverHurtsEitherOfThemOnTheWayDown(GameTestHelper h) {
+        trackFalls();
+        floor(h, 18);
+        TrainingDummy target = dummy(h, 6.5, 2.5);
+        TrainingDummy s = character(h, dev.rick.jjk.yuji.YujiCharacter.ID, 1.5, 2.5);
+        s.setOnGround(true);
+        Vec3 d = target.getBoundingBox().getCenter().subtract(s.getEyePosition());
+        s.setYRot((float) (Mth.atan2(d.z, d.x) * Mth.RAD_TO_DEG) - 90f);
+        s.setYHeadRot(s.getYRot());
+        Casters.get(s).setNoCost(true);
+        Casters.get(s).enterAwakening();
+        float hp = target.getHealth();
+        boolean[] airborne = new boolean[2];
+        h.startSequence()
+                .thenExecute(() -> h.assertTrue(Casters.get(s).input(AbilitySlot.SKILL_3, true, 0, 0, null), "Rush (" + Casters.get(s).lastRefusal + ")"))
+                .thenExecute(() -> Casters.get(s).input(AbilitySlot.SKILL_3, false, 0, 0, null))
+                .thenWaitUntil(() -> {
+                    airborne[0] |= !s.onGround() && s.getY() > h.absoluteVec(new Vec3(0, 3, 0)).y;
+                    airborne[1] |= !target.onGround() && target.getY() > h.absoluteVec(new Vec3(0, 3, 0)).y;
+                    h.assertTrue(!Casters.get(s).isBusy(), "finished");
+                })
+                .thenIdle(50)
+                .thenExecute(() -> {
+                    h.assertTrue(airborne[0] && airborne[1], "both went up into the air (" + airborne[0] + "/" + airborne[1] + ")");
+                    h.assertTrue(s.onGround() && target.onGround(), "both back down");
+                    h.assertTrue(hp - target.getHealth() >= 20, "the move landed (" + (hp - target.getHealth()) + ")");
+                    h.assertValueEqual(fell(s), 0f, "Sukuna takes no fall damage from his own leap");
+                    h.assertValueEqual(fell(target), 0f, "nor does his victim from the knee and slam");
+                    h.assertTrue(s.isAlive() && target.isAlive(), "both alive");
+                })
+                .thenSucceed();
+    }
+
+    @GameTest(maxTicks = 120, padding = 8, skyAccess = true, environment = ENV)
+    public void heightFromATeleportOrAMidComboHitIsNeverFallDamage(GameTestHelper h) {
+        trackFalls();
+        floor(h, 8);
+        TrainingDummy teleported = dummy(h, 1.5, 1.5);
+        TrainingDummy juggled = dummy(h, 4.5, 4.5);
+        TrainingDummy plain = dummy(h, 6.5, 1.5);
+        // Fighters have combat data (it's what remembers where they last stood); the plain one is the same.
+        for (TrainingDummy d : new TrainingDummy[] {teleported, juggled, plain}) Combat.state(d);
+        h.startSequence()
+                .thenIdle(3)
+                .thenExecute(() -> {
+                    // A move teleports one twelve blocks up (as Gojo's Teleport or a blink behind an airborne target does).
+                    dev.rick.jjk.core.combat.LaunchHeight.displaced(teleported, teleported.getY());
+                    teleported.teleportTo(teleported.getX(), teleported.getY() + 12, teleported.getZ());
+                    // Another is up there in hitstun with no launch recorded: where it last stood counts.
+                    juggled.teleportTo(juggled.getX(), juggled.getY() + 12, juggled.getZ());
+                    Statuses.apply(juggled, CombatStatus.HITSTUN, 6);
+                    // The control: simply put twelve blocks up with nothing to do with a fight.
+                    plain.teleportTo(plain.getX(), plain.getY() + 12, plain.getZ());
+                })
+                .thenIdle(90)
+                .thenExecute(() -> {
+                    h.assertTrue(teleported.onGround() && juggled.onGround() && plain.onGround(), "all landed");
+                    h.assertValueEqual(fell(teleported), 0f, "a move's teleport upward: no fall damage");
+                    h.assertValueEqual(fell(juggled), 0f, "airborne mid-combo: no fall damage above where it stood");
+                    h.assertTrue(fell(plain) > 0, "an ordinary twelve-block fall still hurts (" + fell(plain) + ")");
+                })
+                .thenSucceed();
+    }
+
     // --- Domains ---
 
     /**

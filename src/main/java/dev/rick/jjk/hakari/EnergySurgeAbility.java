@@ -99,6 +99,8 @@ public final class EnergySurgeAbility extends Ability {
                     }
                     for (int i = 0; i < 4 && !free(ctx, spot); i++) spot = spot.add(0, -0.8, 0);
                     if (!free(ctx, spot)) spot = user.position().add(0, 0.2, 0);
+                    // Height the teleport gives is never fall damage (only falling below where they left counts).
+                    dev.rick.jjk.core.combat.LaunchHeight.displaced(user, user.getY());
                     user.teleportTo(spot.x, spot.y, spot.z);
                     if (target != null) HakariCombat.faceTowards(user, target.getBoundingBox().getCenter());
                     user.setInvisible(false);

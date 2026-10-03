@@ -38,6 +38,9 @@ public class RikaEntity extends TechniqueEntity {
     @Nullable private LivingEntity target;
     @Nullable private Vec3 station;
     private int moveTicks;
+    /** The follow spot's anchor: Yuta's facing and height, eased (so a quick turn or a jump doesn't whip her about). */
+    private float anchorYaw = Float.NaN;
+    private double anchorY = Double.NaN;
 
     public RikaEntity(EntityType<? extends RikaEntity> type, Level level) {
         super(type, level);
@@ -112,13 +115,33 @@ public class RikaEntity extends TechniqueEntity {
         set(STATIONED, false);
     }
 
-    /** Her place at his side: to his right, a little behind; fully manifested, she looms right behind him. */
+    /**
+     * Her place at his side: to his right, a little behind. Fully manifested (True Love) she is twice his size, so she
+     * stands further out at his right shoulder rather than straight behind him, out of the line between his camera and
+     * him (and what he faces).
+     */
     public Vec3 sideSpot(LivingEntity owner) {
-        float yaw = owner.getYRot() * Mth.DEG_TO_RAD;
+        float yaw = (Float.isNaN(anchorYaw) ? owner.getYRot() : anchorYaw) * Mth.DEG_TO_RAD;
         Vec3 fwd = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw));
         Vec3 right = new Vec3(-fwd.z, 0, fwd.x);
-        if (has(FULL)) return owner.position().add(fwd.scale(-1.9)).add(right.scale(0.5)).add(0, 0.1, 0);
-        return owner.position().add(right.scale(1.6)).add(fwd.scale(-0.6)).add(0, 0.25, 0);
+        Vec3 base = new Vec3(owner.getX(), Double.isNaN(anchorY) ? owner.getY() : anchorY, owner.getZ());
+        if (has(FULL)) return base.add(right.scale(2.4)).add(fwd.scale(-1.0)).add(0, 0.1, 0);
+        return base.add(right.scale(1.6)).add(fwd.scale(-0.6)).add(0, 0.25, 0);
+    }
+
+    /** Eases the follow anchor toward where Yuta is facing and standing. */
+    private void easeAnchor(LivingEntity o) {
+        if (Float.isNaN(anchorYaw)) anchorYaw = o.getYRot();
+        else anchorYaw = Mth.approachDegrees(anchorYaw, o.getYRot(), 14f);
+        // His feet's height, followed loosely: a jump is a bob for her, not a leap.
+        if (Double.isNaN(anchorY) || Math.abs(o.getY() - anchorY) > 6) anchorY = o.getY();
+        else anchorY += (o.getY() - anchorY) * 0.25;
+    }
+
+    @Override
+    protected net.minecraft.world.entity.InterpolationHandler createInterpolationHandler() {
+        // Smooth on every client between the server's position updates (she is driven every tick).
+        return net.minecraft.world.entity.LinearInterpolationHandler.create(this, 3);
     }
 
     @Override
@@ -130,6 +153,7 @@ public class RikaEntity extends TechniqueEntity {
             discard();
             return;
         }
+        easeAnchor(o);
         Vec3 want;
         double speed;
         if (destination != null && moveTicks > 0) {

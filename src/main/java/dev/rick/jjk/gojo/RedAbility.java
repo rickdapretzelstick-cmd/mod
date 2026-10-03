@@ -138,6 +138,8 @@ public final class RedAbility extends Ability {
             Vec3 dest = air ? t.position().add(0, t.getBbHeight() + 0.4, 0) : TeleportAbility.behindSpot(user, t);
             if (dest == null) dest = t.position().add(HakariCombat.flat(t).scale(-1.4));
             Fx.play(level, "teleport_out", from.add(0, 1, 0), dest.subtract(from), 1f, user.getId());
+            // Height the teleport gives is never fall damage (only falling below where they left counts).
+            dev.rick.jjk.core.combat.LaunchHeight.displaced(user, user.getY());
             user.teleportTo(level, dest.x, dest.y, dest.z, java.util.Set.of(), user.getYRot(), user.getXRot(), false);
             HakariCombat.faceTowards(user, t.getBoundingBox().getCenter());
             Motion.set(user, Vec3.ZERO);

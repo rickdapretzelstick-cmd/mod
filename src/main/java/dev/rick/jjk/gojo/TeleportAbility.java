@@ -224,6 +224,8 @@ public final class TeleportAbility extends Ability {
         Vec3 look = target.getBoundingBox().getCenter().subtract(eye);
         float yaw = (float) (Mth.atan2(look.z, look.x) * Mth.RAD_TO_DEG) - 90f;
         float pitch = (float) -(Mth.atan2(look.y, Math.sqrt(look.x * look.x + look.z * look.z)) * Mth.RAD_TO_DEG);
+        // Height the teleport gives is never fall damage (only falling below where they left counts).
+        dev.rick.jjk.core.combat.LaunchHeight.displaced(user, user.getY());
         user.teleportTo(level, dest.x, dest.y, dest.z, Set.of(), yaw, pitch, false);
         Motion.set(user, Vec3.ZERO);
         user.resetFallDistance();
