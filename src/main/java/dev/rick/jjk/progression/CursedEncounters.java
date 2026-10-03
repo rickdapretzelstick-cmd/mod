@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Cursed battle rooms: where they are, what waits in each, and how far each encounter has got. Rooms are generated under
@@ -30,8 +31,8 @@ import java.util.Map;
  * registers it here the first time it ticks. The registry is saved in {@code <world>/jjk_progression/encounters.dat}.
  *
  * <p>An encounter is code registered under an id ({@link #registerEncounter}): it is handed the room and the players in
- * it every couple of seconds and decides when to spawn its curse, and marks the room ACTIVE or CLEARED. The rooms here
- * wait for the Finger Bearer, which is not implemented yet: until its handler exists the rooms stay DORMANT and empty.
+ * it every couple of seconds and decides when to spawn its curse, and marks the room ACTIVE or CLEARED. Every room waits
+ * for the Finger Bearer ({@link dev.rick.jjk.progression.curse.FingerBearerEncounter}).
  */
 public final class CursedEncounters {
     /** The structures battle rooms are built under (the seal's {@code site} property indexes this). */
@@ -51,6 +52,10 @@ public final class CursedEncounters {
         public State state;
         /** Game time someone first entered it (-1: undiscovered). */
         public long discoveredAt;
+        /** The curse this room spawned (saved), while the encounter is ACTIVE. */
+        @Nullable public UUID spirit;
+        /** Checks in a row the spirit wasn't found in the world (not saved: its chunk may simply still be loading). */
+        public int missing;
 
         Room(String dimension, BlockPos seal, String site, String encounter, int radius, State state, long discoveredAt) {
             this.dimension = dimension;
@@ -82,6 +87,12 @@ public final class CursedEncounters {
             ROOMS.clear();
             loadedFor = null;
         });
+    }
+
+    /** Forgets the registry in memory; the next access reads it back from disk (a reload, for tests). */
+    public static void unload() {
+        ROOMS.clear();
+        loadedFor = null;
     }
 
     /** Registers what happens in rooms that wait for {@code id} (the Finger Bearer will register itself here). */
@@ -132,6 +143,19 @@ public final class CursedEncounters {
         save(server);
     }
 
+    /** Saves the registry after a room's fields changed (its spirit, say). */
+    public static void changed(MinecraftServer server) {
+        ensureLoaded(server);
+        save(server);
+    }
+
+    /** The room whose seal is at {@code seal} in {@code dimension}, or null. */
+    @Nullable
+    public static Room find(MinecraftServer server, String dimension, BlockPos seal) {
+        ensureLoaded(server);
+        return ROOMS.get(key(dimension, seal));
+    }
+
     public static Collection<Room> rooms(MinecraftServer server) {
         ensureLoaded(server);
         return List.copyOf(ROOMS.values());
@@ -157,6 +181,7 @@ public final class CursedEncounters {
                 t.putInt("Radius", r.radius);
                 t.putString("State", r.state.name());
                 t.putLong("Discovered", r.discoveredAt);
+                if (r.spirit != null) t.putString("Spirit", r.spirit.toString());
                 list.add(t);
             }
             CompoundTag root = new CompoundTag();
@@ -186,8 +211,15 @@ public final class CursedEncounters {
                 }
                 String dim = t.getStringOr("Dim", "minecraft:overworld");
                 BlockPos pos = new BlockPos(p[0], p[1], p[2]);
-                ROOMS.put(key(dim, pos), new Room(dim, pos, t.getStringOr("Site", "?"), t.getStringOr("Encounter", FINGER_BEARER),
-                        t.getIntOr("Radius", 9), state, t.getLongOr("Discovered", -1L)));
+                Room room = new Room(dim, pos, t.getStringOr("Site", "?"), t.getStringOr("Encounter", FINGER_BEARER),
+                        t.getIntOr("Radius", 9), state, t.getLongOr("Discovered", -1L));
+                try {
+                    String spirit = t.getStringOr("Spirit", "");
+                    if (!spirit.isEmpty()) room.spirit = UUID.fromString(spirit);
+                } catch (IllegalArgumentException ignored) {
+                    // A damaged id: the encounter spawns its curse again.
+                }
+                ROOMS.put(key(dim, pos), room);
             }
         } catch (Exception e) {
             JJK.LOGGER.error("Could not read cursed encounters {}", f, e);

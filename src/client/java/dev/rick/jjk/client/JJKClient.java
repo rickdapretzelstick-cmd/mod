@@ -49,6 +49,8 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.HAKARI_DOOR, dev.rick.jjk.client.render.HakariRenderers.door());
         EntityRendererRegistry.register(ModEntities.THROWN_PROP, dev.rick.jjk.client.render.YujiRenderers.prop());
         EntityRendererRegistry.register(ModEntities.FIRE_ARROW, dev.rick.jjk.client.render.YujiRenderers.arrow());
+        EntityRendererRegistry.register(ModEntities.FINGER_BEARER, dev.rick.jjk.client.render.FingerBearerRenderer::new);
+        EntityRendererRegistry.register(ModEntities.CURSED_ENERGY_SHOT, dev.rick.jjk.client.render.FingerBearerRenderer.Shot::new);
 
         InputHandler.init();
         dev.rick.jjk.client.anim.AnimLibrary.init();

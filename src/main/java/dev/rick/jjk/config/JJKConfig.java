@@ -1131,6 +1131,9 @@ public final class JJKConfig {
         /** Battle rooms under Woodland Mansions and Igloos. */
         public boolean mansionBattleRooms = true;
         public boolean iglooBattleRooms = true;
+        /** The Finger Bearer, the curse waiting in each battle room: its health and a scale on every hit it lands. */
+        public double fingerBearerHealth = 150;
+        public float fingerBearerDamage = 1f;
     }
 
     /** Beam clashes (True Love Beam against Every Last Drop): the duel's tuning lives in the session; these are reach. */

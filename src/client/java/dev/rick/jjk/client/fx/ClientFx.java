@@ -88,6 +88,11 @@ public final class ClientFx {
             ProgressionFx.play(p, mc, level, pos, dir, s, mine, now);
             return;
         }
+        // The Finger Bearer, the battle-room curse.
+        if (p.id().startsWith("fb_")) {
+            FingerBearerFx.play(p, level, pos, dir, s, now);
+            return;
+        }
         switch (p.id()) {
             case "zero_two_cutin" -> dev.rick.jjk.client.hud.GojoPresentation.domainCutIn();
             case "limitless_shatter" -> {

@@ -44,6 +44,13 @@ public final class ModEntities {
     public static final EntityType<dev.rick.jjk.yuta.DomainBladeEntity> DOMAIN_BLADE = register("domain_blade",
             EntityType.Builder.<dev.rick.jjk.yuta.DomainBladeEntity>of(dev.rick.jjk.yuta.DomainBladeEntity::new, MobCategory.MISC).sized(0.4f, 1.4f).noSave().noSummon().fireImmune()
                     .clientTrackingRange(10).updateInterval(1).noLootTable());
+    /** The Finger Bearer (battle-room curse) and its cursed energy shots. */
+    public static final EntityType<dev.rick.jjk.progression.curse.FingerBearerEntity> FINGER_BEARER = register("finger_bearer",
+            EntityType.Builder.<dev.rick.jjk.progression.curse.FingerBearerEntity>of(dev.rick.jjk.progression.curse.FingerBearerEntity::new, MobCategory.MONSTER)
+                    .sized(1.4f, 3.3f).eyeHeight(2.75f).fireImmune().clientTrackingRange(10).noLootTable());
+    public static final EntityType<dev.rick.jjk.progression.curse.CursedEnergyShotEntity> CURSED_ENERGY_SHOT = register("cursed_energy_shot",
+            EntityType.Builder.<dev.rick.jjk.progression.curse.CursedEnergyShotEntity>of(dev.rick.jjk.progression.curse.CursedEnergyShotEntity::new, MobCategory.MISC).sized(0.5f, 0.5f).noSave().noSummon().fireImmune()
+                    .clientTrackingRange(10).updateInterval(1).noLootTable());
     public static final EntityType<TrainingDummy> TRAINING_DUMMY = register("training_dummy",
             EntityType.Builder.<TrainingDummy>of(TrainingDummy::new, MobCategory.MISC).sized(0.6f, 1.95f).clientTrackingRange(10));
 
@@ -56,5 +63,6 @@ public final class ModEntities {
 
     public static void init() {
         FabricDefaultAttributeRegistry.register(TRAINING_DUMMY, TrainingDummy.createAttributes());
+        FabricDefaultAttributeRegistry.register(FINGER_BEARER, dev.rick.jjk.progression.curse.FingerBearerEntity.createAttributes());
     }
 }

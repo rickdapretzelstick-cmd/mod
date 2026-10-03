@@ -15,7 +15,8 @@
       "dev.rick.jjk.test.YutaGameTests",
       "dev.rick.jjk.test.RyuGameTests",
       "dev.rick.jjk.test.MovesetAuditTests",
-      "dev.rick.jjk.test.ProgressionGameTests"
+      "dev.rick.jjk.test.ProgressionGameTests",
+      "dev.rick.jjk.test.FingerBearerTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.AnimFrameworkClientTest",
