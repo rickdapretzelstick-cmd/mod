@@ -446,7 +446,8 @@ public class YujiGameTests {
         });
     }
 
-    @GameTest(maxTicks = 160)
+    // Open's blast reaches 48 blocks: these run in their own widely spaced batch so it never touches another test.
+    @GameTest(maxTicks = 160, padding = 60, environment = "jjk-test:blast")
     public void worldCuttingSlashChantsAndCutsTheWorld(GameTestHelper h) {
         floor(h, 16);
         TrainingDummy target = dummy(h, 7.5, 2.5);
@@ -475,7 +476,7 @@ public class YujiGameTests {
         });
     }
 
-    @GameTest(maxTicks = 120)
+    @GameTest(maxTicks = 120, padding = 60, environment = "jjk-test:blast")
     public void openLoosesTheArrowAndThePillarLifts(GameTestHelper h) {
         floor(h, 16);
         TrainingDummy target = dummy(h, 7.5, 2.5);

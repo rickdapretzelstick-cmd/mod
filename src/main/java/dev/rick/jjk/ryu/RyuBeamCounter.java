@@ -21,11 +21,6 @@ public final class RyuBeamCounter implements BeamCounters.Counter {
     }
 
     @Override
-    public String answers() {
-        return "tlb";
-    }
-
-    @Override
     public String kind() {
         return "eld";
     }

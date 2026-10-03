@@ -71,6 +71,11 @@ public final class DomainInstance {
         return Math.max(0, duration - activeAge);
     }
 
+    /** Ticks it has been open (active, not forming or clashing). */
+    public int activeAge() {
+        return activeAge;
+    }
+
     @Nullable
     public dev.rick.jjk.core.domain.structure.DomainStructure structure() {
         return structure;

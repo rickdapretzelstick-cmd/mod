@@ -21,6 +21,10 @@ public final class CombatTicker {
             if (e.level() instanceof ServerLevel level) serverTick(e, level, state);
         }
         if (caster != null && caster.character() != null && !e.level().isClientSide() && e.isAlive()) caster.tick();
+        if (!e.level().isClientSide()) {
+            dev.rick.jjk.core.anim.AnimRecovery.tick(e, caster);
+            LaunchHeight.tick(e);
+        }
     }
 
     private static void serverTick(LivingEntity e, ServerLevel level, CombatState state) {

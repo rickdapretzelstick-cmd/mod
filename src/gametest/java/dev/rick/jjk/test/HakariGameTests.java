@@ -654,11 +654,12 @@ public class HakariGameTests {
         c.setNoCost(false);
         c.enterAwakening();
         float full = c.awakening();
-        // A blow worth one max health drains about a third of the meter (it empties after 3.33 of them)...
-        HitResolver.resolve(Hit.builder(attacker, "t").type(ModDamageTypes.TECHNIQUE).damage(g.getMaxHealth()).tag(AttackTag.UNBLOCKABLE).build(), g);
-        h.assertTrue(g.isAlive(), "the Reverse Cursed Technique kept him up");
+        // A blow just short of his max health is healed at once, back to full, and drains about a quarter of the meter
+        // (it empties after 3.33 max healths); only one blow that would kill him from full health ends him.
+        HitResolver.resolve(Hit.builder(attacker, "t").type(ModDamageTypes.TECHNIQUE).damage(g.getMaxHealth() * 0.9f).tag(AttackTag.UNBLOCKABLE).build(), g);
+        h.assertTrue(g.isAlive() && g.getHealth() == g.getMaxHealth(), "healed back to full the instant it landed (" + g.getHealth() + ")");
         float drained = full - c.awakening();
-        h.assertTrue(drained > full * 0.2f && drained < full * 0.45f, "the blow drained the Jackpot meter (" + drained + " of " + full + ")");
+        h.assertTrue(drained > full * 0.15f && drained < full * 0.45f, "the blow drained the Jackpot meter (" + drained + " of " + full + ")");
         Combat.state(g).clearAll();
         // ...and once it's empty he can be put down.
         c.setAwakening(0.5f);

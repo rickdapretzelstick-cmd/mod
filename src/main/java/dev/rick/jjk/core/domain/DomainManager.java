@@ -31,7 +31,8 @@ import java.util.UUID;
  * Framework rules that apply to all domains:
  * <ul>
  *   <li>One live domain per owner.</li>
- *   <li>The owner must stay inside; leaving or dying collapses the domain.</li>
+ *   <li>The owner may walk out and back in: the domain stays open until it expires, is cancelled or loses a clash;
+ *   the owner dying or leaving the dimension collapses it.</li>
  *   <li>A domain expanded where another is live starts a clash; the weaker one collapses.</li>
  *   <li>Someone standing inside their own live domain is immune to other domains' sure-hit.</li>
  *   <li>When a domain collapses its owner's technique burns out for a while.</li>
@@ -154,10 +155,9 @@ public final class DomainManager {
 
     private static void tickActive(DomainInstance d) {
         d.activeAge++;
-        if (!d.contains(d.owner)) {
-            end(d, DomainInstance.EndReason.OWNER_LEFT);
-            return;
-        }
+        // Where the owner (or anyone) stands doesn't decide the domain's life: it stays open, its structure and its
+        // effects with it, until it expires, is cancelled, loses a clash, or its owner dies or leaves the dimension.
+        // Its sure-hit only ever applies to those inside it (below).
         AABB box = new AABB(d.center, d.center).inflate(d.radius + 6);
         for (DomainInstance.Annex a : d.annexes) box = box.minmax(new AABB(a.center(), a.center()).inflate(a.radius() + 6));
         List<LivingEntity> nearby = d.level.getEntitiesOfClass(LivingEntity.class, box, e -> e != d.owner && e.isAlive());

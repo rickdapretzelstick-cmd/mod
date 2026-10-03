@@ -32,6 +32,12 @@ import java.util.Random;
  * hesitation, then the winner's surge drives the collision into the loser and punches through; a true tie collapses both
  * into one explosion) → {@link Phase#ENDED}.
  *
+ * <p>When the two meet, a beam that is far stronger than the other ({@link ClashBeam#beamStrength}: one fired long
+ * before and nearly spent, met by a fresh one) overpowers it at once: no struggle, straight to the breakthrough. Two
+ * beams near enough in strength struggle for the full duel ({@link #DUEL_TICKS}, twice the original length). The two
+ * sides are judged by the same rules whoever they are, the same character on both sides included: nothing favours the
+ * side that fired first.
+ *
  * <p>Nothing here trusts a client: a client only says how long after it first saw a check its player pressed, and that
  * is checked against the server's own clock and the player's measured latency before the server judges it.
  */
@@ -42,10 +48,12 @@ public final class BeamClashSession {
 
     public enum Judgement { GREAT, GOOD, MISS }
 
-    // Timing (ticks), tuned for a 4-6 second duel.
-    static final int INTRO_TICKS = 32, DUEL_TICKS = 104, HESITATE_TICKS = 10, BREAK_TICKS = 16, AFTER_TICKS = 14;
-    /** The longest the first beam waits, cut off, for its answer to fire. */
+    // Timing (ticks). The sustained struggle is twice the original 104-tick (5 s) duel: about ten seconds of checks.
+    public static final int INTRO_TICKS = 32, DUEL_TICKS = 2 * 104, HESITATE_TICKS = 10, BREAK_TICKS = 16, AFTER_TICKS = 14;
+    /** The shortest the first beam waits, cut off, for its answer to fire (longer when answered early in a charge). */
     static final int COUNTER_WAIT = 70;
+    /** One beam this many times stronger than the other overpowers it the moment they meet. */
+    public static final float OVERPOWER_RATIO = 2f;
     static final int SCORE_GREAT = 2, SCORE_GOOD = 1, SCORE_MISS = -1;
     /** Power difference that drives the collision all the way to one side's source. */
     static final double FULL_SWING = 8;
@@ -71,6 +79,10 @@ public final class BeamClashSession {
     private int nextCheckId = 1;
     /** Why it ended, if not decided (tests, debugging). */
     String reason = "";
+    /** How long the first beam out may wait for the second (ticks). */
+    int counterWait = COUNTER_WAIT;
+    /** Decided the moment the beams met, one overpowering the other. */
+    boolean overpowered;
 
     /** One duellist. */
     public static final class Side {
@@ -237,9 +249,20 @@ public final class BeamClashSession {
         collision = target = Mth.clamp(collision, 0.1, 0.9);
         ClashCommon.face(sides[0].entity, sides[1].entity.getEyePosition());
         ClashCommon.face(sides[1].entity, sides[0].entity.getEyePosition());
-        setPhase(Phase.INTRO);
         Fx.play(level, "bclash_collide", point(), axis, 1f, sides[0].entity.getId());
         Fx.shake(level, point(), 72, 1.6f, 30);
+        float sa = Math.max(0.01f, sides[0].beam.beamStrength()), sb = Math.max(0.01f, sides[1].beam.beamStrength());
+        if (sa >= sb * OVERPOWER_RATIO || sb >= sa * OVERPOWER_RATIO) {
+            // One is all but spent against a fresh one: it is overpowered on contact, no struggle.
+            overpowered = true;
+            outcome = sa > sb ? Outcome.A : Outcome.B;
+            reason = "overpowered (" + sa + " against " + sb + ")";
+            setPhase(Phase.RESOLVE);
+            phaseAge = HESITATE_TICKS;
+            Fx.play(level, "bclash_decide", point(), b().subtract(a()), outcome.ordinal(), sides[0].entity.getId());
+            return;
+        }
+        setPhase(Phase.INTRO);
     }
 
     void setPhase(Phase p) {
@@ -260,7 +283,7 @@ public final class BeamClashSession {
         if (phase != Phase.COUNTER) for (Side s : sides) ClashCommon.hold(s.entity);
         switch (phase) {
             case COUNTER -> {
-                if (phaseAge > COUNTER_WAIT) {
+                if (phaseAge > counterWait) {
                     // The answer never came: the beam that is out goes on, uncontested.
                     reason = "no answer in time (" + (sides[0].out ? "A out" : "A not out") + ", " + (sides[1].out ? "B out" : "B not out") + ")";
                     cancel(true);
@@ -532,6 +555,20 @@ public final class BeamClashSession {
 
     public String reason() {
         return reason;
+    }
+
+    public boolean overpowered() {
+        return overpowered;
+    }
+
+    public int phaseAge() {
+        return phaseAge;
+    }
+
+    /** The two beams the clash holds (null once released): tests. */
+    @Nullable
+    public ClashBeam beam(int side) {
+        return sides[side].beam;
     }
 
     public int power(int side) {

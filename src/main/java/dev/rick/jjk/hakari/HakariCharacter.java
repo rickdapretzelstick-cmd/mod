@@ -171,13 +171,30 @@ public final class HakariCharacter extends JJKCharacter {
         }
     }
 
+    /**
+     * Jackpot: essentially immortal. Every hit he survives is healed at once, back to full (and drains the Jackpot meter
+     * as damage always has); the only thing that kills him is a single blow big enough to kill him from full health.
+     */
+    public static void init() {
+        net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, base, taken, blocked) -> {
+            AbilityCaster c = dev.rick.jjk.core.ability.Casters.getOrNull(entity);
+            if (c == null || !(c.character() instanceof HakariCharacter) || !c.isAwakened() || !entity.isAlive() || taken <= 0) return;
+            drainJackpot(c, taken);
+            entity.setHealth(entity.getMaxHealth());
+            HakariState.of(entity).lastHealth = entity.getHealth();
+            if (entity.level() instanceof ServerLevel level) {
+                Fx.play(level, "jackpot_heal", entity.position().add(0, 1.2, 0), Vec3.ZERO, 1f, entity.getId());
+            }
+        });
+    }
+
     @Override
     public boolean preventDeath(AbilityCaster caster, DamageSource source, float amount) {
         if (!caster.isAwakened() || !(caster.owner.level() instanceof ServerLevel level)) return false;
-        // Effectively immortal: the blow drains the Jackpot meter instead, as long as there is meter to drain.
+        // One blow that would kill him from full health is the only death in Jackpot; anything less is healed away.
+        if (amount >= caster.owner.getMaxHealth()) return false;
         drainJackpot(caster, amount);
-        if (caster.awakening() <= 0) return false;
-        caster.owner.setHealth(Math.max(1f, caster.owner.getHealth()));
+        caster.owner.setHealth(caster.owner.getMaxHealth());
         HakariState.of(caster.owner).lastHealth = caster.owner.getHealth();
         Fx.play(level, "jackpot_heal", caster.owner.position().add(0, 1.2, 0), Vec3.ZERO, 1f, caster.owner.getId());
         return true;

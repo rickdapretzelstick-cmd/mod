@@ -15,6 +15,13 @@ public abstract class AbilityInstance {
     protected boolean held = true;
     private boolean finished;
     private int phase;
+    /** When the current phase began and how long it said it would take (0: it never said): for {@link #stuck}. */
+    private int phaseStart, phaseExpected;
+
+    /** How far past its declared phase length (at least) a cast may run before it counts as stuck. */
+    public static final int STUCK_SLACK = 200;
+    /** A cast that never declares a phase length counts as stuck past this age. */
+    public static final int STUCK_CEILING = 2400;
 
     protected AbilityInstance(Ability ability, AbilityContext ctx) {
         this.ability = ability;
@@ -73,9 +80,35 @@ public abstract class AbilityInstance {
         return phase;
     }
 
+    /**
+     * A long action that may legitimately run past every usual limit (the caster's watchdog leaves it alone). Clashes
+     * and the caster's own open domain are already exempt; a move that lasts as long as something else does says so.
+     */
+    public boolean longAction() {
+        return false;
+    }
+
+    /**
+     * Whether this cast has run far past what it said it would take: a missed end condition (an end event that never
+     * came) rather than anything still playing out. A held charge being held, or a long action, never is.
+     */
+    public final boolean stuck() {
+        if (finished || longAction()) return false;
+        if (ability.kind() == Ability.Kind.HOLD && held) return false;
+        if (phaseExpected > 0) return age - phaseStart > phaseExpected + Math.max(STUCK_SLACK, phaseExpected);
+        return age - phaseStart > STUCK_CEILING;
+    }
+
+    /** Restarts the stuck clock (the cast was legitimately held up: a clash, a domain). */
+    final void keepAlive() {
+        phaseStart = age;
+    }
+
     /** Advances to a new phase and informs clients (drives charge visuals). */
     protected void setPhase(int phase, int expectedDuration) {
         this.phase = phase;
+        this.phaseStart = age;
+        this.phaseExpected = Math.max(0, expectedDuration);
         Fx.toTrackers(user, new CastPayload(user.getId(), ability.id, phase, expectedDuration), true);
     }
 

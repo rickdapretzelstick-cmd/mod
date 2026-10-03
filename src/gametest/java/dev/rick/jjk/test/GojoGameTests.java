@@ -670,7 +670,9 @@ public class GojoGameTests {
                     face(g, target.getBoundingBox().getCenter());
                     h.assertTrue(Casters.get(g).input(AbilitySlot.SKILL_5, true, 0, 0, null), "Limitless becomes Face Grater");
                 })
-                .thenWaitUntil(() -> h.assertTrue(hp[0] - target.getHealth() >= JJKConfig.get().gojo.faceGraterDamage * 0.6f, "dragged and tossed"))
+                // (The toss is combo-scaled after the punches, and being thrown no longer costs fall damage: a third of it is plenty.)
+                .thenWaitUntil(() -> h.assertTrue(hp[0] - target.getHealth() >= JJKConfig.get().gojo.faceGraterDamage * 0.3f, "dragged and tossed ("
+                        + (hp[0] - target.getHealth()) + ", cast " + (Casters.get(g).cast() == null ? "-" : Casters.get(g).cast().ability.id + " " + Casters.get(g).cast().age()) + ")"))
                 .thenSucceed();
     }
 
@@ -978,7 +980,8 @@ public class GojoGameTests {
         h.succeed();
     }
 
-    @GameTest(maxTicks = 140)
+    // A 48-block blast: its own widely spaced batch.
+    @GameTest(maxTicks = 140, padding = 60, environment = "jjk-test:blast")
     public void unlimitedPurpleErasesItsRadiusWhenTheFuseRunsOut(GameTestHelper h) {
         floor(h, 4);
         TrainingDummy target = dummy(h, 6, 4);

@@ -56,4 +56,9 @@ public final class Anim {
     public static boolean isHolding(LivingEntity entity) {
         return HOLDING.contains(entity);
     }
+
+    /** Forgets any held pose without telling anyone (the entity is gone, or a fresh one replaced it). */
+    static void forget(LivingEntity entity) {
+        HOLDING.remove(entity);
+    }
 }

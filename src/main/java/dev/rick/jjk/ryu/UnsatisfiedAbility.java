@@ -52,6 +52,8 @@ public final class UnsatisfiedAbility extends Ability {
         return new AbilityInstance(this, ctx) {
             @Nullable private LivingEntity victim;
             private boolean whiffed;
+            /** When it ends: at {@link #END}, or sooner once there is nobody left to hit. */
+            private int endAt = END;
 
             @Override
             public void start() {
@@ -64,8 +66,19 @@ public final class UnsatisfiedAbility extends Ability {
             @Override
             public void tick() {
                 JJKConfig.Ryu cfg = RyuCombat.cfg();
+                // Checked first, every tick: however the combo went (landed, tossed, finished them, lost them), it ends.
+                if (age >= endAt) {
+                    finish();
+                    return;
+                }
                 if (whiffed) {
                     if (age >= BLOWS[0] + 10) finish();
+                    return;
+                }
+                if (victim != null && (!victim.isAlive() || victim.isRemoved() || victim.level() != level || victim.distanceToSqr(user) > 36)) {
+                    // Killed by a blow, gone, or knocked out of reach: nothing left to hit, so a short recovery and done.
+                    victim = null;
+                    endAt = Math.min(endAt, age + 8);
                     return;
                 }
                 HakariCombat.drive(user, HakariCombat.flat(user), age < BLOWS[0] ? 0.32 : 0.05);
@@ -92,7 +105,11 @@ public final class UnsatisfiedAbility extends Ability {
                         whiffed = true;
                     }
                 }
-                if (victim == null) return;
+                if (victim == null) {
+                    // Every blow so far missed after a first one connected and the target was then lost: stop.
+                    if (age > BLOWS[0]) endAt = Math.min(endAt, age + 8);
+                    return;
+                }
                 if (age == CLASH) {
                     // The Tetsuzanko: he turns his back into them, all his output behind it.
                     Fx.play(level, "ryu_tetsuzanko", victim.getBoundingBox().getCenter(), HakariCombat.flat(user), 1f, user.getId());
@@ -111,8 +128,8 @@ public final class UnsatisfiedAbility extends Ability {
                                 .status(CombatStatus.LAUNCHED, 20).fx(RyuCombat.hitFx("ryu_final_hit_2", true), 1.3f).build(), victim);
                     }
                     victim = null;
+                    endAt = Math.min(endAt, age + 10);
                 }
-                if (age >= END) finish();
             }
 
             private void refund(int ticks) {

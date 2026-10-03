@@ -486,6 +486,15 @@ public final class AbilityCaster {
         return false;
     }
 
+    /** Casts ended by the stuck-cast watchdog (tests, debugging). */
+    public int recoveries;
+
+    /** Legitimately held up for longer than any move says: in a clash, or holding their own domain open. */
+    private boolean heldUp() {
+        return dev.rick.jjk.core.clash.ClashCommon.clashing(owner) || dev.rick.jjk.core.clash.BeamClashManager.sessionOf(owner) != null
+                || dev.rick.jjk.core.domain.DomainManager.ownedBy(owner) != null;
+    }
+
     /** Stops the current exclusive cast without firing it. */
     public void interrupt(String reason) {
         boolean stun = !reason.equals("death") && !reason.equals("disconnect") && !reason.equals("feint") && !reason.equals("removed");
@@ -562,6 +571,21 @@ public final class AbilityCaster {
 
         CombatState state = Combat.state(owner);
         if (cast != null && !cast.isFinished() && state.shouldInterruptCasting()) interrupt("stunned");
+        if (cast != null && !cast.isFinished()) {
+            if (heldUp()) {
+                cast.keepAlive();
+            } else if (cast.stuck()) {
+                // Ran far past what it said it would take: an end event never came. End it cleanly (its own cleanup,
+                // the held pose released, the cast cleared for clients) rather than leave the caster locked in it.
+                dev.rick.jjk.JJK.LOGGER.warn("[recovery] {}'s {} was stuck at age {} (phase {}): ended", owner.getName().getString(),
+                        cast.ability.id, cast.age(), cast.phase());
+                recoveries++;
+                cast.interrupt("stuck");
+                cast.finish();
+                removeInstance(cast);
+                melee.reset();
+            }
+        }
         // Faster casting (a character's speed buff) runs the casts extra ticks now and then.
         float speed = Math.max(1f, character.castSpeed(this));
         castSpeedCarry += speed - 1f;

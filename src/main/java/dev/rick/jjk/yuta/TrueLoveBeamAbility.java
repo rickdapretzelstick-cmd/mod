@@ -137,6 +137,9 @@ public final class TrueLoveBeamAbility extends Ability {
         private List<Cell> carve = List.of();
         private int carved;
         @Nullable private BeamClashSession clash;
+        /** Its strength when a clash took hold of it (1 fresh; less the longer it had poured out first). */
+        private float strength = 1f;
+        private boolean measured;
 
         private record Cell(BlockPos pos, double along) {}
 
@@ -163,6 +166,8 @@ public final class TrueLoveBeamAbility extends Ability {
         private void goQuick(int delay) {
             JJKConfig.Yuta cfg = YutaCombat.cfg();
             quick = true;
+            // The quick beam is no ultimate beam: whatever could answer the charge can't any more.
+            BeamClashManager.beamGone(this);
             fireAt = age + delay;
             if (rika != null) YutaCombat.free(user);
             caster.resetSlot(slot, mode);
@@ -215,11 +220,22 @@ public final class TrueLoveBeamAbility extends Ability {
             fireAt = cfg.beamWindup;
             hold = cfg.beamTicks;
             collapse = cfg.beamCollapseTicks;
+            range = cfg.beamRange;
             fireEnd = fireAt + hold + collapse;
             setPhase(0, conjure);
             rika = YutaCombat.summonRika(user);
             YutaCombat.busy(user, fireEnd + 4);
             if (rika != null) Anim.playOn(rika, "rika_beam");
+            predictPath();
+            // The charge has begun: from this tick on, whoever could answer it has their window.
+            BeamClashManager.threaten(this, level.getGameTime() + fireAt);
+        }
+
+        /** While he conjures, where it will come from and go (Rika's mouth behind him, the way he faces). */
+        private void predictPath() {
+            Vec3 look = user.getLookAngle().normalize();
+            origin = mouthFor(user, user.getEyePosition().add(look.scale(20)));
+            dir = look;
         }
 
         private void aimOrb() {
@@ -289,13 +305,12 @@ public final class TrueLoveBeamAbility extends Ability {
                     rika.moveTo(user.position().subtract(flat.scale(TrueLoveBeamProfile.BEHIND)), 1.2, 2);
                 }
                 if (age % 6 == 0) Fx.play(level, "beam_gather", orb, user.getLookAngle(), age / (float) conjure, user.getId());
+                predictPath();
             }
             if (!quick && counterAt == null && age == conjure) {
                 plantRika(cfg, null);
                 setPhase(1, fireAt - age);
                 Fx.play(level, "beam_rika_eye", origin, dir.scale(range), fireAt - age, rika.getId());
-                // Committed: anyone who could answer it gets their moment now.
-                BeamClashManager.threaten(this, level.getGameTime() + (fireAt - age));
             }
             if (needsRika && age < fireEnd) {
                 rika.moveTo(rikaFeet, counterAt != null ? 3.0 : 1.6, 2);
@@ -453,7 +468,8 @@ public final class TrueLoveBeamAbility extends Ability {
         private void stop() {
             if (drawn || age >= conjure) Fx.play(level, "beam_stop", origin, dir, 30f, user.getId());
             drawn = false;
-            if (clash != null) BeamClashManager.beamGone(this);
+            // Always: a beam stopped while charging may have been answered already (its clash waits for it).
+            BeamClashManager.beamGone(this);
             finish();
         }
 
@@ -500,7 +516,17 @@ public final class TrueLoveBeamAbility extends Ability {
         }
 
         @Override
+        public float beamStrength() {
+            return strength;
+        }
+
+        @Override
         public void enterClash(BeamClashSession session, Vec3 newOrigin, Vec3 newDir) {
+            if (!measured) {
+                measured = true;
+                int poured = Math.max(0, age - fireAt);
+                strength = (float) Mth.clamp(1.0 - poured / (double) Math.max(1, YutaCombat.cfg().beamTicks), 0, 1);
+            }
             clash = session;
             if (newDir.lengthSqr() > 1e-6 && newDir.normalize().dot(dir) < 0.9999) {
                 dir = newDir.normalize();
@@ -544,14 +570,14 @@ public final class TrueLoveBeamAbility extends Ability {
         public void interrupt(String reason) {
             if (drawn || !quick && age >= conjure) Fx.play(level, "beam_stop", origin, dir, 30f, user.getId());
             drawn = false;
-            if (clash != null) BeamClashManager.beamGone(this);
+            BeamClashManager.beamGone(this);
             super.interrupt(reason);
         }
 
         @Override
         public void end() {
             drawn = false;
-            if (clash != null) BeamClashManager.beamGone(this);
+            BeamClashManager.beamGone(this);
             if (rika != null) YutaCombat.free(user);
         }
     }

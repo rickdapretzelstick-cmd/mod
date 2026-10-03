@@ -26,7 +26,7 @@ public final class JJKConfig {
      * The gameplay tuning this file was written for. When the mod's defaults change (the JJS wiki pass), older files have
      * their gameplay sections reset to the new defaults; the player's client settings are kept.
      */
-    public static final int CURRENT_VERSION = 7;
+    public static final int CURRENT_VERSION = 8;
     public int version;
 
     public General general = new General();
@@ -514,10 +514,12 @@ public final class JJKConfig {
 
         // --- Unlimited Purple: Red MAX into the orb Lapse Blue MAX left behind ---
         public int unlimitedPurpleFuse = 60;
-        public double unlimitedPurpleRadius = 16;
+        /** Blast radius: three times the original 16. Damage, knockback, the dome and the crater (0.8 of it) all follow it. */
+        public double unlimitedPurpleRadius = 48;
         public float unlimitedPurpleMinDamage = 50f;
         public float unlimitedPurpleMaxDamage = 100f;
-        public int unlimitedPurpleMaxBlocks = 6000;
+        /** Crater cap (carved over several ticks within maxBlocksPerTick). */
+        public int unlimitedPurpleMaxBlocks = 18000;
     }
 
     /** Kinji Hakari / Restless Gambler. Every number here can be rebalanced without code changes. */
@@ -822,6 +824,12 @@ public final class JJKConfig {
         public double openRange = 60;
         public float openDamage = 30f;
         public double openPillarRadius = 4.5;
+        /**
+         * The blast round the pillar: everyone within this many blocks of where the arrow lands is caught (full damage in
+         * the pillar, falling off to {@code openBlastEdgeDamage} at the edge). Unlimited Purple's original radius, 16.
+         */
+        public double openBlastRadius = 16;
+        public float openBlastEdgeDamage = 8f;
         public double openLift = 1.4;
 
         // --- 3: Rush (15s) ---

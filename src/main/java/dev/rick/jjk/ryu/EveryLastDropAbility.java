@@ -95,6 +95,9 @@ public final class EveryLastDropAbility extends Ability {
         private List<Double> carveAt = List.of();
         private int carved;
         @Nullable private BeamClashSession clash;
+        /** Its strength when a clash took hold of it (1 fresh; less the longer it had poured out first). */
+        private float strength = 1f;
+        private boolean measured;
 
         Instance(Ability ability, AbilityContext ctx, @Nullable Vec3 counterAt) {
             super(ability, ctx);
@@ -127,6 +130,8 @@ public final class EveryLastDropAbility extends Ability {
             fireEnd = fireAt + hold + collapse;
             setPhase(0, fireAt);
             Fx.play(level, "eld_charge", origin, dir, fireAt, user.getId());
+            // The charge has begun (the counter skips it: it fires back already answering): its window opens now.
+            if (counterAt == null) BeamClashManager.threaten(this, level.getGameTime() + fireAt);
         }
 
         @Override
@@ -140,10 +145,9 @@ public final class EveryLastDropAbility extends Ability {
                 if (!locked) dir = user.getLookAngle().normalize();
                 origin = RyuCombat.fingertip(user, dir);
                 if (!locked && age >= lockAt) {
-                    // Committed: it goes where he points now. Whoever could answer it gets their moment.
+                    // Committed: it goes where he points now (the window has been open since the charge began).
                     locked = true;
                     Anim.play(user, "ryu_eld_point");
-                    BeamClashManager.threaten(this, level.getGameTime() + (fireAt - age));
                 }
                 if ((fireAt - age) % 4 == 0) Fx.play(level, "eld_gather", origin, dir, 1f - (fireAt - age) / (float) Math.max(1, fireAt), user.getId());
             }
@@ -256,7 +260,7 @@ public final class EveryLastDropAbility extends Ability {
         private void stop() {
             if (drawn || age >= fireAt) Fx.play(level, "eld_stop", origin, dir, 1f, user.getId());
             drawn = false;
-            if (clash != null) BeamClashManager.beamGone(this);
+            BeamClashManager.beamGone(this);
             finish();
         }
 
@@ -298,7 +302,17 @@ public final class EveryLastDropAbility extends Ability {
         }
 
         @Override
+        public float beamStrength() {
+            return strength;
+        }
+
+        @Override
         public void enterClash(BeamClashSession session, Vec3 newOrigin, Vec3 newDir) {
+            if (!measured) {
+                measured = true;
+                int poured = Math.max(0, age - fireAt);
+                strength = (float) Mth.clamp(1.0 - poured / (double) Math.max(1, RyuCombat.cfg().eldTicks), 0, 1);
+            }
             clash = session;
             if (newDir.lengthSqr() > 1e-6) {
                 dir = newDir.normalize();
@@ -336,14 +350,14 @@ public final class EveryLastDropAbility extends Ability {
         public void interrupt(String reason) {
             if (drawn) Fx.play(level, "eld_stop", origin, dir, 1f, user.getId());
             drawn = false;
-            if (clash != null) BeamClashManager.beamGone(this);
+            BeamClashManager.beamGone(this);
             super.interrupt(reason);
         }
 
         @Override
         public void end() {
             drawn = false;
-            if (clash != null) BeamClashManager.beamGone(this);
+            BeamClashManager.beamGone(this);
             if (!awakenDone && age >= fireAt) afterBlast();
         }
     }

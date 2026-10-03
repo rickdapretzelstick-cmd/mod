@@ -24,13 +24,16 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Runs every beam clash. The server alone decides them: when an ultimate beam's path is locked (its caster committed),
- * the one opponent who could answer it (the closest that is in its path, can act, and has their Ultimate ready) gets a
- * short window in which their Ultimate key fires their own beam back at it. When that answer fires the two meet and a
- * {@link BeamClashSession} decides the rest. Two such beams fired at each other without a counter clash too.
+ * Runs every beam clash. The server alone decides them: the moment an ultimate beam starts charging, the one opponent
+ * who could answer it (the closest that is in its path, can act, and has their Ultimate ready) gets a window, open from
+ * that tick until a moment after the beam fires, in which their Ultimate key fires their own beam back at it. While the
+ * beam charges the window follows it: if nobody could answer when it began, whoever steps into its path gets the window
+ * then. When the answer fires the two meet and a {@link BeamClashSession} decides the rest. Two such beams fired at each
+ * other without a counter clash too.
  *
- * <p>A beam takes part in one clash at most; a sorcerer in any clash (domain or beam) can't join another; one window is
- * open per beam.
+ * <p>Who clashes is decided by who fires, never by which kit: Yuta's True Love Beam meets another Yuta's, Every Last Drop
+ * another Ryu's, as well as each other. Nobody clashes with their own beam. A beam takes part in one clash at most and
+ * can be answered once; a sorcerer in any clash (domain or beam) can't join another; one window is open per beam.
  */
 public final class BeamClashManager {
     /** How far an answer can come from, and how near the beam's path it must stand. */
@@ -43,6 +46,10 @@ public final class BeamClashManager {
     private static final Map<UUID, Window> WINDOWS = new LinkedHashMap<>();
     /** Beams firing right now that aren't in a clash (two fired at each other meet). */
     private static final List<ClashBeam> LIVE = new ArrayList<>();
+    /** Beams charging or firing that can still be answered, and until when (game time). */
+    private static final Map<ClashBeam, Long> THREATS = new java.util.IdentityHashMap<>();
+    /** Beams already answered: one counter per charge, never a second. */
+    private static final java.util.Set<ClashBeam> ANSWERED = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
     private static int nextId = 1;
 
     private record Window(ClashBeam beam, LivingEntity attacker, long expires) {}
@@ -52,15 +59,23 @@ public final class BeamClashManager {
     // --- From the beams ---
 
     /**
-     * {@code beam}'s path is locked and it will fire at {@code fireTick} (game time): offer the answer to whoever
-     * could give one.
+     * {@code beam} has begun charging and will fire at {@code fireTick} (game time): the answer is open from now until
+     * a moment after it fires, offered to whoever could give one (now, or as they step into its path while it charges).
      */
     public static void threaten(ClashBeam beam, long fireTick) {
         LivingEntity attacker = beam.beamOwner();
-        if (!(attacker.level() instanceof ServerLevel level) || sessionOf(attacker) != null) return;
+        if (!(attacker.level() instanceof ServerLevel level) || sessionOf(attacker) != null || ANSWERED.contains(beam)) return;
+        long expires = Math.max(fireTick, level.getGameTime()) + GRACE;
+        THREATS.put(beam, expires);
+        offer(beam, level, expires);
+    }
+
+    /** Opens the window on {@code beam} for whoever could answer it, unless one is already open. */
+    private static void offer(ClashBeam beam, ServerLevel level, long expires) {
+        LivingEntity attacker = beam.beamOwner();
+        for (Window w : WINDOWS.values()) if (w.beam == beam) return;
         LivingEntity who = pickAnswer(beam, level);
         if (who == null) return;
-        long expires = Math.max(fireTick, level.getGameTime()) + GRACE;
         WINDOWS.put(who.getUUID(), new Window(beam, attacker, expires));
         BeamCounters.Counter c = BeamCounters.of(who);
         if (who instanceof ServerPlayer sp && c != null) {
@@ -92,8 +107,14 @@ public final class BeamClashManager {
                 if (!o.beamLive()) LIVE.remove(o);
                 continue;
             }
-            if (o.beamKind().equals(beam.beamKind()) || !headOn(beam, o)) continue;
+            // Any two ultimate beams meet, the same kind included (Yuta against Yuta, Ryu against Ryu).
+            if (!headOn(beam, o)) continue;
             LIVE.remove(o);
+            for (ClashBeam b : List.of(o, beam)) {
+                ANSWERED.add(b);
+                THREATS.remove(b);
+            }
+            WINDOWS.values().removeIf(w -> w.beam == o || w.beam == beam);
             BeamClashSession ns = create(o.beamOwner(), o, owner, beam, beam.beamOrigin());
             ns.beamOut(o);
             ns.beamOut(beam);
@@ -106,6 +127,7 @@ public final class BeamClashManager {
     /** A beam ended some other way (its caster stopped, died, left): its clash, if any, can't go on. */
     public static void beamGone(ClashBeam beam) {
         LIVE.remove(beam);
+        THREATS.remove(beam);
         for (BeamClashSession s : List.copyOf(SESSIONS.values())) {
             if (s.sideOf(beam) != null) s.beamGone(beam);
         }
@@ -127,17 +149,21 @@ public final class BeamClashManager {
             return false;
         }
         BeamCounters.Counter counter = BeamCounters.of(user);
-        if (counter == null || !counter.answers().equals(w.beam.beamKind()) || !counter.ready(caster)) return false;
+        if (counter == null || ANSWERED.contains(w.beam) || !counter.answers(w.beam.beamKind()) || !counter.ready(caster)) return false;
         WINDOWS.remove(user.getUUID());
         // Aim straight at the incoming beam's source; the session lines both up exactly once both are out.
         Vec3 at = w.beam.beamOrigin();
         Vec3 origin = counter.origin(user, at);
         BeamClashSession s = create(w.attacker, w.beam, user, null, origin);
+        // Answered while it still charges: the answer waits, held, for as long as the rest of the charge takes.
+        s.counterWait = (int) Math.max(BeamClashSession.COUNTER_WAIT, w.expires - level.getGameTime() + 30);
         ClashCommon.face(user, at);
         if (!counter.fire(caster, at)) {
             SESSIONS.remove(s.id);
             return false;
         }
+        ANSWERED.add(w.beam);
+        THREATS.remove(w.beam);
         WINDOWS.values().removeIf(x -> x.beam == w.beam);
         Fx.play(level, "bclash_answer", user.getEyePosition(), at.subtract(user.getEyePosition()), 1f, user.getId());
         if (user instanceof ServerPlayer sp) ServerPlayNetworking.send(sp, new BeamCounterPayload(w.attacker.getId(), 0, "", ""));
@@ -185,7 +211,7 @@ public final class BeamClashManager {
         for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, new AABB(o, o).inflate(RANGE), Entity::isAlive)) {
             BeamCounters.Counter c = BeamCounters.of(e);
             AbilityCaster caster = Casters.getOrNull(e);
-            if (c == null || caster == null || !c.answers().equals(beam.beamKind())) continue;
+            if (c == null || caster == null || e == beam.beamOwner() || !c.answers(beam.beamKind())) continue;
             if (!c.ready(caster)) {
                 miss.append(e.getId()).append(": answer not ready; ");
                 continue;
@@ -222,6 +248,19 @@ public final class BeamClashManager {
             long now = level.getGameTime();
             WINDOWS.entrySet().removeIf(e -> e.getValue().attacker.level() == level && now > e.getValue().expires);
         }
+        if (!THREATS.isEmpty()) {
+            long now = level.getGameTime();
+            for (var e : List.copyOf(THREATS.entrySet())) {
+                ClashBeam b = e.getKey();
+                if (b.beamLevel() != level) continue;
+                if (now > e.getValue() || ANSWERED.contains(b) || b.beamOwner().isRemoved() || !b.beamOwner().isAlive()) {
+                    THREATS.remove(b);
+                    continue;
+                }
+                // Still charging (or just fired) and nobody has the window: whoever is in its path now gets it.
+                if (now % 4 == 0) offer(b, level, e.getValue());
+            }
+        }
         LIVE.removeIf(b -> b.beamLevel() == level && !b.beamLive());
         if (SESSIONS.isEmpty()) return;
         for (BeamClashSession s : List.copyOf(SESSIONS.values())) {
@@ -257,5 +296,26 @@ public final class BeamClashManager {
         SESSIONS.clear();
         WINDOWS.clear();
         LIVE.clear();
+        THREATS.clear();
+        ANSWERED.clear();
+    }
+
+    /** Test hook: two beams already firing at each other clash at once (bypasses aiming and the window). */
+    public static BeamClashSession clashNow(ClashBeam a, ClashBeam b) {
+        BeamClashSession s = create(a.beamOwner(), a, b.beamOwner(), b, b.beamOrigin());
+        s.beamOut(a);
+        s.beamOut(b);
+        return s;
+    }
+
+    /** Whether {@code beam} can still be answered (charging or just fired, not yet answered): tests. */
+    public static boolean threatening(ClashBeam beam) {
+        return THREATS.containsKey(beam);
+    }
+
+    /** Whether {@code e} has a window open on {@code beam} in particular (tests). */
+    public static boolean windowOn(LivingEntity e, ClashBeam beam) {
+        Window w = WINDOWS.get(e.getUUID());
+        return w != null && w.beam == beam;
     }
 }

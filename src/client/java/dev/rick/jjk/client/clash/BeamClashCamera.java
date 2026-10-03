@@ -8,9 +8,11 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The beam clash's one cinematic beat: as the two beams meet, the contestants' cameras swing out side-on to the line
- * between them, framing both sources and the collision, then hand the view straight back as the skill checks begin
- * (the dial sits over the player's own view, and nothing moves the camera while it is up).
+ * The beam clash's camera: from the moment the two beams meet, the contestants' cameras swing out to a distant side-on
+ * shot of the line between them, framing both fighters, both beams and the collision point, and hold it for the whole
+ * clash: the intro, the sustained struggle (the skill-check dial sits over it) and the winner's breakthrough or the
+ * overpower. Nothing else moves the view meanwhile (this is applied last, over the domain clash camera and cinematics).
+ * When the clash ends, is cancelled, or the player dies or leaves, the view blends straight back to their own.
  */
 public final class BeamClashCamera {
     private static float blend;
@@ -20,15 +22,24 @@ public final class BeamClashCamera {
     private BeamClashCamera() {}
 
     private static boolean wanted() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || !mc.player.isAlive()) return false;
         BeamClashClient.View v = BeamClashClient.mine();
-        return v != null && v.phase == BeamClashClient.INTRO && v.phaseAge < 26;
+        return v != null && (v.phase == BeamClashClient.INTRO || v.phase == BeamClashClient.DUEL || v.phase == BeamClashClient.RESOLVE);
+    }
+
+    /** Whether the wide clash shot has the view right now (tests, the HUD). */
+    public static boolean active() {
+        return blend > 0;
     }
 
     public static void tick(Minecraft mc) {
-        boolean on = wanted() && target(mc) != null;
+        // Once found, a shot is kept for the clash even if a wall briefly blocks the search (no cutting in and out).
+        boolean on = wanted() && (smoothPos != null || target(mc) != null);
         blend = Mth.clamp(blend + (on ? 0.14f : -0.2f), 0, 1);
-        if (on && restore == null && mc.options.getCameraType() != CameraType.THIRD_PERSON_BACK) {
-            restore = mc.options.getCameraType();
+        if (on && mc.options.getCameraType() != CameraType.THIRD_PERSON_BACK) {
+            // Held every tick: another camera (a domain cinematic, F5) switching the view mid-clash can't take it over.
+            if (restore == null) restore = mc.options.getCameraType();
             mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
         }
         if (!on && blend <= 0) {
@@ -51,9 +62,12 @@ public final class BeamClashCamera {
     public static double[] apply(Vec3 vanillaPos, float vanillaYaw, float vanillaPitch) {
         if (blend <= 0) return null;
         Vec3[] t = target(Minecraft.getInstance());
-        if (t == null) return null;
-        smoothPos = smoothPos == null ? t[0] : smoothPos.lerp(t[0], 0.12);
-        smoothLook = smoothLook == null ? t[1] : smoothLook.lerp(t[1], 0.12);
+        if (t == null && smoothPos == null) return null;
+        if (t != null) {
+            // Eased, so the shot drifts with the clash rather than jumping.
+            smoothPos = smoothPos == null ? t[0] : smoothPos.lerp(t[0], 0.12);
+            smoothLook = smoothLook == null ? t[1] : smoothLook.lerp(t[1], 0.12);
+        }
         Vec3 dir = smoothLook.subtract(smoothPos);
         float yaw = (float) Math.toDegrees(Math.atan2(-dir.x, dir.z));
         float pitch = (float) -Math.toDegrees(Math.atan2(dir.y, Math.sqrt(dir.x * dir.x + dir.z * dir.z)));
@@ -78,9 +92,18 @@ public final class BeamClashCamera {
         Vec3 mine = v.local == 0 ? v.aOrigin : v.bOrigin;
         Vec3 right = new Vec3(side.z, 0, -side.x);
         if (mine.subtract(look).dot(right) < 0) side = side.reverse();
-        for (double dist = Math.min(26, span * 0.6 + 6); dist >= 5; dist -= 1) {
-            Vec3 pos = look.add(side.scale(dist)).add(0, 1.5 + dist * 0.15, 0);
-            if (clear(mc, pos)) return new Vec3[] {pos, look};
+        // Far enough out that both sources (and the fighters at them) fit the frame wherever the collision has been
+        // pushed to; never closer than a wide shot, pulled in only as far as walls force it.
+        Vec3 mid = v.aOrigin.add(v.bOrigin).scale(0.5);
+        Vec3 aim = mid.lerp(look, 0.35);
+        for (double dist = Mth.clamp(span * 1.05 + 8, 16, 44); dist >= 8; dist -= 1) {
+            Vec3 pos = aim.add(side.scale(dist)).add(0, 2 + dist * 0.18, 0);
+            if (clear(mc, pos)) return new Vec3[] {pos, aim};
+        }
+        // Boxed in: the widest clear spot straight up from the collision.
+        for (double up = 12; up >= 4; up -= 1) {
+            Vec3 pos = aim.add(side.scale(4)).add(0, up, 0);
+            if (clear(mc, pos)) return new Vec3[] {pos, aim};
         }
         return null;
     }

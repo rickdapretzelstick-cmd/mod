@@ -8,6 +8,8 @@ public final class Motion {
     private Motion() {}
 
     public static void set(Entity e, Vec3 velocity) {
+        // Height a move creates is never fall damage (only falling below where it started is).
+        if (velocity.y > 0.05) dev.rick.jjk.core.combat.LaunchHeight.launched(e);
         e.setDeltaMovement(velocity);
         e.syncVelocity = true;
         e.needsSync = true;

@@ -163,7 +163,8 @@ public class MovesetAuditTests {
         runKit(h, dev.rick.jjk.yuji.YujiCharacter.ID, false);
     }
 
-    @GameTest(maxTicks = 1200, padding = 20, skyAccess = true)
+    // Open's blast reaches 48 blocks: its own widely spaced batch.
+    @GameTest(maxTicks = 1200, padding = 60, skyAccess = true, environment = "jjk-test:blast")
     public void yujiKingOfCursesKitPlaysOut(GameTestHelper h) {
         runKit(h, dev.rick.jjk.yuji.YujiCharacter.ID, true);
     }

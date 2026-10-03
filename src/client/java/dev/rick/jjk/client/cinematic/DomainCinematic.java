@@ -80,7 +80,8 @@ public final class DomainCinematic {
         if (show != null && !active()) end(mc);
         // As Malevolent Shrine seals the camera turns to face the caster: the shrine rises behind them (JJS GIF).
         if (show != null && show.kind == DomainCinematicPayload.SOLO && show.local == 0 && turnedFrom == null && shrine(show.domains)
-                && mc.level.getGameTime() - show.start >= show.titleAt && !ClashClient.playing()) {
+                && mc.level.getGameTime() - show.start >= show.titleAt && !ClashClient.playing()
+                && !dev.rick.jjk.client.clash.BeamClashCamera.active()) {
             turnedFrom = mc.options.getCameraType();
             mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);
         }

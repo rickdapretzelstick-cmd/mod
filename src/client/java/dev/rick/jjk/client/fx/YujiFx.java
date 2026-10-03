@@ -477,8 +477,23 @@ final class YujiFx {
             case "open_pillar" -> {
                 // The massive pillar of fire (GIF frames 10-11).
                 sound("open_explode", pos, 3f, 1f);
-                float r = Math.max(1.5f, s);
+                // The pillar's own radius (dir.z) and the blast's (scale): the server hits exactly these two zones.
+                float r = Math.max(1.5f, dir.z > 0 ? (float) dir.z : s);
+                float blast = Math.max(r, s);
                 Vec3 g = groundBelow(level, pos);
+                if (blast > r + 1) {
+                    // The blast: a wall of fire running out across the whole zone, and its rim.
+                    Flashes.ground(g.add(0, 0.05, 0), r, blast, FIRE, 0.75f, 26, now);
+                    Flashes.ring(g.add(0, 1.2, 0), r, blast, FIRE_CORE, 0.6f, 18, now);
+                    if (drawn) {
+                        for (int i = 0; i < q(70); i++) {
+                            double a = RNG.nextDouble() * Mth.TWO_PI, rr = r + Math.sqrt(RNG.nextDouble()) * (blast - r);
+                            Vec3 at = g.add(Math.cos(a) * rr, 0.3 + RNG.nextDouble() * 2.5, Math.sin(a) * rr);
+                            add(level, at, new Vec3(Math.cos(a) * 0.12, 0.12 + RNG.nextDouble() * 0.15, Math.sin(a) * 0.12), Sprite.GLOW,
+                                    i % 4 == 0 ? FIRE_CORE : FIRE, 0.8f, 0.8f, 0.15f, 18 + RNG.nextInt(14));
+                        }
+                    }
+                }
                 Flashes.flash(pos, r * 1.5f, r * 0.5f, FIRE_CORE, 1f, 10, now);
                 line(g, g.add(0, 14, 0), r * 0.9f, FIRE, 0.95f, 26, now);
                 line(g, g.add(0, 16, 0), r * 0.45f, FIRE_CORE, 1f, 22, now);

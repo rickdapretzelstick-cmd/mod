@@ -55,7 +55,9 @@ Tuned after the [Jujutsu Shenanigans wiki](https://jujutsu-shenanigans.fandom.co
   distance. Airborne: he hovers and aims freely. Limitless during the charge (free): it rebounds to him — a target it
   caught is pulled in for a Black Flash (10), an empty return hits Gojo (15).
 - **Unlimited Purple**: Red MAX into the orb Lapse Blue MAX left behind after a kill. Three seconds later it erases
-  everything around it (50-100 by distance) and drains the whole Awakening. It plays like the JJS GIF:
+  everything within 48 blocks (three times its old 16: the dome, the damage, the knockback and the crater all follow
+  that one radius; 50-100 by distance) and drains the whole Awakening. The crater is carved outward over a few ticks
+  within the per-tick block budget. It plays like the JJS GIF:
   1. A black impact frame as Red tears into the orb, magenta flares streaking across the view, and the world lit magenta.
   2. The orb's dark-blue ink turns magenta around a swelling white-hot core. Lightning crackles out across the whole
      blast radius, and a pink dome marks what it will erase.
@@ -165,7 +167,8 @@ cooldowns and durations, its studs as blocks (about 3.6 studs to a block), all i
   - **Renewal**: inside the domain, pressing Reserve Balls again within 8 seconds of a ball landing rewinds to that
     moment. Everyone goes back where they stood, and any damage Hakari took since is undone.
 - **Jackpot** (100s, or 50s after a pity jackpot): infinite cursed energy, and a Reverse Cursed Technique that runs on
-  its own. He heals fast and is effectively immortal, but damage drains the Jackpot meter (empty after 3.33 times his
+  its own. He is essentially immortal: every hit he survives is healed instantly, back to full; only a single blow
+  big enough to kill him from full health ends him. Damage still drains the Jackpot meter (empty after 3.33 times his
   max health). Surviving to the end refunds 40% of the Awakening meter, and 25% more for each Jackpot in a row. Missing
   a jackpot or dying resets that. The kit becomes:
   - **Lucky Volley** (10s): a flurry of punches he can walk forward, ending in an unblockable swipe that launches them.
@@ -214,7 +217,9 @@ sound is the JJS audio. 85 max HP.
     "RECOIL", "TWIN METEORS" (uninterruptible), then swings a slash that cuts the world itself (80, less the more it
     hits), with total i-frames. Puts Open on its full cooldown and doubles Dismantle's.
   - **Open** (40s): fire in his hands, a clap, a bow drawn; with i-frames he looses an arrow of fire and a pillar of
-    flame goes up where it lands, lifting everyone in it (30, unblockable).
+    flame goes up where it lands, lifting everyone in it (30, unblockable). A firestorm runs out from the pillar to
+    Unlimited Purple's original radius (16 blocks), hitting everyone in it once, from 18 next to the pillar down to 8
+    at the rim, and throwing them outward. The drawn blast is that same zone.
   - **Rush** (15s): straight ahead at incredible speed; whoever he hits is hurled, chased down, kneed skyward and
     slammed back down.
   - **Malevolent Shrine** (120s, 18s): played like the JJS GIF. A cut-in of him in a band of teeth and red pillars, the
@@ -457,6 +462,14 @@ Infinity is implemented but not currently part of Gojo's moveset; `infinity.inMo
 
 Players are jointed and animated from data, JJS-style. The full reference is [docs/ANIMATION.md](docs/ANIMATION.md).
 
+**Never stuck.** A held pose (a charge, a stance, a guard) belongs to something going on: a cast, a melee charge, a
+guard, a clash or the player's own domain. If one is left showing with none of those for a second, the server releases
+it and everyone's view of that player blends back to idle or movement; each client also lets go of a held pose its
+server stopped backing (a missed packet), and an entity reloaded or respawned under the same id starts from a clean
+pose. A cast that runs far past the length it declared (an end event that never came) is ended cleanly by the caster's
+watchdog: its own cleanup, the pose released, the cooldown kept. Long actions such as clashes and open domains are
+never cut short.
+
 - **A real skeleton:**
   - 17 bones: root, hips, chest, neck, head, and shoulder/elbow/wrist and hip/knee/ankle on each side.
   - The skin, its overlays and armour are cut at the joints; at rest the model looks exactly like vanilla.
@@ -533,6 +546,11 @@ it is sealed. Everything replaced (including paintings and item frames inside) c
 Every opening is presented: the caster gets a short cinematic (portrait, energy, the structure forming, then
 "DOMAIN EXPANSION — INFINITE VOID"); nearby players see it build in their world with a light banner.
 
+**Staying open:** a domain lasts its full duration whoever walks where. Its owner can step out and back in, and
+victims can leave it (its sure-hit applies only inside), without collapsing it; it ends when it expires, when its owner
+cancels it or dies, or when it loses a clash, and its structure is restored as always. (Authentic Mutual Love still
+breaks at once if it opens on nobody.)
+
 **Counter:** when someone nearby starts opening a domain and your Awakening meter is full, your Awakening key becomes
 a counter for a moment — instant Awakening, your domain opens at once, a "DOMAIN EXPANSION VS DOMAIN EXPANSION" card
 presents both of you, and the domains collide into the clash below. Miss the window and the key is a normal Awakening.
@@ -567,10 +585,13 @@ carries on under its normal rules. When the winner's domain ends, the blocks of 
 
 ## Beam clashes
 
-True Love Beam and Every Last Drop can meet head on. One session on the server owns each clash from start to end.
+True Love Beam and Every Last Drop can meet head on, and so can two of the same: Yuta against Yuta, Ryu against Ryu.
+What makes a clash is who fires the beams, never their kits; nobody ever clashes with their own beam. One session on
+the server owns each clash from start to end.
 
-**The counter.** Once an ultimate beam's caster commits (its path locks during the charge), the server picks the one
-opponent who can answer it. That is the closest who:
+**The counter.** The moment an ultimate beam starts charging, the server picks the one opponent who can answer it.
+While it charges the window follows it: if nobody could answer when it began, whoever steps into its path gets it.
+That is the closest who:
 
 - stands in its path within reach;
 - can see its source;
@@ -578,17 +599,24 @@ opponent who can answer it. That is the closest who:
 - can act;
 - has their own answering beam ready.
 
-Ties go to the lower entity id. That player sees **PRESS [G]**. Pressing their Ultimate inside the window, which
-runs until just after the beam fires, fires their beam straight back after a short wind-up. It works both ways:
-Ryu answers True Love Beam with Every Last Drop, and Yuta answers Every Last Drop with True Love Beam. If Yuta isn't
-awakened yet, a full meter turns True Love on in the same breath. Two such beams fired straight at each other clash
-without a counter.
+Ties go to the lower entity id. That player sees **PRESS [G]** from the first tick of the charge. Pressing their
+Ultimate inside the window, which runs from the start of the charge until just after the beam fires, fires their beam
+straight back after a short wind-up; answered early, it waits, held, for the charge to finish. Each charge can be
+answered once; a press before the charge or after the window is an ordinary Ultimate. Every pairing works: Ryu
+answers True Love Beam or another Every Last Drop with Every Last Drop, and Yuta answers either with True Love Beam.
+If Yuta isn't awakened yet, a full meter turns True Love on in the same breath. Two such beams fired straight at each
+other clash without a counter.
 
 **The duel.** The first beam out is held a few blocks short of the answer still coming. When both are out they lock
 onto one line, and a churning mass of both energies forms where they meet: each beam's colour on its own side, a
-white heart, lightning and rings thrown off by every push. A brief side-on camera frames the collision, then hands
-the view back. For about 5 seconds each contestant gets skill checks: a needle sweeps round a dial, and the space
-bar stops it.
+white heart, lightning and rings thrown off by every push. A beam that had already poured out more than half its
+strength before the other met it is **overpowered on contact**: no struggle, straight to the breakthrough. Otherwise,
+for about 10 seconds (twice the original length) each contestant gets skill checks: a needle sweeps round a dial, and
+the space bar stops it. The same rules judge both sides whoever they are; nothing favours the one who fired first.
+
+**The camera.** From the moment the beams meet until the breakthrough is over, both contestants watch from a distant
+side-on shot that frames both fighters, both beams and the collision point (the dial sits over it). Nothing else takes
+the view meanwhile. When the clash ends, is cancelled, or the player dies or disconnects, their own view comes back.
 
 - **GREAT** (the thin gold arc at the zone's leading edge): +2.
 - **GOOD** (the white arc): +1.
@@ -613,6 +641,13 @@ winning beam plus the burst. On a tie both beams detonate together with balanced
 ![Beam clash](docs/screenshots/beam_clash_dial.png)
 ![The collision](docs/screenshots/beam_clash_side.png)
 ![The counter prompt](docs/screenshots/beam_clash_counter.png)
+
+## Fall damage in fights
+
+Height a move creates never turns into fall damage. Launched by a move (Shutter Doors, an uppercut, a juggle, a leap of
+your own), only how far you land *below the point you were launched from* counts as a fall: thrown 20 blocks up and
+landing back where you started, nothing; thrown 20 up and landing 10 blocks lower (30 in all), a 10-block fall. Being
+juggled again in the air keeps the first launch point. Ordinary jumps and falls work as always.
 
 ## Temporary battle damage
 

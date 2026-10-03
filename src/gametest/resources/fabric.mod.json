@@ -16,7 +16,10 @@
       "dev.rick.jjk.test.RyuGameTests",
       "dev.rick.jjk.test.MovesetAuditTests",
       "dev.rick.jjk.test.ProgressionGameTests",
-      "dev.rick.jjk.test.FingerBearerTests"
+      "dev.rick.jjk.test.FingerBearerTests",
+      "dev.rick.jjk.test.BeamClashMatchupTests",
+      "dev.rick.jjk.test.StabilityTests",
+      "dev.rick.jjk.test.BlastRadiusTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.AnimFrameworkClientTest",
@@ -24,7 +27,8 @@
       "dev.rick.jjk.test.HakariClientGameTest",
       "dev.rick.jjk.test.YujiClientGameTest",
       "dev.rick.jjk.test.YutaClientGameTest",
-      "dev.rick.jjk.test.FingerBearerClientGameTest"
+      "dev.rick.jjk.test.FingerBearerClientGameTest",
+      "dev.rick.jjk.test.BeamClashCameraClientTest"
     ]
   },
   "depends": {

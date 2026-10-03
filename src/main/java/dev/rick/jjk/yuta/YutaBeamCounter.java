@@ -22,11 +22,6 @@ public final class YutaBeamCounter implements BeamCounters.Counter {
     }
 
     @Override
-    public String answers() {
-        return "eld";
-    }
-
-    @Override
     public String kind() {
         return "tlb";
     }

@@ -29,6 +29,14 @@ public interface ClashBeam {
     String beamKind();
 
     /**
+     * How much of its strength it brings to a clash, 0..1: all of it fresh, less the longer it had already been pouring
+     * out before the clash took hold of it (a beam almost spent is overpowered by a fresh one).
+     */
+    default float beamStrength() {
+        return 1f;
+    }
+
+    /**
      * A clash has taken hold of it: from now on {@link BeamClashSession#reach(ClashBeam)} is how far it gets, it keeps
      * firing until released, and it is re-aimed down the clash axis.
      */

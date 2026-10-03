@@ -46,6 +46,8 @@ public final class Bootstrap {
         Characters.register(new dev.rick.jjk.ryu.RyuCharacter());
         dev.rick.jjk.yuta.YutaBeamCounter.register();
         dev.rick.jjk.ryu.RyuBeamCounter.register();
+        dev.rick.jjk.core.anim.AnimRecovery.init();
+        dev.rick.jjk.hakari.HakariCharacter.init();
         Defenses.register(new InfinityDefense());
         Defenses.register(new dev.rick.jjk.hakari.DoorGuardDefense());
         Defenses.register(new dev.rick.jjk.yuji.ManjiKickDefense());

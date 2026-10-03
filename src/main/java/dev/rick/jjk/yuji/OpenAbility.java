@@ -18,6 +18,7 @@ import dev.rick.jjk.hakari.HakariCombat;
 import dev.rick.jjk.util.Motion;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,23 +100,51 @@ public final class OpenAbility extends Ability {
         };
     }
 
-    /** The arrow landed: the pillar of fire. */
+    /**
+     * The arrow landed: the pillar of fire, and the blast round it. Everyone within {@link #blastRadius} of the landing
+     * point is caught once: inside the pillar the full blow and the lift (as it always was); beyond it the blast falls
+     * off with distance to {@code openBlastEdgeDamage} at the edge, throwing them outward. The drawn explosion is the
+     * same two radii.
+     */
     public static void pillar(ServerLevel level, LivingEntity owner, Vec3 at) {
         JJKConfig.Yuji cfg = YujiCombat.cfg();
-        Fx.play(level, "open_pillar", at, new Vec3(0, 1, 0), (float) cfg.openPillarRadius, owner.getId());
-        Fx.shake(level, at, 48, 1.3f, 20);
-        Fx.flash(level, at, 40, 0xA0FF8020, 8);
-        HitShape shape = HitShape.capsule(at.add(0, -1, 0), at.add(0, 10, 0), cfg.openPillarRadius);
-        for (LivingEntity t : HitboxQuery.targets(owner, shape, 0.3, false)) {
-            if (YujiCombat.finishable(t)) {
-                YujiCombat.execute(owner, t, ID, "open_burn");
+        double blast = blastRadius();
+        double pillarR = cfg.openPillarRadius;
+        // dir.z carries the pillar's radius, scale the blast's: the client draws both.
+        Fx.play(level, "open_pillar", at, new Vec3(0, 1, pillarR), (float) blast, owner.getId());
+        Fx.shake(level, at, Math.max(48, blast * 1.5), 1.3f, 20);
+        Fx.flash(level, at, (float) Math.max(40, blast), 0xA0FF8020, 8);
+        HitShape column = HitShape.capsule(at.add(0, -1, 0), at.add(0, 10, 0), pillarR);
+        java.util.Set<LivingEntity> caught = new java.util.LinkedHashSet<>(HitboxQuery.targets(owner, column, 0.3, false));
+        caught.addAll(HitboxQuery.targets(owner, HitShape.sphere(at, blast), 0.3, false));
+        for (LivingEntity t : caught) {
+            boolean inPillar = HitboxQuery.overlaps(column, t, 0.3);
+            if (inPillar) {
+                if (YujiCombat.finishable(t)) {
+                    YujiCombat.execute(owner, t, ID, "open_burn");
+                    continue;
+                }
+                HakariCombat.hit(YujiCombat.slash(owner, ID, cfg.openDamage).tag(AttackTag.UNBLOCKABLE, AttackTag.EXPLOSION).origin(at)
+                        .knockback(Knockback.set(new Vec3(0, cfg.openLift, 0))).hitstun(40).status(CombatStatus.LAUNCHED, 44)
+                        .fx("open_hit", 1.4f).build(), t);
+                t.igniteForSeconds(4);
                 continue;
             }
-            HakariCombat.hit(YujiCombat.slash(owner, ID, cfg.openDamage).tag(AttackTag.UNBLOCKABLE, AttackTag.EXPLOSION).origin(at)
-                    .knockback(Knockback.set(new Vec3(0, cfg.openLift, 0))).hitstun(40).status(CombatStatus.LAUNCHED, 44)
-                    .fx("open_hit", 1.4f).build(), t);
-            t.igniteForSeconds(4);
+            // The blast: strongest at the pillar's edge, fading to the rim.
+            double d = t.getBoundingBox().getCenter().distanceTo(at);
+            float f = (float) Mth.clamp((d - pillarR) / Math.max(1, blast - pillarR), 0, 1);
+            float dmg = Mth.lerp(f, cfg.openDamage * 0.6f, cfg.openBlastEdgeDamage);
+            HakariCombat.hit(YujiCombat.slash(owner, ID, dmg).tag(AttackTag.UNBLOCKABLE, AttackTag.EXPLOSION, AttackTag.AREA).origin(at)
+                    .knockback(Knockback.radial(at, Mth.lerp(f, 1.3, 0.4), Mth.lerp(f, 0.6, 0.25))).hitstun(Math.round(Mth.lerp(f, 24, 10)))
+                    .fx("open_hit", 1f).build(), t);
+            if (f < 0.6f) t.igniteForSeconds(2);
         }
         dev.rick.jjk.util.Destruction.sphere(level, at, 2.5, 5f, 60, owner, null, "jjk:open");
+    }
+
+    /** How far the blast reaches: Unlimited Purple's original radius (16), never inside the pillar itself. */
+    public static double blastRadius() {
+        JJKConfig.Yuji cfg = YujiCombat.cfg();
+        return Math.max(cfg.openBlastRadius, cfg.openPillarRadius);
     }
 }

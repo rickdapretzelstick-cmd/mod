@@ -15,6 +15,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin implements CombatHolder, CasterHolder {
+    /** Falls from height a move created don't hurt: only the drop below the launch point counts. */
+    @org.spongepowered.asm.mixin.injection.ModifyVariable(method = "causeFallDamage", at = @At("HEAD"), argsOnly = true, ordinal = 0)
+    private double jjk$launchFall(double fallDistance) {
+        LivingEntity self = (LivingEntity) (Object) this;
+        if (self.level().isClientSide()) return fallDistance;
+        return dev.rick.jjk.core.combat.LaunchHeight.adjust(self, fallDistance);
+    }
+
     @Unique private CombatState jjk$combat;
     @Unique private AbilityCaster jjk$caster;
 

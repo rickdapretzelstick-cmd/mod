@@ -10,15 +10,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Who can answer whose beam, and how. Each character with an ultimate beam registers its answer here: True Love Beam
- * answers Every Last Drop, Every Last Drop answers True Love Beam. A character's answer is its Ultimate key during the
- * reaction window, nothing else.
+ * Who can answer whose beam, and how. Each character with an ultimate beam registers its answer here. Any ultimate beam
+ * answers any other, whoever fires it: True Love Beam meets Every Last Drop, and also another Yuta's True Love Beam (and
+ * Every Last Drop another Ryu's). A clash is told apart by who fires the beams, never by their kits. A character's
+ * answer is its Ultimate key during the reaction window, nothing else.
  */
 public final class BeamCounters {
     /** One character's answer to an incoming beam. */
     public interface Counter {
-        /** The beam kind ("tlb", "eld") this answers. */
-        String answers();
+        /** Whether this answers a beam of {@code kind} ("tlb", "eld"): every clash beam, its own kind included. */
+        default boolean answers(String kind) {
+            return true;
+        }
 
         /** The kind of beam it fires. */
         String kind();

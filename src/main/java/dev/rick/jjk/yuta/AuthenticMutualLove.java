@@ -90,8 +90,9 @@ public final class AuthenticMutualLove implements DomainDefinition {
     public void onTick(DomainInstance domain) {
         LivingEntity owner = domain.owner;
         if (domain.phase() != DomainInstance.Phase.ACTIVE) return;
-        // Nobody to fight: the domain breaks at once.
-        if (domain.age() > 10 && enemies(domain).isEmpty()) {
+        // Nobody to fight the moment it opens: the domain breaks at once. Once someone was caught, walking out of it
+        // (or Yuta stepping out himself) doesn't break it: it runs its course.
+        if (domain.activeAge() == 2 && enemies(domain).isEmpty()) {
             DomainManager.cancel(domain, DomainInstance.EndReason.CANCELLED);
             return;
         }
