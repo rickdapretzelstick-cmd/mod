@@ -336,7 +336,8 @@ Discharges heat him up. Numbers follow the JJS wiki's *True Cannon* page, conver
   Overheated, the blasts are cut and the ray pushes away instead.
 - **Restyle** (R, 17s): cools him by 60% over a second. From 100% it is the comb instead: 2.75 s, all the way to 0%.
   Under Decadence he cracks his knuckles instead (+10 HP and +10% meter over 2 s).
-- **Every Last Drop** (G, full meter): his whole reserve fired as one round, blue-white cannon beam. It charges for
+- **Every Last Drop** (G, full meter): his whole reserve fired from his fingertip as the same 5x5 square torrent as
+  True Love Beam (the same shape, size, layers and torn tunnel), in his blue. It charges for
   2.5 s and its aim locks 0.7 s before it fires. It deals 104, falling off with distance and the more players it
   catches, is unblockable and uninterruptible, and carves a round tunnel through the temporary battle damage system.
   It sets Overheat to 100%. Fired from 80% or more, it gives him **Decadence** for 90 s and heals 25.
@@ -349,6 +350,10 @@ Discharges heat him up. Numbers follow the JJS wiki's *True Cannon* page, conver
       awakening's drain stops during the exchange.
     - **"You weren't invited."** (4, 20s): a punch of 20 (40 held 1.9 s) that sends them left. Aimed at a wall, the
       wall flies on as debris: 27.8 blocks (69.4 held), 20 to everyone it hits.
+
+His sounds are the game's own, from the JJS Skill Builder's Ryu list. Every beat of every move has its own
+clip, and Decadence brings its music with one of its two vocal takes. One clip (the first hit of "I had no idea...") is
+on neither Roblox nor the mirror, so that move's second-hit clip stands in.
 
 Choices where the wiki leaves room: natural regeneration is stopped by holding his hunger below the regeneration
 threshold. Self damage from his awakened moves can't kill him, but feints follow the wiki. The awakening only comes

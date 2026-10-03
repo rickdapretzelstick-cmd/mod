@@ -50,7 +50,7 @@ public final class LoveBeams {
     }
 
     public static final Palette PINK = new Palette(1f, 0.4f, 1f, new float[] {0.78f, 0.16f, 0.86f}, new float[] {0.24f, 0.02f, 0.3f});
-    public static final Palette BLUE = new Palette(0.22f, 0.58f, 1f, new float[] {0.1f, 0.3f, 0.88f}, new float[] {0.02f, 0.07f, 0.3f});
+    public static final Palette BLUE = new Palette(0.04f, 0.3f, 1f, new float[] {0.03f, 0.16f, 0.78f}, new float[] {0.01f, 0.04f, 0.28f});
 
     private static final Map<Integer, ClientBeam> BEAMS = new HashMap<>();
     private static final Random RNG = new Random();

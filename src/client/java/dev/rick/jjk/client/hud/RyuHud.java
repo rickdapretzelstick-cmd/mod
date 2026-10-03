@@ -21,6 +21,8 @@ public final class RyuHud {
 
     public static void apply(RyuPayload p) {
         if (p.heat() < 0) {
+            // No longer True Cannon: his Decadence music stops with him.
+            dev.rick.jjk.client.fx.ClientFx.stopSound("ryu_music");
             reset();
             return;
         }

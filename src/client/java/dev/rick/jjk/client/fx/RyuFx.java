@@ -19,7 +19,7 @@ import static dev.rick.jjk.client.fx.YujiFx.line;
  * True Cannon's visual language: his Cursed Energy Discharge is a cold, bright blue with a white-hot middle, fired from
  * the "cannon" of his pompadour or his fingertip; when he overheats his head smokes; Decadence burns with a gold edge.
  * Also the beam clash's world effects (the collision, its judgements, the breakthrough and the stalemate), which belong
- * to neither side. Sounds reuse the project's own events.
+ * to neither side. His sounds are the JJS game's own (the JJS Skill Builder's Ryu list).
  */
 final class RyuFx {
     static final float[] RYU = {0.32f, 0.62f, 1f};
@@ -41,7 +41,7 @@ final class RyuFx {
         switch (p.id()) {
             // --- Cursed Energy Discharge: the M1 ray and Granite Blast ---
             case "ryu_m1_ray" -> {
-                sound("red_fire", pos, 0.8f, 1.7f + RNG.nextFloat() * 0.1f);
+                sound("ryu_granite_fire", pos, 0.8f, 1.25f + RNG.nextFloat() * 0.05f);
                 if (drawn) {
                     Vec3 to = pos.add(dir);
                     Flashes.beam(pos, to, 0.16f, RYU, 0.9f, 4, now);
@@ -51,14 +51,15 @@ final class RyuFx {
                 }
             }
             case "ryu_ray_hit" -> {
-                sound("hit_heavy", pos, 0.9f, 1.15f);
+                sound("ryu_granite_hit", pos, 1f, 1f);
                 if (drawn) sparks(level, pos, d, q(8), 0.4, RYU_LIGHT, 0.07f, 6);
                 victimFeedback(p, 0.35f);
             }
             case "granite_charge" -> {
                 // The cannon filling: light sucked into his forehead; at full charge it goes white.
                 boolean full = s >= 0.5f;
-                sound(full ? "red_compress" : "max_charge", pos, 0.8f, full ? 1.4f : 1.6f);
+                // JJS: the charge plays once as he starts (it runs on through the hold).
+                if (!full) sound("ryu_granite_charge", pos, 1f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 0.2f, full ? 0.9f : 0.5f, full ? WHITE : RYU, 1f, full ? 8 : 20, now);
                     implode(level, pos, full ? 1.6 : 2.4, q(full ? 18 : 10), RYU, 0.06f, 10);
@@ -66,8 +67,7 @@ final class RyuFx {
             }
             case "granite_blast", "granite_blast_held" -> {
                 boolean held = p.id().endsWith("held");
-                sound(held ? "max_red_fire" : "red_fire", pos, held ? 1.6f : 1.1f, held ? 1.2f : 1.35f);
-                if (held) sound("ground_impact", pos, 0.8f, 1.3f);
+                sound(held ? "ryu_granite_fire_hard" : "ryu_granite_fire", pos, held ? 1.6f : 1.2f, 1f);
                 Vec3 to = pos.add(dir);
                 float w = held ? 0.55f : 0.32f;
                 if (drawn) {
@@ -83,8 +83,7 @@ final class RyuFx {
                 distanceShake(pos, held ? 30 : 14, held ? 0.6f : 0.25f);
             }
             case "granite_hit" -> {
-                sound("hit_heavy", pos, 1f, 1f);
-                sound("rough_impact", pos, 0.8f, 1.3f);
+                sound("ryu_granite_hit", pos, 1.1f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 0.8f, 1.2f * s, RYU_LIGHT, 1f, 5, now);
                     impactStar(pos, d, 8, 1.3f * s, 0.06f, RYU, now);
@@ -93,8 +92,8 @@ final class RyuFx {
             }
             case "granite_loop" -> {
                 // The dash variant: a blast fired backward to throw himself forward, a ring of discharge behind him.
-                sound("red_fire", pos, 1f, 1.1f);
-                sound("dash", pos, 0.8f, 0.9f);
+                sound("ryu_granite_fire", pos, 1f, 1.05f);
+                sound("ryu_unsat_dash", pos, 0.8f, 1f);
                 if (drawn) {
                     Flashes.beam(pos, pos.subtract(d.scale(4)), 0.4f, RYU_LIGHT, 0.9f, 5, now);
                     Flashes.ripple(pos.subtract(d.scale(0.6)), d, 0.4f, 2.2f, RYU, 0.8f, 6, now);
@@ -105,7 +104,7 @@ final class RyuFx {
                 // A sheet of discharge rising out of the ground along the line in front of him (pushes away when he is
                 // overheated: then it's thin and red-hot).
                 boolean cut = s >= 0.5f;
-                sound("open_fire", pos, 1.3f, cut ? 1.6f : 1.25f);
+                sound("ryu_granite_fire_hard", pos, 1.3f, cut ? 1.3f : 0.9f);
                 float[] col = cut ? new float[] {1f, 0.5f, 0.3f} : RYU;
                 double len = dir.length();
                 if (drawn) {
@@ -122,7 +121,7 @@ final class RyuFx {
             }
             // --- Close range ---
             case "ryu_punch" -> {
-                sound("hit_heavy", pos, 0.9f, 1.05f + RNG.nextFloat() * 0.1f);
+                sound("ryu_hit_" + (1 + RNG.nextInt(3)), pos, 1f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 0.7f, 0.25f, WHITE, 1f, 3, now);
                     sparks(level, pos, d, q(6), 0.35, RYU_LIGHT, 0.06f, 5);
@@ -130,7 +129,8 @@ final class RyuFx {
                 victimFeedback(p, 0.3f);
             }
             case "ryu_punch_heavy", "ryu_trade", "ryu_tetsuzanko" -> {
-                sound(p.id().equals("ryu_tetsuzanko") ? "rush_slam" : "crushing_hit", pos, 1.1f, 1f);
+                // (The trade and the back clash come with their own hit sounds.)
+                if (p.id().equals("ryu_punch_heavy")) sound("ryu_final_hit_1", pos, 1.1f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 1.3f, 0.4f, RYU_LIGHT, 1f, 5, now);
                     impactStar(pos, d, 10, 1.6f, 0.06f, RYU, now);
@@ -141,7 +141,7 @@ final class RyuFx {
                 distanceShake(pos, 16, 0.35f);
             }
             case "ryu_kick" -> {
-                sound("fever_kick", pos, 1f, 1.1f);
+                sound("ryu_dessert_hit", pos, 1f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 1f, 0.3f, WHITE, 1f, 4, now);
                     sparks(level, pos, d, q(8), 0.4, RYU_LIGHT, 0.07f, 6);
@@ -149,7 +149,7 @@ final class RyuFx {
                 victimFeedback(p, 0.45f);
             }
             case "ryu_slam" -> {
-                sound("hit_slam", pos, 1.1f, 1f);
+                sound("ryu_helping_slam", pos, 1.1f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 1.2f, 0.4f, RYU_LIGHT, 1f, 5, now);
                     debris(level, pos, q(10), 0.5);
@@ -157,16 +157,16 @@ final class RyuFx {
                 victimFeedback(p, 0.6f);
             }
             case "ryu_unsatisfied_whiff", "ryu_second_helping_whiff", "ryu_dessert_swing", "ryu_invited_whiff" -> {
-                sound("swing_heavy", pos, 0.9f, 0.9f + RNG.nextFloat() * 0.1f);
+                if (p.id().equals("ryu_invited_whiff")) sound("ryu_invited_swing", pos, 1f, 1f);
+                else sound("swing_heavy", pos, 0.9f, 0.9f + RNG.nextFloat() * 0.1f);
                 if (drawn) line(pos, pos.add(d.scale(1.6)), 0.12f, RYU_LIGHT, 0.5f, 3, now);
             }
             case "second_helping_lock" -> {
-                sound("rushdown_grab", pos, 1f, 1.1f);
+                sound("ryu_helping_start", pos, 1.1f, 1f);
                 if (drawn) Flashes.flash(pos, 0.6f, 1.6f, RYU, 1f, 6, now);
             }
             case "ryu_slam_ground", "ryu_floor_slam" -> {
-                sound("manji_slam", pos, 1.3f, 0.95f);
-                sound("ground_impact", pos, 1.2f, 0.85f);
+                sound(p.id().equals("ryu_floor_slam") ? "ryu_after_slam" : "ryu_helping_slam", pos, 1.3f, 1f);
                 Vec3 g = groundBelow(level, pos.add(0, 0.5, 0));
                 if (drawn) {
                     Flashes.ground(g.add(0, 0.06, 0), 0.6f, 4.5f, RYU, 0.8f, 10, now);
@@ -178,7 +178,7 @@ final class RyuFx {
             }
             case "ryu_delayed_impact" -> {
                 // The punch lands a beat after the fist: a shock of discharge bursting out of the target.
-                sound("crushing_impact", pos, 1.2f, 1.1f);
+                sound("ryu_helping_air_2", pos, 1.2f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 1.5f, 2.6f, RYU_LIGHT, 1f, 7, now);
                     Flashes.ripple(pos, up, 0.5f, 3.2f, WHITE, 0.8f, 8, now);
@@ -187,7 +187,7 @@ final class RyuFx {
                 distanceShake(pos, 20, 0.5f);
             }
             case "ryu_dessert_scene", "ryu_fist_clash" -> {
-                sound(p.id().equals("ryu_fist_clash") ? "crushing_fist" : "fever_rush", pos, 1.2f, 1f);
+                // (Each blow brings its own hit sound.)
                 if (drawn) {
                     Flashes.flash(pos, 1.4f, 2f * s, DECADENCE, 1f, 6, now);
                     impactStar(pos, d, 12, 2f * s, 0.07f, DECADENCE, now);
@@ -198,11 +198,11 @@ final class RyuFx {
             // --- Restyle and Overheat ---
             case "ryu_sweet" -> {
                 // Cooling off: steam rising off the pompadour.
-                sound("infinity_off", pos, 0.7f, 1.4f);
+                // (Restyle's own sounds come from the move.)
                 if (drawn) burst(level, pos.add(0, 0.3, 0), q(14), 0.08, Sprite.SMOKE, STEAM, 0.5f, 30);
             }
             case "ryu_comb" -> {
-                sound("rika_move", pos, 0.7f, 1.5f);
+                // (Restyle's own sounds come from the move.)
                 if (drawn) for (int i = 0; i < q(6); i++) add(level, pos.add(gauss(0.2), 0.35, gauss(0.2)), new Vec3(0, 0.03, 0), Sprite.GLOW, RYU_LIGHT, 0.8f, 0.08f, 0.02f, 16);
             }
             case "ryu_cooled" -> {
@@ -213,7 +213,7 @@ final class RyuFx {
                 }
             }
             case "ryu_restyle_done" -> {
-                sound("jackpot_heal", pos, 0.6f, 1.5f);
+                // (The recovery sound already played.)
                 if (drawn) Flashes.ripple(pos.add(0, -0.9, 0), up, 0.3f, 1.6f, RYU_LIGHT, 0.7f, 10, now);
             }
             case "ryu_overheat" -> {
@@ -243,8 +243,9 @@ final class RyuFx {
             }
             // --- Awakening ---
             case "ryu_awaken" -> {
-                sound("awaken", pos, 1.6f, 1.1f);
-                sound("max_red_explosion", pos, 0.8f, 1.5f);
+                // Decadence: the JJS jingle, and its music (one of the two vocal takes) following him.
+                sound("ryu_jingle", pos, 1.6f, 1f);
+                follow("ryu_music", p.entityId(), 0.8f);
                 if (drawn) {
                     Flashes.flash(pos, 1f, 5f, DECADENCE, 1f, 14, now);
                     Flashes.ring(pos, 1f, 9f, WHITE, 0.8f, 10, now);
@@ -256,6 +257,7 @@ final class RyuFx {
             }
             case "ryu_awaken_end", "ryu_decadence" -> {
                 sound(p.id().equals("ryu_decadence") ? "guard_break" : "awaken_end", pos, 1.2f, 1f);
+                if (p.id().equals("ryu_awaken_end")) stopSound("ryu_music");
                 if (drawn) {
                     Flashes.flash(pos, 1.2f, 2.6f, DECADENCE, 0.9f, 8, now);
                     burst(level, pos, q(20), 0.2, Sprite.SMOKE, STEAM, 0.7f, 24);
@@ -263,12 +265,12 @@ final class RyuFx {
             }
             // --- "You weren't invited." ---
             case "ryu_invited_charged" -> {
-                sound("heavy_charge", pos, 1.1f, 1.1f);
+                sound("ryu_invited_full_charge", pos, 1.2f, 1f);
                 if (drawn) Flashes.flash(pos, 0.4f, 1.8f, DECADENCE, 1f, 10, now);
             }
             case "ryu_wall_punch" -> {
-                sound("rush_break", pos, 1.3f, 0.9f);
-                sound("ground_impact", pos, 1f, 1f);
+                sound("ryu_invited_hit", pos, 1.3f, 0.9f);
+                sound("ryu_helping_slam", pos, 1f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 1.2f, 2.8f * s, DECADENCE, 1f, 8, now);
                     debris(level, pos, q(30), 0.9);
@@ -293,7 +295,7 @@ final class RyuFx {
                 distanceShake(pos, 24, 0.6f);
             }
             case "ryu_invited_hit" -> {
-                sound("crushing_impact", pos, 1.4f, 0.9f);
+                sound("ryu_invited_hit", pos, 1.4f, 1f);
                 if (drawn) {
                     Flashes.flash(pos, 1.6f, 3f, DECADENCE, 1f, 8, now);
                     impactStar(pos, d, 14, 2.4f, 0.08f, WHITE, now);
@@ -310,11 +312,11 @@ final class RyuFx {
                 }
             }
             // --- Every Last Drop ---
-            case "eld_voice" -> sound("max_charge", pos, 1.4f, 0.8f);
+            case "eld_voice" -> sound("ryu_ult_start", pos, 1.6f, 1f);
             case "eld_charge", "eld_counter" -> {
                 boolean counter = p.id().equals("eld_counter");
                 int charge = counter ? 10 : Math.max(10, (int) s);
-                sound("max_red_charge", pos, 1.8f, counter ? 1.4f : 1.1f);
+                if (counter) sound("ryu_ult_start", pos, 1.6f, 1.25f);
                 if (drawn) {
                     Flashes.flash(pos, 0.2f, 1.6f, RYU, 1f, charge, now);
                     Flashes.flash(pos, 0.1f, 0.7f, WHITE, 1f, charge, now);
@@ -329,12 +331,11 @@ final class RyuFx {
                     implode(level, pos, 4 - 2 * k, q((int) (10 + 24 * k)), k > 0.7f ? WHITE : RYU, 0.1f, 8);
                     Flashes.flash(pos, 0.3f + 0.5f * k, 0.5f, k > 0.7f ? WHITE : RYU_LIGHT, 1f, 5, now);
                 }
-                if (s > 0.85f) sound("red_compress", pos, 0.8f, 1.6f);
+                // (The charge is the JJS UltimateStart clip, already playing.)
             }
             case "eld_shape" -> SHAPES.put(p.entityId(), new double[] {dir.x, dir.y, dir.z});
             case "eld_fire" -> {
-                sound("max_red_fire", pos, 3f, 0.9f);
-                sound("purple_fire", pos, 1.8f, 1.3f);
+                sound("ryu_ult_fire", pos, 3f, 1f);
                 double reach = dir.length();
                 int hold = Math.max(2, (int) s);
                 double[] shape = SHAPES.remove(p.entityId());
@@ -361,7 +362,7 @@ final class RyuFx {
                 boolean surge = ((int) s) % 8 == 0;
                 if (surge) {
                     b.surgeAt = now;
-                    sound("red_fire", b.origin, 1.2f, 0.7f + RNG.nextFloat() * 0.15f);
+                    sound("ryu_granite_fire_hard", b.origin, 0.9f, 0.7f + RNG.nextFloat() * 0.1f);
                 }
                 if (capped || !drawn) return;
                 debris(level, pos, q(surge ? 10 : 4), surge ? 0.8 : 0.4);
@@ -396,7 +397,7 @@ final class RyuFx {
                 }
             }
             case "eld_hit" -> {
-                sound("hit_heavy", pos, 1f, 0.85f);
+                sound("ryu_ult_hit", pos, 1.1f, 1f);
                 victimFeedback(p, 0.9f);
             }
             // --- Beam clash (world side) ---
