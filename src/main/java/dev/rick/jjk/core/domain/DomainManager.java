@@ -114,6 +114,17 @@ public final class DomainManager {
         if (d.phase != DomainInstance.Phase.COLLAPSING && ownerLost(d)) {
             end(d, DomainInstance.EndReason.OWNER_LOST);
         }
+        // No domain lasts forever: past its ceiling (forming + duration + a clash allowance, never more than the
+        // configured maximum) it expires, whatever phase it is stuck in.
+        if (d.phase != DomainInstance.Phase.COLLAPSING && d.phase != DomainInstance.Phase.ENDED && d.age >= lifetimeLimit(d)) {
+            dev.rick.jjk.JJK.LOGGER.warn("Domain {} ({}) reached its lifetime ceiling in phase {}: expiring it", d.id, d.definition.displayName(), d.phase);
+            end(d, DomainInstance.EndReason.EXPIRED);
+            if (d.phase != DomainInstance.Phase.COLLAPSING && d.phase != DomainInstance.Phase.ENDED) {
+                // A conquest hand-off left it standing: collapse it directly.
+                d.endReason = DomainInstance.EndReason.EXPIRED;
+                setPhase(d, DomainInstance.Phase.COLLAPSING);
+            }
+        }
         switch (d.phase) {
             case FORMING -> {
                 if (d.phaseAge >= d.definition.formingTicks()) {
@@ -139,7 +150,7 @@ public final class DomainManager {
                         if (a.structure() != null) dev.rick.jjk.core.domain.structure.DomainStructures.beginRestore(a.structure());
                     }
                 }
-                if (d.phaseAge >= d.definition.collapseTicks()) {
+                if (d.phaseAge >= Math.min(Math.max(1, d.definition.collapseTicks()), COLLAPSE_CEILING)) {
                     d.phase = DomainInstance.Phase.ENDED;
                     sendRemoved(d);
                 }
@@ -147,6 +158,17 @@ public final class DomainManager {
             default -> {}
         }
         if (d.age % 20 == 0 && d.phase != DomainInstance.Phase.ENDED) sync(d);
+    }
+
+    /** Longest a collapse may take to give the world back (ticks). */
+    static final int COLLAPSE_CEILING = 400;
+
+    /** The tick of its life at which a domain expires no matter what. */
+    public static int lifetimeLimit(DomainInstance d) {
+        JJKConfig.Domain cfg = JJKConfig.get().domain;
+        int max = Math.max(200, cfg.maxLifetimeTicks);
+        long limit = (long) Math.max(0, d.definition.formingTicks()) + Math.max(20, d.duration) + Math.max(0, cfg.clashAllowanceTicks);
+        return (int) Math.min(max, limit);
     }
 
     private static boolean ownerLost(DomainInstance d) {

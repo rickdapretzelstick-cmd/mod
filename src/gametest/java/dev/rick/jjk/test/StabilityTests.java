@@ -418,6 +418,40 @@ public class StabilityTests {
                 .thenSucceed();
     }
 
+    @GameTest(maxTicks = 600, padding = 16, environment = ENV)
+    public void noDomainOutlivesItsCeiling(GameTestHelper h) {
+        Runnable restore = domainConfig();
+        JJKConfig.Domain cfg = JJKConfig.get().domain;
+        int max = cfg.maxLifetimeTicks;
+        // Configured to last practically forever: the ceiling still ends it.
+        cfg.duration = Integer.MAX_VALUE / 4;
+        cfg.maxLifetimeTicks = 300;
+        floor(h, 8);
+        TrainingDummy g = character(h, GojoCharacter.ID, 4.5, 4.5);
+        DomainInstance[] d = new DomainInstance[1];
+        h.startSequence()
+                .thenExecute(() -> {
+                    d[0] = DomainManager.expand(g, UnlimitedVoid.INSTANCE);
+                    h.assertTrue(d[0] != null, "expanded");
+                    h.assertTrue(DomainManager.lifetimeLimit(d[0]) == 300, "its ceiling is the configured maximum (" + DomainManager.lifetimeLimit(d[0]) + ")");
+                })
+                .thenIdle(250)
+                .thenExecute(() -> h.assertTrue(d[0].isLive(), "still open before the ceiling"))
+                .thenWaitUntil(() -> h.assertTrue(d[0].phase() == DomainInstance.Phase.ENDED, "ended at the ceiling (" + d[0].phase() + ")"))
+                .thenExecute(() -> {
+                    h.assertTrue(d[0].endReason() == DomainInstance.EndReason.EXPIRED, "expired (" + d[0].endReason() + ")");
+                    cfg.maxLifetimeTicks = max;
+                    restore.run();
+                    // With the shipped settings every domain has a finite ceiling no longer than the maximum.
+                    for (var def : java.util.List.of(UnlimitedVoid.INSTANCE, dev.rick.jjk.yuta.AuthenticMutualLove.INSTANCE,
+                            dev.rick.jjk.yuji.MalevolentShrine.INSTANCE, dev.rick.jjk.hakari.IdleDeathGamble.INSTANCE)) {
+                        h.assertTrue(def.duration(g) > 0 && def.duration(g) < cfg.maxLifetimeTicks, def.displayName() + " has a finite duration under the ceiling");
+                    }
+                })
+                .thenWaitUntil(() -> h.assertTrue(d[0].structure() == null || d[0].structure().state() == DomainStructure.State.DONE, "structure restored"))
+                .thenSucceed();
+    }
+
     @GameTest(maxTicks = 200, padding = 16, environment = ENV)
     public void cancellingAnOpenDomainStillCleansUp(GameTestHelper h) {
         Runnable restore = domainConfig();

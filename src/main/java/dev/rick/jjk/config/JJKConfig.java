@@ -382,6 +382,13 @@ public final class JJKConfig {
         /** About 14 seconds, like the reference game. */
         public int duration = 280;
         /**
+         * The hard ceiling on any domain's whole life (forming, active, clashing; 4 minutes). Whatever happens (a clash
+         * that never settles, a huge configured duration), it collapses by then.
+         */
+        public int maxLifetimeTicks = 4800;
+        /** Time a domain may spend clashing on top of its own duration before the ceiling ends it anyway. */
+        public int clashAllowanceTicks = 1200;
+        /**
          * Counter window: while someone nearby starts opening a domain, a sorcerer with a full Awakening meter can press
          * their Awakening button within this many ticks to awaken instantly and answer with their own domain.
          */
