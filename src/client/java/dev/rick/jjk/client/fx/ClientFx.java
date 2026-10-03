@@ -66,7 +66,9 @@ public final class ClientFx {
     /** Effects big enough to always be drawn in full, whatever the distance. */
     private static final java.util.Set<String> MAJOR = java.util.Set.of("awaken", "max_blue_spawn", "max_blue_collapse", "max_red_explosion",
             "purple_fire", "purple_end", "unlimited_purple", "unlimited_purple_end", "domain_expand", "domain_sealed", "domain_counter", "domain_collapse", "red_explosion", "red_amplified", "finisher", "clash_start",
-            "clash_sudden_death", "clash_perfect", "clash_win", "jackpot", "gamble_riichi", "gamble_hit", "overwhelm_final", "idg_charge");
+            "clash_sudden_death", "clash_perfect", "clash_win", "jackpot", "gamble_riichi", "gamble_hit", "overwhelm_final", "idg_charge",
+            "true_love_beam", "beam_pulse", "beam_rika_eye", "beam_compress", "eld_fire", "eld_pulse", "eld_charge", "bclash_collide", "bclash_break",
+            "bclash_tie", "bclash_great", "bclash_good", "bclash_miss", "bclash_decide", "bclash_pin");
 
     static float lod = 1f;
 

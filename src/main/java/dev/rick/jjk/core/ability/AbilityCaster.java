@@ -361,6 +361,12 @@ public final class AbilityCaster {
     /** Result of an input; also stored in {@link #lastRefusal} when refused. */
     public boolean input(AbilitySlot slot, boolean pressed, float forward, float strafe, @Nullable Entity targetHint) {
         if (!(owner.level() instanceof ServerLevel level)) return false;
+        // The Ultimate key answers an incoming ultimate beam first (a beam clash), whatever it is bound to.
+        if (pressed && slot == AbilitySlot.ULTIMATE && owner.isAlive() && dev.rick.jjk.core.clash.BeamClashManager.tryCounter(this)) {
+            lastRefusal = null;
+            dirty = true;
+            return true;
+        }
         Ability ability = ability(slot);
         // The Awakening key is always the domain counter, even when the current kit has nothing bound to it.
         if (ability == null && pressed && slot == AbilitySlot.ULTIMATE && dev.rick.jjk.core.domain.DomainCounter.tryCounter(this)) return true;

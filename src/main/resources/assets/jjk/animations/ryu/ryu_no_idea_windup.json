@@ -1,0 +1,133 @@
+{
+  "name": "ryu_no_idea_windup",
+  "duration": 800,
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "SPECIAL",
+  "hold": true,
+  "keys": [
+    {
+      "t": 0,
+      "bones": {
+        "head": {
+          "rot": [
+            4,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            6,
+            10,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -55,
+            -15,
+            14
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -70,
+            25,
+            -12
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            12,
+            0,
+            6
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -14,
+            0,
+            -6
+          ]
+        },
+        "hips": {
+          "rot": [
+            4,
+            10,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -1,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "t": 800,
+      "bones": {
+        "head": {
+          "rot": [
+            6,
+            20,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            46,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            40,
+            30,
+            40
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -85,
+            30,
+            -12
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            26,
+            0,
+            6
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -6
+          ]
+        },
+        "hips": {
+          "rot": [
+            8,
+            34,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -4,
+            -2
+          ]
+        }
+      },
+      "ease": "EASE_OUT"
+    }
+  ]
+}

@@ -72,6 +72,9 @@ public final class HitResolver {
             return finish(new HitResult(hit, target, outcome, 0, prior));
         }
         damage *= defense.damageScale();
+        // True Cannon's Decadence: critical, his Awakening meter takes the blow first.
+        var tc = dev.rick.jjk.core.ability.Casters.getOrNull(target);
+        if (tc != null && damage > 0) damage = dev.rick.jjk.ryu.RyuCharacter.absorb(tc, damage);
 
         float dealt = 0;
         if (damage > 0) {

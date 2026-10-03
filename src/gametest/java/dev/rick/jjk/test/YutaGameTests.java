@@ -420,6 +420,7 @@ public class YutaGameTests {
     }
 
     // --- True Love Beam ---
+    // (Its own batch: a 5x5 beam bores on past its plot, into whatever test would be next door.)
 
     /** Awakened, Rika out and her moveset up: the beam is on skill 3. */
     private static void rikaAwakened(GameTestHelper h, TrainingDummy y, Runnable then) {
@@ -431,22 +432,29 @@ public class YutaGameTests {
         });
     }
 
-    @GameTest(maxTicks = 260)
-    public void trueLoveBeamHitsExactlyWhatItDrawsOnce(GameTestHelper h) {
+    @GameTest(maxTicks = 280, padding = 16, environment = "jjk-test:beam")
+    public void trueLoveBeamHitsItsFiveByFiveSquareInTicks(GameTestHelper h) {
         floor(h, 16);
         JJKConfig.Yuta cfg = JJKConfig.get().yuta;
-        TrainingDummy onAxis = dummy(h, 3.5, 13.5);
-        TrainingDummy edge = dummy(h, 4.7, 13.5);      // 1.2 off the axis: inside its 3-block body
-        TrainingDummy wide = dummy(h, 7.5, 13.5);      // 4 off: outside it
-        TrainingDummy behind = dummy(h, 3.5, 0.5);     // behind Yuta and Rika
-        TrainingDummy y = yuta(h, 3.5, 4.5, onAxis);
+        // Everything inside the plot (entities beyond it don't tick, so their hurt cooldown would never run down),
+        // and a wall it can't carve behind the targets, so its push holds them in it.
+        for (int x = -2; x < 8; x++) for (int yy = 1; yy < 5; yy++) h.setBlock(x, yy, 7, Blocks.BEDROCK);
+        TrainingDummy onAxis = dummy(h, 3.5, 6.6);
+        TrainingDummy edge = dummy(h, 5.5, 6.6);       // 2 off the axis: inside its 5-block square
+        TrainingDummy wide = dummy(h, 7.6, 6.6);       // 4 off: outside it
+        TrainingDummy behind = dummy(h, 1.5, 0.7);     // behind Rika's mouth, within the square sideways
+        TrainingDummy y = yuta(h, 3.5, 2.0, onAxis);
         TrainingDummy[] all = {onAxis, edge, wide, behind};
         float[] hp = new float[4];
         long[] pressed = {-1};
+        // Damage per tick of the blast: periodic, never every tick.
+        int[] dealtTicks = new int[1];
+        float[] last = new float[1];
         rikaAwakened(h, y, () -> {
             face(y, onAxis.getBoundingBox().getCenter());
             // Health from the moment it is cast (Rika coming out can jostle whoever stands behind him).
             for (int i = 0; i < 4; i++) hp[i] = all[i].getHealth();
+            last[0] = onAxis.getHealth();
             h.assertTrue(press(y, AbilitySlot.SKILL_3), "True Love Beam (" + Casters.get(y).lastRefusal + ")");
             pressed[0] = h.getTick();
         });
@@ -461,18 +469,23 @@ public class YutaGameTests {
                 RikaEntity r = YutaState.of(y).rika();
                 h.assertTrue(r != null && r.position().distanceTo(y.position()) < 2.5, "Rika planted behind him");
             }
+            if (onAxis.getHealth() < last[0] - 0.5f) dealtTicks[0]++;
+            last[0] = onAxis.getHealth();
         });
+        int ticks = cfg.beamTicks / Math.max(1, cfg.beamDamageInterval);
+        float most = cfg.beamDamage + cfg.beamTickDamage * (ticks + 1) + 0.5f;
         h.succeedWhen(() -> {
-            h.assertTrue(pressed[0] >= 0 && h.getTick() - pressed[0] > cfg.beamWindup + cfg.beamTicks + 2, "the beam is over");
+            h.assertTrue(pressed[0] >= 0 && h.getTick() - pressed[0] > cfg.beamWindup + cfg.beamTicks + cfg.beamCollapseTicks + 2, "the beam is over");
             float a = hp[0] - onAxis.getHealth(), b = hp[1] - edge.getHealth();
-            h.assertTrue(a > 50 && a <= cfg.beamDamage + 0.5f, "on the axis: hit once for its full damage (" + a + ")");
-            h.assertTrue(b > 50 && b <= cfg.beamDamage + 0.5f, "inside its radius: hit once (" + b + ")");
-            h.assertTrue(hp[2] - wide.getHealth() < 5, "outside its radius: untouched by it (" + (hp[2] - wide.getHealth()) + ")");
+            h.assertTrue(a >= cfg.beamDamage + cfg.beamTickDamage * (ticks - 2) && a <= most, "on the axis: first contact then every interval (" + a + ")");
+            h.assertTrue(b >= cfg.beamDamage + cfg.beamTickDamage * (ticks - 2) && b <= most, "2 off the axis, inside the square: the same (" + b + ")");
+            h.assertTrue(dealtTicks[0] <= ticks + 2, "periodic, not every tick (" + dealtTicks[0] + " damage ticks)");
+            h.assertTrue(hp[2] - wide.getHealth() < 5, "outside its square: untouched by it (" + (hp[2] - wide.getHealth()) + ")");
             h.assertTrue(hp[3] - behind.getHealth() < 5, "behind: untouched by it (" + (hp[3] - behind.getHealth()) + ")");
         });
     }
 
-    @GameTest(maxTicks = 240)
+    @GameTest(maxTicks = 240, padding = 16, environment = "jjk-test:beam")
     public void trueLoveBeamIsCancelledIfYutaDiesInTheWindup(GameTestHelper h) {
         floor(h, 16);
         JJKConfig.Yuta cfg = JJKConfig.get().yuta;
@@ -496,7 +509,7 @@ public class YutaGameTests {
         });
     }
 
-    @GameTest(maxTicks = 120)
+    @GameTest(maxTicks = 120, padding = 16, environment = "jjk-test:beam")
     public void trueLoveBeamPressedAgainIsTheQuickBeam(GameTestHelper h) {
         floor(h, 16);
         JJKConfig.Yuta cfg = JJKConfig.get().yuta;

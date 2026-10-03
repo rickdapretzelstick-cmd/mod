@@ -1,4 +1,4 @@
-# Jujutsu — Gojo Satoru, Kinji Hakari, Yuji Itadori and Yuta Okkotsu
+# Jujutsu — Gojo Satoru, Kinji Hakari, Yuji Itadori, Yuta Okkotsu and Ryu Ishigori
 
 Fabric mod for **Minecraft 26.3** (Java 25, Fabric API). Install the jar plus Fabric API. The latest build is
 [`release/jujutsu-0.1.0.jar`](release/jujutsu-0.1.0.jar).
@@ -102,6 +102,17 @@ hers.
 | 4 | Second Wind | — | Authentic Mutual Love | Rika Throw |
 | R (Special) | Rika | Rika (back to Yuta) | Rika | Rika (back to Yuta) |
 | G | Awakening (True Love) | True Love | Copy Wheel | Copy Wheel |
+
+Ryu has his base kit and Decadence, the awakened kit Every Last Drop can give him.
+
+| Key | Ryu (True Cannon) | Decadence (awakened) |
+|---|---|---|
+| 1 | Granite Blast (hold) | "What are you after?" |
+| 2 | Unsatisfied | "I had no idea..." |
+| 3 | Second Helping | "This is what dessert is like!" |
+| 4 | Appetizer | "You weren't invited." (hold) |
+| R (Special) | Restyle | Restyle |
+| G | Every Last Drop | — |
 
 ![Hakari](docs/screenshots/hakari_showcase.png)
 ![Idle Death Gamble opening](docs/screenshots/hakari_idg_cutin.png)
@@ -268,10 +279,15 @@ config). 90 max HP. Rika is the new model, animated with the same clip framework
     - **Rika Downslam** (13s): her arm slams down on them (8 + 4).
     - **Rika Slam** (13s): she grabs a leg and slams them five times.
     - **True Love Beam** (40s): a pink orb conjured together while he aims. Rika then plants herself behind him, jaw
-      opening wide over his head, and charges it while its path is traced on the ground. From her mouth comes a
-      3-block-thick torrent of cursed energy that holds for 5 seconds, boring into whatever it strikes (100, less the
-      more players it catches). Its drawn shape is its hitbox, and it hits each target once. Press it again in the
-      wind-up for the quick beam from his hands (22.4, 15s). It stops for everyone if he dies or Rika is gone.
+      opening wide over his head, and the charge gathers, compresses and turns white while its path is traced on the
+      ground. Then it erupts: a **5x5 square** torrent of cursed energy with square edges, for exactly 5 seconds from
+      firing. Its layers move independently: a white core 2.5 blocks across, the pink main body filling the square,
+      and an unstable aura of arcs, streaks, spiralling light, lightning and dark bands. It surges every 0.4 s, and
+      a mass of energy 7-9 blocks across sits where it strikes. Damage is periodic: 20 on first contact, then 8 every
+      half second a target stays in it, less the more players it catches. Its drawn shape is its hitbox. It carves an
+      irregular 5x5 tunnel through the temporary battle damage system, so the terrain comes back later. Press it again
+      in the wind-up for the quick beam from his hands (22.4, 15s). It stops for everyone if he dies or Rika is gone.
+      It can be answered with Every Last Drop (see Beam clashes).
     - **Rika Throw** (13s): she picks him up and hurls him. An enemy he crashes into takes 8-18 by airtime. If he hits
       no one, he takes it himself and is truly ragdolled.
   - **Authentic Mutual Love** (4 while awakened; 120s, 45s): a pale stone platform under a black sky, grave crosses,
@@ -298,6 +314,49 @@ config). 90 max HP. Rika is the new model, animated with the same clip framework
 ![Cursed Partners](docs/screenshots/yuta_showcase.png)
 ![True Love Beam](docs/screenshots/yuta_true_love_beam.png)
 ![Authentic Mutual Love](docs/screenshots/yuta_domain.png)
+
+### Ryu Ishigori — True Cannon
+
+100 HP. His Cursed Energy Discharge comes from the "cannon" of his pompadour, and Every Last Drop from his fingertip.
+Discharges heat him up. Numbers follow the JJS wiki's *True Cannon* page, converted at about 3.6 studs per block.
+
+- **M1s**: a 3-hit chain (3, 3, 4). While Overheat is under 90%, the neutral third hit is a ray from his head
+  instead: 6.7 blocks, 8 damage, +10% Overheat.
+- **Overheat** (the bar above the hotbar). The M1 ray adds 10%, Granite Blast 20% (40% held), each Appetizer blast
+  10%, and Every Last Drop sets it to 100%. At 100% his discharges shut off and his head smokes until he cools down.
+  The mark at 80% shows where Every Last Drop starts to awaken him.
+- **Granite Blast** (1, 0.5s): tap for a blast that stuns the first target (5.5; ragdolls if they're already
+  stunned). Hold 1.1 s for a piercing, unblockable blast that ragdolls everyone on the line (12, falling to 5.5 with
+  distance). Right after a front dash, it loops a blast round him and dashes him on (4, 6s).
+- **Unsatisfied** (2, 20s): three blows of 3, a back clash of 3 and a toss of 6. Each landed hit takes 0.5 s off
+  Restyle's cooldown.
+- **Second Helping** (3, 15s): rushes in up to 19.5 blocks and slams them into the floor (12), bouncing them
+  skywards. In the air: a punch of 6, then a delayed impact of 6. Takes 3 s off Restyle.
+- **Appetizer** (4, 18s): two blasts of 4, then a ray of 8 rising from the ground ahead, pulling targets up and in.
+  Overheated, the blasts are cut and the ray pushes away instead.
+- **Restyle** (R, 17s): cools him by 60% over a second. From 100% it is the comb instead: 2.75 s, all the way to 0%.
+  Under Decadence he cracks his knuckles instead (+10 HP and +10% meter over 2 s).
+- **Every Last Drop** (G, full meter): his whole reserve fired as one round, blue-white cannon beam. It charges for
+  2.5 s and its aim locks 0.7 s before it fires. It deals 104, falling off with distance and the more players it
+  catches, is unblockable and uninterruptible, and carves a round tunnel through the temporary battle damage system.
+  It sets Overheat to 100%. Fired from 80% or more, it gives him **Decadence** for 90 s and heals 25.
+- **Decadence**: no natural regeneration and Overheat locked at 100%. Below 30% health his meter absorbs damage
+  (200 worth), and a fatal hit is survived at the cost of the awakening. Feinting or cancelling one of his first three
+  moves costs 5 HP and puts that move on a 6 s cooldown.
+    - **"What are you after?"** (1, 18s): floor slam 10, punch 20, launch 5. Costs him 5.
+    - **"I had no idea..."** (2, 15s): armoured wind-up, grab 3, an exchange of seven punches each way, push 3.
+    - **"This is what dessert is like!"** (3, 20s): kick 7, swing 3, four blows of 5, push 6, with full armour. The
+      awakening's drain stops during the exchange.
+    - **"You weren't invited."** (4, 20s): a punch of 20 (40 held 1.9 s) that sends them left. Aimed at a wall, the
+      wall flies on as debris: 27.8 blocks (69.4 held), 20 to everyone it hits.
+
+Choices where the wiki leaves room: natural regeneration is stopped by holding his hunger below the regeneration
+threshold. Self damage from his awakened moves can't kill him, but feints follow the wiki. The awakening only comes
+from Every Last Drop, so the Awakening key never transforms him on its own.
+
+![Every Last Drop](docs/screenshots/ryu_every_last_drop.png)
+![Appetizer](docs/screenshots/ryu_appetizer.png)
+![Decadence](docs/screenshots/ryu_decadence.png)
 
 ## HUD and Vanilla Minecraft mode
 
@@ -427,6 +486,55 @@ carries on under its normal rules. When the winner's domain ends, the blocks of 
 ![Domain clash](docs/screenshots/domain_clash.png)
 ![Split territory](docs/screenshots/domain_clash_split.png)
 ![Conquest](docs/screenshots/domain_clash_conquest.png)
+
+## Beam clashes
+
+True Love Beam and Every Last Drop can meet head on. One session on the server owns each clash from start to end.
+
+**The counter.** Once an ultimate beam's caster commits (its path locks during the charge), the server picks the one
+opponent who can answer it. That is the closest who:
+
+- stands in its path within reach;
+- can see its source;
+- is not in another clash;
+- can act;
+- has their own answering beam ready.
+
+Ties go to the lower entity id. That player sees **PRESS [G]**. Pressing their Ultimate inside the window, which
+runs until just after the beam fires, fires their beam straight back after a short wind-up. It works both ways:
+Ryu answers True Love Beam with Every Last Drop, and Yuta answers Every Last Drop with True Love Beam. If Yuta isn't
+awakened yet, a full meter turns True Love on in the same breath. Two such beams fired straight at each other clash
+without a counter.
+
+**The duel.** The first beam out is held a few blocks short of the answer still coming. When both are out they lock
+onto one line, and a churning mass of both energies forms where they meet: each beam's colour on its own side, a
+white heart, lightning and rings thrown off by every push. A brief side-on camera frames the collision, then hands
+the view back. For about 5 seconds each contestant gets skill checks: a needle sweeps round a dial, and the space
+bar stops it.
+
+- **GREAT** (the thin gold arc at the zone's leading edge): +2.
+- **GOOD** (the white arc): +1.
+- **MISS**: -1.
+
+The zone's position is random every time, and checks get faster as the clash goes on and the harder it presses. The
+score difference moves the collision itself: the tug-of-war bar at the top of the screen is where the beams meet in
+the world. The winning beam blazes and churns harder, and the losing one flickers.
+
+**The outcome.** The winner's beam punches through the collision, the loser's collapses, and the loser takes the
+winning beam plus the burst. On a tie both beams detonate together with balanced damage to each.
+
+**Fairness and safety.**
+
+- The server judges every press. The client reports how far round the needle was, and the server only believes it
+  within what that player's round-trip time can explain.
+- Bots judge their own checks on the server.
+- Death, disconnecting, changing dimension, turning spectator, the beam being interrupted, or the server stopping
+  ends the clash and releases both players. Their lock re-applies each tick, so it can never outlive the session.
+- Everyone nearby sees the beams and the collision. Only the two contestants see their dials.
+
+![Beam clash](docs/screenshots/beam_clash_dial.png)
+![The collision](docs/screenshots/beam_clash_side.png)
+![The counter prompt](docs/screenshots/beam_clash_counter.png)
 
 ## Temporary battle damage
 

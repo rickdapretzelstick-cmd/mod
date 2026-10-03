@@ -42,6 +42,9 @@ public final class Bootstrap {
         Characters.register(new dev.rick.jjk.hakari.HakariCharacter());
         Characters.register(new dev.rick.jjk.yuji.YujiCharacter());
         Characters.register(new dev.rick.jjk.yuta.YutaCharacter());
+        Characters.register(new dev.rick.jjk.ryu.RyuCharacter());
+        dev.rick.jjk.yuta.YutaBeamCounter.register();
+        dev.rick.jjk.ryu.RyuBeamCounter.register();
         Defenses.register(new InfinityDefense());
         Defenses.register(new dev.rick.jjk.hakari.DoorGuardDefense());
         Defenses.register(new dev.rick.jjk.yuji.ManjiKickDefense());
@@ -73,8 +76,11 @@ public final class Bootstrap {
             DomainManager.tick(level);
             dev.rick.jjk.hakari.ShutterTrap.tick(level);
             dev.rick.jjk.gojo.UnlimitedPurple.tick(level);
+            dev.rick.jjk.core.clash.BeamClashManager.tick(level);
         });
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> dev.rick.jjk.core.clash.BeamClashManager.clear());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            dev.rick.jjk.core.clash.BeamClashManager.clear();
             HitboxManager.clearAll();
             DomainManager.clearAll();
             dev.rick.jjk.hakari.IdleDeathGamble.clearAll();

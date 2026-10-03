@@ -780,3 +780,122 @@ for (x, y) in ((4, 6), (6, 4), (8, 2)):
     i.line(x, y, x + 2, y + 2, 0xFFFFFF)
 i.outline()
 i.save('rika_throw')
+
+# --- Ryu (True Cannon): discharge blue, Decadence gold ---
+RYU_ = 0x3A86E8
+RYU_L = 0xA8D8FF
+GOLD_ = 0xFFB040
+GOLD_L = 0xFFE6A0
+HAIR = 0x1A1A22
+
+# Granite Blast: a blast fired from the pompadour.
+i = Icon()
+for x in range(2, 8):
+    for y in range(5, 11):
+        if math.hypot(x - 5, y - 8) < 3.6:
+            i.set(x, y, HAIR)
+for x in range(6, 16):
+    d = abs(7.5 - 7.5)
+    i.set(x, 6, RYU_)
+    i.set(x, 7, RYU_L)
+    i.set(x, 8, 0xFFFFFF)
+    i.set(x, 9, RYU_L)
+    i.set(x, 10, RYU_)
+i.disk(1.6, 0xFFFFFF, 7, 8)
+i.outline()
+i.save('granite_blast')
+
+# Unsatisfied: three fists in a row.
+i = Icon()
+fist(i, 0, 1, 7, 6)
+fist(i, 5, 5, 7, 6)
+fist(i, 9, 9, 7, 6, RYU_L, RYU_)
+i.outline()
+i.save('unsatisfied')
+
+# Second Helping: a fist slamming down onto a cracked floor.
+i = Icon()
+fist(i, 4, 1, 8, 8)
+for x in range(1, 15):
+    i.set(x, 13, 0x6A6A74)
+    i.set(x, 14, 0x4A4A54)
+for (x0, y0, x1, y1) in ((8, 12, 4, 10), (8, 12, 12, 10), (8, 12, 8, 10)):
+    i.line(x0, y0, x1, y1, RYU_L)
+i.outline()
+i.save('second_helping')
+
+# Appetizer: two blasts and a pillar rising.
+i = Icon()
+i.disk(1.8, RYU_L, 3, 4)
+i.disk(1.8, RYU_L, 3, 10)
+for y in range(1, 15):
+    i.set(11, y, RYU_)
+    i.set(12, y, 0xFFFFFF)
+    i.set(13, y, RYU_)
+i.outline()
+i.save('appetizer')
+
+# Restyle: a comb through the pompadour.
+i = Icon()
+for x in range(2, 14):
+    for y in range(2, 8):
+        if math.hypot((x - 8) / 6, (y - 7) / 5) < 1:
+            i.set(x, y, HAIR)
+for x in range(3, 14):
+    i.set(x, 10, 0xC8CCD8)
+for x in range(3, 14, 2):
+    i.set(x, 11, 0xC8CCD8)
+    i.set(x, 12, 0xC8CCD8)
+i.outline()
+i.save('restyle')
+
+# Every Last Drop: a pointing finger and a great beam.
+i = Icon()
+for x in range(5, 16):
+    for y in range(3, 13):
+        d = abs(y - 7.5)
+        if d < 4.5:
+            i.set(x, y, 0xFFFFFF if d < 1 else RYU_L if d < 2.6 else RYU_)
+i.disk(2.4, 0xF0CCA8, 3, 7.5)
+i.line(0, 7, 4, 7, 0xF0CCA8)
+i.outline()
+i.save('every_last_drop')
+
+# What are you after?: a gold fist driving down.
+i = Icon()
+fist(i, 3, 2, 10, 9, GOLD_L, GOLD_)
+for x in range(1, 15):
+    i.set(x, 14, 0x6A6A74)
+i.outline()
+i.save('what_are_you_after')
+
+# I had no idea...: two fists meeting.
+i = Icon()
+fist(i, 0, 4, 7, 7)
+fist(i, 9, 4, 7, 7, GOLD_L, GOLD_)
+i.disk(1.4, 0xFFFFFF, 7.5, 7.5)
+i.outline()
+i.save('no_idea')
+
+# This is what dessert is like!: a kick (a boot) with gold streaks.
+i = Icon()
+for x in range(3, 12):
+    for y in range(8, 12):
+        i.set(x, y, HAIR)
+for y in range(2, 9):
+    i.set(9, y, HAIR)
+    i.set(10, y, HAIR)
+for y in (3, 6, 9):
+    i.line(0, y + 2, 4, y, GOLD_L)
+i.outline()
+i.save('dessert')
+
+# You weren't invited.: a fist through a broken wall.
+i = Icon()
+for y in range(1, 15):
+    for x in range(10, 15):
+        if not (5 <= y <= 9 and x < 13):
+            i.set(x, y, 0x8A7E70 if (x + y) % 3 else 0x6A5E50)
+fist(i, 2, 4, 9, 7, GOLD_L, GOLD_)
+i.outline()
+i.save('not_invited')

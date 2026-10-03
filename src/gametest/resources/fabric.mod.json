@@ -13,6 +13,7 @@
       "dev.rick.jjk.test.HakariGameTests",
       "dev.rick.jjk.test.YujiGameTests",
       "dev.rick.jjk.test.YutaGameTests",
+      "dev.rick.jjk.test.RyuGameTests",
       "dev.rick.jjk.test.MovesetAuditTests"
     ],
     "fabric-client-gametest": [

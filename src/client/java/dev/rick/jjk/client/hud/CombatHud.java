@@ -86,7 +86,18 @@ public final class CombatHud {
             java.util.Map.entry("rika_downslam", meta("Rika Downslam", 0xFFE8E8F0, true, "rika_downslam")),
             java.util.Map.entry("rika_slam", meta("Rika Slam", 0xFFE8E8F0, true, "rika_slam")),
             java.util.Map.entry("true_love_beam", meta("True Love Beam", 0xFFF76BFF, true, "true_love_beam")),
-            java.util.Map.entry("rika_throw", meta("Rika Throw", 0xFFE8E8F0, true, "rika_throw")));
+            java.util.Map.entry("rika_throw", meta("Rika Throw", 0xFFE8E8F0, true, "rika_throw")),
+            // Ryu (True Cannon)
+            java.util.Map.entry("granite_blast", meta("Granite Blast", 0xFF5AB4FF, false, "granite_blast")),
+            java.util.Map.entry("unsatisfied", meta("Unsatisfied", 0xFF8AC8FF, false, "unsatisfied")),
+            java.util.Map.entry("second_helping", meta("Second Helping", 0xFF8AC8FF, false, "second_helping")),
+            java.util.Map.entry("appetizer", meta("Appetizer", 0xFF5AB4FF, false, "appetizer")),
+            java.util.Map.entry("restyle", meta("Restyle", 0xFFD8ECFF, false, "restyle")),
+            java.util.Map.entry("every_last_drop", meta("Every Last Drop", 0xFF5AB4FF, true, "every_last_drop")),
+            java.util.Map.entry("what_are_you_after", meta("What are you after?", 0xFFFFC04A, true, "what_are_you_after")),
+            java.util.Map.entry("no_idea", meta("I had no idea...", 0xFFFFC04A, true, "no_idea")),
+            java.util.Map.entry("dessert", meta("This is what dessert is like!", 0xFFFFC04A, true, "dessert")),
+            java.util.Map.entry("not_invited", meta("You weren't invited.", 0xFFFFC04A, true, "not_invited")));
     /** The technique column (empty slots are skipped), then the movement/defence pair under it. */
     private static final AbilitySlot[] TECHNIQUES = {AbilitySlot.SKILL_1, AbilitySlot.SKILL_2, AbilitySlot.SKILL_3, AbilitySlot.SKILL_4,
             AbilitySlot.SKILL_5, AbilitySlot.ULTIMATE};
@@ -115,6 +126,7 @@ public final class CombatHud {
         if (JJKConfig.get().client.showComboCounter) comboCounter(g, font, mc, w, h);
         statusBanner(g, font, state, w, h);
         YutaHud.render(g, font, mc, w, h, partial);
+        RyuHud.render(g, font, mc, w, h, partial);
     }
 
     // --- CE: a slim vertical bar hugging the left edge ---

@@ -608,4 +608,109 @@ public final class Glow {
             }
         });
     }
+
+    /** Brightness along a beam, 0..1+, at a distance along it (for {@link #prism}). */
+    public interface Shade {
+        float at(double s);
+    }
+
+    /**
+     * A glowing SQUARE prism from the origin along {@code n}: its sides along {@code u} (side) and {@code v} (up), its
+     * half-width given along it, its brightness too. Each face is as bright as it faces the camera (so it reads as a
+     * block of energy, its edges and corners crisp, not as a tube); {@code solid} draws it alpha-blended instead of as
+     * added light, so its body holds up as a mass against a bright sky.
+     */
+    public static void prism(SubmitNodeCollector c, PoseStack ps, Vector3f n, Vector3f u, Vector3f v, float from, float to, Radius half, Shade shade,
+                             int rings, float r, float g, float b, float a, Vector3f cam, float edge, boolean solid) {
+        if (to - from <= 0.01f || a <= 0.003f) return;
+        // The four faces: their outward normals, and the two corners each spans (as multiples of u and v).
+        float[][] faces = {{1, 0, 1, -1, 1, 1}, {0, 1, 1, 1, -1, 1}, {-1, 0, -1, 1, -1, -1}, {0, -1, -1, -1, 1, -1}};
+        SubmitNodeCollector.CustomGeometryRenderer geo = (pose, buf) -> {
+            for (float[] f : faces) {
+                float nx = u.x * f[0] + v.x * f[1], ny = u.y * f[0] + v.y * f[1], nz = u.z * f[0] + v.z * f[1];
+                for (int i = 0; i < rings; i++) {
+                    float s0 = from + (to - from) * i / rings, s1 = from + (to - from) * (i + 1) / rings;
+                    float h0 = (float) half.at(s0), h1 = (float) half.at(s1);
+                    if (h0 < 0.01f && h1 < 0.01f) continue;
+                    float k0 = shade.at(s0), k1 = shade.at(s1);
+                    float[][] q = {
+                            corner(n, u, v, s0, h0, f[2], f[3]), corner(n, u, v, s1, h1, f[2], f[3]),
+                            corner(n, u, v, s1, h1, f[4], f[5]), corner(n, u, v, s0, h0, f[4], f[5])};
+                    float[] al = new float[4];
+                    for (int k = 0; k < 4; k++) {
+                        float tx = cam.x - q[k][0], ty = cam.y - q[k][1], tz = cam.z - q[k][2];
+                        float inv = Mth.invSqrt(tx * tx + ty * ty + tz * tz + 1e-6f);
+                        float face = Math.abs((nx * tx + ny * ty + nz * tz) * inv);
+                        float kk = k == 0 || k == 3 ? k0 : k1;
+                        al[k] = a * kk * (edge + (1 - edge) * (solid ? (float) Math.sqrt(face) : face));
+                    }
+                    for (int k = 0; k < 4; k++) buf.addVertex(pose, q[k][0], q[k][1], q[k][2]).setColor(r, g, b, Math.min(1f, al[k]));
+                    for (int k = 3; k >= 0; k--) buf.addVertex(pose, q[k][0], q[k][1], q[k][2]).setColor(r, g, b, Math.min(1f, al[k]));
+                }
+            }
+        };
+        if (solid) c.submitCustomGeometry(ps, INK, geo);
+        else submit(c, ps, geo);
+    }
+
+    private static float[] corner(Vector3f n, Vector3f u, Vector3f v, float s, float h, float cu, float cv) {
+        return new float[] {n.x * s + (u.x * cu + v.x * cv) * h, n.y * s + (u.y * cu + v.y * cv) * h, n.z * s + (u.z * cu + v.z * cv) * h};
+    }
+
+    /**
+     * A square sheet of light across a beam at {@code s} along it, {@code half} out each way: seen head-on, a stack of
+     * them fills the square solid (a prism seen end-on is only its rim), from the side they are edge-on and all but vanish.
+     */
+    public static void slice(SubmitNodeCollector c, PoseStack ps, Vector3f n, Vector3f u, Vector3f v, float s, float half, float r, float g, float b,
+                             float a, float centre) {
+        if (half <= 0.01f || a <= 0.003f) return;
+        submit(c, ps, (pose, buf) -> {
+            float cx = n.x * s, cy = n.y * s, cz = n.z * s;
+            // Four triangles-as-quads from the bright middle out to the square's edge, so it glows from the centre.
+            float[][] cs = {{1, 1}, {-1, 1}, {-1, -1}, {1, -1}};
+            for (int i = 0; i < 4; i++) {
+                float[] p0 = cs[i], p1 = cs[(i + 1) % 4];
+                float x0 = cx + (u.x * p0[0] + v.x * p0[1]) * half, y0 = cy + (u.y * p0[0] + v.y * p0[1]) * half, z0 = cz + (u.z * p0[0] + v.z * p0[1]) * half;
+                float x1 = cx + (u.x * p1[0] + v.x * p1[1]) * half, y1 = cy + (u.y * p1[0] + v.y * p1[1]) * half, z1 = cz + (u.z * p1[0] + v.z * p1[1]) * half;
+                for (int side = 0; side < 2; side++) {
+                    buf.addVertex(pose, cx, cy, cz).setColor(r, g, b, Math.min(1f, a * centre));
+                    if (side == 0) {
+                        buf.addVertex(pose, x0, y0, z0).setColor(r, g, b, a);
+                        buf.addVertex(pose, x1, y1, z1).setColor(r, g, b, a);
+                    } else {
+                        buf.addVertex(pose, x1, y1, z1).setColor(r, g, b, a);
+                        buf.addVertex(pose, x0, y0, z0).setColor(r, g, b, a);
+                    }
+                    buf.addVertex(pose, cx, cy, cz).setColor(r, g, b, Math.min(1f, a * centre));
+                }
+            }
+        });
+    }
+
+    /** A square outline frame (a shock front, a flare) at {@code s} along {@code n}, {@code half} out, {@code width} thick. */
+    public static void squareRing(SubmitNodeCollector c, PoseStack ps, Vector3f n, Vector3f u, Vector3f v, float s, float half, float width, float spin,
+                                  float r, float g, float b, float a) {
+        if (half <= 0.01f || a <= 0.003f) return;
+        float cs = Mth.cos(spin), sn = Mth.sin(spin);
+        Vector3f uu = new Vector3f(u).mul(cs).add(new Vector3f(v).mul(sn)), vv = new Vector3f(v).mul(cs).sub(new Vector3f(u).mul(sn));
+        submit(c, ps, (pose, buf) -> {
+            float[][] k = {{1, 1}, {-1, 1}, {-1, -1}, {1, -1}};
+            float in = Math.max(0, half - width);
+            for (int i = 0; i < 4; i++) {
+                float[] p0 = k[i], p1 = k[(i + 1) % 4];
+                float[][] q = new float[4][];
+                q[0] = pt(n, uu, vv, s, p0[0] * half, p0[1] * half);
+                q[1] = pt(n, uu, vv, s, p1[0] * half, p1[1] * half);
+                q[2] = pt(n, uu, vv, s, p1[0] * in, p1[1] * in);
+                q[3] = pt(n, uu, vv, s, p0[0] * in, p0[1] * in);
+                float[] alpha = {a * 0.2f, a * 0.2f, a, a};
+                for (int j = 0; j < 4; j++) buf.addVertex(pose, q[j][0], q[j][1], q[j][2]).setColor(r, g, b, alpha[j]);
+                for (int j = 3; j >= 0; j--) buf.addVertex(pose, q[j][0], q[j][1], q[j][2]).setColor(r, g, b, alpha[j]);
+            }
+        });
+    }
+
+    private static float[] pt(Vector3f n, Vector3f u, Vector3f v, float s, float a, float b) {
+        return new float[] {n.x * s + u.x * a + v.x * b, n.y * s + u.y * a + v.y * b, n.z * s + u.z * a + v.z * b};
+    }
 }

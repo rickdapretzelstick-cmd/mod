@@ -98,7 +98,7 @@ public final class ClashManager {
         BOT_SKILL.put(e, skill);
     }
 
-    static float botSkillOf(LivingEntity e) {
+    public static float botSkillOf(LivingEntity e) {
         return BOT_SKILL.getOrDefault(e, JJKConfig.get().clash.botSkill);
     }
 

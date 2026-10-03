@@ -21,6 +21,7 @@ public final class Network {
         c2s.register(ClashInputPayload.TYPE, ClashInputPayload.CODEC);
         c2s.register(CharacterSelectPayload.TYPE, CharacterSelectPayload.CODEC);
         c2s.register(RhythmInputPayload.TYPE, RhythmInputPayload.CODEC);
+        c2s.register(BeamClashInputPayload.TYPE, BeamClashInputPayload.CODEC);
 
         var s2c = PayloadTypeRegistry.clientboundPlay();
         s2c.register(FxPayload.TYPE, FxPayload.CODEC);
@@ -38,6 +39,11 @@ public final class Network {
         s2c.register(DomainCounterPayload.TYPE, DomainCounterPayload.CODEC);
         s2c.register(GamblePayload.TYPE, GamblePayload.CODEC);
         s2c.register(YutaPayload.TYPE, YutaPayload.CODEC);
+        s2c.register(BeamCounterPayload.TYPE, BeamCounterPayload.CODEC);
+        s2c.register(RyuPayload.TYPE, RyuPayload.CODEC);
+        s2c.register(BeamClashStatePayload.TYPE, BeamClashStatePayload.CODEC);
+        s2c.register(BeamClashCheckPayload.TYPE, BeamClashCheckPayload.CODEC);
+        s2c.register(BeamClashJudgePayload.TYPE, BeamClashJudgePayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
@@ -66,6 +72,8 @@ public final class Network {
                 dev.rick.jjk.hakari.RhythmAbility.input(ctx.player(), p.time()));
         ServerPlayNetworking.registerGlobalReceiver(ClashInputPayload.TYPE, (p, ctx) ->
                 dev.rick.jjk.core.domain.clash.ClashManager.input(ctx.player(), p.session(), p.lane(), p.time()));
+        ServerPlayNetworking.registerGlobalReceiver(BeamClashInputPayload.TYPE, (p, ctx) ->
+                dev.rick.jjk.core.clash.BeamClashManager.input(ctx.player(), p.session(), p.check(), p.elapsedMs()));
     }
 }
 

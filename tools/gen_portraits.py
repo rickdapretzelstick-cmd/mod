@@ -153,3 +153,37 @@ def yuta():
 
 
 yuta()
+
+
+# Ryu: his towering pompadour, its tip glowing with True Cannon's blue.
+def ryu():
+    import math
+    img = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
+    for y in range(32):
+        for x in range(32):
+            # The swept-forward pompadour: a long rounded wedge.
+            dx, dy = (x - 14) / 13.0, (y - 14) / 7.5
+            t = (x - 3) / 26.0
+            top = 6 + 10 * (1 - t) ** 0.5
+            if 3 <= x <= 29 and 21 - 16 * t ** 0.7 >= y >= 21 - 16 * t ** 0.7 - (5 + 5 * (1 - t)):
+                col = 0x2A2A36 if y < 21 - 16 * t ** 0.7 - 3 else 0x14141C
+                img.putpixel((x, y), rgb(col))
+    # The head beneath it.
+    for y in range(18, 31):
+        for x in range(4, 18):
+            if math.hypot((x - 10.5) / 7, (y - 24) / 7) <= 1:
+                img.putpixel((x, y), rgb(0x14141C if y < 22 else 0xE6C2A0 if x > 6 else 0xC89A74))
+    # The cannon's glow at the tip.
+    for y in range(32):
+        for x in range(32):
+            d = math.hypot(x - 28, y - 6)
+            if d < 1.5:
+                img.putpixel((x, y), rgb(0xFFFFFF))
+            elif d < 3:
+                img.putpixel((x, y), rgb(0xA8D8FF))
+            elif d < 4 and img.getpixel((x, y))[3] == 0:
+                img.putpixel((x, y), rgb(0x3A86E8))
+    img.save(os.path.join(OUT, 'ryu.png'))
+
+
+ryu()

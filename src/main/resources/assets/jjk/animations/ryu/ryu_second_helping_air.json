@@ -1,0 +1,133 @@
+{
+  "name": "ryu_second_helping_air",
+  "duration": 500,
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "SPECIAL",
+  "hold": true,
+  "keys": [
+    {
+      "t": 0,
+      "bones": {
+        "head": {
+          "rot": [
+            6,
+            20,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            46,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            40,
+            30,
+            40
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -85,
+            30,
+            -12
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            -60,
+            0,
+            6
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -20,
+            0,
+            -6
+          ]
+        },
+        "hips": {
+          "rot": [
+            8,
+            34,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -3,
+            -1.5
+          ]
+        }
+      }
+    },
+    {
+      "t": 500,
+      "bones": {
+        "head": {
+          "rot": [
+            6,
+            20,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            46,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            40,
+            30,
+            40
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -85,
+            30,
+            -12
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            -70,
+            0,
+            6
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -6
+          ]
+        },
+        "hips": {
+          "rot": [
+            8,
+            34,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -3,
+            -1.5
+          ]
+        }
+      },
+      "ease": "EASE_OUT"
+    }
+  ]
+}

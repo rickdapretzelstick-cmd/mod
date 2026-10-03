@@ -37,6 +37,10 @@ public record CharacterTheme(
     public static final CharacterTheme YUTA = register("yuta", new CharacterTheme(0xFFFFFFFF, 0xFF8A8A9A, 0xFF2A2A34,
             "TRUE LOVE", "AWAKENING", "TRUE LOVE READY", 0xFFE8E8F0, 0xFFF76BFF, 0xFFFFC8F4, 0xFFF76BFF, false, 0xFFF76BFF));
 
+    /** Ryu: True Cannon's discharge blue on charcoal; Decadence burns gold. */
+    public static final CharacterTheme RYU = register("ryu", new CharacterTheme(0xFFB8E0FF, 0xFF2E7BE0, 0xFF22303E,
+            "DECADENCE", "AWAKENING", "DECADENCE READY", 0xFF5AB4FF, 0xFFFFC04A, 0xFFFFE6A0, 0xFFFFA020, false, 0xFF5AB4FF));
+
     public static CharacterTheme register(String characterId, CharacterTheme theme) {
         THEMES.put(characterId, theme);
         return theme;

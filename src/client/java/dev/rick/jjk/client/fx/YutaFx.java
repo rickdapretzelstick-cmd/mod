@@ -607,124 +607,166 @@ final class YutaFx {
             }
             // --- True Love Beam ---
             case "beam_orb" -> {
-                // The small pink orb they conjure between them.
+                // The first of their combined energy, gathering between them.
                 sound("tlb_charge", pos, 1.4f, 1f);
                 if (drawn) {
-                    Flashes.flash(pos, 0.1f, 0.7f, PINK, 1f, 30, now);
-                    Flashes.flash(pos, 0.05f, 0.3f, WHITE, 1f, 30, now);
-                    Flashes.swirl(pos, d, 0.2f, 0.8f, 3f, 4f, 0.04f, PINK_LIGHT, 0.8f, 24, now);
-                    implode(level, pos, 1.6, q(14), PINK, 0.1f, 14);
+                    Flashes.flash(pos, 0.1f, 0.9f, PINK, 1f, 30, now);
+                    Flashes.flash(pos, 0.05f, 0.4f, WHITE, 1f, 30, now);
+                    Flashes.swirl(pos, d, 0.2f, 1.1f, 3f, 4f, 0.05f, PINK_LIGHT, 0.8f, 24, now);
+                    implode(level, pos, 2.4, q(20), PINK, 0.1f, 14);
                 }
             }
-            case "beam_rika_eye" -> {
-                // Rika in place, jaw wide over his head: the charge swelling at her mouth, and the path it will take
-                // traced out (a faint line and a marker where it first strikes), so it can be read and dodged.
-                sound("tlb_power", pos, 2f, 1f);
-                int charge = Math.max(10, (int) s);
-                double reach = dir.length();
+            case "beam_gather" -> {
+                // Energy rushing in round them both from every side as he aims: more and faster the further along.
+                if (drawn) {
+                    float k = Math.max(0.2f, s);
+                    implode(level, pos, 3.5 + 3 * k, q((int) (16 + 30 * k)), PINK, 0.12f, 12);
+                    Flashes.swirl(pos, d, 3.5f * k + 1f, 0.6f, 4f, 3f, 0.06f, PINK_LIGHT, 0.6f, 10, now);
+                    Flashes.flash(pos, 0.3f, 0.8f + 1.2f * k, PINK, 0.8f, 7, now);
+                }
+            }
+            case "beam_rika_eye", "beam_counter" -> {
+                // Rika in place, jaw wide over his head: a huge mass of energy gathering at her mouth, and the square path
+                // it will take traced out (a frame on the ground ahead, a marker where it first strikes), so it can be read.
+                boolean counter = p.id().equals("beam_counter");
+                if (!counter) sound("tlb_power", pos, 2.4f, 1f);
+                else sound("rika_voice", pos, 2.2f, 0.9f);
+                int charge = counter ? 10 : Math.max(10, (int) s);
+                double reach = counter ? 40 : dir.length();
                 Vec3 strike = beamStrike(level, pos, d, reach);
                 if (drawn) {
-                    Flashes.flash(pos, 0.3f, 2.4f, PINK, 1f, charge, now);
-                    Flashes.flash(pos, 0.2f, 1.1f, WHITE, 1f, charge, now);
-                    Flashes.lens(pos, 6f, 0.6f, PINK, 0.55f, charge, now);
-                    for (int i = 0; i < 3; i++) Flashes.swirl(pos, d, 0.5f + i * 0.3f, 2.6f + i * 0.4f, 4f, 3f - i * 2f, 0.07f, i == 1 ? WHITE : PINK_LIGHT, 0.8f, charge, now + i * 3);
-                    implode(level, pos, 4.0, q(40), PINK, 0.16f, 20);
-                    Flashes.beam(pos, pos.add(d.scale(reach)), 0.12f, PINK, 0.5f, charge, now);
-                    Flashes.ground(strike, 0.6f, 2.8f, PINK, 0.7f, charge, now);
-                    Flashes.flash(strike, 0.4f, 1.2f, PINK_LIGHT, 0.7f, charge, now);
+                    Flashes.flash(pos, 0.5f, 4.2f, PINK, 1f, charge, now);
+                    Flashes.flash(pos, 0.3f, 1.8f, WHITE, 1f, charge, now);
+                    Flashes.lens(pos, 9f, 0.8f, PINK, 0.6f, charge, now);
+                    for (int i = 0; i < 4; i++) Flashes.swirl(pos, d, 0.8f + i * 0.5f, 4f + i * 0.6f, 4f, 3f - i * 1.6f, 0.08f, i % 2 == 1 ? WHITE : PINK_LIGHT, 0.85f, charge, now + i * 2);
+                    implode(level, pos, 6.0, q(60), PINK, 0.18f, 20);
+                    implode(level, pos, 3.0, q(24), WHITE, 0.1f, 12);
+                    if (!counter) {
+                        Flashes.beam(pos, pos.add(d.scale(reach)), 0.14f, PINK, 0.5f, charge, now);
+                        Flashes.ground(strike, 0.8f, 5f, PINK, 0.75f, charge, now);
+                        Flashes.flash(strike, 0.5f, 2f, PINK_LIGHT, 0.7f, charge, now);
+                    }
                 }
+            }
+            case "beam_compress" -> {
+                // The charge compressing: the gathered mass pulled in tight, its middle going white.
+                if (drawn) {
+                    float k = Math.max(0, Math.min(1, s));
+                    Flashes.flash(pos, 4.5f - 2.5f * k, 1.2f, PINK, 0.9f, 6, now);
+                    Flashes.flash(pos, 0.6f + 0.8f * k, 0.4f, WHITE, 1f, 6, now);
+                    Flashes.lens(pos, 6f - 3f * k, 1f, PINK_LIGHT, 0.5f + 0.4f * k, 6, now);
+                    implode(level, pos, 5.0 - 2 * k, q((int) (14 + 20 * k)), k > 0.6f ? WHITE : PINK, 0.12f, 8);
+                }
+                if (s > 0.8f) sound("tlb_small", pos, 0.6f, 1.6f);
             }
             case "beam_shape" -> SHAPES.put(p.entityId(), new double[] {dir.x, dir.y, dir.z});
             case "true_love_beam", "beam_quick" -> {
                 boolean big = p.id().equals("true_love_beam");
-                // The full beam's roar is in tlb_power, timed to its release; the quick one is its own.
                 if (!big) sound("tlb_small", pos, 1.8f, 1f);
+                else {
+                    sound("tlb_small", pos, 3f, 0.6f);
+                    sound("ripple_bomb", pos, 2.5f, 0.55f);
+                }
                 double reach = dir.length();
-                int life = Math.max(2, (int) s);
+                int hold = Math.max(2, (int) s);
                 double[] shape = SHAPES.remove(p.entityId());
-                double radius = shape != null ? shape[0] : big ? 2.6 : 0.9;
-                int grow = shape != null ? (int) shape[1] : big ? 4 : 2, collapse = shape != null ? (int) shape[2] : big ? 8 : 3;
-                // The beam itself: the exact shape the server hits with, until it ends or is cut short.
-                Flashes.loveBeam(p.entityId(), new Flashes.LoveBeam(pos, d, reach, radius, grow, collapse, life, now, !big));
+                double half = shape != null ? shape[0] : big ? 2.5 : 0.9;
+                int grow = shape != null ? (int) shape[1] : big ? 3 : 2, collapse = shape != null ? (int) shape[2] : big ? 8 : 3;
+                // The torrent itself: the exact square the server hits with, until it ends, is cut short or held.
+                dev.rick.jjk.client.render.LoveBeams.start(p.entityId(), new dev.rick.jjk.client.render.ClientBeam(pos, d, reach, half, grow, collapse,
+                        hold, now, !big));
                 if (drawn) {
-                    // The release at her mouth (or his hands), and where it first strikes.
-                    Flashes.flash(pos, 1f, big ? 4f : 2.2f, PINK_LIGHT, 1f, big ? 10 : 6, now);
-                    Flashes.flash(pos, 0.5f, big ? 2f : 1f, WHITE, 1f, big ? 6 : 4, now);
-                    Flashes.ripple(pos, d, 0.5f, (float) radius * 2.4f, PINK_LIGHT, 0.85f, big ? 10 : 6, now);
+                    // The eruption: the compressed mass flashes white, a shockwave throws out round her, and it bursts forward.
+                    Flashes.flash(pos, 1.5f, big ? 7f : 2.6f, PINK_LIGHT, 1f, big ? 12 : 6, now);
+                    Flashes.flash(pos, 1f, big ? 3.5f : 1.2f, WHITE, 1f, big ? 8 : 4, now);
+                    Flashes.ripple(pos, d, 1f, (float) half * 5f, PINK_LIGHT, 0.9f, big ? 12 : 6, now);
+                    Flashes.ring(pos, 1f, big ? 14f : 4f, WHITE, 0.7f, big ? 10 : 6, now);
                     Vec3 strike = beamStrike(level, pos, d, reach);
                     long hitAt = now + Math.max(0, Math.round(strike.distanceTo(pos) / reach * grow) - 1);
-                    // The first strike: a burst as its front arrives (the pulses keep the impact going after).
-                    Flashes.flash(strike, 1f, (float) radius * 4f, PINK_LIGHT, 1f, 10, hitAt);
-                    Flashes.ripple(strike, d, 0.5f, (float) radius * 5f, WHITE, 0.8f, 10, hitAt);
+                    Flashes.flash(strike, 1.5f, (float) half * 3.5f, PINK_LIGHT, 1f, 12, hitAt);
+                    Flashes.ripple(strike, d, 1f, (float) half * 5f, WHITE, 0.85f, 12, hitAt);
                     if (big) {
-                        // Shock rings running down it as the front passes, and sparks thrown off its sides.
-                        for (double t = 4; t < reach; t += 6) {
-                            Flashes.ripple(pos.add(d.scale(t)), d, (float) radius, (float) radius * 1.9f, PINK_LIGHT, 0.6f, 12, now + Math.round(t / reach * grow));
+                        Vec3 g = groundBelow(level, pos);
+                        if (g.distanceTo(pos) < 8) {
+                            Flashes.ground(g.add(0, 0.1, 0), 1f, 16f, PINK, 0.8f, 14, now);
+                            debris(level, g, q(30), 0.8);
+                            burst(level, g.add(0, 0.3, 0), q(26), 0.5, Sprite.SMOKE, SMOKE, 1.2f, 30);
                         }
-                        for (int i = 0; i < q(36); i++) {
-                            Vec3 at = pos.add(d.scale(RNG.nextDouble() * reach)).add(randomUnit().scale(radius * 0.9));
-                            add(level, at, randomUnit().scale(0.25).add(d.scale(0.4)), Sprite.GLOW, i % 3 == 0 ? WHITE : PINK, 0.85f, 0.5f, 0.04f, 10 + RNG.nextInt(life));
+                        for (double t = 5; t < reach; t += 6) {
+                            Flashes.ripple(pos.add(d.scale(t)), d, (float) half * 1.2f, (float) half * 2.3f, PINK_LIGHT, 0.6f, 12, now + Math.round(t / reach * grow));
                         }
-                        debris(level, strike, q(20), 0.6);
+                        debris(level, strike, q(36), 0.9);
                     }
                 }
-                if (big && mc.player != null && closeTo(mc.player.position(), pos, d, reach, radius + 6)) ScreenEffects.flash(0x40FF9CFF, 6);
-                distanceShake(pos, big ? 64 : 24, big ? 1.2f : 0.5f);
+                if (big && mc.player != null && closeTo(mc.player.position(), pos, d, reach, half + 8)) ScreenEffects.flash(0x50FF9CFF, 8);
+                distanceShake(pos, big ? 90 : 24, big ? 1.4f : 0.5f);
             }
             case "beam_pulse", "beam_quick_pulse" -> {
-                // Every few ticks of the blast: it keeps dumping energy into whatever it strikes (pos), a mass 4-6 blocks
-                // across, while rings travel down it and it lights the ground beneath.
+                // Every four ticks of the blast: where it is striking now (the impact is drawn there), and every second
+                // one a surge, a wave of energy pumped down it to crash into the impact.
                 boolean big = p.id().equals("beam_pulse");
-                double[] st = Flashes.loveBeamState(p.entityId(), now, 0);
+                var b = dev.rick.jjk.client.render.LoveBeams.get(p.entityId());
+                if (b == null) return;
+                b.strike = pos;
+                double[] st = dev.rick.jjk.client.render.LoveBeams.state(p.entityId(), now, 0);
                 if (st == null || st[1] <= 0.05) return;
+                boolean capped = st[0] + 0.5 < pos.distanceTo(b.origin);
+                boolean surge = big && ((int) s) % 8 == 0;
+                if (surge) {
+                    b.surgeAt = now;
+                    sound("tlb_small", b.origin, 1.4f, 0.8f + RNG.nextFloat() * 0.15f);
+                }
+                if (capped || !drawn) return;
                 float k = (float) st[1];
-                float mass = big ? 5f : 1.8f;
-                Flashes.flash(pos, mass * 0.5f, mass * k, PINK_LIGHT, 1f, 6, now);
-                Flashes.flash(pos, mass * 0.3f, mass * 0.6f * k, WHITE, 1f, 5, now);
-                Flashes.ripple(pos, d, mass * 0.3f, mass * 1.1f * k, PINK_LIGHT, 0.85f, 7, now);
                 if (big) {
-                    // The mass of it: a churning ball of energy 4-6 blocks across, shells bursting off it.
-                    Flashes.flash(pos, 2f, 6f * k, PINK, 0.8f, 7, now + 1);
-                    Flashes.ink(pos, 1.5f, 3.6f, MAGENTA, 0.5f, 8, now);
-                    Flashes.lens(pos, 1.5f, 5.5f * k, PINK_LIGHT, 0.6f, 7, now);
-                    Flashes.ring(pos, 1f, 6f * k, WHITE, 0.6f, 6, now + 1);
-                    if (drawn) burst(level, pos, q(6), 0.15, Sprite.SMOKE, SMOKE, 0.9f, 14);
+                    // The environment can't take it: dust, debris, sparks and the ground lit beneath.
+                    debris(level, pos, q(surge ? 14 : 6), surge ? 0.9 : 0.5);
+                    burst(level, pos, q(surge ? 10 : 4), 0.25, Sprite.SMOKE, SMOKE, 1.1f, 18);
+                    sparks(level, pos, d.scale(-1), q(surge ? 18 : 8), 0.8, RNG.nextBoolean() ? WHITE : PINK, 0.1f, 12);
                     Vec3 g = groundBelow(level, pos);
-                    if (g.distanceTo(pos) < 6) Flashes.ground(g.add(0, 0.1, 0), 1f, 6f * k, PINK, 0.7f, 8, now);
-                    // Cursed-energy arcs lashing out of the impact.
-                    for (int i = 0; i < 3; i++) {
-                        Vec3 out = randomUnit().subtract(d.scale(0.6)).normalize();
-                        Flashes.bolt(pos, pos.add(out.scale(2.5 + RNG.nextDouble() * 2.5)), 0.08f, i == 0 ? WHITE : PINK_LIGHT, 0.95f, 4, now);
-                    }
-                    // A ring running down the beam toward the impact, and its light on the ground below.
-                    Vec3 from = pos.subtract(d.scale(Math.min(30, 4 + (s % 9) * 3)));
-                    for (int j = 0; j < 4; j++) {
-                        Vec3 at = from.add(d.scale(j * 1.6));
-                        Flashes.ripple(at, d, 1.6f, 2.4f, PINK_LIGHT, 0.55f, 5, now + j);
-                    }
-                    Vec3 mid = pos.subtract(d.scale(6));
-                    Vec3 gm = groundBelow(level, mid);
-                    if (gm.distanceTo(mid) < 5) Flashes.ground(gm.add(0, 0.08, 0), 2f, 3.5f, PINK, 0.35f, 6, now);
-                    if (drawn) {
-                        sparks(level, pos, d.scale(-1), q(14), 0.7, RNG.nextBoolean() ? WHITE : PINK, 0.09f, 12);
-                        debris(level, pos, q(6), 0.5);
-                        for (int i = 0; i < q(8); i++) {
-                            Vec3 a0 = pos.subtract(d.scale(RNG.nextDouble() * 20)).add(randomUnit().scale(1.6));
-                            add(level, a0, randomUnit().scale(0.2).add(d.scale(0.5)), Sprite.GLOW, i % 3 == 0 ? WHITE : PINK, 0.85f, 0.45f, 0.04f, 10);
+                    if (g.distanceTo(pos) < 7) Flashes.ground(g.add(0, 0.1, 0), 2f, (surge ? 9f : 6f) * k, PINK, 0.7f, 8, now);
+                    if (surge) {
+                        Flashes.flash(pos, 2f, 8f * k, PINK_LIGHT, 0.9f, 7, now);
+                        Flashes.lens(pos, 2f, 8f * k, PINK_LIGHT, 0.55f, 8, now);
+                        for (int i = 0; i < 4; i++) {
+                            Vec3 out = randomUnit().subtract(d.scale(0.7)).normalize();
+                            Flashes.bolt(pos, pos.add(out.scale(3 + RNG.nextDouble() * 4)), 0.09f, i == 0 ? WHITE : PINK_LIGHT, 0.95f, 5, now);
                         }
+                        if (((int) s) % 16 == 0) sound("ripple_bomb", pos, 1.6f, 0.75f + RNG.nextFloat() * 0.2f);
+                        if (mc.player != null && mc.player.position().distanceTo(pos) < 14) ScreenEffects.shake(0.45f, 5);
                     }
-                    if ((int) s % 9 == 0) sound("ripple_bomb", pos, 1.4f, 0.8f + RNG.nextFloat() * 0.2f);
-                    if (mc.player != null && mc.player.position().distanceTo(pos) < 10) ScreenEffects.shake(0.35f, 4);
-                } else if (drawn) {
+                    // Energy streaming along it toward the impact, sucked in round its edges.
+                    for (int i = 0; i < q(6); i++) {
+                        Vec3 a0 = b.origin.add(d.scale(RNG.nextDouble() * st[0])).add(randomUnit().scale(b.half * 1.4));
+                        add(level, a0, randomUnit().scale(0.15).add(d.scale(0.7)), Sprite.GLOW, i % 3 == 0 ? WHITE : PINK, 0.85f, 0.5f, 0.04f, 10);
+                    }
+                } else {
                     sparks(level, pos, d.scale(-1), q(6), 0.4, PINK, 0.06f, 8);
                 }
             }
+            case "beam_hold" -> {
+                // A clash has it: it pours on until released.
+                var b = dev.rick.jjk.client.render.LoveBeams.get(p.entityId());
+                if (b != null) b.held = true;
+            }
+            case "beam_reaim" -> {
+                var b = dev.rick.jjk.client.render.LoveBeams.get(p.entityId());
+                if (b != null && d.lengthSqr() > 1e-6) b.dir = d;
+            }
+            case "beam_release" -> {
+                // It won: on through, full length, for a while yet.
+                var b = dev.rick.jjk.client.render.LoveBeams.get(p.entityId());
+                if (b != null) {
+                    b.held = false;
+                    b.hold = (int) b.age(now, false) + Math.max(4, (int) s);
+                    b.surgeAt = now;
+                }
+            }
             case "beam_stop", "beam_fizzle" -> {
-                // Cut short (he fell, left, or Rika is gone): the beam collapses now, the charge drains away.
-                Flashes.stopLoveBeam(p.entityId(), now);
+                dev.rick.jjk.client.render.LoveBeams.stop(p.entityId(), now);
                 if (drawn) {
-                    Flashes.flash(pos, 1.6f, 0.2f, PINK, 0.8f, 8, now);
-                    burst(level, pos, q(16), 0.2, Sprite.SMOKE, SMOKE, 0.7f, 16);
+                    Flashes.flash(pos, 2.2f, 0.2f, PINK, 0.8f, 8, now);
+                    burst(level, pos, q(20), 0.2, Sprite.SMOKE, SMOKE, 0.8f, 16);
                 }
                 if (p.id().equals("beam_fizzle")) sound("rika_move", pos, 1f, 0.8f);
             }
@@ -733,7 +775,6 @@ final class YutaFx {
                 victimFeedback(p, 0.9f);
             }
             case "beam_finisher" -> {
-                // Atomized into black mist.
                 sound("yuta_crush", pos, 1.3f, 0.8f);
                 if (drawn) burst(level, pos, q(40), 0.15, Sprite.SMOKE, SMOKE, 1f, 30);
             }
@@ -961,7 +1002,7 @@ final class YutaFx {
                     }
                 }
             }
-            default -> {}
+            default -> RyuFx.play(p, mc, level, pos, dir, s, mine, now);
         }
     }
 

@@ -26,7 +26,7 @@ public final class JJKConfig {
      * The gameplay tuning this file was written for. When the mod's defaults change (the JJS wiki pass), older files have
      * their gameplay sections reset to the new defaults; the player's client settings are kept.
      */
-    public static final int CURRENT_VERSION = 5;
+    public static final int CURRENT_VERSION = 6;
     public int version;
 
     public General general = new General();
@@ -50,6 +50,8 @@ public final class JJKConfig {
     public Gojo gojo = new Gojo();
     public Yuji yuji = new Yuji();
     public Yuta yuta = new Yuta();
+    public Ryu ryu = new Ryu();
+    public BeamClash beamClash = new BeamClash();
 
     public static JJKConfig get() {
         return instance;
@@ -1003,14 +1005,22 @@ public final class JJKConfig {
         public int beamConjureTicks = 22;
         /** Ticks from the start until the beam fires (the rest of it is Rika's charge, the path telegraphed). */
         public int beamWindup = 60;
-        /** How long the blast lasts (5 seconds), including its grow-in and collapse; it only does damage while drawn. */
+        /** How long the blast holds at full size once it appears (exactly 5 seconds); the collapse comes after, harmless. */
         public int beamTicks = 100;
         public int beamGrowTicks = 3;
-        public int beamCollapseTicks = 6;
-        public double beamRange = 40;
-        /** The beam's full radius: 1.5 makes it the 3x3-block torrent its hitbox is (the quick beam's is thinner). */
-        public double beamRadius = 1.5;
-        public float beamDamage = 100f;
+        public int beamCollapseTicks = 8;
+        public double beamRange = 44;
+        /** Half the beam's square side: 2.5 makes the visible torrent and its hitbox 5 blocks wide and 5 tall. */
+        public double beamRadius = 2.5;
+        /** Damage the first time the beam catches someone, then every {@code beamDamageInterval} ticks they stay in it. */
+        public float beamDamage = 20f;
+        public float beamTickDamage = 8f;
+        public int beamDamageInterval = 10;
+        /** How far each tick of contact carries someone along it (blocks a tick): it bores them along, it doesn't fling them. */
+        public double beamPush = 0.35;
+        /** The square path it carves (temporary, restored like all battle damage) and the ragged edge round it. */
+        public float beamMaxHardness = 60f;
+        public double beamCarveEdge = 1.2;
         /** The quick beam: the orb let go from his hands at once (pressed again in the wind-up, or Rika is busy). */
         public int beamQuickWindup = 8;
         public int beamQuickTicks = 7;
@@ -1024,6 +1034,88 @@ public final class JJKConfig {
         public float throwMaxDamage = 18f;
         public float throwMissMinDamage = 0.5f;
         public float throwMissMaxDamage = 22f;
+    }
+
+    /**
+     * Ryu Ishigori (JJS "True Cannon"), from the Jujutsu Shenanigans wiki: its seconds in ticks, its studs in blocks
+     * (about 3.6 studs to a block), its damage as written.
+     */
+    public static final class Ryu {
+        public float maxCursedEnergy = 900f;
+        public float regenPerSecond = 22f;
+        public float finisherThreshold = 0.2f;
+        /** Every Last Drop's awakening: 90 seconds. */
+        public int awakeningSeconds = 90;
+        // Overheat (0-100): what each discharge adds, where it shuts things off.
+        public float heatM1 = 10f, heatGranite = 20f, heatGraniteHeld = 40f, heatAppetizer = 10f;
+        public float m1RayHeatLimit = 90f;
+        /** Every Last Drop awakens him only if he fired it with the meter in [awakenFrom, 100). */
+        public float awakenFrom = 80f;
+        public float heatCoolPerSecond = 0f;
+        // Cursed Energy Discharge: 3 hits (3 + 3 + 4), the neutral third a 24-stud ray for 8.
+        public float m1Damage = 3f, m1FinisherDamage = 4f, m1RayDamage = 8f;
+        public double m1RayRange = 6.7;
+        // Granite Blast: 0.5s; 78.5 studs, 5.5, stuns the first it meets; held 1.1s: 100 studs, piercing, unblockable,
+        // ragdolling, 12 falling to 5.5 with distance; during a front dash: a looping blast into a second dash (4, 6s).
+        public int graniteCooldown = 10;
+        public int graniteHoldTicks = 22;
+        public double graniteRange = 21.8, graniteHeldRange = 27.8;
+        public float graniteDamage = 5.5f, graniteHeldDamage = 12f, graniteHeldMinDamage = 5.5f;
+        public int graniteStun = 18;
+        public int graniteDashCooldown = 120;
+        public float graniteDashDamage = 4f;
+        public int graniteDashWindow = 8;
+        // Unsatisfied: 20s; three quick blows (3 each), the back clash (3) and the toss (6).
+        public int unsatisfiedCooldown = 400;
+        public float unsatisfiedHit = 3f, unsatisfiedClash = 3f, unsatisfiedToss = 6f;
+        public int unsatisfiedRestyleRefund = 10;
+        // Second Helping: 15s; a target within 70 studs, a dash over them and a slam (12); airborne: punch 6, impact 6.
+        public int secondHelpingCooldown = 300;
+        public double secondHelpingRange = 19.5;
+        public float secondHelpingDamage = 12f, secondHelpingAirPunch = 6f, secondHelpingAirImpact = 6f;
+        public int secondHelpingRestyleRefund = 60;
+        // Appetizer: 18s; two blasts (4, 80 studs, stun) and the vertical ray (8, 60 studs, ragdolls them up and in).
+        public int appetizerCooldown = 360;
+        public double appetizerRange = 22.2, appetizerRayRange = 16.7;
+        public float appetizerBlast = 4f, appetizerRay = 8f;
+        // Restyle: 17s; -60% (1s) or, overheated, the comb: -100% (2.75s); awakened: +10 HP, +10% meter (2s).
+        public int restyleCooldown = 340;
+        public float restyleCool = 60f;
+        public int restyleTicks = 20, restyleCombTicks = 55, restyleAwakenedTicks = 40;
+        public float restyleHeal = 10f, restyleMeter = 0.1f;
+        // Every Last Drop.: 104 (less the more it catches, and the farther), 100% overheat; awakening heals 25.
+        public int eldCharge = 50;
+        public int eldTicks = 40;
+        public double eldRange = 46, eldRadius = 1.3;
+        public float eldDamage = 104f, eldMinDamage = 45f, eldHeal = 25f;
+        public int eldCooldown = 600;
+        public float eldCost = 150f;
+        // Decadence: the meter takes the blows once he is critical (200 damage' worth); feints cost 5 HP (6s cooldown).
+        public float decadenceCritical = 0.3f;
+        public float decadenceMeterHealth = 200f;
+        public float feintCost = 5f;
+        public int feintCooldown = 120;
+        // "What are you after?": 18s; slam 10, punch 20, launch 5, 5 to himself.
+        public int afterCooldown = 360;
+        public float afterSlam = 10f, afterPunch = 20f, afterLaunch = 5f, afterSelf = 5f;
+        // "I had no idea...": 15s; grab 3, seven punches of 2, push 3; 9 to himself.
+        public int noIdeaCooldown = 300;
+        public float noIdeaGrab = 3f, noIdeaPunch = 2f, noIdeaPush = 3f, noIdeaSelfGrab = 2f, noIdeaSelfPunch = 1f;
+        public int noIdeaWindup = 18;
+        // "This is what dessert is like!": 20s; kick 7, swing 3, four blows of 5, push 6; 10 to himself.
+        public int dessertCooldown = 400;
+        public float dessertKick = 7f, dessertSwing = 3f, dessertBlow = 5f, dessertPush = 6f, dessertSelf = 2f;
+        // "You weren't invited.": 20s; 20, 40 held 1.9s; a wall's debris flies 100 studs (250 held), 20 a wall.
+        public int invitedCooldown = 400;
+        public int invitedHoldTicks = 38;
+        public float invitedDamage = 20f, invitedWallDamage = 20f;
+        public double invitedWallRange = 27.8, invitedWallHeldRange = 69.4;
+    }
+
+    /** Beam clashes (True Love Beam against Every Last Drop): the duel's tuning lives in the session; these are reach. */
+    public static final class BeamClash {
+        public boolean enabled = true;
+        public double counterRange = 64;
     }
 
     public static Path path() {

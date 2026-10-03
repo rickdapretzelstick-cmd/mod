@@ -72,13 +72,15 @@ public final class MeleeSystem {
         }
         JJKConfig.Melee cfg = JJKConfig.get().melee;
         long now = user.level().getGameTime();
-        if (now - m.lastAttackTime > cfg.chainResetTicks || m.chainIndex > 3) m.chainIndex = 0;
+        MeleeMoveset set0 = moveset(caster);
+        int last = Math.max(1, set0.chain()) - 1;
+        if (now - m.lastAttackTime > cfg.chainResetTicks || m.chainIndex > last) m.chainIndex = 0;
 
         boolean airborne = Combat.isAirborne(user) && (flags & MeleeInputPayload.FLAG_AIRBORNE) != 0 || !user.onGround() && user.fallDistance > 0.4;
         boolean sprinting = (flags & MeleeInputPayload.FLAG_SPRINT) != 0 || user.isSprinting();
         boolean jumpHeld = (flags & MeleeInputPayload.FLAG_JUMP) != 0;
         boolean lookDown = user.getXRot() > 50 || (flags & MeleeInputPayload.FLAG_LOOK_DOWN) != 0;
-        MeleeMoveset set = moveset(caster);
+        MeleeMoveset set = set0;
 
         MeleeMove move;
         if (lookDown && !airborne && downedTargetNear(user)) {
@@ -86,10 +88,14 @@ public final class MeleeSystem {
         } else if (m.chainIndex == 0 && sprinting && !airborne) {
             move = sprintAttack(set, cfg);
             m.chainIndex = 1;
-        } else if (m.chainIndex == 3) {
+        } else if (m.chainIndex == last) {
             // Movesets without launchers (Shrine) end every chain on the plain finisher.
             move = !set.launchers() ? finisher(set, cfg) : airborne ? downslam(set, cfg) : jumpHeld ? uppercut(set, cfg) : finisher(set, cfg);
-            m.chainIndex = 4;
+            if (move.id().equals("finisher") && set.finisher() != null) {
+                MeleeMove own = set.finisher().replace(user, move);
+                if (own != null) move = own;
+            }
+            m.chainIndex = last + 1;
         } else {
             move = airborne ? airLight(set, cfg, m.chainIndex) : groundLight(set, cfg, m.chainIndex);
             m.chainIndex++;

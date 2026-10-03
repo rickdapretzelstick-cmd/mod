@@ -1,0 +1,195 @@
+{
+  "name": "ryu_after_slam",
+  "duration": 500,
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "SPECIAL",
+  "hold": true,
+  "keys": [
+    {
+      "t": 0,
+      "bones": {
+        "head": {
+          "rot": [
+            -12,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            -14,
+            0,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -170,
+            0,
+            10
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -160,
+            0,
+            -12
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            -10,
+            0,
+            6
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            10,
+            0,
+            -6
+          ]
+        },
+        "hips": {
+          "rot": [
+            -6,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            1,
+            -1
+          ]
+        }
+      }
+    },
+    {
+      "t": 300,
+      "bones": {
+        "head": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            40,
+            -10,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -30,
+            -10,
+            10
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -20,
+            10,
+            -20
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            -60,
+            0,
+            8
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            30,
+            0,
+            -8
+          ]
+        },
+        "hips": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -8,
+            4
+          ]
+        }
+      },
+      "ease": "EASE_IN"
+    },
+    {
+      "t": 500,
+      "bones": {
+        "head": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            40,
+            -10,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -30,
+            -10,
+            10
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -20,
+            10,
+            -20
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            -60,
+            0,
+            8
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            30,
+            0,
+            -8
+          ]
+        },
+        "hips": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -8,
+            4
+          ]
+        }
+      },
+      "ease": "EASE_OUT"
+    }
+  ]
+}

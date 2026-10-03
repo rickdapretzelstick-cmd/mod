@@ -18,6 +18,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class KeyboardHandlerMixin {
     @Inject(method = "keyPress", at = @At("HEAD"), cancellable = true)
     private void jjk$clashLanes(long handle, int action, KeyEvent event, CallbackInfo ci) {
+        // A beam clash's skill check takes the space bar (the contestants are rooted anyway).
+        if (dev.rick.jjk.client.clash.BeamClashClient.playing() && event.key() == InputConstants.KEY_SPACE && Minecraft.getInstance().gui.screen() == null) {
+            if (action == 1) dev.rick.jjk.client.clash.BeamClashClient.press();
+            ci.cancel();
+            return;
+        }
         if (!ClashClient.playing() || !dev.rick.jjk.client.CombatMode.enabled() || Minecraft.getInstance().gui.screen() != null) return;
         int lane = switch (event.key()) {
             case InputConstants.KEY_LEFT, InputConstants.KEY_A -> 0;

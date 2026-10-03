@@ -76,6 +76,9 @@ public class JJKClient implements ClientModInitializer {
         HudElementRegistry.addLast(JJK.id("clash_hud"), (g, delta) -> {
             if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.clash.ClashHud.render(g);
         });
+        HudElementRegistry.addLast(JJK.id("beam_clash_hud"), (g, delta) -> {
+            if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.clash.BeamClashHud.render(g);
+        });
         HudElementRegistry.addLast(JJK.id("gojo_presentation"), (g, delta) -> {
             if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.hud.GojoPresentation.render(g);
         });
@@ -110,6 +113,9 @@ public class JJKClient implements ClientModInitializer {
             dev.rick.jjk.client.clash.ClashClient.reset();
             dev.rick.jjk.client.cinematic.DomainCinematic.reset();
             dev.rick.jjk.client.clash.ClashCamera.reset();
+            dev.rick.jjk.client.clash.BeamClashClient.reset();
+            dev.rick.jjk.client.clash.BeamClashCamera.reset();
+            dev.rick.jjk.client.hud.RyuHud.reset();
         });
     }
 
@@ -117,6 +123,11 @@ public class JJKClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(FxPayload.TYPE, (p, ctx) -> ClientFx.handle(p));
         ClientPlayNetworking.registerGlobalReceiver(CasterSyncPayload.TYPE, (p, ctx) -> ClientState.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.YutaPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.YutaHud.apply(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.RyuPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.RyuHud.apply(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.BeamClashStatePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.BeamClashClient.state(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.BeamClashCheckPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.BeamClashClient.check(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.BeamClashJudgePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.BeamClashClient.judge(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.BeamCounterPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.BeamClashClient.counter(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.GamblePayload.TYPE, (p, ctx) -> {
             if (ctx.client().level != null) ClientState.applyGamble(p, ctx.client().level.getGameTime());
         });
@@ -246,6 +257,8 @@ public class JJKClient implements ClientModInitializer {
         dev.rick.jjk.client.cinematic.DomainCinematic.tick(mc);
         dev.rick.jjk.client.fx.UnlimitedPurpleFx.tick(mc);
         dev.rick.jjk.client.clash.ClashCamera.tick(mc);
+        dev.rick.jjk.client.clash.BeamClashClient.tick(mc);
+        dev.rick.jjk.client.clash.BeamClashCamera.tick(mc);
         InputHandler.tick(mc);
         ambientTicks++;
         ambient(mc);

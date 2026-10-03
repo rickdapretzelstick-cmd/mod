@@ -32,6 +32,12 @@ public abstract class CameraMixin {
             setPosition(new net.minecraft.world.phys.Vec3(clash[0], clash[1], clash[2]));
             setRotation((float) clash[3], (float) clash[4]);
         }
+        // Beam clash: a brief side-on shot of the two beams meeting.
+        double[] beams = dev.rick.jjk.client.clash.BeamClashCamera.apply(position(), yRot, xRot);
+        if (beams != null) {
+            setPosition(new net.minecraft.world.phys.Vec3(beams[0], beams[1], beams[2]));
+            setRotation((float) beams[3], (float) beams[4]);
+        }
         float dy = ScreenEffects.yawOffset(partialTicks), dx = ScreenEffects.pitchOffset(partialTicks);
         if (dy != 0 || dx != 0) setRotation(yRot + dy, xRot + dx);
     }

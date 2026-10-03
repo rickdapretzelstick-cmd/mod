@@ -1,0 +1,133 @@
+{
+  "name": "ryu_invited_lunge",
+  "duration": 300,
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "SPECIAL",
+  "hold": true,
+  "keys": [
+    {
+      "t": 0,
+      "bones": {
+        "head": {
+          "rot": [
+            6,
+            20,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            46,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            40,
+            30,
+            40
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -85,
+            30,
+            -12
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            26,
+            0,
+            6
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -6
+          ]
+        },
+        "hips": {
+          "rot": [
+            8,
+            34,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -3,
+            -1.5
+          ]
+        }
+      }
+    },
+    {
+      "t": 300,
+      "bones": {
+        "head": {
+          "rot": [
+            6,
+            20,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            16,
+            50,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            40,
+            30,
+            40
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -85,
+            30,
+            -12
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            26,
+            0,
+            6
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -6
+          ]
+        },
+        "hips": {
+          "rot": [
+            8,
+            34,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -3,
+            6
+          ]
+        }
+      },
+      "ease": "EASE_OUT"
+    }
+  ]
+}

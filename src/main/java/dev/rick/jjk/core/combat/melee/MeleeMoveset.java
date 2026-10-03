@@ -13,11 +13,24 @@ import java.util.function.Consumer;
  * @param launchers        whether the 4th hit can be an uppercut (jump held) or a downslam (airborne)
  * @param blockable360     whether a guard stops these hits from any side
  * @param onSwing          extra work each swing does (Shrine's slashes cut through walls), or null
+ * @param chain            hits in a chain (4; True Cannon's is 3), the last of them the finisher
+ * @param finisher         replaces the plain ground finisher when it returns a move (True Cannon's energy ray), or null
  */
 public record MeleeMoveset(String animPrefix, String fxPrefix, float damageMultiplier, float knockbackMultiplier, float speedMultiplier,
-                           float rangeMultiplier, boolean launchers, boolean blockable360, @Nullable Consumer<LivingEntity> onSwing) {
+                           float rangeMultiplier, boolean launchers, boolean blockable360, @Nullable Consumer<LivingEntity> onSwing, int chain,
+                           @Nullable Finisher finisher) {
+    /** A character's own ground finisher: given the standard one, the move to use instead (or null to keep it). */
+    public interface Finisher {
+        @Nullable MeleeMove replace(LivingEntity user, MeleeMove standard);
+    }
+
     public MeleeMoveset(String animPrefix, String fxPrefix, float damageMultiplier, float knockbackMultiplier, float speedMultiplier) {
         this(animPrefix, fxPrefix, damageMultiplier, knockbackMultiplier, speedMultiplier, 1f, true, false, null);
+    }
+
+    public MeleeMoveset(String animPrefix, String fxPrefix, float damageMultiplier, float knockbackMultiplier, float speedMultiplier,
+                        float rangeMultiplier, boolean launchers, boolean blockable360, @Nullable Consumer<LivingEntity> onSwing) {
+        this(animPrefix, fxPrefix, damageMultiplier, knockbackMultiplier, speedMultiplier, rangeMultiplier, launchers, blockable360, onSwing, 4, null);
     }
 
     public String anim(String name) {

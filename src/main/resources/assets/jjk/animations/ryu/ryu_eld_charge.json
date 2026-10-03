@@ -1,0 +1,257 @@
+{
+  "name": "ryu_eld_charge",
+  "duration": 2500,
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "SPECIAL",
+  "hold": true,
+  "keys": [
+    {
+      "t": 0,
+      "bones": {
+        "head": {
+          "rot": [
+            4,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            6,
+            10,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -55,
+            -15,
+            14
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -70,
+            25,
+            -12
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            12,
+            0,
+            6
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -14,
+            0,
+            -6
+          ]
+        },
+        "hips": {
+          "rot": [
+            4,
+            10,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -1,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "t": 400,
+      "bones": {
+        "head": {
+          "rot": [
+            2,
+            -14,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            2,
+            -30,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -80,
+            -20,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -64,
+            46,
+            -4
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            26,
+            0,
+            8
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -8
+          ]
+        },
+        "hips": {
+          "rot": [
+            6,
+            -24,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -3,
+            -1
+          ]
+        }
+      },
+      "ease": "EASE_OUT"
+    },
+    {
+      "t": 1800,
+      "bones": {
+        "head": {
+          "rot": [
+            2,
+            -14,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            6,
+            -34,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -90,
+            -20,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -74,
+            46,
+            -4
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            26,
+            0,
+            8
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -8
+          ]
+        },
+        "hips": {
+          "rot": [
+            6,
+            -24,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -4,
+            -1
+          ]
+        }
+      },
+      "ease": "EASE_IN_OUT"
+    },
+    {
+      "t": 2500,
+      "bones": {
+        "head": {
+          "rot": [
+            2,
+            -14,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            2,
+            -30,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -92,
+            -20,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -76,
+            46,
+            -4
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            26,
+            0,
+            8
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -8
+          ]
+        },
+        "hips": {
+          "rot": [
+            6,
+            -24,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -4.5,
+            -1.5
+          ]
+        }
+      },
+      "ease": "EASE_IN"
+    }
+  ]
+}
