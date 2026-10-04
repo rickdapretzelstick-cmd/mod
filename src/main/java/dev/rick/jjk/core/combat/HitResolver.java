@@ -59,6 +59,7 @@ public final class HitResolver {
         float damage = hit.damage * cfg.general.damageMultiplier;
         if (hit.comboScaling) damage *= Math.max(cfg.general.comboMinDamageScale, 1f - cfg.general.comboDamageDecay * prior);
         if (!sureHit && state.has(CombatStatus.OVERLOAD)) damage *= cfg.domain.overloadedDamageScale;
+        damage *= masteryDamage(hit.attacker);
 
         DefenseResult defense = Defenses.resolve(IncomingAttack.of(hit, target, damage));
         HitResult.Outcome outcome = switch (defense.kind()) {
@@ -146,5 +147,13 @@ public final class HitResolver {
                 Math.max(box.minY, Math.min(from.y, box.maxY)),
                 Math.max(box.minZ, Math.min(from.z, box.maxZ)));
         return closest.lerp(c, 0.35);
+    }
+
+    /** Technique Mastery's damage bonus on the move this hit belongs to ({@code <ability>.damage}); 1 for anyone else. */
+    private static float masteryDamage(@org.jetbrains.annotations.Nullable net.minecraft.world.entity.LivingEntity attacker) {
+        if (!(attacker instanceof net.minecraft.server.level.ServerPlayer)) return 1f;
+        var c = dev.rick.jjk.core.ability.Casters.getOrNull(attacker);
+        String id = c == null ? null : c.creditedAbility();
+        return id == null ? 1f : (float) dev.rick.jjk.progression.mastery.Mastery.param(attacker, id + ".damage");
     }
 }

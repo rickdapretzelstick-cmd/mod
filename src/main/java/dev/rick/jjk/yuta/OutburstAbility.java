@@ -102,7 +102,9 @@ public final class OutburstAbility extends Ability {
 
         int stage() {
             if (fixedStage >= 0) return fixedStage;
-            return Math.min(3, Math.max(0, age - YutaCombat.cfg().outburstWindup) / YutaCombat.cfg().outburstStageTicks);
+            // The last, unblockable stage is a Mastery node (outburst.full_stage); without it the burst stops growing at 2.
+            int top = dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "outburst.full_stage") ? 3 : 2;
+            return Math.min(top, Math.max(0, age - YutaCombat.cfg().outburstWindup) / YutaCombat.cfg().outburstStageTicks);
         }
 
         boolean parryOpen() {

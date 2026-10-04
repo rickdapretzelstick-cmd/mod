@@ -1,0 +1,280 @@
+{
+  "id": "technique/hakari",
+  "kind": "TECHNIQUE",
+  "owner": "hakari",
+  "title": "Hakari Kinji — Idle Death Gamble",
+  "lanes": [
+    "Balls & Doors",
+    "Strikes",
+    "Guard",
+    "Gamble",
+    "Jackpot"
+  ],
+  "nodes": [
+    {
+      "id": "steel_flick",
+      "name": "Steel Flick",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 0,
+      "row": 0,
+      "move": "reserve_balls",
+      "description": "Reserve Balls hits 20% harder.",
+      "effects": [
+        {
+          "param": "reserve_balls.damage",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "rough_grip",
+      "name": "Coarse Grip",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 1,
+      "row": 0,
+      "move": "rough_energy",
+      "description": "Rough Energy hits 15% harder.",
+      "effects": [
+        {
+          "param": "rough_energy.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "lacquer",
+      "name": "Lacquered Door",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 2,
+      "row": 0,
+      "move": "door_guard",
+      "description": "Door Guard comes back 20% sooner.",
+      "effects": [
+        {
+          "param": "door_guard.cooldown",
+          "mul": 0.8
+        }
+      ]
+    },
+    {
+      "id": "door_timing",
+      "name": "Train Schedule",
+      "tier": "SMALL",
+      "cost": 25,
+      "lane": 0,
+      "row": 1,
+      "move": "shutter_doors",
+      "description": "Shutter Doors comes back 15% sooner.",
+      "requires": [
+        "steel_flick"
+      ],
+      "effects": [
+        {
+          "param": "shutter_doors.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "fever_kick",
+      "name": "Fever Pitch",
+      "tier": "SMALL",
+      "cost": 25,
+      "lane": 1,
+      "row": 1,
+      "move": "fever_breaker",
+      "description": "Fever Breaker hits 15% harder.",
+      "requires": [
+        "rough_grip"
+      ],
+      "effects": [
+        {
+          "param": "fever_breaker.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "ball_doors",
+      "name": "Balls + Doors",
+      "tier": "MECHANICAL",
+      "cost": 55,
+      "lane": 0,
+      "row": 2,
+      "move": "reserve_balls",
+      "description": "Shutter Doors during Reserve Balls' wind-up: the doors open where the ball lands and bounce whoever it stunned.",
+      "requires": [
+        "door_timing"
+      ],
+      "effects": [
+        {
+          "unlock": "reserve_balls.doors"
+        }
+      ]
+    },
+    {
+      "id": "fever_crush",
+      "name": "Fever Crush",
+      "tier": "MECHANICAL",
+      "cost": 60,
+      "lane": 1,
+      "row": 2,
+      "move": "fever_breaker",
+      "description": "Shutter Doors during Fever Breaker's wind-up: the doors clamp them in place for an unblockable axe kick.",
+      "requires": [
+        "fever_kick",
+        "door_timing"
+      ],
+      "effects": [
+        {
+          "unlock": "fever_breaker.doors"
+        }
+      ]
+    },
+    {
+      "id": "hot_hand",
+      "name": "Hot Hand",
+      "tier": "SMALL",
+      "cost": 35,
+      "lane": 2,
+      "row": 2,
+      "move": "rough_energy",
+      "description": "Rough Energy comes back 15% sooner.",
+      "requires": [
+        "lacquer"
+      ],
+      "effects": [
+        {
+          "param": "rough_energy.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "awakening",
+      "name": "Domain Expansion: Idle Death Gamble",
+      "tier": "AWAKENING",
+      "cost": 450,
+      "lane": 3,
+      "row": 3,
+      "move": "idle_death_gamble",
+      "description": "Milestone. The domain opens: the gamble, the pachinko rules and the Jackpot that is Hakari's awakening.",
+      "requires": [
+        "ball_doors",
+        "fever_crush",
+        "hot_hand"
+      ],
+      "effects": [
+        {
+          "unlock": "hakari.awakening"
+        }
+      ]
+    },
+    {
+      "id": "renewal",
+      "name": "Renewal",
+      "tier": "MECHANICAL",
+      "cost": 90,
+      "lane": 0,
+      "row": 4,
+      "move": "reserve_balls",
+      "description": "Inside the domain, Reserve Balls again within 8 seconds of a ball landing rewinds everyone to that moment.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "unlock": "reserve_balls.renewal"
+        }
+      ]
+    },
+    {
+      "id": "rhythm",
+      "name": "Keep the Beat",
+      "tier": "SMALL",
+      "cost": 50,
+      "lane": 3,
+      "row": 4,
+      "move": "rhythm",
+      "description": "Rhythm comes back 20% sooner.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "rhythm.cooldown",
+          "mul": 0.8
+        }
+      ]
+    },
+    {
+      "id": "volley",
+      "name": "Lucky Streak",
+      "tier": "SMALL",
+      "cost": 50,
+      "lane": 4,
+      "row": 4,
+      "move": "lucky_volley",
+      "description": "Lucky Volley and Lucky Rushdown hit 15% harder.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "lucky_volley.damage",
+          "mul": 1.15
+        },
+        {
+          "param": "lucky_rushdown.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "surge",
+      "name": "Overflowing Luck",
+      "tier": "SMALL",
+      "cost": 60,
+      "lane": 4,
+      "row": 5,
+      "move": "overwhelming_luck",
+      "description": "Overwhelming Luck hits 15% harder; Energy Surge comes back 15% sooner.",
+      "requires": [
+        "volley"
+      ],
+      "effects": [
+        {
+          "param": "overwhelming_luck.damage",
+          "mul": 1.15
+        },
+        {
+          "param": "energy_surge.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "house",
+      "name": "The House Always Pays",
+      "tier": "MAJOR",
+      "cost": 120,
+      "lane": 3,
+      "row": 5,
+      "move": "idle_death_gamble",
+      "description": "Milestone. Idle Death Gamble comes back 15% sooner.",
+      "requires": [
+        "rhythm",
+        "renewal"
+      ],
+      "effects": [
+        {
+          "param": "idle_death_gamble.cooldown",
+          "mul": 0.85
+        }
+      ]
+    }
+  ]
+}

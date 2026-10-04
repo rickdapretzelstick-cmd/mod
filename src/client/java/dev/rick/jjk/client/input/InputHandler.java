@@ -35,6 +35,7 @@ public final class InputHandler {
     private static KeyMapping modeKey;
     /** Opens the character select screen. */
     private static KeyMapping characterKey;
+    private static KeyMapping masteryKey;
 
     private static final int HEAVY_HOLD_TICKS = 7;
     private static boolean attackHeld;
@@ -62,6 +63,7 @@ public final class InputHandler {
         bind(AbilitySlot.GUARD, "guard", InputConstants.KEY_F);
         bind(AbilitySlot.DASH, "dash", InputConstants.KEY_Q);
         characterKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.character_menu", InputConstants.Type.KEYBOARD, InputConstants.KEY_K, CATEGORY));
+        masteryKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.mastery", InputConstants.Type.KEYBOARD, InputConstants.KEY_J, CATEGORY));
         modeKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.combat_mode", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY));
     }
 
@@ -128,6 +130,9 @@ public final class InputHandler {
         while (characterKey.consumeClick()) {
             // Survival progression decides what the screen may offer (Creative: everything).
             if (mc.gui.screen() == null) dev.rick.jjk.client.ClientProgression.openCharacterSelect(null);
+        }
+        while (masteryKey.consumeClick()) {
+            if (mc.gui.screen() == null) mc.gui.setScreen(new dev.rick.jjk.client.mastery.MasteryScreen());
         }
         if (!dev.rick.jjk.client.CombatMode.enabled()) {
             // Vanilla Minecraft mode: none of this mod's keys do anything. Swallow their presses so nothing fires later.

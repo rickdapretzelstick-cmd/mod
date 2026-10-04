@@ -1,0 +1,30 @@
+{
+  "id": "tool/cursed_cleaver",
+  "kind": "TOOL",
+  "owner": "cursed_cleaver",
+  "title": "Cursed Cleaver",
+  "lanes": ["Weight", "Charge", "Break"],
+  "nodes": [
+    {"id": "heft", "name": "Heft", "tier": "SMALL", "cost": 8, "lane": 0, "row": 0,
+     "description": "You learn where the weight sits. +15% damage.",
+     "effects": [{"param": "tool.cursed_cleaver.damage", "mul": 1.15}]},
+    {"id": "heavy_swing", "name": "Heavy Swing", "tier": "MECHANICAL", "cost": 18, "lane": 1, "row": 0,
+     "description": "Use and hold to wind up, release to bring the cleaver down in front of you. Longer holds hit far harder.",
+     "effects": [{"unlock": "tool.cursed_cleaver.heavy_swing"}]},
+    {"id": "momentum", "name": "Momentum", "tier": "MECHANICAL", "cost": 18, "lane": 0, "row": 1, "requires": ["heft"],
+     "description": "Your swings carry through: every hit throws the target back.",
+     "effects": [{"unlock": "tool.cursed_cleaver.momentum"}]},
+    {"id": "settled_stance", "name": "Settled Stance", "tier": "SMALL", "cost": 14, "lane": 1, "row": 1, "requires": ["heavy_swing"],
+     "description": "+10% attack speed between heavy blows.",
+     "effects": [{"param": "tool.cursed_cleaver.speed", "mul": 1.1}]},
+    {"id": "guard_break", "name": "Guard Break", "tier": "MECHANICAL", "cost": 28, "lane": 2, "row": 2, "requires": ["heavy_swing"],
+     "description": "A Heavy Swing smashes straight through a guard and leaves the target open.",
+     "effects": [{"unlock": "tool.cursed_cleaver.guard_break"}]},
+    {"id": "iron_weight", "name": "Iron Weight", "tier": "SMALL", "cost": 22, "lane": 0, "row": 2, "requires": ["momentum"],
+     "description": "+15% damage.",
+     "effects": [{"param": "tool.cursed_cleaver.damage", "mul": 1.15}]},
+    {"id": "shockwave", "name": "Shockwave", "tier": "MAJOR", "cost": 60, "lane": 1, "row": 3, "requires": ["guard_break", "iron_weight"],
+     "description": "Milestone. A fully charged Heavy Swing splits the ground: everything nearby is hit and thrown into the air.",
+     "effects": [{"unlock": "tool.cursed_cleaver.shockwave"}]}
+  ]
+}

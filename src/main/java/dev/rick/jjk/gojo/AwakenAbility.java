@@ -84,6 +84,7 @@ public final class AwakenAbility extends Ability {
         @Override
         public boolean pressWhileLocked(dev.rick.jjk.core.ability.AbilitySlot slot) {
             if (slot != dev.rick.jjk.core.ability.AbilitySlot.SKILL_5 || zeroTwo || age >= total - 6) return false;
+            if (!dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "awaken.zero_two")) return false;
             zeroTwo = true;
             // Any time during the sequence: the cut-in, then Infinite Void for two tenths of a second.
             rushAt = Math.max(reveal, age + CUT_IN);

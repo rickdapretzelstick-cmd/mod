@@ -61,6 +61,13 @@ public final class TeleportAbility extends Ability {
         return JJKConfig.get().gojo.limitlessCooldown;
     }
 
+    /** The opponent Rapid Punches just landed on, if Face Grater (a Mastery variant) is open to this Gojo. */
+    @Nullable
+    private static LivingEntity faceGrater(AbilityContext ctx) {
+        if (!dev.rick.jjk.progression.mastery.Mastery.unlocked(ctx.user(), "rapid_punches.face_grater")) return null;
+        return GojoState.of(ctx.user()).faceGraterTarget(ctx.level().getGameTime());
+    }
+
     @Nullable
     private static LivingEntity target(AbilityContext ctx) {
         return Aim.target(ctx.user(), JJKConfig.get().gojo.limitlessRange, JJKConfig.get().teleport.targetAssistAngle, ctx.targetHint());
@@ -68,7 +75,7 @@ public final class TeleportAbility extends Ability {
 
     @Override
     public @Nullable String checkActivation(AbilityContext ctx) {
-        if (GojoState.of(ctx.user()).faceGraterTarget(ctx.level().getGameTime()) != null) return null;
+        if (faceGrater(ctx) != null) return null;
         return target(ctx) == null ? "no_target" : null;
     }
 
@@ -79,7 +86,7 @@ public final class TeleportAbility extends Ability {
             caster.setAwakening(Math.max(0, caster.awakening() - JJKConfig.get().gojo.limitlessMeterCost));
         }
         GojoState gs = GojoState.of(ctx.user());
-        LivingEntity punched = gs.faceGraterTarget(ctx.level().getGameTime());
+        LivingEntity punched = faceGrater(ctx);
         LivingEntity aimed = target(ctx);
         if (punched != null) {
             gs.punched = null;

@@ -559,7 +559,7 @@ public class YutaGameTests {
         });
     }
 
-    @GameTest(maxTicks = 260, padding = 24, environment = "jjk-test:yuta_domain")
+    @GameTest(maxTicks = 260, padding = 24, environment = "jjk-test:yuta_domain_b")
     public void bladesFallAndJacobsLadderShattersTheDomain(GameTestHelper h) {
         floor(h, 18);
         TrainingDummy target = dummy(h, 9.5, 8.5);

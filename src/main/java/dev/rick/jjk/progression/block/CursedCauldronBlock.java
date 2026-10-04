@@ -46,9 +46,8 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
     /** 0 = still; 1..STAGES while glasses are being infused. */
     public static final int STAGES = 5;
     public static final IntegerProperty INFUSION = IntegerProperty.create("infusion", 0, STAGES);
-    /** While infusing: true when what it holds is a Dormant Prison Realm (not glasses). */
-    public static final net.minecraft.world.level.block.state.properties.BooleanProperty REALM =
-            net.minecraft.world.level.block.state.properties.BooleanProperty.create("realm");
+    /** While infusing: what it holds, an index into {@link CauldronInfusions#ALL}. */
+    public static final IntegerProperty HELD = IntegerProperty.create("held", 0, 7);
     /** How often a full cauldron looks for glasses in it. */
     private static final int WATCH_TICKS = 5;
 
@@ -57,7 +56,7 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
 
     public CursedCauldronBlock(Properties properties) {
         super(properties, INTERACTIONS);
-        registerDefaultState(stateDefinition.any().setValue(LEVEL, 1).setValue(INFUSION, 0).setValue(REALM, false));
+        registerDefaultState(stateDefinition.any().setValue(LEVEL, 1).setValue(INFUSION, 0).setValue(HELD, 0));
     }
 
     /**
@@ -83,32 +82,19 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
             if (state.getValue(LEVEL) >= MAX_LEVEL || state.getValue(INFUSION) > 0) return InteractionResult.TRY_WITH_EMPTY_HAND;
             return pour(level, pos, player, hand, stack, state.getValue(LEVEL));
         }
-        if (stack.is(ProgressionItems.DORMANT_PRISON_REALM)) {
+        int infusion = CauldronInfusions.indexOf(stack);
+        if (infusion >= 0) {
             if (state.getValue(LEVEL) < MAX_LEVEL || state.getValue(INFUSION) > 0) return InteractionResult.TRY_WITH_EMPTY_HAND;
             if (level instanceof ServerLevel server) {
-                // Only one Prison Realm can exist in a world: while it does, the energy won't take another cube.
-                if (!dev.rick.jjk.progression.prison.PrisonRealm.canForge(server.getServer())) {
-                    player.sendOverlayMessage(net.minecraft.network.chat.Component.literal("The energy recoils: a Prison Realm already exists in this world.")
-                            .withStyle(net.minecraft.ChatFormatting.GRAY));
+                var refused = CauldronInfusions.refused(server, infusion);
+                if (refused != null) {
+                    player.sendOverlayMessage(refused.copy().withStyle(net.minecraft.ChatFormatting.GRAY));
                     Fx.sound(server, Vec3.atCenterOf(pos), SoundEvents.SHULKER_HURT_CLOSED, 0.8f, 0.6f);
                     return InteractionResult.FAIL;
                 }
+                // The cauldron takes it itself (its state holds it), so nothing loose can drift out.
                 stack.consume(1, player);
-                server.setBlock(pos, state.setValue(INFUSION, 1).setValue(REALM, true), Block.UPDATE_ALL);
-                Vec3 core = Vec3.atBottomCenterOf(pos).add(0, contentY(MAX_LEVEL) + 0.05, 0);
-                Fx.play(server, "prog_infuse", core, Vec3.ZERO, 1, -1);
-                Fx.sound(server, core, SoundEvents.SHULKER_BOX_OPEN, 0.8f, 0.4f);
-                Fx.sound(server, core, SoundEvents.SCULK_SHRIEKER_SHRIEK, 0.6f, 0.5f);
-                server.scheduleTick(pos, this, stageTicks());
-            }
-            return InteractionResult.SUCCESS;
-        }
-        if (stack.is(ProgressionItems.GLASSES)) {
-            if (state.getValue(LEVEL) < MAX_LEVEL || state.getValue(INFUSION) > 0) return InteractionResult.TRY_WITH_EMPTY_HAND;
-            if (level instanceof ServerLevel server) {
-                // The cauldron takes the glasses itself (its INFUSION state holds them), so nothing loose can drift out.
-                stack.consume(1, player);
-                server.setBlock(pos, state.setValue(INFUSION, 1), Block.UPDATE_ALL);
+                server.setBlock(pos, state.setValue(INFUSION, 1).setValue(HELD, infusion), Block.UPDATE_ALL);
                 Vec3 core = Vec3.atBottomCenterOf(pos).add(0, contentY(MAX_LEVEL) + 0.05, 0);
                 Fx.play(server, "prog_infuse", core, Vec3.ZERO, 1, -1);
                 Fx.sound(server, core, SoundEvents.BOTTLE_EMPTY, 0.8f, 0.5f);
@@ -150,7 +136,7 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> b) {
-        b.add(LEVEL, INFUSION, REALM);
+        b.add(LEVEL, INFUSION, HELD);
     }
 
     @Override
@@ -186,9 +172,10 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
         int stage = state.getValue(INFUSION);
         Vec3 core = Vec3.atBottomCenterOf(pos).add(0, contentY(MAX_LEVEL) + 0.05, 0);
         if (stage == 0) {
-            // Glasses tossed in are taken too (the cauldron holds them from here).
+            // Anything it can take, tossed in, is taken too (the cauldron holds it from here).
             ItemEntity thrown = glassesIn(level, pos);
-            if (thrown != null) {
+            int infusion = thrown == null ? -1 : CauldronInfusions.indexOf(thrown.getItem());
+            if (thrown != null && infusion >= 0 && CauldronInfusions.refused(level, infusion) == null) {
                 ItemStack held = thrown.getItem();
                 if (held.getCount() > 1) {
                     ItemStack rest = held.copy();
@@ -197,7 +184,7 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
                 } else {
                     thrown.discard();
                 }
-                level.setBlock(pos, state.setValue(INFUSION, 1), Block.UPDATE_ALL);
+                level.setBlock(pos, state.setValue(INFUSION, 1).setValue(HELD, infusion), Block.UPDATE_ALL);
                 Fx.play(level, "prog_infuse", core, Vec3.ZERO, 1, -1);
                 Fx.sound(level, core, SoundEvents.SCULK_SHRIEKER_SHRIEK, 0.5f, 1.6f);
                 level.scheduleTick(pos, this, stageTicks());
@@ -217,13 +204,8 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
         }
         // Collapse: the energy is spent into what it held, and that rises out awakened.
         level.setBlock(pos, Blocks.CAULDRON.defaultBlockState(), Block.UPDATE_ALL);
-        ItemStack result = new ItemStack(ProgressionItems.CURSED_GLASSES);
-        if (state.getValue(REALM)) {
-            // The world gives the cube its one id now (or, if another realm appeared meanwhile, it stays dormant).
-            java.util.UUID id = dev.rick.jjk.progression.prison.PrisonRealm.forge(level.getServer());
-            result = id != null ? dev.rick.jjk.progression.prison.PrisonRealmItem.create(id) : new ItemStack(ProgressionItems.DORMANT_PRISON_REALM);
-            if (id != null) Fx.sound(level, core, SoundEvents.ENDER_DRAGON_GROWL, 0.5f, 1.6f);
-        }
+        ItemStack result = CauldronInfusions.get(state.getValue(HELD)).result().apply(level);
+        if (result.is(ProgressionItems.PRISON_REALM)) Fx.sound(level, core, SoundEvents.ENDER_DRAGON_GROWL, 0.5f, 1.6f);
         ItemEntity out = new ItemEntity(level, core.x, core.y + 0.4, core.z, result);
         out.setDeltaMovement(0, 0.3, 0);
         out.setPickUpDelay(20);
@@ -238,14 +220,14 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
     protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean moved) {
         super.affectNeighborsAfterRemoval(state, level, pos, moved);
         if (state.getValue(INFUSION) > 0 && !level.getBlockState(pos).is(this)) {
-            Block.popResource(level, pos, new ItemStack(state.getValue(REALM) ? ProgressionItems.DORMANT_PRISON_REALM : ProgressionItems.GLASSES));
+            Block.popResource(level, pos, new ItemStack(CauldronInfusions.get(state.getValue(HELD)).input().get()));
         }
     }
 
     /** Glasses lying in the energy. */
     private static ItemEntity glassesIn(ServerLevel level, BlockPos pos) {
         AABB inside = new AABB(pos.getX() + 0.1, pos.getY() + 0.2, pos.getZ() + 0.1, pos.getX() + 0.9, pos.getY() + 1.1, pos.getZ() + 0.9);
-        List<ItemEntity> found = level.getEntitiesOfClass(ItemEntity.class, inside, e -> e.isAlive() && e.getItem().is(ProgressionItems.GLASSES));
+        List<ItemEntity> found = level.getEntitiesOfClass(ItemEntity.class, inside, e -> e.isAlive() && CauldronInfusions.indexOf(e.getItem()) >= 0);
         return found.isEmpty() ? null : found.get(0);
     }
 

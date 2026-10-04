@@ -109,7 +109,7 @@ public final class InfinityAbility extends Ability {
             return;
         }
         // Awakened Gojo's Infinity costs nothing to maintain.
-        if (!caster.isAwakened() && !caster.drain(cfg.upkeepPerSecond / 20f)) {
+        if (!caster.isAwakened() && !caster.drain(cfg.upkeepPerSecond / 20f * (float) dev.rick.jjk.progression.mastery.Mastery.param(caster.owner, "infinity.upkeep"))) {
             toggleOff(caster, "energy");
             return;
         }

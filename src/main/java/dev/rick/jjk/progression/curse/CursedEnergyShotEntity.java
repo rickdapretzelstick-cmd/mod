@@ -135,6 +135,8 @@ public class CursedEnergyShotEntity extends TechniqueEntity implements CursedSpi
         }
         Fx.play(level, kind == Kind.BLAST ? "fb_blast_land" : "fb_shot_land", at, dir, (float) Math.max(kind.radius, kind.splash), ownerId());
         if (landed && owner instanceof FingerBearerEntity bearer && kind == Kind.BLAST) bearer.blastLanded();
+        // Where a blast bursts, its energy lingers on the floor for a while (area denial).
+        if (owner instanceof FingerBearerEntity bearer && kind == Kind.BLAST) bearer.leavePool(at, FingerBearerEntity.POOL_RADIUS, FingerBearerEntity.POOL_TICKS);
         discard();
     }
 }

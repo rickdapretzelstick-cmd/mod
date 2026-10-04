@@ -1,0 +1,23 @@
+{
+  "id": "cliff_fall",
+  "weight": 3,
+  "grade": "GRADE_3",
+  "site": "cliff",
+  "trigger": "jump",
+  "realm": "cliff_realm",
+  "curses": [
+    {"kind": "school_maw", "min": 1, "max": 1},
+    {"kind": "fly_head", "min": 2, "max": 4, "grade": "GRADE_4"}
+  ],
+  "trail": 24,
+  "reports": [
+    {
+      "headline": "{name} Found at the Foot of the Cliffs",
+      "body": "{name}, who kept the hives by the well, was found at the bottom of the cliffs {dir} of the village {dist}. Those who knew {them} say {they} had no reason to be up there. A shepherd says {they} walked past him that morning, straight-backed, not answering, as if somebody were calling {them}. The edge has been roped off by nobody; people simply stopped going near it."
+    },
+    {
+      "headline": "Another Fall Near the Cliffs",
+      "body": "For the second time this season someone has gone off the cliffs {dir} of here. {name} had complained for days of a voice from below the edge. The family asks that nobody else go looking. The children have started saying the cliff \"wants company\"; their parents would rather they didn't."
+    }
+  ]
+}

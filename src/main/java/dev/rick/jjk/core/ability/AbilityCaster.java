@@ -60,6 +60,9 @@ public final class AbilityCaster {
     @Nullable public String lastRefusal;
 
     private float castSpeedCarry;
+    /** The ability activated last and when (what a hit landing afterwards is credited to, for Mastery's damage). */
+    @Nullable private String lastAbility;
+    private long lastAbilityAt;
 
     public AbilityCaster(LivingEntity owner) {
         this.owner = owner;
@@ -181,6 +184,14 @@ public final class AbilityCaster {
         return noCost() || awakening >= cost;
     }
 
+    /**
+     * Whether this sorcerer may awaken at all: the kit's Awakening is a Technique Mastery node ({@code <kit>.awakening})
+     * for a governed Survival player, and always open for everyone else.
+     */
+    public boolean awakeningUnlocked() {
+        return character == null || dev.rick.jjk.progression.mastery.Mastery.unlocked(owner, character.id + ".awakening");
+    }
+
     /** Switches to the awakened moveset. The meter becomes the timer. */
     public void enterAwakening() {
         if (character == null || awakened) return;
@@ -275,6 +286,7 @@ public final class AbilityCaster {
     }
 
     private void startCooldownAt(int i, @Nullable Ability a, int ticks) {
+        if (a != null && ticks > 0) ticks = Math.max(1, (int) Math.round(ticks * dev.rick.jjk.progression.mastery.Mastery.param(owner, a.id + ".cooldown")));
         if (noCost()) ticks = Math.min(ticks, 4);
         if (a != null && a.maxCharges(this) > 1) {
             if (cooldowns[i] <= 0) {
@@ -339,6 +351,17 @@ public final class AbilityCaster {
     @Nullable
     public AbilityInstance cast() {
         return cast;
+    }
+
+    /**
+     * The ability a hit landing now belongs to: the running cast, else the one activated within the last 10 seconds
+     * (a projectile or a lingering field outliving its cast). Null for a basic attack.
+     */
+    @Nullable
+    public String creditedAbility() {
+        if (cast != null && !cast.isFinished()) return cast.ability.id;
+        if (lastAbility != null && owner.level().getGameTime() - lastAbilityAt <= 200) return lastAbility;
+        return null;
     }
 
     public boolean isCasting() {
@@ -414,12 +437,14 @@ public final class AbilityCaster {
         }
         if (melee.isCommitted() && slot != AbilitySlot.GUARD && !ability.usableDuringMelee()) return refuse("attacking");
         if (!isReady(slot)) return refuse("cooldown");
+        // Before its Mastery node, the Awakening key (the transformation, or the domain that is a kit's way in) is shut.
+        if (slot == AbilitySlot.ULTIMATE && !awakened && !awakeningUnlocked()) return refuse("mastery");
         float meterCost = ability.awakeningCost(this);
         if (meterCost > 0 && !canAffordAwakening(meterCost)) {
             Fx.play(level, "no_energy", owner.position().add(0, 1, 0), net.minecraft.world.phys.Vec3.ZERO, 1f, owner.getId());
             return refuse("awakening");
         }
-        float cost = ability.cost(this);
+        float cost = ability.cost(this) * (float) dev.rick.jjk.progression.mastery.Mastery.param(owner, ability.id + ".cost");
         if (!canAfford(cost)) {
             Fx.play(level, "no_energy", owner.position().add(0, 1, 0), net.minecraft.world.phys.Vec3.ZERO, 1f, owner.getId());
             return refuse("energy");
@@ -444,6 +469,8 @@ public final class AbilityCaster {
 
         // Techniques and movement cancel melee recovery frames.
         melee.cancel();
+        lastAbility = ability.id;
+        lastAbilityAt = owner.level().getGameTime();
         AbilityInstance inst = ability.activate(ctx);
         lastRefusal = null;
         character.onAbilityUsed(this, ability, slot);

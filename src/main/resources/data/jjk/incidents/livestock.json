@@ -1,0 +1,23 @@
+{
+  "id": "livestock",
+  "weight": 3,
+  "grade": "GRADE_4",
+  "site": "pasture",
+  "trigger": "approach",
+  "realm": "",
+  "curses": [
+    {"kind": "school_crawler", "min": 1, "max": 2},
+    {"kind": "fly_head", "min": 2, "max": 3}
+  ],
+  "trail": 14,
+  "reports": [
+    {
+      "headline": "Livestock Lost in the Night",
+      "body": "{name} lost three {animal} overnight in the grazing land {dir} of the village {dist}. No tracks, no wolves heard. What was left had been worried at, not eaten. The dogs refuse to go out that way after dark, and {name} has taken to bringing the rest in before sunset."
+    },
+    {
+      "headline": "Strange Sounds From the Pasture",
+      "body": "Several households report a buzzing, like a hive kicked over, from the fields {dir} of here {dist}. {name} went out with a lantern and came back with nothing to say except that something had been at the {animal}. The fencing is intact."
+    }
+  ]
+}

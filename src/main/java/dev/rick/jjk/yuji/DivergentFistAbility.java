@@ -162,7 +162,8 @@ public final class DivergentFistAbility extends Ability {
             long now = level.getGameTime();
             LivingEntity t = HakariCombat.firstInFront(user, cfg.divergentReach + 0.4, 1.8, 2.4);
             if (t != null && YujiCombat.ragdolled(t)) t = null;
-            boolean behind = t != null && YujiCombat.behind(user, t);
+            // The chain off someone's back is a Mastery variant (divergent_fist.chain): without it, every one is a lone flash.
+            boolean behind = t != null && YujiCombat.behind(user, t) && dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "divergent_fist.chain");
             boolean chaining = t != null && ys.chaining(t, now);
             int link = behind ? (chaining ? ys.chain + 1 : 1) : 0;
             boolean fourth = link >= cfg.blackFlashChainMax;

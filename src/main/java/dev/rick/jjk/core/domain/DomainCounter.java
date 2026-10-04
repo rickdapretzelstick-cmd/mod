@@ -53,7 +53,7 @@ public final class DomainCounter {
 
     /** Full meter, a domain to open, not awakened yet, not already holding a domain. */
     public static boolean eligible(AbilityCaster c) {
-        return !c.isAwakened() && (c.noCost() || c.awakening() >= c.maxAwakening()) && domainAbility(c) != null && DomainManager.ownedBy(c.owner) == null;
+        return !c.isAwakened() && c.awakeningUnlocked() && (c.noCost() || c.awakening() >= c.maxAwakening()) && domainAbility(c) != null && DomainManager.ownedBy(c.owner) == null;
     }
 
     /**

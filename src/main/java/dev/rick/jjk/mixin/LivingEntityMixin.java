@@ -23,6 +23,12 @@ public abstract class LivingEntityMixin implements CombatHolder, CasterHolder {
         return dev.rick.jjk.core.combat.LaunchHeight.adjust(self, fallDistance);
     }
 
+    /** Curses take cursed-tool hits scaled by the wielder's Mastery, and shrug off part of untechnical cursed energy. */
+    @org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer", at = @At("HEAD"), argsOnly = true, ordinal = 0)
+    private float jjk$cursedDamage(float damage, net.minecraft.server.level.ServerLevel level, net.minecraft.world.damagesource.DamageSource source) {
+        return dev.rick.jjk.progression.grade.CursedDamage.modify((LivingEntity) (Object) this, source, damage);
+    }
+
     @Unique private CombatState jjk$combat;
     @Unique private AbilityCaster jjk$caster;
 

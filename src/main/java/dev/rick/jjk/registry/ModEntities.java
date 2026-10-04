@@ -55,6 +55,16 @@ public final class ModEntities {
     public static final EntityType<dev.rick.jjk.progression.prison.PrisonRealmEntity> PRISON_REALM = register("prison_realm",
             EntityType.Builder.<dev.rick.jjk.progression.prison.PrisonRealmEntity>of(dev.rick.jjk.progression.prison.PrisonRealmEntity::new, MobCategory.MISC)
                     .sized(1.1f, 1.1f).noSummon().fireImmune().clientTrackingRange(16).updateInterval(2).noLootTable());
+    /** The common curses: graded cursed spirits found through investigations. */
+    public static final EntityType<dev.rick.jjk.progression.curse.FlyHeadEntity> FLY_HEAD = register("fly_head",
+            EntityType.Builder.<dev.rick.jjk.progression.curse.FlyHeadEntity>of(dev.rick.jjk.progression.curse.FlyHeadEntity::new, MobCategory.MONSTER)
+                    .sized(0.65f, 0.85f).eyeHeight(0.5f).clientTrackingRange(10).noLootTable());
+    public static final EntityType<dev.rick.jjk.progression.curse.SchoolCrawlerEntity> SCHOOL_CRAWLER = register("school_crawler",
+            EntityType.Builder.<dev.rick.jjk.progression.curse.SchoolCrawlerEntity>of(dev.rick.jjk.progression.curse.SchoolCrawlerEntity::new, MobCategory.MONSTER)
+                    .sized(1.2f, 1.2f).eyeHeight(0.8f).clientTrackingRange(10).noLootTable());
+    public static final EntityType<dev.rick.jjk.progression.curse.SchoolMawEntity> SCHOOL_MAW = register("school_maw",
+            EntityType.Builder.<dev.rick.jjk.progression.curse.SchoolMawEntity>of(dev.rick.jjk.progression.curse.SchoolMawEntity::new, MobCategory.MONSTER)
+                    .sized(1.15f, 1.55f).eyeHeight(1.2f).clientTrackingRange(10).noLootTable());
     public static final EntityType<TrainingDummy> TRAINING_DUMMY = register("training_dummy",
             EntityType.Builder.<TrainingDummy>of(TrainingDummy::new, MobCategory.MISC).sized(0.6f, 1.95f).clientTrackingRange(10));
 
@@ -68,5 +78,8 @@ public final class ModEntities {
     public static void init() {
         FabricDefaultAttributeRegistry.register(TRAINING_DUMMY, TrainingDummy.createAttributes());
         FabricDefaultAttributeRegistry.register(FINGER_BEARER, dev.rick.jjk.progression.curse.FingerBearerEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(FLY_HEAD, dev.rick.jjk.progression.curse.FlyHeadEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(SCHOOL_CRAWLER, dev.rick.jjk.progression.curse.SchoolCrawlerEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(SCHOOL_MAW, dev.rick.jjk.progression.curse.SchoolMawEntity.createAttributes());
     }
 }

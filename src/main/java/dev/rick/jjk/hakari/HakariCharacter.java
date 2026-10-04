@@ -123,9 +123,12 @@ public final class HakariCharacter extends JJKCharacter {
     public boolean interceptInput(AbilityCaster caster, AbilitySlot slot, Ability ability, net.minecraft.world.entity.Entity targetHint) {
         if (caster.isAwakened()) return false;
         // Renewal: Reserve Balls again inside the domain, within 8s of a ball landing, rewinds to that moment.
-        if (ability instanceof ReserveBallsAbility && ReserveBallsAbility.renew(caster.owner)) return true;
+        if (ability instanceof ReserveBallsAbility && dev.rick.jjk.progression.mastery.Mastery.unlocked(caster.owner, "reserve_balls.renewal")
+                && ReserveBallsAbility.renew(caster.owner)) return true;
         // Shutter Doors during Reserve Balls' or Fever Breaker's wind-up combines with it; both go on cooldown.
-        if (ability instanceof ShutterDoorsAbility && caster.cast() instanceof DoorCombo combo && !caster.cast().isFinished() && combo.acceptsDoors()) {
+        // Each combination is a Mastery variant of the move it joins (reserve_balls.doors, fever_breaker.doors).
+        if (ability instanceof ShutterDoorsAbility && caster.cast() instanceof DoorCombo combo && !caster.cast().isFinished() && combo.acceptsDoors()
+                && dev.rick.jjk.progression.mastery.Mastery.unlocked(caster.owner, caster.cast().ability.id + ".doors")) {
             if (!caster.isReady(slot)) return false;
             float cost = ability.cost(caster);
             if (!caster.canAfford(cost)) return false;

@@ -1,0 +1,33 @@
+{
+  "id": "tool/slaughter_demon",
+  "kind": "TOOL",
+  "owner": "slaughter_demon",
+  "title": "Slaughter Demon",
+  "lanes": ["Edge", "Footwork", "Kill"],
+  "nodes": [
+    {"id": "keen_edge", "name": "Keen Edge", "tier": "SMALL", "cost": 8, "lane": 0, "row": 0,
+     "description": "The blade bites deeper into cursed flesh. +15% damage.",
+     "effects": [{"param": "tool.slaughter_demon.damage", "mul": 1.15}]},
+    {"id": "light_grip", "name": "Light Grip", "tier": "SMALL", "cost": 8, "lane": 1, "row": 0,
+     "description": "You stop strangling the hilt. +12% attack speed.",
+     "effects": [{"param": "tool.slaughter_demon.speed", "mul": 1.12}]},
+    {"id": "flurry", "name": "Flurry", "tier": "MECHANICAL", "cost": 20, "lane": 0, "row": 1, "requires": ["keen_edge"],
+     "description": "Every third cut on the same target in quick succession lands a heavy follow-through and staggers it.",
+     "effects": [{"unlock": "tool.slaughter_demon.flurry"}]},
+    {"id": "precision", "name": "Precision", "tier": "MECHANICAL", "cost": 20, "lane": 1, "row": 1, "requires": ["light_grip"],
+     "description": "A falling strike finds the weak point: +50% damage when you cut on the way down.",
+     "effects": [{"unlock": "tool.slaughter_demon.precision"}]},
+    {"id": "honed_flurry", "name": "Honed Flurry", "tier": "SMALL", "cost": 18, "lane": 0, "row": 2, "requires": ["flurry"],
+     "description": "Flurry's follow-through hits 40% harder.",
+     "effects": [{"param": "tool.slaughter_demon.flurry", "mul": 1.4}]},
+    {"id": "quickstep", "name": "Quickstep", "tier": "MECHANICAL", "cost": 30, "lane": 1, "row": 2, "requires": ["precision"],
+     "description": "Use: dart forward and cut the first thing in your path. A gap-closer with a short cooldown.",
+     "effects": [{"unlock": "tool.slaughter_demon.quickstep"}]},
+    {"id": "long_step", "name": "Long Step", "tier": "SMALL", "cost": 18, "lane": 1, "row": 3, "requires": ["quickstep"],
+     "description": "Quickstep covers 40% more ground.",
+     "effects": [{"param": "tool.slaughter_demon.quickstep_reach", "mul": 1.4}]},
+    {"id": "severing_point", "name": "Severing Point", "tier": "MAJOR", "cost": 60, "lane": 2, "row": 3, "requires": ["honed_flurry", "quickstep"],
+     "description": "Milestone. A weakened curse of Grade 3 or lower (a quarter of its strength left) is cut apart in one stroke.",
+     "effects": [{"unlock": "tool.slaughter_demon.severing_point"}, {"param": "tool.slaughter_demon.damage", "mul": 1.1}]}
+  ]
+}

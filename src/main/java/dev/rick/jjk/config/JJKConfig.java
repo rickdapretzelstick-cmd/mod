@@ -26,7 +26,7 @@ public final class JJKConfig {
      * The gameplay tuning this file was written for. When the mod's defaults change (the JJS wiki pass), older files have
      * their gameplay sections reset to the new defaults; the player's client settings are kept.
      */
-    public static final int CURRENT_VERSION = 8;
+    public static final int CURRENT_VERSION = 9;
     public int version;
 
     public General general = new General();
@@ -53,6 +53,7 @@ public final class JJKConfig {
     public Ryu ryu = new Ryu();
     public BeamClash beamClash = new BeamClash();
     public Progression progression = new Progression();
+    public MasteryRules mastery = new MasteryRules();
 
     public static JJKConfig get() {
         return instance;
@@ -1150,8 +1151,31 @@ public final class JJKConfig {
         public boolean mansionBattleRooms = true;
         public boolean iglooBattleRooms = true;
         /** The Finger Bearer, the curse waiting in each battle room: its health and a scale on every hit it lands. */
-        public double fingerBearerHealth = 150;
+        public double fingerBearerHealth = 300;
         public float fingerBearerDamage = 1f;
+    }
+
+    /**
+     * Mastery's economy. Each node's own cost is in its tree's JSON ({@code data/jjk/mastery}); these scale the whole
+     * economy at once, and set how quickly repeated kills of the same grade stop paying (fatigue).
+     */
+    public static final class MasteryRules {
+        /** Every node's cost is multiplied by this. */
+        public double costMultiplier = 1.0;
+        /** Every exorcism's Mastery is multiplied by this. */
+        public double rewardMultiplier = 1.0;
+        /** Each exorcism of a grade adds this much fatigue to it; a kill pays {@code 1 / (1 + fatigue)}. */
+        public double fatiguePerKill = 0.35;
+        /** Fatigue recovered per real minute (all grades). */
+        public double fatigueRecoveryPerMinute = 0.5;
+        /** A curse tied to an investigation pays at least this share even when fatigued. */
+        public double incidentFloor = 0.6;
+        /** Investigations: how many open reports a village board shows, and how far (blocks) an incident may lie. */
+        public int reportsPerBoard = 3;
+        public int incidentMinDistance = 90;
+        public int incidentMaxDistance = 420;
+        /** Village news boards are placed by the bell of a village a player walks into. */
+        public boolean newsBoards = true;
     }
 
     /** Beam clashes (True Love Beam against Every Last Drop): the duel's tuning lives in the session; these are reach. */
@@ -1225,5 +1249,6 @@ public final class JJKConfig {
         if (yuji == null) yuji = new Yuji();
         if (yuta == null) yuta = new Yuta();
         if (progression == null) progression = new Progression();
+        if (mastery == null) mastery = new MasteryRules();
     }
 }

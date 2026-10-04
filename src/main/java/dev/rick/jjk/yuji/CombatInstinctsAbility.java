@@ -55,6 +55,7 @@ public final class CombatInstinctsAbility extends Ability {
     @Override
     public @Nullable String checkActivation(AbilityContext ctx) {
         // Nothing to feint: only a throwable prop makes it do anything.
+        if (!dev.rick.jjk.progression.mastery.Mastery.unlocked(ctx.user(), "combat_instincts.throw")) return "nothing_to_feint";
         return YujiCombat.throwable(ctx.user()) != null ? null : "nothing_to_feint";
     }
 

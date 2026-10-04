@@ -1,0 +1,258 @@
+{
+  "id": "technique/ryu",
+  "kind": "TECHNIQUE",
+  "owner": "ryu",
+  "title": "Ryu Ishigori — True Cannon",
+  "lanes": [
+    "Cannon",
+    "Barrage",
+    "Brawl",
+    "Every Last Drop"
+  ],
+  "nodes": [
+    {
+      "id": "granite",
+      "name": "Granite Blast",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 0,
+      "row": 0,
+      "move": "granite_blast",
+      "description": "Granite Blast hits 15% harder.",
+      "effects": [
+        {
+          "param": "granite_blast.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "appetizer",
+      "name": "Appetizer",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 1,
+      "row": 0,
+      "move": "appetizer",
+      "description": "Appetizer hits 15% harder.",
+      "effects": [
+        {
+          "param": "appetizer.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "unsatisfied",
+      "name": "Unsatisfied",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 2,
+      "row": 0,
+      "move": "unsatisfied",
+      "description": "Unsatisfied hits 15% harder.",
+      "effects": [
+        {
+          "param": "unsatisfied.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "charged",
+      "name": "Granite Blast: Charged",
+      "tier": "MECHANICAL",
+      "cost": 55,
+      "lane": 0,
+      "row": 1,
+      "move": "granite_blast",
+      "description": "Held about a second: it pierces everything for 100 studs, unblockable, and ragdolls whoever it meets.",
+      "requires": [
+        "granite"
+      ],
+      "effects": [
+        {
+          "unlock": "granite_blast.charged"
+        }
+      ]
+    },
+    {
+      "id": "restyle",
+      "name": "Restyle",
+      "tier": "SMALL",
+      "cost": 25,
+      "lane": 1,
+      "row": 1,
+      "move": "restyle",
+      "description": "Restyle comes back 15% sooner.",
+      "requires": [
+        "appetizer"
+      ],
+      "effects": [
+        {
+          "param": "restyle.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "second_helping",
+      "name": "Second Helping",
+      "tier": "SMALL",
+      "cost": 25,
+      "lane": 2,
+      "row": 1,
+      "move": "second_helping",
+      "description": "Second Helping hits 15% harder.",
+      "requires": [
+        "unsatisfied"
+      ],
+      "effects": [
+        {
+          "param": "second_helping.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "dash",
+      "name": "Granite Blast: Looping Shot",
+      "tier": "MECHANICAL",
+      "cost": 50,
+      "lane": 0,
+      "row": 2,
+      "move": "granite_blast",
+      "description": "Granite Blast during a front dash: stop, loop a blast around yourself and dash on.",
+      "requires": [
+        "charged"
+      ],
+      "effects": [
+        {
+          "unlock": "granite_blast.dash"
+        }
+      ]
+    },
+    {
+      "id": "barrage",
+      "name": "Second Course",
+      "tier": "SMALL",
+      "cost": 35,
+      "lane": 1,
+      "row": 2,
+      "move": "appetizer",
+      "description": "Appetizer and Second Helping come back 15% sooner.",
+      "requires": [
+        "restyle",
+        "second_helping"
+      ],
+      "effects": [
+        {
+          "param": "appetizer.cooldown",
+          "mul": 0.85
+        },
+        {
+          "param": "second_helping.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "awakening",
+      "name": "Every Last Drop",
+      "tier": "AWAKENING",
+      "cost": 450,
+      "lane": 3,
+      "row": 3,
+      "move": "every_last_drop",
+      "description": "Milestone. His strongest blast; fired hot enough, he enters Decadence (What Are You After, No Idea, Dessert, You Weren't Invited).",
+      "requires": [
+        "dash",
+        "barrage"
+      ],
+      "effects": [
+        {
+          "unlock": "ryu.awakening"
+        }
+      ]
+    },
+    {
+      "id": "dessert",
+      "name": "Dessert",
+      "tier": "SMALL",
+      "cost": 60,
+      "lane": 1,
+      "row": 4,
+      "move": "dessert",
+      "description": "Dessert and \"What are you after\" hit 15% harder.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "dessert.damage",
+          "mul": 1.15
+        },
+        {
+          "param": "what_are_you_after.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "no_idea",
+      "name": "Trade Blows",
+      "tier": "SMALL",
+      "cost": 60,
+      "lane": 2,
+      "row": 4,
+      "move": "no_idea",
+      "description": "\"I had no idea...\" hits 15% harder.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "no_idea.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "eld",
+      "name": "Hyper-Concentration",
+      "tier": "MAJOR",
+      "cost": 100,
+      "lane": 3,
+      "row": 4,
+      "move": "every_last_drop",
+      "description": "Milestone. Every Last Drop hits 15% harder.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "every_last_drop.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "not_invited",
+      "name": "You Weren't Invited: Held",
+      "tier": "MAJOR",
+      "cost": 120,
+      "lane": 2,
+      "row": 5,
+      "move": "not_invited",
+      "description": "Milestone. Hold the jab nearly two seconds: double damage, and a wall's debris flies 250 studs.",
+      "requires": [
+        "no_idea"
+      ],
+      "effects": [
+        {
+          "unlock": "not_invited.held"
+        }
+      ]
+    }
+  ]
+}

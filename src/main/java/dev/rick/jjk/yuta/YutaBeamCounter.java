@@ -39,7 +39,7 @@ public final class YutaBeamCounter implements BeamCounters.Counter {
     public boolean ready(AbilityCaster c) {
         if (c.character() == null || !(beam(c) instanceof TrueLoveBeamAbility)) return false;
         if (Combat.actionsLocked(c.owner)) return false;
-        if (!c.isAwakened()) return c.noCost() || c.awakening() >= c.maxAwakening();
+        if (!c.isAwakened()) return c.awakeningUnlocked() && (c.noCost() || c.awakening() >= c.maxAwakening());
         return c.cooldown(AbilitySlot.SKILL_3, YutaCharacter.RIKA_AWAKENED) <= 0 && c.canAfford(beam(c).cost(c));
     }
 

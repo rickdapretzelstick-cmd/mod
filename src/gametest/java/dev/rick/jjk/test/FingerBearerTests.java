@@ -385,7 +385,7 @@ public class FingerBearerTests {
         fb.forceMove(Move.BLAST, p);
         h.runAfterDelay(FingerBearerEntity.BLAST_FIRE + 1, () -> {
             h.assertTrue(!h.getLevel().getEntitiesOfClass(CursedEnergyShotEntity.class, fb.getBoundingBox().inflate(12)).isEmpty(), "the blast is in flight");
-            fb.hurtServer(h.getLevel(), h.getLevel().damageSources().generic(), 10_000f);
+            fb.hurtServer(h.getLevel(), h.getLevel().damageSources().genericKill(), 10_000f);
             h.runAfterDelay(2, () -> {
                 h.assertTrue(h.getLevel().getEntitiesOfClass(CursedEnergyShotEntity.class, fb.getBoundingBox().inflate(16)).isEmpty(), "its energy dies with it");
                 h.assertTrue(fb.move() == Move.NONE, "no move survives its death");
@@ -428,6 +428,75 @@ public class FingerBearerTests {
             h.assertTrue(room(h, seal).state == CursedEncounters.State.CLEARED, "cleared is saved");
             fingers.forEach(ItemEntity::discard);
             p.discard();
+        });
+    }
+
+    // --- The Grade 1 wall: immunity, reactions, area denial, the second phase ---
+
+    @GameTest(maxTicks = 40, padding = 16, environment = ENV)
+    public void ordinaryWeaponsDontTouchItACursedToolDoes(GameTestHelper h) {
+        setup(h);
+        ServerPlayer p = survivor(h, 2, 3, true);
+        FingerBearerEntity fb = bearer(h, 4, 3);
+        p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(net.minecraft.world.item.Items.NETHERITE_SWORD));
+        fb.hurtServer(h.getLevel(), h.getLevel().damageSources().playerAttack(p), 20f);
+        h.assertTrue(fb.getHealth() == fb.getMaxHealth(), "a netherite sword does nothing");
+        p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(ProgressionItems.CURSED_CLEAVER));
+        fb.setInvulnerableTime(0);
+        fb.hurtServer(h.getLevel(), h.getLevel().damageSources().playerAttack(p), 20f);
+        h.assertTrue(fb.getHealth() < fb.getMaxHealth(), "a cursed tool does");
+        h.assertTrue(fb.curseGrade() == dev.rick.jjk.progression.grade.CurseGrade.GRADE_1, "Grade 1");
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 80, padding = 16, environment = ENV)
+    public void atHalfHealthItEnragesAndThrowsEveryoneBack(GameTestHelper h) {
+        setup(h);
+        ServerPlayer p = survivor(h, 3, 3, true);
+        FingerBearerEntity fb = bearer(h, 5, 3);
+        fb.setHealth(fb.getMaxHealth() * 0.45f);
+        h.succeedWhen(() -> {
+            h.assertTrue(fb.enraged(), "enraged");
+            h.assertTrue(landed(p, "fb_enrage") >= 1, "the roar throws them back");
+        });
+    }
+
+    @GameTest(maxTicks = 120, padding = 16, environment = ENV)
+    public void theLeapLandsOnTheMarkedSpot(GameTestHelper h) {
+        setup(h);
+        ServerPlayer stays = survivor(h, 6.5, 2.5, true);
+        ServerPlayer leaves = survivor(h, 6.5, 4.5, true);
+        FingerBearerEntity fb = bearer(h, 1, 4);
+        fb.forceMove(Move.LEAP, stays);
+        h.runAfterDelay(4, () -> move(h, leaves, 1, 7.5));
+        h.succeedWhen(() -> {
+            stays.setHealth(stays.getMaxHealth());
+            h.assertTrue(landed(stays, "fb_leap") == 1, "it comes down on whoever stayed (move " + fb.move() + " t" + fb.moveTick()
+                    + " at " + h.relativeVec(fb.position()) + ", target at " + h.relativeVec(stays.position()) + ")");
+            h.assertTrue(landed(leaves, "fb_leap") == 0, "not on whoever got out of the ring");
+        });
+    }
+
+    @GameTest(maxTicks = 60, padding = 16, environment = ENV)
+    public void lingeringBehindItEarnsABackhand(GameTestHelper h) {
+        setup(h);
+        ServerPlayer p = survivor(h, 2, 3, true);
+        FingerBearerEntity fb = bearer(h, 4, 3);
+        fb.forceMove(Move.SPIN, p);
+        h.succeedWhen(() -> h.assertTrue(landed(p, "fb_spin") == 1, "spun on"));
+    }
+
+    @GameTest(maxTicks = 200, padding = 16, environment = ENV)
+    public void aBlastLeavesAPoolThatHurtsWhoeverStandsInIt(GameTestHelper h) {
+        setup(h);
+        ServerPlayer p = survivor(h, 7.2, 3.5, true);
+        FingerBearerEntity fb = bearer(h, 0.8, 3.5);
+        fb.forceMove(Move.BLAST, p);
+        h.succeedWhen(() -> {
+            p.setHealth(p.getMaxHealth());
+            if (fb.pools() > 0) move(h, p, 7.2, 3.5);
+            h.assertTrue(fb.pools() >= 1, "a pool lingers where it burst (move " + fb.move() + " t" + fb.moveTick() + ", target " + fb.getTarget() + ")");
+            h.assertTrue(landed(p, "fb_pool") >= 1, "standing in it hurts");
         });
     }
 }

@@ -21,7 +21,10 @@
       "dev.rick.jjk.test.StabilityTests",
       "dev.rick.jjk.test.BlastRadiusTests",
       "dev.rick.jjk.test.PrisonRealmTests",
-      "dev.rick.jjk.test.DomainClashRulesTests"
+      "dev.rick.jjk.test.DomainClashRulesTests",
+      "dev.rick.jjk.test.MasteryTests",
+      "dev.rick.jjk.test.CommonCurseTests",
+      "dev.rick.jjk.test.InvestigationTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.AnimFrameworkClientTest",
@@ -33,7 +36,8 @@
       "dev.rick.jjk.test.BeamClashCameraClientTest",
       "dev.rick.jjk.test.RikaViewClientTest",
       "dev.rick.jjk.test.NoKitClientTest",
-      "dev.rick.jjk.test.PrisonRealmClientTest"
+      "dev.rick.jjk.test.PrisonRealmClientTest",
+      "dev.rick.jjk.test.InvestigationClientTest"
     ]
   },
   "depends": {

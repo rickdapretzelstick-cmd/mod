@@ -77,7 +77,7 @@ public final class NotInvitedAbility extends Ability {
                     Motion.set(user, user.getDeltaMovement().multiply(0.3, 1, 0.3));
                     // Held past the tap: it charges.
                     if (held && age == 6) RyuCombat.sfx(user, "ryu_invited_charge", 1f);
-                    if (!full && age >= cfg.invitedHoldTicks) {
+                    if (!full && age >= cfg.invitedHoldTicks && dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "not_invited.held")) {
                         full = true;
                         Fx.play(level, "ryu_invited_charged", user.position().add(0, 1.2, 0), Vec3.ZERO, 1f, user.getId());
                     }

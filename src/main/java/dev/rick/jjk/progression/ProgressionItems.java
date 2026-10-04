@@ -40,10 +40,16 @@ public final class ProgressionItems {
     public static final Item PRISON_REALM = item("prison_realm", dev.rick.jjk.progression.prison.PrisonRealmItem::new,
             new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant());
 
+    /** The first cursed tools: ordinary steel steeped in a full cauldron of cursed energy. */
+    public static final Item SLAUGHTER_DEMON = tool(dev.rick.jjk.progression.tool.CursedTools.SLAUGHTER_DEMON, Rarity.RARE);
+    public static final Item CURSED_CLEAVER = tool(dev.rick.jjk.progression.tool.CursedTools.CURSED_CLEAVER, Rarity.RARE);
+
     public static final Item CURSED_SOUL_SAND = item("cursed_soul_sand", p -> new BlockItem(ProgressionBlocks.CURSED_SOUL_SAND, p),
             new Item.Properties().useBlockDescriptionPrefix());
 
     private ProgressionItems() {}
+
+    public static final Item NEWS_BOARD = item("news_board", p -> new BlockItem(ProgressionBlocks.NEWS_BOARD, p), new Item.Properties().useBlockDescriptionPrefix());
 
     private static Item item(String name, java.util.function.Function<Item.Properties, Item> factory, Item.Properties properties) {
         // 26.3: the properties carry the item's id; vanilla's Items.register* helpers are private.
@@ -51,8 +57,23 @@ public final class ProgressionItems {
         return Registry.register(BuiltInRegistries.ITEM, key, factory.apply(properties.setId(key)));
     }
 
+    /** A cursed tool's item: its swing damage and speed from its definition; it never breaks. */
+    private static Item tool(dev.rick.jjk.progression.tool.CursedToolDefinition def, Rarity rarity) {
+        var attrs = net.minecraft.world.item.component.ItemAttributeModifiers.builder()
+                .add(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE, new net.minecraft.world.entity.ai.attributes.AttributeModifier(
+                        Item.BASE_ATTACK_DAMAGE_ID, def.damage(), net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE),
+                        net.minecraft.world.entity.EquipmentSlotGroup.MAINHAND)
+                .add(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_SPEED, new net.minecraft.world.entity.ai.attributes.AttributeModifier(
+                        Item.BASE_ATTACK_SPEED_ID, def.attackSpeed() - 4.0, net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE),
+                        net.minecraft.world.entity.EquipmentSlotGroup.MAINHAND)
+                .build();
+        return item(def.id(), p -> new dev.rick.jjk.progression.tool.CursedToolItem(def, p),
+                new Item.Properties().stacksTo(1).rarity(rarity).attributes(attrs).fireResistant());
+    }
+
     public static void init() {
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.NATURAL_BLOCKS).register(e -> e.accept(CURSED_SOUL_SAND));
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS).register(e -> e.accept(NEWS_BOARD));
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.INGREDIENTS).register(e -> {
             e.accept(SOUL_IN_A_BOTTLE);
             e.accept(CURSED_ENERGY_BOTTLE);
@@ -62,6 +83,8 @@ public final class ProgressionItems {
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(e -> {
             e.accept(GLASSES);
             e.accept(CURSED_GLASSES);
+            e.accept(SLAUGHTER_DEMON);
+            e.accept(CURSED_CLEAVER);
         });
     }
 }

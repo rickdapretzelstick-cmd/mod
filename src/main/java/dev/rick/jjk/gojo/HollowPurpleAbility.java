@@ -119,7 +119,7 @@ public final class HollowPurpleAbility extends Ability {
             fired = true;
             setPhase(PHASE_FIRED, 0);
             float growth = Mth.clamp(chargedTicks / (float) Math.max(1, cfg.maxHoldTicks), 0f, 1f);
-            double radius = Mth.lerp(growth, cfg.radius, cfg.chargedRadius);
+            double radius = Mth.lerp(growth, cfg.radius, cfg.chargedRadius) * dev.rick.jjk.progression.mastery.Mastery.param(user, "hollow_purple.radius");
             Vec3 look = user.getLookAngle();
             Vec3 from = user.getEyePosition().add(look.scale(1.2 + radius * 0.6));
             Anim.play(user, "purple_release");

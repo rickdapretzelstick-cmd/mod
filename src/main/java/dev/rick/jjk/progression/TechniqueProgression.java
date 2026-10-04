@@ -313,5 +313,7 @@ public final class TechniqueProgression {
         if (!force && payload.equals(last)) return;
         SENT.put(player.getUUID(), payload);
         ServerPlayNetworking.send(player, payload);
+        // What Mastery shows follows the kit (the technique tab is the legitimately owned kit's).
+        dev.rick.jjk.progression.mastery.Mastery.sync(player);
     }
 }

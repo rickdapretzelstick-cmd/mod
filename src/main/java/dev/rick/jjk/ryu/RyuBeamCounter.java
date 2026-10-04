@@ -38,7 +38,7 @@ public final class RyuBeamCounter implements BeamCounters.Counter {
     public boolean ready(AbilityCaster c) {
         if (c.character() == null || !(eld(c) instanceof EveryLastDropAbility)) return false;
         if (c.isAwakened() || Combat.actionsLocked(c.owner) || !RyuCombat.canDischarge(c.owner)) return false;
-        return c.noCost() || c.awakening() >= c.maxAwakening();
+        return c.awakeningUnlocked() && (c.noCost() || c.awakening() >= c.maxAwakening());
     }
 
     @Override

@@ -20,10 +20,12 @@ public final class Network {
         c2s.register(AbilityInputPayload.TYPE, AbilityInputPayload.CODEC);
         c2s.register(ClashInputPayload.TYPE, ClashInputPayload.CODEC);
         c2s.register(CharacterSelectPayload.TYPE, CharacterSelectPayload.CODEC);
+        c2s.register(MasteryPurchasePayload.TYPE, MasteryPurchasePayload.CODEC);
         c2s.register(RhythmInputPayload.TYPE, RhythmInputPayload.CODEC);
         c2s.register(BeamClashInputPayload.TYPE, BeamClashInputPayload.CODEC);
 
         var s2c = PayloadTypeRegistry.clientboundPlay();
+        s2c.register(NewsBoardPayload.TYPE, NewsBoardPayload.CODEC);
         s2c.register(FxPayload.TYPE, FxPayload.CODEC);
         s2c.register(CameraPayload.TYPE, CameraPayload.CODEC);
         s2c.register(AnimPayload.TYPE, AnimPayload.CODEC);
@@ -46,7 +48,23 @@ public final class Network {
         s2c.register(BeamClashJudgePayload.TYPE, BeamClashJudgePayload.CODEC);
         s2c.register(ProgressionPayload.TYPE, ProgressionPayload.CODEC);
         s2c.register(PrisonPayload.TYPE, PrisonPayload.CODEC);
+        s2c.register(MasterySyncPayload.TYPE, MasterySyncPayload.CODEC);
 
+        ServerPlayNetworking.registerGlobalReceiver(MasteryPurchasePayload.TYPE, (p, ctx) -> {
+            var r = dev.rick.jjk.progression.mastery.Mastery.purchase(ctx.player(), p.tree(), p.node());
+            if (r != dev.rick.jjk.progression.mastery.Mastery.Result.OK) {
+                String why = switch (r) {
+                    case NOT_YOURS -> "That technique isn't yours to develop.";
+                    case OWNED -> "Already learned.";
+                    case NEEDS -> "Learn what it builds on first.";
+                    case POINTS -> "Not enough Mastery.";
+                    default -> "That can't be learned.";
+                };
+                ctx.player().sendOverlayMessage(net.minecraft.network.chat.Component.literal(why).withStyle(net.minecraft.ChatFormatting.GRAY));
+                // The screen waits for an answer either way.
+                dev.rick.jjk.progression.mastery.Mastery.sync(ctx.player());
+            }
+        });
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
             AbilityCaster caster = Casters.active(player);

@@ -1,0 +1,322 @@
+{
+  "id": "technique/gojo",
+  "kind": "TECHNIQUE",
+  "owner": "gojo",
+  "title": "Gojo Satoru — Limitless",
+  "lanes": [
+    "Lapse Blue",
+    "Reversal Red",
+    "Close Quarters",
+    "Limitless",
+    "Six Eyes"
+  ],
+  "nodes": [
+    {
+      "id": "blue_reach",
+      "name": "Wider Lapse",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 0,
+      "row": 0,
+      "move": "blue",
+      "description": "Lapse Blue finds a target 20% farther away.",
+      "effects": [
+        {
+          "param": "blue.range",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "red_focus",
+      "name": "Concentrated Red",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 1,
+      "row": 0,
+      "move": "red",
+      "description": "Reversal Red's blast hits 15% harder.",
+      "effects": [
+        {
+          "param": "red.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "quick_hands",
+      "name": "Quick Hands",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 2,
+      "row": 0,
+      "move": "rapid_punches",
+      "description": "Rapid Punches hits 15% harder.",
+      "effects": [
+        {
+          "param": "rapid_punches.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "thin_infinity",
+      "name": "Thin Infinity",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 3,
+      "row": 0,
+      "move": "infinity",
+      "description": "Infinity costs a quarter less to keep up.",
+      "effects": [
+        {
+          "param": "infinity.upkeep",
+          "mul": 0.75
+        }
+      ]
+    },
+    {
+      "id": "blue_crush",
+      "name": "Crushing Vacuum",
+      "tier": "SMALL",
+      "cost": 30,
+      "lane": 0,
+      "row": 1,
+      "move": "blue",
+      "description": "Lapse Blue hits 20% harder and comes back 10% sooner.",
+      "requires": [
+        "blue_reach"
+      ],
+      "effects": [
+        {
+          "param": "blue.damage",
+          "mul": 1.2
+        },
+        {
+          "param": "blue.cooldown",
+          "mul": 0.9
+        }
+      ]
+    },
+    {
+      "id": "red_limitless",
+      "name": "Red: Limitless Variants",
+      "tier": "MECHANICAL",
+      "cost": 60,
+      "lane": 1,
+      "row": 1,
+      "move": "red",
+      "description": "Limitless pressed during Reversal Red's wind-up: phase behind them and fire point-blank, appear over an airborne target, or freeze someone mid-move and announce it.",
+      "requires": [
+        "red_focus"
+      ],
+      "effects": [
+        {
+          "unlock": "red.limitless"
+        }
+      ]
+    },
+    {
+      "id": "face_grater",
+      "name": "Face Grater",
+      "tier": "MECHANICAL",
+      "cost": 55,
+      "lane": 2,
+      "row": 1,
+      "move": "rapid_punches",
+      "description": "Limitless right after Rapid Punches lands: appear before them, drag them along the floor and toss them.",
+      "requires": [
+        "quick_hands"
+      ],
+      "effects": [
+        {
+          "unlock": "rapid_punches.face_grater"
+        }
+      ]
+    },
+    {
+      "id": "blink",
+      "name": "Quick Blink",
+      "tier": "SMALL",
+      "cost": 25,
+      "lane": 3,
+      "row": 1,
+      "move": "teleport",
+      "description": "Limitless comes back 20% sooner.",
+      "requires": [
+        "thin_infinity"
+      ],
+      "effects": [
+        {
+          "param": "teleport.cooldown",
+          "mul": 0.8
+        }
+      ]
+    },
+    {
+      "id": "red_flow",
+      "name": "Steady Output",
+      "tier": "SMALL",
+      "cost": 35,
+      "lane": 1,
+      "row": 2,
+      "move": "red",
+      "description": "Reversal Red costs and cools down 15% less.",
+      "requires": [
+        "red_limitless"
+      ],
+      "effects": [
+        {
+          "param": "red.cost",
+          "mul": 0.85
+        },
+        {
+          "param": "red.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "twofold",
+      "name": "Twofold Tempo",
+      "tier": "SMALL",
+      "cost": 30,
+      "lane": 2,
+      "row": 2,
+      "move": "twofold_kick",
+      "description": "Twofold Kick hits 15% harder and comes back 15% sooner.",
+      "requires": [
+        "face_grater"
+      ],
+      "effects": [
+        {
+          "param": "twofold_kick.damage",
+          "mul": 1.15
+        },
+        {
+          "param": "twofold_kick.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "awakening",
+      "name": "Awakening: The Blindfold Comes Off",
+      "tier": "AWAKENING",
+      "cost": 500,
+      "lane": 4,
+      "row": 3,
+      "move": "awaken",
+      "description": "Milestone. Gojo may awaken: the blindfold comes off and the awakened moveset opens (Blue MAX, Red MAX, Hollow Purple, Unlimited Void).",
+      "requires": [
+        "blue_crush",
+        "red_flow",
+        "twofold",
+        "blink"
+      ],
+      "effects": [
+        {
+          "unlock": "gojo.awakening"
+        }
+      ]
+    },
+    {
+      "id": "max_blue",
+      "name": "Vortex",
+      "tier": "SMALL",
+      "cost": 60,
+      "lane": 0,
+      "row": 4,
+      "move": "max_blue",
+      "description": "Lapse Blue MAX hits 15% harder.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "max_blue.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "red_rebound",
+      "name": "Red MAX: Rebound",
+      "tier": "MECHANICAL",
+      "cost": 90,
+      "lane": 1,
+      "row": 4,
+      "move": "max_red",
+      "description": "Limitless during Red MAX's charge: at the end of its range the orb rebounds to you, through whoever it caught.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "unlock": "max_red.limitless"
+        }
+      ]
+    },
+    {
+      "id": "zero_two",
+      "name": "0.2-Second Domain",
+      "tier": "MECHANICAL",
+      "cost": 110,
+      "lane": 3,
+      "row": 4,
+      "move": "awaken",
+      "description": "The Special during the Awakening: a flash of Unlimited Void for two tenths of a second, a sure hit on everyone close.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "unlock": "awaken.zero_two"
+        }
+      ]
+    },
+    {
+      "id": "void",
+      "name": "Infinite Void",
+      "tier": "SMALL",
+      "cost": 70,
+      "lane": 4,
+      "row": 4,
+      "move": "unlimited_void",
+      "description": "Unlimited Void comes back 15% sooner.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "unlimited_void.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "purple",
+      "name": "Hollow Technique: Purple",
+      "tier": "MAJOR",
+      "cost": 150,
+      "lane": 2,
+      "row": 5,
+      "move": "hollow_purple",
+      "description": "Milestone. Hollow Purple erases a path 25% wider and hits 15% harder.",
+      "requires": [
+        "max_blue",
+        "red_rebound"
+      ],
+      "effects": [
+        {
+          "param": "hollow_purple.radius",
+          "mul": 1.25
+        },
+        {
+          "param": "hollow_purple.damage",
+          "mul": 1.15
+        }
+      ]
+    }
+  ]
+}

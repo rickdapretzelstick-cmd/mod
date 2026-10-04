@@ -63,7 +63,9 @@ public final class ProgressionCommand {
                             dev.rick.jjk.progression.prison.PrisonRealm.adminReset(c.getSource().getServer());
                             c.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal("The Prison Realm is forgotten: another may be forged."), true);
                             return 1;
-                        }))));
+                        })))
+                .then(dev.rick.jjk.progression.mastery.MasteryCommand.node())
+                .then(dev.rick.jjk.progression.investigation.InvestigationCommand.node()));
     }
 
     private static int prisonStatus(CommandContext<CommandSourceStack> c) {

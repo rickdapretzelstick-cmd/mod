@@ -47,7 +47,8 @@ public final class GraniteBlastAbility extends Ability {
     }
 
     static boolean dashVariant(LivingEntity user) {
-        return user.level().getGameTime() - RyuState.of(user).frontDashAt <= RyuCombat.cfg().graniteDashWindow;
+        return user.level().getGameTime() - RyuState.of(user).frontDashAt <= RyuCombat.cfg().graniteDashWindow
+                && dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "granite_blast.dash");
     }
 
     @Override
@@ -92,13 +93,13 @@ public final class GraniteBlastAbility extends Ability {
                 if (age >= fireAt + 8) finish();
                 return;
             }
-            if (!charged && age >= cfg.graniteHoldTicks) {
+            if (!charged && age >= cfg.graniteHoldTicks && dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "granite_blast.charged")) {
                 charged = true;
                 setPhase(1, 20);
                 // Warning before the charged shot.
                 Fx.play(level, "granite_charge", RyuCombat.cannon(user), user.getLookAngle(), 1f, user.getId());
             }
-            if (!held && age >= 2 || age >= cfg.graniteHoldTicks + 20) {
+            if (!held && age >= 2 || age >= cfg.graniteHoldTicks + (charged ? 20 : 0)) {
                 fire(charged);
                 fireAt = age;
             }

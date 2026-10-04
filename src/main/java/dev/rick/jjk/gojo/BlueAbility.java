@@ -99,10 +99,10 @@ public final class BlueAbility extends Ability {
                 return;
             }
             if (age == cfg.blueWindup) {
-                target = Aim.target(user, cfg.blueRange, 12, hint);
+                target = Aim.target(user, cfg.blueRange * dev.rick.jjk.progression.mastery.Mastery.param(user, "blue.range"), 12, hint);
                 if (target == null) {
                     // A vacuum over nothing: a whiff with a little endlag.
-                    Aim.Target t = Aim.point(user, cfg.blueRange, 6, null);
+                    Aim.Target t = Aim.point(user, cfg.blueRange * dev.rick.jjk.progression.mastery.Mastery.param(user, "blue.range"), 6, null);
                     Fx.play(level, "blue_spawn", t.point(), Vec3.ZERO, 0.6f, user.getId());
                     endAt = age + 10;
                     return;

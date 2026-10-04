@@ -78,5 +78,12 @@
   "block.jjk.prison_wall": "Prison Realm Flesh",
   "block.jjk.seal_lock": "Seal Lock",
   "block.jjk.prison_core": "Prison Realm Core",
-  "key.jjk.prison_view": "Prison Realm: look outside"
+  "key.jjk.prison_view": "Prison Realm: look outside",
+  "key.jjk.mastery": "Mastery",
+  "item.jjk.slaughter_demon": "Slaughter Demon",
+  "item.jjk.cursed_cleaver": "Cursed Cleaver",
+  "entity.jjk.fly_head": "Fly Head",
+  "entity.jjk.school_crawler": "School Crawler",
+  "entity.jjk.school_maw": "School Maw",
+  "block.jjk.news_board": "Village News Board"
 }

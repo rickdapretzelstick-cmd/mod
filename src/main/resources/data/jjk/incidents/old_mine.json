@@ -1,0 +1,23 @@
+{
+  "id": "old_mine",
+  "weight": 2,
+  "grade": "GRADE_3",
+  "site": "hillside",
+  "trigger": "descend",
+  "realm": "mine_realm",
+  "curses": [
+    {"kind": "school_crawler", "min": 2, "max": 3},
+    {"kind": "school_maw", "min": 1, "max": 1}
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "Miner Missing Three Days",
+      "body": "{name} went into the old diggings in the hillside {dir} of the village {dist} and has not come out. A search party went as far as the first bend in the tunnel and turned back; they won't say why. One of them says the lantern light \"didn't reach as far as it should\". Anyone with news is asked to come to the bell."
+    },
+    {
+      "headline": "The Old Mine Is Not Empty",
+      "body": "Children playing near the boarded mine {dir} of here {dist} swear they heard scraping from inside, \"like a lot of hands\". {name}'s cousin went to look and now refuses to speak of it. The entrance should be left alone."
+    }
+  ]
+}

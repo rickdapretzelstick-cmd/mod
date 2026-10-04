@@ -105,7 +105,8 @@ public final class YujiCharacter extends JJKCharacter {
         var cast = caster.cast() != null && !caster.cast().isFinished() ? caster.cast() : null;
         if (!caster.isAwakened()) {
             // Divergent Fist pressed again while he flashes white: the Black Flash.
-            if (ability instanceof DivergentFistAbility && cast instanceof DivergentFistAbility.Instance df && df.blackFlashPress()) return true;
+            if (ability instanceof DivergentFistAbility && cast instanceof DivergentFistAbility.Instance df
+                    && dev.rick.jjk.progression.mastery.Mastery.unlocked(caster.owner, "divergent_fist.black_flash") && df.blackFlashPress()) return true;
             // Combat Instincts during an M1's or a skill's wind-up: the feint.
             if (ability instanceof CombatInstinctsAbility) {
                 boolean skill = cast instanceof Feintable f && f.feintable();
@@ -133,7 +134,7 @@ public final class YujiCharacter extends JJKCharacter {
         }
         // World Cutting Slash: Rush during Dismantle's wind-up, then Open, then Cleave.
         if (cast instanceof DismantleAbility.Instance d) {
-            if (ability instanceof RushAbility && d.chant(1)) return true;
+            if (ability instanceof RushAbility && dev.rick.jjk.progression.mastery.Mastery.unlocked(caster.owner, "dismantle.world_cutting_slash") && d.chant(1)) return true;
             if (ability instanceof OpenAbility && d.chant(2)) return true;
             if (ability instanceof CleaveAbility && caster.isReady(slot) && d.chant(3)) return true;
         }

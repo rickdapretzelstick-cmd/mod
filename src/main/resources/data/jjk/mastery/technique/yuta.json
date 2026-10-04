@@ -1,0 +1,341 @@
+{
+  "id": "technique/yuta",
+  "kind": "TECHNIQUE",
+  "owner": "yuta",
+  "title": "Yuta Okkotsu — Rika",
+  "lanes": [
+    "Katana",
+    "Outburst",
+    "Footwork",
+    "Rika",
+    "True Love"
+  ],
+  "nodes": [
+    {
+      "id": "severing",
+      "name": "Severing Path",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 0,
+      "row": 0,
+      "move": "severing_path",
+      "description": "Severing Path hits 15% harder.",
+      "effects": [
+        {
+          "param": "severing_path.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "outburst_edge",
+      "name": "Charged Draw",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 1,
+      "row": 0,
+      "move": "outburst",
+      "description": "Outburst hits 15% harder.",
+      "effects": [
+        {
+          "param": "outburst.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "second_wind",
+      "name": "Second Wind",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 2,
+      "row": 0,
+      "move": "second_wind",
+      "description": "Second Wind comes back 15% sooner.",
+      "effects": [
+        {
+          "param": "second_wind.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "rika",
+      "name": "Rika's Reach",
+      "tier": "SMALL",
+      "cost": 25,
+      "lane": 3,
+      "row": 0,
+      "move": "rika",
+      "description": "Rika Smash and Rika Haymaker hit 15% harder.",
+      "effects": [
+        {
+          "param": "rika_smash.damage",
+          "mul": 1.15
+        },
+        {
+          "param": "rika_haymaker.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "resolute",
+      "name": "Resolute Slash",
+      "tier": "SMALL",
+      "cost": 25,
+      "lane": 0,
+      "row": 1,
+      "move": "resolute_slash",
+      "description": "Resolute Slash hits 15% harder.",
+      "requires": [
+        "severing"
+      ],
+      "effects": [
+        {
+          "param": "resolute_slash.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "full_stage",
+      "name": "Outburst: Last Stage",
+      "tier": "MECHANICAL",
+      "cost": 80,
+      "lane": 1,
+      "row": 1,
+      "move": "outburst",
+      "description": "Held to the end, the burst reaches its third stage: bigger, and fully unblockable.",
+      "requires": [
+        "outburst_edge"
+      ],
+      "effects": [
+        {
+          "unlock": "outburst.full_stage"
+        }
+      ]
+    },
+    {
+      "id": "veilstep",
+      "name": "Veilstep",
+      "tier": "MECHANICAL",
+      "cost": 50,
+      "lane": 2,
+      "row": 1,
+      "move": "severing_path",
+      "description": "Severing Path walking backwards: a long back roll with i-frames that launches anyone in the way.",
+      "requires": [
+        "second_wind"
+      ],
+      "effects": [
+        {
+          "unlock": "severing_path.veilstep"
+        }
+      ]
+    },
+    {
+      "id": "rika_feint",
+      "name": "Rika Launch Feint",
+      "tier": "MECHANICAL",
+      "cost": 50,
+      "lane": 3,
+      "row": 1,
+      "move": "rika_launch",
+      "description": "Rika Launch during one of your moves feints it into the boost, on a shorter cooldown.",
+      "requires": [
+        "rika"
+      ],
+      "effects": [
+        {
+          "unlock": "rika_launch.feint"
+        }
+      ]
+    },
+    {
+      "id": "resolute_bf",
+      "name": "Resolute Black Flash",
+      "tier": "MECHANICAL",
+      "cost": 70,
+      "lane": 0,
+      "row": 2,
+      "move": "resolute_slash",
+      "description": "Resolute Slash again as you reappear: vanish once more and return with a Black Flash.",
+      "requires": [
+        "resolute"
+      ],
+      "effects": [
+        {
+          "unlock": "resolute_slash.black_flash"
+        }
+      ]
+    },
+    {
+      "id": "pummel",
+      "name": "Second Wind: Pummel",
+      "tier": "MECHANICAL",
+      "cost": 60,
+      "lane": 2,
+      "row": 2,
+      "move": "second_wind",
+      "description": "Severing Path as Second Wind collides with a defenseless target: pummel them instead.",
+      "requires": [
+        "veilstep"
+      ],
+      "effects": [
+        {
+          "unlock": "second_wind.pummel"
+        }
+      ]
+    },
+    {
+      "id": "awakening",
+      "name": "True Love",
+      "tier": "AWAKENING",
+      "cost": 500,
+      "lane": 4,
+      "row": 3,
+      "move": "true_love",
+      "description": "Milestone. \"Come, Rika. Give me everything.\" She manifests fully: the True Love moveset (Elbow Rush, Copy, Energy Ripple, awakened Rika, Authentic Mutual Love).",
+      "requires": [
+        "resolute_bf",
+        "pummel",
+        "rika_feint",
+        "full_stage"
+      ],
+      "effects": [
+        {
+          "unlock": "yuta.awakening"
+        }
+      ]
+    },
+    {
+      "id": "steel_arm",
+      "name": "Steel Arm",
+      "tier": "SMALL",
+      "cost": 60,
+      "lane": 0,
+      "row": 4,
+      "move": "elbow_rush",
+      "description": "Elbow Rush and Energy Ripple hit 15% harder.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "elbow_rush.damage",
+          "mul": 1.15
+        },
+        {
+          "param": "energy_ripple.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "fakeout",
+      "name": "Fakeout",
+      "tier": "MECHANICAL",
+      "cost": 80,
+      "lane": 1,
+      "row": 4,
+      "move": "energy_ripple",
+      "description": "Energy Ripple again before the blade reaches the floor: a sudden swing that transfers the energy into them.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "unlock": "energy_ripple.fakeout"
+        }
+      ]
+    },
+    {
+      "id": "copy",
+      "name": "Copy",
+      "tier": "SMALL",
+      "cost": 50,
+      "lane": 2,
+      "row": 4,
+      "move": "copy",
+      "description": "Copy comes back 15% sooner.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "copy.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "rika_full",
+      "name": "Queen of Curses",
+      "tier": "SMALL",
+      "cost": 60,
+      "lane": 3,
+      "row": 4,
+      "move": "rika_slam",
+      "description": "Rika Slam, Downslam and Throw hit 15% harder.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "rika_slam.damage",
+          "mul": 1.15
+        },
+        {
+          "param": "rika_downslam.damage",
+          "mul": 1.15
+        },
+        {
+          "param": "rika_throw.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "beam",
+      "name": "True Love Beam",
+      "tier": "MAJOR",
+      "cost": 120,
+      "lane": 3,
+      "row": 5,
+      "move": "true_love_beam",
+      "description": "Milestone. True Love Beam hits 15% harder and comes back 15% sooner.",
+      "requires": [
+        "rika_full"
+      ],
+      "effects": [
+        {
+          "param": "true_love_beam.damage",
+          "mul": 1.15
+        },
+        {
+          "param": "true_love_beam.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "ladder",
+      "name": "Jacob's Ladder",
+      "tier": "MAJOR",
+      "cost": 150,
+      "lane": 4,
+      "row": 5,
+      "move": "authentic_mutual_love",
+      "description": "Milestone. Inside Authentic Mutual Love, after four katana hits: the divine ray that lifts them and takes their health in one blow.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "unlock": "authentic_mutual_love.jacobs_ladder"
+        }
+      ]
+    }
+  ]
+}

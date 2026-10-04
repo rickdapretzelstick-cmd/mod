@@ -35,6 +35,10 @@ public final class ProgressionBlocks {
                     .lightLevel(s -> s.getValue(dev.rick.jjk.progression.prison.PrisonCellBlocks.Core.OPEN) ? 15 : 7)
                     .pushReaction(net.minecraft.world.level.material.PushReaction.IMMOVEABLE).isValidSpawn((s, l, p, t) -> false));
 
+    /** A village's news board (put up by the bell; also craftable-free decoration for builders via commands). */
+    public static final Block NEWS_BOARD = Blocks.register(key("news_board"), dev.rick.jjk.progression.investigation.NewsBoardBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS).strength(2.0f).noOcclusion().ignitedByLava());
+
     private ProgressionBlocks() {}
 
     private static ResourceKey<Block> key(String name) {

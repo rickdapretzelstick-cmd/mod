@@ -159,6 +159,54 @@ final class FingerBearerFx {
                     level.addParticle(ParticleTypes.SOUL_FIRE_FLAME, pos.x + RNG.nextGaussian() * 0.2, pos.y + 0.1, pos.z + RNG.nextGaussian() * 0.2, 0, 0.03, 0);
                 }
             }
+            // --- The common curses and anything a curse shrugs off ("curse_*") ---
+            case "curse_unharmed" -> {
+                // An ordinary weapon passes through cursed flesh: a grey puff, nothing more.
+                burst(level, pos, q(6), 0.03, Sprite.SMOKE, DUST, 0.35f * Math.max(0.6f, s), 12);
+            }
+            case "curse_tell" -> {
+                // The beat before it commits: a sickly flare at the eyes or the mouth. Readable, not a marker.
+                Flashes.flash(pos, 0.15f, 0.7f * Math.max(0.5f, s), WARN, 0.7f, 6, now);
+                implode(level, pos, 0.6 * Math.max(0.5f, s), q(6), VIOLET, 0.06f, 7);
+            }
+            case "curse_bite" -> {
+                float k = Math.max(0.5f, s);
+                ClientFx.sparks(level, pos, dir, q(Math.round(6 * k)), 0.3, WARN, 0.06f, 7);
+                burst(level, pos, q(3), 0.03, Sprite.SMOKE, CORE, 0.3f * k, 10);
+            }
+            case "curse_tongue" -> {
+                // The lash: a wet streak along its path (dir = the full reach).
+                int n = q(14);
+                for (int i = 0; i < n; i++) {
+                    Vec3 at = pos.add(dir.scale(i / (double) Math.max(1, n - 1)));
+                    add(level, at, Vec3.ZERO, Sprite.GLOW, WARN, 0.75f, 0.09f, 0.02f, 6 + i / 3);
+                }
+            }
+            case "curse_pounce" -> burst(level, pos, q(8), 0.07, Sprite.SMOKE, DUST, 0.45f, 16);
+            case "curse_scatter" -> {
+                for (int i = 0; i < q(5); i++) add(level, pos, randomUnit().scale(0.08), Sprite.SMOKE, CORE, 0.5f, 0.15f, 0.2f, 10);
+            }
+            case "curse_pool" -> {
+                // A lingering pool of cursed energy (area denial): drawn for its lifetime (dir.x ticks), radius s.
+                int life = Math.max(10, (int) dir.x);
+                Flashes.ground(pos, s * 0.9f, s, VIOLET, 0.45f, life, now);
+                for (int i = 0; i < q(10); i++) {
+                    double a = RNG.nextDouble() * Mth.TWO_PI, r = Math.sqrt(RNG.nextDouble()) * s;
+                    add(level, pos.add(Math.cos(a) * r, 0.05, Math.sin(a) * r), new Vec3(0, 0.02, 0), Sprite.SMOKE, CORE, 0.6f, 0.25f, 0.1f, 30);
+                }
+            }
+            case "curse_residue" -> {
+                // Cursed residue at an incident: faint violet traces only a perceiving player is sent.
+                for (int i = 0; i < q(3); i++) {
+                    Vec3 o = new Vec3(RNG.nextGaussian() * 0.4, RNG.nextDouble() * 0.3, RNG.nextGaussian() * 0.4);
+                    add(level, pos.add(o), new Vec3(0, 0.008, 0), i == 0 ? Sprite.GLOW : Sprite.SMOKE, i == 0 ? VIOLET_LIGHT : VIOLET,
+                            0.55f, i == 0 ? 0.05f : 0.14f, 0.05f, 40 + RNG.nextInt(20)).fadeIn();
+                }
+            }
+            case "curse_realm_pull" -> {
+                Flashes.flash(pos, 0.5f, 3.5f, CORE, 0.85f, 18, now);
+                implode(level, pos, 2.5, q(30), VIOLET, 0.12f, 16);
+            }
             default -> {}
         }
     }

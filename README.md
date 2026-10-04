@@ -425,9 +425,14 @@ It runs one move at a time. Each has a readable windup, lands at most once, and 
 | **Point-Blank Burst** | used when you crowd it or stand close while it charges: curls up, and a ring on the floor shows the radius for 0.9 s | get out of the ring | short pause after |
 | **Brutal Rush** | crouches with its arms swept back (0.7 s), then charges in a straight line | step out of the line | a miss or a wall leaves it staggered ~1.8 s |
 | **Heavy Follow-Up Smash** | both arms overhead (1.1 s); a ring marks the spot | step off the mark, or guard / raise a shield | bent over the floor ~1 s |
+| **Leap** | keep your distance (or climb above it): it crouches, and a ring marks where you stand | get out of the ring before it comes down | the landing breaks soft ground and leaves it winded 1.5 s |
+| **Backhand Spin** | stay at its back for a moment: it wheels round, a ring at its feet | don't loiter behind it | short |
+| **Cursed Pools** | where a Charged Blast bursts the energy stays on the floor for 6 s (enraged: it throws three down on purpose) | stay out of them: they hurt and slow | — |
 
 The smash follows a rush that connected, but never so fast that you can't move first. Walls stop its shots, its rush and
-its area damage. It has 150 health and 4 armour, and no single hit takes more than 12 health from an unarmoured
+its area damage. It is a **Grade 1** curse and the wall at the start of progression: **ordinary weapons don't hurt it
+at all** (you need a cursed tool, below), and at half health it **enrages**: a roar that throws everyone back, then
+shorter rests, its shots in a fan of three, and pools thrown down on purpose. It has 300 health and 4 armour, and no single hit takes more than 12 health from an unarmoured
 player (`progression.fingerBearerHealth`, `progression.fingerBearerDamage`). Mid-move it shrugs off hitstun; between moves
 a hit makes it flinch.
 
@@ -447,6 +452,109 @@ paths define their own.
 **Admin** (op): `/jjk kit list | owner <kit> | info [player] | grant <kit> <player> | transfer <kit> <player> |
 release <kit> | repair | rooms`. `/jjk character` is still an admin override; under progression it lasts until the
 player relogs or leaves Creative (a Creative K pick is the test kit above).
+
+## Investigations, curses and Mastery
+
+The long loop of Survival: **villages report strange happenings → you investigate → you find and exorcise the curse
+behind it → the Mastery you earn develops your cursed tool and (once you have one) your own technique.**
+
+### Curse grades and cursed damage
+
+Every curse has a **grade** (Grade 4, 3, 2, 1, Special), saved per entity, so the same kind can turn up weaker or
+stronger. The grade scales its health, its damage, how quickly it attacks again, how much cursed energy it shrugs off,
+what exorcising it is worth and how bad the reports about it sound (`CurseGrade`). Damage to a curse is classified
+(`CursedDamage`): **mundane** (any vanilla weapon or fist: a curse is simply unharmed, a grey puff), **cursed tool**,
+**technique** (a cursed technique in use) and **cursed energy**. Commands and the void still kill anything.
+
+### The common curses
+
+Three curses from the supplied pack (`fly_head`, `school_crawler`, `school_maw`: Blockbench models, textures and
+idle/move/attack/hurt/death clips, installed by `tools/install_bbmodel.py`). Seen only through Cursed Glasses, like the
+Finger Bearer, and each fights differently:
+
+| Curse | Grade | How it fights | How to beat it |
+|---|---|---|---|
+| **Fly Head** | 4 | comes in swarms that circle you just out of reach on wobbling orbits, one diving at a time to bite | sidestep the dive (it overshoots); a swatted one scatters for a moment |
+| **School Crawler** | 4 (strong) | scuttles round you at mid range, presses flat (the tell) and pounces; up close, a raking swipe, then backs off | sidestep the pounce: it skids past and lies sprawled for 1.5 s |
+| **School Maw** | 3 | slow, all mouth: its tongue lashes out along a line and reels you in front of its jaw, and the bite follows at once; otherwise a long gaping bite | get out of the tongue's line; a missed bite leaves it hunched over 1.4 s |
+
+### Cursed tools
+
+An ordinary person's first way to fight curses. Drop an **iron sword** or an **iron axe** into a full Cursed Energy
+cauldron (like the glasses) and it comes out as a cursed tool:
+
+- **Slaughter Demon** (from the sword): a short, fast blade. Its tree: Keen Edge, Light Grip, **Flurry** (every third
+  cut on the same target lands a staggering follow-through), **Precision** (falling strikes +50%), **Quickstep**
+  (use: dart forward and cut the first thing in your path), **Severing Point** (a weakened Grade 3-or-lower curse is cut
+  apart in one stroke).
+- **Cursed Cleaver** (from the axe): slow and crushing. Its tree: Heft, **Heavy Swing** (use and hold to wind up,
+  release to bring it down; longer holds hit far harder), **Momentum** (every hit throws them back), **Guard Break**
+  (a heavy swing smashes through a guard), **Shockwave** (a full-charge swing hits everything around and launches it).
+
+### Mastery
+
+Two kinds of tree, both on the **Mastery screen (J)**: the **Cursed Tool** tab shows the tree of the tool in your hand;
+the **Technique** tab shows your own kit's tree, and only if you legitimately own that kit (a borrowed Creative test kit
+has none). Lanes are columns, tiers go down; lines join prerequisites; each node shows whether it is owned, available
+or locked, its cost, which move it belongs to and what it does. Click a node to read it, double-click (or Develop) to
+buy it. The server checks every purchase.
+
+**Every move of every kit has nodes** (data: `data/jjk/mastery/technique/<kit>.json`), and they aren't just numbers:
+
+- **The R-combination variants are no longer free.** In Survival, on your own kit, each is a node of the move it comes
+  from: Gojo's Red + Limitless variants, Face Grater and the 0.2-second Domain; Hakari's Balls + Doors, Fever Crush and
+  Renewal; Yuji's Black Flash, Black Flash Chain, Improvised Weapon and World Cutting Slash; Yuta's Veilstep, Resolute
+  Black Flash, Second Wind's pummel, Rika Launch's feint, Outburst's last stage, Fakeout and Jacob's Ladder; Ryu's
+  charged and looping Granite Blast and the held "You weren't invited".
+- **Awakening is a node**: the most expensive one in each tree, needing a node from several lanes first (Gojo's
+  blindfold, Hakari's Idle Death Gamble, the King of Curses, True Love, Every Last Drop). Before it, the Awakening key
+  (and the domain counter that uses it) does nothing. The awakened moves have their own nodes below it.
+- Small upgrades (damage, cooldown, cost, a range or a radius) sit between them; milestones have a gold frame.
+
+Creative, progression switched off, and anything that isn't a player (dummies, curses) always have the whole kit. Costs
+live in each tree's JSON; `mastery.costMultiplier` scales them all.
+
+**What exorcising pays.** Each curse is worth its grade's Mastery (Grade 4: 6, Grade 3: 14, Grade 1: 70...), split by
+damage share: first between the players who fought it, then each player's part between their trees (the tool and the
+technique they hit it with). Using both at once pays the same as either alone, never double. Your technique's share is
+only paid into a kit you own. Killing the same grade over and over pays less each time (fatigue, which wears off with
+time); investigations always pay at least 60%, and **completing an investigation adds a bonus** for everyone who took
+part (Grade 3: +26). Exorcisms and investigations are recorded per grade for the future **Sorcerer Grade** (Unranked →
+Grade 4 … Special Grade), which is kept apart from Mastery.
+
+### Village news boards and investigations
+
+Walk into a village and its **news board** goes up by the bell: a weathered board with notices pinned to it. Read it
+(use it). It is local news, not a quest log: missing people, livestock found worried at in the night, strange sounds,
+a fall from the cliffs. Nothing says *curse*, nothing has a marker or a waypoint; a report says roughly where
+(*"the cliffs northeast of the village (a short walk out)"*) and its tone says how bad it is.
+
+Each incident is a template (`data/jjk/incidents/*.json`: its curses and grade, the kind of place, its trigger, its
+realm, its report texts) placed at a real spot that fits it near the village (a ten-block drop for a cliff, flat
+grassland, a hillside for a mine). At the place there are physical traces (flowers and a candle at the edge, bones in
+the grass, a boarded mine entrance), and through Cursed Glasses a faint **trail of cursed residue** leads the last
+stretch. No checklist, no HUD.
+
+| Incident | Grade | What sets it off | Where the fight is |
+|---|---|---|---|
+| **A fall from the cliffs** | 3 | jumping off the edge where it happened | pulled into a cursed realm before you land: the cliff, broken off and hanging in a red void |
+| **Livestock lost in the night** | 4 | walking into the pasture | right there, in the open |
+| **The old mine** | 3 | going down to the end of the tunnel | a cursed realm: a low cavern of wet rock |
+
+Exorcise every curse and the incident is over: the bonus is paid, and the board posts a follow-up. Left alone for three
+days a report goes stale and something else gets reported.
+
+**Cursed realms** are arenas in one void dimension (`jjk:cursed_realm`), one slot per incident in use, built when the
+first player is pulled in and **cleared back to empty void when it closes**: no new dimension per incident and nothing
+left behind. Anyone who sets the incident off while it is open joins the same arena. Entering is unsettling (darkness,
+nausea, a heartbeat); falling off the edge puts you back on the ground, hurt but alive. When the last curse falls,
+everyone inside is sent back where they came from. Dying there respawns you as usual. A realm nobody is in for a minute
+(everyone died, fled or logged out), or a server restart, closes it and the incident can be tried again. Logging in
+inside a realm that has closed sends you home. (A world without the dimension builds the arenas far out in the
+overworld's sky instead.)
+
+**Admin** (op): `/jjk mastery info|give|buy|respec <player> ...` · `/jjk incident list|realms|here <template>|start <id>`
+(`here` puts an incident where you stand, facing its direction: stand on a cliff edge looking out for a cliff fall).
 
 ## The Prison Realm
 
@@ -741,7 +849,8 @@ Domain structures are separate and restore as soon as the domain ends. `/jjk res
 
 `/jjk arena` test arena with dummies · `/jjk dummy [stand|jump|fight] [n]` · `/jjk dummy domain <void|idg|shrine> [skill]` (solo clash practice: the nearest dummy opens that domain; press Awakening in the counter window to clash it; skill 0–1 is how well it plays) · `/jjk nocooldown true|false` ·
 `/jjk awakening <amount>|end` · `/jjk reset` · `/jjk character gojo|hakari|yuji|yuta|none` · `/jjk domain cancel [all]` ·
-`/jjk status [target]` · `/jjk config reload` · `/jjk kit ...` (Survival kit ownership, see Survival progression)
+`/jjk status [target]` · `/jjk config reload` · `/jjk kit ...` (Survival kit ownership, see Survival progression) ·
+`/jjk mastery ...` · `/jjk incident ...` (see Investigations, curses and Mastery)
 
 ## Config
 

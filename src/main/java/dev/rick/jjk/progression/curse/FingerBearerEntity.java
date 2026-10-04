@@ -66,13 +66,23 @@ import java.util.UUID;
  *   <li><b>Heavy Follow-Up Smash</b>: a two-handed hammer blow on a marked spot in front of it; it follows a rush that
  *   connected, never so fast that the victim can't get away, and it can be guarded or shielded.</li>
  * </ul>
+ * It is a Grade 1 curse ({@link dev.rick.jjk.progression.grade.GradedCurse}), the wall at the start of progression: an
+ * ordinary weapon can't touch it, and it fights where you stand:
+ * <ul>
+ *   <li><b>Leap</b>: keep your distance or climb above it and it crouches and comes down on the spot you were on (the ring
+ *   shows where); the landing breaks soft ground and leaves it winded.</li>
+ *   <li><b>Spin</b>: stay at its back and it wheels round with a backhand.</li>
+ *   <li><b>Pools</b>: where a Charged Blast bursts the energy lingers on the floor, hurting and slowing.</li>
+ *   <li><b>Enraged</b> below half health: it roars and throws everyone back, then fights faster, fires its shots in a fan of
+ *   three and throws pools down on purpose.</li>
+ * </ul>
  * Who it may fight is {@link CurseAggro}'s rule: it only takes a target who perceives it and is in sight (or one it is
  * already fighting: taking the glasses off doesn't end a fight), and every hit goes through {@link Targeting}, which
  * refuses anyone else. Leaving the room ends the chase. Clips ({@code animations/cursed_spirit/}) put their release and
  * impact keys on the same ticks as the code here.
  */
-public class FingerBearerEntity extends Monster implements CursedSpirit {
-    public enum Move { NONE, SHOT, BLAST, BURST, RUSH, SMASH }
+public class FingerBearerEntity extends Monster implements dev.rick.jjk.progression.grade.GradedCurse {
+    public enum Move { NONE, SHOT, BLAST, BURST, RUSH, SMASH, LEAP, SPIN, POOL }
 
     // Move timings (ticks into the move). The clips use the same numbers (tools/gen_finger_bearer_anims.py).
     public static final int SHOT_FIRE = 12, SHOT_END = 24;
@@ -85,7 +95,21 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
     public static final double CLOSE = 3.6, BURST_RADIUS = 4.5, SMASH_RADIUS = 2.4, SMASH_REACH = 2.6, RUSH_SPEED = 0.62;
     /** Damage before {@link JJKConfig.Progression#fingerBearerDamage}: none of them can take a full-health player. */
     public static final float SHOT_DAMAGE = 5f, BLAST_DAMAGE = 11f, BLAST_SPLASH = 5f, BURST_DAMAGE = 7f, STRIKE_DAMAGE = 9f, SMASH_DAMAGE = 12f;
-    private static final int[] COOLDOWN = {0, 50, 160, 110, 120, 90};
+    private static final int[] COOLDOWN = {0, 50, 160, 110, 120, 90, 150, 70, 200};
+    /** The leap: crouch, then a high arc onto where its target stood; the landing breaks soft ground and leaves it open. */
+    public static final int LEAP_WINDUP = 14, LEAP_AIR = 16, LEAP_RECOVER = 30;
+    public static final double LEAP_RADIUS = 3.4;
+    public static final float LEAP_DAMAGE = 12f;
+    /** The spin: someone lingering behind it gets a backhand. */
+    public static final int SPIN_HIT = 8, SPIN_END = 20;
+    public static final double SPIN_RADIUS = 3.2;
+    public static final float SPIN_DAMAGE = 8f;
+    /** Pools of lingering cursed energy (where a blast burst; thrown down on purpose once it is enraged). */
+    public static final int POOL_FIRE = 18, POOL_END = 34, POOL_TICKS = 120;
+    public static final double POOL_RADIUS = 1.8;
+    public static final float POOL_DAMAGE = 2.5f;
+    /** Below this share of its health it is enraged: faster, more shots, pools of its own. */
+    public static final float ENRAGE_AT = 0.5f;
 
     /** The move under way, synced so the renderer can drop its walk cycle while a clip drives the legs. */
     private static final EntityDataAccessor<Byte> MOVE = SynchedEntityData.defineId(FingerBearerEntity.class, EntityDataSerializers.BYTE);
@@ -114,6 +138,12 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
     @Nullable private BlockPos home;
     private int homeRadius = 9;
     private boolean rewarded;
+    private boolean enraged;
+    private int behindTicks;
+    private Vec3 leapFrom = Vec3.ZERO, leapTo = Vec3.ZERO;
+    private int leapPhase;
+    private record Pool(Vec3 center, double radius, long until) {}
+    private final List<Pool> pools = new ArrayList<>();
 
     public FingerBearerEntity(EntityType<? extends FingerBearerEntity> type, Level level) {
         super(type, level);
@@ -122,7 +152,7 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 150).add(Attributes.MOVEMENT_SPEED, 0.27)
+        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 300).add(Attributes.MOVEMENT_SPEED, 0.27)
                 .add(Attributes.ARMOR, 4).add(Attributes.KNOCKBACK_RESISTANCE, 0.8).add(Attributes.FOLLOW_RANGE, 24)
                 .add(Attributes.STEP_HEIGHT, 1.0).add(Attributes.ATTACK_DAMAGE, 6);
     }
@@ -177,6 +207,30 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
     }
 
     @Override
+    public dev.rick.jjk.progression.grade.CurseGrade curseGrade() {
+        return dev.rick.jjk.progression.grade.CurseGrade.GRADE_1;
+    }
+
+    @Override
+    public String curseKind() {
+        return "finger_bearer";
+    }
+
+    /** Past half health: its second phase. */
+    public boolean enraged() {
+        return enraged;
+    }
+
+    public int pools() {
+        return pools.size();
+    }
+
+    /** Test hook: how long its target has been behind it. */
+    public void setBehindTicks(int t) {
+        behindTicks = t;
+    }
+
+    @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(MOVE, (byte) 0);
@@ -200,7 +254,12 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
         super.customServerAiStep(level);
         for (int i = 0; i < cooldown.length; i++) if (cooldown[i] > 0) cooldown[i]--;
         if (rest > 0) rest--;
+        tickPools(level);
         LivingEntity target = validTarget(level);
+        if (move == Move.NONE && !enraged && getHealth() <= getMaxHealth() * ENRAGE_AT && isAlive()) {
+            enrage(level);
+            return;
+        }
         if (move != Move.NONE) {
             tickMove(level, target);
             return;
@@ -304,6 +363,9 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
         double d = distanceTo(target);
         boolean los = hasLineOfSight(target);
         closeTicks = d <= CLOSE ? closeTicks + 1 : Math.max(0, closeTicks - 2);
+        // Someone working its back: it notices.
+        Vec3 to = flatDir(target.position());
+        behindTicks = d <= 4.5 && forward().dot(to) < -0.35 ? behindTicks + 1 : Math.max(0, behindTicks - 2);
         if (getNavigation().isDone()) turnToward(target.position(), 12f);
         getLookControl().setLookAt(target, 30f, 30f);
         if (rest <= 0 && !Combat.actionsLocked(this)) {
@@ -320,6 +382,13 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
     private Move choose(ServerLevel level, LivingEntity target, double d, boolean los) {
         List<Move> options = new ArrayList<>();
         List<Integer> weights = new ArrayList<>();
+        // Reactions to where its prey stands come first: behind it, it spins; far off or up high, it leaps on them.
+        if (behindTicks >= 14 && d <= 4.5 && ready(Move.SPIN)) return Move.SPIN;
+        boolean high = target.getY() > getY() + 2.5;
+        if (ready(Move.LEAP) && d <= 22 && (high || d >= (enraged ? 9 : 12)) && getRandom().nextInt(high ? 1 : 2) == 0 && leapClear(level, target)) {
+            return Move.LEAP;
+        }
+        if (enraged && los && d >= 5 && d <= 16 && ready(Move.POOL)) add(options, weights, Move.POOL, 2);
         if (d <= CLOSE) {
             if (ready(Move.SMASH) && closeTicks >= 6) add(options, weights, Move.SMASH, 3);
             if (ready(Move.BURST) && closeTicks >= 16) add(options, weights, Move.BURST, 2);
@@ -409,6 +478,24 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
                 fx(level, "fb_rush_windup", chest, aim, 1f);
             }
             case SMASH -> beginSmash(level, target);
+            case LEAP -> {
+                leapPhase = 0;
+                Anim.playOn(this, "finger_bearer_rush_windup");
+                sound(level, SoundEvents.RAVAGER_ROAR, 1.2f, 0.6f);
+                leapTo = target.position();
+                // The landing ring shows from the start: get out of it.
+                fx(level, "fb_smash_warn", leapTo.add(0, 0.05, 0), new Vec3(LEAP_WINDUP + LEAP_AIR, 0, 0), (float) LEAP_RADIUS);
+            }
+            case SPIN -> {
+                Anim.playOn(this, "finger_bearer_rush_strike");
+                sound(level, SoundEvents.RAVAGER_ATTACK, 1.1f, 0.9f);
+                fx(level, "fb_burst_warn", position().add(0, 0.05, 0), new Vec3(SPIN_HIT, 0, 0), (float) SPIN_RADIUS);
+            }
+            case POOL -> {
+                Anim.playOn(this, "finger_bearer_smash");
+                sound(level, SoundEvents.WARDEN_SONIC_CHARGE, 1.2f, 0.9f);
+                fx(level, "fb_gather", position().add(forward().scale(1.2)).add(0, 1.6, 0), aim, 1f);
+            }
             default -> {}
         }
     }
@@ -445,6 +532,9 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
             case BURST -> tickBurst(level);
             case RUSH -> tickRush(level, target);
             case SMASH -> tickSmash(level);
+            case LEAP -> tickLeap(level);
+            case SPIN -> tickSpin(level, target);
+            case POOL -> tickPool(level, target);
             default -> end(0, 0);
         }
     }
@@ -462,6 +552,10 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
         if (t == SHOT_FIRE) {
             Vec3 from = handPos();
             CursedEnergyShotEntity.fire(level, this, from, aim, CursedEnergyShotEntity.Kind.SHOT);
+            if (enraged) {
+                // Enraged: a fan of three.
+                for (float yaw : new float[] {-14f, 14f}) CursedEnergyShotEntity.fire(level, this, from, aim.yRot(yaw * Mth.DEG_TO_RAD), CursedEnergyShotEntity.Kind.SHOT);
+            }
             sound(level, SoundEvents.WARDEN_SONIC_BOOM, 0.7f, 1.7f);
             fx(level, "fb_shot_fire", from, aim, 1f);
         }
@@ -539,6 +633,8 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
                 if (t > 1 && (horizontalCollision || outsideRoom())) {
                     // Into a wall (or the edge of its room): it rebounds, dazed.
                     sound(level, SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR, 1.2f, 0.6f);
+                    // It hits hard enough to break what's soft (restored later, like any world damage).
+                    dev.rick.jjk.util.Destruction.sphere(level, position().add(aim.scale(1.2)).add(0, 1.4, 0), 1.6, 0.9f, 20, this, null);
                     fx(level, "fb_wall", position().add(aim.scale(0.9)).add(0, 1.4, 0), aim, 1f);
                     Fx.shake(level, position(), 12, 0.4f, 6);
                     setDeltaMovement(aim.scale(-0.25).add(0, 0.15, 0));
@@ -635,6 +731,10 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
     }
 
     private void end(int cooldownTicks, int restTicks) {
+        if (enraged) {
+            cooldownTicks = cooldownTicks * 3 / 4;
+            restTicks = restTicks * 3 / 5;
+        }
         if (move != Move.NONE) cooldown[move.ordinal()] = Math.max(cooldown[move.ordinal()], cooldownTicks);
         move = Move.NONE;
         rushPhase = 0;
@@ -646,10 +746,156 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
 
     /** Stops whatever it was doing (death, a reset): nothing it started lands afterwards. */
     public void cancelMove() {
+        setNoGravity(false);
         move = Move.NONE;
         rushPhase = 0;
         t = 0;
         struck.clear();
+    }
+
+    // --- Phase two, the leap, the spin, the pools ---
+
+    /** Half its health gone: it roars, throws everyone back and fights faster from here on. */
+    private void enrage(ServerLevel level) {
+        enraged = true;
+        getNavigation().stop();
+        Anim.playOn(this, "finger_bearer_roar");
+        sound(level, SoundEvents.WARDEN_ROAR, 2f, 0.55f);
+        fx(level, "fb_roar", getEyePosition(), getLookAngle(), 1.6f);
+        Vec3 c = position().add(0, 1, 0);
+        struck.clear();
+        for (LivingEntity e : areaTargets(level, HitShape.sphere(c, 5.5), c)) {
+            strike(e, Hit.builder(this, "fb_enrage").type(ModDamageTypes.TECHNIQUE).damage(dmg(3f)).tag(AttackTag.TECHNIQUE, AttackTag.AREA)
+                    .knockback(Knockback.radial(c, 1.6, 0.5)).hitstun(6).origin(c).fx("fb_impact", 1f));
+        }
+        struck.clear();
+        Fx.shake(level, c, 24, 0.9f, 14);
+        rest = Math.max(rest, ROAR_TICKS + 10);
+        for (int i = 0; i < cooldown.length; i++) cooldown[i] = Math.min(cooldown[i], 20);
+    }
+
+    /** A straight path for the leap (it won't jump through a ceiling). */
+    private boolean leapClear(ServerLevel level, LivingEntity target) {
+        Vec3 top = position().add(0, getBbHeight() + 3, 0);
+        return level.clip(new ClipContext(position().add(0, getBbHeight(), 0), top, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this)).getType() == Type.MISS;
+    }
+
+    private void tickLeap(ServerLevel level) {
+        switch (leapPhase) {
+            case 0 -> {
+                turnToward(leapTo, 20f);
+                setDeltaMovement(getDeltaMovement().multiply(0.2, 1, 0.2));
+                if (t >= LEAP_WINDUP) {
+                    leapPhase = 1;
+                    t = 0;
+                    leapFrom = position();
+                    setNoGravity(true);
+                    sound(level, SoundEvents.RAVAGER_STEP, 1.6f, 0.5f);
+                    fx(level, "fb_rush", position().add(0, 0.2, 0), flatDir(leapTo), 1.4f);
+                }
+            }
+            case 1 -> {
+                // A high arc onto the marked spot.
+                float k = Math.min(1f, (t + 1) / (float) LEAP_AIR);
+                Vec3 flat = leapFrom.lerp(leapTo, k);
+                double span = Math.sqrt(leapFrom.distanceToSqr(leapTo.x, leapFrom.y, leapTo.z));
+                double arc = Mth.clamp(span * 0.35, 1.2, 4.5) * Math.sin(Math.PI * k);
+                double y = Mth.lerp(k, leapFrom.y, leapTo.y);
+                faceDir(flatDir(leapTo));
+                // Driven along the arc (not left to momentum). Under a low ceiling the arc flattens; only a wall ends it early.
+                Vec3 next = new Vec3(flat.x, y + arc, flat.z);
+                if (!level.noCollision(this, getBoundingBox().move(next.subtract(position())))) next = new Vec3(flat.x, Math.max(y, getY()), flat.z);
+                Vec3 step = next.subtract(position());
+                if (level.noCollision(this, getBoundingBox().move(step))) {
+                    setPos(next);
+                    setDeltaMovement(Vec3.ZERO);
+                } else {
+                    land(level);
+                    return;
+                }
+                if (t >= LEAP_AIR) land(level);
+            }
+            default -> {
+                // Landed hard: open for a moment.
+                setDeltaMovement(getDeltaMovement().multiply(0.3, 1, 0.3));
+                if (t == 3) fx(level, "fb_stagger", getEyePosition(), Vec3.ZERO, 1f);
+                if (t >= LEAP_RECOVER) end(COOLDOWN[Move.LEAP.ordinal()], 16);
+            }
+        }
+    }
+
+    private void land(ServerLevel level) {
+        setNoGravity(false);
+        setDeltaMovement(Vec3.ZERO);
+        leapPhase = 2;
+        t = 0;
+        Vec3 c = position().add(0, 0.6, 0);
+        for (LivingEntity e : areaTargets(level, HitShape.sphere(c, LEAP_RADIUS), c)) {
+            strike(e, Hit.builder(this, "fb_leap").damage(dmg(LEAP_DAMAGE)).tag(AttackTag.MELEE, AttackTag.HEAVY, AttackTag.AREA)
+                    .knockback(Knockback.radial(c, 1.1, 0.7)).hitstun(12).guardDamage(4).origin(c).fx("fb_impact", 1.6f));
+        }
+        dev.rick.jjk.util.Destruction.sphere(level, position(), 2.4, 0.9f, 30, this, null);
+        Fx.sound(level, c, SoundEvents.MACE_SMASH_GROUND_HEAVY, 1.6f, 0.6f);
+        Fx.sound(level, c, SoundEvents.GENERIC_EXPLODE, 1f, 0.7f);
+        fx(level, "fb_smash", position().add(0, 0.05, 0), Vec3.ZERO, (float) LEAP_RADIUS);
+        Fx.shake(level, c, 22, 1f, 12);
+        Anim.playOn(this, "finger_bearer_recover");
+    }
+
+    private void tickSpin(ServerLevel level, @Nullable LivingEntity target) {
+        // It wheels round on whoever is at its back.
+        if (target != null && t < SPIN_HIT) turnToward(target.position(), 30f);
+        if (t == SPIN_HIT) {
+            Vec3 c = position().add(0, 1.4, 0);
+            for (LivingEntity e : areaTargets(level, HitShape.sphere(c, SPIN_RADIUS), c)) {
+                strike(e, Hit.builder(this, "fb_spin").damage(dmg(SPIN_DAMAGE)).tag(AttackTag.MELEE, AttackTag.AREA)
+                        .knockback(Knockback.radial(c, 1.3, 0.4)).hitstun(10).guardDamage(3).origin(c).fx("fb_impact", 1.2f));
+            }
+            sound(level, SoundEvents.PLAYER_ATTACK_SWEEP, 1.4f, 0.5f);
+            fx(level, "fb_burst", position().add(0, 0.1, 0), Vec3.ZERO, (float) SPIN_RADIUS);
+            behindTicks = 0;
+        }
+        if (t >= SPIN_END) end(COOLDOWN[Move.SPIN.ordinal()], 12);
+    }
+
+    private void tickPool(ServerLevel level, @Nullable LivingEntity target) {
+        if (target != null && t < POOL_FIRE - 4) turnToward(target.position(), 12f);
+        if (t == POOL_FIRE) {
+            Vec3 at = target != null ? target.position() : position().add(forward().scale(6));
+            Vec3 side = new Vec3(-forward().z, 0, forward().x).scale(3.5);
+            leavePool(at, POOL_RADIUS + 0.4, POOL_TICKS);
+            leavePool(at.add(side), POOL_RADIUS, POOL_TICKS);
+            leavePool(at.subtract(side), POOL_RADIUS, POOL_TICKS);
+            Fx.sound(level, at, SoundEvents.WARDEN_SONIC_BOOM, 1f, 0.5f);
+            Fx.shake(level, position(), 14, 0.5f, 8);
+        }
+        if (t >= POOL_END) end(COOLDOWN[Move.POOL.ordinal()], 18);
+    }
+
+    /** Leaves a pool of cursed energy on the floor under {@code at}: standing in it hurts and slows. */
+    public void leavePool(Vec3 at, double radius, int ticks) {
+        if (!(level() instanceof ServerLevel level)) return;
+        BlockPos b = BlockPos.containing(at);
+        for (int i = 0; i < 4 && level.getBlockState(b.below()).isAir(); i++) b = b.below();
+        Vec3 c = new Vec3(at.x, b.getY() + 0.05, at.z);
+        if (pools.size() >= 6) pools.removeFirst();
+        pools.add(new Pool(c, radius, level.getGameTime() + ticks));
+        fx(level, "curse_pool", c, new Vec3(ticks, 0, 0), (float) radius);
+    }
+
+    private void tickPools(ServerLevel level) {
+        if (pools.isEmpty()) return;
+        long now = level.getGameTime();
+        pools.removeIf(p -> p.until() <= now);
+        if (now % 10 != 0) return;
+        for (Pool p : pools) {
+            for (LivingEntity e : HitboxQuery.query(level, HitShape.sphere(p.center(), p.radius()), 0.0, e -> Targeting.canTarget(this, e))) {
+                if (Math.abs(e.getY() - p.center().y) > 1.2) continue;
+                HitResolver.resolve(Hit.builder(this, "fb_pool").type(ModDamageTypes.TECHNIQUE).damage(dmg(POOL_DAMAGE)).tag(AttackTag.TECHNIQUE, AttackTag.AREA)
+                        .knockback(Knockback.NONE).hitstun(0).origin(p.center()).noComboScaling().build(), e);
+                e.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.SLOWNESS, 25, 1, false, true));
+            }
+        }
     }
 
     // --- Facing ---
@@ -810,6 +1056,7 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
         if (home != null) out.store("JjkHome", BlockPos.CODEC, home);
         out.putInt("JjkHomeRadius", homeRadius);
         out.putBoolean("JjkRewarded", rewarded);
+        out.putBoolean("JjkEnraged", enraged);
     }
 
     @Override
@@ -818,5 +1065,6 @@ public class FingerBearerEntity extends Monster implements CursedSpirit {
         home = in.read("JjkHome", BlockPos.CODEC).orElse(null);
         homeRadius = in.getIntOr("JjkHomeRadius", 9);
         rewarded = in.getBooleanOr("JjkRewarded", false);
+        enraged = in.getBooleanOr("JjkEnraged", false);
     }
 }

@@ -58,7 +58,7 @@ public final class SeveringPathAbility extends Ability {
     @Override
     public @Nullable AbilityInstance activate(AbilityContext ctx) {
         YutaCombat.drawKatana(ctx.user());
-        if (ctx.forward() < -0.1f) return new Veilstep(this, ctx);
+        if (ctx.forward() < -0.1f && dev.rick.jjk.progression.mastery.Mastery.unlocked(ctx.user(), "severing_path.veilstep")) return new Veilstep(this, ctx);
         return new Instance(this, ctx);
     }
 

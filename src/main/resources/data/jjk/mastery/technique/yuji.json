@@ -1,0 +1,300 @@
+{
+  "id": "technique/yuji",
+  "kind": "TECHNIQUE",
+  "owner": "yuji",
+  "title": "Yuji Itadori — Vessel",
+  "lanes": [
+    "Strikes",
+    "Black Flash",
+    "Instinct",
+    "King of Curses"
+  ],
+  "nodes": [
+    {
+      "id": "cursed_strikes",
+      "name": "Cursed Strikes",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 0,
+      "row": 0,
+      "move": "cursed_strikes",
+      "description": "Cursed Strikes hits 15% harder.",
+      "effects": [
+        {
+          "param": "cursed_strikes.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "divergent",
+      "name": "Divergent Fist",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 1,
+      "row": 0,
+      "move": "divergent_fist",
+      "description": "Divergent Fist hits 15% harder.",
+      "effects": [
+        {
+          "param": "divergent_fist.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "manji",
+      "name": "Manji Reflex",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 2,
+      "row": 0,
+      "move": "manji_kick",
+      "description": "Manji Kick comes back 15% sooner.",
+      "effects": [
+        {
+          "param": "manji_kick.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "crushing",
+      "name": "Crushing Blow",
+      "tier": "SMALL",
+      "cost": 25,
+      "lane": 0,
+      "row": 1,
+      "move": "crushing_blow",
+      "description": "Crushing Blow hits 15% harder.",
+      "requires": [
+        "cursed_strikes"
+      ],
+      "effects": [
+        {
+          "param": "crushing_blow.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "black_flash",
+      "name": "Black Flash",
+      "tier": "MECHANICAL",
+      "cost": 60,
+      "lane": 1,
+      "row": 1,
+      "move": "divergent_fist",
+      "description": "Divergent Fist again while his body flashes white: the punch itself becomes a Black Flash.",
+      "requires": [
+        "divergent"
+      ],
+      "effects": [
+        {
+          "unlock": "divergent_fist.black_flash"
+        }
+      ]
+    },
+    {
+      "id": "throw",
+      "name": "Improvised Weapon",
+      "tier": "MECHANICAL",
+      "cost": 40,
+      "lane": 2,
+      "row": 1,
+      "move": "combat_instincts",
+      "description": "Combat Instincts next to a bin, barrel or crate punches it at them.",
+      "requires": [
+        "manji"
+      ],
+      "effects": [
+        {
+          "unlock": "combat_instincts.throw"
+        }
+      ]
+    },
+    {
+      "id": "heavy",
+      "name": "Relentless",
+      "tier": "SMALL",
+      "cost": 35,
+      "lane": 0,
+      "row": 2,
+      "move": "cursed_strikes",
+      "description": "Cursed Strikes and Crushing Blow come back 15% sooner.",
+      "requires": [
+        "crushing"
+      ],
+      "effects": [
+        {
+          "param": "cursed_strikes.cooldown",
+          "mul": 0.85
+        },
+        {
+          "param": "crushing_blow.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "chain",
+      "name": "Black Flash Chain",
+      "tier": "MECHANICAL",
+      "cost": 90,
+      "lane": 1,
+      "row": 2,
+      "move": "divergent_fist",
+      "description": "A Black Flash on someone's back keeps Divergent Fist ready for another: up to four, the last a heavy KOKUSEN.",
+      "requires": [
+        "black_flash"
+      ],
+      "effects": [
+        {
+          "unlock": "divergent_fist.chain"
+        }
+      ]
+    },
+    {
+      "id": "feint",
+      "name": "Read the Opening",
+      "tier": "SMALL",
+      "cost": 35,
+      "lane": 2,
+      "row": 2,
+      "move": "combat_instincts",
+      "description": "Combat Instincts comes back 20% sooner.",
+      "requires": [
+        "throw"
+      ],
+      "effects": [
+        {
+          "param": "combat_instincts.cooldown",
+          "mul": 0.8
+        }
+      ]
+    },
+    {
+      "id": "awakening",
+      "name": "King of Curses",
+      "tier": "AWAKENING",
+      "cost": 500,
+      "lane": 3,
+      "row": 3,
+      "move": "king_of_curses",
+      "description": "Milestone. Vessel faints and Sukuna takes over: the King of Curses moveset (Dismantle, Cleave, Open, Rush, Malevolent Shrine).",
+      "requires": [
+        "heavy",
+        "chain",
+        "feint"
+      ],
+      "effects": [
+        {
+          "unlock": "yuji.awakening"
+        }
+      ]
+    },
+    {
+      "id": "dismantle",
+      "name": "Dismantle",
+      "tier": "SMALL",
+      "cost": 60,
+      "lane": 0,
+      "row": 4,
+      "move": "dismantle",
+      "description": "Dismantle and Cleave hit 15% harder.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "dismantle.damage",
+          "mul": 1.15
+        },
+        {
+          "param": "cleave.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "name": "Fuga",
+      "tier": "SMALL",
+      "cost": 60,
+      "lane": 1,
+      "row": 4,
+      "move": "open",
+      "description": "Open comes back 15% sooner.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "open.cooldown",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "rush",
+      "name": "Rush",
+      "tier": "SMALL",
+      "cost": 50,
+      "lane": 2,
+      "row": 4,
+      "move": "rush",
+      "description": "Rush hits 15% harder.",
+      "requires": [
+        "awakening"
+      ],
+      "effects": [
+        {
+          "param": "rush.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "world_cut",
+      "name": "World Cutting Slash",
+      "tier": "MAJOR",
+      "cost": 150,
+      "lane": 0,
+      "row": 5,
+      "move": "dismantle",
+      "description": "Milestone. Rush during Dismantle's wind-up, then Open, then Cleave: the slash that cuts the world itself.",
+      "requires": [
+        "dismantle",
+        "open"
+      ],
+      "effects": [
+        {
+          "unlock": "dismantle.world_cutting_slash"
+        }
+      ]
+    },
+    {
+      "id": "shrine",
+      "name": "Malevolent Shrine",
+      "tier": "MAJOR",
+      "cost": 120,
+      "lane": 3,
+      "row": 5,
+      "move": "malevolent_shrine",
+      "description": "Milestone. Malevolent Shrine comes back 15% sooner and Cleave 15% sooner.",
+      "requires": [
+        "rush"
+      ],
+      "effects": [
+        {
+          "param": "malevolent_shrine.cooldown",
+          "mul": 0.85
+        },
+        {
+          "param": "cleave.cooldown",
+          "mul": 0.85
+        }
+      ]
+    }
+  ]
+}

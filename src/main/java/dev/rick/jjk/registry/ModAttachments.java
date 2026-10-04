@@ -22,6 +22,10 @@ public final class ModAttachments {
     public static final AttachmentType<java.util.Map<String, Long>> CURSE_HOSTILITY = AttachmentRegistry.create(JJK.id("curse_hostility"),
             b -> b.persistent(Codec.unboundedMap(Codec.STRING, Codec.LONG)));
 
+    /** Mastery: unspent and earned Mastery per tree, nodes bought, the exorcism record. Survives death and relogging. */
+    public static final AttachmentType<dev.rick.jjk.progression.mastery.MasteryData> MASTERY = AttachmentRegistry.create(JJK.id("mastery"),
+            b -> b.persistent(dev.rick.jjk.progression.mastery.MasteryData.CODEC).copyOnDeath());
+
     private ModAttachments() {}
 
     public static void init() {}

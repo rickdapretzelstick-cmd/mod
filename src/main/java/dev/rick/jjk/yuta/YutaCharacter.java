@@ -167,15 +167,20 @@ public final class YutaCharacter extends JJKCharacter {
             CopyWheelAbility.press(caster, slot);
             return true;
         }
-        if (ability instanceof ResoluteSlashAbility && cast instanceof ResoluteSlashAbility.Instance r && r.againPress()) return true;
-        if (ability instanceof SeveringPathAbility && cast instanceof SecondWindAbility.Instance sw && sw.pummelPress(caster, slot)) return true;
-        if (ability instanceof EnergyRippleAbility && cast instanceof EnergyRippleAbility.Instance er && er.fakeoutPress()) return true;
+        // The "use again" variants are each a Mastery node of the move they come from.
+        if (ability instanceof ResoluteSlashAbility && cast instanceof ResoluteSlashAbility.Instance r
+                && dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "resolute_slash.black_flash") && r.againPress()) return true;
+        if (ability instanceof SeveringPathAbility && cast instanceof SecondWindAbility.Instance sw
+                && dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "second_wind.pummel") && sw.pummelPress(caster, slot)) return true;
+        if (ability instanceof EnergyRippleAbility && cast instanceof EnergyRippleAbility.Instance er
+                && dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "energy_ripple.fakeout") && er.fakeoutPress()) return true;
         // True Love Beam's key again in its wind-up: the quick beam. Firing it put Rika's moveset away, so the key now
         // shows his own move; it is the beam's own slot that counts.
         for (var o : caster.overlays()) if (o instanceof TrueLoveBeamAbility.Instance b && !b.isFinished() && b.slot() == slot && b.quickPress()) return true;
         if (cast instanceof TrueLoveBeamAbility.Instance b && b.slot() == slot && b.quickPress()) return true;
-        if (ability instanceof AuthenticMutualLoveAbility && AuthenticMutualLoveAbility.ladderPress(caster, targetHint)) return true;
-        if (ability instanceof RikaLaunchAbility && user.level() instanceof ServerLevel level) {
+        if (ability instanceof AuthenticMutualLoveAbility && dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "authentic_mutual_love.jacobs_ladder")
+                && AuthenticMutualLoveAbility.ladderPress(caster, targetHint)) return true;
+        if (ability instanceof RikaLaunchAbility && dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "rika_launch.feint") && user.level() instanceof ServerLevel level) {
             AbilityContext ctx = new AbilityContext(caster, user, level, slot, 0, 0, targetHint);
             if (RikaLaunchAbility.feint(caster, slot, ability, ctx)) return true;
         }

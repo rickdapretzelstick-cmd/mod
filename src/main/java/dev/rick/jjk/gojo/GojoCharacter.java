@@ -87,6 +87,8 @@ public final class GojoCharacter extends JJKCharacter {
                                   @org.jetbrains.annotations.Nullable net.minecraft.world.entity.Entity targetHint) {
         // Limitless during a Reversal Red wind-up / Red MAX charge: the special variants.
         if (ability instanceof TeleportAbility && caster.cast() instanceof LimitlessCombo combo && !caster.cast().isFinished() && combo.acceptsLimitless()) {
+            // A variant Mastery hasn't opened (red.limitless / max_red.limitless) isn't there: Limitless is just Limitless.
+            if (!dev.rick.jjk.progression.mastery.Mastery.unlocked(caster.owner, caster.cast().ability.id + ".limitless")) return false;
             boolean costsSpecial = !caster.isAwakened();
             if (costsSpecial && !caster.isReady(slot)) return false;
             if (combo.limitless(targetHint) && costsSpecial) caster.startCooldown(slot, ability.cooldown(caster));
