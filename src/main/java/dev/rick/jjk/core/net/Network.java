@@ -26,6 +26,8 @@ public final class Network {
 
         var s2c = PayloadTypeRegistry.clientboundPlay();
         s2c.register(NewsBoardPayload.TYPE, NewsBoardPayload.CODEC);
+        s2c.register(ScopeViewPayload.TYPE, ScopeViewPayload.CODEC);
+        s2c.register(RifleStatePayload.TYPE, RifleStatePayload.CODEC);
         s2c.register(FxPayload.TYPE, FxPayload.CODEC);
         s2c.register(CameraPayload.TYPE, CameraPayload.CODEC);
         s2c.register(AnimPayload.TYPE, AnimPayload.CODEC);

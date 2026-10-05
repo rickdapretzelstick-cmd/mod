@@ -31,6 +31,8 @@ import org.jetbrains.annotations.Nullable;
 public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRenderer<T, CommonCurseRenderer.State> {
     private final String kind;
     private final RenderType solid;
+    private final float scale;
+    private final int baseTint;
 
     public static class State extends EntityRenderState {
         public float yaw;
@@ -40,8 +42,15 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
     }
 
     public CommonCurseRenderer(EntityRendererProvider.Context ctx, String kind, float shadow) {
+        this(ctx, kind, shadow, 1f, 0xFFFFFFFF);
+    }
+
+    /** A curse drawn with another's model (a placeholder): scaled, and tinted so it reads as something else. */
+    public CommonCurseRenderer(EntityRendererProvider.Context ctx, String kind, float shadow, float scale, int baseTint) {
         super(ctx);
         this.kind = kind;
+        this.scale = scale;
+        this.baseTint = baseTint;
         this.solid = RenderTypes.entityCutout(JJK.id("textures/entity/" + kind + ".png"));
         this.shadowRadius = shadow;
     }
@@ -87,9 +96,9 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
         if (model == null || !s.visible) return;
         ps.pushPose();
         ps.rotate(Axis.YP.rotationDegrees(180f - s.yaw));
-        ps.scale(1 / 16f, 1 / 16f, 1 / 16f);
+        ps.scale(scale / 16f, scale / 16f, scale / 16f);
         BbModel.Posing pose = RikaRenderer.posing(s.pose);
-        int tint = s.hurt > 0 ? 0xFF000000 | 0xFF << 16 | Math.round(255 - 110 * s.hurt) << 8 | Math.round(255 - 110 * s.hurt) : 0xFFFFFFFF;
+        int tint = s.hurt > 0 ? 0xFF000000 | 0xFF << 16 | Math.round(255 - 110 * s.hurt) << 8 | Math.round(255 - 110 * s.hurt) : baseTint;
         int light = s.lightCoords;
         c.submitCustomGeometry(ps, solid, (p, buf) -> model.render(p, buf, pose, light, tint));
         ps.popPose();

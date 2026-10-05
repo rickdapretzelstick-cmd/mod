@@ -81,9 +81,13 @@
   "key.jjk.prison_view": "Prison Realm: look outside",
   "key.jjk.mastery": "Mastery",
   "item.jjk.slaughter_demon": "Slaughter Demon",
+  "item.jjk.cursed_rifle": "Cursed Rifle",
   "item.jjk.cursed_cleaver": "Cursed Cleaver",
   "entity.jjk.fly_head": "Fly Head",
   "entity.jjk.school_crawler": "School Crawler",
+  "entity.jjk.forest_stalker": "Hunter's Shade",
   "entity.jjk.school_maw": "School Maw",
-  "block.jjk.news_board": "Village News Board"
+  "block.jjk.news_board": "Village News Board",
+  "block.jjk.gun_rack": "Gun Rack",
+  "block.jjk.mounted_scope": "Mounted Scope"
 }

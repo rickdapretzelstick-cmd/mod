@@ -24,7 +24,7 @@ import java.util.Map;
  * or realm is one entry in the matching registry.
  */
 public record IncidentTemplate(String id, int weight, CurseGrade grade, String site, Trigger trigger, String realm,
-                               List<CurseSpawn> curses, int trail, List<Report> reports) {
+                               List<CurseSpawn> curses, int trail, List<Report> reports, String reward) {
     /** What sets an incident off once a player has found it. */
     public enum Trigger {
         /** Jumping off the edge where it happened (the cliff). */
@@ -32,7 +32,9 @@ public record IncidentTemplate(String id, int weight, CurseGrade grade, String s
         /** Coming close enough to the site. */
         APPROACH,
         /** Going down into the site (a mine shaft). */
-        DESCEND
+        DESCEND,
+        /** Looking through something at the site and seeing what isn't there (the lodge's mounted scope). */
+        SCOPE
     }
 
     /** Curses of one kind it brings: how many, and their grade if it isn't the incident's. */
@@ -88,7 +90,7 @@ public record IncidentTemplate(String id, int weight, CurseGrade grade, String s
         for (CurseSpawn c : curses) if (!CurseKinds.exists(c.kind())) throw new IllegalArgumentException("unknown curse " + c.kind());
         return new IncidentTemplate(o.get("id").getAsString(), o.has("weight") ? o.get("weight").getAsInt() : 1,
                 CurseGrade.valueOf(o.get("grade").getAsString()), site, Trigger.valueOf(o.get("trigger").getAsString().toUpperCase(java.util.Locale.ROOT)),
-                realm, curses, o.has("trail") ? o.get("trail").getAsInt() : 16, reports);
+                realm, curses, o.has("trail") ? o.get("trail").getAsInt() : 16, reports, o.has("reward") ? o.get("reward").getAsString() : "");
     }
 
     @Nullable

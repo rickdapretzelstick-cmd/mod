@@ -43,6 +43,11 @@ public final class BeamCounters {
     }
 
     private static final Map<String, Counter> BY_CHARACTER = new HashMap<>();
+    /**
+     * Answers that come from what someone holds rather than who they are (the Cursed Rifle's beam): asked first, so a
+     * sorcerer aiming a mastered rifle answers with it.
+     */
+    private static final java.util.List<java.util.function.Function<LivingEntity, Counter>> HELD = new java.util.ArrayList<>();
 
     private BeamCounters() {}
 
@@ -50,8 +55,16 @@ public final class BeamCounters {
         BY_CHARACTER.put(characterId, counter);
     }
 
+    public static void registerHeld(java.util.function.Function<LivingEntity, Counter> byItem) {
+        HELD.add(byItem);
+    }
+
     @Nullable
     public static Counter of(LivingEntity e) {
+        for (var f : HELD) {
+            Counter held = f.apply(e);
+            if (held != null) return held;
+        }
         AbilityCaster c = Casters.getOrNull(e);
         return c == null || c.character() == null ? null : BY_CHARACTER.get(c.character().id);
     }

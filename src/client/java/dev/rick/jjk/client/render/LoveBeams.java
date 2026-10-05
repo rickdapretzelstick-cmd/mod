@@ -36,15 +36,15 @@ public final class LoveBeams {
      * light, and the dark bands rolling down it. Every Last Drop is the same square torrent in True Cannon's blue.
      */
     public record Palette(float r, float g, float b, float[] solid, float[] band) {
-        float r(float t) {
+        public float r(float t) {
             return r + (1 - r) * t;
         }
 
-        float g(float t) {
+        public float g(float t) {
             return g + (1 - g) * t;
         }
 
-        float b(float t) {
+        public float b(float t) {
             return b + (1 - b) * t;
         }
     }

@@ -29,6 +29,10 @@ public final class CursedTools {
     public static final CursedToolDefinition CURSED_CLEAVER = new CursedToolDefinition("cursed_cleaver", "Cursed Cleaver",
             CursedToolDefinition.Style.HEAVY, 8f, 0.85f, "A heavy cursed blade: slow, crushing, built to break a guard.");
 
+    /** The Cursed Rifle: found, not made (a lodge investigation's reward). Its stock makes a poor club. */
+    public static final CursedToolDefinition CURSED_RIFLE = new CursedToolDefinition("cursed_rifle", "Cursed Rifle",
+            CursedToolDefinition.Style.RANGED, 2f, 1.0f, "A cursed rifle with a scope, and four folded support arms round its barrel.");
+
     private static final Map<String, CursedToolDefinition> DEFS = new LinkedHashMap<>();
     private static final Map<String, ToolBehavior> BEHAVIORS = new LinkedHashMap<>();
     private static final Identifier SPEED_ID = JJK.id("cursed_tool_mastery_speed");
@@ -36,6 +40,7 @@ public final class CursedTools {
     static {
         register(SLAUGHTER_DEMON, new SlaughterDemonBehavior(SLAUGHTER_DEMON));
         register(CURSED_CLEAVER, new CursedCleaverBehavior(CURSED_CLEAVER));
+        register(CURSED_RIFLE, new dev.rick.jjk.progression.tool.rifle.RifleBehavior());
     }
 
     private CursedTools() {}
@@ -60,6 +65,8 @@ public final class CursedTools {
 
     public static void init() {
         ServerTickEvents.END_SERVER_TICK.register(CursedTools::tick);
+        dev.rick.jjk.progression.tool.rifle.RifleServer.init();
+        dev.rick.jjk.progression.tool.rifle.RifleCounter.register();
     }
 
     /** The cursed tool in a player's main hand, or null. */

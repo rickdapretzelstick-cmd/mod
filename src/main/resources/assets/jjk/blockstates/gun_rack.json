@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=north,rack=sealed": {
+      "model": "jjk:block/gun_rack_sealed"
+    },
+    "facing=north,rack=open": {
+      "model": "jjk:block/gun_rack_open"
+    },
+    "facing=north,rack=empty": {
+      "model": "jjk:block/gun_rack_empty"
+    },
+    "facing=east,rack=sealed": {
+      "model": "jjk:block/gun_rack_sealed",
+      "y": 90
+    },
+    "facing=east,rack=open": {
+      "model": "jjk:block/gun_rack_open",
+      "y": 90
+    },
+    "facing=east,rack=empty": {
+      "model": "jjk:block/gun_rack_empty",
+      "y": 90
+    },
+    "facing=south,rack=sealed": {
+      "model": "jjk:block/gun_rack_sealed",
+      "y": 180
+    },
+    "facing=south,rack=open": {
+      "model": "jjk:block/gun_rack_open",
+      "y": 180
+    },
+    "facing=south,rack=empty": {
+      "model": "jjk:block/gun_rack_empty",
+      "y": 180
+    },
+    "facing=west,rack=sealed": {
+      "model": "jjk:block/gun_rack_sealed",
+      "y": 270
+    },
+    "facing=west,rack=open": {
+      "model": "jjk:block/gun_rack_open",
+      "y": 270
+    },
+    "facing=west,rack=empty": {
+      "model": "jjk:block/gun_rack_empty",
+      "y": 270
+    }
+  }
+}

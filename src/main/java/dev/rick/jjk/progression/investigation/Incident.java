@@ -45,6 +45,13 @@ public final class Incident {
     final List<UUID> curses = new ArrayList<>();
     /** Everyone who took part (entered its realm or fought at the site). */
     final Set<UUID> participants = new LinkedHashSet<>();
+    /** Rewards owed (a lodge's rifle): who may still claim one here, and who already has. Persisted apart from completion. */
+    final Set<UUID> rewardsPending = new LinkedHashSet<>();
+    final Set<UUID> rewardsClaimed = new LinkedHashSet<>();
+    /** Named places at the site, laid out when its traces were built (a lodge's scope, rack, anomaly and clues). */
+    final java.util.Map<String, BlockPos> marks = new java.util.LinkedHashMap<>();
+    /** Clues each player has found here (a bit per clue), so leaving or reconnecting never resets them. */
+    final java.util.Map<UUID, Integer> clues = new java.util.LinkedHashMap<>();
     /** The residue trail leading to the site (for perceiving players). */
     final List<BlockPos> trail = new ArrayList<>();
 
@@ -78,6 +85,27 @@ public final class Incident {
 
     public Set<UUID> participants() {
         return Set.copyOf(participants);
+    }
+
+    public Set<UUID> rewardsPending() {
+        return Set.copyOf(rewardsPending);
+    }
+
+    public Set<UUID> rewardsClaimed() {
+        return Set.copyOf(rewardsClaimed);
+    }
+
+    @Nullable
+    public BlockPos mark(String name) {
+        return marks.get(name);
+    }
+
+    public java.util.Map<String, BlockPos> marks() {
+        return java.util.Map.copyOf(marks);
+    }
+
+    public int clues(UUID player) {
+        return clues.getOrDefault(player, 0);
     }
 
     public List<BlockPos> trail() {
@@ -114,6 +142,18 @@ public final class Incident {
         ListTag tr = new ListTag();
         for (BlockPos b : trail) tr.add(LongTag.valueOf(b.asLong()));
         t.put("Trail", tr);
+        ListTag rp = new ListTag();
+        for (UUID u : rewardsPending) rp.add(StringTag.valueOf(u.toString()));
+        t.put("RewardsPending", rp);
+        ListTag rcl = new ListTag();
+        for (UUID u : rewardsClaimed) rcl.add(StringTag.valueOf(u.toString()));
+        t.put("RewardsClaimed", rcl);
+        CompoundTag cl = new CompoundTag();
+        clues.forEach((u, m) -> cl.putInt(u.toString(), m));
+        t.put("Clues", cl);
+        CompoundTag mk = new CompoundTag();
+        marks.forEach((k, v) -> mk.putLong(k, v.asLong()));
+        t.put("Marks", mk);
         return t;
     }
 
@@ -132,6 +172,20 @@ public final class Incident {
             for (Tag x : t.getListOrEmpty("Participants")) uuid(x, ps);
             i.participants.addAll(ps);
             for (Tag x : t.getListOrEmpty("Trail")) if (x instanceof LongTag l) i.trail.add(BlockPos.of(l.longValue()));
+            List<UUID> rp = new ArrayList<>(), rc = new ArrayList<>();
+            for (Tag x : t.getListOrEmpty("RewardsPending")) uuid(x, rp);
+            for (Tag x : t.getListOrEmpty("RewardsClaimed")) uuid(x, rc);
+            i.rewardsPending.addAll(rp);
+            i.rewardsClaimed.addAll(rc);
+            CompoundTag mk = t.getCompoundOrEmpty("Marks");
+            for (String k : mk.keySet()) i.marks.put(k, BlockPos.of(mk.getLongOr(k, 0L)));
+            CompoundTag cl = t.getCompoundOrEmpty("Clues");
+            for (String k : cl.keySet()) {
+                try {
+                    i.clues.put(UUID.fromString(k), cl.getIntOr(k, 0));
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
             return i;
         } catch (RuntimeException e) {
             return null;

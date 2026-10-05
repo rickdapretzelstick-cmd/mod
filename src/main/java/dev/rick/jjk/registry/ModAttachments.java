@@ -23,6 +23,12 @@ public final class ModAttachments {
             b -> b.persistent(Codec.unboundedMap(Codec.STRING, Codec.LONG)));
 
     /** Mastery: unspent and earned Mastery per tree, nodes bought, the exorcism record. Survives death and relogging. */
+    /** The Cursed Rifle's own reserve of cursed energy (it never needs a technique): kept per player, not on the item. */
+    public static final AttachmentType<Float> RIFLE_ENERGY = AttachmentRegistry.create(JJK.id("rifle_energy"),
+            b -> b.persistent(com.mojang.serialization.Codec.FLOAT).copyOnDeath());
+    /** Which issued rifle is a player's live one (the lodge's recovery route replaces it, never adds a second). */
+    public static final AttachmentType<String> RIFLE_CLAIM = AttachmentRegistry.create(JJK.id("rifle_claim"),
+            b -> b.persistent(com.mojang.serialization.Codec.STRING).copyOnDeath());
     public static final AttachmentType<dev.rick.jjk.progression.mastery.MasteryData> MASTERY = AttachmentRegistry.create(JJK.id("mastery"),
             b -> b.persistent(dev.rick.jjk.progression.mastery.MasteryData.CODEC).copyOnDeath());
 

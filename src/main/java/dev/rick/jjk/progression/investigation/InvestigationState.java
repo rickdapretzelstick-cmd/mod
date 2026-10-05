@@ -94,6 +94,8 @@ public final class InvestigationState {
     final Map<String, Incident> incidents = new LinkedHashMap<>();
     final Map<Integer, Arena> arenas = new LinkedHashMap<>();
     final Map<UUID, Return> returns = new LinkedHashMap<>();
+    /** Every Cursed Rifle issued and still live: its claim id → whose it is (a recovered rifle replaces its old id). */
+    final Map<String, UUID> rifleClaims = new LinkedHashMap<>();
     int nextId;
     private boolean dirty;
 
@@ -130,6 +132,23 @@ public final class InvestigationState {
         return returns.get(player);
     }
 
+    /** Rifle claims: issuing one retires the owner's previous id (see RifleClaims). */
+    public static final class Claims {
+        private Claims() {}
+
+        public static void issue(InvestigationState st, @Nullable String old, String id, UUID owner) {
+            if (old != null) st.rifleClaims.remove(old);
+            // Every earlier claim of theirs goes, not just the one their player data remembers (it may have rolled back).
+            st.rifleClaims.values().removeIf(owner::equals);
+            st.rifleClaims.put(id, owner);
+            st.save();
+        }
+    }
+
+    public Map<String, UUID> rifleClaims() {
+        return java.util.Collections.unmodifiableMap(rifleClaims);
+    }
+
     @Nullable
     public Incident incident(String id) {
         return incidents.get(id);
@@ -143,8 +162,13 @@ public final class InvestigationState {
         dirty = true;
     }
 
+    /** Test hook: forces the next flush to write. */
+    public void markDirtyForTest() {
+        dirty = true;
+    }
+
     /** Writes if anything changed. */
-    void flush() {
+    public void flush() {
         if (dirty) save();
     }
 
@@ -201,6 +225,14 @@ public final class InvestigationState {
                 rs.add(c);
             }
             t.put("Returns", rs);
+            ListTag rc = new ListTag();
+            for (Map.Entry<String, UUID> e : rifleClaims.entrySet()) {
+                CompoundTag c = new CompoundTag();
+                c.putString("Claim", e.getKey());
+                c.putString("Owner", e.getValue().toString());
+                rc.add(c);
+            }
+            t.put("RifleClaims", rc);
             Path tmp = f.resolveSibling(FILE + ".tmp");
             NbtIo.writeCompressed(t, tmp);
             Files.move(tmp, f, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
@@ -241,6 +273,13 @@ public final class InvestigationState {
                 try {
                     returns.put(UUID.fromString(c.getStringOr("Player", "")), new Return(c.getStringOr("Dimension", "minecraft:overworld"),
                             new Vec3(c.getDoubleOr("X", 0), c.getDoubleOr("Y", 64), c.getDoubleOr("Z", 0)), c.getFloatOr("Yaw", 0f)));
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+            for (Tag x : t.getListOrEmpty("RifleClaims")) {
+                if (!(x instanceof CompoundTag c)) continue;
+                try {
+                    rifleClaims.put(c.getStringOr("Claim", ""), UUID.fromString(c.getStringOr("Owner", "")));
                 } catch (IllegalArgumentException ignored) {
                 }
             }

@@ -23,7 +23,9 @@ import net.minecraft.world.entity.ai.village.poi.PoiTypes;
  *   <li>{@code here <template>}: an incident of that kind right where you stand (facing = its direction: stand on a cliff
  *   edge looking out for a cliff fall), reported at the nearest village bell;</li>
  *   <li>{@code start <id>}: sets an open incident off for you now;</li>
- *   <li>{@code realms}: the cursed-realm arenas in use.</li>
+ *   <li>{@code realms}: the cursed-realm arenas in use;</li>
+ *   <li>{@code complete <id>}: exorcises an incident's curses and completes it (its rewards are owed as usual);</li>
+ *   <li>{@code show <id>}: an incident's marks, clues and reward claims.</li>
  * </ul>
  */
 public final class InvestigationCommand {
@@ -36,7 +38,44 @@ public final class InvestigationCommand {
                 .then(Commands.literal("here").then(Commands.argument("template", StringArgumentType.word())
                         .suggests((c, b) -> SharedSuggestionProvider.suggest(IncidentTemplate.all().stream().map(IncidentTemplate::id), b))
                         .executes(InvestigationCommand::here)))
-                .then(Commands.literal("start").then(Commands.argument("id", StringArgumentType.word()).executes(InvestigationCommand::start)));
+                .then(Commands.literal("start").then(Commands.argument("id", StringArgumentType.word()).executes(InvestigationCommand::start)))
+                .then(Commands.literal("complete").then(Commands.argument("id", StringArgumentType.word()).executes(InvestigationCommand::complete)))
+                .then(Commands.literal("show").then(Commands.argument("id", StringArgumentType.word()).executes(InvestigationCommand::show)));
+    }
+
+    private static int complete(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+        ServerPlayer p = c.getSource().getPlayerOrException();
+        InvestigationState st = InvestigationState.get(c.getSource().getServer());
+        Incident in = st.incident(StringArgumentType.getString(c, "id"));
+        if (in == null || in.state() == Incident.State.COMPLETE || in.state() == Incident.State.EXPIRED) {
+            c.getSource().sendFailure(Component.literal("No open or active incident by that id."));
+            return 0;
+        }
+        for (java.util.UUID u : in.curses()) {
+            net.minecraft.world.entity.Entity e = Investigations.curseEntity(c.getSource().getServer(), u);
+            if (e != null) e.discard();
+        }
+        in.curses.clear();
+        in.participants.add(p.getUUID());
+        Investigations.complete(c.getSource().getServer(), in, st);
+        st.flush();
+        c.getSource().sendSuccess(() -> Component.literal("Incident " + in.id + " complete; you are counted as taking part."), true);
+        return 1;
+    }
+
+    private static int show(CommandContext<CommandSourceStack> c) {
+        InvestigationState st = InvestigationState.get(c.getSource().getServer());
+        Incident in = st.incident(StringArgumentType.getString(c, "id"));
+        if (in == null) {
+            c.getSource().sendFailure(Component.literal("No incident by that id."));
+            return 0;
+        }
+        StringBuilder sb = new StringBuilder(in.id + " " + in.template + " " + in.state() + " built " + in.featureBuilt);
+        in.marks().forEach((k, v) -> sb.append("\n  ").append(k).append(" ").append(v.toShortString()));
+        sb.append("\n  participants ").append(in.participants().size()).append(", owed ").append(in.rewardsPending().size())
+                .append(", claimed ").append(in.rewardsClaimed().size()).append(", clue sets ").append(in.clues.size());
+        c.getSource().sendSuccess(() -> Component.literal(sb.toString()), false);
+        return 1;
     }
 
     private static int list(CommandContext<CommandSourceStack> c) {

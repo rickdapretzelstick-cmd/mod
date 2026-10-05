@@ -70,6 +70,7 @@ public final class Investigations {
 
     public static void init() {
         IncidentTemplate.load();
+        LodgeScope.init();
         ServerTickEvents.END_SERVER_TICK.register(Investigations::tick);
         ServerLifecycleEvents.SERVER_STARTED.register(Investigations::onStart);
         ServerLifecycleEvents.SERVER_STOPPING.register(s -> InvestigationState.get(s).save());
@@ -120,6 +121,7 @@ public final class Investigations {
             int phase = (int) ((now + p.getId()) % 100);
             if (phase == 0 && JJKConfig.get().mastery.newsBoards) visitVillages(level, p, st, now);
             if (phase % 5 == 0) triggers(level, p, st, now);
+            if (phase == 50) LodgeRewards.visit(level, p, st);
             if (phase % 10 == 0 && CursePerception.canPerceive(p)) residue(level, p, st);
         }
         if (now % 200 == 0) expire(st, now);
@@ -182,7 +184,7 @@ public final class Investigations {
 
     /** Puts a specific incident at a specific place (generation, and tests). */
     public static Incident create(ServerLevel level, InvestigationState.Village v, InvestigationState st, IncidentTemplate t, Sites.Site s, long now, RandomSource r) {
-        ReportWriter.Written w = ReportWriter.write(t, t.grade(), v.bell, s.pos(), Sites.landmark(t.site()), r);
+        ReportWriter.Written w = ReportWriter.write(t, t.grade(), v.bell, s.pos(), Sites.describe(t.site(), level, v.bell, s.pos()), r);
         Incident in = new Incident(st.newId(), t.id(), t.grade(), level.dimension().identifier().toString(), v.bell, s.pos(), s.dirX(), s.dirZ(), now,
                 w.headline(), w.body());
         st.incidents.put(in.id, in);
@@ -236,15 +238,22 @@ public final class Investigations {
             if (d2 > 96 * 96) continue;
             IncidentTemplate t = in.def();
             if (t == null) continue;
-            if (!in.featureBuilt && level.isLoaded(in.site) && level.isLoaded(Sites.mineEnd(in))) {
+            if (!in.featureBuilt && areaLoaded(level, in.site, 30) && level.isLoaded(Sites.mineEnd(in))) {
                 in.featureBuilt = true;
                 Sites.build(t.site(), level, in);
                 layTrail(level, in, t.trail());
                 st.markDirty();
             }
+            if (in.featureBuilt && !in.marks.isEmpty()) lodgeClues(level, p, in, now);
             if (d2 > 24 * 24 || !in.featureBuilt) continue;
             if (fired(p, in, t)) begin(level, p, in, t, st, now);
         }
+    }
+
+    /** The ground round a site is all loaded (its traces reach this far out). */
+    static boolean areaLoaded(ServerLevel level, BlockPos c, int r) {
+        for (int dx = -r; dx <= r; dx += r) for (int dz = -r; dz <= r; dz += r) if (!level.isLoaded(c.offset(dx, 0, dz))) return false;
+        return true;
     }
 
     /** Whether this player has just set the incident off. */
@@ -257,6 +266,8 @@ public final class Investigations {
                     && dx * in.dirX + dz * in.dirZ > -0.5;
             case APPROACH -> dx * dx + dz * dz <= 12 * 12 && Math.abs(p.getY() - site.y) < 8;
             case DESCEND -> p.position().distanceToSqr(Vec3.atBottomCenterOf(Sites.mineEnd(in))) <= 2.5 * 2.5;
+            // The scope is used, never walked into: it has its own deliberate steps (LodgeScope).
+            case SCOPE -> false;
         };
     }
 
@@ -334,6 +345,7 @@ public final class Investigations {
                 p.sendSystemMessage(Component.literal("It's over. Whatever was there won't trouble anyone again.").withStyle(net.minecraft.ChatFormatting.GRAY));
             }
         }
+        LodgeRewards.completed(server, in, st);
         JJK.LOGGER.info("[investigations] incident {} complete ({} participants)", in.id, in.participants.size());
     }
 
@@ -361,6 +373,55 @@ public final class Investigations {
 
     // --- Clues ---
 
+    /** Clue bits on {@link Incident#clues} (per player, persisted): what each has found at a lodge. */
+    public static final int CLUE_STAND = 1, CLUE_MARKS = 2, CLUE_TRACKS = 4, CLUE_GUNSHOT = 8, CLUE_SCOPE = 16, CLUE_ANOMALY = 32;
+
+    /** Records a clue for a player (once); its line, if any, goes to the overlay the first time. True if it was new. */
+    public static boolean clue(ServerPlayer p, Incident in, int bit, @Nullable String line) {
+        int had = in.clues.getOrDefault(p.getUUID(), 0);
+        if ((had & bit) != 0) return false;
+        in.clues.put(p.getUUID(), had | bit);
+        InvestigationState.get(p.level().getServer()).markDirty();
+        if (line != null) p.sendOverlayMessage(Component.literal(line).withStyle(net.minecraft.ChatFormatting.GRAY, net.minecraft.ChatFormatting.ITALIC));
+        return true;
+    }
+
+    /** A lodge's traces, noticed by walking up to them, and its gunshots with nobody there. */
+    private static void lodgeClues(ServerLevel level, ServerPlayer p, Incident in, long now) {
+        if (in.marks.isEmpty()) return;
+        BlockPos me = p.blockPosition();
+        for (String k : new String[] {"stand_a", "stand_b"}) {
+            BlockPos b = in.mark(k);
+            if (b != null && me.distSqr(b) <= 5 * 5) {
+                clue(p, in, CLUE_STAND, "A hunting stand, its rungs worn smooth. Someone sat up here a long time, watching the same stretch of woods.");
+            }
+        }
+        BlockPos m = in.mark("marks");
+        if (m != null && me.distSqr(m) <= 4 * 4) clue(p, in, CLUE_MARKS, "The bark is scored and blackened, chest high. Shot at, more than once, from the lodge.");
+        BlockPos t = in.mark("tracks");
+        if (t != null && me.distSqr(t) <= 3 * 3) clue(p, in, CLUE_TRACKS, "The tracks just stop. No turn, no scuffle. Whoever made them didn't walk any further.");
+        // A distant shot now and then, from the trees beyond the window; far likelier after dark.
+        BlockPos a = in.mark("anomaly");
+        if (a == null) return;
+        double d2 = p.position().distanceToSqr(Vec3.atCenterOf(a));
+        if (d2 > 90 * 90) return;
+        boolean night = level.isDarkOutside();
+        RandomSource r = level.getRandom();
+        if (r.nextInt(night ? 60 : 400) != 0) return;
+        Vec3 from = Vec3.atCenterOf(a).add(r.nextGaussian() * 6, 2, r.nextGaussian() * 6);
+        Vec3 toward = from.subtract(p.getEyePosition());
+        // Played at the player (pointing the right way) so it carries as far as it should; it's only theirs to hear.
+        Vec3 at = p.getEyePosition().add(toward.normalize().scale(Math.min(14, toward.length())));
+        hear(p, at, net.minecraft.sounds.SoundEvents.GENERIC_EXPLODE.value(), 0.35f, 1.9f);
+        clue(p, in, CLUE_GUNSHOT, "A gunshot, out past the lodge. Then nothing at all.");
+    }
+
+    /** A sound only this player hears. */
+    public static void hear(ServerPlayer p, Vec3 at, net.minecraft.sounds.SoundEvent s, float volume, float pitch) {
+        p.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(net.minecraft.core.Holder.direct(s),
+                net.minecraft.sounds.SoundSource.AMBIENT, at.x, at.y, at.z, volume, pitch, p.getRandom().nextLong()));
+    }
+
     private static void layTrail(ServerLevel level, Incident in, int length) {
         in.trail.clear();
         Vec3 site = Vec3.atBottomCenterOf(in.site), toVillage = Vec3.atBottomCenterOf(in.village).subtract(site);
@@ -384,6 +445,8 @@ public final class Investigations {
             if (p.position().distanceToSqr(Vec3.atBottomCenterOf(in.site)) > 80 * 80) continue;
             List<BlockPos> pts = new ArrayList<>(in.trail);
             pts.add(in.site);
+            // A lodge's clues carry residue too (never the anomaly: only the scope shows that).
+            for (String k : new String[] {"stand_a", "stand_b", "marks", "tracks"}) if (in.mark(k) != null) pts.add(in.mark(k));
             for (BlockPos b : pts) {
                 if (sent >= 10) return;
                 if (p.blockPosition().distSqr(b) > 28 * 28) continue;
@@ -467,6 +530,15 @@ public final class Investigations {
         if (level == null) return false;
         begin(level, p, in, t, st, level.getGameTime());
         return true;
+    }
+
+    /** Test hook: builds an incident's site now (as the first visit does once its ground is loaded). */
+    public static void buildForTest(ServerLevel level, Incident in) {
+        IncidentTemplate t = in.def();
+        if (t == null || in.featureBuilt) return;
+        in.featureBuilt = true;
+        Sites.build(t.site(), level, in);
+        InvestigationState.get(level.getServer()).markDirty();
     }
 
     @Nullable

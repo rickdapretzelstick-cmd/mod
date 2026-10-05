@@ -68,7 +68,7 @@ public final class ClientFx {
             "purple_fire", "purple_end", "unlimited_purple", "unlimited_purple_end", "domain_expand", "domain_sealed", "domain_counter", "domain_collapse", "red_explosion", "red_amplified", "finisher", "clash_start",
             "clash_sudden_death", "clash_perfect", "clash_win", "jackpot", "gamble_riichi", "gamble_hit", "overwhelm_final", "idg_charge",
             "true_love_beam", "beam_pulse", "beam_rika_eye", "beam_compress", "eld_fire", "eld_pulse", "eld_charge", "bclash_collide", "bclash_break",
-            "bclash_tie", "bclash_great", "bclash_good", "bclash_miss", "bclash_decide", "bclash_pin");
+            "bclash_tie", "bclash_great", "bclash_good", "bclash_miss", "bclash_decide", "bclash_pin", "rifle_beam_fire", "rifle_beam_pulse", "lodge_reveal");
 
     static float lod = 1f;
 
@@ -86,6 +86,11 @@ public final class ClientFx {
         // Survival progression (extraction, the cauldron, the Cursed Finger).
         if (p.id().startsWith("prog_")) {
             ProgressionFx.play(p, mc, level, pos, dir, s, mine, now);
+            return;
+        }
+        // The Cursed Rifle, and the hunting lodge it comes from.
+        if (p.id().startsWith("rifle_") || p.id().startsWith("lodge_") || p.id().startsWith("rack_") || p.id().startsWith("stalker_")) {
+            RifleFx.play(p, mc, level, pos, dir, s, mine, now);
             return;
         }
         // The Finger Bearer, the battle-room curse.

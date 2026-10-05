@@ -54,6 +54,7 @@ public final class JJKConfig {
     public BeamClash beamClash = new BeamClash();
     public Progression progression = new Progression();
     public MasteryRules mastery = new MasteryRules();
+    public Rifle rifle = new Rifle();
 
     public static JJKConfig get() {
         return instance;
@@ -1178,6 +1179,45 @@ public final class JJKConfig {
         public boolean newsBoards = true;
     }
 
+    /**
+     * The Cursed Rifle. Its ammunition is its own reserve of cursed energy ({@code capacity}, refilling over time), never a
+     * technique's. Mastery multiplies these (tool/cursed_rifle in data/jjk/mastery); the floors and caps here keep every
+     * upgrade sensible: no free shots, no instant charge, no beam that never ends.
+     */
+    public static final class Rifle {
+        public float capacity = 100f;
+        public float regenPerSecond = 5f;
+        /** Normal shots: damage, reserve cost, ticks between shots, reach. */
+        public float shotDamage = 7f;
+        public float shotCost = 12f;
+        public int shotInterval = 18;
+        public double shotRange = 72;
+        /** Aim: the scope's sway (degrees) and how long it takes to settle; hip shots sway more. */
+        public float swayDegrees = 2.2f;
+        public float hipSwayDegrees = 5.5f;
+        public int settleTicks = 16;
+        /** Floors on Mastery: shots never cost less than this share, nor come faster than this many ticks. */
+        public float minCostShare = 0.55f;
+        public int minShotInterval = 9;
+        /** The beam: reserve it takes, the sequence's ticks (deploy, charge, cooldown, retract), how long it fires. */
+        public float beamCost = 70f;
+        public int deployTicks = 28, chargeTicks = 30, minChargeTicks = 16, cooldownTicks = 14, retractTicks = 28;
+        public int beamTicks = 40, maxBeamTicks = 70;
+        /** Held ready, it slowly drains the reserve; empty, it lets go. */
+        public float readyDrainPerSecond = 4f;
+        public int beamCooldown = 240;
+        public double beamRange = 44;
+        /** Output 0..1: the first beam is 0.45; lens upgrades raise it to at most {@code outputCap}; Maximum Output is 1. */
+        public float baseOutput = 0.45f, outputCap = 0.8f;
+        /** Half-width at the first unlock and at full output (True Love Beam and Every Last Drop are 2.5). */
+        public double baseHalf = 1.1, maxHalf = 2.5;
+        /** Full-output damage on first contact and then every interval (scaled down with output); terrain it may carve. */
+        public float beamDamage = 20f, beamTickDamage = 8f;
+        public int beamDamageInterval = 10;
+        public float beamMaxHardness = 50f;
+        public double beamCarveEdge = 0.8;
+    }
+
     /** Beam clashes (True Love Beam against Every Last Drop): the duel's tuning lives in the session; these are reach. */
     public static final class BeamClash {
         public boolean enabled = true;
@@ -1250,5 +1290,6 @@ public final class JJKConfig {
         if (yuta == null) yuta = new Yuta();
         if (progression == null) progression = new Progression();
         if (mastery == null) mastery = new MasteryRules();
+        if (rifle == null) rifle = new Rifle();
     }
 }
