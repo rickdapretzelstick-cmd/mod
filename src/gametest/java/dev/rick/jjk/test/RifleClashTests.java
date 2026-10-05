@@ -79,12 +79,18 @@ public class RifleClashTests {
     /** Watches one clash to its end. */
     private static final class Watch {
         BeamClashSession session;
+        String k0 = "", k1 = "";
         long duelAt = -1, resolveAt = -1;
 
         void see(GameTestHelper h, LivingEntity e) {
             BeamClashSession s = BeamClashManager.sessionOf(e);
             if (s != null) session = s;
             if (session == null) return;
+            // The beams are let go when it ends: note what clashed while it runs.
+            if (k0.isEmpty() && session.beam(0) != null && session.beam(1) != null) {
+                k0 = session.beam(0).beamKind();
+                k1 = session.beam(1).beamKind();
+            }
             if (duelAt < 0 && session.phase() == BeamClashSession.Phase.DUEL) duelAt = h.getTick();
             if (resolveAt < 0 && session.phase() == BeamClashSession.Phase.RESOLVE) resolveAt = h.getTick();
         }
@@ -118,7 +124,7 @@ public class RifleClashTests {
         });
         h.succeedWhen(() -> {
             h.assertTrue(w.session != null, "a clash (" + BeamClashManager.lastMiss + ")");
-            h.assertTrue("rifle".equals(w.session.beam(0).beamKind()) && "rifle".equals(w.session.beam(1).beamKind()), "rifle against rifle");
+            h.assertTrue("rifle".equals(w.k0) && "rifle".equals(w.k1), "rifle against rifle: " + w.k0 + "/" + w.k1);
             h.assertTrue(w.session.phase() == BeamClashSession.Phase.ENDED, "played out");
             if (expectOverpower) {
                 h.assertTrue(w.session.overpowered(), "the first unlock is overpowered");
@@ -170,7 +176,7 @@ public class RifleClashTests {
         });
         h.succeedWhen(() -> {
             h.assertTrue(w.session != null, "a clash");
-            String k0 = w.session.beam(0).beamKind(), k1 = w.session.beam(1).beamKind();
+            String k0 = w.k0, k1 = w.k1;
             h.assertTrue(("eld".equals(k0) && "rifle".equals(k1)) || ("rifle".equals(k0) && "eld".equals(k1)), "Every Last Drop against the rifle: " + k0 + "/" + k1);
             h.assertTrue(w.session.phase() == BeamClashSession.Phase.ENDED, "played out");
             h.assertTrue(!w.session.overpowered() && w.resolveAt - w.duelAt >= BeamClashSession.DUEL_TICKS, "even terms: the full duel (" + (w.resolveAt - w.duelAt) + ")");
@@ -210,7 +216,7 @@ public class RifleClashTests {
         });
         h.succeedWhen(() -> {
             h.assertTrue(w.session != null, "a clash");
-            String k0 = w.session.beam(0).beamKind(), k1 = w.session.beam(1).beamKind();
+            String k0 = w.k0, k1 = w.k1;
             h.assertTrue(k0.equals(RifleBeam.KIND) || k1.equals(RifleBeam.KIND), "the rifle is in it: " + k0 + "/" + k1);
             h.assertTrue(w.session.phase() == BeamClashSession.Phase.ENDED, "played out");
             h.assertTrue(!ClashCommon.clashing(p) && !ClashCommon.clashing(y), "both free");
