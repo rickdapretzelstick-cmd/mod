@@ -22,6 +22,7 @@ public final class BeamClashVisuals {
     private BeamClashVisuals() {}
 
     static float[] color(String kind) {
+        if ("rifle".equals(kind)) return new float[] {0.45f, 0.82f, 1f};
         return "eld".equals(kind) ? new float[] {0.35f, 0.7f, 1f} : new float[] {1f, 0.42f, 1f};
     }
 
@@ -34,7 +35,8 @@ public final class BeamClashVisuals {
     }
 
     private static boolean anyOut(BeamClashClient.View v) {
-        return LoveBeams.get(v.aId) != null || RyuBeams.get(v.aId) != null || LoveBeams.get(v.bId) != null || RyuBeams.get(v.bId) != null;
+        return LoveBeams.get(v.aId) != null || RyuBeams.get(v.aId) != null || RifleBeams.get(v.aId) != null
+                || LoveBeams.get(v.bId) != null || RyuBeams.get(v.bId) != null || RifleBeams.get(v.bId) != null;
     }
 
     private static void draw(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, BeamClashClient.View v, float time) {

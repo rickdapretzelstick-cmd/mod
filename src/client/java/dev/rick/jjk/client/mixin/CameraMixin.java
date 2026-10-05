@@ -51,7 +51,7 @@ public abstract class CameraMixin {
 
     @Inject(method = "calculateFov", at = @At("RETURN"), cancellable = true)
     private void jjk$fov(float partialTicks, CallbackInfoReturnable<Float> cir) {
-        float m = ScreenEffects.fovMultiplier(partialTicks);
+        float m = ScreenEffects.fovMultiplier(partialTicks) * dev.rick.jjk.client.rifle.RifleClient.zoom();
         if (m != 1f) cir.setReturnValue(cir.getReturnValue() * m);
     }
 }

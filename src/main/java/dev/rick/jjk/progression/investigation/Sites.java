@@ -52,7 +52,7 @@ public final class Sites {
             "cliff", new Kind(Sites::findCliff, Sites::buildCliff, "the cliffs"),
             "pasture", new Kind(Sites::findPasture, Sites::buildPasture, "the grazing land"),
             "hillside", new Kind(Sites::findHillside, Sites::buildMine, "the hillside"),
-            "lodge", new Kind(LodgeSite::find, LodgeSite::build, "the old hunting lodge"));
+            "lodge", new Kind(LodgeSite::find, LodgeSite::build, "out in the woods"));
 
     private Sites() {}
 

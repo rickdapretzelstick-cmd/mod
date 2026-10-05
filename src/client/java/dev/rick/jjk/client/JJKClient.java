@@ -49,6 +49,8 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.HAKARI_DOOR, dev.rick.jjk.client.render.HakariRenderers.door());
         EntityRendererRegistry.register(ModEntities.THROWN_PROP, dev.rick.jjk.client.render.YujiRenderers.prop());
         EntityRendererRegistry.register(ModEntities.FIRE_ARROW, dev.rick.jjk.client.render.YujiRenderers.arrow());
+        // The Cursed Rifle's held model (posed by its clips).
+        net.minecraft.client.renderer.special.SpecialModelRenderers.ID_MAPPER.put(JJK.id("cursed_rifle"), dev.rick.jjk.client.rifle.RifleItemRenderer.Unbaked.MAP_CODEC);
         EntityRendererRegistry.register(ModEntities.FINGER_BEARER, dev.rick.jjk.client.render.FingerBearerRenderer::new);
         EntityRendererRegistry.register(ModEntities.FLY_HEAD, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "fly_head", 0.35f));
         EntityRendererRegistry.register(ModEntities.SCHOOL_CRAWLER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_crawler", 0.6f));
@@ -72,6 +74,7 @@ public class JJKClient implements ClientModInitializer {
         });
         // The animation debugger works in either mode (it only shows once turned on).
         HudElementRegistry.addLast(JJK.id("anim_debug"), (g, delta) -> dev.rick.jjk.client.anim.AnimDebug.renderHud(g));
+        HudElementRegistry.addLast(JJK.id("rifle_hud"), (g, delta) -> dev.rick.jjk.client.rifle.RifleHud.render(g));
         HudElementRegistry.addLast(JJK.id("prison_view"), (g, delta) -> dev.rick.jjk.client.prison.PrisonClient.renderHud(g));
         // Every custom HUD layer is skipped in Vanilla Minecraft mode.
         HudElementRegistry.addLast(JJK.id("combat_hud"), (g, delta) -> {
@@ -128,6 +131,7 @@ public class JJKClient implements ClientModInitializer {
             dev.rick.jjk.client.clash.BeamClashClient.reset();
             dev.rick.jjk.client.clash.BeamClashCamera.reset();
             dev.rick.jjk.client.prison.PrisonClient.reset();
+            dev.rick.jjk.client.rifle.RifleClient.clear();
             dev.rick.jjk.client.hud.RyuHud.reset();
         });
     }
@@ -140,6 +144,8 @@ public class JJKClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ProgressionPayload.TYPE, (p, ctx) -> ClientProgression.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.MasterySyncPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.mastery.ClientMastery.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.NewsBoardPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.investigation.NewsBoardScreen.show(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.RifleStatePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.rifle.RifleClient.apply(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ScopeViewPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.rifle.RifleClient.scope(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.PrisonPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.prison.PrisonClient.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.BeamClashStatePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.BeamClashClient.state(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.BeamClashCheckPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.BeamClashClient.check(p));
@@ -270,6 +276,7 @@ public class JJKClient implements ClientModInitializer {
         ScreenEffects.tick();
         if (mc.level == null || mc.player == null) return;
         ClientState.tick();
+        dev.rick.jjk.client.rifle.RifleClient.tick(mc);
         dev.rick.jjk.client.clash.ClashClient.tick(mc);
         dev.rick.jjk.client.cinematic.DomainCinematic.tick(mc);
         dev.rick.jjk.client.fx.UnlimitedPurpleFx.tick(mc);

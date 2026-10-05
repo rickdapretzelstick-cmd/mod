@@ -73,7 +73,11 @@ public final class RifleServer {
         ServerTickEvents.END_SERVER_TICK.register(RifleServer::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((h, s) -> drop(h.player));
         ServerLivingEntityEvents.AFTER_DEATH.register((e, src) -> {
-            if (e instanceof ServerPlayer p) drop(p);
+            if (e instanceof ServerPlayer p && STATES.containsKey(p.getUUID())) {
+                drop(p);
+                // Everyone watching lets the pose go at once.
+                Fx.toTrackers(p, new RifleStatePayload(p.getId(), Phase.IDLE.ordinal(), 0, 0.45f, energy(p), cfg().capacity, false, 1f, 16), true);
+            }
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(s -> STATES.clear());
         ServerPlayConnectionEvents.JOIN.register((h, s, server) -> sync(h.player, state(h.player), true));

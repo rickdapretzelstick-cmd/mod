@@ -162,8 +162,13 @@ public final class InvestigationState {
         dirty = true;
     }
 
+    /** Test hook: forces the next flush to write. */
+    public void markDirtyForTest() {
+        dirty = true;
+    }
+
     /** Writes if anything changed. */
-    void flush() {
+    public void flush() {
         if (dirty) save();
     }
 

@@ -24,7 +24,10 @@
       "dev.rick.jjk.test.DomainClashRulesTests",
       "dev.rick.jjk.test.MasteryTests",
       "dev.rick.jjk.test.CommonCurseTests",
-      "dev.rick.jjk.test.InvestigationTests"
+      "dev.rick.jjk.test.InvestigationTests",
+      "dev.rick.jjk.test.RifleTests",
+      "dev.rick.jjk.test.RifleClashTests",
+      "dev.rick.jjk.test.LodgeTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.AnimFrameworkClientTest",

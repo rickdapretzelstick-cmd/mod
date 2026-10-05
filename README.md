@@ -490,6 +490,34 @@ cauldron (like the glasses) and it comes out as a cursed tool:
 - **Cursed Cleaver** (from the axe): slow and crushing. Its tree: Heft, **Heavy Swing** (use and hold to wind up,
   release to bring it down; longer holds hit far harder), **Momentum** (every hit throws them back), **Guard Break**
   (a heavy swing smashes through a guard), **Shockwave** (a full-charge swing hits everything around and launches it).
+- **Cursed Rifle** (from the hunting lodge, below): a scoped rifle with four folded support arms round its barrel. It is
+  a ranged tool for anyone, technique or not: its own **reserve** (100, refilling 5 a second, kept per player) pays for
+  everything, and the server decides every shot and every hit.
+  - **Normal shots**: hold use to raise the scope (the view zooms, the reticle settles), let go to fire. A quick tap is a
+    hip shot and sways far more. Each shot costs 12, deals 7 and needs 18 ticks for the bolt to cycle. The reticle
+    drifts exactly as the server's aim does: where it sits is where the round goes. The rifle plays its `normal_shot`
+    clip, with a muzzle flash, a tracer to the impact and a kick of the view.
+  - **The beam** (once Unfolding Array is learned): sneak and hold use. The arms unfold (`deploy`), the lenses build
+    (`charge`), and it holds ready (`charged_hold`, draining 4 a second). Let go to fire (`beam_fire`: the arms stay
+    deployed for the whole beam), then it vents (`cooldown`) and folds away (`retract`); 12 seconds before the next.
+    Letting go early, switching items, running the reserve dry, dying or leaving cancel it at any point and the arms
+    retract. Every client nearby plays the same clips at the server's timing. The beam is the shared square torrent
+    (the same profile as True Love Beam and Every Last Drop: the drawn beam is the hitbox), starting at the model's
+    `beam_origin`; it carves terrain that is restored like all battle damage.
+  - **Its tree** (`data/jjk/mastery/tool/cursed_rifle.json`): Marksman (Steady Hands, Settle, Heavy Rounds: less sway,
+    faster settling, +15% damage), Mechanism (Quick Bolt, Frugal Rounds, Oiled Action: faster cycling, cheaper shots),
+    then **Unfolding Array** (80, the beam), the Array lane (Lens Economy, Fast Focus, Sustained Fire: a cheaper, faster,
+    longer beam), the Output lane (Harmonised Arms, Focused Lenses: a stronger, wider beam) and the capstone
+    **Maximum Output** (220). Every upgrade is capped (`JJKConfig.rifle`: sway no lower than 35%, shots no cheaper than
+    55% and no faster than 9 ticks, damage at most +50%, beam at most 70 ticks).
+  - **Maximum Output**: the beam at full output, as wide as True Love Beam and Every Last Drop (5 blocks) and as strong
+    in a clash: a white core in electric blue, blue-white streaks, a hard flare where it strikes. The first unlock is a
+    narrower (2.2 blocks), dimmer violet-blue beam at 0.45 output; the lens upgrades raise it to at most 0.8.
+  - **Beam clashes**: the rifle is one more ultimate beam in the shared system (below), with no special rules. A rifle
+    holding its charge can answer True Love Beam, Every Last Drop or another rifle in the counter window (it opens when
+    the opponent starts charging; let go of use to answer), and is answered the same way from the moment its arms start
+    to deploy. Charging alone never starts a clash. Its clash strength is freshness x output: the first unlock is
+    overpowered by a fresh full-power beam; Maximum Output meets one on even terms (the full, doubled duel).
 
 ### Mastery
 
@@ -540,6 +568,31 @@ stretch. No checklist, no HUD.
 | **A fall from the cliffs** | 3 | jumping off the edge where it happened | pulled into a cursed realm before you land: the cliff, broken off and hanging in a red void |
 | **Livestock lost in the night** | 4 | walking into the pasture | right there, in the open |
 | **The old mine** | 3 | going down to the end of the tunnel | a cursed realm: a low cavern of wet rock |
+| **Gunshots at the old hunting lodge** (uncommon) | 3 | holding the lodge's mounted scope on what's out in the trees, then using it again | a cursed realm: the woods through the scope, distorted |
+
+**The hunting lodge.** Reported as gunshots after sunset round an old hunting lodge, with a landmark that is really
+there (*"beyond the northern ridge, near the spruce forest"*: a ridge only if the ground rises between them, the woods
+by the site's biome). The lodge is weathered, its windows broken, hunting gear left where it lay, a sealed gun rack on
+the back wall and a rifle scope mounted on the front windowsill. Round it: two abandoned hunting stands, trunks scored
+and blackened where they were shot at, a line of tracks that just stops, and now and then (far more often at night) a
+distant gunshot with nobody there. Each one you find is noted once (per player, saved with the incident).
+Put your eye to the scope (use it): through Cursed Glasses something out in the trees doesn't belong. Hold the scope
+on it and it resolves into a crooked trail and a figure standing on it, with a heartbeat; use the scope again,
+deliberately, to follow it in. Without perception the spot only "doesn't sit right". Inside is the distorted forest:
+trunks that kink and lean the wrong way, the same hunting stand again and again, a path that doubles back. It holds the
+**Hunter's Shade** (Grade 3, 48 health): it keeps to the trees, slips out of your line of sight when you look straight
+at it, and closes in cover to cover when you don't. Before it attacks it shows itself: it stops dead in the open, its
+eyes light, a dry rattle carries, and about a second later it lunges straight along the line it locked. Sidestep and it
+crashes down **exposed** for two seconds (taking 60% more damage); crowd it and it rakes after a short wind-up and
+breaks away. Nothing it does comes from out of sight. A starter cursed tool beats it. *(Its model is a placeholder:
+the School Crawler's, darkened and scaled up.)*
+
+When it falls, everyone who went in is **owed a Cursed Rifle**, saved with the incident apart from its completion: the
+rack's seal breaks and the rifle rests on it. Each takes their own, deliberately, from the rack: a full inventory
+leaves it waiting, and a late return, death, logging out or a restart change nothing. Nobody else can take it. The
+rifle is not unique (every lodge pays out), but every rifle a lodge hands out carries a claim, and a player has one
+live claim: a participant who has lost theirs can **recover** it at the rack, and the lost one (wherever it is) goes
+cold rather than making two. Seeing another lodge through also replaces your earlier rifle the same way.
 
 Exorcise every curse and the incident is over: the bonus is paid, and the board posts a follow-up. Left alone for three
 days a report goes stale and something else gets reported.
@@ -553,8 +606,10 @@ everyone inside is sent back where they came from. Dying there respawns you as u
 inside a realm that has closed sends you home. (A world without the dimension builds the arenas far out in the
 overworld's sky instead.)
 
-**Admin** (op): `/jjk mastery info|give|buy|respec <player> ...` · `/jjk incident list|realms|here <template>|start <id>`
-(`here` puts an incident where you stand, facing its direction: stand on a cliff edge looking out for a cliff fall).
+**Admin** (op): `/jjk mastery info|give|buy|respec <player> ...` · `/jjk incident list|realms|here <template>|start <id>|complete <id>|show <id>`
+(`here` puts an incident where you stand, facing its direction: stand on a cliff edge looking out for a cliff fall; a
+lodge's window faces the way you face) · `/jjk rifle state|energy <n>|phase <phase>|issue` (the rifle's numbers, its
+reserve, a forced phase such as `ready` to test a clash answer, a claimed rifle as a lodge would give).
 
 ## The Prison Realm
 
@@ -850,7 +905,7 @@ Domain structures are separate and restore as soon as the domain ends. `/jjk res
 `/jjk arena` test arena with dummies · `/jjk dummy [stand|jump|fight] [n]` · `/jjk dummy domain <void|idg|shrine> [skill]` (solo clash practice: the nearest dummy opens that domain; press Awakening in the counter window to clash it; skill 0–1 is how well it plays) · `/jjk nocooldown true|false` ·
 `/jjk awakening <amount>|end` · `/jjk reset` · `/jjk character gojo|hakari|yuji|yuta|none` · `/jjk domain cancel [all]` ·
 `/jjk status [target]` · `/jjk config reload` · `/jjk kit ...` (Survival kit ownership, see Survival progression) ·
-`/jjk mastery ...` · `/jjk incident ...` (see Investigations, curses and Mastery)
+`/jjk mastery ...` · `/jjk incident ...` · `/jjk rifle ...` (see Investigations, curses and Mastery)
 
 ## Config
 

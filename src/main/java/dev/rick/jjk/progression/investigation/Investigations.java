@@ -532,6 +532,15 @@ public final class Investigations {
         return true;
     }
 
+    /** Test hook: builds an incident's site now (as the first visit does once its ground is loaded). */
+    public static void buildForTest(ServerLevel level, Incident in) {
+        IncidentTemplate t = in.def();
+        if (t == null || in.featureBuilt) return;
+        in.featureBuilt = true;
+        Sites.build(t.site(), level, in);
+        InvestigationState.get(level.getServer()).markDirty();
+    }
+
     @Nullable
     public static Entity curseEntity(MinecraftServer server, UUID id) {
         for (ServerLevel l : server.getAllLevels()) {

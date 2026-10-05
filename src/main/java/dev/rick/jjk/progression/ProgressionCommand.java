@@ -65,7 +65,8 @@ public final class ProgressionCommand {
                             return 1;
                         })))
                 .then(dev.rick.jjk.progression.mastery.MasteryCommand.node())
-                .then(dev.rick.jjk.progression.investigation.InvestigationCommand.node()));
+                .then(dev.rick.jjk.progression.investigation.InvestigationCommand.node())
+                .then(dev.rick.jjk.progression.tool.rifle.RifleCommand.node()));
     }
 
     private static int prisonStatus(CommandContext<CommandSourceStack> c) {

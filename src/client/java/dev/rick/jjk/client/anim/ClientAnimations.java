@@ -171,6 +171,20 @@ public final class ClientAnimations {
         return f.any() ? f : null;
     }
 
+    /** The same for clips kept under a key of their own (a held item's model: see RifleClient#animKey). */
+    @Nullable
+    public static PoseFrame computeKey(int key, float now) {
+        AnimPlayer p = PLAYERS.get(key);
+        if (p == null) return null;
+        advance(key, p, now);
+        if (p.idle()) {
+            PLAYERS.remove(key);
+            return null;
+        }
+        PoseFrame f = p.sample(new PoseFrame());
+        return f.any() ? f : null;
+    }
+
     private static void advance(int id, AnimPlayer p, float now) {
         float ms = now * 50f;
         if (Float.isNaN(p.lastNow)) p.lastNow = ms;

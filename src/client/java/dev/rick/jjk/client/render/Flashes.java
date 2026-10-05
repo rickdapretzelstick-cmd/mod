@@ -107,11 +107,13 @@ public final class Flashes {
         ACTIVE.clear();
         LoveBeams.clear();
         RyuBeams.clear();
+        RifleBeams.clear();
     }
 
     public static void render(SubmitNodeCollector c, PoseStack ps, Vec3 cam, Quaternionf camRot, long now, float partial) {
         LoveBeams.render(c, ps, cam, camRot, now, partial);
         RyuBeams.render(c, ps, cam, camRot, now, partial);
+        RifleBeams.render(c, ps, cam, camRot, now, partial);
         BeamClashVisuals.render(c, ps, cam, camRot, now, partial);
         Iterator<Effect> it = ACTIVE.iterator();
         while (it.hasNext()) {

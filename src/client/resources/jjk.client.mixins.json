@@ -2,7 +2,7 @@
   "required": true,
   "package": "dev.rick.jjk.client.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["MinecraftMixin", "CameraMixin", "EntityRendererMixin", "HumanoidModelMixin", "PlayerModelMixin", "AvatarRendererMixin", "KeyboardHandlerMixin",
+  "client": ["MinecraftMixin", "CameraMixin", "EntityRendererMixin", "HumanoidModelMixin", "PlayerModelMixin", "AvatarRendererMixin", "KeyboardHandlerMixin", "SpecialModelWrapperMixin",
     "rig.PartDefinitionAccessor", "rig.CubeDefinitionAccessor", "rig.CubeDeformationAccessor", "rig.ModelPartAccessor", "rig.PlayerModelMeshMixin"],
   "injectors": { "defaultRequire": 1 }
 }

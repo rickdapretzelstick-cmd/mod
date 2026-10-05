@@ -1,0 +1,28 @@
+{
+  "hand_animation_on_swap": false,
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": [
+          "gui",
+          "ground",
+          "fixed",
+          "on_shelf"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "jjk:item/cursed_rifle"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:special",
+      "base": "jjk:item/cursed_rifle_in_hand",
+      "model": {
+        "type": "jjk:cursed_rifle"
+      }
+    }
+  }
+}
