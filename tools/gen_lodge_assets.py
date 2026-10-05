@@ -195,10 +195,10 @@ write_json({
     'gui_light': 'front',
     'textures': {'particle': 'jjk:item/cursed_rifle'},
     'display': {
-        'thirdperson_righthand': {'rotation': [0, 0, 0], 'translation': [0, 1.5, -2.5], 'scale': [1, 1, 1]},
-        'thirdperson_lefthand': {'rotation': [0, 0, 0], 'translation': [0, 1.5, -2.5], 'scale': [1, 1, 1]},
-        'firstperson_righthand': {'rotation': [0, -4, 0], 'translation': [-1.5, 1.5, -3], 'scale': [1, 1, 1]},
-        'firstperson_lefthand': {'rotation': [0, -4, 0], 'translation': [-1.5, 1.5, -3], 'scale': [1, 1, 1]},
+        'thirdperson_righthand': {'rotation': [90, 0, 0], 'translation': [0, 2, 1], 'scale': [1, 1, 1]},
+        'thirdperson_lefthand': {'rotation': [90, 0, 0], 'translation': [0, 2, 1], 'scale': [1, 1, 1]},
+        'firstperson_righthand': {'rotation': [0, -6, 0], 'translation': [2, 4.5, -3], 'scale': [0.75, 0.75, 0.75]},
+        'firstperson_lefthand': {'rotation': [0, -6, 0], 'translation': [2, 4.5, -3], 'scale': [0.75, 0.75, 0.75]},
         'head': {'rotation': [0, 0, 0], 'translation': [0, 0, 0], 'scale': [0.6, 0.6, 0.6]},
     },
 }, 'models', 'item', 'cursed_rifle_in_hand.json')

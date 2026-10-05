@@ -194,8 +194,17 @@ public final class RifleClient {
         return zoom;
     }
 
+    @Nullable private static Vec3 scopeEye;
+
+    /** Where the camera is while looking through the lodge's scope (its front lens), or null. */
+    @Nullable
+    public static Vec3 scopeEye() {
+        return scopeOn ? scopeEye : null;
+    }
+
     public static void scope(ScopeViewPayload p) {
         scopeOn = p.on();
+        scopeEye = p.ex() == 0 && p.ey() == 0 && p.ez() == 0 ? null : new Vec3(p.ex(), p.ey(), p.ez());
         scopeProgress = p.progress();
         scopeRevealed = p.revealed();
     }

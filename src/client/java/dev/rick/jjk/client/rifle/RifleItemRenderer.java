@@ -38,6 +38,9 @@ public final class RifleItemRenderer implements SpecialModelRenderer<RifleItemRe
     /** The grip, which sits at the hand. */
     static final Vector3f GRIP = new Vector3f(0, 11, 4);
 
+    /** Extra turn (degrees, X then Y then Z) in third person, applied about the grip. */
+    public static float[] THIRD_PERSON = {0, 0, 0};
+
     public record Arg(@Nullable PoseFrame pose, int holder, boolean world) {}
 
     private static final ThreadLocal<Object[]> CONTEXT = new ThreadLocal<>();
@@ -67,6 +70,12 @@ public final class RifleItemRenderer implements SpecialModelRenderer<RifleItemRe
         BbModel model = BbModels.get(RifleClient.RIG);
         if (model == null) return;
         ps.pushPose();
+        if (arg != null && arg.world()) {
+            ps.translate(0.5f, 0.5f, 0.5f);
+            ps.mulPose(new org.joml.Matrix4f().rotationXYZ((float) Math.toRadians(THIRD_PERSON[0]), (float) Math.toRadians(THIRD_PERSON[1]),
+                    (float) Math.toRadians(THIRD_PERSON[2])));
+            ps.translate(-0.5f, -0.5f, -0.5f);
+        }
         place(ps);
         BbModel.Posing pose = RikaRenderer.posing(arg == null ? null : arg.pose());
         c.submitCustomGeometry(ps, RenderTypes.entityCutout(JJK.id("textures/entity/cursed_rifle.png")), (p, buf) -> model.render(p, buf, pose, light, 0xFFFFFFFF));

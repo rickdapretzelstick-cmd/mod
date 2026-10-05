@@ -32,6 +32,9 @@ public abstract class CameraMixin {
             setPosition(new net.minecraft.world.phys.Vec3(clash[0], clash[1], clash[2]));
             setRotation((float) clash[3], (float) clash[4]);
         }
+        // The lodge's mounted scope: the view is from its front lens (past the scope's own body).
+        net.minecraft.world.phys.Vec3 scope = dev.rick.jjk.client.rifle.RifleClient.scopeEye();
+        if (scope != null) setPosition(scope);
         // Beam clash: a brief side-on shot of the two beams meeting.
         double[] beams = dev.rick.jjk.client.clash.BeamClashCamera.apply(position(), yRot, xRot);
         if (beams != null) {

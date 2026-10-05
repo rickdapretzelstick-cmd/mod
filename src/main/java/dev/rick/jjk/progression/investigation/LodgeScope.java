@@ -41,6 +41,8 @@ public final class LodgeScope {
     static final class Looking {
         final String incident;
         final BlockPos scope;
+        /** The scope's front lens: where the view through it is from (in front of the scope's own body). */
+        Vec3 eye = Vec3.ZERO;
         int hold;
         boolean revealed;
         int hintCooldown;
@@ -93,9 +95,11 @@ public final class LodgeScope {
                     ? "Just the woods, and the path the hunter used to take." : "Through the scope: only trees.").withStyle(ChatFormatting.GRAY));
             return;
         }
-        LOOKING.put(p.getUUID(), new Looking(in.id, pos.immutable()));
+        Looking look = new Looking(in.id, pos.immutable());
+        look.eye = Vec3.atCenterOf(pos).add(facing.getStepX() * 0.55, 0.22, facing.getStepZ() * 0.55);
+        LOOKING.put(p.getUUID(), look);
         Investigations.clue(p, in, Investigations.CLUE_SCOPE, null);
-        ServerPlayNetworking.send(p, new ScopeViewPayload(true, 0f, false));
+        send(p, look, 0f, false);
         p.sendOverlayMessage(Component.literal("You put your eye to the scope.").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
     }
 
@@ -137,7 +141,7 @@ public final class LodgeScope {
     static void tickLook(ServerLevel level, ServerPlayer p, Looking l, Incident in) {
         BlockPos anomaly = in.mark("anomaly");
         if (anomaly == null) return;
-        Vec3 to = Vec3.atCenterOf(anomaly).add(0, 1, 0).subtract(p.getEyePosition());
+        Vec3 to = Vec3.atCenterOf(anomaly).add(0, 1, 0).subtract(l.eye.lengthSqr() > 0 ? l.eye : p.getEyePosition());
         double angle = Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, to.normalize().dot(p.getLookAngle())))));
         boolean onIt = angle <= AIM_DEGREES;
         if (l.hintCooldown > 0) l.hintCooldown--;
@@ -157,17 +161,21 @@ public final class LodgeScope {
         l.hold = onIt ? l.hold + 1 : Math.max(0, l.hold - 2);
         float progress = l.hold / (float) HOLD_TICKS;
         if (l.hold > 0 && level.getGameTime() % 3 == 0) send(p, "lodge_anomaly", anomaly, progress);
-        if (level.getGameTime() % 5 == 0) ServerPlayNetworking.send(p, new ScopeViewPayload(true, progress, false));
+        if (level.getGameTime() % 5 == 0) send(p, l, progress, false);
         if (l.hold >= HOLD_TICKS) {
             l.revealed = true;
             send(p, "lodge_reveal", anomaly, 1f);
             Investigations.hear(p, p.getEyePosition(), SoundEvents.WARDEN_HEARTBEAT, 1.4f, 0.6f);
             Investigations.hear(p, p.getEyePosition(), SoundEvents.SOUL_ESCAPE.value(), 1.4f, 0.5f);
-            ServerPlayNetworking.send(p, new ScopeViewPayload(true, 1f, true));
+            send(p, l, 1f, true);
             Investigations.clue(p, in, Investigations.CLUE_ANOMALY, null);
             p.sendOverlayMessage(Component.literal("A crooked trail through the trees, and something standing on it. Use the scope again to follow.")
                     .withStyle(ChatFormatting.DARK_RED, ChatFormatting.ITALIC));
         }
+    }
+
+    private static void send(ServerPlayer p, Looking l, float progress, boolean revealed) {
+        ServerPlayNetworking.send(p, new ScopeViewPayload(true, progress, revealed, l.eye.x, l.eye.y, l.eye.z));
     }
 
     private static void send(ServerPlayer p, String id, BlockPos at, float s) {
@@ -182,7 +190,13 @@ public final class LodgeScope {
         if (in != null) tickLook((ServerLevel) p.level(), p, l, in);
     }
 
+    public static void stopForTest(ServerPlayer p) {
+        stop(p);
+    }
+
     public static void useForTest(ServerPlayer p, BlockPos pos) {
-        use(p, (ServerLevel) p.level(), pos, Direction.NORTH);
+        var st = p.level().getBlockState(pos);
+        use(p, (ServerLevel) p.level(), pos, st.hasProperty(net.minecraft.world.level.block.HorizontalDirectionalBlock.FACING)
+                ? st.getValue(net.minecraft.world.level.block.HorizontalDirectionalBlock.FACING) : Direction.NORTH);
     }
 }

@@ -28,6 +28,10 @@ import net.minecraft.world.phys.Vec3;
  * placeholder model). Opt-in: screenshots in build/run/clientGameTest/screenshots as rifle*.png.
  */
 public class RifleClientTest implements FabricClientGameTest {
+    private static String tp(double x, double y, double z, float yaw, float pitch) {
+        return String.format(java.util.Locale.ROOT, "tp @a %.2f %.2f %.2f %.1f %.1f", x, y, z, yaw, pitch);
+    }
+
     @Override
     public void runTest(ClientGameTestContext ctx) {
         try (TestSingleplayerContext sp = ctx.worldBuilder().create()) {
@@ -45,12 +49,12 @@ public class RifleClientTest implements FabricClientGameTest {
             ctx.takeScreenshot("rifle2_third_person");
 
             // The array: deploying, then ready (held), seen from the front.
-            server.runOnServer(srv -> {
-                ServerPlayer p = srv.getPlayerList().getPlayers().getFirst();
-                p.setShiftKeyDown(true);
-                RifleServer.useForTest(p);
-                p.startUsingItem(InteractionHand.MAIN_HAND);
-            });
+            // Through the real controls: sneak and hold use.
+            net.fabricmc.fabric.api.client.gametest.v1.TestInput input = ctx.getInput();
+            net.minecraft.client.KeyMapping use = ctx.computeOnClient(mc -> mc.options.keyUse), sneak = ctx.computeOnClient(mc -> mc.options.keyShift);
+            input.holdKey(sneak);
+            ctx.waitTicks(2);
+            input.holdKey(use);
             ctx.waitTicks(16);
             ctx.takeScreenshot("rifle3_deploying");
             String phase = ctx.computeOnClient(mc -> RifleClient.orIdle(mc.player.getId()).phase.name());
@@ -61,10 +65,8 @@ public class RifleClientTest implements FabricClientGameTest {
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
             server.runCommand("tp @a 0 ~ 0 -60 0");
             ctx.waitTicks(4);
-            server.runOnServer(srv -> {
-                ServerPlayer p = srv.getPlayerList().getPlayers().getFirst();
-                p.releaseUsingItem();
-            });
+            input.releaseKey(use);
+            input.releaseKey(sneak);
             ctx.waitTicks(12);
             ctx.takeScreenshot("rifle5_beam");
             ctx.waitTicks(30);
@@ -75,15 +77,10 @@ public class RifleClientTest implements FabricClientGameTest {
 
             // The scope.
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
-            server.runOnServer(srv -> {
-                ServerPlayer p = srv.getPlayerList().getPlayers().getFirst();
-                p.setShiftKeyDown(false);
-                RifleServer.useForTest(p);
-                p.startUsingItem(InteractionHand.MAIN_HAND);
-            });
+            input.holdKey(use);
             ctx.waitTicks(20);
             ctx.takeScreenshot("rifle7_scope");
-            server.runOnServer(srv -> srv.getPlayerList().getPlayers().getFirst().releaseUsingItem());
+            input.releaseKey(use);
             ctx.waitTicks(10);
 
             // The lodge, its window facing east.
@@ -98,67 +95,53 @@ public class RifleClientTest implements FabricClientGameTest {
                         RandomSource.create(3));
                 Investigations.buildForTest(level, in);
                 id[0] = in.id;
-                p.teleportTo(site.getX() - 14.5, site.getY() + 3, site.getZ() + 9.5);
-                p.setYRot(-125);
-                p.setXRot(10);
             });
+            server.runCommand(server.computeOnServer(srv -> {
+                BlockPos site = InvestigationState.get(srv).incident(id[0]).site;
+                return tp(site.getX() - 13.5, site.getY() + 4, site.getZ() + 9.5, -125, 12);
+            }));
             ctx.waitTicks(40);
             ctx.takeScreenshot("rifle8_lodge");
             // Inside, at the rack (sealed), then the scope's view.
-            server.runOnServer(srv -> {
-                ServerPlayer p = srv.getPlayerList().getPlayers().getFirst();
-                Incident in = InvestigationState.get(srv).incident(id[0]);
-                BlockPos rack = in.mark("rack");
-                p.teleportTo(rack.getX() + 0.5 + 2.2, rack.getY() - 1, rack.getZ() + 0.5);
-                p.setYRot(90);
-                p.setXRot(15);
+            String atRack = server.computeOnServer(srv -> {
+                BlockPos rack = InvestigationState.get(srv).incident(id[0]).mark("rack");
+                return tp(rack.getX() + 0.5 + 2.4, rack.getY() - 1, rack.getZ() + 0.5, 90, 18);
             });
+            server.runCommand(atRack);
             ctx.waitTicks(20);
             ctx.takeScreenshot("rifle9_rack_sealed");
-            server.runOnServer(srv -> {
-                ServerPlayer p = srv.getPlayerList().getPlayers().getFirst();
+            server.runCommand(server.computeOnServer(srv -> {
                 Incident in = InvestigationState.get(srv).incident(id[0]);
                 BlockPos scope = in.mark("scope");
                 Vec3 at = Vec3.atBottomCenterOf(scope.relative(Direction.WEST));
-                p.teleportTo(at.x, at.y, at.z);
-                Vec3 to = Vec3.atCenterOf(in.mark("anomaly")).add(0, 1, 0).subtract(p.getEyePosition());
-                p.setYRot((float) (Math.toDegrees(Math.atan2(to.z, to.x)) - 90));
-                p.setXRot((float) -Math.toDegrees(Math.atan2(to.y, Math.sqrt(to.x * to.x + to.z * to.z))));
-                LodgeScope.useForTest(p, scope);
-            });
+                // Aimed from the scope's lens, as the view through it is.
+                Vec3 lens = Vec3.atCenterOf(scope).add(0.55, 0.22, 0);
+                Vec3 to = Vec3.atCenterOf(in.mark("anomaly")).add(0, 1, 0).subtract(lens);
+                return tp(at.x, at.y, at.z, (float) (Math.toDegrees(Math.atan2(to.z, to.x)) - 90),
+                        (float) -Math.toDegrees(Math.atan2(to.y, Math.sqrt(to.x * to.x + to.z * to.z))));
+            }));
+            ctx.waitTicks(5);
+            server.runOnServer(srv -> LodgeScope.useForTest(srv.getPlayerList().getPlayers().getFirst(),
+                    InvestigationState.get(srv).incident(id[0]).mark("scope")));
             ctx.waitTicks(20);
             ctx.takeScreenshot("rifle10_scope_view");
             ctx.waitTicks(40);
             boolean revealed = ctx.computeOnClient(mc -> RifleClient.scopeRevealed());
             ctx.takeScreenshot("rifle11_scope_revealed");
             if (!revealed) throw new AssertionError("the anomaly resolved through the scope");
-            server.runOnServer(srv -> {
-                ServerPlayer p = srv.getPlayerList().getPlayers().getFirst();
-                p.setShiftKeyDown(true);
-            });
+            server.runOnServer(srv -> LodgeScope.stopForTest(srv.getPlayerList().getPlayers().getFirst()));
             ctx.waitTicks(4);
             // The curse gone: the rack unsealed, the rifle on it.
-            server.runCommand("jjk incident complete " + id[0]);
-            server.runOnServer(srv -> {
-                ServerPlayer p = srv.getPlayerList().getPlayers().getFirst();
-                p.setShiftKeyDown(false);
-                Incident in = InvestigationState.get(srv).incident(id[0]);
-                BlockPos rack = in.mark("rack");
-                p.teleportTo(rack.getX() + 0.5 + 2.2, rack.getY() - 1, rack.getZ() + 0.5);
-                p.setYRot(90);
-                p.setXRot(15);
-            });
+            server.runCommand("execute as @p run jjk incident complete " + id[0]);
+            server.runCommand(atRack);
             ctx.waitTicks(20);
             ctx.takeScreenshot("rifle12_rack_open");
 
             // The Hunter's Shade (a placeholder model), out in the open.
-            server.runOnServer(srv -> {
-                ServerPlayer p = srv.getPlayerList().getPlayers().getFirst();
+            server.runCommand(server.computeOnServer(srv -> {
                 BlockPos site = InvestigationState.get(srv).incident(id[0]).site;
-                p.teleportTo(site.getX() + 12.5, site.getY() + 1, site.getZ() + 0.5);
-                p.setYRot(90);
-                p.setXRot(15);
-            });
+                return tp(site.getX() + 12.5, site.getY() + 1, site.getZ() + 0.5, 90, 15);
+            }));
             ctx.waitTicks(5);
             server.runCommand("execute at @a run summon jjk:forest_stalker ~-4 ~ ~ {NoAI:1b,Rotation:[-90f,0f]}");
             ctx.waitTicks(20);
