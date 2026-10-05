@@ -138,17 +138,17 @@ public class RifleClashTests {
         });
     }
 
-    @GameTest(maxTicks = 700, padding = 8, environment = ENV)
+    @GameTest(maxTicks = 700, padding = 16, environment = ENV)
     public void rifleAgainstRifleAtMaximumOutputIsAnEvenDuel(GameTestHelper h) {
         rifleDuel(h, RifleTests.TO_MAX, RifleTests.TO_MAX, false);
     }
 
-    @GameTest(maxTicks = 400, padding = 8, environment = ENV)
+    @GameTest(maxTicks = 400, padding = 16, environment = ENV)
     public void aFirstUnlockRifleIsOverpoweredByMaximumOutput(GameTestHelper h) {
         rifleDuel(h, RifleTests.TO_BEAM, RifleTests.TO_MAX, true);
     }
 
-    @GameTest(maxTicks = 600, padding = 8, environment = ENV)
+    @GameTest(maxTicks = 600, padding = 16, environment = ENV)
     public void maximumOutputAnswersEveryLastDropOnEvenTerms(GameTestHelper h) {
         floor(h);
         ServerPlayer p = ready(h, 3.5, 7.0, RifleTests.TO_MAX);
@@ -185,7 +185,7 @@ public class RifleClashTests {
         });
     }
 
-    @GameTest(maxTicks = 700, padding = 8, environment = ENV)
+    @GameTest(maxTicks = 700, padding = 16, environment = ENV)
     public void trueLoveBeamIsAnsweredByTheRifle(GameTestHelper h) {
         floor(h);
         ServerPlayer p = ready(h, 3.5, 7.0, RifleTests.TO_MAX);

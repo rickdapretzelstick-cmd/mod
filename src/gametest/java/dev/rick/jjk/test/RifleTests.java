@@ -151,7 +151,7 @@ public class RifleTests {
         });
     }
 
-    @GameTest(maxTicks = 300, environment = ENV)
+    @GameTest(maxTicks = 300, padding = 16, environment = ENV)
     public void theBeamRunsItsWholeSequenceOnTheServersClock(GameTestHelper h) {
         floor(h);
         ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
@@ -188,7 +188,7 @@ public class RifleTests {
         });
     }
 
-    @GameTest(maxTicks = 200, environment = ENV)
+    @GameTest(maxTicks = 200, padding = 16, environment = ENV)
     public void switchingItemsMidBeamEndsIt(GameTestHelper h) {
         floor(h);
         ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
@@ -261,7 +261,7 @@ public class RifleTests {
         floor(h);
         ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
         ItemStack first = RifleClaims.issue(p);
-        p.getInventory().add(first);
+        p.getInventory().add(first.copy());
         h.assertTrue(RifleClaims.carriesLive(p) && RifleClaims.inertReason(p, first) == null, "the issued rifle is live");
         ItemStack second = RifleClaims.issue(p);
         h.assertTrue(RifleClaims.inertReason(p, first) != null, "the old one goes cold");

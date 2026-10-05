@@ -80,7 +80,7 @@ public class LodgeTests {
         return n;
     }
 
-    @GameTest(maxTicks = 20, environment = "jjk-test:lodge_a")
+    @GameTest(maxTicks = 20, padding = 36, environment = "jjk-test:lodge_a")
     public void theLodgeIsBuiltWithItsRackScopeAndTraces(GameTestHelper h) {
         floor(h);
         Incident in = lodge(h);
@@ -96,7 +96,7 @@ public class LodgeTests {
         h.succeed();
     }
 
-    @GameTest(maxTicks = 260, environment = "jjk-test:lodge_b")
+    @GameTest(maxTicks = 260, padding = 36, environment = "jjk-test:lodge_b")
     public void theScopeShowsTheAnomalyOnlyToThoseWhoPerceiveAndASecondUseGoesIn(GameTestHelper h) {
         floor(h);
         Incident in = lodge(h);
@@ -138,7 +138,7 @@ public class LodgeTests {
         });
     }
 
-    @GameTest(maxTicks = 400, environment = "jjk-test:lodge_c")
+    @GameTest(maxTicks = 400, padding = 36, environment = "jjk-test:lodge_c")
     public void defeatingItOwesEachParticipantTheirOwnRifle(GameTestHelper h) {
         floor(h);
         ServerLevel level = h.getLevel();

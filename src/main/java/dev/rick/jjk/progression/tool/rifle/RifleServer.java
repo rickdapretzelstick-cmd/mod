@@ -282,10 +282,11 @@ public final class RifleServer {
     private static void tick(MinecraftServer server) {
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             if (!(p.level() instanceof ServerLevel level)) continue;
-            // The reserve refills on its own (a twentieth of the per-second rate a tick).
-            float e = energy(p);
-            if (e < cfg().capacity) setEnergy(p, e + cfg().regenPerSecond / 20f);
+            // The reserve refills on its own (a twentieth of the per-second rate a tick), but not while the array is out.
             State s = STATES.get(p.getUUID());
+            boolean array = s != null && s.phase != Phase.IDLE && s.phase != Phase.AIM;
+            float e = energy(p);
+            if (e < cfg().capacity && !array) setEnergy(p, e + cfg().regenPerSecond / 20f);
             if (s != null) tick(level, p, s);
             if (s != null || isRifle(p.getMainHandItem())) sync(p, s == null ? state(p) : s, false);
         }
