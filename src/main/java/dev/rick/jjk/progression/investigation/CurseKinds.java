@@ -12,7 +12,8 @@ public final class CurseKinds {
     private static final Map<String, EntityType<? extends CommonCurseEntity>> KINDS = Map.of(
             "fly_head", ModEntities.FLY_HEAD,
             "school_crawler", ModEntities.SCHOOL_CRAWLER,
-            "school_maw", ModEntities.SCHOOL_MAW);
+            "school_maw", ModEntities.SCHOOL_MAW,
+            "forest_stalker", ModEntities.FOREST_STALKER);
 
     private CurseKinds() {}
 

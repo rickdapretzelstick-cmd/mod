@@ -89,6 +89,11 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         return incident;
     }
 
+    /** Whose clips it plays ({@code <prefix>_attack} and so on): its own kind, unless it borrows another's model. */
+    protected String clipPrefix() {
+        return curseKind();
+    }
+
     /** The kind's base max health (before the grade). */
     protected abstract double baseHealth();
 
@@ -181,7 +186,7 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         actionTicks = 0;
         struck.clear();
         getNavigation().stop();
-        if (clip != null) Anim.playOn(this, curseKind() + "_" + clip);
+        if (clip != null) Anim.playOn(this, clipPrefix() + "_" + clip);
     }
 
     protected void finishAction(int restAfter) {
@@ -306,7 +311,7 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
         boolean hurt = super.hurtServer(level, source, damage);
         if (hurt && isAlive()) {
-            if (action == 0) Anim.playOn(this, curseKind() + "_hurt");
+            if (action == 0) Anim.playOn(this, clipPrefix() + "_hurt");
             onHurt(level, source);
         }
         return hurt;
@@ -331,7 +336,7 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         if (wasDead || !(level() instanceof ServerLevel level)) return;
         action = 0;
         getNavigation().stop();
-        Anim.playOn(this, curseKind() + "_death");
+        Anim.playOn(this, clipPrefix() + "_death");
         fx(level, "fb_death", position().add(0, getBbHeight() * 0.5, 0), Vec3.ZERO, 0.5f);
     }
 

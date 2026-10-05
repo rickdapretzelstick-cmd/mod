@@ -65,6 +65,10 @@ public final class ModEntities {
     public static final EntityType<dev.rick.jjk.progression.curse.SchoolMawEntity> SCHOOL_MAW = register("school_maw",
             EntityType.Builder.<dev.rick.jjk.progression.curse.SchoolMawEntity>of(dev.rick.jjk.progression.curse.SchoolMawEntity::new, MobCategory.MONSTER)
                     .sized(1.15f, 1.55f).eyeHeight(1.2f).clientTrackingRange(10).noLootTable());
+    /** The hunting lodge's curse (a placeholder model: the School Crawler's). */
+    public static final EntityType<dev.rick.jjk.progression.curse.ForestStalkerEntity> FOREST_STALKER = register("forest_stalker",
+            EntityType.Builder.<dev.rick.jjk.progression.curse.ForestStalkerEntity>of(dev.rick.jjk.progression.curse.ForestStalkerEntity::new, MobCategory.MONSTER)
+                    .sized(1.2f, 1.2f).eyeHeight(0.8f).clientTrackingRange(10).noLootTable());
     public static final EntityType<TrainingDummy> TRAINING_DUMMY = register("training_dummy",
             EntityType.Builder.<TrainingDummy>of(TrainingDummy::new, MobCategory.MISC).sized(0.6f, 1.95f).clientTrackingRange(10));
 
@@ -81,5 +85,6 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(FLY_HEAD, dev.rick.jjk.progression.curse.FlyHeadEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(SCHOOL_CRAWLER, dev.rick.jjk.progression.curse.SchoolCrawlerEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(SCHOOL_MAW, dev.rick.jjk.progression.curse.SchoolMawEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(FOREST_STALKER, dev.rick.jjk.progression.curse.ForestStalkerEntity.createAttributes());
     }
 }

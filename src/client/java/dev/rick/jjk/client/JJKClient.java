@@ -52,6 +52,8 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.FINGER_BEARER, dev.rick.jjk.client.render.FingerBearerRenderer::new);
         EntityRendererRegistry.register(ModEntities.FLY_HEAD, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "fly_head", 0.35f));
         EntityRendererRegistry.register(ModEntities.SCHOOL_CRAWLER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_crawler", 0.6f));
+        // Placeholder: the forest stalker borrows the crawler's model, darkened and a little larger.
+        EntityRendererRegistry.register(ModEntities.FOREST_STALKER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_crawler", 0.7f, 1.15f, 0xFF5A5866));
         EntityRendererRegistry.register(ModEntities.SCHOOL_MAW, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_maw", 0.6f));
         EntityRendererRegistry.register(ModEntities.PRISON_REALM, dev.rick.jjk.client.render.PrisonRealmRenderer::new);
         EntityRendererRegistry.register(ModEntities.CURSED_ENERGY_SHOT, dev.rick.jjk.client.render.FingerBearerRenderer.Shot::new);

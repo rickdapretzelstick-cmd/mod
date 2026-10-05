@@ -80,7 +80,11 @@ public final class BeamClashManager {
         BeamCounters.Counter c = BeamCounters.of(who);
         if (who instanceof ServerPlayer sp && c != null) {
             ServerPlayNetworking.send(sp, new BeamCounterPayload(attacker.getId(), (int) (expires - level.getGameTime()),
-                    beam.beamKind().equals("tlb") ? "TRUE LOVE BEAM" : "EVERY LAST DROP", c.name()));
+                    switch (beam.beamKind()) {
+                        case "tlb" -> "TRUE LOVE BEAM";
+                        case "rifle" -> "CURSED RIFLE";
+                        default -> "EVERY LAST DROP";
+                    }, c.name()));
         }
         Fx.play(level, "bclash_threat", who.getEyePosition(), beam.beamDir(), 1f, who.getId());
     }

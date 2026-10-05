@@ -1,0 +1,23 @@
+{
+  "id": "hunting_lodge",
+  "weight": 1,
+  "grade": "GRADE_3",
+  "site": "lodge",
+  "trigger": "scope",
+  "realm": "forest_realm",
+  "curses": [
+    {"kind": "forest_stalker", "min": 1, "max": 1}
+  ],
+  "reward": "cursed_rifle",
+  "trail": 0,
+  "reports": [
+    {
+      "headline": "Gunshots at the Old Lodge",
+      "body": "Gunshots have been heard after sunset around the old hunting lodge {landmark}. Nobody has lived there since the hunter who built it went missing, and his rifle was never found. {name} went up to see who was shooting and found the lodge empty and the door open. Shots were heard again the next night, closer to the trees."
+    },
+    {
+      "headline": "Someone Is Still Hunting Up There",
+      "body": "Woodcutters say that {landmark}, at dusk, they keep hearing a rifle from the direction of the old hunting lodge, though the place has stood empty for years. {name} says the shots come in pairs, and that nothing ever comes out of the trees afterwards. Families are asked to keep children away from the lodge after dark."
+    }
+  ]
+}

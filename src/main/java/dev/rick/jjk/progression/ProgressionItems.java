@@ -44,12 +44,17 @@ public final class ProgressionItems {
     public static final Item SLAUGHTER_DEMON = tool(dev.rick.jjk.progression.tool.CursedTools.SLAUGHTER_DEMON, Rarity.RARE);
     public static final Item CURSED_CLEAVER = tool(dev.rick.jjk.progression.tool.CursedTools.CURSED_CLEAVER, Rarity.RARE);
 
+    public static final Item CURSED_RIFLE = tool(dev.rick.jjk.progression.tool.CursedTools.CURSED_RIFLE, Rarity.EPIC);
+
     public static final Item CURSED_SOUL_SAND = item("cursed_soul_sand", p -> new BlockItem(ProgressionBlocks.CURSED_SOUL_SAND, p),
             new Item.Properties().useBlockDescriptionPrefix());
 
     private ProgressionItems() {}
 
     public static final Item NEWS_BOARD = item("news_board", p -> new BlockItem(ProgressionBlocks.NEWS_BOARD, p), new Item.Properties().useBlockDescriptionPrefix());
+    /** Decoration only (a placed rack or scope isn't any lodge's: only a lodge's own do anything). */
+    public static final Item GUN_RACK = item("gun_rack", p -> new BlockItem(ProgressionBlocks.GUN_RACK, p), new Item.Properties().useBlockDescriptionPrefix());
+    public static final Item MOUNTED_SCOPE = item("mounted_scope", p -> new BlockItem(ProgressionBlocks.MOUNTED_SCOPE, p), new Item.Properties().useBlockDescriptionPrefix());
 
     private static Item item(String name, java.util.function.Function<Item.Properties, Item> factory, Item.Properties properties) {
         // 26.3: the properties carry the item's id; vanilla's Items.register* helpers are private.
@@ -73,7 +78,11 @@ public final class ProgressionItems {
 
     public static void init() {
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.NATURAL_BLOCKS).register(e -> e.accept(CURSED_SOUL_SAND));
-        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS).register(e -> e.accept(NEWS_BOARD));
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS).register(e -> {
+            e.accept(NEWS_BOARD);
+            e.accept(GUN_RACK);
+            e.accept(MOUNTED_SCOPE);
+        });
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.INGREDIENTS).register(e -> {
             e.accept(SOUL_IN_A_BOTTLE);
             e.accept(CURSED_ENERGY_BOTTLE);
@@ -85,6 +94,7 @@ public final class ProgressionItems {
             e.accept(CURSED_GLASSES);
             e.accept(SLAUGHTER_DEMON);
             e.accept(CURSED_CLEAVER);
+            e.accept(CURSED_RIFLE);
         });
     }
 }

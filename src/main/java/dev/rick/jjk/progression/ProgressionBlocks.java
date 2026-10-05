@@ -39,6 +39,13 @@ public final class ProgressionBlocks {
     public static final Block NEWS_BOARD = Blocks.register(key("news_board"), dev.rick.jjk.progression.investigation.NewsBoardBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS).strength(2.0f).noOcclusion().ignitedByLava());
 
+    /** The hunting lodge's gun rack (sealed, holding the Cursed Rifle, empty) and the scope on its windowsill. */
+    public static final Block GUN_RACK = Blocks.register(key("gun_rack"), dev.rick.jjk.progression.investigation.GunRackBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.SPRUCE_PLANKS).strength(-1.0f, 3600000.0f).noLootTable().noOcclusion()
+                    .lightLevel(s -> s.getValue(dev.rick.jjk.progression.investigation.GunRackBlock.RACK) == dev.rick.jjk.progression.investigation.GunRackBlock.Rack.OPEN ? 6 : 0));
+    public static final Block MOUNTED_SCOPE = Blocks.register(key("mounted_scope"), dev.rick.jjk.progression.investigation.MountedScopeBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BARS).strength(-1.0f, 3600000.0f).noLootTable().noOcclusion());
+
     private ProgressionBlocks() {}
 
     private static ResourceKey<Block> key(String name) {

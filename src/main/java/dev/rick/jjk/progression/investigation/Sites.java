@@ -38,12 +38,21 @@ public final class Sites {
 
     private record Kind(Finder finder, Builder builder, String landmark) {}
 
+    /** How a village describes where a kind of place is ({@code {landmark}} in a report): the lodge has its own words. */
+    @FunctionalInterface
+    public interface Describer {
+        String describe(ServerLevel level, BlockPos village, BlockPos site);
+    }
+
+    private static final Map<String, Describer> DESCRIBE = Map.of("lodge", LodgeSite::describe);
+
     private static final int[][] DIRS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
 
     private static final Map<String, Kind> KINDS = Map.of(
             "cliff", new Kind(Sites::findCliff, Sites::buildCliff, "the cliffs"),
             "pasture", new Kind(Sites::findPasture, Sites::buildPasture, "the grazing land"),
-            "hillside", new Kind(Sites::findHillside, Sites::buildMine, "the hillside"));
+            "hillside", new Kind(Sites::findHillside, Sites::buildMine, "the hillside"),
+            "lodge", new Kind(LodgeSite::find, LodgeSite::build, "the old hunting lodge"));
 
     private Sites() {}
 
@@ -60,6 +69,12 @@ public final class Sites {
     public static void build(String kind, ServerLevel level, Incident incident) {
         Kind k = KINDS.get(kind);
         if (k != null) k.builder.build(level, incident);
+    }
+
+    /** The village's words for where the place is (a ridge crossed, the kind of woods...), or the kind's plain landmark. */
+    public static String describe(String kind, ServerLevel level, BlockPos village, BlockPos site) {
+        Describer d = DESCRIBE.get(kind);
+        return d != null ? d.describe(level, village, site) : landmark(kind);
     }
 
     public static String landmark(String kind) {
