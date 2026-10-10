@@ -97,7 +97,7 @@ public class LodgeTests {
     }
 
     @GameTest(maxTicks = 260, padding = 36, environment = "jjk-test:lodge_b")
-    public void theScopeShowsTheAnomalyOnlyToThoseWhoPerceiveAndASecondUseGoesIn(GameTestHelper h) {
+    public void theScopeShowsTheAnomalyOnlyToThoseWhoPerceiveAndItsBreachGoesIn(GameTestHelper h) {
         floor(h);
         Incident in = lodge(h);
         BlockPos scope = in.mark("scope");
@@ -127,14 +127,25 @@ public class LodgeTests {
                 h.assertTrue(in.state() == Incident.State.OPEN, "seeing it changes nothing by itself");
                 went[0] = true;
                 LodgeScope.useForTest(p, scope);
-                h.assertTrue(CursedRealms.pulling(p), "the second use begins the pull");
+                h.assertTrue(!CursedRealms.pulling(p), "the scope only shows the way: it takes nobody in");
+                // Out where the trail ends, the breach: the one way in.
+                BlockPos anchor = dev.rick.jjk.progression.investigation.CursedBreaches.anchor(in);
+                h.assertTrue(anchor.equals(in.mark("anomaly")), "the breach is where the scope showed the figure");
+                dev.rick.jjk.progression.investigation.CursedBreaches.ensure(h.getLevel(), in.id, anchor);
+                var breach = dev.rick.jjk.progression.investigation.CursedBreaches.find(h.getLevel(), in.id, anchor);
+                h.assertTrue(breach != null, "a breach hangs there");
+                p.setPos(breach.position().add(1, 0, 0));
+                dev.rick.jjk.progression.investigation.CursedBreaches.useForTest(p, breach);
+                h.assertTrue(CursedRealms.pulling(p), "using it begins the pull");
             }
-            h.assertTrue(CursedRealms.inRealm(p) && in.state() == Incident.State.ACTIVE, "the second use goes in");
+            h.assertTrue(CursedRealms.inRealm(p) && in.state() == Incident.State.ACTIVE, "through the breach");
             InvestigationState st = InvestigationState.get(h.getLevel().getServer());
             var arena = CursedRealms.arenaOf(st, in.id);
             h.assertTrue(arena != null && "forest_realm".equals(arena.layout), "into the distorted forest");
-            Entity curse = Investigations.curseEntity(h.getLevel().getServer(), in.curses().get(0));
-            h.assertTrue(curse instanceof ForestStalkerEntity, "the stalker waits there");
+            Entity curse = in.curses().isEmpty() ? null : Investigations.curseEntity(h.getLevel().getServer(), in.curses().get(0));
+            int stalkers = 0;
+            for (Entity e : CursedRealms.level(h.getLevel().getServer()).getAllEntities()) if (e instanceof ForestStalkerEntity && !e.isRemoved()) stalkers++;
+            h.assertTrue(curse instanceof ForestStalkerEntity, "the stalker waits there (" + in.curses().size() + " curses, " + stalkers + " stalkers loaded)");
             CursedRealms.close(h.getLevel().getServer(), st, arena, false);
         });
     }

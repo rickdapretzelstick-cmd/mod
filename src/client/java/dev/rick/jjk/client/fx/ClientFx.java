@@ -99,7 +99,7 @@ public final class ClientFx {
             return;
         }
         // The Finger Bearer, the battle-room curse.
-        if (p.id().startsWith("fb_") || p.id().startsWith("curse_")) {
+        if (p.id().startsWith("fb_") || p.id().startsWith("curse_") || p.id().startsWith("breach_")) {
             FingerBearerFx.play(p, level, pos, dir, s, now);
             return;
         }

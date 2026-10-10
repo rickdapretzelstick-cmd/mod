@@ -157,7 +157,7 @@ public class RealmTests {
     }
 
     @GameTest(maxTicks = 60, environment = "jjk-test:realm_e")
-    public void theEmptyHouseIsSetOffByLyingInItsBed(GameTestHelper h) {
+    public void theEmptyHousesBreachIsInsideIt(GameTestHelper h) {
         floor(h);
         ServerLevel level = h.getLevel();
         Incident in = incident(h, "empty_house", new BlockPos(5, 1, 5), 1, 0);
@@ -166,9 +166,15 @@ public class RealmTests {
         h.assertTrue(bed != null && door != null, "the house has its door and its bed");
         h.assertTrue(level.getBlockState(bed).getBlock() instanceof net.minecraft.world.level.block.BedBlock, "a bed stands there");
         ServerPlayer p = survivor(h, 5.5, 1, 5.5);
-        h.assertTrue(!Investigations.use(p, door.above(3)), "using anything else does nothing");
-        h.assertTrue(Investigations.use(p, bed), "lying down in it does");
-        h.assertTrue(CursedRealms.pulling(p), "and the pull begins");
+        h.assertTrue(!CursedRealms.pulling(p), "lying in the bed (the old trigger) does nothing by itself");
+        BlockPos anchor = dev.rick.jjk.progression.investigation.CursedBreaches.anchor(in);
+        h.assertTrue(anchor.distSqr(bed) <= 4 * 4, "the breach hangs inside the house");
+        dev.rick.jjk.progression.investigation.CursedBreaches.ensure(level, in.id, anchor);
+        var breach = dev.rick.jjk.progression.investigation.CursedBreaches.find(level, in.id, anchor);
+        h.assertTrue(breach != null, "there is a breach");
+        p.setPos(breach.position().add(1, 0, 0));
+        dev.rick.jjk.progression.investigation.CursedBreaches.useForTest(p, breach);
+        h.assertTrue(CursedRealms.pulling(p), "using it begins the pull");
         CursedRealms.finishPullForTest(p);
         InvestigationState st = InvestigationState.get(level.getServer());
         var a = CursedRealms.arenaOf(st, in.id);

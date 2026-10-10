@@ -48,7 +48,8 @@
       "dev.rick.jjk.test.RifleClientTest",
       "dev.rick.jjk.test.CursedGearClientTest",
       "dev.rick.jjk.test.StoryClientTest",
-      "dev.rick.jjk.test.NewsHouseClientTest"
+      "dev.rick.jjk.test.NewsHouseClientTest",
+      "dev.rick.jjk.test.BreachClientTest"
     ]
   },
   "depends": {

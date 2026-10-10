@@ -3,7 +3,7 @@
   "weight": 0,
   "grade": "GRADE_3",
   "site": "crater",
-  "trigger": "approach",
+  "trigger": "breach",
   "realm": "crater_realm",
   "curses": [
     {

@@ -88,12 +88,6 @@ public final class Investigations {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> CursedRealms.cancelPull(handler.player));
         // Nothing hurts someone being pulled in (the cliff's fall never lands).
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> !(entity instanceof ServerPlayer sp && CursedRealms.pulling(sp)));
-        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (world.isClientSide() || !(player instanceof ServerPlayer sp) || hand != net.minecraft.world.InteractionHand.MAIN_HAND) {
-                return net.minecraft.world.InteractionResult.PASS;
-            }
-            return use(sp, hit.getBlockPos()) ? net.minecraft.world.InteractionResult.SUCCESS : net.minecraft.world.InteractionResult.PASS;
-        });
         ServerPlayerEvents.AFTER_RESPAWN.register((old, now, alive) -> {
             // Died in a realm: they respawn at home as usual; the realm forgets them.
             if (!CursedRealms.inRealm(now)) {
@@ -285,8 +279,12 @@ public final class Investigations {
                 st.markDirty();
             }
             if (in.featureBuilt && !in.marks.isEmpty()) lodgeClues(level, p, in, now);
-            if (d2 > 24 * 24 || !in.featureBuilt) continue;
-            if (fired(p, in, t)) begin(level, p, in, t, st, now);
+        }
+        // Every open (or under-way) incident whose site is built has its breach: the one way in.
+        for (Incident in : List.copyOf(st.incidents.values())) {
+            if ((in.state != Incident.State.OPEN && in.state != Incident.State.ACTIVE) || !in.featureBuilt || !in.dimension.equals(dim)) continue;
+            if (p.position().distanceToSqr(Vec3.atBottomCenterOf(in.site)) > 64 * 64) continue;
+            CursedBreaches.ensure(level, in.id, CursedBreaches.anchor(in));
         }
     }
 
@@ -296,67 +294,8 @@ public final class Investigations {
         return true;
     }
 
-    /** Whether this player has just set the incident off. */
-    public static boolean fired(ServerPlayer p, Incident in, IncidentTemplate t) {
-        Vec3 site = Vec3.atBottomCenterOf(in.site);
-        double dx = p.getX() - site.x, dz = p.getZ() - site.z;
-        return switch (t.trigger()) {
-            // Off the edge, falling, just past where it happened.
-            case JUMP -> dx * dx + dz * dz <= 4.0 * 4.0 && p.getY() < site.y - 1.5 && p.getDeltaMovement().y < -0.25 && !p.onGround()
-                    && dx * in.dirX + dz * in.dirZ > -0.5;
-            case APPROACH -> dx * dx + dz * dz <= 12 * 12 && Math.abs(p.getY() - site.y) < 8;
-            case DESCEND -> p.position().distanceToSqr(Vec3.atBottomCenterOf(Sites.mineEnd(in))) <= 2.5 * 2.5;
-            // The scope is used, never walked into: it has its own deliberate steps (LodgeScope).
-            case SCOPE -> false;
-            case NIGHT -> night(p.level()) && dx * dx + dz * dz <= 12 * 12 && Math.abs(p.getY() - site.y) < 8;
-            case THRESHOLD -> {
-                BlockPos door = in.mark("door");
-                yield door != null && p.position().distanceToSqr(Vec3.atBottomCenterOf(door)) <= 0.9 * 0.9;
-            }
-            // Used, never walked into (the bed, the object: see use()).
-            case SLEEP, INTERACT -> false;
-        };
-    }
-
-    /** Tests: pretend it is (or isn't) night, without touching the world's clock. Null: the real clock. */
-    public static Boolean nightForTest;
-
-    /** After dark (the hours a bed can be slept in). */
-    static boolean night(net.minecraft.world.level.Level level) {
-        if (nightForTest != null) return nightForTest;
-        long t = Math.floorMod(level.getOverworldClockTime(), 24000L);
-        return t >= 12542 && t <= 23459;
-    }
-
     /**
-     * Something at a site was used (right-clicked): a bed whose incident is set off by lying down in it, or the object an
-     * incident is set off by using. True if that set one off (the use is spent on it: you never get to sleep).
-     */
-    public static boolean use(ServerPlayer p, BlockPos pos) {
-        if (CursedRealms.inRealm(p) || CursedRealms.pulling(p) || p.isSpectator()) return false;
-        InvestigationState st = InvestigationState.get(p.level().getServer());
-        String dim = p.level().dimension().identifier().toString();
-        for (Incident in : List.copyOf(st.incidents.values())) {
-            if (in.state != Incident.State.OPEN || !in.dimension.equals(dim)) continue;
-            IncidentTemplate t = in.def();
-            if (t == null) continue;
-            String mark = switch (t.trigger()) {
-                case SLEEP -> "bed";
-                case INTERACT -> "object";
-                default -> null;
-            };
-            if (mark == null) continue;
-            BlockPos m = in.mark(mark);
-            // A bed is two blocks: either half counts.
-            if (m == null || m.distManhattan(pos) > 1) continue;
-            begin((ServerLevel) p.level(), p, in, t, st, p.level().getServer().overworld().getGameTime());
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Sets an incident off for a player: the place takes them. Every cursed-event fight happens in a cursed realm (an
+     * Sets an incident off for a player (they used its {@link CursedBreachEntity breach}): the place takes them. Every cursed-event fight happens in a cursed realm (an
      * incident whose template names no realm, or one this build doesn't have, uses the plain hollow one): the player is
      * held where they stand for a moment while the world goes dark ({@link CursedRealms#pull}), then arrives.
      */

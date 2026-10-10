@@ -3,7 +3,7 @@
   "weight": 0,
   "grade": "GRADE_3",
   "site": "pasture",
-  "trigger": "night",
+  "trigger": "breach",
   "realm": "chapel_realm",
   "curses": [
     {

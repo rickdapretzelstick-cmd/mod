@@ -398,8 +398,9 @@ The path so far:
    units are spent, and **Cursed Glasses** rise out.
 6. **Cursed Glasses** let their wearer perceive curses.
 7. **Battle rooms**: Woodland Mansions and Igloos hide a cursed chamber far below them, reached by a trapdoor set
-   into the building's lowest floor under a carpet and a ladder shaft. The first time anyone enters, the **Finger
-   Bearer** takes shape over the seal at its heart (below).
+   into the building's lowest floor under a carpet and a ladder shaft. Over the seal at its heart hangs a **Cursed
+   Breach** (the same as every incident's): use it and you are taken to the room's realm, a round hall of black stone,
+   where the **Finger Bearer** takes shape (below). Its finger goes to whoever lands the last blow.
 8. **Cursed Finger**: each room's Finger Bearer leaves exactly one when it dies, and a cleared room never fills again.
    It **no longer makes anyone Yuji** (Yuji is earned through his storyline). The world's Yuji, its vessel, can eat
    one: it is absorbed and counted, for the Sukuna progression to come. Anyone else is consumed by it and dies, whatever
@@ -670,13 +671,21 @@ grassland, a hillside for a mine). At the place there are physical traces (flowe
 the grass, a boarded mine entrance), and through Cursed Glasses a faint **trail of cursed residue** leads the last
 stretch. No checklist, no HUD.
 
-| Incident | Grade | What sets it off | Where the fight is |
+**Every incident is entered the same way: through its Cursed Breach.** Report → travel to the area → the Cursed
+Compass → the place itself → a **Cursed Breach** hanging there → **use it (right-click)** → a short pull → its cursed
+realm. A breach is an upright tear in the air: black at its heart, a ragged crimson edge that crawls, cracks running
+out into the air round it, a thin ring turning slowly, motes and dust drawn in and swallowed, a low drone, and a slow
+pulse (faster once someone is already through: use it to join them in the same fight). Nothing else sets an incident
+off: no jump, no bed, no doorway at midnight. Where the breach hangs is the place's story; how you go in never changes.
+
+| Incident | Grade | Where its breach hangs | Where the fight is |
 |---|---|---|---|
-| **A fall from the cliffs** | 3 | jumping off the edge where it happened | pulled into a cursed realm before you land: the cliff, broken off and hanging in a red void |
-| **Livestock lost in the night** | 4 | walking into the pasture after dark | a cursed realm: an endless dead field at night |
-| **The old mine** | 3 | going down to the end of the tunnel | a cursed realm: a low cavern of wet rock |
-| **Nobody will stay in the old house** | 3 | lying down in the abandoned cottage's bed (any hour: you never get to sleep) | a cursed realm: the house's rooms, laid end to end and too long |
-| **Gunshots at the old hunting lodge** (uncommon) | 3 | holding the lodge's mounted scope on what's out in the trees, then using it again | a cursed realm: the woods through the scope, distorted |
+| **A fall from the cliffs** | 3 | at the lip of the cliff, where it happened | the cliff, broken off and hanging in a red void |
+| **Livestock lost in the night** | 4 | in the pasture, among the bones | an endless dead field at night |
+| **The old mine** | 3 | at the far end of the tunnel, deep in the hill | a low cavern of wet rock |
+| **Nobody will stay in the old house** | 3 | inside the abandoned cottage, between the door and the bed | the house's rooms, laid end to end and too long |
+| **Gunshots at the old hunting lodge** (uncommon) | 3 | out in the trees, where the scope shows the figure | the woods through the scope, distorted |
+| Character storylines | – | at each site's centrepiece (the theater's projector, the watchtower's lamp, the storehouse bell, the crater's shard, the chapel altar), or as above for the shared kinds of place | that event's realm |
 
 **The hunting lodge.** Reported as gunshots after sunset round an old hunting lodge, with a landmark that is really
 there (*"beyond the northern ridge, near the spruce forest"*: a ridge only if the ground rises between them, the woods
@@ -685,8 +694,9 @@ the back wall and a rifle scope mounted on the front windowsill. Round it: two a
 and blackened where they were shot at, a line of tracks that just stops, and now and then (far more often at night) a
 distant gunshot with nobody there. Each one you find is noted once (per player, saved with the incident).
 Put your eye to the scope (use it): through Cursed Glasses something out in the trees doesn't belong. Hold the scope
-on it and it resolves into a crooked trail and a figure standing on it, with a heartbeat; use the scope again,
-deliberately, to follow it in. Without perception the spot only "doesn't sit right". Inside is the distorted forest:
+on it and it resolves into a crooked trail and a figure standing on it, with a heartbeat, where the air is torn: the
+lodge's breach is out there, at the end of the trail. Without perception the spot only "doesn't sit right" (the
+breach is there either way; the scope only shows you where to walk). Inside is the distorted forest:
 trunks that kink and lean the wrong way, the same hunting stand again and again, a path that doubles back. It holds the
 **Hunter's Shade** (Grade 3, 48 health): it keeps to the trees, slips out of your line of sight when you look straight
 at it, and closes in cover to cover when you don't. Before it attacks it shows itself: it stops dead in the open, its
@@ -724,9 +734,8 @@ behind. Anyone who sets the incident off while it is open joins the same arena (
 
 - **The transition** (about two seconds): you are held where it caught you, sound dulls to a heartbeat, the edges of
   the screen close in black and pulse twice, the view goes dark, and you arrive; the dark lifts over a second and a
-  half. Nothing hurts you meanwhile, so **the cliff's fall never lands**: you are caught mid-air.
-- **What sets them off** is one generic list every incident template picks from: jumping off a drop, going down to a
-  depth, coming close (or coming close after dark), crossing a threshold, lying in a bed, using an object, a scope.
+  half. Nothing hurts you meanwhile.
+- **What sets them off**: only ever using the incident's Cursed Breach (above).
 - **The way back** is solid ground near where you were taken: where you stood, or (caught mid-jump) the ground back
   from the edge. When the last curse falls, everyone inside is sent there a few seconds later.
 - **Death** respawns you as usual and the arena carries on for the rest. A realm nobody is in for a minute (everyone

@@ -3,7 +3,7 @@
   "weight": 0,
   "grade": "GRADE_3",
   "site": "storehouse",
-  "trigger": "threshold",
+  "trigger": "breach",
   "realm": "fight_club_realm",
   "curses": [
     {

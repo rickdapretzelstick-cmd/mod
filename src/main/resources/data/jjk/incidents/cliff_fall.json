@@ -3,7 +3,7 @@
   "weight": 3,
   "grade": "GRADE_3",
   "site": "cliff",
-  "trigger": "jump",
+  "trigger": "breach",
   "realm": "cliff_realm",
   "curses": [
     {

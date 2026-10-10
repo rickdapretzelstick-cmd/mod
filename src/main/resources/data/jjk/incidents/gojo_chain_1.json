@@ -3,7 +3,7 @@
   "weight": 0,
   "grade": "GRADE_3",
   "site": "tower",
-  "trigger": "night",
+  "trigger": "breach",
   "realm": "distance_realm",
   "curses": [
     {

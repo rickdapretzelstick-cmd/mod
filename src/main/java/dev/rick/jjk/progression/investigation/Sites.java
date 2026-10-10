@@ -139,6 +139,8 @@ public final class Sites {
         place(level, surface(level, back), Blocks.POPPY.defaultBlockState());
         place(level, surface(level, back.offset(in.dirZ, 0, -in.dirX)), Blocks.CANDLE.defaultBlockState());
         place(level, surface(level, back.offset(-in.dirZ, 0, in.dirX)), Blocks.OXEYE_DAISY.defaultBlockState());
+        // The breach hangs right at the lip, where it happened (the site is the ground level there).
+        in.marks.put("breach", in.site.immutable());
     }
 
     // --- Pasture: flat dry grassland ---
@@ -168,6 +170,7 @@ public final class Sites {
             if (i < 2) place(level, at, Blocks.BONE_BLOCK.defaultBlockState().setValue(BlockStateProperties.AXIS, i == 0 ? net.minecraft.core.Direction.Axis.X : net.minecraft.core.Direction.Axis.Z));
         }
         place(level, surface(level, in.site.offset(3, 0, -2)), Blocks.OAK_FENCE.defaultBlockState());
+        in.marks.put("breach", in.site.immutable());
     }
 
     // --- Hillside: ground rising into a slope (a mine entrance faces downhill) ---
@@ -277,6 +280,8 @@ public final class Sites {
         for (int i = 0; i < 4; i++) level.setBlock(base.offset(r.nextBoolean() ? 2 : -2, h - 1, r.nextBoolean() ? 2 : -2), Blocks.COBWEB.defaultBlockState(), 2);
         in.marks.put("door", door.immutable());
         in.marks.put("bed", foot.immutable());
+        // Inside, in the middle of the room, between the door and the bed.
+        in.marks.put("breach", base.immutable());
     }
 
     /** The deepest point of the mine tunnel (where its trigger waits). */

@@ -106,5 +106,6 @@
   "item.jjk.infused_blindfold": "Infused Blindfold",
   "item.jjk.infused_cursed_ring": "Infused Cursed Ring",
   "item.jjk.infused_comb": "Infused Comb",
-  "item.jjk.infused_scratch_off_ticket": "Infused Scratch-Off Ticket"
+  "item.jjk.infused_scratch_off_ticket": "Infused Scratch-Off Ticket",
+  "entity.jjk.cursed_breach": "Cursed Breach"
 }

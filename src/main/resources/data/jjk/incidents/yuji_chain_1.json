@@ -3,7 +3,7 @@
   "weight": 0,
   "grade": "GRADE_3",
   "site": "theater",
-  "trigger": "night",
+  "trigger": "breach",
   "realm": "theater_realm",
   "curses": [
     {

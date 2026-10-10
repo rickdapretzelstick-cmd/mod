@@ -203,6 +203,19 @@ final class FingerBearerFx {
                             0.55f, i == 0 ? 0.05f : 0.14f, 0.05f, 40 + RNG.nextInt(20)).fadeIn();
                 }
             }
+            case "breach_use" -> {
+                // Reaching in: the tear flares and swallows, then the pull.
+                Flashes.flash(pos, 0.4f, 2.6f, CORE, 0.9f, 14, now);
+                implode(level, pos, 2.2, q(26), WARN, 0.1f, 14);
+            }
+            case "breach_close" -> {
+                // The tear seals: a last dark snap and the motes scatter.
+                Flashes.flash(pos, 0.6f, 0.2f, CORE, 0.8f, 10, now);
+                for (int i = 0; i < q(16); i++) {
+                    Vec3 v = new Vec3(RNG.nextGaussian(), RNG.nextGaussian(), RNG.nextGaussian()).normalize().scale(0.15);
+                    add(level, pos, v, Sprite.SMOKE, CORE, 0.6f, 0.15f, 0.02f, 20);
+                }
+            }
             case "curse_realm_pull" -> {
                 Flashes.flash(pos, 0.5f, 3.5f, CORE, 0.85f, 18, now);
                 implode(level, pos, 2.5, q(30), VIOLET, 0.12f, 16);

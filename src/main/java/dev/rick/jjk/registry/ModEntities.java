@@ -55,6 +55,10 @@ public final class ModEntities {
     public static final EntityType<dev.rick.jjk.progression.prison.PrisonRealmEntity> PRISON_REALM = register("prison_realm",
             EntityType.Builder.<dev.rick.jjk.progression.prison.PrisonRealmEntity>of(dev.rick.jjk.progression.prison.PrisonRealmEntity::new, MobCategory.MISC)
                     .sized(0.3f, 0.3f).noSummon().fireImmune().clientTrackingRange(16).updateInterval(2).noLootTable());
+    /** A Cursed Breach: the way into a cursed realm, where an incident is anchored (never saved: the site raises it). */
+    public static final EntityType<dev.rick.jjk.progression.investigation.CursedBreachEntity> CURSED_BREACH = register("cursed_breach",
+            EntityType.Builder.<dev.rick.jjk.progression.investigation.CursedBreachEntity>of(dev.rick.jjk.progression.investigation.CursedBreachEntity::new, MobCategory.MISC)
+                    .sized(1.1f, 1.9f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(10).noLootTable());
     /** The common curses: graded cursed spirits found through investigations. */
     public static final EntityType<dev.rick.jjk.progression.curse.FlyHeadEntity> FLY_HEAD = register("fly_head",
             EntityType.Builder.<dev.rick.jjk.progression.curse.FlyHeadEntity>of(dev.rick.jjk.progression.curse.FlyHeadEntity::new, MobCategory.MONSTER)

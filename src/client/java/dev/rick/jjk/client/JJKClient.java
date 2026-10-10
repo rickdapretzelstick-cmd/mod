@@ -58,6 +58,8 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.FOREST_STALKER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_crawler", 0.7f, 1.15f, 0xFF5A5866));
         EntityRendererRegistry.register(ModEntities.SCHOOL_MAW, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_maw", 0.6f));
         EntityRendererRegistry.register(ModEntities.PRISON_REALM, dev.rick.jjk.client.render.PrisonRealmRenderer::new);
+        EntityRendererRegistry.register(ModEntities.CURSED_BREACH, dev.rick.jjk.client.render.CursedBreachRenderer::new);
+        dev.rick.jjk.progression.investigation.CursedBreachEntity.clientTick = dev.rick.jjk.client.render.CursedBreachRenderer::clientTick;
         EntityRendererRegistry.register(ModEntities.CURSED_ENERGY_SHOT, dev.rick.jjk.client.render.FingerBearerRenderer.Shot::new);
 
         InputHandler.init();

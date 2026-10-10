@@ -3,7 +3,7 @@
   "weight": 2,
   "grade": "GRADE_3",
   "site": "house",
-  "trigger": "sleep",
+  "trigger": "breach",
   "realm": "house_realm",
   "curses": [
     {
