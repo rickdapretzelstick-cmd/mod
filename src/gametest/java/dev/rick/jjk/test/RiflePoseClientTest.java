@@ -141,7 +141,30 @@ public class RiflePoseClientTest implements FabricClientGameTest {
             ctx.waitTicks(12);
             move(ctx, "rf_volley", 4);
             shoot(ctx, "volley", new int[] {90});
+            // Stowing and drawing again, from the side (as anyone watching sees it).
+            ctx.waitTicks(20);
+            SCENE.yaw = 90;
+            ctx.waitTicks(3);
             ctx.runOnClient(mc -> {
+                CursedGear.TEST_HOLSTERED.add(dummy.getId());
+                ClientAnimations.play(dummy.getId(), "kit_holster_back", 1f, mc.level.getGameTime());
+            });
+            for (int t = 1; t <= 7; t += 2) {
+                ctx.waitTicks(t == 1 ? 1 : 2);
+                snap(ctx, "stow_t" + t);
+            }
+            ctx.waitTicks(10);
+            snap(ctx, "stowed");
+            ctx.runOnClient(mc -> {
+                CursedGear.TEST_HOLSTERED.remove(dummy.getId());
+                ClientAnimations.play(dummy.getId(), "kit_draw_back", 1f, mc.level.getGameTime());
+            });
+            for (int t = 1; t <= 9; t += 2) {
+                ctx.waitTicks(t == 1 ? 1 : 2);
+                snap(ctx, "draw_t" + t);
+            }
+            ctx.runOnClient(mc -> {
+                CursedGear.TEST_HOLSTERED.clear();
                 mc.level.removeEntity(dummy.getId(), net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
                 CursedGear.TEST_DRAWN.clear();
             });
