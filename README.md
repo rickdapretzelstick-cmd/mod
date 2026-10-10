@@ -582,7 +582,11 @@ Grade 4 … Special Grade), which is kept apart from Mastery.
 
 ### Village news boards and investigations
 
-Walk into a village and its **news board** goes up by the bell: a weathered board with notices pinned to it. Read it
+Walk into a village and its **news house** goes up by the bell, built in the village's own style (plains, desert,
+savanna, taiga or snowy): a small gabled building, door toward the bell, with the **news board** on its back wall, a
+lectern where someone keeps the record (a librarian's work site, so villagers come and use the place), a desk strewn
+with papers, a bookshelf and a barrel of old notices. The board shows as many pinned notices as the village has news
+(none to four). Where there's no flat open ground for the house, the board stands in the open by the bell. Read it
 (use it). It is local news, not a quest log: missing people, livestock found worried at in the night, strange sounds,
 a fall from the cliffs. Nothing says *curse*, nothing has a marker or a waypoint; a report says roughly where
 (*"the cliffs northeast of the village (a short walk out)"*) and its tone says how bad it is.
