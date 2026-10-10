@@ -28,6 +28,11 @@ import net.minecraft.world.phys.Vec3;
  * placeholder model). Opt-in: screenshots in build/run/clientGameTest/screenshots as rifle*.png.
  */
 public class RifleClientTest implements FabricClientGameTest {
+    private static net.minecraft.client.KeyMapping key(ClientGameTestContext ctx, String name) {
+        return ctx.computeOnClient(mc -> java.util.Arrays.stream(mc.options.keyMappings).filter(k -> k.getName().equals(name)).findFirst()
+                .orElseThrow(() -> new AssertionError("missing key " + name)));
+    }
+
     private static String tp(double x, double y, double z, float yaw, float pitch) {
         return String.format(java.util.Locale.ROOT, "tp @a %.2f %.2f %.2f %.1f %.1f", x, y, z, yaw, pitch);
     }
@@ -40,24 +45,62 @@ public class RifleClientTest implements FabricClientGameTest {
             server.runCommand("gamerule advance_time false");
             server.runCommand("gamemode creative @a");
             server.runCommand("item replace entity @a armor.head with jjk:cursed_glasses");
-            server.runCommand("item replace entity @a weapon.mainhand with jjk:cursed_rifle");
             server.runCommand("tp @a 0 ~ 0 0 0");
+            // The rifle fights from the Cursed Item slot (no technique: its moveset is simply yours), its array learned.
+            dev.rick.jjk.config.JJKConfig.get().rifle.beamCooldown = 20;
+            server.runOnServer(srv -> {
+                ServerPlayer p = srv.getPlayerList().getPlayers().getFirst();
+                dev.rick.jjk.core.character.CharacterService.assign(p, null);
+                dev.rick.jjk.progression.tool.kit.CursedSlot.set(p, new net.minecraft.world.item.ItemStack(dev.rick.jjk.progression.ProgressionItems.CURSED_RIFLE));
+                dev.rick.jjk.progression.tool.kit.CursedKits.update(p);
+                String tree = dev.rick.jjk.progression.tool.CursedTools.CURSED_RIFLE.treeId();
+                dev.rick.jjk.progression.mastery.Mastery.award(p, tree, 5000);
+                for (String n : RifleTests.TO_BEAM) dev.rick.jjk.progression.mastery.Mastery.purchase(p, tree, n);
+            });
             ctx.waitTicks(40);
+            boolean drawn = ctx.computeOnClient(mc -> dev.rick.jjk.client.gear.CursedGear.rifleDrawn(mc.player));
+            if (!drawn) throw new AssertionError("the equipped rifle is drawn");
             ctx.takeScreenshot("rifle1_first_person");
+            net.fabricmc.fabric.api.client.gametest.v1.TestInput input = ctx.getInput();
+            net.minecraft.client.KeyMapping snap = key(ctx, "key.jjk.skill_1"), aim = key(ctx, "key.jjk.skill_2"), ult = key(ctx, "key.jjk.ultimate");
+            // Snap Shot: the rifle snaps up, fires on its tick.
+            input.pressKey(snap);
+            ctx.waitTicks(2);
+            ctx.takeScreenshot("rifle1b_snap_raise");
+            ctx.waitTicks(3);
+            ctx.takeScreenshot("rifle1c_snap_fired");
+            ctx.waitTicks(25);
+            // Aimed Shot: up to the eye, then the scope.
+            input.holdKey(aim);
+            ctx.waitTicks(3);
+            ctx.takeScreenshot("rifle1d_ads_rising");
+            ctx.waitTicks(20);
+            ctx.takeScreenshot("rifle7_scope");
+            input.releaseKey(aim);
+            ctx.waitTicks(25);
+            // First person through the array: braced, charging, firing.
+            input.holdKey(ult);
+            ctx.waitTicks(20);
+            String phase = ctx.computeOnClient(mc -> RifleClient.orIdle(mc.player.getId()).phase.name());
+            if (!phase.equals("DEPLOY") && !phase.equals("CHARGE")) throw new AssertionError("G opens the array: " + phase);
+            ctx.takeScreenshot("rifle1e_fp_deploy");
+            ctx.waitTicks(30);
+            ctx.takeScreenshot("rifle1f_fp_charge");
+            ctx.waitTicks(15);
+            input.releaseKey(ult);
+            ctx.waitTicks(8);
+            ctx.takeScreenshot("rifle1g_fp_beam");
+            ctx.waitTicks(110);
+
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
             ctx.waitTicks(10);
             ctx.takeScreenshot("rifle2_third_person");
-
-            // The array: deploying, then ready (held), seen from the front.
-            // Through the real controls: sneak and hold use.
-            net.fabricmc.fabric.api.client.gametest.v1.TestInput input = ctx.getInput();
-            net.minecraft.client.KeyMapping use = ctx.computeOnClient(mc -> mc.options.keyUse), sneak = ctx.computeOnClient(mc -> mc.options.keyShift);
-            input.holdKey(sneak);
-            ctx.waitTicks(2);
-            input.holdKey(use);
+            server.runOnServer(srv -> RifleServer.setEnergy(srv.getPlayerList().getPlayers().getFirst(), 100));
+            // The array from the front: deploying, then ready (held).
+            input.holdKey(ult);
             ctx.waitTicks(16);
             ctx.takeScreenshot("rifle3_deploying");
-            String phase = ctx.computeOnClient(mc -> RifleClient.orIdle(mc.player.getId()).phase.name());
+            phase = ctx.computeOnClient(mc -> RifleClient.orIdle(mc.player.getId()).phase.name());
             if (!phase.equals("DEPLOY")) throw new AssertionError("the client follows the phase: " + phase);
             ctx.waitTicks(50);
             ctx.takeScreenshot("rifle4_ready");
@@ -65,8 +108,7 @@ public class RifleClientTest implements FabricClientGameTest {
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.THIRD_PERSON_BACK));
             server.runCommand("tp @a 0 ~ 0 -60 0");
             ctx.waitTicks(4);
-            input.releaseKey(use);
-            input.releaseKey(sneak);
+            input.releaseKey(ult);
             ctx.waitTicks(12);
             ctx.takeScreenshot("rifle5_beam");
             ctx.waitTicks(30);
@@ -74,14 +116,10 @@ public class RifleClientTest implements FabricClientGameTest {
             ctx.waitTicks(100);
             phase = ctx.computeOnClient(mc -> RifleClient.orIdle(mc.player.getId()).phase.name());
             if (!phase.equals("IDLE")) throw new AssertionError("back at rest after the beam: " + phase);
-
-            // The scope.
+            float[] err = ctx.computeOnClient(mc -> dev.rick.jjk.client.rifle.RifleStance.errors(mc.player.getId()));
+            if (err == null || err[0] > 1 || err[1] > 1) throw new AssertionError("both hands on the rifle: " + java.util.Arrays.toString(err));
             ctx.runOnClient(mc -> mc.options.setCameraType(CameraType.FIRST_PERSON));
-            input.holdKey(use);
-            ctx.waitTicks(20);
-            ctx.takeScreenshot("rifle7_scope");
-            input.releaseKey(use);
-            ctx.waitTicks(10);
+            dev.rick.jjk.config.JJKConfig.get().rifle.beamCooldown = 240;
 
             // The lodge, its window facing east.
             String[] id = new String[1];
