@@ -26,7 +26,7 @@ public abstract class AvatarRendererMixin {
         net.minecraft.world.item.ItemStack tool = dev.rick.jjk.client.gear.CursedGear.equipped(p);
         if (tool.isEmpty()) {
             state.setData(dev.rick.jjk.client.gear.CursedGear.HOLSTERED, null);
-            dev.rick.jjk.client.rifle.RifleStance.forget(p.getId());
+            dev.rick.jjk.client.rifle.RifleStance.untrack(p.getId());
             return;
         }
         var grip = dev.rick.jjk.client.gear.CursedGear.grip(tool);
@@ -35,10 +35,17 @@ public abstract class AvatarRendererMixin {
         net.minecraft.world.entity.HumanoidArm main = p.getMainArm();
         // Drawn, the tool is what the hands hold (whatever sits in the hotbar slot is put away meanwhile).
         boolean drawn = dev.rick.jjk.client.gear.CursedGear.drawn(p);
-        if (drawn && dev.rick.jjk.progression.tool.rifle.RifleServer.isRifle(tool)) {
+        dev.rick.jjk.client.rifle.RifleStance.Carry carry = null;
+        if (dev.rick.jjk.progression.tool.rifle.RifleServer.isRifle(tool)) {
+            // The rifle's draw and stow take a moment: on the back until the hand has it, in the hands until it's slung.
+            carry = dev.rick.jjk.client.rifle.RifleStance.carry(p, drawn, p.level().getGameTime() + partialTicks);
+            drawn = carry != dev.rick.jjk.client.rifle.RifleStance.Carry.BACK;
+        }
+        if (drawn && carry != null) {
             // The rifle fights with the whole body: its stance places the gun and both hands (RifleStance); nothing is
             // drawn in the hands the vanilla way, and the arms take no vanilla pose of their own.
-            state.setData(dev.rick.jjk.client.rifle.RifleStance.VIEW, dev.rick.jjk.client.rifle.RifleStance.extract(p, state, partialTicks));
+            state.setData(dev.rick.jjk.client.rifle.RifleStance.VIEW, dev.rick.jjk.client.rifle.RifleStance.extract(p, state, partialTicks,
+                    carry == dev.rick.jjk.client.rifle.RifleStance.Carry.STOWING));
             state.rightHandItemState.clear();
             state.leftHandItemState.clear();
             state.rightHandItemStack = net.minecraft.world.item.ItemStack.EMPTY;

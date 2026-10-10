@@ -60,7 +60,10 @@ final class RifleFx {
             // --- Normal shots ---
             case "rifle_shot" -> {
                 RifleClient.shot(id);
+                // Where the server says it landed; seen leaving the end of the barrel as drawn.
                 Vec3 end = pos.add(dir);
+                pos = muzzle(id, pos);
+                d = end.subtract(pos).lengthSqr() > 1e-6 ? end.subtract(pos).normalize() : d;
                 if (drawn) {
                     Flashes.flash(pos, 0.25f, 0.9f, PALE, 1f, 3, now);
                     Flashes.flash(pos, 0.15f, 0.5f, WHITE, 1f, 2, now);
@@ -73,10 +76,8 @@ final class RifleFx {
                         sparks(level, end, d.scale(-1), q(6), 0.3, VIOLET, 0.05f, 6);
                     }
                 }
-                if (mine) {
-                    ScreenEffects.shake(0.12f, 3);
-                    ScreenEffects.fovPunch(0.015f);
-                }
+                // The kick is in the rifle (and a touch of FOV), never a turn of the view: the aim stays put.
+                if (mine) ScreenEffects.fovPunch(0.012f);
             }
             case "rifle_impact" -> {
                 if (drawn) {
@@ -227,9 +228,8 @@ final class RifleFx {
     private static Vec3 muzzle(int id, Vec3 server) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return server;
-        if (mc.player != null && mc.player.getId() == id && mc.options.getCameraType().isFirstPerson()) return server;
         Vec3 m = RifleClient.muzzle(id, mc.level.getGameTime());
-        return m != null && m.distanceToSqr(server) < 1.5 * 1.5 ? m : server;
+        return m != null && m.distanceToSqr(server) < 2.5 * 2.5 ? m : server;
     }
 
     /** The four lenses round the muzzle (the arms' tips). */

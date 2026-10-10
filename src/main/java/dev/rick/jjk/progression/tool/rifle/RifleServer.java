@@ -169,6 +169,15 @@ public final class RifleServer {
         return true;
     }
 
+    /** Why the array can't open right now (still cooling, the reserve too low), or null. */
+    @Nullable
+    public static String beamRefusal(ServerPlayer p) {
+        State s = state(p);
+        if (p.level().getGameTime() < s.beamReadyAt) return "The array is still cooling.";
+        if (energy(p) < RifleRules.beamCost(p)) return "The reserve is too low to open the array.";
+        return null;
+    }
+
     /** A kit key let go: the same as letting go of use. */
     public static void kitRelease(ServerPlayer p) {
         State s = STATES.get(p.getUUID());
@@ -243,17 +252,10 @@ public final class RifleServer {
         }
         setEnergy(p, energy(p) - cost);
         p.getCooldowns().addCooldown(stack, RifleRules.shotInterval(p));
-        boolean scoped = s.aimTicks >= 4;
-        float[] drift = RifleAim.drift(level.getGameTime(), p.getId(), s.aimTicks, RifleRules.sway(p), RifleRules.settleTicks(p), scoped, cfg().hipSwayDegrees);
-        Vec3 dir = RifleAim.apply(p.getYRot(), p.getXRot(), drift);
-        Vec3 from = p.getEyePosition();
-        double range = cfg().shotRange;
-        var clip = level.clip(new ClipContext(from, from.add(dir.scale(range)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
-        double reach = clip.getType() == HitResult.Type.MISS ? range : clip.getLocation().distanceTo(from);
-        LivingEntity target = firstAlong(level, p, from, dir, reach);
-        double at = target == null ? reach : target.getBoundingBox().inflate(0.25).clip(from, from.add(dir.scale(reach))).map(v -> v.distanceTo(from)).orElse(reach);
-        Vec3 end = from.add(dir.scale(at));
-        Vec3 muzzle = muzzle(p, dir);
+        // Exactly where the crosshair is: the view's own ray decides the hit; the muzzle is only where it's seen to leave.
+        RifleAim.Solution aim = RifleAim.solve(level, p, cfg().shotRange);
+        LivingEntity target = aim.target();
+        Vec3 muzzle = aim.muzzle(), end = aim.point(), dir = aim.dir();
         Fx.play(level, "rifle_shot", muzzle, end.subtract(muzzle), target != null ? 1f : 0f, p.getId());
         Fx.sound(level, muzzle, SoundEvents.FIREWORK_ROCKET_BLAST, 1.6f, 0.55f);
         Fx.sound(level, muzzle, SoundEvents.GENERIC_EXPLODE, 0.35f, 1.9f);
@@ -262,29 +264,18 @@ public final class RifleServer {
             float dmg = target instanceof GradedCurse ? cfg().shotDamage : RifleRules.shotDamage(p);
             HitResolver.resolve(Hit.builder(p, "rifle_shot").damage(dmg).tag(AttackTag.PROJECTILE).knockback(Knockback.directional(dir, 0.35, 0.08))
                     .hitstun(6).origin(muzzle).noComboScaling().fx("curse_bite", 0.7f).build(), target);
-        } else if (clip.getType() != HitResult.Type.MISS) {
+        } else if (aim.struck()) {
             Fx.play(level, "rifle_impact", end, dir.scale(-1), 1f, p.getId());
         }
+        lastShot = aim;
     }
 
-    /** The first living thing the round meets before {@code reach}. */
-    @Nullable
-    static LivingEntity firstAlong(ServerLevel level, ServerPlayer p, Vec3 from, Vec3 dir, double reach) {
-        Vec3 to = from.add(dir.scale(reach));
-        LivingEntity best = null;
-        double bestT = Double.MAX_VALUE;
-        List<LivingEntity> near = level.getEntitiesOfClass(LivingEntity.class, new AABB(from, to).inflate(1.0),
-                e -> e != p && e.isAlive() && !e.isSpectator() && Targeting.canTarget(p, e));
-        for (LivingEntity e : near) {
-            Optional<Vec3> hit = e.getBoundingBox().inflate(0.25).clip(from, to);
-            if (hit.isEmpty()) continue;
-            double t = hit.get().distanceToSqr(from);
-            if (t < bestT) {
-                bestT = t;
-                best = e;
-            }
-        }
-        return best;
+    /** The last shot's aiming (tests). */
+    @Nullable public static RifleAim.Solution lastShot;
+
+    /** Where the beam goes: from the muzzle toward what the crosshair is on (or along the aim, at its full reach). */
+    static Vec3 beamDir(ServerLevel level, ServerPlayer p) {
+        return RifleAim.solve(level, p, cfg().beamRange).visualDir();
     }
 
     /** Where the barrel ends (the model's beam_origin, held at the right side). */
@@ -318,8 +309,8 @@ public final class RifleServer {
         }
         if (at == null && BeamClashManager.tryCounter(Casters.get(p))) return true;
         setEnergy(p, energy(p) - cost);
-        Vec3 dir = at == null ? p.getLookAngle() : at.subtract(p.getEyePosition()).normalize();
-        s.beam.fire(muzzle(p, dir), dir, RifleRules.beamTicks(p));
+        Vec3 dir = at == null ? beamDir(level, p) : at.subtract(muzzle(p, p.getLookAngle())).normalize();
+        s.beam.fire(muzzle(p, RifleAim.direction(p)), dir, RifleRules.beamTicks(p));
         set(p, s, Phase.FIRE, s.beam.lifetime());
         return true;
     }
@@ -387,7 +378,8 @@ public final class RifleServer {
         switch (s.phase) {
             case IDLE -> {}
             case AIM -> {
-                if (!using) set(p, s, Phase.IDLE, 0);
+                // Sprinting drops the scope (no shot).
+                if (!using || p.isSprinting()) set(p, s, Phase.IDLE, 0);
                 else s.aimTicks++;
             }
             case DEPLOY, CHARGE, READY -> {
@@ -395,7 +387,7 @@ public final class RifleServer {
                     cancel(level, p, s, null);
                     return;
                 }
-                if (s.beam != null) s.beam.aim(muzzle(p, p.getLookAngle()), p.getLookAngle());
+                if (s.beam != null) s.beam.aim(muzzle(p, RifleAim.direction(p)), beamDir(level, p));
                 if (s.phase == Phase.DEPLOY && s.age >= s.duration) {
                     set(p, s, Phase.CHARGE, RifleRules.chargeTicks(p));
                 } else if (s.phase == Phase.CHARGE) {

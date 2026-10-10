@@ -21,6 +21,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
@@ -79,6 +80,8 @@ public class RifleTests {
      */
     static boolean press(ServerPlayer p) {
         AbilitySlot slot = p.isShiftKeyDown() && RifleRules.beamUnlocked(p) ? AbilitySlot.ULTIMATE : AbilitySlot.SKILL_2;
+        // The array is the rifle's ultimate: it needs the meter full.
+        if (slot == AbilitySlot.ULTIMATE) Casters.get(p).setAwakening(Casters.get(p).maxAwakening());
         Casters.get(p).input(slot, true, 0, 0, null);
         return RifleServer.phase(p) == RifleServer.Phase.AIM || RifleServer.phase(p) == RifleServer.Phase.DEPLOY;
     }
@@ -376,6 +379,109 @@ public class RifleTests {
         } finally {
             JJKConfig.get().mastery.enabled = true;
         }
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 40, environment = ENV)
+    public void theArrayNeedsAFullMeter(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
+        learn(p, TO_BEAM);
+        var c = Casters.get(p);
+        c.setAwakening(c.maxAwakening() * 0.9f);
+        c.input(AbilitySlot.ULTIMATE, true, 0, 0, null);
+        h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.IDLE, "short of a full meter: nothing");
+        c.input(AbilitySlot.ULTIMATE, false, 0, 0, null);
+        c.setAwakening(c.maxAwakening());
+        c.input(AbilitySlot.ULTIMATE, true, 0, 0, null);
+        h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.DEPLOY, "full: the arms deploy");
+        h.assertTrue(c.awakening() < 1f, "and the meter is spent: " + c.awakening());
+        letGo(p);
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 40, environment = ENV)
+    public void aRifleFightingFillsTheMeter(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
+        TrainingDummy d = dummy(h, 1.5, 6.5);
+        face(p, d.getBoundingBox().getCenter());
+        var c = Casters.get(p);
+        h.assertTrue(c.character() == null, "no technique, just the rifle");
+        float before = c.awakening();
+        RifleServer.kitShot(p);
+        h.assertTrue(c.awakening() > before, "a landed shot builds the meter: " + before + " -> " + c.awakening());
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 40, environment = ENV)
+    public void shotsGoExactlyWhereTheViewPoints(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
+        // Several aims (level, up, down, to the sides): the round lands on the view's own ray every time, no spread.
+        float[][] aims = {{0, 0}, {35, -20}, {-60, 25}, {120, 8}, {-150, -40}};
+        for (float[] a : aims) {
+            p.getCooldowns().removeCooldown(p.getCooldowns().getCooldownGroup(rifle(p)));
+            RifleServer.setEnergy(p, JJKConfig.get().rifle.capacity);
+            p.setYRot(a[0]);
+            p.setYHeadRot(a[0]);
+            p.setXRot(a[1]);
+            RifleServer.lastShot = null;
+            for (int i = 0; i < 3; i++) {
+                p.getCooldowns().removeCooldown(p.getCooldowns().getCooldownGroup(rifle(p)));
+                RifleServer.kitShot(p);
+                var shot = RifleServer.lastShot;
+                h.assertTrue(shot != null, "fired at " + a[0] + "/" + a[1]);
+                Vec3 view = p.getViewVector(1f);
+                Vec3 toPoint = shot.point().subtract(p.getEyePosition());
+                if (!shot.blocked()) {
+                    double off = toPoint.normalize().subtract(view).length();
+                    h.assertTrue(off < 1e-4, "the point lies on the view ray (" + a[0] + "/" + a[1] + "): " + off);
+                }
+                Vec3 fromMuzzle = shot.point().subtract(shot.muzzle()).normalize();
+                h.assertTrue(shot.visualDir().subtract(fromMuzzle).length() < 1e-4, "the tracer runs from the muzzle to that point");
+            }
+        }
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 60, environment = ENV)
+    public void combatModeOffPutsTheRifleAwayAndOnBringsItBack(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
+        h.assertTrue(RifleServer.wielding(p) && Boolean.TRUE.equals(p.getAttached(dev.rick.jjk.registry.ModAttachments.TOOL_DRAWN)), "drawn");
+        h.assertTrue(press(p), "the scope comes up");
+        CursedKits.setCombatMode(p, false);
+        RifleServer.tickForTest(p);
+        h.assertTrue(!RifleServer.wielding(p) && !Boolean.TRUE.equals(p.getAttached(dev.rick.jjk.registry.ModAttachments.TOOL_DRAWN)), "Combat Mode off: holstered");
+        h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.IDLE, "and the scope is down");
+        h.assertTrue(!CursedKits.switchMoveset(p), "it can't be drawn while Combat Mode is off");
+        CursedKits.setCombatMode(p, true);
+        h.assertTrue(RifleServer.wielding(p), "Combat Mode back on: drawn again");
+        // With no technique, X holsters it and draws it again.
+        var c = Casters.get(p);
+        for (int i = 0; i < JJKConfig.get().cursedTools.switchLockTicks + 2; i++) c.tick();
+        h.assertTrue(CursedKits.switchMoveset(p) && !RifleServer.wielding(p), "X holsters it");
+        for (int i = 0; i < JJKConfig.get().cursedTools.switchLockTicks + 2; i++) c.tick();
+        h.assertTrue(CursedKits.switchMoveset(p) && RifleServer.wielding(p), "X draws it");
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 40, environment = ENV)
+    public void creativeTakingTheRifleOutOfTheSlotUnequipsIt(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.CREATIVE);
+        h.assertTrue(Casters.get(p).toolKit() != null, "equipped");
+        int slot = -1;
+        for (int i = 0; i < p.inventoryMenu.slots.size(); i++) if (p.inventoryMenu.getSlot(i) instanceof dev.rick.jjk.progression.tool.kit.CursedItemSlot) slot = i;
+        h.assertTrue(slot > 45, "the Cursed Item slot comes after the vanilla ones: " + slot);
+        p.connection.handleSetCreativeModeSlot(new net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket(slot, ItemStack.EMPTY));
+        h.assertTrue(CursedSlot.get(p).isEmpty(), "the server took it out");
+        h.assertTrue(Casters.get(p).toolKit() == null && !RifleServer.wielding(p), "and the kit is gone");
+        p.connection.handleSetCreativeModeSlot(new net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket(slot, new ItemStack(ProgressionItems.CURSED_RIFLE)));
+        h.assertTrue(Casters.get(p).toolKit() != null, "put back in Creative: equipped again");
+        p.connection.handleSetCreativeModeSlot(new net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket(slot, new ItemStack(Items.DIAMOND)));
+        h.assertTrue(RifleServer.isRifle(CursedSlot.get(p)), "only a cursed tool fits");
         h.succeed();
     }
 }

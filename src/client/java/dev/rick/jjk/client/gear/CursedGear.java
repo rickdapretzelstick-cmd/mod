@@ -41,7 +41,8 @@ public final class CursedGear {
 
     /** The tool to show in the main hand: the drawn tool (in place of what the hand slot has), else what is really there. */
     public static ItemStack mainHand(Player p, ItemStack real) {
-        return drawn(p) ? equipped(p) : real;
+        // The rifle is never a hand item: its stance draws it (third person) and RifleFirstPerson (first).
+        return drawn(p) && !dev.rick.jjk.progression.tool.rifle.RifleServer.isRifle(equipped(p)) ? equipped(p) : real;
     }
 
     /** Whether the drawn tool is the Cursed Rifle (its HUD, its first-person pose). */

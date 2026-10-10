@@ -34,8 +34,8 @@ public final class RifleFirstPerson {
     public static void submit(PoseStack ps, SubmitNodeCollector c, AvatarRenderState s, RifleStance.View v, int light) {
         BbModel model = BbModels.get(RifleClient.RIG);
         if (model == null || s.isInvisible) return;
-        boolean scopedIn = v.phase == RifleServer.Phase.AIM && v.ads > 0.95f && v.phaseAge >= 4;
-        if (scopedIn) return;
+        // Fully through the scope, the optic is all there is to see.
+        if (RifleScope.overlay() >= 0.999f) return;
         float side = v.leftHanded ? -1 : 1;
         boolean aiming = v.phase == RifleServer.Phase.AIM || v.snap >= 0 && v.snap < 11 || v.volley >= 0;
         float aim = aiming ? v.ads : 0;
@@ -86,6 +86,14 @@ public final class RifleFirstPerson {
         float bob = (float) Math.sin(v.walkPos * 0.6662f) * v.walkSpeed * (1 - brace);
         butt.add(0.008f * bob, Math.abs(bob) * 0.01f, 0);
 
+        // Drawn, it comes up from below the view as the stance takes over; stowed, it drops away the same way.
+        float out = 1 - v.weight;
+        if (out > 0.001f) {
+            float k = out * out * (3 - 2 * out);
+            butt.add(0.10f * side * k, -0.70f * k, 0.12f * k);
+            down += 40 * k;
+            roll += 25 * side * k;
+        }
         Matrix3f rot = new Matrix3f().rotationYXZ(in * side * Mth.DEG_TO_RAD, -down * Mth.DEG_TO_RAD, roll * side * Mth.DEG_TO_RAD);
         Matrix4f rifle = new Matrix4f().translate(butt).mul(new Matrix4f().set(rot)).scale(RifleStance.SCALE / 16f)
                 .translate(-RifleStance.BUTT.x, -RifleStance.BUTT.y, -RifleStance.BUTT.z);
@@ -94,6 +102,7 @@ public final class RifleFirstPerson {
         ps.mulPose(rifle);
         BbModel.Posing pose = RikaRenderer.posing(v.model);
         c.submitCustomGeometry(ps, RenderTypes.entityCutout(JJK.id("textures/entity/cursed_rifle.png")), (p, buf) -> model.render(p, buf, pose, light, 0xFFFFFFFF));
+        recordMuzzle(v.id, new Matrix4f(ps.last().pose()).transformPosition(model.locate("beam_origin", pose, new Vector3f())));
         ps.popPose();
 
         // The arms, from just below the view onto the grip and the fore-end.
@@ -105,6 +114,23 @@ public final class RifleFirstPerson {
         boolean rightMain = side > 0;
         arm(ps, c, light, renderer, skin, s, rightMain, grip, new Vector3f(0.55f * side, -1.25f, 0.15f));
         arm(ps, c, light, renderer, skin, s, !rightMain, fore, new Vector3f(-0.30f * side, -1.3f, -0.15f));
+    }
+
+    /**
+     * Where the barrel's end is in the world, as seen: the hands are drawn with their own field of view (70), so the
+     * point is moved to where the world's projection shows it at the same spot on screen. Shots and the beam start there.
+     */
+    private static void recordMuzzle(int id, Vector3f rel) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        var cam = mc.gameRenderer.mainCamera();
+        org.joml.Quaternionf rot = new org.joml.Quaternionf(cam.rotation());
+        Vector3f view = new org.joml.Quaternionf(rot).conjugate().transform(new Vector3f(rel));
+        float k = (float) (Math.tan(Math.toRadians(cam.getFov() / 2)) / Math.tan(Math.toRadians(70 / 2.0)));
+        view.x *= k;
+        view.y *= k;
+        Vector3f world = rot.transform(view);
+        RifleClient.muzzleDrawn(id, cam.position().add(world.x, world.y, world.z), mc.level.getGameTime());
     }
 
     /** One arm laid straight from {@code from} (off screen) to {@code target}, the fist on it. */

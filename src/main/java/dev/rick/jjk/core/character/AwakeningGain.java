@@ -45,7 +45,8 @@ public final class AwakeningGain {
     }
 
     public static void gain(LivingEntity e, float amount) {
-        AbilityCaster c = Casters.active(e);
-        if (c != null) c.gainAwakening(amount);
+        // Anyone fighting with this mod's kit builds it: a technique, or a cursed tool's moveset.
+        AbilityCaster c = Casters.getOrNull(e);
+        if (c != null && c.armed()) c.gainAwakening(amount);
     }
 }

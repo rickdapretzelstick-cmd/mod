@@ -80,6 +80,10 @@ public class JJKClient implements ClientModInitializer {
         HudElementRegistry.addLast(JJK.id("story_overlay"), (g, delta) -> dev.rick.jjk.client.hud.StoryOverlay.render(g, delta));
         HudElementRegistry.addLast(JJK.id("realm_transition"), (g, delta) -> dev.rick.jjk.client.hud.RealmTransitionOverlay.render(g, delta));
         HudElementRegistry.addLast(JJK.id("rifle_hud"), (g, delta) -> dev.rick.jjk.client.rifle.RifleHud.render(g));
+        // Under the rifle's scope its own reticle is the aim: the vanilla crosshair stands down.
+        HudElementRegistry.replaceElement(net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CROSSHAIR, vanilla -> (g, delta) -> {
+            if (!dev.rick.jjk.client.rifle.RifleHud.hidesCrosshair()) vanilla.extractRenderState(g, delta);
+        });
         HudElementRegistry.addLast(JJK.id("prison_view"), (g, delta) -> dev.rick.jjk.client.prison.PrisonClient.renderHud(g));
         // Every custom HUD layer is skipped in Vanilla Minecraft mode.
         HudElementRegistry.addLast(JJK.id("combat_hud"), (g, delta) -> {
@@ -121,6 +125,8 @@ public class JJKClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(JJKClient::tick);
         ClientTickEvents.START_CLIENT_TICK.register(InputHandler::beforeVanillaKeys);
         ClientTickEvents.START_CLIENT_TICK.register(dev.rick.jjk.client.prison.PrisonClient::beforeInput);
+        // The server holsters a drawn cursed tool while Combat Mode is off: tell it where this client stands.
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> CombatMode.sync());
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             InputHandler.releaseAll(null);
             ClientState.reset();

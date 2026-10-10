@@ -152,7 +152,8 @@ public final class InputHandler {
         }
         boolean canAct = mc.gui.screen() == null && ClientState.hasCharacter() && player.isAlive();
         while (switchKey.consumeClick()) {
-            if (canAct && ClientState.canSwitchMoveset()) {
+            // Drawing or holstering a cursed tool works with no technique too.
+            if (mc.gui.screen() == null && player.isAlive() && ClientState.canSwitchMoveset()) {
                 // Keys held across a switch would release onto the other moveset: let them go first.
                 releaseAll(player);
                 ClientPlayNetworking.send(new dev.rick.jjk.core.net.MovesetSwitchPayload());

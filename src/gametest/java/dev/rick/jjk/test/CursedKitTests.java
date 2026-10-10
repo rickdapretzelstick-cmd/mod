@@ -121,6 +121,8 @@ public class CursedKitTests {
         h.assertTrue(d == CursedTools.CURSED_CLEAVER, "a basic attack in the tool's moveset is the Cleaver's");
         h.assertTrue("tool/cursed_cleaver".equals(d.treeId()), "booked to its own tree");
         CharacterService.assign(p, Characters.get("gojo"));
+        // (A tool drawn only because there was no technique is holstered once there is one.)
+        CursedKits.update(p);
         h.assertTrue(!c.usingTool() && CursedKits.credited(p) == null, "the technique's moves are not the tool's");
         h.succeed();
     }

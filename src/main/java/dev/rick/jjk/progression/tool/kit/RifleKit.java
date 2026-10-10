@@ -369,11 +369,23 @@ public final class RifleKit extends CursedToolKit {
             return 4;
         }
 
+        /** The rifle's ultimate: only with the meter full, and it spends all of it. */
+        @Override
+        public float awakeningCost(dev.rick.jjk.core.ability.AbilityCaster caster) {
+            return caster.maxAwakening();
+        }
+
         @Override
         public @Nullable String checkActivation(AbilityContext ctx) {
             if (!(ctx.user() instanceof ServerPlayer p) || !RifleServer.wielding(p)) return "no_tool";
             if (!RifleRules.beamUnlocked(p)) return "mastery";
             if (RifleServer.phase(p) != RifleServer.Phase.IDLE && RifleServer.phase(p) != RifleServer.Phase.AIM) return "busy";
+            // Refused before the meter is spent, never after.
+            String why = RifleServer.beamRefusal(p);
+            if (why != null) {
+                p.sendOverlayMessage(net.minecraft.network.chat.Component.literal(why).withStyle(net.minecraft.ChatFormatting.GRAY));
+                return "busy";
+            }
             return null;
         }
 

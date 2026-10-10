@@ -48,6 +48,8 @@ public abstract class CameraMixin {
             setRotation((float) prison[3], (float) prison[4]);
             return;
         }
+        // Never shake the view under the rifle's scope: what's centred is what's hit.
+        if (dev.rick.jjk.client.rifle.RifleScope.steady()) return;
         float dy = ScreenEffects.yawOffset(partialTicks), dx = ScreenEffects.pitchOffset(partialTicks);
         if (dy != 0 || dx != 0) setRotation(yRot + dy, xRot + dx);
     }

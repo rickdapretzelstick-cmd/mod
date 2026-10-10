@@ -79,6 +79,8 @@ public class RifleClientTest implements FabricClientGameTest {
             input.releaseKey(aim);
             ctx.waitTicks(25);
             // First person through the array: braced, charging, firing.
+            server.runOnServer(srv -> { var c = dev.rick.jjk.core.ability.Casters.get(srv.getPlayerList().getPlayers().getFirst()); c.setAwakening(c.maxAwakening()); });
+            ctx.waitTicks(2);
             input.holdKey(ult);
             ctx.waitTicks(20);
             String phase = ctx.computeOnClient(mc -> RifleClient.orIdle(mc.player.getId()).phase.name());
@@ -97,6 +99,8 @@ public class RifleClientTest implements FabricClientGameTest {
             ctx.takeScreenshot("rifle2_third_person");
             server.runOnServer(srv -> RifleServer.setEnergy(srv.getPlayerList().getPlayers().getFirst(), 100));
             // The array from the front: deploying, then ready (held).
+            server.runOnServer(srv -> { var c = dev.rick.jjk.core.ability.Casters.get(srv.getPlayerList().getPlayers().getFirst()); c.setAwakening(c.maxAwakening()); });
+            ctx.waitTicks(2);
             input.holdKey(ult);
             ctx.waitTicks(16);
             ctx.takeScreenshot("rifle3_deploying");

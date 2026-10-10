@@ -79,6 +79,8 @@ public final class RifleStance {
         /** Ticks into each move clip, or -1. */
         public float snap = -1, volley = -1, flare = -1, bash = -1;
         public boolean leftHanded;
+        /** Being put away: the stance lets go, the rifle goes with the dominant hand over the shoulder. */
+        public boolean stowing;
         // Smoothed blends (0..1).
         public float ads, brace, sprintW, air, land, weight, charge;
         /** The rifle's own clip pose (its arms, iris). */
@@ -105,8 +107,55 @@ public final class RifleStance {
         SMOOTH.remove(id);
     }
 
+    // --- Drawn, holstered, and the moments between ---
+
+    /** Where the rifle is: slung on the back, in the hands, or on its way back over the shoulder. */
+    public enum Carry { BACK, HANDS, STOWING }
+
+    /** Ticks into the draw before the hand has it off the back (the draw clip's reach over the shoulder). */
+    public static final float DRAW_REACH = 3f;
+    /** Ticks the stow takes before it is slung again (the holster clip's swing up to the shoulder). */
+    public static final float STOW_TICKS = 5f;
+
+    private static final class Track {
+        boolean drawn;
+        float since = -1000;
+        boolean fromHands;
+    }
+
+    private static final Map<Integer, Track> TRACK = new HashMap<>();
+
+    /** Where {@code p}'s rifle is at {@code now}, given whether the server says it's drawn. */
+    public static Carry carry(Player p, boolean drawn, float now) {
+        Track t = TRACK.get(p.getId());
+        if (t == null) {
+            // First sight: already where it is, no draw or stow to play.
+            t = new Track();
+            t.drawn = drawn;
+            TRACK.put(p.getId(), t);
+        } else if (t.drawn != drawn) {
+            t.fromHands = !drawn && current(t, now) == Carry.HANDS;
+            t.drawn = drawn;
+            t.since = now;
+        }
+        return current(t, now);
+    }
+
+    private static Carry current(Track t, float now) {
+        float age = now - t.since;
+        if (t.drawn) return age < DRAW_REACH ? Carry.BACK : Carry.HANDS;
+        return t.fromHands && age < STOW_TICKS ? Carry.STOWING : Carry.BACK;
+    }
+
+    /** A player whose rifle is gone (unequipped, or out of sight): nothing of its carry is kept. */
+    public static void untrack(int id) {
+        TRACK.remove(id);
+        SMOOTH.remove(id);
+    }
+
     public static void clear() {
         SMOOTH.clear();
+        TRACK.clear();
         ERRORS.clear();
     }
 
@@ -118,8 +167,9 @@ public final class RifleStance {
 
     // --- Extract ---
 
-    public static View extract(Player p, AvatarRenderState s, float partial) {
+    public static View extract(Player p, AvatarRenderState s, float partial, boolean stowing) {
         View v = new View();
+        v.stowing = stowing;
         float now = p.level().getGameTime() + partial;
         int id = p.getId();
         v.id = id;
@@ -177,7 +227,8 @@ public final class RifleStance {
         if (v.ground) m.fall = 0;
         m.wasGround = v.ground;
         m.land *= (float) Math.pow(0.72, dt);
-        m.weight = approach(m.weight, 1f, 0.2f, dt);
+        // Drawn, the stance takes over from the draw; stowing, it lets go quickly, the hands following the holster.
+        m.weight = v.stowing ? approach(m.weight, 0f, 0.45f, dt) : approach(m.weight, 1f, 0.25f, dt);
         v.ads = m.ads;
         v.brace = m.brace;
         v.sprintW = m.sprint;

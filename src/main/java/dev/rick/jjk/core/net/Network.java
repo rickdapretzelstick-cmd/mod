@@ -22,6 +22,7 @@ public final class Network {
         c2s.register(CharacterSelectPayload.TYPE, CharacterSelectPayload.CODEC);
         c2s.register(MasteryPurchasePayload.TYPE, MasteryPurchasePayload.CODEC);
         c2s.register(MovesetSwitchPayload.TYPE, MovesetSwitchPayload.CODEC);
+        c2s.register(CombatModePayload.TYPE, CombatModePayload.CODEC);
         c2s.register(InvestigatePayload.TYPE, InvestigatePayload.CODEC);
         c2s.register(RhythmInputPayload.TYPE, RhythmInputPayload.CODEC);
         c2s.register(BeamClashInputPayload.TYPE, BeamClashInputPayload.CODEC);
@@ -76,6 +77,8 @@ public final class Network {
                 dev.rick.jjk.progression.investigation.CursedCompass.investigate(ctx.player(), p.incident()));
         ServerPlayNetworking.registerGlobalReceiver(MovesetSwitchPayload.TYPE, (p, ctx) ->
                 dev.rick.jjk.progression.tool.kit.CursedKits.switchMoveset(ctx.player()));
+        ServerPlayNetworking.registerGlobalReceiver(CombatModePayload.TYPE, (p, ctx) ->
+                dev.rick.jjk.progression.tool.kit.CursedKits.setCombatMode(ctx.player(), p.on()));
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
             AbilityCaster caster = Casters.armed(player);
