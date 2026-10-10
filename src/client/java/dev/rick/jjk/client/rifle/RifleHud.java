@@ -7,7 +7,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.util.Mth;
 
 /**
- * The Cursed Rifle's screen for whoever holds it:
+ * The Cursed Rifle's screen for whoever has it drawn (from the Cursed Item slot):
  * <ul>
  *   <li>through the scope, a dark scope ring and a reticle that drifts exactly as the server's aim does (where it sits
  *   is where the round goes), settling the longer the aim is held;</li>
@@ -34,7 +34,7 @@ public final class RifleHud {
             }
             return;
         }
-        if (!RifleServer.isRifle(mc.player.getMainHandItem())) return;
+        if (!dev.rick.jjk.client.gear.CursedGear.rifleDrawn(mc.player)) return;
         RifleClient.State s = RifleClient.orIdle(mc.player.getId());
         Font font = mc.font;
         float time = mc.level.getGameTime() + mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);

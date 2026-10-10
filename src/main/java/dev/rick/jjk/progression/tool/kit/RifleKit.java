@@ -56,6 +56,15 @@ public final class RifleKit extends CursedToolKit {
         bind(AbilitySlot.ULTIMATE, new Array());
     }
 
+    /**
+     * Every rifle move needs the rifle drawn from the Cursed Item slot (its moveset in use: never just held) and at rest
+     * (no scope up, no array out).
+     */
+    static @Nullable String ready(AbilityContext ctx) {
+        if (!(ctx.user() instanceof ServerPlayer p) || !RifleServer.wielding(p)) return "no_tool";
+        return RifleServer.busy(p) ? "busy" : null;
+    }
+
     static final class Snap extends ToolMove {
         Snap() {
             super("rf_snap", CursedTools.CURSED_RIFLE, null);
@@ -73,8 +82,8 @@ public final class RifleKit extends CursedToolKit {
 
         @Override
         public @Nullable String checkActivation(AbilityContext ctx) {
-            if (!(ctx.user() instanceof ServerPlayer p) || RifleServer.busy(p)) return "busy";
-            return super.checkActivation(ctx);
+            String why = ready(ctx);
+            return why != null ? why : super.checkActivation(ctx);
         }
 
         @Override
@@ -101,8 +110,8 @@ public final class RifleKit extends CursedToolKit {
 
         @Override
         public @Nullable String checkActivation(AbilityContext ctx) {
-            if (!(ctx.user() instanceof ServerPlayer p) || RifleServer.busy(p)) return "busy";
-            return super.checkActivation(ctx);
+            String why = ready(ctx);
+            return why != null ? why : super.checkActivation(ctx);
         }
 
         @Override
@@ -173,8 +182,8 @@ public final class RifleKit extends CursedToolKit {
 
         @Override
         public @Nullable String checkActivation(AbilityContext ctx) {
-            if (!(ctx.user() instanceof ServerPlayer p) || RifleServer.busy(p)) return "busy";
-            return super.checkActivation(ctx);
+            String why = ready(ctx);
+            return why != null ? why : super.checkActivation(ctx);
         }
 
         @Override
@@ -194,7 +203,12 @@ public final class RifleKit extends CursedToolKit {
 
                 @Override
                 public void tick() {
-                    if (age % 4 == 1 && fired < cfg().rfVolleyShots && user instanceof ServerPlayer p) {
+                    // Holstered or unequipped mid-volley: the rest of it never fires.
+                    if (user instanceof ServerPlayer w && !RifleServer.wielding(w)) {
+                        finish();
+                        return;
+                    }
+                    if (age % 4 == 1 && fired < cfg().rfVolleyShots && user instanceof ServerPlayer p && RifleServer.wielding(p)) {
                         fired++;
                         // Each round cycles the bolt on its own; the volley ignores the interval between them.
                         p.getCooldowns().removeCooldown(p.getCooldowns().getCooldownGroup(RifleServer.weapon(p)));
@@ -219,6 +233,12 @@ public final class RifleKit extends CursedToolKit {
         @Override
         protected int baseCooldown() {
             return cfg().rfFlareCooldown;
+        }
+
+        @Override
+        public @Nullable String checkActivation(AbilityContext ctx) {
+            String why = ready(ctx);
+            return why != null ? why : super.checkActivation(ctx);
         }
 
         @Override
@@ -253,6 +273,12 @@ public final class RifleKit extends CursedToolKit {
         @Override
         protected int baseCooldown() {
             return 70;
+        }
+
+        @Override
+        public @Nullable String checkActivation(AbilityContext ctx) {
+            String why = ready(ctx);
+            return why != null ? why : super.checkActivation(ctx);
         }
 
         @Override
@@ -296,7 +322,7 @@ public final class RifleKit extends CursedToolKit {
 
         @Override
         public @Nullable String checkActivation(AbilityContext ctx) {
-            if (!(ctx.user() instanceof ServerPlayer p)) return "busy";
+            if (!(ctx.user() instanceof ServerPlayer p) || !RifleServer.wielding(p)) return "no_tool";
             if (!RifleRules.beamUnlocked(p)) return "mastery";
             if (RifleServer.phase(p) != RifleServer.Phase.IDLE && RifleServer.phase(p) != RifleServer.Phase.AIM) return "busy";
             return null;

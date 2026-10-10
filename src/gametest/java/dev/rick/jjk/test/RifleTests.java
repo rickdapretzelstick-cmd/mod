@@ -5,6 +5,10 @@ import dev.rick.jjk.entity.TrainingDummy;
 import dev.rick.jjk.progression.ProgressionItems;
 import dev.rick.jjk.progression.mastery.Mastery;
 import dev.rick.jjk.progression.tool.CursedTools;
+import dev.rick.jjk.core.ability.AbilitySlot;
+import dev.rick.jjk.core.ability.Casters;
+import dev.rick.jjk.progression.tool.kit.CursedKits;
+import dev.rick.jjk.progression.tool.kit.CursedSlot;
 import dev.rick.jjk.progression.tool.rifle.RifleBeam;
 import dev.rick.jjk.progression.tool.rifle.RifleClaims;
 import dev.rick.jjk.progression.tool.rifle.RifleRules;
@@ -17,7 +21,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
@@ -39,16 +42,24 @@ public class RifleTests {
         for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) h.setBlock(x, 0, z, Blocks.STONE);
     }
 
-    /** A Survival player holding the rifle (Mastery governs them: the beam has to be learned). */
+    /**
+     * A Survival player with the rifle in their Cursed Item slot, its moveset theirs (no technique). Mastery governs them:
+     * the beam has to be learned.
+     */
     static ServerPlayer shooter(GameTestHelper h, double x, double z, GameType mode) {
         ServerPlayer p = h.makeMockServerPlayerInLevel();
         p.setGameMode(mode);
         p.getAbilities().invulnerable = false;
         p.setPos(h.absoluteVec(new Vec3(x, 1, z)));
         p.connection.handleAcceptPlayerLoad(new net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket());
-        p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ProgressionItems.CURSED_RIFLE));
+        equip(p, new ItemStack(ProgressionItems.CURSED_RIFLE));
         RifleServer.setEnergy(p, JJKConfig.get().rifle.capacity);
         return p;
+    }
+
+    static void equip(ServerPlayer p, ItemStack rifle) {
+        CursedSlot.set(p, rifle);
+        CursedKits.update(p);
     }
 
     static void face(LivingEntity e, Vec3 target) {
@@ -61,14 +72,26 @@ public class RifleTests {
         e.setXRot(pitch);
     }
 
-    /** Use pressed, the way the game does it (the item starts being used if the rifle accepts). */
+    /**
+     * A rifle key pressed, the way the game does it: Aimed Shot (2), or sneaking, Unfolding Array (G). True when the
+     * rifle took it (the scope is up, or the arms deploy).
+     */
     static boolean press(ServerPlayer p) {
-        p.getMainHandItem().use(p.level(), p, InteractionHand.MAIN_HAND);
-        return p.isUsingItem();
+        AbilitySlot slot = p.isShiftKeyDown() && RifleRules.beamUnlocked(p) ? AbilitySlot.ULTIMATE : AbilitySlot.SKILL_2;
+        Casters.get(p).input(slot, true, 0, 0, null);
+        return RifleServer.phase(p) == RifleServer.Phase.AIM || RifleServer.phase(p) == RifleServer.Phase.DEPLOY;
     }
 
+    /** The held key let go (whichever it was; a phase forced by a test is let go the same way). */
     static void letGo(ServerPlayer p) {
-        p.releaseUsingItem();
+        Casters.get(p).input(AbilitySlot.SKILL_2, false, 0, 0, null);
+        Casters.get(p).input(AbilitySlot.ULTIMATE, false, 0, 0, null);
+        RifleServer.kitRelease(p);
+    }
+
+    /** The equipped rifle (for its item cooldown). */
+    static ItemStack rifle(ServerPlayer p) {
+        return CursedSlot.get(p);
     }
 
     /** Buys the rifle's nodes up to (and including) {@code last} along the beam's path. */
@@ -105,7 +128,7 @@ public class RifleTests {
             h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.IDLE, "fired");
             h.assertTrue(Math.abs(full - RifleServer.energy(p) - RifleRules.shotCost(p)) < 0.5f, "paid its cost: " + (full - RifleServer.energy(p)));
             h.assertTrue(d.getHealth() < hp, "the round hit what the scope was on (" + hp + " -> " + d.getHealth() + ")");
-            h.assertTrue(p.getCooldowns().isOnCooldown(p.getMainHandItem()), "and the bolt has to cycle");
+            h.assertTrue(p.getCooldowns().isOnCooldown(rifle(p)), "and the bolt has to cycle");
             float after = RifleServer.energy(p), hit = d.getHealth();
             press(p);
             letGo(p);
@@ -126,7 +149,7 @@ public class RifleTests {
         h.runAfterDelay(20, () -> {
             letGo(p);
             h.assertTrue(d.getHealth() == hp, "nothing fired");
-            h.assertTrue(!p.getCooldowns().isOnCooldown(p.getMainHandItem()), "no interval started");
+            h.assertTrue(!p.getCooldowns().isOnCooldown(rifle(p)), "no interval started");
             h.succeed();
         });
     }
@@ -137,7 +160,7 @@ public class RifleTests {
         ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
         p.setShiftKeyDown(true);
         press(p);
-        h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.AIM, "without Unfolding Array, sneak-use is just the scope");
+        h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.AIM, "without Unfolding Array, only the scope");
         letGo(p);
         learn(p, TO_BEAM);
         h.assertTrue(RifleRules.beamUnlocked(p) && !RifleRules.maximumOutput(p), "learned the array (not Maximum Output)");
@@ -189,19 +212,18 @@ public class RifleTests {
     }
 
     @GameTest(maxTicks = 200, padding = 16, environment = ENV)
-    public void switchingItemsMidBeamEndsIt(GameTestHelper h) {
+    public void unequippingMidBeamEndsIt(GameTestHelper h) {
         floor(h);
         ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
         learn(p, TO_BEAM);
         p.setShiftKeyDown(true);
         face(p, h.absoluteVec(new Vec3(1.5, 1.5, 7.5)));
         RifleServer.forcePhaseForTest(p, RifleServer.Phase.READY);
-        p.startUsingItem(InteractionHand.MAIN_HAND);
         letGo(p);
         RifleBeam b = RifleServer.beam(p);
         h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.FIRE && b != null && b.firing(), "firing");
         h.runAfterDelay(5, () -> {
-            p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STICK));
+            CursedSlot.set(p, ItemStack.EMPTY);
             h.runAfterDelay(2, () -> {
                 h.assertTrue(!b.firing(), "the beam stopped");
                 h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.COOLDOWN || RifleServer.phase(p) == RifleServer.Phase.RETRACT, "folding away");
@@ -216,7 +238,6 @@ public class RifleTests {
         ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
         learn(p, TO_BEAM);
         RifleServer.forcePhaseForTest(p, RifleServer.Phase.READY);
-        p.startUsingItem(InteractionHand.MAIN_HAND);
         RifleServer.setEnergy(p, RifleRules.beamCost(p) + 0.1f);
         h.succeedWhen(() -> {
             h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.RETRACT || RifleServer.phase(p) == RifleServer.Phase.IDLE, "the reserve gave out: cancelled");
@@ -267,8 +288,73 @@ public class RifleTests {
         h.assertTrue(RifleClaims.inertReason(p, first) != null, "the old one goes cold");
         h.assertTrue(RifleClaims.inertReason(p, second) == null, "the new one works");
         h.assertTrue(RifleClaims.inertReason(p, new ItemStack(ProgressionItems.CURSED_RIFLE)) == null, "an unclaimed rifle (Creative, a give) always works");
-        p.setItemInHand(InteractionHand.MAIN_HAND, first);
+        equip(p, first);
         h.assertTrue(!press(p), "and the cold one won't raise its scope");
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 40, environment = ENV)
+    public void aRifleInTheHandDoesNothing(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
+        CursedSlot.set(p, ItemStack.EMPTY);
+        CursedKits.update(p);
+        p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ProgressionItems.CURSED_RIFLE));
+        TrainingDummy d = dummy(h, 1.5, 5.5);
+        face(p, d.getBoundingBox().getCenter());
+        float hp = d.getHealth(), full = RifleServer.energy(p);
+        p.getMainHandItem().use(p.level(), p, InteractionHand.MAIN_HAND);
+        h.assertTrue(!p.isUsingItem() && RifleServer.phase(p) == RifleServer.Phase.IDLE, "use on the held rifle raises nothing");
+        h.assertTrue(!RifleServer.wielding(p) && !RifleServer.kitShot(p), "it isn't the weapon: no shot");
+        h.assertTrue(Casters.get(p).toolKit() == null, "and gives no moveset");
+        h.assertTrue(d.getHealth() == hp && RifleServer.energy(p) == full, "nothing fired, nothing paid");
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 80, environment = ENV)
+    public void holsteringForTheTechniqueEndsWhateverTheRifleWasDoing(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
+        dev.rick.jjk.core.character.CharacterService.assign(p, dev.rick.jjk.core.character.Characters.get("gojo"));
+        var c = Casters.get(p);
+        CursedKits.update(p);
+        h.assertTrue(!c.usingTool() && !RifleServer.wielding(p), "with a technique, the rifle starts slung");
+        h.assertTrue(!RifleServer.kitAim(p) && !RifleServer.kitShot(p), "slung, it does nothing");
+        h.assertTrue(CursedKits.switchMoveset(p) && RifleServer.wielding(p), "switched: drawn");
+        for (int i = 0; i < JJKConfig.get().cursedTools.switchLockTicks + 2; i++) c.tick();
+        h.assertTrue(press(p) && RifleServer.phase(p) == RifleServer.Phase.AIM, "the scope comes up");
+        // The switch is refused while a move runs: the rifle is let go first, then it can holster.
+        String blocked = CursedKits.switchMoveset(p) ? null : c.switchBlocked();
+        if (blocked != null) {
+            letGo(p);
+            for (int i = 0; i < 6; i++) {
+                c.tick();
+                RifleServer.tickForTest(p);
+            }
+            h.assertTrue(CursedKits.switchMoveset(p), "free again, it holsters: " + c.switchBlocked());
+        }
+        RifleServer.tickForTest(p);
+        h.assertTrue(!RifleServer.wielding(p) && RifleServer.phase(p) == RifleServer.Phase.IDLE, "holstered and at rest: " + RifleServer.phase(p));
+        h.assertTrue(!RifleServer.kitShot(p), "a slung rifle never fires");
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 300, padding = 16, environment = ENV)
+    public void dyingAfterTheBeamKeepsTheArrayCooling(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
+        learn(p, TO_BEAM);
+        face(p, h.absoluteVec(new Vec3(1.5, 1.5, 7.5)));
+        ItemStack rifle = rifle(p).copy();
+        RifleServer.forcePhaseForTest(p, RifleServer.Phase.READY);
+        letGo(p);
+        h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.FIRE, "firing");
+        p.hurtServer(h.getLevel(), p.damageSources().genericKill(), 10_000f);
+        h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.IDLE && RifleServer.beam(p) == null, "dead: at rest");
+        // Back with the rifle and a full reserve: still the array has to cool.
+        equip(p, rifle);
+        RifleServer.setEnergy(p, JJKConfig.get().rifle.capacity);
+        h.assertTrue(!RifleServer.kitBeam(p), "no fresh beam for dying");
         h.succeed();
     }
 }

@@ -33,10 +33,14 @@ public final class CursedGear {
         return d != null && d && !equipped(p).isEmpty();
     }
 
-    /** The tool to show in the main hand: the drawn tool when the hand itself is empty, else what is really there. */
+    /** The tool to show in the main hand: the drawn tool (in place of what the hand slot has), else what is really there. */
     public static ItemStack mainHand(Player p, ItemStack real) {
-        if (!real.isEmpty() || !drawn(p)) return real;
-        return equipped(p);
+        return drawn(p) ? equipped(p) : real;
+    }
+
+    /** Whether the drawn tool is the Cursed Rifle (its HUD, its first-person pose). */
+    public static boolean rifleDrawn(Player p) {
+        return drawn(p) && dev.rick.jjk.progression.tool.rifle.RifleServer.isRifle(equipped(p));
     }
 
     public static GripProfile grip(ItemStack s) {

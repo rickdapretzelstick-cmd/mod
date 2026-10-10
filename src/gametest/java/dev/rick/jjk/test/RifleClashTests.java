@@ -19,7 +19,6 @@ import dev.rick.jjk.yuta.YutaState;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
@@ -59,7 +58,6 @@ public class RifleClashTests {
     private static void arm(ServerPlayer p) {
         p.setShiftKeyDown(true);
         RifleServer.forcePhaseForTest(p, RifleServer.Phase.READY);
-        p.startUsingItem(InteractionHand.MAIN_HAND);
     }
 
     private static TrainingDummy character(GameTestHelper h, String id, double x, double z) {

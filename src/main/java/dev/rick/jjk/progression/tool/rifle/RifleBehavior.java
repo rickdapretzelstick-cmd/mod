@@ -6,7 +6,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemUseAnimation;
 
-/** The rifle's use key, handed to {@link RifleServer} (holding use is aiming, or charging the beam). */
+/**
+ * The rifle in the hand: nothing to fire. It fights only from the Cursed Item slot (its moveset, {@link RifleServer});
+ * use here just says so.
+ */
 public final class RifleBehavior implements ToolBehavior {
     @Override
     public boolean use(ServerLevel level, ServerPlayer player, ItemStack stack) {
@@ -14,13 +17,11 @@ public final class RifleBehavior implements ToolBehavior {
     }
 
     @Override
-    public void release(ServerLevel level, ServerPlayer player, ItemStack stack, int heldTicks) {
-        RifleServer.release(level, player, stack, heldTicks);
-    }
+    public void release(ServerLevel level, ServerPlayer player, ItemStack stack, int heldTicks) {}
 
     @Override
     public int useDuration(ItemStack stack) {
-        return 72000;
+        return 0;
     }
 
     @Override
