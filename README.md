@@ -627,14 +627,17 @@ Wall, Shockwave and Executioner; the rifle's tree below.
     kick, the bash. Everything follows the server's phase and move timing, so every client sees the same; shots and the
     beam leave the drawn muzzle. Every move has its own HUD icon.
   - **Normal shots**: Aimed Shot (2, hold) raises the scope (the view zooms, the reticle settles); let go to fire. Snap
-    Shot (1) is a hip shot that sways far more. Each shot costs 12, deals 7 and needs 18 ticks for the bolt to cycle. The reticle
-    drifts exactly as the server's aim does: where it sits is where the round goes. The rifle plays its `normal_shot`
-    clip, with a muzzle flash, a tracer to the impact and a kick of the view.
-  - **The beam** (once Unfolding Array is learned): hold G. The arms unfold (`deploy`), the lenses build
-    (`charge`), and it holds ready (`charged_hold`, draining 4 a second). Let go to fire (`beam_fire`: the arms stay
-    deployed for the whole beam), then it vents (`cooldown`) and folds away (`retract`); 12 seconds before the next.
-    Letting go early, holstering, running the reserve dry, dying or leaving cancel it at any point and the arms
-    retract. Every client nearby plays the same clips at the server's timing. The beam is the shared square torrent
+    Shot (1) fires from the hip. Each shot costs 12, deals 7 and needs 18 ticks for the bolt to cycle. There is no sway
+    or spread: every shot (and the beam) goes exactly where the crosshair, or the scope's centre, is; the round is seen
+    leaving the end of the barrel, and a barrel blocked by a wall stops it there. The rifle plays its `normal_shot`
+    clip, with a muzzle flash, a tracer from the barrel to the impact and the kick in the rifle, never a turn of the view.
+    The scope rises with the rifle, tightens the view smoothly and fades its optic in; sprinting drops it.
+  - **The beam** (once Unfolding Array is learned; it is the rifle's ultimate: **G with the meter full**, which it
+    spends). Press G: the arms unfold (`deploy`) and the lenses build (`charge`). Let go any time: it fires the moment
+    it's ready (`beam_fire`: the arms stay out for the whole beam), then it vents (`cooldown`) and folds away
+    (`retract`); 12 seconds before the next. Keep G held and it waits ready (`charged_hold`, draining 4 a second,
+    still able to answer a beam clash) until you let go. Holstering, running the reserve dry, dying or leaving cancel it
+    and the arms retract. Every client nearby plays the same clips at the server's timing. The beam is the shared square torrent
     (the same profile as True Love Beam and Every Last Drop: the drawn beam is the hitbox), starting at the model's
     `beam_origin`; it carves terrain that is restored like all battle damage.
   - **Its tree** (`data/jjk/mastery/tool/cursed_rifle.json`): Marksman (Steady Hands, Settle, Heavy Rounds: less sway,

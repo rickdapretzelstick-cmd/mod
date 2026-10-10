@@ -173,7 +173,7 @@ public class RifleTests {
             h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.DEPLOY, "now the arms deploy");
             h.assertTrue(RifleServer.beam(p) != null && Math.abs(RifleServer.beam(p).output() - JJKConfig.get().rifle.baseOutput) < 1e-3, "at the base output");
             letGo(p);
-            h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.RETRACT && RifleServer.beam(p) == null, "let go early: cancelled, folding away");
+            h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.DEPLOY && RifleServer.beam(p) != null, "let go early: it carries on (it fires when ready)");
             h.succeed();
         });
     }
@@ -483,5 +483,29 @@ public class RifleTests {
         p.connection.handleSetCreativeModeSlot(new net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket(slot, new ItemStack(Items.DIAMOND)));
         h.assertTrue(RifleServer.isRifle(CursedSlot.get(p)), "only a cursed tool fits");
         h.succeed();
+    }
+
+    @GameTest(maxTicks = 300, padding = 16, environment = ENV)
+    public void aTapOfGRunsTheWholeArrayOnce(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
+        learn(p, TO_BEAM);
+        p.setShiftKeyDown(true);
+        face(p, h.absoluteVec(new Vec3(1.5, 1.5, 7.5)));
+        h.assertTrue(press(p), "G: the arms come out");
+        letGo(p);
+        java.util.List<RifleServer.Phase> seen = new java.util.ArrayList<>();
+        h.onEachTick(() -> {
+            RifleServer.Phase ph = RifleServer.phase(p);
+            if (seen.isEmpty() || seen.getLast() != ph) seen.add(ph);
+        });
+        h.succeedWhen(() -> {
+            h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.IDLE, "back at rest: " + seen);
+            h.assertTrue(seen.equals(java.util.List.of(RifleServer.Phase.DEPLOY, RifleServer.Phase.CHARGE, RifleServer.Phase.READY, RifleServer.Phase.FIRE,
+                    RifleServer.Phase.COOLDOWN, RifleServer.Phase.RETRACT, RifleServer.Phase.IDLE))
+                    || seen.equals(java.util.List.of(RifleServer.Phase.DEPLOY, RifleServer.Phase.CHARGE, RifleServer.Phase.FIRE,
+                    RifleServer.Phase.COOLDOWN, RifleServer.Phase.RETRACT, RifleServer.Phase.IDLE)),
+                    "out, charge, fire, in: once, never folding early: " + seen);
+        });
     }
 }

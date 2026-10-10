@@ -66,6 +66,8 @@ public final class RifleServer {
         float sentEnergy = -1;
         /** Held through the equipped rifle's moveset (a kit key) rather than the use key. */
         boolean kitHold;
+        /** G was let go while the array was still opening or charging: it fires the moment it's ready. */
+        boolean released;
     }
 
     private static final Map<UUID, State> STATES = new HashMap<>();
@@ -234,7 +236,8 @@ public final class RifleServer {
                 shoot(level, p, stack, s);
                 set(p, s, Phase.IDLE, 0);
             }
-            case DEPLOY, CHARGE -> cancel(level, p, s, null);
+            // Let go while it builds: it carries on and fires as soon as it's ready (never an in-and-out).
+            case DEPLOY, CHARGE -> s.released = true;
             case READY -> fireBeam(level, p, s, null);
             default -> {}
         }
@@ -383,10 +386,12 @@ public final class RifleServer {
                 else s.aimTicks++;
             }
             case DEPLOY, CHARGE, READY -> {
-                if (!using) {
+                // Holstered or unequipped: the array folds away. Letting go of G only means "fire when ready".
+                if (!held) {
                     cancel(level, p, s, null);
                     return;
                 }
+                if (!s.kitHold) s.released = true;
                 if (s.beam != null) s.beam.aim(muzzle(p, RifleAim.direction(p)), beamDir(level, p));
                 if (s.phase == Phase.DEPLOY && s.age >= s.duration) {
                     set(p, s, Phase.CHARGE, RifleRules.chargeTicks(p));
@@ -398,8 +403,14 @@ public final class RifleServer {
                         Fx.sound(level, p.getEyePosition(), SoundEvents.BEACON_POWER_SELECT, 1.2f, 1.6f);
                         // Ready and held: still answerable, for as long as it is held.
                         if (s.beam != null) BeamClashManager.threaten(s.beam, level.getGameTime() + 40);
+                        // Already let go: straight out.
+                        if (s.released) fireBeam(level, p, s, null);
                     }
                 } else if (s.phase == Phase.READY) {
+                    if (s.released) {
+                        fireBeam(level, p, s, null);
+                        return;
+                    }
                     setEnergy(p, energy(p) - cfg().readyDrainPerSecond / 20f);
                     if (energy(p) < RifleRules.beamCost(p)) cancel(level, p, s, "The reserve gave out.");
                     else if (s.age % 10 == 0) Fx.play(level, "rifle_charge", muzzle(p, p.getLookAngle()), p.getLookAngle(), 1f, p.getId());
@@ -432,6 +443,7 @@ public final class RifleServer {
 
     static void set(ServerPlayer p, State s, Phase phase, int duration) {
         if (phase == Phase.IDLE || phase == Phase.RETRACT || phase == Phase.COOLDOWN || phase == Phase.FIRE) s.kitHold = false;
+        if (phase == Phase.IDLE || phase == Phase.DEPLOY || phase == Phase.FIRE || phase == Phase.RETRACT) s.released = false;
         s.phase = phase;
         s.age = 0;
         s.duration = duration;
