@@ -60,6 +60,33 @@ public final class PoseFrame {
         return false;
     }
 
+    /** Layers a code-built value (radians, pixels or factors) over whatever is here with weight {@code a}. */
+    public PoseFrame layer(int channel, Bone b, float[] v, float a) {
+        add(channel, b, v, a);
+        return this;
+    }
+
+    /** Copies everything from {@code o} into this (empty) frame. */
+    public PoseFrame copyFrom(PoseFrame o) {
+        for (int ch = 0; ch < 3; ch++) {
+            for (int i = 0; i < Bone.COUNT; i++) {
+                System.arraycopy(o.value[ch][i], 0, value[ch][i], 0, 3);
+                weight[ch][i] = o.weight[ch][i];
+            }
+        }
+        look = o.look;
+        named.putAll(o.named);
+        return this;
+    }
+
+    /** Layers a whole frame over this one, bone by bone with that frame's own weights. */
+    public PoseFrame over(PoseFrame o) {
+        for (int ch = 0; ch < 3; ch++) for (Bone b : Bone.ALL) add(ch, b, o.value[ch][b.ordinal()], o.weight[ch][b.ordinal()]);
+        look = Math.max(look, o.look);
+        named.putAll(o.named);
+        return this;
+    }
+
     /** Layers {@code v} over whatever is already here with weight {@code a}. */
     void add(int channel, Bone b, float[] v, float a) {
         if (a <= 0) return;

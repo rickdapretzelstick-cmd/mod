@@ -1,7 +1,7 @@
 {
-  "name": "rf_flare",
-  "duration": 550,
-  "note": "Lens Flare: the rifle canted on its side to aim an arm's lens, the flash, back to the ready.",
+  "name": "rf_volley",
+  "duration": 800,
+  "note": "Suppressing Volley: braced and scoped, three rounds four ticks apart, then recovery.",
   "blendIn": 0,
   "blendOut": 0,
   "priority": "ATTACK",
@@ -15,10 +15,16 @@
       "t": 150,
       "ease": "EASE_IN_OUT",
       "bones": {},
-      "marker": "flare"
+      "marker": "first"
     },
     {
       "t": 550,
+      "ease": "EASE_IN_OUT",
+      "bones": {},
+      "marker": "last"
+    },
+    {
+      "t": 800,
       "ease": "EASE_IN_OUT",
       "bones": {}
     }

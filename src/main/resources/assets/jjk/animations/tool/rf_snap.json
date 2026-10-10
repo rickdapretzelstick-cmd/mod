@@ -1,7 +1,7 @@
 {
-  "name": "rf_bash",
+  "name": "rf_snap",
   "duration": 450,
-  "note": "Stock Bash: wound back, the stock driven out by the hips, recovered.",
+  "note": "Snap Shot: the rifle snaps to the shoulder (3 ticks), fires, comes back down.",
   "blendIn": 0,
   "blendOut": 0,
   "priority": "ATTACK",
@@ -12,10 +12,10 @@
       "bones": {}
     },
     {
-      "t": 100,
+      "t": 150,
       "ease": "EASE_IN_OUT",
       "bones": {},
-      "marker": "bash"
+      "marker": "fire"
     },
     {
       "t": 450,

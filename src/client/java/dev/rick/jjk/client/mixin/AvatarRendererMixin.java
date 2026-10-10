@@ -22,9 +22,11 @@ public abstract class AvatarRendererMixin {
     private void jjk$cursedGear(net.minecraft.world.entity.Avatar entity, net.minecraft.client.renderer.entity.state.AvatarRenderState state, float partialTicks,
                                 CallbackInfo ci) {
         if (!(entity instanceof net.minecraft.world.entity.player.Player p)) return;
+        state.setData(dev.rick.jjk.client.rifle.RifleStance.VIEW, null);
         net.minecraft.world.item.ItemStack tool = dev.rick.jjk.client.gear.CursedGear.equipped(p);
         if (tool.isEmpty()) {
             state.setData(dev.rick.jjk.client.gear.CursedGear.HOLSTERED, null);
+            dev.rick.jjk.client.rifle.RifleStance.forget(p.getId());
             return;
         }
         var grip = dev.rick.jjk.client.gear.CursedGear.grip(tool);
@@ -33,6 +35,20 @@ public abstract class AvatarRendererMixin {
         net.minecraft.world.entity.HumanoidArm main = p.getMainArm();
         // Drawn, the tool is what the hands hold (whatever sits in the hotbar slot is put away meanwhile).
         boolean drawn = dev.rick.jjk.client.gear.CursedGear.drawn(p);
+        if (drawn && dev.rick.jjk.progression.tool.rifle.RifleServer.isRifle(tool)) {
+            // The rifle fights with the whole body: its stance places the gun and both hands (RifleStance); nothing is
+            // drawn in the hands the vanilla way, and the arms take no vanilla pose of their own.
+            state.setData(dev.rick.jjk.client.rifle.RifleStance.VIEW, dev.rick.jjk.client.rifle.RifleStance.extract(p, state, partialTicks));
+            state.rightHandItemState.clear();
+            state.leftHandItemState.clear();
+            state.rightHandItemStack = net.minecraft.world.item.ItemStack.EMPTY;
+            state.leftHandItemStack = net.minecraft.world.item.ItemStack.EMPTY;
+            state.rightArmPose = net.minecraft.client.model.HumanoidModel.ArmPose.EMPTY;
+            state.leftArmPose = net.minecraft.client.model.HumanoidModel.ArmPose.EMPTY;
+            state.setData(dev.rick.jjk.client.gear.CursedGear.HOLSTERED, null);
+            return;
+        }
+        dev.rick.jjk.client.rifle.RifleStance.forget(p.getId());
         if (drawn) {
             var ctx = main == net.minecraft.world.entity.HumanoidArm.RIGHT ? net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
                     : net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_LEFT_HAND;

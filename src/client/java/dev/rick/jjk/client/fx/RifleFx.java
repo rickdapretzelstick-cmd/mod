@@ -86,6 +86,20 @@ final class RifleFx {
                     burst(level, pos, q(3), 0.03, Sprite.SMOKE, SMOKE, 0.3f, 16);
                 }
             }
+            // --- Lens Flare: an arm's lens throws a blinding flash where the aim is ---
+            case "rifle_flare" -> {
+                Vec3 from = muzzle(id, pos), end = pos.add(dir);
+                if (drawn) {
+                    Flashes.flash(from, 0.3f, 1.2f, WHITE, 1f, 4, now);
+                    Flashes.ring(from, 0.15f, 0.9f, PALE, 0.8f, 5, now);
+                    Flashes.beam(from, end, 0.12f, PALE, 0.5f, 4, now);
+                    Flashes.beam(from, end, 0.04f, WHITE, 0.9f, 3, now);
+                    Flashes.flash(end, 1.2f, 4.5f, WHITE, 1f, 8, now);
+                    Flashes.ring(end, 0.6f, 4f, PALE, 0.7f, 8, now);
+                    sparks(level, end, d.scale(-1), q(10), 0.4, WHITE, 0.06f, 6);
+                }
+                if (mc.player != null && mc.player.getId() != id && mc.player.getEyePosition().distanceTo(end) < 5) ScreenEffects.flash(0xB0FFFFFF, 10);
+            }
             // --- The beam's charge ---
             case "rifle_charge" -> {
                 if (!drawn) return;

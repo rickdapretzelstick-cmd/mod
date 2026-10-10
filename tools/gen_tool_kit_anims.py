@@ -5,7 +5,7 @@
 Every tool move has its own clip, shaped by how the tool is held:
 - Slaughter Demon (one hand, fast): low, darting, the blade arm leading; the free hand stays back for balance.
 - Cursed Cleaver (two hands, heavy): wide stances, both hands on the haft, big wind-ups, the body dropping into blows.
-- Cursed Rifle (two hands, ranged): shouldered, compact; the stock and the lenses are what it fights with up close.
+- Cursed Rifle: its moves are markers (see below); its whole body is built by RifleStance.
 Draw and holster have a hip version (a sheath at the left hip) and a back version (slung over the right shoulder).
 
 Bone angles are degrees (x: an arm's negative x raises it forward; y swings it across; z out to the side), root
@@ -202,17 +202,16 @@ clip('cl_exec_crash', 900, [
     k(900, TWO_SETTLE),
 ], priority='SPECIAL', note='The landing: everything comes down at once.')
 
-# --- Cursed Rifle: shouldered, compact ---
-clip('rf_bash', 420, [
-    k(0, {'chest': r(4, 30), 'rightArm': r(-70, 0, 0), 'rightForearm': r(-50), 'leftArm': r(-80, 40, 0), 'leftForearm': r(-30)}),
-    k(100, {'chest': r(16, -24), 'hips': r(6, -10), 'rightArm': r(-96, -30, 0), 'rightForearm': r(-10), 'leftArm': r(-60, 10), 'root': p(0, -1.5, 4)},
-      'EASE_IN', 'bash'),
-    k(420, {'chest': r(2, 6), 'rightArm': r(-80, -6), 'rightForearm': r(-40), 'leftArm': r(-84, 36), 'leftForearm': r(-30), 'root': p(0, -0.5, 0)}),
-], note='Turned side-on, the stock driven forward in both hands.')
-clip('rf_flare', 520, [
-    k(0, {'rightArm': r(-80, -6), 'leftArm': r(-84, 36)}),
-    k(160, {'chest': r(-10, 0), 'head': r(-6), 'rightArm': r(-120, -10, 0), 'rightForearm': r(-20), 'leftArm': r(-126, 30, 0), 'leftForearm': r(-14)},
-      'EASE_IN', 'flare'),
-    k(520, {'rightArm': r(-80, -6), 'rightForearm': r(-40), 'leftArm': r(-84, 36), 'leftForearm': r(-30)}),
-], note='The rifle tipped up so the arms\' lenses catch and throw the light.')
+# --- Cursed Rifle: markers only ---
+# The rifle's body is built every frame by RifleStance (stance, aim, both hands solved onto the gun), so its move clips
+# carry no bone keys: they only tell every client that the move is running and how far in it is (the stance reads that
+# and choreographs the move). Their timing is the server's: startup to the marked moment, then recovery.
+clip('rf_snap', 450, [k(0, {}), k(150, {}, marker='fire'), k(450, {})], priority='ATTACK', blend_in=0, blend_out=0,
+     note='Snap Shot: the rifle snaps to the shoulder (3 ticks), fires, comes back down.')
+clip('rf_volley', 800, [k(0, {}), k(150, {}, marker='first'), k(550, {}, marker='last'), k(800, {})], priority='ATTACK', blend_in=0, blend_out=0,
+     note='Suppressing Volley: braced and scoped, three rounds four ticks apart, then recovery.')
+clip('rf_flare', 550, [k(0, {}), k(150, {}, marker='flare'), k(550, {})], priority='ATTACK', blend_in=0, blend_out=0,
+     note='Lens Flare: the rifle canted on its side to aim an arm\'s lens, the flash, back to the ready.')
+clip('rf_bash', 450, [k(0, {}), k(100, {}, marker='bash'), k(450, {})], priority='ATTACK', blend_in=0, blend_out=0,
+     note='Stock Bash: wound back, the stock driven out by the hips, recovered.')
 print('tool clips written:', len(os.listdir(OUT)))

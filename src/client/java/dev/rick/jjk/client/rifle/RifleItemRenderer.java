@@ -89,6 +89,26 @@ public final class RifleItemRenderer implements SpecialModelRenderer<RifleItemRe
         ps.popPose();
     }
 
+    /**
+     * The drawn rifle where its holder's stance placed it ({@link RifleStance}): {@code ps} is the holder's model space,
+     * in blocks. Records where its beam_origin is this frame, for shots and the beam to start there.
+     */
+    public static void submitPlaced(PoseStack ps, SubmitNodeCollector c, int light, RifleStance.View v) {
+        BbModel model = BbModels.get(RifleClient.RIG);
+        if (model == null) return;
+        ps.pushPose();
+        ps.scale(1 / 16f, 1 / 16f, 1 / 16f);
+        ps.mulPose(v.rifle);
+        BbModel.Posing pose = RikaRenderer.posing(v.model);
+        c.submitCustomGeometry(ps, RenderTypes.entityCutout(JJK.id("textures/entity/cursed_rifle.png")), (p, buf) -> model.render(p, buf, pose, light, 0xFFFFFFFF));
+        Vector3f at = model.locate("beam_origin", pose, new Vector3f());
+        Vector3f w = new Matrix4f(ps.last().pose()).transformPosition(at);
+        Minecraft mc = Minecraft.getInstance();
+        Vec3 cam = mc.gameRenderer.mainCamera().position();
+        RifleClient.muzzleDrawn(v.id, cam.add(w.x, w.y, w.z), mc.level == null ? 0 : mc.level.getGameTime());
+        ps.popPose();
+    }
+
     /** Model pixels into the item's space, the grip at its pivot. */
     static void place(PoseStack ps) {
         ps.translate(0.5f, 0.5f, 0.5f);

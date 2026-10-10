@@ -33,7 +33,12 @@ public abstract class HumanoidModelMixin {
         PoseFrame f = state.getData(PoseKeys.FRAME);
         Rig.Parts parts = Rig.parts((HumanoidModel<?>) (Object) this);
         boolean solved = false;
-        if (f != null) {
+        dev.rick.jjk.client.rifle.RifleStance.View rifle = state.getData(dev.rick.jjk.client.rifle.RifleStance.VIEW);
+        if (rifle != null) {
+            // A drawn Cursed Rifle: the whole body fights with it, both hands on it.
+            dev.rick.jjk.client.rifle.RifleStance.solve(parts, rifle, f, jjk$bones);
+            solved = true;
+        } else if (f != null) {
             Rig.solve(parts, f, jjk$bones);
             solved = true;
         } else if (dev.rick.jjk.client.anim.AnimDebug.wantsSkeleton(state.getDataOrDefault(PoseKeys.ENTITY, Integer.MIN_VALUE))) {
