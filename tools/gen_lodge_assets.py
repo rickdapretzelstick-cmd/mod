@@ -83,42 +83,87 @@ for x in range(16):
             chain.putpixel((x, y), (96, 92, 88, 255) if (x + y) % 4 else (140, 136, 128, 255))
 save(chain, 'block', 'rack_chain.png')
 
-# The rifle's icon: a long dark rifle, a pale folded arm along the barrel, a violet lens at the muzzle.
-ICON = [
-    "................",
-    "................",
-    "................",
-    "................",
-    "..........SS....",
-    "LBBBBBBBBRRRWWW.",
-    "LMMMMMMMMRRRWWWW",
-    ".AAAAAAA.RGRWWWW",
-    ".........G...WWW",
-    "........GG......",
-    "................",
-    "................",
-    "................",
-    "................",
-    "................",
-    "................",
-]
-PAL = {'B': (60, 62, 72, 255), 'M': (40, 42, 50, 255), 'R': (70, 72, 84, 255), 'S': (24, 24, 28, 255), 'W': (104, 66, 40, 255),
-       'G': (30, 30, 34, 255), 'A': (200, 192, 172, 255), 'L': (150, 110, 255, 255)}
-icon = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
-for y, row in enumerate(ICON):
-    for x, ch in enumerate(row):
-        if ch in PAL:
-            icon.putpixel((x, y), PAL[ch])
-# Tilt it: shift rows so it reads as held at an angle, like the other weapons' icons.
-tilted = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
-for y in range(16):
-    for x in range(16):
-        p = icon.getpixel((x, y))
-        if p[3]:
-            ny = y + (8 - x) // 3
-            if 0 <= ny < 16:
-                tilted.putpixel((x, ny), p)
-save(tilted, 'item', 'cursed_rifle.png')
+# The rifle's icon (32x32, so the scope, the barrel and the stock all read at inventory size): the current model
+# (models/bb/cursed_rifle.bbmodel) drawn in its own colours, laid along a diagonal like the vanilla weapons, butt low
+# and left, muzzle high and right. Each pixel samples the rifle's side profile in rifle-local units (u along the
+# barrel, v across it, down positive).
+import math
+METAL, METAL_HI, METAL_DK, BLACK = (38, 40, 43), (63, 67, 69), (25, 26, 28), (14, 16, 19)
+WOOD, WOOD_DK, WOOD_HI, GRIP = (99, 60, 36), (72, 45, 28), (118, 75, 45), (67, 39, 24)
+SCOPE, GLASS, GLASS_HI = (18, 29, 34), (46, 99, 109), (85, 145, 151)
+CELL, CELL_HI, ARM, CORE = (236, 59, 81), (250, 110, 123), (45, 33, 38), (255, 218, 202)
+
+
+def profile(u, v):
+    """The colour of the rifle's side at (u, v), or None."""
+    # Muzzle and its crimson aperture.
+    if 31.0 <= u <= 33.4 and abs(v) <= 1.5:
+        if u >= 32.6 and abs(v) <= 0.6:
+            return CORE if abs(v) < 0.3 else CELL_HI
+        return BLACK if abs(v) > 1.0 else CELL
+    # The folded arms along the barrel, their lens tips at the end.
+    if 21.0 <= u <= 30.8 and 0.95 <= abs(v) <= 1.45 and v > 0:
+        return CELL if u >= 29.8 else ARM
+    # Barrel, banded.
+    if 17.5 <= u <= 31.0 and abs(v) <= 0.85:
+        if int(u) % 4 == 0 and v > -0.3:
+            return BLACK
+        return (100, 106, 110) if v < -0.35 else METAL
+    # Scope: tube above the receiver, mounts down to it, a lit lens at the front.
+    if 10.0 <= u <= 19.6 and -4.3 <= v <= -2.3:
+        if u >= 19.0:
+            return GLASS_HI if v < -3.3 else GLASS
+        if u <= 10.6:
+            return METAL_DK
+        return (100, 106, 110) if v < -3.6 else SCOPE
+    if (12.0 <= u <= 13.0 or 16.5 <= u <= 17.5) and -2.3 < v < -1.3:
+        return METAL_DK
+    # Receiver with its glowing cell.
+    if 9.0 <= u <= 17.8 and -1.4 <= v <= 1.4:
+        if 13.0 <= u <= 15.4 and -0.5 <= v <= 0.5:
+            return CELL_HI if u < 14.0 else CELL
+        return (100, 106, 110) if v < -0.9 else METAL
+    # Magazine.
+    if 14.2 <= u <= 16.6 and 1.4 < v <= 3.8:
+        return BLACK
+    # Pistol grip and trigger guard.
+    if 10.0 <= u <= 12.2 and 1.4 < v <= 4.4 - (u - 10.0) * 0.25:
+        return GRIP
+    if 12.2 < u <= 13.8 and 1.4 < v <= 2.4 and not (12.6 < u < 13.4 and v < 2.0):
+        return METAL_DK
+    # Stock: deep at the butt, tapering to the wrist.
+    if 0.0 <= u < 9.2:
+        top = -1.4 - (9.2 - u) * 0.06
+        bot = 1.3 + (9.2 - u) * 0.28
+        if top <= v <= bot:
+            if u < 1.0:
+                return BLACK
+            if v < top + 0.8:
+                return WOOD_HI
+            return WOOD_DK if v > bot - 0.9 else WOOD
+    return None
+
+
+SIZE, ANGLE, LENGTH = 32, math.radians(38), 33.4
+d = (math.cos(ANGLE), -math.sin(ANGLE))   # along the barrel, toward the muzzle (up and right)
+n = (math.sin(ANGLE), math.cos(ANGLE))    # across it (down and right)
+origin = (SIZE / 2 - d[0] * LENGTH / 2 + 0.6, SIZE / 2 - d[1] * LENGTH / 2 + 0.6)
+icon = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 0))
+for y in range(SIZE):
+    for x in range(SIZE):
+        rx, ry = x + 0.5 - origin[0], y + 0.5 - origin[1]
+        c = profile(rx * d[0] + ry * d[1], rx * n[0] + ry * n[1])
+        if c:
+            icon.putpixel((x, y), c + (255,))
+# A thin dark edge round the silhouette (keeps it legible on any slot background).
+edged = icon.copy()
+for y in range(SIZE):
+    for x in range(SIZE):
+        if icon.getpixel((x, y))[3]:
+            continue
+        if any(0 <= x + dx < SIZE and 0 <= y + dy < SIZE and icon.getpixel((x + dx, y + dy))[3] for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+            edged.putpixel((x, y), (10, 10, 12, 150))
+save(edged, 'item', 'cursed_rifle.png')
 
 
 # --- Models ---
