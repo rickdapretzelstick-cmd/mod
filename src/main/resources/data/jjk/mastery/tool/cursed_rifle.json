@@ -3,46 +3,288 @@
   "kind": "TOOL",
   "owner": "cursed_rifle",
   "title": "Cursed Rifle",
-  "lanes": ["Marksman", "Mechanism", "Array", "Output"],
+  "lanes": [
+    "Marksman",
+    "Mechanism",
+    "Array",
+    "Output"
+  ],
   "nodes": [
-    {"id": "steady_hands", "name": "Steady Hands", "tier": "SMALL", "cost": 10, "lane": 0, "row": 0, "move": "",
-     "description": "The scope wanders a quarter less.",
-     "effects": [{"param": "tool.cursed_rifle.sway", "mul": 0.75}]},
-    {"id": "quick_bolt", "name": "Quick Bolt", "tier": "SMALL", "cost": 10, "lane": 1, "row": 0, "move": "",
-     "description": "The rifle is ready to fire again 15% sooner.",
-     "effects": [{"param": "tool.cursed_rifle.recovery", "mul": 0.85}]},
-    {"id": "settle", "name": "Breath Control", "tier": "SMALL", "cost": 14, "lane": 0, "row": 1, "requires": ["steady_hands"], "move": "",
-     "description": "Your aim settles 30% faster once you raise the scope.",
-     "effects": [{"param": "tool.cursed_rifle.stabilize", "mul": 0.7}]},
-    {"id": "frugal_rounds", "name": "Frugal Rounds", "tier": "SMALL", "cost": 14, "lane": 1, "row": 1, "requires": ["quick_bolt"], "move": "",
-     "description": "Each shot draws 20% less from the rifle's reserve.",
-     "effects": [{"param": "tool.cursed_rifle.efficiency", "mul": 0.8}]},
-    {"id": "heavy_rounds", "name": "Heavy Rounds", "tier": "SMALL", "cost": 18, "lane": 0, "row": 2, "requires": ["settle"], "move": "",
-     "description": "Normal shots hit 15% harder.",
-     "effects": [{"param": "tool.cursed_rifle.damage", "mul": 1.15}]},
-    {"id": "oiled_action", "name": "Oiled Action", "tier": "SMALL", "cost": 18, "lane": 1, "row": 2, "requires": ["frugal_rounds"], "move": "",
-     "description": "Another 15% off the time between shots.",
-     "effects": [{"param": "tool.cursed_rifle.recovery", "mul": 0.85}]},
-    {"id": "unfolding_array", "name": "Unfolding Array", "tier": "MAJOR", "cost": 80, "lane": 2, "row": 3, "requires": ["heavy_rounds", "oiled_action"], "move": "",
-     "description": "Milestone. Sneak and hold use: the four support arms unfold and brace round the barrel, the lenses gather, and when it is ready, let go to fire a beam of cursed energy.",
-     "effects": [{"unlock": "tool.cursed_rifle.beam"}]},
-    {"id": "lens_economy", "name": "Lens Economy", "tier": "SMALL", "cost": 30, "lane": 1, "row": 4, "requires": ["unfolding_array"], "move": "",
-     "description": "The beam takes 15% less of the reserve.",
-     "effects": [{"param": "tool.cursed_rifle.beam_efficiency", "mul": 0.85}]},
-    {"id": "fast_focus", "name": "Fast Focus", "tier": "SMALL", "cost": 30, "lane": 2, "row": 4, "requires": ["unfolding_array"], "move": "",
-     "description": "The lenses reach the ready state 20% sooner.",
-     "effects": [{"param": "tool.cursed_rifle.beam_charge", "mul": 0.8}]},
-    {"id": "sustained_fire", "name": "Sustained Fire", "tier": "SMALL", "cost": 30, "lane": 3, "row": 4, "requires": ["unfolding_array"], "move": "",
-     "description": "The beam pours out 25% longer.",
-     "effects": [{"param": "tool.cursed_rifle.beam_duration", "mul": 1.25}]},
-    {"id": "harmonised_arms", "name": "Harmonised Arms", "tier": "MECHANICAL", "cost": 50, "lane": 2, "row": 5, "requires": ["fast_focus"], "move": "",
-     "description": "The four arms brace in step: the beam's output rises (wider, stronger, more of a match in a clash).",
-     "effects": [{"param": "tool.cursed_rifle.output", "mul": 1.3}]},
-    {"id": "focused_lenses", "name": "Focused Lenses", "tier": "MECHANICAL", "cost": 50, "lane": 3, "row": 5, "requires": ["sustained_fire"], "move": "",
-     "description": "The focusing lenses are ground true: the beam's output rises again.",
-     "effects": [{"param": "tool.cursed_rifle.output", "mul": 1.35}]},
-    {"id": "maximum_output", "name": "Maximum Output", "tier": "AWAKENING", "cost": 220, "lane": 3, "row": 6, "requires": ["harmonised_arms", "focused_lenses", "lens_economy"], "move": "",
-     "description": "Capstone. Everything the rifle has: a beam as wide and as strong as True Love Beam or Every Last Drop, white-hot at the core with an electric-blue glow, able to hold its own in a beam clash. It still costs most of the reserve, charges fully and recovers slowly.",
-     "effects": [{"unlock": "tool.cursed_rifle.maximum_output"}]}
+    {
+      "id": "steady_hands",
+      "name": "Steady Hands",
+      "tier": "SMALL",
+      "cost": 10,
+      "lane": 0,
+      "row": 0,
+      "move": "",
+      "description": "The scope wanders a quarter less.",
+      "effects": [
+        {
+          "param": "tool.cursed_rifle.sway",
+          "mul": 0.75
+        }
+      ]
+    },
+    {
+      "id": "quick_bolt",
+      "name": "Quick Bolt",
+      "tier": "SMALL",
+      "cost": 10,
+      "lane": 1,
+      "row": 0,
+      "move": "",
+      "description": "The rifle is ready to fire again 15% sooner.",
+      "effects": [
+        {
+          "param": "tool.cursed_rifle.recovery",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "settle",
+      "name": "Breath Control",
+      "tier": "SMALL",
+      "cost": 14,
+      "lane": 0,
+      "row": 1,
+      "requires": [
+        "steady_hands"
+      ],
+      "move": "",
+      "description": "Your aim settles 30% faster once you raise the scope.",
+      "effects": [
+        {
+          "param": "tool.cursed_rifle.stabilize",
+          "mul": 0.7
+        }
+      ]
+    },
+    {
+      "id": "frugal_rounds",
+      "name": "Frugal Rounds",
+      "tier": "SMALL",
+      "cost": 14,
+      "lane": 1,
+      "row": 1,
+      "requires": [
+        "quick_bolt"
+      ],
+      "move": "",
+      "description": "Each shot draws 20% less from the rifle's reserve.",
+      "effects": [
+        {
+          "param": "tool.cursed_rifle.efficiency",
+          "mul": 0.8
+        }
+      ]
+    },
+    {
+      "id": "heavy_rounds",
+      "name": "Heavy Rounds",
+      "tier": "SMALL",
+      "cost": 18,
+      "lane": 0,
+      "row": 2,
+      "requires": [
+        "settle"
+      ],
+      "move": "",
+      "description": "Normal shots hit 15% harder.",
+      "effects": [
+        {
+          "param": "tool.cursed_rifle.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "oiled_action",
+      "name": "Oiled Action",
+      "tier": "SMALL",
+      "cost": 18,
+      "lane": 1,
+      "row": 2,
+      "requires": [
+        "frugal_rounds"
+      ],
+      "move": "",
+      "description": "Another 15% off the time between shots.",
+      "effects": [
+        {
+          "param": "tool.cursed_rifle.recovery",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "volley",
+      "name": "Suppressing Volley",
+      "tier": "MECHANICAL",
+      "cost": 30,
+      "lane": 1,
+      "row": 3,
+      "requires": [
+        "oiled_action"
+      ],
+      "description": "New move (3): three quick shots, each paying the reserve.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_rifle.volley"
+        }
+      ]
+    },
+    {
+      "id": "lens_flare",
+      "name": "Lens Flare",
+      "tier": "MECHANICAL",
+      "cost": 30,
+      "lane": 0,
+      "row": 3,
+      "requires": [
+        "heavy_rounds"
+      ],
+      "description": "New move (4): one lens flashes where you aim; anyone near it is blinded and staggered.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_rifle.lens_flare"
+        }
+      ]
+    },
+    {
+      "id": "unfolding_array",
+      "name": "Unfolding Array",
+      "tier": "MAJOR",
+      "cost": 80,
+      "lane": 2,
+      "row": 3,
+      "requires": [
+        "heavy_rounds",
+        "oiled_action"
+      ],
+      "move": "",
+      "description": "Milestone. Sneak and hold use: the four support arms unfold and brace round the barrel, the lenses gather, and when it is ready, let go to fire a beam of cursed energy.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_rifle.beam"
+        }
+      ]
+    },
+    {
+      "id": "lens_economy",
+      "name": "Lens Economy",
+      "tier": "SMALL",
+      "cost": 30,
+      "lane": 1,
+      "row": 4,
+      "requires": [
+        "unfolding_array"
+      ],
+      "move": "",
+      "description": "The beam takes 15% less of the reserve.",
+      "effects": [
+        {
+          "param": "tool.cursed_rifle.beam_efficiency",
+          "mul": 0.85
+        }
+      ]
+    },
+    {
+      "id": "fast_focus",
+      "name": "Fast Focus",
+      "tier": "SMALL",
+      "cost": 30,
+      "lane": 2,
+      "row": 4,
+      "requires": [
+        "unfolding_array"
+      ],
+      "move": "",
+      "description": "The lenses reach the ready state 20% sooner.",
+      "effects": [
+        {
+          "param": "tool.cursed_rifle.beam_charge",
+          "mul": 0.8
+        }
+      ]
+    },
+    {
+      "id": "sustained_fire",
+      "name": "Sustained Fire",
+      "tier": "SMALL",
+      "cost": 30,
+      "lane": 3,
+      "row": 4,
+      "requires": [
+        "unfolding_array"
+      ],
+      "move": "",
+      "description": "The beam pours out 25% longer.",
+      "effects": [
+        {
+          "param": "tool.cursed_rifle.beam_duration",
+          "mul": 1.25
+        }
+      ]
+    },
+    {
+      "id": "harmonised_arms",
+      "name": "Harmonised Arms",
+      "tier": "MECHANICAL",
+      "cost": 50,
+      "lane": 2,
+      "row": 5,
+      "requires": [
+        "fast_focus"
+      ],
+      "move": "",
+      "description": "The four arms brace in step: the beam's output rises (wider, stronger, more of a match in a clash).",
+      "effects": [
+        {
+          "param": "tool.cursed_rifle.output",
+          "mul": 1.3
+        }
+      ]
+    },
+    {
+      "id": "focused_lenses",
+      "name": "Focused Lenses",
+      "tier": "MECHANICAL",
+      "cost": 50,
+      "lane": 3,
+      "row": 5,
+      "requires": [
+        "sustained_fire"
+      ],
+      "move": "",
+      "description": "The focusing lenses are ground true: the beam's output rises again.",
+      "effects": [
+        {
+          "param": "tool.cursed_rifle.output",
+          "mul": 1.35
+        }
+      ]
+    },
+    {
+      "id": "maximum_output",
+      "name": "Maximum Output",
+      "tier": "AWAKENING",
+      "cost": 220,
+      "lane": 3,
+      "row": 6,
+      "requires": [
+        "harmonised_arms",
+        "focused_lenses",
+        "lens_economy"
+      ],
+      "move": "",
+      "description": "Capstone. Everything the rifle has: a beam as wide and as strong as True Love Beam or Every Last Drop, white-hot at the core with an electric-blue glow, able to hold its own in a beam clash. It still costs most of the reserve, charges fully and recovers slowly.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_rifle.maximum_output"
+        }
+      ]
+    }
   ]
 }

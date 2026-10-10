@@ -46,7 +46,7 @@ public final class MeleeSystem {
 
     /** Entry point for a melee input from a client. */
     public static void handleInput(LivingEntity user, AbilityCaster caster, int kind, int flags, int targetHint) {
-        if (caster.character() == null || !user.isAlive()) return;
+        if (caster.activeKit() == null || !user.isAlive()) return;
         switch (kind) {
             case MeleeInputPayload.LIGHT -> light(user, caster, flags, targetHint);
             case MeleeInputPayload.HEAVY_START -> heavyStart(user, caster);
@@ -190,7 +190,8 @@ public final class MeleeSystem {
     // --- Moves ---
 
     private static MeleeMoveset moveset(AbilityCaster caster) {
-        JJKCharacter c = caster.character();
+        // The cursed tool's basic attacks while its moveset is in use, the technique's otherwise.
+        JJKCharacter c = caster.activeKit();
         return c != null ? c.melee(caster) : new MeleeMoveset("", "", 1f, 1f, 1f);
     }
 

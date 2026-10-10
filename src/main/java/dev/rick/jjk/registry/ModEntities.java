@@ -54,7 +54,7 @@ public final class ModEntities {
     /** The Prison Realm in the world (saved: it lies where it sealed someone). */
     public static final EntityType<dev.rick.jjk.progression.prison.PrisonRealmEntity> PRISON_REALM = register("prison_realm",
             EntityType.Builder.<dev.rick.jjk.progression.prison.PrisonRealmEntity>of(dev.rick.jjk.progression.prison.PrisonRealmEntity::new, MobCategory.MISC)
-                    .sized(1.1f, 1.1f).noSummon().fireImmune().clientTrackingRange(16).updateInterval(2).noLootTable());
+                    .sized(0.3f, 0.3f).noSummon().fireImmune().clientTrackingRange(16).updateInterval(2).noLootTable());
     /** The common curses: graded cursed spirits found through investigations. */
     public static final EntityType<dev.rick.jjk.progression.curse.FlyHeadEntity> FLY_HEAD = register("fly_head",
             EntityType.Builder.<dev.rick.jjk.progression.curse.FlyHeadEntity>of(dev.rick.jjk.progression.curse.FlyHeadEntity::new, MobCategory.MONSTER)

@@ -18,7 +18,7 @@ public final class RifleCounter implements BeamCounters.Counter {
     private RifleCounter() {}
 
     public static void register() {
-        BeamCounters.registerHeld(e -> e instanceof ServerPlayer p && RifleServer.isRifle(p.getMainHandItem()) && RifleRules.beamUnlocked(p) ? INSTANCE : null);
+        BeamCounters.registerHeld(e -> e instanceof ServerPlayer p && RifleServer.wielding(p) && RifleRules.beamUnlocked(p) ? INSTANCE : null);
     }
 
     @Override

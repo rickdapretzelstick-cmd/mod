@@ -3,31 +3,249 @@
   "kind": "TOOL",
   "owner": "slaughter_demon",
   "title": "Slaughter Demon",
-  "lanes": ["Edge", "Footwork", "Kill"],
+  "lanes": [
+    "Footwork",
+    "Edge",
+    "Stance",
+    "Kill"
+  ],
   "nodes": [
-    {"id": "keen_edge", "name": "Keen Edge", "tier": "SMALL", "cost": 8, "lane": 0, "row": 0,
-     "description": "The blade bites deeper into cursed flesh. +15% damage.",
-     "effects": [{"param": "tool.slaughter_demon.damage", "mul": 1.15}]},
-    {"id": "light_grip", "name": "Light Grip", "tier": "SMALL", "cost": 8, "lane": 1, "row": 0,
-     "description": "You stop strangling the hilt. +12% attack speed.",
-     "effects": [{"param": "tool.slaughter_demon.speed", "mul": 1.12}]},
-    {"id": "flurry", "name": "Flurry", "tier": "MECHANICAL", "cost": 20, "lane": 0, "row": 1, "requires": ["keen_edge"],
-     "description": "Every third cut on the same target in quick succession lands a heavy follow-through and staggers it.",
-     "effects": [{"unlock": "tool.slaughter_demon.flurry"}]},
-    {"id": "precision", "name": "Precision", "tier": "MECHANICAL", "cost": 20, "lane": 1, "row": 1, "requires": ["light_grip"],
-     "description": "A falling strike finds the weak point: +50% damage when you cut on the way down.",
-     "effects": [{"unlock": "tool.slaughter_demon.precision"}]},
-    {"id": "honed_flurry", "name": "Honed Flurry", "tier": "SMALL", "cost": 18, "lane": 0, "row": 2, "requires": ["flurry"],
-     "description": "Flurry's follow-through hits 40% harder.",
-     "effects": [{"param": "tool.slaughter_demon.flurry", "mul": 1.4}]},
-    {"id": "quickstep", "name": "Quickstep", "tier": "MECHANICAL", "cost": 30, "lane": 1, "row": 2, "requires": ["precision"],
-     "description": "Use: dart forward and cut the first thing in your path. A gap-closer with a short cooldown.",
-     "effects": [{"unlock": "tool.slaughter_demon.quickstep"}]},
-    {"id": "long_step", "name": "Long Step", "tier": "SMALL", "cost": 18, "lane": 1, "row": 3, "requires": ["quickstep"],
-     "description": "Quickstep covers 40% more ground.",
-     "effects": [{"param": "tool.slaughter_demon.quickstep_reach", "mul": 1.4}]},
-    {"id": "severing_point", "name": "Severing Point", "tier": "MAJOR", "cost": 60, "lane": 2, "row": 3, "requires": ["honed_flurry", "quickstep"],
-     "description": "Milestone. A weakened curse of Grade 3 or lower (a quarter of its strength left) is cut apart in one stroke.",
-     "effects": [{"unlock": "tool.slaughter_demon.severing_point"}, {"param": "tool.slaughter_demon.damage", "mul": 1.1}]}
+    {
+      "id": "long_step",
+      "name": "Long Step",
+      "tier": "SMALL",
+      "cost": 10,
+      "lane": 0,
+      "row": 0,
+      "description": "Quickstep (1) darts 35% further.",
+      "effects": [
+        {
+          "param": "tool.slaughter_demon.sd_quickstep_reach",
+          "mul": 1.35
+        }
+      ]
+    },
+    {
+      "id": "keen_edge",
+      "name": "Keen Edge",
+      "tier": "SMALL",
+      "cost": 8,
+      "lane": 1,
+      "row": 0,
+      "description": "The blade bites deeper into cursed flesh. +15% damage with every move.",
+      "effects": [
+        {
+          "param": "tool.slaughter_demon.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "light_grip",
+      "name": "Light Grip",
+      "tier": "SMALL",
+      "cost": 10,
+      "lane": 2,
+      "row": 0,
+      "description": "You stop strangling the hilt: faster swings, and Draw Cut (R) comes back 20% sooner.",
+      "effects": [
+        {
+          "param": "tool.slaughter_demon.speed",
+          "mul": 1.12
+        },
+        {
+          "param": "tool.slaughter_demon.sd_drawcut_cooldown",
+          "mul": 0.8
+        }
+      ]
+    },
+    {
+      "id": "return_cut",
+      "name": "Return Cut",
+      "tier": "MECHANICAL",
+      "cost": 20,
+      "lane": 0,
+      "row": 1,
+      "requires": [
+        "long_step"
+      ],
+      "description": "R variant of Quickstep: press R as you dart to cut straight back through them.",
+      "effects": [
+        {
+          "unlock": "tool.slaughter_demon.sd_quickstep_r"
+        }
+      ]
+    },
+    {
+      "id": "flurry",
+      "name": "Flurry",
+      "tier": "MECHANICAL",
+      "cost": 18,
+      "lane": 1,
+      "row": 1,
+      "requires": [
+        "keen_edge"
+      ],
+      "description": "New move (2): four rapid cuts in front, the last staggering. In the hand: every third cut on one foe lands a follow-through.",
+      "effects": [
+        {
+          "unlock": "tool.slaughter_demon.flurry"
+        }
+      ]
+    },
+    {
+      "id": "parry",
+      "name": "Mirror Parry",
+      "tier": "MECHANICAL",
+      "cost": 26,
+      "lane": 2,
+      "row": 1,
+      "requires": [
+        "light_grip"
+      ],
+      "description": "New move (4): hold a stance for a moment; a blow or a bullet that meets it is turned aside and answered from behind the attacker.",
+      "effects": [
+        {
+          "unlock": "tool.slaughter_demon.parry"
+        }
+      ]
+    },
+    {
+      "id": "precision",
+      "name": "Precision",
+      "tier": "MECHANICAL",
+      "cost": 18,
+      "lane": 0,
+      "row": 2,
+      "requires": [
+        "return_cut"
+      ],
+      "description": "Quickstep recovers 20% sooner; in the hand, a falling cut hits 50% harder.",
+      "effects": [
+        {
+          "unlock": "tool.slaughter_demon.precision"
+        },
+        {
+          "param": "tool.slaughter_demon.sd_quickstep_cooldown",
+          "mul": 0.8
+        }
+      ]
+    },
+    {
+      "id": "rising_flurry",
+      "name": "Rising Flurry",
+      "tier": "MECHANICAL",
+      "cost": 22,
+      "lane": 1,
+      "row": 2,
+      "requires": [
+        "flurry"
+      ],
+      "description": "R variant of Flurry: press R as it starts and the last cut launches them.",
+      "effects": [
+        {
+          "unlock": "tool.slaughter_demon.sd_flurry_r"
+        }
+      ]
+    },
+    {
+      "id": "long_parry",
+      "name": "Patient Blade",
+      "tier": "SMALL",
+      "cost": 16,
+      "lane": 2,
+      "row": 2,
+      "requires": [
+        "parry"
+      ],
+      "description": "Mirror Parry's stance holds 40% longer.",
+      "effects": [
+        {
+          "param": "tool.slaughter_demon.sd_parry_window",
+          "mul": 1.4
+        }
+      ]
+    },
+    {
+      "id": "extra_cut",
+      "name": "Extra Cut",
+      "tier": "SMALL",
+      "cost": 16,
+      "lane": 1,
+      "row": 3,
+      "requires": [
+        "rising_flurry"
+      ],
+      "description": "Flurry cuts one more time, and reaches a little further.",
+      "effects": [
+        {
+          "param": "tool.slaughter_demon.sd_flurry_hits",
+          "add": 1
+        },
+        {
+          "param": "tool.slaughter_demon.sd_flurry_reach",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "severing_point",
+      "name": "Severing Point",
+      "tier": "MAJOR",
+      "cost": 40,
+      "lane": 3,
+      "row": 2,
+      "requires": [
+        "flurry",
+        "parry"
+      ],
+      "description": "New move (3): a lunging thrust. A curse of Grade 3 or lower on its last quarter is cut apart in one stroke.",
+      "effects": [
+        {
+          "unlock": "tool.slaughter_demon.severing_point"
+        },
+        {
+          "param": "tool.slaughter_demon.damage",
+          "mul": 1.1
+        }
+      ]
+    },
+    {
+      "id": "deep_sever",
+      "name": "Deep Sever",
+      "tier": "SMALL",
+      "cost": 20,
+      "lane": 3,
+      "row": 3,
+      "requires": [
+        "severing_point"
+      ],
+      "description": "Severing Point cuts apart curses with up to 40% of their strength left.",
+      "effects": [
+        {
+          "param": "tool.slaughter_demon.sd_sever_threshold",
+          "mul": 1.6
+        }
+      ]
+    },
+    {
+      "id": "thousand_cuts",
+      "name": "Thousand Cuts",
+      "tier": "AWAKENING",
+      "cost": 120,
+      "lane": 3,
+      "row": 4,
+      "requires": [
+        "deep_sever",
+        "precision",
+        "long_parry"
+      ],
+      "description": "Ultimate (G): flicker between up to five foes nearby, cutting each in turn. You know this blade now.",
+      "effects": [
+        {
+          "unlock": "tool.slaughter_demon.thousand_cuts"
+        }
+      ]
+    }
   ]
 }

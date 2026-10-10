@@ -32,6 +32,22 @@ public final class ModAttachments {
     public static final AttachmentType<dev.rick.jjk.progression.mastery.MasteryData> MASTERY = AttachmentRegistry.create(JJK.id("mastery"),
             b -> b.persistent(dev.rick.jjk.progression.mastery.MasteryData.CODEC).copyOnDeath());
 
+    /**
+     * The Cursed Item slot: the cursed tool a player has equipped (its moveset is theirs while it is there). Saved with
+     * the player, and synced to everyone (others see the weapon drawn). Dropped on death like the inventory, unless
+     * keepInventory (then it carries over).
+     */
+    public static final AttachmentType<net.minecraft.world.item.ItemStack> CURSED_ITEM = AttachmentRegistry.create(JJK.id("cursed_item"),
+            b -> b.persistent(net.minecraft.world.item.ItemStack.OPTIONAL_CODEC)
+                    .syncWith(net.minecraft.world.item.ItemStack.OPTIONAL_STREAM_CODEC, net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all()));
+    /** With a technique and a cursed tool: whether the tool's moveset is the one in use (saved; synced for drawing it). */
+    public static final AttachmentType<Boolean> TOOL_MOVESET = AttachmentRegistry.create(JJK.id("tool_moveset"),
+            b -> b.persistent(Codec.BOOL).copyOnDeath()
+                    .syncWith(net.minecraft.network.codec.ByteBufCodecs.BOOL, net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all()));
+    /** The incident a player is investigating (chosen at a news board): what the Cursed Compass follows. */
+    public static final AttachmentType<String> INVESTIGATING = AttachmentRegistry.create(JJK.id("investigating"),
+            b -> b.persistent(Codec.STRING).copyOnDeath());
+
     private ModAttachments() {}
 
     public static void init() {}

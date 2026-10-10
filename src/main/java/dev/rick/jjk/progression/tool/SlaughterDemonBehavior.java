@@ -28,7 +28,7 @@ import java.util.UUID;
  * <ul>
  *   <li>{@code flurry}: every third hit on the same foe in quick succession lands an extra cut and staggers them;</li>
  *   <li>{@code precision}: a falling (critical) hit cuts deeper;</li>
- *   <li>{@code quickstep}: use dashes a few blocks forward through the first foe in line, cutting them;</li>
+ *   <li>use dashes a few blocks forward through the first foe in line, cutting them (Quickstep);</li>
  *   <li>{@code severing_point}: a curse on its last quarter of health (Grade 3 or weaker) is exorcised outright by a hit.</li>
  * </ul>
  */
@@ -72,12 +72,13 @@ public final class SlaughterDemonBehavior implements ToolBehavior {
 
     @Override
     public boolean use(ServerLevel level, ServerPlayer player, ItemStack stack) {
-        if (!Mastery.unlocked(player, def.unlockKey("quickstep")) || player.getCooldowns().isOnCooldown(stack)) return false;
+        // In the hand, use is Quickstep (the moveset's move 1, the same dart).
+        if (player.getCooldowns().isOnCooldown(stack)) return false;
         Vec3 look = player.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0, look.z);
         if (flat.lengthSqr() < 1e-4) return false;
         flat = flat.normalize();
-        double reach = 5 * Mastery.param(player, def.paramKey("quickstep_reach"));
+        double reach = 5 * Mastery.param(player, def.paramKey("sd_quickstep_reach"));
         Vec3 from = player.position().add(0, 0.6, 0);
         var hit = level.clip(new ClipContext(from, from.add(flat.scale(reach)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         double go = hit.getType() == HitResult.Type.MISS ? reach : Math.max(0, hit.getLocation().distanceTo(from) - 0.6);

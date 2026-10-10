@@ -12,8 +12,22 @@ import dev.rick.jjk.progression.mastery.MasteryTree;
  * @param damage       its swing's attack damage (on top of the player's base 1)
  * @param attackSpeed  attacks per second
  */
-public record CursedToolDefinition(String id, String displayName, Style style, float damage, float attackSpeed, String description) {
+public record CursedToolDefinition(String id, String displayName, Style style, float damage, float attackSpeed, String description, Rarity rarity) {
     public enum Style { FAST, HEAVY, RANGED, SPECIAL }
+
+    /**
+     * How many can exist. {@link #COMMON}: anyone can make or find one, as often as they like. {@link #RARE}: found, not
+     * made (its source decides how often). {@link #UNIQUE}: one in the whole world, ever live at once (like a technique).
+     */
+    public enum Rarity { COMMON, RARE, UNIQUE }
+
+    public CursedToolDefinition(String id, String displayName, Style style, float damage, float attackSpeed, String description) {
+        this(id, displayName, style, damage, attackSpeed, description, Rarity.COMMON);
+    }
+
+    public boolean unique() {
+        return rarity == Rarity.UNIQUE;
+    }
 
     public String treeId() {
         return MasteryTree.toolId(id);

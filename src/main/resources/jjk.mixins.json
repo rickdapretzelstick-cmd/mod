@@ -10,7 +10,11 @@
     "MobMixin",
     "PlayerMixin",
     "ProjectileMixin",
-    "ServerLevelSpawnMixin"
+    "ServerLevelSpawnMixin",
+    "AbstractContainerMenuAccessor",
+    "InventoryMenuMixin"
   ],
-  "injectors": { "defaultRequire": 1 }
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

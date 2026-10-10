@@ -20,7 +20,7 @@ import org.joml.Matrix3x2fStack;
  * And, for whoever an incoming beam could be answered by, the counter prompt with their Ultimate key.
  */
 public final class BeamClashHud {
-    private static final int TLB = 0xFFF76BFF, ELD = 0xFF5AB4FF, RIFLE = 0xFF73D1FF;
+    private static final int TLB = 0xFFF76BFF, ELD = 0xFF5AB4FF, RIFLE = 0xFFFF9A3C;
     private static final String[] TEXT = {"GREAT!", "GOOD", "MISS"};
     private static final int[] COLOR = {0xFFFFE27A, 0xFFFFFFFF, 0xFFFF5A5A};
 

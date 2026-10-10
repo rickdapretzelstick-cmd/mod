@@ -120,6 +120,16 @@ public final class ClientState {
         return !character.isEmpty();
     }
 
+    /** The keys use the equipped cursed tool's moveset. */
+    public static boolean usingTool() {
+        return (flags & CasterSyncPayload.FLAG_TOOL) != 0;
+    }
+
+    /** There is both a technique and a cursed tool to switch between. */
+    public static boolean canSwitchMoveset() {
+        return (flags & CasterSyncPayload.FLAG_CAN_SWITCH) != 0;
+    }
+
     public static void apply(CasterSyncPayload p) {
         boolean wasAwakened = awakened();
         character = p.character();

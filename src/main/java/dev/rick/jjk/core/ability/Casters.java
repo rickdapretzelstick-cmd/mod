@@ -16,6 +16,13 @@ public final class Casters {
         return entity instanceof CasterHolder h ? h.jjk$casterOrNull() : null;
     }
 
+    /** A caster that fights with something of this mod's: a technique, or a cursed tool's kit. */
+    @Nullable
+    public static AbilityCaster armed(Entity entity) {
+        AbilityCaster c = getOrNull(entity);
+        return c != null && c.armed() ? c : null;
+    }
+
     /** The caster if this entity is playing a character. */
     @Nullable
     public static AbilityCaster active(Entity entity) {

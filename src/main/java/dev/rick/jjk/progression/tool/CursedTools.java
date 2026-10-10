@@ -31,7 +31,8 @@ public final class CursedTools {
 
     /** The Cursed Rifle: found, not made (a lodge investigation's reward). Its stock makes a poor club. */
     public static final CursedToolDefinition CURSED_RIFLE = new CursedToolDefinition("cursed_rifle", "Cursed Rifle",
-            CursedToolDefinition.Style.RANGED, 2f, 1.0f, "A cursed rifle with a scope, and four folded support arms round its barrel.");
+            CursedToolDefinition.Style.RANGED, 2f, 1.0f, "A cursed rifle with a scope, and four folded support arms round its barrel.",
+            CursedToolDefinition.Rarity.UNIQUE);
 
     private static final Map<String, CursedToolDefinition> DEFS = new LinkedHashMap<>();
     private static final Map<String, ToolBehavior> BEHAVIORS = new LinkedHashMap<>();
@@ -65,6 +66,13 @@ public final class CursedTools {
 
     public static void init() {
         ServerTickEvents.END_SERVER_TICK.register(CursedTools::tick);
+        // Their movesets (the Cursed Item slot).
+        dev.rick.jjk.progression.tool.kit.CursedKits.register(new dev.rick.jjk.progression.tool.kit.SlaughterDemonKit());
+        dev.rick.jjk.progression.tool.kit.CursedKits.register(new dev.rick.jjk.progression.tool.kit.CleaverKit());
+        dev.rick.jjk.progression.tool.kit.CursedKits.register(new dev.rick.jjk.progression.tool.kit.RifleKit());
+        dev.rick.jjk.progression.tool.kit.CursedKits.init();
+        dev.rick.jjk.core.defense.Defenses.register(new dev.rick.jjk.progression.tool.kit.SlaughterDemonKit.ParryDefense());
+        dev.rick.jjk.core.defense.Defenses.register(new dev.rick.jjk.progression.tool.kit.CleaverKit.WallDefense());
         dev.rick.jjk.progression.tool.rifle.RifleServer.init();
         dev.rick.jjk.progression.tool.rifle.RifleCounter.register();
     }

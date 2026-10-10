@@ -14,15 +14,17 @@ import java.util.Map;
 /**
  * The Cursed Rifle's beam drawn: the same square torrent as True Love Beam and Every Last Drop (the same layers, surges,
  * streaks and impact, from the same shared profile the server hits with), sized by the server's half-width and coloured
- * by its output. The first unlock is a narrower, dimmer violet-blue; Maximum Output burns electric blue round a
- * white-hot core, as wide as the others. Capped where a clash holds it.
+ * by its output: orange outside, white inside. The first unlock is narrower and dimmer; Maximum Output blazes as wide as
+ * the others. Capped where a clash holds it.
  */
 public final class RifleBeams {
     private static final Map<Integer, ClientBeam> BEAMS = new HashMap<>();
     private static final Map<Integer, Float> OUTPUT = new HashMap<>();
 
-    private static final LoveBeams.Palette BASE = new LoveBeams.Palette(0.46f, 0.38f, 1f, new float[] {0.24f, 0.16f, 0.62f}, new float[] {0.06f, 0.03f, 0.2f});
-    private static final LoveBeams.Palette MAX = new LoveBeams.Palette(0.12f, 0.66f, 1f, new float[] {0.06f, 0.4f, 0.96f}, new float[] {0f, 0.08f, 0.3f});
+    // Orange outside, white-hot inside (the core layers always run to white): the first unlock a deeper, dimmer ember,
+    // Maximum Output a blazing orange.
+    private static final LoveBeams.Palette BASE = new LoveBeams.Palette(0.95f, 0.38f, 0.06f, new float[] {0.7f, 0.2f, 0.02f}, new float[] {0.22f, 0.05f, 0f});
+    private static final LoveBeams.Palette MAX = new LoveBeams.Palette(1f, 0.55f, 0.1f, new float[] {0.95f, 0.36f, 0.03f}, new float[] {0.32f, 0.09f, 0f});
 
     private RifleBeams() {}
 

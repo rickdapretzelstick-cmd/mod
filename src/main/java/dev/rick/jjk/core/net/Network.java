@@ -21,6 +21,7 @@ public final class Network {
         c2s.register(ClashInputPayload.TYPE, ClashInputPayload.CODEC);
         c2s.register(CharacterSelectPayload.TYPE, CharacterSelectPayload.CODEC);
         c2s.register(MasteryPurchasePayload.TYPE, MasteryPurchasePayload.CODEC);
+        c2s.register(MovesetSwitchPayload.TYPE, MovesetSwitchPayload.CODEC);
         c2s.register(RhythmInputPayload.TYPE, RhythmInputPayload.CODEC);
         c2s.register(BeamClashInputPayload.TYPE, BeamClashInputPayload.CODEC);
 
@@ -67,15 +68,17 @@ public final class Network {
                 dev.rick.jjk.progression.mastery.Mastery.sync(ctx.player());
             }
         });
+        ServerPlayNetworking.registerGlobalReceiver(MovesetSwitchPayload.TYPE, (p, ctx) ->
+                dev.rick.jjk.progression.tool.kit.CursedKits.switchMoveset(ctx.player()));
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
-            AbilityCaster caster = Casters.active(player);
+            AbilityCaster caster = Casters.armed(player);
             if (caster == null) return;
             MeleeSystem.handleInput(player, caster, p.kind(), p.flags(), p.targetHint());
         });
         ServerPlayNetworking.registerGlobalReceiver(AbilityInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
-            AbilityCaster caster = Casters.active(player);
+            AbilityCaster caster = Casters.armed(player);
             AbilitySlot slot = AbilitySlot.byIndex(p.slot());
             if (caster == null || slot == null) return;
             Entity hint = p.targetHint() >= 0 ? player.level().getEntity(p.targetHint()) : null;
