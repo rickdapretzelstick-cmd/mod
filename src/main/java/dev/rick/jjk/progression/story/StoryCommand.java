@@ -195,7 +195,7 @@ public final class StoryCommand {
             return 0;
         }
         ItemStack relic = RelicItem.create(s.relic().get(), token);
-        if (!p.getInventory().add(relic)) p.drop(relic, false);
+        if (!p.getInventory().add(relic)) p.drop(relic, false, net.minecraft.util.Prediction.SERVER_ONLY);
         c.getSource().sendSuccess(() -> Component.literal("Forged the world's " + s.kit() + " relic for " + p.getName().getString()), true);
         return 1;
     }

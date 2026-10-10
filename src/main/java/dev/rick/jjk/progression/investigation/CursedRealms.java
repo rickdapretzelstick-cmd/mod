@@ -71,6 +71,11 @@ public final class CursedRealms {
         /** Where the curses appear, relative to the origin. */
         List<Vec3> curseSpots();
 
+        /** Which way players face on arrival (degrees, Minecraft yaw), or NaN to keep the way they faced. */
+        default float arrivalYaw() {
+            return Float.NaN;
+        }
+
         /** Pulled in from above (and so given a slow fall), or set down. */
         default boolean fromAbove() {
             return false;
@@ -387,7 +392,8 @@ public final class CursedRealms {
     }
 
     private static void arrive(ServerPlayer p, ServerLevel realm, Vec3 at, Layout layout) {
-        p.teleport(new TeleportTransition(realm, at, Vec3.ZERO, p.getYRot(), 10f, Set.<Relative>of(), TeleportTransition.DO_NOTHING));
+        float yaw = Float.isNaN(layout.arrivalYaw()) ? p.getYRot() : layout.arrivalYaw();
+        p.teleport(new TeleportTransition(realm, at, Vec3.ZERO, yaw, 10f, Set.<Relative>of(), TeleportTransition.DO_NOTHING));
         p.fallDistance = 0;
         // The fade in: the dark lifts over a few seconds.
         p.removeEffect(MobEffects.BLINDNESS);

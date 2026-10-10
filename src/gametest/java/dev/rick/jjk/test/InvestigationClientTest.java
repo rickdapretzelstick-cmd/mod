@@ -24,7 +24,7 @@ import java.util.Arrays;
 
 /**
  * Investigations through a real client: the three common curses drawn from their models (through Cursed Glasses), the
- * Mastery screen's technique and tool tabs, a village news board and a note read in full, and a cursed realm entered
+ * Mastery screen's tool tab (the only one now), a village news board and a note read in full, and a cursed realm entered
  * (in a real world it is its own dimension). Opt-in: screenshots in build/run/clientGameTest/screenshots as inv*.png.
  */
 public class InvestigationClientTest implements FabricClientGameTest {
@@ -49,13 +49,9 @@ public class InvestigationClientTest implements FabricClientGameTest {
             server.runCommand("kill @e[type=jjk:school_crawler]");
             server.runCommand("kill @e[type=jjk:school_maw]");
 
-            // Mastery: Gojo's tree (owned) and the Slaughter Demon's (in hand), some of each developed.
+            // Mastery: only the Slaughter Demon's tree (in hand); the technique trees are retired, even for an owned kit.
             server.runCommand("gamemode survival @a");
             server.runCommand("jjk kit grant gojo @p");
-            server.runCommand("jjk mastery give @p technique/gojo 700");
-            for (String n : new String[] {"red_focus", "red_limitless", "quick_hands", "face_grater", "blue_reach", "thin_infinity"}) {
-                server.runCommand("jjk mastery buy @p technique/gojo " + n);
-            }
             server.runCommand("item replace entity @a weapon.mainhand with jjk:slaughter_demon");
             server.runCommand("jjk mastery give @p tool/slaughter_demon 40");
             server.runCommand("jjk mastery buy @p tool/slaughter_demon keen_edge");
@@ -67,15 +63,8 @@ public class InvestigationClientTest implements FabricClientGameTest {
             in.pressKey(mastery);
             ctx.waitTicks(10);
             String tabs = ctx.computeOnClient(mc -> mc.gui.screen() instanceof MasteryScreen s ? String.join(",", s.tabIds()) : "none");
-            if (!tabs.equals("technique/gojo,tool/slaughter_demon")) throw new AssertionError("tabs: " + tabs);
-            ctx.runOnClient(mc -> ((MasteryScreen) mc.gui.screen()).select("red_limitless"));
-            ctx.waitTicks(4);
-            ctx.takeScreenshot("inv2_mastery_technique");
-            ctx.runOnClient(mc -> {
-                MasteryScreen s = (MasteryScreen) mc.gui.screen();
-                s.selectTab(1);
-                s.select("flurry");
-            });
+            if (!tabs.equals("tool/slaughter_demon")) throw new AssertionError("tabs: " + tabs);
+            ctx.runOnClient(mc -> ((MasteryScreen) mc.gui.screen()).select("flurry"));
             ctx.waitTicks(4);
             ctx.takeScreenshot("inv3_mastery_tool");
             in.pressKey(InputConstants.KEY_ESCAPE);

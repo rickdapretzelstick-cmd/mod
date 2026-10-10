@@ -121,7 +121,7 @@ final class StorySites {
         }
         // The screen on the far wall (inside, facing the seats).
         for (int b = -width + 1; b <= width - 1; b++) for (int y = 1; y < h - 1; y++) {
-            set(l, base.relative(d, -half + 1).relative(side, b).above(y), Blocks.WHITE_WOOL.defaultBlockState());
+            set(l, base.relative(d, -half + 1).relative(side, b).above(y), Blocks.WOOL.white().defaultBlockState());
         }
         // Rows of seats facing the screen, an aisle down the middle.
         for (int row = 0; row < 4; row++) {
@@ -229,11 +229,11 @@ final class StorySites {
         for (int a = -half; a <= half; a++) {
             for (int b = -width; b <= width; b++) {
                 BlockPos c = base.relative(d, a).relative(side, b);
-                set(l, c.below(), b == 0 ? Blocks.WHITE_WOOL.defaultBlockState() : Blocks.SMOOTH_STONE.defaultBlockState());
+                set(l, c.below(), b == 0 ? Blocks.WOOL.white().defaultBlockState() : Blocks.SMOOTH_STONE.defaultBlockState());
                 boolean edge = Math.abs(a) == half || Math.abs(b) == width;
                 for (int y = 0; y < h; y++) {
                     BlockState s = !edge ? Blocks.AIR.defaultBlockState()
-                            : (y == 2 && Math.abs(b) == width && a % 2 == 0) ? Blocks.WHITE_STAINED_GLASS_PANE.defaultBlockState()
+                            : (y == 2 && Math.abs(b) == width && a % 2 == 0) ? Blocks.STAINED_GLASS_PANE.white().defaultBlockState()
                             : r.nextInt(9) == 0 ? Blocks.MOSSY_STONE_BRICKS.defaultBlockState() : Blocks.CALCITE.defaultBlockState();
                     set(l, c.above(y), s);
                 }
@@ -248,7 +248,7 @@ final class StorySites {
         // The altar, candles round it, white flowers.
         BlockPos altar = base.relative(d, -half + 2);
         set(l, altar, Blocks.CHISELED_QUARTZ_BLOCK.defaultBlockState());
-        set(l, altar.above(), Blocks.WHITE_CANDLE.defaultBlockState());
+        set(l, altar.above(), Blocks.DYED_CANDLE.white().defaultBlockState());
         for (Direction s : new Direction[] {side, side.getOpposite()}) {
             set(l, altar.relative(s), Blocks.CANDLE.defaultBlockState());
             set(l, altar.relative(s, 2), Blocks.LILY_OF_THE_VALLEY.defaultBlockState().canSurvive(l, altar.relative(s, 2))

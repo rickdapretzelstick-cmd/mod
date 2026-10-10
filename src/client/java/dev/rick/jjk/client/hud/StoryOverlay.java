@@ -127,7 +127,8 @@ public final class StoryOverlay {
 
     private static void blindfold(GuiGraphicsExtractor g, int w, int h, float t) {
         float fadeIn = Mth.clamp(t / 30f, 0, 1);
-        g.fill(0, 0, w, h, Math.round(200 * fadeIn) << 24);
+        // Severely restricted: the world is all but gone (cursed energy, glowing through it, is what's left to see).
+        g.fill(0, 0, w, h, Math.round(238 * fadeIn) << 24);
         float breath = 0.5f + 0.5f * Mth.sin(t * 0.08f);
         int steps = 10;
         for (int i = 0; i < steps; i++) {

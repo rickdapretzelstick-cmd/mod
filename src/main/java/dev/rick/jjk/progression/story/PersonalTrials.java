@@ -667,7 +667,7 @@ public final class PersonalTrials {
                         // The climax: the blindfold comes off.
                         ItemStack fold = p.getItemBySlot(EquipmentSlot.HEAD).copy();
                         p.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
-                        if (!p.getInventory().add(fold)) p.drop(fold, false);
+                        if (!p.getInventory().add(fold)) p.drop(fold, false, net.minecraft.util.Prediction.SERVER_ONLY);
                         p.removeEffect(MobEffects.BLINDNESS);
                         ServerPlayNetworking.send(p, new StoryPayload(StoryPayload.SIX_EYES, "", "", 0, 120));
                         Fx.flash(realm, p.position(), 4, 0xFFFFFFFF, 10);
@@ -759,7 +759,7 @@ public final class PersonalTrials {
                 far = 0;
             }
             protect(realm, p);
-            meter(p, "Trust " + "♥".repeat(Math.min(6, trust)) + "♡".repeat(Math.max(0, 6 - trust)), story.color());
+            meter(p, "Trust " + Math.min(6, trust) + " / 6", story.color());
             switch (phase) {
                 case 0 -> {
                     // The haunting: she closes in on them while they look away.

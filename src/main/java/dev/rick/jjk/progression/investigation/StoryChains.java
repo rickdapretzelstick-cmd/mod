@@ -137,7 +137,7 @@ public final class StoryChains {
         p.sendSystemMessage(Component.literal("Something condenses out of what happened there, and settles in your hands.")
                 .withStyle(ChatFormatting.LIGHT_PURPLE, ChatFormatting.ITALIC));
         if (!p.getInventory().add(essence)) {
-            ItemEntity dropped = p.drop(essence, false);
+            ItemEntity dropped = p.drop(essence, false, net.minecraft.util.Prediction.SERVER_ONLY);
             if (dropped != null) dropped.setUnlimitedLifetime();
         }
     }

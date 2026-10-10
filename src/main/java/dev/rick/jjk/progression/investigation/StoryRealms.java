@@ -52,7 +52,7 @@ public final class StoryRealms {
             for (int x = -24; x <= 24; x++) {
                 for (int z = -3; z <= 3; z++) {
                     BlockState s = Math.abs(z) == 3 ? Blocks.POLISHED_DEEPSLATE.defaultBlockState()
-                            : (x % 4 == 0 && z == 0) ? Blocks.LIGHT_GRAY_CONCRETE.defaultBlockState() : Blocks.DEEPSLATE_TILES.defaultBlockState();
+                            : (x % 4 == 0 && z == 0) ? Blocks.CONCRETE.lightGray().defaultBlockState() : Blocks.DEEPSLATE_TILES.defaultBlockState();
                     set(l, o.offset(x, 0, z), s);
                     set(l, o.offset(x, -1, z), Blocks.DEEPSLATE.defaultBlockState());
                 }
@@ -102,6 +102,11 @@ public final class StoryRealms {
         }
 
         @Override
+        public float arrivalYaw() {
+            return -90f;
+        }
+
+        @Override
         public String entryLine() {
             return "The tower is right there. It has always been right there. You can't reach it.";
         }
@@ -118,21 +123,21 @@ public final class StoryRealms {
             for (int x = -hx - 1; x <= hx + 1; x++) {
                 for (int z = -hz - 1; z <= hz + 1; z++) {
                     set(l, o.offset(x, -1, z), Blocks.STONE_BRICKS.defaultBlockState());
-                    set(l, o.offset(x, 0, z), Math.abs(z) <= 1 ? Blocks.RED_CARPET.defaultBlockState() : Blocks.DARK_OAK_PLANKS.defaultBlockState());
+                    set(l, o.offset(x, 0, z), Math.abs(z) <= 1 ? Blocks.CARPET.red().defaultBlockState() : Blocks.DARK_OAK_PLANKS.defaultBlockState());
                     if (Math.abs(z) <= 1) set(l, o.offset(x, -1, z), Blocks.DARK_OAK_PLANKS.defaultBlockState());
-                    set(l, o.offset(x, h, z), Blocks.BLACK_CONCRETE.defaultBlockState());
+                    set(l, o.offset(x, h, z), Blocks.CONCRETE.black().defaultBlockState());
                     boolean wall = Math.abs(x) == hx + 1 || Math.abs(z) == hz + 1;
-                    if (wall) for (int y = 0; y < h; y++) set(l, o.offset(x, y, z), y % 3 == 1 ? Blocks.RED_TERRACOTTA.defaultBlockState() : Blocks.DARK_OAK_PLANKS.defaultBlockState());
+                    if (wall) for (int y = 0; y < h; y++) set(l, o.offset(x, y, z), y % 3 == 1 ? Blocks.DYED_TERRACOTTA.red().defaultBlockState() : Blocks.DARK_OAK_PLANKS.defaultBlockState());
                 }
             }
             // The carpet sits on planks (a carpet needs a floor under it).
             for (int x = -hx; x <= hx; x++) for (int z = -1; z <= 1; z++) {
                 set(l, o.offset(x, 0, z), Blocks.DARK_OAK_PLANKS.defaultBlockState());
-                set(l, o.offset(x, 1, z), Blocks.RED_CARPET.defaultBlockState());
+                set(l, o.offset(x, 1, z), Blocks.CARPET.red().defaultBlockState());
             }
             // The screen across the far (east) wall, lit from behind.
             for (int z = -hz + 2; z <= hz - 2; z++) for (int y = 2; y < h - 1; y++) {
-                set(l, o.offset(hx, y, z), Blocks.WHITE_CONCRETE.defaultBlockState());
+                set(l, o.offset(hx, y, z), Blocks.CONCRETE.white().defaultBlockState());
                 set(l, o.offset(hx + 1, y, z), Blocks.SEA_LANTERN.defaultBlockState());
             }
             // Rows of seats facing the screen, with gaps between blocks of seats.
@@ -164,6 +169,11 @@ public final class StoryRealms {
         @Override
         public int radius() {
             return 20;
+        }
+
+        @Override
+        public float arrivalYaw() {
+            return -90f;
         }
 
         @Override
@@ -222,6 +232,11 @@ public final class StoryRealms {
         @Override
         public int radius() {
             return 21;
+        }
+
+        @Override
+        public float arrivalYaw() {
+            return 180f;
         }
 
         @Override
@@ -299,6 +314,11 @@ public final class StoryRealms {
         }
 
         @Override
+        public float arrivalYaw() {
+            return -90f;
+        }
+
+        @Override
         public String entryLine() {
             return "The crowd roars. A bell rings. Place your bets.";
         }
@@ -328,11 +348,11 @@ public final class StoryRealms {
             // The chapel's back wall, standing alone, its round window.
             for (int x = -6; x <= 6; x++) for (int y = 1; y <= 9 - Math.abs(x) / 2; y++) {
                 boolean window = x * x + (y - 6) * (y - 6) <= 5;
-                set(l, o.offset(x, y, -14), window ? Blocks.WHITE_STAINED_GLASS.defaultBlockState()
+                set(l, o.offset(x, y, -14), window ? Blocks.STAINED_GLASS.white().defaultBlockState()
                         : r.nextInt(7) == 0 ? Blocks.MOSSY_STONE_BRICKS.defaultBlockState() : Blocks.CALCITE.defaultBlockState());
             }
             set(l, o.offset(0, 1, -12), Blocks.CHISELED_QUARTZ_BLOCK.defaultBlockState());
-            set(l, o.offset(0, 2, -12), Blocks.WHITE_CANDLE.defaultBlockState());
+            set(l, o.offset(0, 2, -12), Blocks.DYED_CANDLE.white().defaultBlockState());
             // Pale lights hanging in the dark.
             for (int i = 0; i < 8; i++) {
                 double a = Mth.TWO_PI * i / 8 + 0.2;
@@ -354,6 +374,11 @@ public final class StoryRealms {
         @Override
         public int radius() {
             return 17;
+        }
+
+        @Override
+        public float arrivalYaw() {
+            return 180f;
         }
 
         @Override

@@ -45,7 +45,8 @@
       "dev.rick.jjk.test.PrisonRealmClientTest",
       "dev.rick.jjk.test.InvestigationClientTest",
       "dev.rick.jjk.test.RifleClientTest",
-      "dev.rick.jjk.test.CursedGearClientTest"
+      "dev.rick.jjk.test.CursedGearClientTest",
+      "dev.rick.jjk.test.StoryClientTest"
     ]
   },
   "depends": {
