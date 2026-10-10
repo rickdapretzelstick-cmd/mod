@@ -32,6 +32,13 @@ public final class CombatHud {
     /** Presentation per ability id. Infinity keeps its entry for when it returns to the moveset. */
     private static final java.util.Map<String, Meta> META = java.util.Map.ofEntries(
             java.util.Map.entry("blue", meta("Lapse Blue", 0xFF4F9BFF, false, "blue")),
+            // The Cursed Rifle's moveset (drawn from the Cursed Item slot).
+            java.util.Map.entry("rf_snap", meta("Snap Shot", 0xFFE6ECFF, false, "rf_snap")),
+            java.util.Map.entry("rf_aimed", meta("Aimed Shot", 0xFF3FA3AD, false, "rf_aimed")),
+            java.util.Map.entry("rf_volley", meta("Suppressing Volley", 0xFF9A7BFF, false, "rf_volley")),
+            java.util.Map.entry("rf_flare", meta("Lens Flare", 0xFFE6ECFF, false, "rf_flare")),
+            java.util.Map.entry("rf_bash", meta("Stock Bash", 0xFFB07A4A, false, "rf_bash")),
+            java.util.Map.entry("rf_array", meta("Unfolding Array", 0xFFFF8A24, true, "rf_array")),
             java.util.Map.entry("red", meta("Reversal Red", 0xFFFF3B30, false, "red")),
             java.util.Map.entry("rapid_punches", meta("Rapid Punches", 0xFFCFE8FF, false, "rapid_punches")),
             java.util.Map.entry("twofold_kick", meta("Twofold Kick", 0xFF8FC8FF, false, "twofold_kick")),

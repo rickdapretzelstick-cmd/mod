@@ -899,3 +899,95 @@ for y in range(1, 15):
 fist(i, 2, 4, 9, 7, GOLD_L, GOLD_)
 i.outline()
 i.save('not_invited')
+
+# --- Cursed Rifle (its moveset from the Cursed Item slot) ---
+R_METAL, R_METAL_L, R_WOOD, R_WOOD_D = 0x2A2C30, 0x5E656B, 0x6E4426, 0x4A2C18
+R_GLASS, R_CELL, R_VIOLET, R_PALE, R_ORANGE = 0x3FA3AD, 0xEC3B51, 0x9A7BFF, 0xE6ECFF, 0xFF8A24
+
+
+def rifle(i, y=8, x0=2, x1=13):
+    """A small side-on rifle: stock at the right, barrel to the left, scope on top."""
+    for x in range(x0, x1 + 1):
+        i.set(x, y, R_METAL)
+    for x in range(x1 - 3, x1 + 2):
+        i.set(x, y, R_WOOD)
+        i.set(x, y + 1, R_WOOD_D)
+    i.set(x1 + 1, y + 2, R_WOOD_D)
+    i.set(x1 - 5, y + 1, R_METAL)
+    i.set(x1 - 5, y + 2, R_METAL)
+    for x in range(x1 - 8, x1 - 4):
+        i.set(x, y - 1, R_METAL_L)
+    i.set(x1 - 4, y - 2, R_GLASS)
+    i.set(x1 - 8, y - 2, R_METAL)
+
+
+# Snap Shot: the rifle from the hip, a flash at the muzzle and the round's streak.
+i = Icon()
+rifle(i, 9, 4, 13)
+for (x, y) in ((2, 9), (3, 8), (3, 10), (1, 9)):
+    i.set(x, y, 0xFFF1B0)
+i.set(2, 9, 0xFFFFFF)
+i.line(0, 6, 3, 6, R_PALE)
+i.line(0, 12, 2, 12, R_PALE)
+i.outline()
+i.save('rf_snap')
+
+# Aimed Shot: the scope's reticle, settled on the mark.
+i = Icon()
+i.ring(5.2, 6.4, R_METAL)
+i.disk(5.1, 0x1E3F45)
+i.ring(4.0, 4.6, R_GLASS)
+for k in range(3, 13):
+    if abs(k - 7.5) > 1:
+        i.set(k, 7, R_PALE)
+        i.set(7, k, R_PALE)
+i.set(7, 7, R_CELL)
+i.set(8, 7, R_CELL)
+i.outline()
+i.save('rf_aimed')
+
+# Suppressing Volley: three rounds in a fan of violet tracers.
+i = Icon()
+for k, y in enumerate((3, 7, 11)):
+    i.line(2, y + 1, 12, y - 1 + k, R_VIOLET)
+    i.set(13, y - 1 + k, 0xFFFFFF)
+    i.set(14, y - 1 + k, R_PALE)
+i.outline()
+i.save('rf_volley')
+
+# Lens Flare: an arm's lens throwing a blinding star.
+i = Icon()
+for a in range(8):
+    ang = a * math.pi / 4
+    r = 7 if a % 2 == 0 else 5
+    i.line(C, C, C + math.cos(ang) * r, C + math.sin(ang) * r, R_PALE)
+i.disk(2.6, R_GLASS)
+i.disk(1.4, 0xFFFFFF)
+i.outline()
+i.save('rf_flare')
+
+# Stock Bash: the stock driven out, an impact burst ahead of it.
+i = Icon()
+for y in range(5, 12):
+    for x in range(7, 14):
+        if x - 7 <= (y - 5) + 3:
+            i.set(x, y, R_WOOD if (x + y) % 4 else R_WOOD_D)
+for x in range(9, 15):
+    i.set(x, 4, R_METAL)
+for (x, y) in ((4, 8), (3, 6), (2, 9), (4, 11), (5, 5), (1, 8)):
+    i.set(x, y, 0xFFE07A)
+i.set(3, 8, 0xFFFFFF)
+i.outline()
+i.save('rf_bash')
+
+# Unfolding Array: four arms opened round the crimson iris, the beam's orange core.
+i = Icon()
+for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+    for k in range(3, 7):
+        i.set(round(C + dx * k), round(C + dy * k), R_METAL_L)
+    i.set(round(C + dx * 7), round(C + dy * 7), R_GLASS)
+i.disk(2.7, R_ORANGE)
+i.disk(1.6, R_CELL)
+i.disk(0.8, 0xFFFFFF)
+i.outline()
+i.save('rf_array')
