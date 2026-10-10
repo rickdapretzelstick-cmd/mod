@@ -57,6 +57,10 @@ public final class InvestigationState {
         public List<String> incidents() {
             return List.copyOf(incidents);
         }
+
+        public void setBoardForTest(BlockPos at) {
+            board = at.immutable();
+        }
     }
 
     /** A cursed-realm arena in use: its slot in the realm dimension, its incident, and who is in it. */

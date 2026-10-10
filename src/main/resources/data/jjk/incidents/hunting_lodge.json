@@ -6,7 +6,11 @@
   "trigger": "scope",
   "realm": "forest_realm",
   "curses": [
-    {"kind": "forest_stalker", "min": 1, "max": 1}
+    {
+      "kind": "forest_stalker",
+      "min": 1,
+      "max": 1
+    }
   ],
   "reward": "cursed_rifle",
   "trail": 0,
@@ -18,6 +22,14 @@
     {
       "headline": "Someone Is Still Hunting Up There",
       "body": "Woodcutters say that {landmark}, at dusk, they keep hearing a rifle from the old hunting lodge {dir} of here, though the place has stood empty for years. {name} says the shots come in pairs, and that nothing ever comes out of the trees afterwards. Families are asked to keep children away from the lodge after dark."
+    },
+    {
+      "headline": "A Rifle Fired With No One Holding It",
+      "body": "Travellers passing {landmark} {dir} of the village {dist} heard a single shot from the old hunting lodge and saw no one at the windows. {name}, who used to hunt with the man who kept it, went as far as the trees and turned back, and says the scope on the sill was turned to face the road, which it never was."
+    },
+    {
+      "headline": "Tracks That End in the Woods",
+      "body": "{name} followed a deer trail past the hunting lodge {dir} of here {dist} and found a line of boot prints walking out into the trees, then stopping dead in open ground. No prints coming back. The hunting stands out there have bullet holes in them, fresh, all fired from the direction of the lodge."
     }
   ]
 }
