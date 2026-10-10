@@ -52,7 +52,8 @@ public final class Sites {
             "cliff", new Kind(Sites::findCliff, Sites::buildCliff, "the cliffs"),
             "pasture", new Kind(Sites::findPasture, Sites::buildPasture, "the grazing land"),
             "hillside", new Kind(Sites::findHillside, Sites::buildMine, "the hillside"),
-            "lodge", new Kind(LodgeSite::find, LodgeSite::build, "out in the woods"));
+            "lodge", new Kind(LodgeSite::find, LodgeSite::build, "out in the woods"),
+            "house", new Kind(Sites::findPasture, Sites::buildHouse, "the old house"));
 
     private Sites() {}
 
@@ -216,6 +217,60 @@ public final class Sites {
         BlockPos end = mouth.offset(dx * 9, -4, dz * 9);
         for (int w = -1; w <= 1; w++) for (int y = 0; y < 3; y++) level.setBlock(end.offset(sx * w, y, sz * w), Blocks.DEEPSLATE.defaultBlockState(), 2);
         level.setBlock(mouth.offset(sx, 0, sz).offset(-dx, 0, -dz), Blocks.LANTERN.defaultBlockState(), 2);
+    }
+
+    // --- House: an abandoned cottage on flat ground, its bed still made ---
+
+    /**
+     * The empty house: a small cottage of old planks and mossy stone, a sagging roof with holes in it, its door hanging
+     * open, cobwebs in the corners, and the bed nobody has slept in since. Marks its {@code door} (the threshold) and its
+     * {@code bed} (where the incident is set off).
+     */
+    static void buildHouse(ServerLevel level, Incident in) {
+        RandomSource r = RandomSource.create(in.id.hashCode());
+        BlockPos base = surface(level, in.site);
+        int hx = 3, hz = 3, h = 4;
+        for (int x = -hx; x <= hx; x++) {
+            for (int z = -hz; z <= hz; z++) {
+                boolean wall = Math.abs(x) == hx || Math.abs(z) == hz;
+                level.setBlock(base.offset(x, -1, z), Blocks.COBBLESTONE.defaultBlockState(), 2);
+                for (int y = 0; y < h; y++) {
+                    BlockState st = !wall ? Blocks.AIR.defaultBlockState()
+                            : (Math.abs(x) == hx && Math.abs(z) == hz) ? Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()
+                            : y == 0 ? Blocks.MOSSY_COBBLESTONE.defaultBlockState()
+                            : y == 1 && (x == 0 || z == 0) ? Blocks.AIR.defaultBlockState()
+                            : r.nextInt(9) == 0 ? Blocks.AIR.defaultBlockState() : Blocks.SPRUCE_PLANKS.defaultBlockState();
+                    level.setBlock(base.offset(x, y, z), st, 2);
+                }
+                // The roof, with holes.
+                if (r.nextInt(6) != 0) level.setBlock(base.offset(x, h, z), Blocks.DARK_OAK_SLAB.defaultBlockState(), 2);
+            }
+        }
+        // The door, on the side facing out, hanging open; glass gone from the windows.
+        BlockPos door = base.offset(in.dirX * hx, 0, in.dirZ * hx);
+        level.setBlock(door, Blocks.AIR.defaultBlockState(), 2);
+        level.setBlock(door.above(), Blocks.AIR.defaultBlockState(), 2);
+        net.minecraft.core.Direction out = net.minecraft.core.Direction.getApproximateNearest(in.dirX, 0, in.dirZ);
+        level.setBlock(door, Blocks.SPRUCE_DOOR.defaultBlockState().setValue(net.minecraft.world.level.block.DoorBlock.FACING, out)
+                .setValue(net.minecraft.world.level.block.DoorBlock.OPEN, true), 2);
+        level.setBlock(door.above(), Blocks.SPRUCE_DOOR.defaultBlockState().setValue(net.minecraft.world.level.block.DoorBlock.FACING, out)
+                .setValue(net.minecraft.world.level.block.DoorBlock.OPEN, true)
+                .setValue(net.minecraft.world.level.block.DoorBlock.HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER), 2);
+        // The bed against the far wall, made; a table, a cold lantern, webs.
+        BlockPos foot = base.offset(-in.dirX * (hx - 2), 0, -in.dirZ * (hx - 2));
+        BlockPos head = foot.offset(-in.dirX, 0, -in.dirZ);
+        net.minecraft.core.Direction facing = out.getOpposite();
+        level.setBlock(head, Blocks.BED.white().defaultBlockState().setValue(net.minecraft.world.level.block.BedBlock.FACING, facing)
+                .setValue(net.minecraft.world.level.block.BedBlock.PART, net.minecraft.world.level.block.state.properties.BedPart.HEAD), 2);
+        level.setBlock(foot, Blocks.BED.white().defaultBlockState().setValue(net.minecraft.world.level.block.BedBlock.FACING, facing)
+                .setValue(net.minecraft.world.level.block.BedBlock.PART, net.minecraft.world.level.block.state.properties.BedPart.FOOT), 2);
+        BlockPos side = base.offset(in.dirZ * 2, 0, -in.dirX * 2);
+        level.setBlock(side, Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
+        level.setBlock(side.above(), Blocks.SPRUCE_PRESSURE_PLATE.defaultBlockState(), 2);
+        level.setBlock(base.offset(-in.dirZ * 2, 0, in.dirX * 2), Blocks.LANTERN.defaultBlockState(), 2);
+        for (int i = 0; i < 4; i++) level.setBlock(base.offset(r.nextBoolean() ? 2 : -2, h - 1, r.nextBoolean() ? 2 : -2), Blocks.COBWEB.defaultBlockState(), 2);
+        in.marks.put("door", door.immutable());
+        in.marks.put("bed", foot.immutable());
     }
 
     /** The deepest point of the mine tunnel (where its trigger waits). */

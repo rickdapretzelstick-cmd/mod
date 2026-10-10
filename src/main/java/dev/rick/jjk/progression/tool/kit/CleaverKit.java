@@ -47,6 +47,11 @@ import java.util.UUID;
  * </ol>
  */
 public final class CleaverKit extends CursedToolKit {
+    @Override
+    public GripProfile grip() {
+        return GripProfile.HEAVY;
+    }
+
     public CleaverKit() {
         super(CursedTools.CURSED_CLEAVER, new MeleeMoveset("", "", 1.35f, 1.4f, 0.85f));
         bind(AbilitySlot.SKILL_1, new Heavy());
@@ -101,7 +106,7 @@ public final class CleaverKit extends CursedToolKit {
 
             @Override
             public void start() {
-                Anim.play(user, "yuta_heavy_charge");
+                Anim.play(user, "cl_heavy_charge");
                 setPhase(0, cfg().clHeavyMaxCharge);
             }
 
@@ -129,7 +134,7 @@ public final class CleaverKit extends CursedToolKit {
                     if (!held || age >= max) {
                         swingAt = age;
                         charge = Mth.clamp(age / (float) max, 0.2f, 1f);
-                        Anim.play(user, whirl ? "yuta_steel_downslam" : "yuta_heavy");
+                        Anim.play(user, whirl ? "cl_whirl" : "cl_heavy");
                         setPhase(1, 10);
                     }
                     return;
@@ -204,7 +209,7 @@ public final class CleaverKit extends CursedToolKit {
 
             @Override
             public void start() {
-                Anim.play(user, "yuta_steel_sprint");
+                Anim.play(user, "cl_charge");
                 setPhase(0, 16);
                 Fx.sound(level, user.position(), SoundEvents.RAVAGER_ROAR, 0.5f, 1.4f);
             }
@@ -288,7 +293,7 @@ public final class CleaverKit extends CursedToolKit {
 
             @Override
             public void start() {
-                Anim.play(user, "yuta_steel_downslam");
+                Anim.play(user, "cl_splitter");
                 setPhase(0, 24);
             }
 
@@ -357,7 +362,7 @@ public final class CleaverKit extends CursedToolKit {
 
             @Override
             public void start() {
-                Anim.play(user, "yuta_guard_katana");
+                Anim.play(user, "cl_wall");
                 setPhase(0, cfg().clWallTicks);
                 Fx.play(level, "kit_wall", chest(user), HakariCombat.flat(user), 1f, user.getId());
             }
@@ -381,7 +386,7 @@ public final class CleaverKit extends CursedToolKit {
                 if (swingAt < 0) {
                     if (!held || age >= cfg().clWallTicks * param(user, "duration")) {
                         swingAt = age;
-                        Anim.play(user, "yuta_heavy");
+                        Anim.play(user, "cl_counter");
                         setPhase(1, 10);
                     }
                     return;
@@ -467,7 +472,7 @@ public final class CleaverKit extends CursedToolKit {
 
             @Override
             public void start() {
-                Anim.play(user, "yuta_steel_jab");
+                Anim.play(user, "cl_haft");
                 setPhase(0, 8);
             }
 
@@ -522,7 +527,7 @@ public final class CleaverKit extends CursedToolKit {
 
             @Override
             public void start() {
-                Anim.play(user, "yuta_steel_uppercut");
+                Anim.play(user, "cl_exec_leap");
                 setPhase(0, 30);
                 Fx.play(level, "kit_ultimate", chest(user), dir, 1f, user.getId());
                 Motion.set(user, dir.scale(0.6).add(0, 0.95, 0));
@@ -540,7 +545,7 @@ public final class CleaverKit extends CursedToolKit {
                     if (user.onGround() || age > 26) {
                         crashed = true;
                         user.fallDistance = 0;
-                        Anim.play(user, "yuta_steel_downslam");
+                        Anim.play(user, "cl_exec_crash");
                         Vec3 at = user.position();
                         Fx.play(level, "tool_shockwave", at, Vec3.ZERO, 2.2f, user.getId());
                         Fx.sound(level, at, SoundEvents.GENERIC_EXPLODE.value(), 1.2f, 0.6f);

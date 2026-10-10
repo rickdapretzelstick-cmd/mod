@@ -41,6 +41,11 @@ import org.jetbrains.annotations.Nullable;
  * </ol>
  */
 public final class RifleKit extends CursedToolKit {
+    @Override
+    public GripProfile grip() {
+        return GripProfile.RANGED;
+    }
+
     public RifleKit() {
         super(CursedTools.CURSED_RIFLE, new MeleeMoveset("", "", 0.7f, 1.2f, 0.95f));
         bind(AbilitySlot.SKILL_1, new Snap());
@@ -222,6 +227,7 @@ public final class RifleKit extends CursedToolKit {
             Vec3 eye = user.getEyePosition(), look = user.getLookAngle();
             var clip = ctx.level().clip(new ClipContext(eye, eye.add(look.scale(32)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, user));
             Vec3 at = clip.getLocation();
+            dev.rick.jjk.core.anim.Anim.play(user, "rf_flare");
             Fx.play(ctx.level(), "rifle_ready", at, look.scale(-1), 1f, user.getId());
             Fx.sound(ctx.level(), at, SoundEvents.BEACON_POWER_SELECT, 1.4f, 2f);
             for (LivingEntity t : HitboxQuery.targets(user, HitShape.sphere(at, 4.0 * param(user, "radius")), 0, false)) {
@@ -254,7 +260,7 @@ public final class RifleKit extends CursedToolKit {
             return new ToolMove.Instance(this, ctx) {
                 @Override
                 public void start() {
-                    Anim.play(user, "yuta_steel_jab");
+                    Anim.play(user, "rf_bash");
                     setPhase(0, 8);
                 }
 

@@ -1,0 +1,302 @@
+{
+  "name": "cl_whirl",
+  "duration": 700,
+  "note": "The swing carries on round: a full turn with the cleaver out at arm's length.",
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "ATTACK",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -14
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            24,
+            0,
+            14
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            18,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -3.5,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            -80,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -90,
+            60,
+            30
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -90,
+            80,
+            20
+          ]
+        }
+      }
+    },
+    {
+      "t": 200,
+      "ease": "EASE_IN",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -14
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            24,
+            0,
+            14
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            18,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -3.5,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            100,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            0,
+            80,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -90,
+            -70,
+            -20
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -90,
+            -40,
+            -20
+          ]
+        }
+      },
+      "marker": "spin1"
+    },
+    {
+      "t": 420,
+      "ease": "LINEAR",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -14
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            24,
+            0,
+            14
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            18,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -3.5,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            -100,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            0,
+            -60,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -90,
+            60,
+            30
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -90,
+            80,
+            20
+          ]
+        }
+      },
+      "marker": "spin2"
+    },
+    {
+      "t": 700,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "head": {
+          "rot": [
+            2,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            10,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            2,
+            6,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -46,
+            -18,
+            4
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -30,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -50,
+            34,
+            -4
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -34,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            10,
+            0,
+            6
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -12,
+            0,
+            -6
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            8,
+            0,
+            0
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            10,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -1.5,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

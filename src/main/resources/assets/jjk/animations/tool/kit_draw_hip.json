@@ -1,0 +1,113 @@
+{
+  "name": "kit_draw_hip",
+  "duration": 360,
+  "note": "The blade comes out of the sheath at the left hip in one pull.",
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "COMBAT",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -20,
+            40,
+            10
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -50,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            -16,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            6,
+            10,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "t": 120,
+      "ease": "EASE_IN",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -10,
+            60,
+            20
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -70,
+            0,
+            0
+          ]
+        },
+        "rightHand": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            6,
+            -24,
+            0
+          ]
+        }
+      },
+      "marker": "draw"
+    },
+    {
+      "t": 360,
+      "ease": "OVERSHOOT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -50,
+            -14,
+            6
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -20,
+            0,
+            0
+          ]
+        },
+        "rightHand": {
+          "rot": [
+            10,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            2,
+            4,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

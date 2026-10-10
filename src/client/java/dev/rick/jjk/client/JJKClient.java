@@ -70,10 +70,12 @@ public class JJKClient implements ClientModInitializer {
             if (renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>) {
                 helper.register(new dev.rick.jjk.client.render.BlindfoldLayer(renderer));
                 helper.register(new dev.rick.jjk.client.render.YutaGearLayer(renderer));
+                helper.register(new dev.rick.jjk.client.gear.CursedGearLayer(renderer));
             }
         });
         // The animation debugger works in either mode (it only shows once turned on).
         HudElementRegistry.addLast(JJK.id("anim_debug"), (g, delta) -> dev.rick.jjk.client.anim.AnimDebug.renderHud(g));
+        HudElementRegistry.addLast(JJK.id("realm_transition"), (g, delta) -> dev.rick.jjk.client.hud.RealmTransitionOverlay.render(g, delta));
         HudElementRegistry.addLast(JJK.id("rifle_hud"), (g, delta) -> dev.rick.jjk.client.rifle.RifleHud.render(g));
         HudElementRegistry.addLast(JJK.id("prison_view"), (g, delta) -> dev.rick.jjk.client.prison.PrisonClient.renderHud(g));
         // Every custom HUD layer is skipped in Vanilla Minecraft mode.

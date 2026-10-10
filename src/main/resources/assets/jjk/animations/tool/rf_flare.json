@@ -1,0 +1,113 @@
+{
+  "name": "rf_flare",
+  "duration": 520,
+  "note": "The rifle tipped up so the arms' lenses catch and throw the light.",
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "ATTACK",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -80,
+            -6,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -84,
+            36,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "t": 160,
+      "ease": "EASE_IN",
+      "bones": {
+        "chest": {
+          "rot": [
+            -10,
+            0,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            -6,
+            0,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -120,
+            -10,
+            0
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -20,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -126,
+            30,
+            0
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -14,
+            0,
+            0
+          ]
+        }
+      },
+      "marker": "flare"
+    },
+    {
+      "t": 520,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -80,
+            -6,
+            0
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -40,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -84,
+            36,
+            0
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -30,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,253 @@
+{
+  "name": "sd_drawcut",
+  "duration": 520,
+  "note": "From the sheath straight into a wide sweep.",
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "ATTACK",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -14
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            24,
+            0,
+            14
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            18,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -3.5,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            10,
+            -30,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            4,
+            -20,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -10,
+            70,
+            30
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -70,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -10,
+            30,
+            -10
+          ]
+        }
+      }
+    },
+    {
+      "t": 130,
+      "ease": "EASE_IN",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -14
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            24,
+            0,
+            14
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            18,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -4,
+            3
+          ]
+        },
+        "chest": {
+          "rot": [
+            14,
+            60,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            6,
+            40,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -90,
+            -90,
+            -10
+          ]
+        },
+        "rightHand": {
+          "rot": [
+            90,
+            0,
+            0
+          ]
+        }
+      },
+      "marker": "sweep"
+    },
+    {
+      "t": 520,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "head": {
+          "rot": [
+            2,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            2,
+            6,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            2,
+            4,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -40,
+            -10,
+            6
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -24,
+            0,
+            0
+          ]
+        },
+        "rightHand": {
+          "rot": [
+            14,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -18,
+            14,
+            -12
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -18,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            8,
+            0,
+            4
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -10,
+            0,
+            -4
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            6,
+            0,
+            0
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            8,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -1,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

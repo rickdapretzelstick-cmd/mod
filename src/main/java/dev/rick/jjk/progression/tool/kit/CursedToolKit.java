@@ -97,4 +97,9 @@ public abstract class CursedToolKit extends JJKCharacter {
     public Ability move(AbilitySlot slot) {
         return ability(slot, BASE);
     }
+
+    /** How this tool is held and carried (the client draws it by this). */
+    public GripProfile grip() {
+        return GripProfile.ONE_HAND;
+    }
 }

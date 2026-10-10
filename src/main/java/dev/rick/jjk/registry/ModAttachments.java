@@ -44,6 +44,9 @@ public final class ModAttachments {
     public static final AttachmentType<Boolean> TOOL_MOVESET = AttachmentRegistry.create(JJK.id("tool_moveset"),
             b -> b.persistent(Codec.BOOL).copyOnDeath()
                     .syncWith(net.minecraft.network.codec.ByteBufCodecs.BOOL, net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all()));
+    /** Whether a player's cursed tool is drawn (its moveset in use), for everyone's view of them. Not saved: recomputed. */
+    public static final AttachmentType<Boolean> TOOL_DRAWN = AttachmentRegistry.create(JJK.id("tool_drawn"),
+            b -> b.syncWith(net.minecraft.network.codec.ByteBufCodecs.BOOL, net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all()));
     /** The incident a player is investigating (chosen at a news board): what the Cursed Compass follows. */
     public static final AttachmentType<String> INVESTIGATING = AttachmentRegistry.create(JJK.id("investigating"),
             b -> b.persistent(Codec.STRING).copyOnDeath());

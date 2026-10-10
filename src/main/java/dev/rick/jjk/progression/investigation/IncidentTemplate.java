@@ -34,7 +34,15 @@ public record IncidentTemplate(String id, int weight, CurseGrade grade, String s
         /** Going down into the site (a mine shaft). */
         DESCEND,
         /** Looking through something at the site and seeing what isn't there (the lodge's mounted scope). */
-        SCOPE
+        SCOPE,
+        /** Coming close after dark (by day the place is only a place). */
+        NIGHT,
+        /** Stepping over a threshold at the site: its door (the {@code door} mark), crossed from outside. */
+        THRESHOLD,
+        /** Lying down in a bed at the site (the {@code bed} mark), at any hour: you never get to sleep. */
+        SLEEP,
+        /** Using a particular thing at the site (the {@code object} mark): a well's bucket, a shrine's bell. */
+        INTERACT
     }
 
     /** Curses of one kind it brings: how many, and their grade if it isn't the incident's. */

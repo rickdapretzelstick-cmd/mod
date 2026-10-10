@@ -3,8 +3,8 @@
   "weight": 3,
   "grade": "GRADE_4",
   "site": "pasture",
-  "trigger": "approach",
-  "realm": "",
+  "trigger": "night",
+  "realm": "pasture_realm",
   "curses": [
     {"kind": "school_crawler", "min": 1, "max": 2},
     {"kind": "fly_head", "min": 2, "max": 3}

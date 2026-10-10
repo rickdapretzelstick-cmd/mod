@@ -1,0 +1,113 @@
+{
+  "name": "kit_draw_back",
+  "duration": 420,
+  "note": "Reached over the right shoulder and swung down into both hands.",
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "COMBAT",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -120,
+            10,
+            20
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -40,
+            0,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            -4,
+            -10,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "t": 150,
+      "ease": "EASE_IN",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -170,
+            20,
+            26
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -70,
+            0,
+            0
+          ]
+        },
+        "rightHand": {
+          "rot": [
+            -20,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            -4,
+            10,
+            0
+          ]
+        }
+      },
+      "marker": "draw"
+    },
+    {
+      "t": 420,
+      "ease": "OVERSHOOT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -56,
+            -16,
+            4
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -30,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -50,
+            34,
+            -4
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -34,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            10,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

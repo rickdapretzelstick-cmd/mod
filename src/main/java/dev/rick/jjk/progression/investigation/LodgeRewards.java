@@ -79,7 +79,7 @@ public final class LodgeRewards {
         BlockState s = level.getBlockState(pos);
         if (!s.is(ProgressionBlocks.GUN_RACK)) return;
         GunRackBlock.Rack want = in.state != Incident.State.COMPLETE ? GunRackBlock.Rack.SEALED
-                : !in.rewardsPending.isEmpty() ? GunRackBlock.Rack.OPEN : GunRackBlock.Rack.EMPTY;
+                : !in.rewardsPending.isEmpty() && RifleClaims.bearer(level.getServer()) == null ? GunRackBlock.Rack.OPEN : GunRackBlock.Rack.EMPTY;
         if (s.getValue(GunRackBlock.RACK) != want) level.setBlock(pos, s.setValue(GunRackBlock.RACK, want), 3);
     }
 
@@ -104,6 +104,12 @@ public final class LodgeRewards {
             if (in.rewardsClaimed.contains(u)) say(p, "Your rifle is already with you.", ChatFormatting.GRAY);
             else if (in.rewardsPending.isEmpty()) say(p, "The pegs are empty now.", ChatFormatting.GRAY);
             else say(p, "It isn't yours to take. It wouldn't answer you.", ChatFormatting.GRAY);
+            return;
+        }
+        // The Cursed Rifle is one of a kind: while someone else holds its live claim, no rack anywhere has one to give.
+        java.util.UUID bearer = RifleClaims.bearer(level.getServer());
+        if (owed && bearer != null && !bearer.equals(u)) {
+            say(p, "The pegs are bare. There is only one such rifle in the world, and it already answers to someone.", ChatFormatting.GRAY);
             return;
         }
         int slot = p.getInventory().getFreeSlot();

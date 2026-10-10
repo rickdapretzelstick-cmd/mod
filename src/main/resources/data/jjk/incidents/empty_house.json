@@ -1,0 +1,23 @@
+{
+  "id": "empty_house",
+  "weight": 2,
+  "grade": "GRADE_3",
+  "site": "house",
+  "trigger": "sleep",
+  "realm": "house_realm",
+  "curses": [
+    {"kind": "school_crawler", "min": 1, "max": 2},
+    {"kind": "school_maw", "min": 1, "max": 1}
+  ],
+  "trail": 16,
+  "reports": [
+    {
+      "headline": "Nobody Will Stay in the Old House",
+      "body": "The cottage {dir} of the village {dist} has stood empty since {name} moved out of it in a hurry, telling anyone who would listen that the bed was always warm in the morning, as if someone had just got up from it. Two travellers who sheltered there last month left before dawn and would not say why."
+    },
+    {
+      "headline": "A Light in the Empty Cottage",
+      "body": "Shepherds coming home late swear there was a lantern lit in the abandoned house {dir} of here {dist}, though the door has hung open all year and nobody lives there. {name} went to look by daylight and found the bed made up fresh, and has not been back since. The family asks that nobody else lie down in it."
+    }
+  ]
+}

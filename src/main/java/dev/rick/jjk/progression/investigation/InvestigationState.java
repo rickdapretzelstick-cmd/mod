@@ -140,8 +140,15 @@ public final class InvestigationState {
             if (old != null) st.rifleClaims.remove(old);
             // Every earlier claim of theirs goes, not just the one their player data remembers (it may have rolled back).
             st.rifleClaims.values().removeIf(owner::equals);
+            // One rifle per world: issuing a claim retires anyone else's.
+            st.rifleClaims.clear();
             st.rifleClaims.put(id, owner);
             st.save();
+        }
+
+        /** Tests: forget every rifle claim (tests share one world). */
+        public static void clearForTest(InvestigationState st) {
+            st.rifleClaims.clear();
         }
     }
 

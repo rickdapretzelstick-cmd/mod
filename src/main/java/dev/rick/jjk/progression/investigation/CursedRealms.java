@@ -84,7 +84,142 @@ public final class CursedRealms {
         String entryLine();
     }
 
-    private static final Map<String, Layout> LAYOUTS = Map.of("cliff_realm", new CliffRealm(), "mine_realm", new MineRealm(), "forest_realm", new ForestRealm());
+    private static final Map<String, Layout> LAYOUTS = Map.of("cliff_realm", new CliffRealm(), "mine_realm", new MineRealm(), "forest_realm", new ForestRealm(),
+            "pasture_realm", new PastureRealm(), "house_realm", new HouseRealm(), "hollow_realm", new HollowRealm(), "finger_bearer_realm", new BattleRealm());
+    /** Arenas that belong to a cursed battle room (the Finger Bearer's), not an incident: their key starts with this. */
+    public static final String ROOM = "room:";
+
+    /** The layout for an id, or the plain hollow realm (an incident always has somewhere to fight). */
+    static Layout layout(String id) {
+        Layout l = LAYOUTS.get(id);
+        return l != null ? l : LAYOUTS.get("hollow_realm");
+    }
+
+    // --- The pull ---
+
+    /** Someone being taken: held where the pull caught them, for {@link JJKConfig.Realms#transitionTicks}, then {@code arrive}. */
+    private static final class Pull {
+        final Vec3 hold;
+        final Vec3 safe;
+        final String safeDim;
+        final Runnable arrive;
+        int age;
+
+        Pull(Vec3 hold, Vec3 safe, String safeDim, Runnable arrive) {
+            this.hold = hold;
+            this.safe = safe;
+            this.safeDim = safeDim;
+            this.arrive = arrive;
+        }
+    }
+
+    private static final Map<UUID, Pull> PULLS = new java.util.HashMap<>();
+
+    public static boolean pulling(Entity e) {
+        return PULLS.containsKey(e.getUUID());
+    }
+
+    /**
+     * Starts taking a player into a realm: they are held still where they are (mid-fall, if that's where it caught them:
+     * the cliff's drop never lands), sound dulls, the world darkens and pulses, and after the transition they arrive
+     * ({@code arrive}). Nothing hurts them meanwhile. {@code safe} is where they go if the pull is cut short.
+     */
+    public static void pull(ServerPlayer p, Vec3 safe, Runnable arrive) {
+        if (PULLS.containsKey(p.getUUID())) return;
+        PULLS.put(p.getUUID(), new Pull(p.position(), safe, p.level().dimension().identifier().toString(), arrive));
+        ServerLevel level = (ServerLevel) p.level();
+        p.setDeltaMovement(Vec3.ZERO);
+        p.needsSync = true;
+        p.fallDistance = 0;
+        int ticks = Math.max(20, dev.rick.jjk.config.JJKConfig.get().realms.transitionTicks);
+        p.addEffect(new MobEffectInstance(MobEffects.DARKNESS, ticks + 30, 0, false, false));
+        p.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, ticks, 6, false, false));
+        Fx.play(level, "curse_realm_pull", p.position().add(0, 1, 0), Vec3.ZERO, 1f);
+        ServerPlayNetworking.send(p, new FxPayload("realm_transition", p.position(), Vec3.ZERO, ticks, -1));
+        level.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.WARDEN_HEARTBEAT, net.minecraft.sounds.SoundSource.AMBIENT, 1.6f, 0.5f);
+        level.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.AMBIENT_CAVE.value(), net.minecraft.sounds.SoundSource.AMBIENT, 1.2f, 0.6f);
+    }
+
+    /** Cuts a pull short (logging out mid-pull): set down at its safe spot. */
+    public static void cancelPull(ServerPlayer p) {
+        Pull pull = PULLS.remove(p.getUUID());
+        if (pull == null) return;
+        p.teleportTo(pull.safe.x, pull.safe.y, pull.safe.z);
+        p.setDeltaMovement(Vec3.ZERO);
+        p.fallDistance = 0;
+    }
+
+    /** Test hook: finishes a pull now. */
+    public static void finishPullForTest(ServerPlayer p) {
+        Pull pull = PULLS.remove(p.getUUID());
+        if (pull != null) pull.arrive.run();
+    }
+
+    private static void tickPulls(MinecraftServer server) {
+        if (PULLS.isEmpty()) return;
+        int ticks = Math.max(20, dev.rick.jjk.config.JJKConfig.get().realms.transitionTicks);
+        for (Map.Entry<UUID, Pull> e : List.copyOf(PULLS.entrySet())) {
+            Pull pull = e.getValue();
+            ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
+            if (p == null || !p.isAlive() || p.isSpectator()) {
+                PULLS.remove(e.getKey());
+                continue;
+            }
+            pull.age++;
+            // Held: no falling, no walking off.
+            if (p.position().distanceToSqr(pull.hold) > 0.0025) p.teleportTo(pull.hold.x, pull.hold.y, pull.hold.z);
+            p.setDeltaMovement(Vec3.ZERO);
+            p.needsSync = true;
+            p.fallDistance = 0;
+            ServerLevel level = (ServerLevel) p.level();
+            if (pull.age == ticks / 2) {
+                // The pulse: a second, closer heartbeat, and the light goes.
+                level.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.WARDEN_HEARTBEAT, net.minecraft.sounds.SoundSource.AMBIENT, 2f, 0.4f);
+                p.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, ticks - pull.age + 12, 0, false, false));
+            }
+            if (pull.age % 6 == 0) Fx.play(level, "curse_realm_pull", p.position().add(0, 1, 0), Vec3.ZERO, 0.4f + 0.6f * pull.age / ticks);
+            if (pull.age >= ticks) {
+                PULLS.remove(e.getKey());
+                pull.arrive.run();
+                // If nothing took them (the incident ended meanwhile), they are set down safely.
+                if (!inRealm(p)) {
+                    p.teleportTo(pull.safe.x, pull.safe.y, pull.safe.z);
+                    p.fallDistance = 0;
+                }
+            }
+        }
+    }
+
+    /** Solid footing within a block and a half under a spot (standing, or a step off the ground). */
+    private static boolean groundUnder(ServerLevel level, Vec3 at) {
+        BlockPos b = BlockPos.containing(at.x, at.y - 0.01, at.z);
+        for (int dy = 0; dy <= 1; dy++) {
+            BlockPos q = b.below(dy);
+            if (!level.getBlockState(q).getCollisionShape(level, q).isEmpty()) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Where a player taken from an incident comes back: where they stood if that was solid ground, else (mid-jump off the
+     * cliff, mid-fall) the ground back from the edge, by the site.
+     */
+    public static Vec3 safeReturn(ServerLevel level, ServerPlayer p, Incident in) {
+        if (p.onGround() || groundUnder(level, p.position())) return p.position();
+        BlockPos back = in.site.offset(-in.dirX * 2, 0, -in.dirZ * 2);
+        // The first footing under the edge's height there (not the sky's heightmap: an overhang or a roof isn't ground).
+        int from = Math.max(back.getY() + 2, (int) Math.ceil(p.getY()));
+        for (int y = from; y > from - 48 && y > level.getMinY(); y--) {
+            BlockPos q = new BlockPos(back.getX(), y - 1, back.getZ());
+            BlockPos head = q.above();
+            if (!level.getBlockState(q).getCollisionShape(level, q).isEmpty() && level.getBlockState(head).getCollisionShape(level, head).isEmpty()
+                    && level.getBlockState(head.above()).getCollisionShape(level, head.above()).isEmpty()) {
+                return Vec3.atBottomCenterOf(head);
+            }
+        }
+        BlockPos top = level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, back);
+        return Vec3.atBottomCenterOf(top);
+    }
 
     private CursedRealms() {}
 
@@ -135,21 +270,26 @@ public final class CursedRealms {
 
     // --- Entering ---
 
-    /** Pulls a player into the incident's realm (building it if it isn't open yet). False if there is no realm to go to. */
-    static boolean enter(ServerPlayer p, Incident in, InvestigationState st) {
+    /**
+     * Takes a player into the incident's realm now (building it if it isn't open yet), skipping the pull. Everyone who
+     * sets it off while it is open joins the same arena: one arena per incident, however many come.
+     */
+    public static boolean enter(ServerPlayer p, Incident in, InvestigationState st) {
         IncidentTemplate t = in.def();
         MinecraftServer server = p.level().getServer();
         ServerLevel realm = level(server);
-        if (t == null || !t.usesRealm()) return false;
-        Layout layout = LAYOUTS.get(t.realm());
+        if (t == null) return false;
+        String layoutId = LAYOUTS.containsKey(t.realm()) ? t.realm() : "hollow_realm";
+        Layout layout = layout(layoutId);
         InvestigationState.Arena a = arenaOf(st, in.id);
         if (a == null) {
             int slot = 0;
             while (st.arenas.containsKey(slot)) slot++;
-            a = new InvestigationState.Arena(slot, in.id, t.realm(), origin(server, slot));
+            a = new InvestigationState.Arena(slot, in.id, layoutId, origin(server, slot));
             if (!dedicated(server)) JJK.LOGGER.warn("[investigations] this world has no {} dimension: the realm is built in the overworld's far sky", DIMENSION.identifier());
             a.openedAt = server.overworld().getGameTime();
             st.arenas.put(slot, a);
+            forceLoad(realm, a.origin, true);
             clear(realm, a.origin);
             layout.build(realm, a.origin, RandomSource.create(in.id.hashCode()));
             Investigations.spawnCurses(realm, in, a.origin, layout.curseSpots(), layout.radius());
@@ -157,35 +297,83 @@ public final class CursedRealms {
             in.changedAt = server.overworld().getGameTime();
             JJK.LOGGER.info("[investigations] realm {} opened for incident {} ({})", slot, in.id, t.realm());
         }
-        if (!inRealm(p)) st.returns.put(p.getUUID(), new InvestigationState.Return(p.level().dimension().identifier().toString(), p.position(), p.getYRot()));
+        if (!inRealm(p)) {
+            Vec3 back = p.level() instanceof ServerLevel from && in.dimension.equals(from.dimension().identifier().toString()) ? safeReturn(from, p, in) : p.position();
+            st.returns.put(p.getUUID(), new InvestigationState.Return(p.level().dimension().identifier().toString(), back, p.getYRot()));
+        }
         in.participants.add(p.getUUID());
         a.inside.add(p.getUUID());
         a.emptyTicks = 0;
         st.markDirty();
-        Vec3 at = Vec3.atBottomCenterOf(a.origin).add(layout.arrival());
-        // The pull: a black flash where they were, then the realm.
-        Fx.play((ServerLevel) p.level(), "curse_realm_pull", p.position().add(0, 1, 0), Vec3.ZERO, 1f);
+        arrive(p, realm, Vec3.atBottomCenterOf(a.origin).add(layout.arrival()), layout);
+        return true;
+    }
+
+    /**
+     * Takes a player into a cursed battle room's realm now (the Finger Bearer's): one arena per room, shared by everyone
+     * who walks into the room while it's open. They come back to where they stood in the room.
+     */
+    public static void enterRoom(ServerPlayer p, String roomKey, InvestigationState st) {
+        MinecraftServer server = p.level().getServer();
+        ServerLevel realm = level(server);
+        String key = ROOM + roomKey;
+        Layout layout = layout("finger_bearer_realm");
+        InvestigationState.Arena a = arenaOf(st, key);
+        if (a == null) {
+            int slot = 0;
+            while (st.arenas.containsKey(slot)) slot++;
+            a = new InvestigationState.Arena(slot, key, "finger_bearer_realm", origin(server, slot));
+            a.openedAt = server.overworld().getGameTime();
+            st.arenas.put(slot, a);
+            forceLoad(realm, a.origin, true);
+            clear(realm, a.origin);
+            layout.build(realm, a.origin, RandomSource.create(roomKey.hashCode()));
+            JJK.LOGGER.info("[encounters] realm {} opened for battle room {}", slot, roomKey);
+        }
+        if (!inRealm(p)) st.returns.put(p.getUUID(), new InvestigationState.Return(p.level().dimension().identifier().toString(), p.position(), p.getYRot()));
+        a.inside.add(p.getUUID());
+        a.emptyTicks = 0;
+        st.markDirty();
+        arrive(p, realm, Vec3.atBottomCenterOf(a.origin).add(layout.arrival()), layout);
+    }
+
+    private static void arrive(ServerPlayer p, ServerLevel realm, Vec3 at, Layout layout) {
         p.teleport(new TeleportTransition(realm, at, Vec3.ZERO, p.getYRot(), 10f, Set.<Relative>of(), TeleportTransition.DO_NOTHING));
         p.fallDistance = 0;
+        // The fade in: the dark lifts over a few seconds.
+        p.removeEffect(MobEffects.BLINDNESS);
         p.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 70, 0, false, false));
-        p.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 90, 0, false, false));
         if (layout.fromAbove()) p.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 80, 0, false, false));
         realm.playSound(null, at.x, at.y, at.z, SoundEvents.WARDEN_HEARTBEAT, net.minecraft.sounds.SoundSource.AMBIENT, 2f, 0.6f);
         realm.playSound(null, at.x, at.y, at.z, SoundEvents.AMBIENT_SOUL_SAND_VALLEY_MOOD.value(), net.minecraft.sounds.SoundSource.AMBIENT, 1.5f, 0.7f);
         ServerPlayNetworking.send(p, new FxPayload("curse_realm_pull", at.add(0, 1, 0), Vec3.ZERO, 1f, -1));
         p.sendOverlayMessage(Component.literal(layout.entryLine()).withStyle(net.minecraft.ChatFormatting.DARK_RED, net.minecraft.ChatFormatting.ITALIC));
-        return true;
+    }
+
+    /** The arena an entity in the realm stands in, or null (in the realm with no arena there: it shouldn't exist). */
+    @Nullable
+    public static InvestigationState.Arena arenaHere(Entity e) {
+        MinecraftServer s = e.level().getServer();
+        if (s == null || !inRealm(e)) return null;
+        return arenaAt(InvestigationState.get(s), e.position());
+    }
+
+    /** The arena's origin (its centre on the ground), for leashing what lives in it. */
+    public static int arenaRadius(InvestigationState.Arena a) {
+        return layout(a.layout).radius();
     }
 
     // --- Running ---
 
     static void tick(MinecraftServer server, InvestigationState st) {
+        tickPulls(server);
         ServerLevel realm = level(server);
         if (st.arenas.isEmpty()) return;
         for (InvestigationState.Arena a : List.copyOf(st.arenas.values())) {
             Incident in = st.incidents.get(a.incident);
+            boolean room = a.incident.startsWith(ROOM);
             Layout layout = LAYOUTS.get(a.layout);
-            if (in == null || layout == null) {
+            if ((in == null && !room) || layout == null) {
                 close(server, st, a, false);
                 continue;
             }
@@ -200,7 +388,19 @@ public final class CursedRealms {
                     keepInside(p, a, layout);
                 }
             }
-            if (in.state == Incident.State.COMPLETE) {
+            if (room) {
+                // The battle room's own rules: done when its spirit falls; its spirit raised again if lost.
+                int r = dev.rick.jjk.progression.curse.FingerBearerEncounter.tickArena(server, a, a.incident.substring(ROOM.length()), realm);
+                if (r > 0) {
+                    if (a.wonTicks < 0) a.wonTicks = 0;
+                    if (++a.wonTicks >= WIN_DELAY) close(server, st, a, true);
+                    continue;
+                }
+                if (r < 0) {
+                    close(server, st, a, false);
+                    continue;
+                }
+            } else if (in.state == Incident.State.COMPLETE) {
                 if (a.wonTicks < 0) a.wonTicks = 0;
                 if (++a.wonTicks >= WIN_DELAY) close(server, st, a, true);
                 continue;
@@ -234,7 +434,9 @@ public final class CursedRealms {
             if (inRealm(p) && arenaAt(st, p.position()) == a) sendHome(p, st);
         }
         clear(realm, a.origin);
+        forceLoad(realm, a.origin, false);
         st.arenas.remove(a.slot);
+        if (!won && a.incident.startsWith(ROOM)) dev.rick.jjk.progression.curse.FingerBearerEncounter.arenaAbandoned(server, a.incident.substring(ROOM.length()));
         if (!won && in != null && in.state == Incident.State.ACTIVE) {
             // Nobody finished it: the place goes quiet again, and can be tried again.
             in.state = Incident.State.OPEN;
@@ -266,6 +468,13 @@ public final class CursedRealms {
         }
         p.fallDistance = 0;
         p.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 40, 0, false, false));
+    }
+
+    /** Keeps an open arena's ground loaded and ticking (its curses fight on whoever is there), and lets it go after. */
+    private static void forceLoad(ServerLevel realm, BlockPos origin, boolean on) {
+        for (int cx = (origin.getX() - RADIUS) >> 4; cx <= (origin.getX() + RADIUS) >> 4; cx++) {
+            for (int cz = (origin.getZ() - RADIUS) >> 4; cz <= (origin.getZ() + RADIUS) >> 4; cz++) realm.setChunkForced(cx, cz, on);
+        }
     }
 
     /** Clears an arena's box back to void, and anything left standing in it. */
@@ -507,6 +716,226 @@ public final class CursedRealms {
         @Override
         public String entryLine() {
             return "The view through the scope, from the inside. The trees lean wrong, and something is moving between them.";
+        }
+    }
+
+    /**
+     * The pasture after dark, as the curse keeps it: a field of dead grass under no sky, broken fencing in rings that
+     * don't close, bones, a lone crooked tree, hay bales gone black. Open ground: the fly heads come from everywhere.
+     */
+    static final class PastureRealm implements Layout {
+        static final int R = 18;
+
+        @Override
+        public void build(ServerLevel l, BlockPos o, RandomSource r) {
+            for (int x = -R; x <= R; x++) {
+                for (int z = -R; z <= R; z++) {
+                    double d = Math.sqrt(x * x + z * z) + r.nextDouble() * 1.8;
+                    if (d > R) continue;
+                    BlockState top = r.nextInt(6) == 0 ? Blocks.COARSE_DIRT.defaultBlockState() : r.nextInt(5) == 0 ? Blocks.PODZOL.defaultBlockState()
+                            : Blocks.GRASS_BLOCK.defaultBlockState();
+                    set(l, o.offset(x, 0, z), top);
+                    for (int y = 1; y <= 3; y++) set(l, o.offset(x, -y, z), Blocks.DIRT.defaultBlockState());
+                    if (r.nextInt(4) == 0 && d < R - 1) set(l, o.offset(x, 1, z), r.nextBoolean() ? Blocks.SHORT_DRY_GRASS.defaultBlockState() : Blocks.DEAD_BUSH.defaultBlockState());
+                }
+            }
+            // Fences in broken rings.
+            for (int ring = 0; ring < 2; ring++) {
+                int rad = 7 + ring * 6;
+                for (int i = 0; i < rad * 6; i++) {
+                    double a = Mth.TWO_PI * i / (rad * 6);
+                    if (r.nextInt(3) == 0) continue;
+                    BlockPos fp = o.offset((int) Math.round(Math.cos(a) * rad), 1, (int) Math.round(Math.sin(a) * rad));
+                    if (l.getBlockState(fp.below()).isAir()) continue;
+                    set(l, fp, Blocks.DARK_OAK_FENCE.defaultBlockState());
+                }
+            }
+            for (int i = 0; i < 6; i++) {
+                int x = r.nextInt(2 * R - 8) - R + 4, z = r.nextInt(2 * R - 8) - R + 4;
+                if (x * x + z * z > (R - 3) * (R - 3)) continue;
+                set(l, o.offset(x, 1, z), i % 2 == 0 ? Blocks.BONE_BLOCK.defaultBlockState() : Blocks.HAY_BLOCK.defaultBlockState());
+            }
+            // The one tree, dead.
+            for (int y = 1; y <= 7; y++) set(l, o.offset(-9, y, -6 + y / 3), Blocks.DARK_OAK_LOG.defaultBlockState());
+            for (int[] c : new int[][] {{10, 4}, {-4, 12}, {3, -12}, {-13, 2}}) {
+                set(l, o.offset(c[0], 1, c[1]), Blocks.DARK_OAK_FENCE.defaultBlockState());
+                set(l, o.offset(c[0], 2, c[1]), Blocks.SOUL_LANTERN.defaultBlockState());
+            }
+        }
+
+        @Override
+        public Vec3 arrival() {
+            return new Vec3(0, 1, 12);
+        }
+
+        @Override
+        public List<Vec3> curseSpots() {
+            return List.of(new Vec3(0, 1.5, -8), new Vec3(-6, 2, -4), new Vec3(6, 2, -5), new Vec3(-3, 1, -11), new Vec3(4, 1, -10));
+        }
+
+        @Override
+        public int radius() {
+            return 17;
+        }
+
+        @Override
+        public String entryLine() {
+            return "The field goes on, and the night with it. Something is buzzing in the grass.";
+        }
+    }
+
+    /**
+     * The house, from the inside out: its rooms laid end to end and too long, doors that open onto more of the same
+     * hall, the bed it happened in at the far end. Close quarters: walls everywhere, corners to be caught in.
+     */
+    static final class HouseRealm implements Layout {
+        @Override
+        public void build(ServerLevel l, BlockPos o, RandomSource r) {
+            int hx = 14, hz = 6, h = 5;
+            for (int x = -hx - 1; x <= hx + 1; x++) {
+                for (int z = -hz - 1; z <= hz + 1; z++) {
+                    set(l, o.offset(x, -1, z), Blocks.STONE_BRICKS.defaultBlockState());
+                    set(l, o.offset(x, 0, z), (x + z) % 2 == 0 ? Blocks.SPRUCE_PLANKS.defaultBlockState() : Blocks.DARK_OAK_PLANKS.defaultBlockState());
+                    set(l, o.offset(x, h, z), Blocks.DARK_OAK_PLANKS.defaultBlockState());
+                    boolean wall = x == -hx - 1 || x == hx + 1 || z == -hz - 1 || z == hz + 1;
+                    if (wall) for (int y = 1; y < h; y++) set(l, o.offset(x, y, z), y == 2 && x % 4 == 0 ? Blocks.TINTED_GLASS.defaultBlockState()
+                            : Blocks.STRIPPED_SPRUCE_WOOD.defaultBlockState());
+                }
+            }
+            // Partition walls with a doorway each, never in the same place twice.
+            for (int x = -hx + 6; x < hx; x += 7) {
+                int door = -hz + 1 + r.nextInt(2 * hz - 2);
+                for (int z = -hz; z <= hz; z++) for (int y = 1; y < h; y++) {
+                    if (Math.abs(z - door) <= 0 && y <= 2) continue;
+                    set(l, o.offset(x, y, z), Blocks.STRIPPED_SPRUCE_WOOD.defaultBlockState());
+                }
+            }
+            // Furniture knocked about: chairs (stairs), a table, a cold hearth, cobwebs high.
+            for (int i = 0; i < 8; i++) {
+                int x = -hx + 1 + r.nextInt(2 * hx - 2), z = -hz + 1 + r.nextInt(2 * hz - 2);
+                if (!l.getBlockState(o.offset(x, 1, z)).isAir()) continue;
+                set(l, o.offset(x, 1, z), i % 3 == 0 ? Blocks.SPRUCE_FENCE.defaultBlockState() : i % 3 == 1 ? Blocks.SPRUCE_STAIRS.defaultBlockState() : Blocks.BARREL.defaultBlockState());
+            }
+            for (int i = 0; i < 10; i++) set(l, o.offset(-hx + r.nextInt(2 * hx), h - 1, -hz + r.nextInt(2 * hz)), Blocks.COBWEB.defaultBlockState());
+            // The bed at the far end, and a light that barely reaches it.
+            set(l, o.offset(hx - 1, 1, 0), Blocks.BED.red().defaultBlockState().setValue(net.minecraft.world.level.block.BedBlock.FACING, net.minecraft.core.Direction.WEST)
+                    .setValue(net.minecraft.world.level.block.BedBlock.PART, net.minecraft.world.level.block.state.properties.BedPart.HEAD));
+            set(l, o.offset(hx - 2, 1, 0), Blocks.BED.red().defaultBlockState().setValue(net.minecraft.world.level.block.BedBlock.FACING, net.minecraft.core.Direction.WEST)
+                    .setValue(net.minecraft.world.level.block.BedBlock.PART, net.minecraft.world.level.block.state.properties.BedPart.FOOT));
+            for (int x = -hx + 3; x < hx; x += 7) set(l, o.offset(x, h - 1, 0), Blocks.SOUL_LANTERN.defaultBlockState().setValue(net.minecraft.world.level.block.LanternBlock.HANGING, true));
+        }
+
+        @Override
+        public Vec3 arrival() {
+            return new Vec3(-12, 1, 0);
+        }
+
+        @Override
+        public List<Vec3> curseSpots() {
+            return List.of(new Vec3(10, 1, 2), new Vec3(10, 1, -2), new Vec3(3, 1, 3), new Vec3(4, 1, -3));
+        }
+
+        @Override
+        public int radius() {
+            return 15;
+        }
+
+        @Override
+        public String entryLine() {
+            return "You never fall asleep. The hall goes on further than the house did.";
+        }
+    }
+
+    /** Any other place, hollowed out: a ragged island of grey stone in the red dark, a few broken pillars. */
+    static final class HollowRealm implements Layout {
+        @Override
+        public void build(ServerLevel l, BlockPos o, RandomSource r) {
+            for (int x = -13; x <= 13; x++) {
+                for (int z = -13; z <= 13; z++) {
+                    double d = Math.sqrt(x * x + z * z) + r.nextDouble() * 2;
+                    if (d > 13) continue;
+                    for (int y = 0; y < 3; y++) set(l, o.offset(x, -y, z), y == 0 ? (r.nextInt(5) == 0 ? Blocks.TUFF.defaultBlockState() : Blocks.STONE.defaultBlockState())
+                            : Blocks.DEEPSLATE.defaultBlockState());
+                }
+            }
+            for (int i = 0; i < 6; i++) {
+                double a = Mth.TWO_PI * i / 6;
+                int x = (int) Math.round(Math.cos(a) * 9), z = (int) Math.round(Math.sin(a) * 9);
+                int h = 2 + r.nextInt(5);
+                for (int y = 1; y <= h; y++) set(l, o.offset(x, y, z), Blocks.POLISHED_DEEPSLATE.defaultBlockState());
+                if (i % 2 == 0) set(l, o.offset(x, h + 1, z), Blocks.SOUL_LANTERN.defaultBlockState());
+            }
+        }
+
+        @Override
+        public Vec3 arrival() {
+            return new Vec3(0, 1, 8);
+        }
+
+        @Override
+        public List<Vec3> curseSpots() {
+            return List.of(new Vec3(0, 1, -6), new Vec3(-5, 1, -3), new Vec3(5, 1, -3), new Vec3(-3, 1, -8), new Vec3(3, 1, -8));
+        }
+
+        @Override
+        public int radius() {
+            return 12;
+        }
+
+        @Override
+        public String entryLine() {
+            return "The place folds in on itself. You are somewhere it keeps.";
+        }
+    }
+
+    /**
+     * The Finger Bearer's realm: the battle room's seal, laid bare in a round hall of black stone, chains hanging from
+     * nothing, the seal itself in the middle where it takes shape. Room enough for its leaps and pools.
+     */
+    static final class BattleRealm implements Layout {
+        static final int R = 14;
+
+        @Override
+        public void build(ServerLevel l, BlockPos o, RandomSource r) {
+            for (int x = -R - 1; x <= R + 1; x++) {
+                for (int z = -R - 1; z <= R + 1; z++) {
+                    double d = Math.sqrt(x * x + z * z);
+                    if (d > R + 1) continue;
+                    set(l, o.offset(x, -1, z), Blocks.DEEPSLATE.defaultBlockState());
+                    BlockState floor = d < 2.5 ? Blocks.CHISELED_POLISHED_BLACKSTONE.defaultBlockState()
+                            : (int) d % 4 == 0 ? Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState()
+                            : r.nextInt(6) == 0 ? Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS.defaultBlockState() : Blocks.POLISHED_BLACKSTONE.defaultBlockState();
+                    set(l, o.offset(x, 0, z), floor);
+                    if (d > R) for (int y = 1; y <= 7; y++) set(l, o.offset(x, y, z), y == 7 ? Blocks.BLACKSTONE_WALL.defaultBlockState() : Blocks.BLACKSTONE.defaultBlockState());
+                }
+            }
+            for (int i = 0; i < 8; i++) {
+                double a = Mth.TWO_PI * i / 8;
+                int x = (int) Math.round(Math.cos(a) * (R - 2)), z = (int) Math.round(Math.sin(a) * (R - 2));
+                for (int y = 1; y <= 6; y++) set(l, o.offset(x, y, z), Blocks.POLISHED_BASALT.defaultBlockState());
+                set(l, o.offset(x, 7, z), Blocks.SOUL_LANTERN.defaultBlockState());
+                for (int y = 9; y <= 12; y++) set(l, o.offset(x / 2, y, z / 2), Blocks.IRON_CHAIN.defaultBlockState());
+            }
+        }
+
+        @Override
+        public Vec3 arrival() {
+            return new Vec3(0, 1, 10);
+        }
+
+        @Override
+        public List<Vec3> curseSpots() {
+            return List.of(new Vec3(0, 1, 0));
+        }
+
+        @Override
+        public int radius() {
+            return R - 1;
+        }
+
+        @Override
+        public String entryLine() {
+            return "The seal opens under you. Something has been waiting a long time.";
         }
     }
 }

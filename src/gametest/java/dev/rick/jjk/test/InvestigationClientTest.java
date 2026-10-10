@@ -74,7 +74,7 @@ public class InvestigationClientTest implements FabricClientGameTest {
             ctx.runOnClient(mc -> {
                 MasteryScreen s = (MasteryScreen) mc.gui.screen();
                 s.selectTab(1);
-                s.select("quickstep");
+                s.select("flurry");
             });
             ctx.waitTicks(4);
             ctx.takeScreenshot("inv3_mastery_tool");
@@ -102,6 +102,9 @@ public class InvestigationClientTest implements FabricClientGameTest {
             ctx.runOnClient(mc -> ((NewsBoardScreen) mc.gui.screen()).read(0));
             ctx.waitTicks(4);
             ctx.takeScreenshot("inv5_news_note");
+            ctx.runOnClient(mc -> ((NewsBoardScreen) mc.gui.screen()).investigate(0));
+            ctx.waitTicks(4);
+            ctx.takeScreenshot("inv5b_news_note_investigating");
             in.pressKey(InputConstants.KEY_ESCAPE);
             ctx.waitTicks(5);
 

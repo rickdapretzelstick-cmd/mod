@@ -123,7 +123,7 @@ public final class SlaughterDemonKit extends CursedToolKit {
 
             @Override
             public void start() {
-                Anim.play(user, "yuta_blade_run");
+                Anim.play(user, "sd_quickstep");
                 setPhase(0, 12);
                 cut(dart(user, dir, cfg().sdQuickstepReach * param(user, "reach")), dir);
             }
@@ -153,7 +153,7 @@ public final class SlaughterDemonKit extends CursedToolKit {
                     Vec3 d = start.subtract(user.position());
                     Vec3 flat = new Vec3(d.x, 0, d.z);
                     if (flat.lengthSqr() > 0.25) {
-                        Anim.play(user, "yuta_blade_run");
+                        Anim.play(user, "sd_return_cut");
                         cut(dart(user, flat.normalize(), flat.length()), flat.normalize());
                     }
                 }
@@ -221,7 +221,9 @@ public final class SlaughterDemonKit extends CursedToolKit {
                 if (age % 4 == 1 && done < hits) {
                     done++;
                     boolean last = done == hits;
-                    Anim.play(user, "yuta_light_" + (1 + (done - 1) % 4));
+                    // One clip for the four cuts (its markers fall on these ticks); Rising Flurry's last cut has its own.
+                    if (done == 1) Anim.play(user, "sd_flurry");
+                    else if (last && rising) Anim.play(user, "sd_rising");
                     Vec3 dir = HakariCombat.flat(user);
                     Knockback kb = !last ? Knockback.HOLD : rising ? Knockback.set(new Vec3(0, 0.95, 0).add(dir.scale(0.1)))
                             : Knockback.directional(dir, 0.6, 0.15);
@@ -273,7 +275,7 @@ public final class SlaughterDemonKit extends CursedToolKit {
 
             @Override
             public void start() {
-                Anim.play(user, "yuta_resolute_windup");
+                Anim.play(user, "sd_sever_windup");
                 setPhase(0, 18);
                 Fx.play(level, "curse_tell", chest(user).add(dir), dir, 0.6f, user.getId());
             }
@@ -284,7 +286,7 @@ public final class SlaughterDemonKit extends CursedToolKit {
                     Motion.set(user, new Vec3(0, Math.min(0, user.getDeltaMovement().y), 0));
                     return;
                 }
-                if (age == 6) Anim.play(user, "yuta_resolute_slash");
+                if (age == 6) Anim.play(user, "sd_sever");
                 if (age <= 10 && !landed) {
                     HakariCombat.drive(user, dir, 0.9);
                     for (LivingEntity t : HakariCombat.front(user, 1.8, 1.6, 2.0)) {
@@ -343,7 +345,7 @@ public final class SlaughterDemonKit extends CursedToolKit {
 
             @Override
             public void start() {
-                Anim.play(user, "yuta_outburst_grip");
+                Anim.play(user, "sd_parry_stance");
                 setPhase(0, cfg().sdParryWindow);
                 Fx.play(level, "kit_parry_stance", chest(user), HakariCombat.flat(user), 1f, user.getId());
             }
@@ -362,7 +364,7 @@ public final class SlaughterDemonKit extends CursedToolKit {
                 LivingEntity attacker = PARRIED.remove(user.getUUID());
                 if (attacker != null && riposteAt < 0) {
                     riposteAt = age;
-                    Anim.play(user, "yuta_outburst_parry");
+                    Anim.play(user, "sd_riposte");
                     Fx.sound(level, user.position(), SoundEvents.SHIELD_BLOCK.value(), 1f, 1.6f);
                     if (attacker.isAlive() && attacker.distanceToSqr(user) < 8 * 8) {
                         // Behind them, and the cut.
@@ -448,7 +450,7 @@ public final class SlaughterDemonKit extends CursedToolKit {
 
             @Override
             public void start() {
-                Anim.play(user, "yuta_light_4");
+                Anim.play(user, "sd_drawcut");
                 setPhase(0, 8);
             }
 
@@ -542,7 +544,7 @@ public final class SlaughterDemonKit extends CursedToolKit {
                         user.teleportTo(at.x, t.getY(), at.z);
                         user.fallDistance = 0;
                         HakariCombat.faceTowards(user, t.getEyePosition());
-                        Anim.play(user, "yuta_light_" + (1 + next % 4));
+                        Anim.play(user, "sd_flicker");
                         Fx.play(level, "tool_quickstep", from.add(0, 1, 0), at.subtract(from), 1.4f, user.getId());
                         HakariCombat.hit(strike(user, cfg().sdUltimateDamage).tag(AttackTag.ULTIMATE).noComboScaling().origin(user.getEyePosition())
                                 .knockback(Knockback.HOLD).hitstun(30).fx("tool_sever", 1.2f).build(), t);

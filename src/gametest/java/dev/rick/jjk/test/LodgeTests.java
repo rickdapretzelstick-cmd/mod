@@ -121,12 +121,13 @@ public class LodgeTests {
         });
         boolean[] went = new boolean[1];
         h.succeedWhen(() -> {
-            h.assertTrue(withGlasses[0] >= 0 && LodgeScope.revealed(p), "with the glasses, held on it, it resolves");
-            h.assertTrue(h.getTick() - withGlasses[0] >= LodgeScope.HOLD_TICKS - 1, "only after holding it there");
-            h.assertTrue(in.state() == Incident.State.OPEN, "seeing it changes nothing by itself");
             if (!went[0]) {
+                h.assertTrue(withGlasses[0] >= 0 && LodgeScope.revealed(p), "with the glasses, held on it, it resolves");
+                h.assertTrue(h.getTick() - withGlasses[0] >= LodgeScope.HOLD_TICKS - 1, "only after holding it there");
+                h.assertTrue(in.state() == Incident.State.OPEN, "seeing it changes nothing by itself");
                 went[0] = true;
                 LodgeScope.useForTest(p, scope);
+                h.assertTrue(CursedRealms.pulling(p), "the second use begins the pull");
             }
             h.assertTrue(CursedRealms.inRealm(p) && in.state() == Incident.State.ACTIVE, "the second use goes in");
             InvestigationState st = InvestigationState.get(h.getLevel().getServer());
@@ -149,15 +150,16 @@ public class LodgeTests {
         ServerPlayer b = player(h, h.absoluteVec(new Vec3(3.5, 1, 4.5)), true);
         Vec3 home = a.position();
         InvestigationState st = InvestigationState.get(level.getServer());
-        Investigations.begin(level, a, in, in.def(), st, level.getGameTime());
+        CursedRealms.enter(a, in, st);
         h.assertTrue(CursedRealms.inRealm(a), "A went in");
-        boolean[] killed = new boolean[1], checked = new boolean[1];
+        boolean[] checked = new boolean[1];
         h.succeedWhen(() -> {
-            if (!killed[0]) {
-                killed[0] = true;
-                for (UUID u : in.curses()) {
+            Incident now = InvestigationState.get(level.getServer()).incident(id);
+            if (now != null && now.state() != Incident.State.COMPLETE) {
+                // Exorcise whatever is still there (a curse whose chunk isn't ready yet is found on a later tick).
+                for (UUID u : now.curses()) {
                     Entity e = Investigations.curseEntity(level.getServer(), u);
-                    if (e instanceof LivingEntity le) le.hurtServer((ServerLevel) le.level(), le.damageSources().genericKill(), 10_000f);
+                    if (e instanceof LivingEntity le && le.isAlive()) le.hurtServer((ServerLevel) le.level(), le.damageSources().genericKill(), 10_000f);
                 }
                 h.fail("exorcising");
             }
@@ -183,6 +185,8 @@ public class LodgeTests {
                 LodgeRewards.useRack(a, level, rack);
                 h.assertTrue(rifles(a) == 0 && i.rewardsPending().contains(a.getUUID()), "no room: still owed");
                 a.getInventory().setItem(5, ItemStack.EMPTY);
+                // Tests share one world: nobody else's rifle claim counts here (the rifle is one per world).
+                InvestigationState.Claims.clearForTest(InvestigationState.get(level.getServer()));
                 LodgeRewards.useRack(a, level, rack);
                 h.assertTrue(rifles(a) == 1 && !i.rewardsPending().contains(a.getUUID()) && i.rewardsClaimed().contains(a.getUUID()), "claimed, once");
                 h.assertTrue(level.getBlockState(rack).getValue(GunRackBlock.RACK) == GunRackBlock.Rack.EMPTY, "the rack is empty now");

@@ -27,7 +27,9 @@
       "dev.rick.jjk.test.InvestigationTests",
       "dev.rick.jjk.test.RifleTests",
       "dev.rick.jjk.test.RifleClashTests",
-      "dev.rick.jjk.test.LodgeTests"
+      "dev.rick.jjk.test.LodgeTests",
+      "dev.rick.jjk.test.CursedKitTests",
+      "dev.rick.jjk.test.RealmTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.AnimFrameworkClientTest",
@@ -41,7 +43,8 @@
       "dev.rick.jjk.test.NoKitClientTest",
       "dev.rick.jjk.test.PrisonRealmClientTest",
       "dev.rick.jjk.test.InvestigationClientTest",
-      "dev.rick.jjk.test.RifleClientTest"
+      "dev.rick.jjk.test.RifleClientTest",
+      "dev.rick.jjk.test.CursedGearClientTest"
     ]
   },
   "depends": {

@@ -97,6 +97,18 @@ public final class CursedKits {
         JJKCharacter had = c.toolKit();
         Boolean chosen = p.getAttached(ModAttachments.TOOL_MOVESET);
         c.setToolSelected(chosen != null && chosen);
+        // Drawn or holstered, for everyone watching (and the first-person hand).
+        boolean drawn = want != null && (c.character() == null || c.toolSelected());
+        Boolean was = p.getAttached(ModAttachments.TOOL_DRAWN);
+        if (was == null || was != drawn) {
+            p.setAttached(ModAttachments.TOOL_DRAWN, drawn);
+            if (p.level() instanceof ServerLevel level && want != null) {
+                // The draw or the holster: a quick clip and the sound of it.
+                String where = want.grip().holster == GripProfile.Holster.BACK ? "back" : "hip";
+                dev.rick.jjk.core.anim.Anim.play(p, (drawn ? "kit_draw_" : "kit_holster_") + where);
+                Fx.sound(level, p.position(), drawn ? SoundEvents.ARMOR_EQUIP_IRON.value() : SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0.6f, drawn ? 1.2f : 0.9f);
+            }
+        }
         if (had == want) return;
         c.setToolKit(want);
         if (want != null && p.level() instanceof ServerLevel level) {

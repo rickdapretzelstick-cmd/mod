@@ -10,7 +10,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.item.properties.numeric.RangeSelectItemModelProperties;
 import net.minecraft.client.renderer.item.properties.numeric.RangeSelectItemModelProperty;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -40,6 +39,7 @@ public final class CursedCompassClient {
     private static float wander;
     private static final RandomSource RANDOM = RandomSource.create();
     private static int beat;
+    private static final float[] MOTE = {0.12f, 0.05f, 0.2f}, MOTE_GLOW = {0.6f, 0.35f, 1f};
 
     private CursedCompassClient() {}
 
@@ -139,8 +139,10 @@ public final class CursedCompassClient {
             // Dark motes off the compass, more of them the nearer it is.
             if (RANDOM.nextFloat() < 0.15 + near * 0.6) {
                 Vec3 hand = p.getEyePosition().add(p.getLookAngle().scale(0.6)).add(0, -0.35, 0);
-                mc.level.addParticle(RANDOM.nextBoolean() ? ParticleTypes.SMOKE : ParticleTypes.WITCH, hand.x + (RANDOM.nextFloat() - 0.5) * 0.3,
-                        hand.y, hand.z + (RANDOM.nextFloat() - 0.5) * 0.3, 0, 0.01, 0);
+                boolean glow = RANDOM.nextInt(3) == 0;
+                dev.rick.jjk.client.fx.ClientFx.add(mc.level, hand.add((RANDOM.nextFloat() - 0.5) * 0.3, 0, (RANDOM.nextFloat() - 0.5) * 0.3),
+                        new Vec3(0, 0.012, 0), glow ? dev.rick.jjk.client.particle.EnergyParticle.Sprite.GLOW : dev.rick.jjk.client.particle.EnergyParticle.Sprite.SMOKE,
+                        glow ? MOTE_GLOW : MOTE, 0.6f, glow ? 0.04f : 0.09f, 0.02f, 24 + RANDOM.nextInt(12));
             }
             // A heartbeat: slow at the edge, quick on top of it.
             int interval = (int) Mth.lerp(near, 40, 8);
