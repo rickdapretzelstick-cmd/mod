@@ -136,6 +136,7 @@ public final class Investigations {
             if (phase % 10 == 0 && CursePerception.canPerceive(p)) residue(level, p, st);
         }
         if (now % 200 == 0) expire(st, now);
+        if (now % 4 == 0) takeDownSites(server, st);
         if (now % 100 == 0) st.flush();
     }
 
@@ -188,17 +189,35 @@ public final class Investigations {
         }
         JJKConfig.MasteryRules cfg = JJKConfig.get().mastery;
         v.lastGenerated = now;
-        for (int attempt = 0; attempt < 4 && !pool.isEmpty(); attempt++) {
+        for (int attempt = 0; attempt < 8 && !pool.isEmpty(); attempt++) {
             IncidentTemplate t = pool.get(r.nextInt(pool.size()));
             Sites.Site s = Sites.find(t.site(), level, v.bell, r, cfg.incidentMinDistance, cfg.incidentMaxDistance);
             if (s == null) {
                 pool.removeIf(x -> x == t);
                 continue;
             }
+            // Never on top of another investigation's site that is still standing (another player may be on it).
+            if (crowded(st, level.dimension().identifier().toString(), s.pos())) continue;
             return create(level, v, st, t, s, now, r);
         }
         st.markDirty();
         return null;
+    }
+
+    /** Sites this close together could overlap (a lodge's grounds reach about thirty blocks out). */
+    static final int SITE_SPACING = 64;
+
+    /** Whether a new site at {@code pos} would overlap the site of an incident still standing there. */
+    public static boolean crowded(InvestigationState st, String dimension, BlockPos pos) {
+        for (Incident o : st.incidents.values()) {
+            if (o.dimension.equals(dimension) && standing(o) && o.site.distSqr(pos) < (double) SITE_SPACING * SITE_SPACING) return true;
+        }
+        return false;
+    }
+
+    /** Whether an incident still holds its ground: reported and not over, or built and not taken down (or abandoned). */
+    public static boolean standing(Incident o) {
+        return o.state == Incident.State.OPEN || o.state == Incident.State.ACTIVE || (o.featureBuilt && !o.siteCleared);
     }
 
     /** Puts a specific incident at a specific place (generation, and tests). */
@@ -260,7 +279,7 @@ public final class Investigations {
             if (t == null) continue;
             if (!in.featureBuilt && areaLoaded(level, in.site, 30) && level.isLoaded(Sites.mineEnd(in))) {
                 in.featureBuilt = true;
-                Sites.build(t.site(), level, in);
+                buildSite(level, in, t);
                 layTrail(level, in, t.trail());
                 st.markDirty();
             }
@@ -625,6 +644,14 @@ public final class Investigations {
         complete(server, in, st);
     }
 
+    /** Test hook: an incident as it comes back from disk (a restart), swapped in for the live one. */
+    public static Incident reloadForTest(MinecraftServer server, Incident in) {
+        InvestigationState st = InvestigationState.get(server);
+        Incident back = Incident.load(in.save());
+        st.incidents.put(back.id, back);
+        return back;
+    }
+
     /** Test hook: someone took part in an incident (entered its realm, fought at it). */
     public static void participateForTest(Incident in, ServerPlayer p) {
         in.participants.add(p.getUUID());
@@ -635,8 +662,46 @@ public final class Investigations {
         IncidentTemplate t = in.def();
         if (t == null || in.featureBuilt) return;
         in.featureBuilt = true;
-        Sites.build(t.site(), level, in);
+        buildSite(level, in, t);
         InvestigationState.get(level.getServer()).markDirty();
+    }
+
+    /** Builds an incident's site, recording what it changed so it can be taken down once the incident is over. */
+    static void buildSite(ServerLevel level, Incident in, IncidentTemplate t) {
+        in.footprint = new ArrayList<>(SiteFootprint.record(level, () -> Sites.build(t.site(), level, in)));
+        in.footprintRaw = null;
+    }
+
+    /**
+     * Completed incidents' sites come down, a batch at a time, wherever their ground is loaded (a restart or an unloaded
+     * chunk only pauses it). A lodge waits until nobody is still owed its rifle (the rack holds it).
+     */
+    private static void takeDownSites(MinecraftServer server, InvestigationState st) {
+        for (Incident in : st.incidents.values()) {
+            if (in.state != Incident.State.COMPLETE || in.siteCleared || !in.featureBuilt) continue;
+            if (LodgeRewards.givesRifle(in) && !in.rewardsPending.isEmpty()) continue;
+            ServerLevel level = server.getLevel(ResourceKey.create(Registries.DIMENSION, Identifier.parse(in.dimension)));
+            if (level == null) continue;
+            if (in.footprint == null) {
+                if (in.footprintRaw == null) {
+                    // Built before sites recorded their footprint: nothing known to take down.
+                    in.siteCleared = true;
+                    st.markDirty();
+                    continue;
+                }
+                in.footprint = SiteFootprint.load(level, in.footprintRaw);
+                in.footprintRaw = null;
+            }
+            if (!level.isLoaded(in.site)) continue;
+            int before = in.footprint.size();
+            boolean done = SiteFootprint.demolish(level, in.footprint);
+            if (done) {
+                in.siteCleared = true;
+                in.footprint = null;
+                JJK.LOGGER.info("[investigations] the site of incident {} ({}) has been taken down", in.id, in.template);
+            }
+            if (done || in.footprint == null || in.footprint.size() != before) st.markDirty();
+        }
     }
 
     @Nullable

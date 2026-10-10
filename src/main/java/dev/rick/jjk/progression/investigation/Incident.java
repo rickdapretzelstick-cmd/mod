@@ -54,6 +54,12 @@ public final class Incident {
     final java.util.Map<UUID, Integer> clues = new java.util.LinkedHashMap<>();
     /** The residue trail leading to the site (for perceiving players). */
     final List<BlockPos> trail = new ArrayList<>();
+    /** What building the site changed (top-down), left to take down once it is over ({@link SiteFootprint}). */
+    @Nullable List<SiteFootprint.Change> footprint;
+    /** The footprint as saved, decoded on first use (it needs the world's block registry). */
+    @Nullable ListTag footprintRaw;
+    /** The site has been taken down (it is never built or taken down again). */
+    boolean siteCleared;
 
     public Incident(String id, String template, CurseGrade grade, String dimension, BlockPos village, BlockPos site, int dirX, int dirZ,
                     long createdAt, String headline, String body) {
@@ -112,6 +118,17 @@ public final class Incident {
         return List.copyOf(trail);
     }
 
+    /** Whether its site has been taken down after it was completed. */
+    public boolean siteCleared() {
+        return siteCleared;
+    }
+
+    /** Positions of its site still standing (recorded when it was built), or -1 if it never recorded one. */
+    public int siteBlocksLeft() {
+        if (footprint != null) return footprint.size();
+        return footprintRaw != null ? footprintRaw.size() : -1;
+    }
+
     @Nullable
     public IncidentTemplate def() {
         return IncidentTemplate.get(template);
@@ -154,6 +171,9 @@ public final class Incident {
         CompoundTag mk = new CompoundTag();
         marks.forEach((k, v) -> mk.putLong(k, v.asLong()));
         t.put("Marks", mk);
+        if (footprint != null) t.put("Footprint", SiteFootprint.save(footprint));
+        else if (footprintRaw != null) t.put("Footprint", footprintRaw);
+        t.putBoolean("SiteCleared", siteCleared);
         return t;
     }
 
@@ -177,6 +197,8 @@ public final class Incident {
             for (Tag x : t.getListOrEmpty("RewardsClaimed")) uuid(x, rc);
             i.rewardsPending.addAll(rp);
             i.rewardsClaimed.addAll(rc);
+            i.siteCleared = t.getBooleanOr("SiteCleared", false);
+            if (t.get("Footprint") instanceof ListTag fp && !fp.isEmpty()) i.footprintRaw = fp;
             CompoundTag mk = t.getCompoundOrEmpty("Marks");
             for (String k : mk.keySet()) i.marks.put(k, BlockPos.of(mk.getLongOr(k, 0L)));
             CompoundTag cl = t.getCompoundOrEmpty("Clues");

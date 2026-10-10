@@ -525,8 +525,10 @@ a hit makes it flinch.
 `jjk:requires_curse_perception` entity tag) is drawn only for players who can perceive curses, decided per player by
 the server: the same entity, seen by one player and not another. It can't start a fight with someone who can't see
 it. Once it has turned on someone, though, it remembers: taking the glasses off hides it again, but it keeps
-attacking. Perception comes from sources registered in `CursePerception` (today: anything worn from the
-`jjk:grants_curse_perception` item tag), and hostility lives in `CurseAggro`, kept apart from it.
+attacking. Perception comes from sources registered in `CursePerception`: anything worn from the
+`jjk:grants_curse_perception` item tag (Cursed Glasses, the Infused Blindfold), a personal trial in progress, and
+**owning a kit**: once a player legitimately owns a character (the world's kit record), they see curses with their own
+eyes in every dimension, glasses or not, for as long as they own it. Hostility lives in `CurseAggro`, kept apart from it.
 
 **For kit acquisition paths.** Every path calls `TechniqueProgression.acquire(player, KitAcquisition)`. That claims the
 kit atomically in `KitOwnership` (the world's `kit → owner` record, `<world>/jjk_progression/kit_ownership.dat`), records
@@ -702,7 +704,14 @@ change nothing. Nobody else can take it, and while it has a bearer no other lodg
 bare). Every rifle carries a claim: its bearer, if they lose it, can **recover** it at the rack, and the lost one
 (wherever it is) goes cold rather than making two.
 
-Exorcise every curse and the incident is over: the bonus is paid, and the board posts a follow-up. Left alone for three
+Exorcise every curse and the incident is over: the bonus is paid, and the board posts a follow-up. **The site then
+comes down**: whatever its building changed (recorded block by block when it went up, saved with the incident) is
+put back as it was over a few seconds, top-down, wherever its ground is loaded (a restart, a relog or an unloaded chunk
+only pauses it), so the place is free for the next one. Only the site's own blocks are touched: anything a player has
+built or changed there since, and everything around it, stays. A lodge waits until nobody is still owed its rifle. A
+new incident is never put within 64 blocks of a site that is still standing, so two players' investigations never
+build over each other; in the Cursed Dimension each investigation has its own arena slot, and one closing clears only
+its own. Left alone for three
 days a report goes stale and something else gets reported.
 
 **The Cursed Compass.** The board only says roughly where (*"Reported Location: about 150 blocks northeast of

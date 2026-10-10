@@ -286,6 +286,11 @@ public final class Sites {
 
     // --- Helpers ---
 
+    /** Tests: where a site's builder stands it (the surface at that column). */
+    public static BlockPos surfaceForTest(ServerLevel level, BlockPos p) {
+        return surface(level, p);
+    }
+
     static BlockPos surface(ServerLevel level, BlockPos p) {
         return new BlockPos(p.getX(), level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, p.getX(), p.getZ()), p.getZ());
     }
