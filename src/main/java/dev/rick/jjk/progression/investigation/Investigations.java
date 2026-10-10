@@ -484,10 +484,15 @@ public final class Investigations {
         long now = level.getServer().overworld().getGameTime();
         stock(level, v, st, now);
         st.flush();
-        ServerPlayNetworking.send(p, new NewsBoardPayload(villageName(v), notes(v, st, now)));
+        ServerPlayNetworking.send(p, new NewsBoardPayload(villageName(v), notes(v, st, now, p.getAttached(dev.rick.jjk.registry.ModAttachments.INVESTIGATING))));
     }
 
     public static List<NewsBoardPayload.Note> notes(InvestigationState.Village v, InvestigationState st, long now) {
+        return notes(v, st, now, null);
+    }
+
+    /** The board's notices, marking the one {@code tracked} (the reader's investigation). */
+    public static List<NewsBoardPayload.Note> notes(InvestigationState.Village v, InvestigationState st, long now, @Nullable String tracked) {
         List<NewsBoardPayload.Note> out = new ArrayList<>();
         List<String> ids = new ArrayList<>(v.incidents);
         java.util.Collections.reverse(ids);
@@ -496,8 +501,8 @@ public final class Investigations {
             if (i == null || out.size() >= 6) continue;
             int days = (int) Math.max(0, (now - i.createdAt) / 24000);
             switch (i.state) {
-                case OPEN -> out.add(new NewsBoardPayload.Note(i.headline, i.body, 0, days));
-                case ACTIVE -> out.add(new NewsBoardPayload.Note(i.headline, i.body, 1, days));
+                case OPEN, ACTIVE -> out.add(new NewsBoardPayload.Note(i.id, i.headline, i.body, i.state == Incident.State.OPEN ? 0 : 1, days,
+                        place(v, i), i.id.equals(tracked)));
                 case COMPLETE -> {
                     if (now - i.changedAt <= 48000) {
                         out.add(new NewsBoardPayload.Note("Update: " + i.headline, "Since the last notice there has been nothing more of it. "
@@ -508,6 +513,20 @@ public final class Investigations {
             }
         }
         return out;
+    }
+
+    /**
+     * Roughly where a report places it: a direction and a distance rounded to the nearest fifty blocks from the village
+     * ("about 150 blocks north-east of Ashford"). Never closer than that: finding the exact place is the compass's job.
+     */
+    public static String place(InvestigationState.Village v, Incident i) {
+        int dx = i.site.getX() - v.bell.getX(), dz = i.site.getZ() - v.bell.getZ();
+        double d = Math.sqrt((double) dx * dx + (double) dz * dz);
+        if (d < 40) return "In " + villageName(v) + " itself";
+        String[] dirs = {"east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"};
+        int oct = (int) Math.floorMod(Math.round(Math.atan2(dz, dx) / (Math.PI / 4)), 8);
+        long rounded = Math.max(50, Math.round(d / 50.0) * 50);
+        return "About " + rounded + " blocks " + dirs[oct] + " of " + villageName(v);
     }
 
     private static String villageName(InvestigationState.Village v) {

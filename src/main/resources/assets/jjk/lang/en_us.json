@@ -90,5 +90,6 @@
   "block.jjk.news_board": "Village News Board",
   "block.jjk.gun_rack": "Gun Rack",
   "block.jjk.mounted_scope": "Mounted Scope",
-  "key.jjk.switch_moveset": "Switch Technique / Cursed Tool"
+  "key.jjk.switch_moveset": "Switch Technique / Cursed Tool",
+  "item.jjk.cursed_compass": "Cursed Compass"
 }

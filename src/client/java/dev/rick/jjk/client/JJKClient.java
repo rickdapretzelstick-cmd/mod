@@ -143,6 +143,8 @@ public class JJKClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.RyuPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.RyuHud.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ProgressionPayload.TYPE, (p, ctx) -> ClientProgression.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.MasterySyncPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.mastery.ClientMastery.apply(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.CompassPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.investigation.CursedCompassClient.apply(p));
+        dev.rick.jjk.client.investigation.CursedCompassClient.init();
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.NewsBoardPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.investigation.NewsBoardScreen.show(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.RifleStatePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.rifle.RifleClient.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ScopeViewPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.rifle.RifleClient.scope(p));

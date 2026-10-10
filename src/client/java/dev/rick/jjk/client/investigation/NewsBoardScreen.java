@@ -16,7 +16,7 @@ import java.util.List;
  * saying; click one to read it in full. Nothing is highlighted and nothing says what to do about it.
  */
 public class NewsBoardScreen extends Screen {
-    private final NewsBoardPayload board;
+    private NewsBoardPayload board;
     private int open = -1;
     private int hovered = -1;
 
@@ -80,6 +80,12 @@ public class NewsBoardScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (open >= 0) {
+            int[] b = investigateButton();
+            NewsBoardPayload.Note n = open < board.notes().size() ? board.notes().get(open) : null;
+            if (n != null && canInvestigate(n) && event.x() >= b[0] && event.x() < b[2] && event.y() >= b[1] && event.y() < b[3]) {
+                investigate(open);
+                return true;
+            }
             open = -1;
             return true;
         }
@@ -125,6 +131,7 @@ public class NewsBoardScreen extends Screen {
         // The pin.
         int pc = (r[0] + r[2]) / 2;
         g.fill(pc - 2, r[1] - lift - 1, pc + 2, r[1] - lift + 3, 0xFF9A2A2A);
+        if (n.tracked()) g.fill(r[2] - 10, r[1] - lift, r[2] - 4, r[1] - lift + 12, 0xFF902020);
         int x = r[0] + 6, y = r[1] - lift + 7, w = r[2] - r[0] - 12;
         y = text(g, n.headline(), x, y, w, 0.8f, 0xFF2A2018, 3);
         y += 2;
@@ -139,16 +146,64 @@ public class NewsBoardScreen extends Screen {
         return days <= 0 ? "today" : days == 1 ? "yesterday" : days + " days ago";
     }
 
-    private void reading(GuiGraphicsExtractor g, NewsBoardPayload.Note n) {
-        int w = Math.min(320, width - 40), h = Math.min(220, height - 40);
+    private int[] readingRect() {
+        int w = Math.min(320, width - 40), h = Math.min(240, height - 40);
         int x0 = width / 2 - w / 2, y0 = height / 2 - h / 2;
+        return new int[] {x0, y0, x0 + w, y0 + h};
+    }
+
+    private int[] investigateButton() {
+        int[] r = readingRect();
+        int bw = 120;
+        return new int[] {(r[0] + r[2]) / 2 - bw / 2, r[3] - 34, (r[0] + r[2]) / 2 + bw / 2, r[3] - 20};
+    }
+
+    private static boolean canInvestigate(NewsBoardPayload.Note n) {
+        return !n.id().isEmpty() && n.status() != 2;
+    }
+
+    /** Marks (or unmarks) a report as the reader's investigation: the server decides; the board shows it at once. */
+    public void investigate(int i) {
+        NewsBoardPayload.Note n = board.notes().get(i);
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(new dev.rick.jjk.core.net.InvestigatePayload(n.id()));
+        boolean now = !n.tracked();
+        List<NewsBoardPayload.Note> notes = new java.util.ArrayList<>();
+        for (NewsBoardPayload.Note x : board.notes()) {
+            notes.add(new NewsBoardPayload.Note(x.id(), x.headline(), x.body(), x.status(), x.daysAgo(), x.place(), x == n ? now : now ? false : x.tracked()));
+        }
+        board = new NewsBoardPayload(board.village(), notes);
+    }
+
+    /** The report, taken down and read: a filed document. What was reported, where, and when; nothing about what to do. */
+    private void reading(GuiGraphicsExtractor g, NewsBoardPayload.Note n) {
+        int[] r = readingRect();
+        int x0 = r[0], y0 = r[1], w = r[2] - r[0], h = r[3] - r[1];
         g.fill(0, 0, width, height, 0x80000000);
         g.fill(x0 + 3, y0 + 4, x0 + w + 3, y0 + h + 4, 0x60000000);
         g.fill(x0, y0, x0 + w, y0 + h, paper(n));
-        int y = text(g, n.headline(), x0 + 12, y0 + 12, w - 24, 1.0f, 0xFF2A2018, 3) + 4;
-        y = text(g, "Posted " + ago(n.daysAgo()), x0 + 12, y, w - 24, 0.75f, 0xFF6A5E50, 1) + 6;
-        text(g, n.body(), x0 + 12, y, w - 24, 0.85f, 0xFF3A3028, 40);
-        g.centeredText(font, Component.literal("(click to put it back)"), width / 2, y0 + h - 12, 0xFF8A7E70);
+        // Ruled like a clerk's form: a header rule, a margin line, a stamp box.
+        g.fill(x0 + 8, y0 + 8, x0 + w - 8, y0 + 9, 0xFFB8A888);
+        g.fill(x0 + 24, y0 + 9, x0 + 25, y0 + h - 8, 0x40B05040);
+        int y = text(g, "VILLAGE REPORT", x0 + 32, y0 + 14, w - 44, 0.6f, 0xFF8A6E50, 1) + 2;
+        y = text(g, n.headline(), x0 + 32, y, w - 44, 1.0f, 0xFF2A2018, 3) + 4;
+        if (!n.place().isEmpty()) y = text(g, "Reported Location: " + n.place(), x0 + 32, y, w - 44, 0.7f, 0xFF5A4A3A, 2);
+        y = text(g, "Filed: " + ago(n.daysAgo()), x0 + 32, y, w - 44, 0.7f, 0xFF5A4A3A, 1) + 3;
+        g.fill(x0 + 32, y, x0 + w - 12, y + 1, 0xFFC8B898);
+        y += 5;
+        int bodyLines = Math.max(1, (y0 + h - 40 - y) / 8);
+        text(g, n.body(), x0 + 32, y, w - 44, 0.8f, 0xFF3A3028, bodyLines);
+        if (n.tracked()) {
+            // A rubber stamp in the corner.
+            g.fill(x0 + w - 86, y0 + 14, x0 + w - 14, y0 + 30, 0x30902020);
+            text(g, "INVESTIGATING", x0 + w - 82, y0 + 19, 70, 0.6f, 0xFF902020, 1);
+        }
+        if (canInvestigate(n)) {
+            int[] b = investigateButton();
+            g.fill(b[0], b[1], b[2], b[3], 0xFF4A3A2A);
+            g.fill(b[0] + 1, b[1] + 1, b[2] - 1, b[3] - 1, n.tracked() ? 0xFF6A4040 : 0xFF5A4A3A);
+            g.centeredText(font, Component.literal(n.tracked() ? "Set it aside" : "Investigate"), (b[0] + b[2]) / 2, b[1] + 3, 0xFFEADFC8);
+        }
+        g.centeredText(font, Component.literal("(click elsewhere to put it back)"), width / 2, y0 + h - 12, 0xFF8A7E70);
     }
 
     /** Wrapped, scaled text; returns the y after it. */

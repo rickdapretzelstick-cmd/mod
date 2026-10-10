@@ -22,12 +22,14 @@ public final class Network {
         c2s.register(CharacterSelectPayload.TYPE, CharacterSelectPayload.CODEC);
         c2s.register(MasteryPurchasePayload.TYPE, MasteryPurchasePayload.CODEC);
         c2s.register(MovesetSwitchPayload.TYPE, MovesetSwitchPayload.CODEC);
+        c2s.register(InvestigatePayload.TYPE, InvestigatePayload.CODEC);
         c2s.register(RhythmInputPayload.TYPE, RhythmInputPayload.CODEC);
         c2s.register(BeamClashInputPayload.TYPE, BeamClashInputPayload.CODEC);
 
         var s2c = PayloadTypeRegistry.clientboundPlay();
         s2c.register(NewsBoardPayload.TYPE, NewsBoardPayload.CODEC);
         s2c.register(ScopeViewPayload.TYPE, ScopeViewPayload.CODEC);
+        s2c.register(CompassPayload.TYPE, CompassPayload.CODEC);
         s2c.register(RifleStatePayload.TYPE, RifleStatePayload.CODEC);
         s2c.register(FxPayload.TYPE, FxPayload.CODEC);
         s2c.register(CameraPayload.TYPE, CameraPayload.CODEC);
@@ -68,6 +70,8 @@ public final class Network {
                 dev.rick.jjk.progression.mastery.Mastery.sync(ctx.player());
             }
         });
+        ServerPlayNetworking.registerGlobalReceiver(InvestigatePayload.TYPE, (p, ctx) ->
+                dev.rick.jjk.progression.investigation.CursedCompass.investigate(ctx.player(), p.incident()));
         ServerPlayNetworking.registerGlobalReceiver(MovesetSwitchPayload.TYPE, (p, ctx) ->
                 dev.rick.jjk.progression.tool.kit.CursedKits.switchMoveset(ctx.player()));
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {

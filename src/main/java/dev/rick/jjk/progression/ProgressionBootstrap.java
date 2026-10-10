@@ -27,6 +27,7 @@ public final class ProgressionBootstrap {
         dev.rick.jjk.progression.mastery.Mastery.init();
         dev.rick.jjk.progression.mastery.CurseRewards.init();
         dev.rick.jjk.progression.investigation.Investigations.init();
+        dev.rick.jjk.progression.investigation.CursedCompass.init();
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> ProgressionCommand.register(dispatcher));
     }
 }
