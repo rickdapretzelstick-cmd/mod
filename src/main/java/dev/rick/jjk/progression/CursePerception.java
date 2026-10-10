@@ -17,9 +17,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * ({@link #requiresPerception}) are drawn only for players who have it, and can't start a fight with someone who
  * doesn't ({@link CurseAggro}).
  *
- * <p>Perception comes from {@link Source}s. Today the only one is equipment: anything worn that is in the
- * {@code jjk:grants_curse_perception} item tag (Cursed Glasses). Techniques, status effects or progression register
- * their own source later; nothing checks for a particular item.
+ * <p>Perception comes from {@link Source}s: equipment (anything worn that is in the {@code jjk:grants_curse_perception}
+ * item tag: Cursed Glasses, the Infused Blindfold), owning a technique ({@link #ownsATechnique}), and a personal trial
+ * in progress. Nothing checks for a particular item.
  */
 public final class CursePerception {
     /** Items that let their wearer perceive curses. */
@@ -39,6 +39,7 @@ public final class CursePerception {
 
     static {
         register(CursePerception::wearsPerceptionGear);
+        register(CursePerception::ownsATechnique);
     }
 
     private CursePerception() {}
@@ -52,6 +53,16 @@ public final class CursePerception {
         if (player.isSpectator()) return true;
         for (Source s : SOURCES) if (s.grants(player)) return true;
         return false;
+    }
+
+    /**
+     * A sorcerer sees curses with their own eyes: whoever legitimately owns a kit (the world's record in {@link
+     * KitOwnership}) perceives them, glasses or not, in every dimension. A Creative test kit is not ownership; a kit an
+     * admin releases or transfers away takes this with it.
+     */
+    public static boolean ownsATechnique(Player player) {
+        return player instanceof net.minecraft.server.level.ServerPlayer sp && sp.level().getServer() != null
+                && KitOwnership.get(sp.level().getServer()).ownsAny(sp.getUUID());
     }
 
     public static boolean wearsPerceptionGear(Player player) {

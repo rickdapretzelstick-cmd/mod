@@ -86,6 +86,12 @@ public final class KitOwnership {
         return o != null && o.uuid.equals(player);
     }
 
+    /** Whether this player legitimately owns any kit at all. */
+    public synchronized boolean ownsAny(UUID player) {
+        for (Owner o : owners.values()) if (o.uuid.equals(player)) return true;
+        return false;
+    }
+
     /** Every kit this player owns, in claim order. */
     public synchronized List<String> kitsOwnedBy(UUID player) {
         List<String> out = new ArrayList<>();

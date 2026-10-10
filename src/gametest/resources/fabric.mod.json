@@ -31,7 +31,8 @@
       "dev.rick.jjk.test.CursedKitTests",
       "dev.rick.jjk.test.RealmTests",
       "dev.rick.jjk.test.StoryTests",
-      "dev.rick.jjk.test.NewsHouseTests"
+      "dev.rick.jjk.test.NewsHouseTests",
+      "dev.rick.jjk.test.SiteTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.AnimFrameworkClientTest",

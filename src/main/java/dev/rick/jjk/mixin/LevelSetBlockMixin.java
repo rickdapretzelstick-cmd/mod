@@ -10,11 +10,17 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Lets world restoration see the original of every block that technique damage changes, including knock-on effects. */
+/**
+ * Lets world restoration see the original of every block that technique damage changes, including knock-on effects, and
+ * lets an investigation site record what building it changed (so it can be taken down after).
+ */
 @Mixin(Level.class)
 public abstract class LevelSetBlockMixin {
     @Inject(method = "setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z", at = @At("HEAD"))
     private void jjk$recordOriginal(BlockPos pos, BlockState state, int flags, int limit, CallbackInfoReturnable<Boolean> cir) {
-        if ((Object) this instanceof ServerLevel level) WorldRestoration.beforeSetBlock(level, pos, state);
+        if ((Object) this instanceof ServerLevel level) {
+            WorldRestoration.beforeSetBlock(level, pos, state);
+            dev.rick.jjk.progression.investigation.SiteFootprint.before(level, pos, state);
+        }
     }
 }
