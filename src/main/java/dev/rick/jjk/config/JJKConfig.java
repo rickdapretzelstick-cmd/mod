@@ -1255,6 +1255,19 @@ public final class JJKConfig {
         public int clHaftCooldown = 80;
         public float clUltimateDamage = 16f;
         public int clUltimateCooldown = 1200;
+        // Cursed Blade.
+        public float cbHeavyDamage = 11f, cbCrossDamage = 7f;
+        public int cbHeavyCooldown = 110;
+        public float cbWaveDamage = 9f, cbWaveRange = 20f;
+        public int cbWaveMaxCharge = 28, cbWaveCooldown = 200;
+        public float cbLungeDamage = 7f, cbLungeThornDamage = 5f, cbLungeDistance = 8f;
+        public int cbLungeCooldown = 180;
+        public int cbGuardWindow = 22, cbGuardCooldown = 240;
+        public float cbGuardCounterDamage = 9f;
+        public float cbRisingDamage = 6f;
+        public int cbRisingCooldown = 90;
+        public float cbUltimateDamage = 14f, cbUltimateRadius = 9f;
+        public int cbUltimateCooldown = 1400;
         // Cursed Rifle (its shots and beam use the Rifle section).
         public int rfVolleyShots = 3, rfVolleyCooldown = 140;
         public int rfFlareCooldown = 260;

@@ -1,0 +1,239 @@
+{
+  "name": "cb_air_3",
+  "duration": 380,
+  "note": "In the air, legs tucked.",
+  "blendIn": 30,
+  "blendOut": 160,
+  "priority": "ATTACK",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -46,
+            0,
+            -6
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            60,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            -30,
+            0,
+            6
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            50,
+            0,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -150,
+            30,
+            4
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -28,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -156,
+            78,
+            -4
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -34,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            -4,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "t": 100,
+      "ease": "EASE_IN",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -46,
+            0,
+            -6
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            60,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            -30,
+            0,
+            6
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            50,
+            0,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -32,
+            -42,
+            4
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -28,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -38,
+            6,
+            -4
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -34,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            16,
+            0,
+            0
+          ]
+        }
+      },
+      "marker": "hit"
+    },
+    {
+      "t": 380,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -12,
+            0,
+            -6
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            10,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            10,
+            0,
+            6
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            8,
+            0,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            2,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            10,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            2,
+            6,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -44,
+            -16,
+            4
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -28,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -50,
+            32,
+            -4
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -34,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -1.5,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

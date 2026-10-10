@@ -98,6 +98,11 @@ public final class ClientFx {
             dev.rick.jjk.client.hud.RealmTransitionOverlay.start((int) s);
             return;
         }
+        // The Cursed Blade's cuts, wave and thorns.
+        if (p.id().startsWith("cb_")) {
+            BladeFx.play(p, mc, level, pos, dir, s, mine, now);
+            return;
+        }
         // The Finger Bearer, the battle-room curse.
         if (p.id().startsWith("fb_") || p.id().startsWith("curse_")) {
             FingerBearerFx.play(p, level, pos, dir, s, now);

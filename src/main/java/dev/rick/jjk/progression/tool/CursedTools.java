@@ -34,6 +34,11 @@ public final class CursedTools {
             CursedToolDefinition.Style.RANGED, 2f, 1.0f, "A cursed rifle with a scope, and four folded support arms round its barrel.",
             CursedToolDefinition.Rarity.UNIQUE);
 
+    /** The Cursed Blade: a netherite sword steeped in cursed energy. Rare (it costs netherite), not unique. */
+    public static final CursedToolDefinition CURSED_BLADE = new CursedToolDefinition("cursed_blade", "Cursed Blade",
+            CursedToolDefinition.Style.HEAVY, 7f, 1.0f, "A great cleaver of a blade, black thorns bursting from its guard: heavy, crimson slashes.",
+            CursedToolDefinition.Rarity.RARE);
+
     private static final Map<String, CursedToolDefinition> DEFS = new LinkedHashMap<>();
     private static final Map<String, ToolBehavior> BEHAVIORS = new LinkedHashMap<>();
     private static final Identifier SPEED_ID = JJK.id("cursed_tool_mastery_speed");
@@ -42,6 +47,7 @@ public final class CursedTools {
         register(SLAUGHTER_DEMON, new SlaughterDemonBehavior(SLAUGHTER_DEMON));
         register(CURSED_CLEAVER, new CursedCleaverBehavior(CURSED_CLEAVER));
         register(CURSED_RIFLE, new dev.rick.jjk.progression.tool.rifle.RifleBehavior());
+        register(CURSED_BLADE, ToolBehavior.NONE);
     }
 
     private CursedTools() {}
@@ -70,9 +76,11 @@ public final class CursedTools {
         dev.rick.jjk.progression.tool.kit.CursedKits.register(new dev.rick.jjk.progression.tool.kit.SlaughterDemonKit());
         dev.rick.jjk.progression.tool.kit.CursedKits.register(new dev.rick.jjk.progression.tool.kit.CleaverKit());
         dev.rick.jjk.progression.tool.kit.CursedKits.register(new dev.rick.jjk.progression.tool.kit.RifleKit());
+        dev.rick.jjk.progression.tool.kit.CursedKits.register(new dev.rick.jjk.progression.tool.kit.BladeKit());
         dev.rick.jjk.progression.tool.kit.CursedKits.init();
         dev.rick.jjk.core.defense.Defenses.register(new dev.rick.jjk.progression.tool.kit.SlaughterDemonKit.ParryDefense());
         dev.rick.jjk.core.defense.Defenses.register(new dev.rick.jjk.progression.tool.kit.CleaverKit.WallDefense());
+        dev.rick.jjk.core.defense.Defenses.register(new dev.rick.jjk.progression.tool.kit.BladeKit.ThornGuardDefense());
         dev.rick.jjk.progression.tool.rifle.RifleServer.init();
         dev.rick.jjk.progression.tool.rifle.RifleCounter.register();
     }

@@ -1,6 +1,7 @@
 package dev.rick.jjk.client.anim;
 
 import dev.rick.jjk.JJK;
+import dev.rick.jjk.client.anim.rig.Bone;
 import dev.rick.jjk.core.combat.Combat;
 import dev.rick.jjk.core.combat.CombatState;
 import dev.rick.jjk.core.combat.CombatStatus;
@@ -132,8 +133,9 @@ public final class ClientAnimations {
         int id = e.getId();
         String reaction = reaction(e);
         AnimPlayer p = PLAYERS.get(id);
+        PoseFrame stance = stance(e, now);
         if (p == null) {
-            if (reaction == null) return null;
+            if (reaction == null) return stance;
             p = new AnimPlayer();
             PLAYERS.put(id, p);
         }
@@ -148,10 +150,51 @@ public final class ClientAnimations {
         if (p.idle()) {
             PLAYERS.remove(id);
             STALE_SINCE.remove(id);
+            return stance;
+        }
+        // Whatever is playing goes over the stance: an attack takes the arms completely, and the stance shows through
+        // as it blends out.
+        PoseFrame f = p.sample(stance != null ? stance : new PoseFrame());
+        return f.any() ? f : null;
+    }
+
+    /**
+     * How a player holds a drawn cursed tool when nothing else is posing them: its stance clips
+     * ({@code stance_<tool>_idle}, {@code _walk}, {@code _run}; upper body only, so the legs keep the real walk), sampled
+     * from the clock and blended by how fast they move. Null for anyone without a drawn tool that has a stance.
+     */
+    @Nullable
+    static PoseFrame stance(LivingEntity e, float now) {
+        if (!(e instanceof net.minecraft.world.entity.player.Player pl) || !dev.rick.jjk.client.gear.CursedGear.drawn(pl)
+                || !pl.getMainHandItem().isEmpty()) {
             return null;
         }
-        PoseFrame f = p.sample(new PoseFrame());
-        return f.any() ? f : null;
+        if (!(dev.rick.jjk.client.gear.CursedGear.equipped(pl).getItem() instanceof dev.rick.jjk.progression.tool.CursedToolItem tool)) return null;
+        String base = "stance_" + tool.definition().id();
+        Clip idle = AnimLibrary.get(base + "_idle");
+        if (idle == null) return null;
+        float ms = now * 50f;
+        float moving = Math.min(1f, e.walkAnimation.speed(1f) * 2.2f);
+        PoseFrame f = new PoseFrame();
+        sampleInto(idle, ms, f, 1f);
+        Clip move = AnimLibrary.get(base + (e.isSprinting() ? "_run" : "_walk"));
+        if (move != null) sampleInto(move, ms, f, moving);
+        return f;
+    }
+
+    private static void sampleInto(Clip c, float ms, PoseFrame f, float w) {
+        if (w <= 0.01f) return;
+        float t = c.localTime(ms % Math.max(1f, c.duration));
+        float[] tmp = new float[3];
+        for (Bone b : Bone.ALL) {
+            if (!c.layer.has(b)) continue;
+            for (int ch = 0; ch < 3; ch++) {
+                Track tr = c.tracks[b.ordinal()][ch];
+                if (tr == null) continue;
+                tr.sample(t, tmp);
+                f.add(ch, b, tmp, w);
+            }
+        }
     }
 
     /**

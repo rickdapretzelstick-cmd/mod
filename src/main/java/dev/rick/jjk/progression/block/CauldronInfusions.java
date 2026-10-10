@@ -62,6 +62,8 @@ public final class CauldronInfusions {
         for (CharacterStory s : CharacterStories.all()) {
             all.add(new Infusion(s.object(), (l, pos) -> RelicForging.make(l, pos, s), (l, p) -> RelicForging.refuse(l, s, p)));
         }
+        // Index 10: netherite steel takes the energy as the Cursed Blade.
+        all.add(new Infusion(() -> Items.NETHERITE_SWORD, (l, pos) -> new ItemStack(ProgressionItems.CURSED_BLADE), null));
         ALL = List.copyOf(all);
     }
 
@@ -87,6 +89,6 @@ public final class CauldronInfusions {
 
     /** It has gone in: what the energy needs to remember about who offered it (a relic's keeper). */
     public static void taken(ServerLevel level, BlockPos cauldron, int i, @Nullable ServerPlayer player) {
-        if (i >= 5) RelicForging.offered(level, cauldron, player);
+        if (i >= 5 && i < 5 + CharacterStories.all().size()) RelicForging.offered(level, cauldron, player);
     }
 }

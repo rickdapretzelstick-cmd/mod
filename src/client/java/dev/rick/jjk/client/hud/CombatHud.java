@@ -31,6 +31,13 @@ public final class CombatHud {
 
     /** Presentation per ability id. Infinity keeps its entry for when it returns to the moveset. */
     private static final java.util.Map<String, Meta> META = java.util.Map.ofEntries(
+            // The Cursed Blade (a cursed tool's moveset, from the Cursed Item slot).
+            java.util.Map.entry("cb_heavy_slash", meta("Heavy Slash", 0xFFE0304A, false, "cb_heavy_slash")),
+            java.util.Map.entry("cb_cursed_wave", meta("Cursed Wave", 0xFFFF4A5C, false, "cb_cursed_wave")),
+            java.util.Map.entry("cb_thorn_lunge", meta("Thorn Lunge", 0xFFD02840, false, "cb_thorn_lunge")),
+            java.util.Map.entry("cb_thorn_guard", meta("Thorn Guard", 0xFFB8BEC8, false, "cb_thorn_guard")),
+            java.util.Map.entry("cb_rising_cut", meta("Rising Cut", 0xFFFF6A78, false, "cb_rising_cut")),
+            java.util.Map.entry("cb_black_thorn", meta("Black Thorn", 0xFFFF2040, true, "cb_black_thorn")),
             java.util.Map.entry("blue", meta("Lapse Blue", 0xFF4F9BFF, false, "blue")),
             java.util.Map.entry("red", meta("Reversal Red", 0xFFFF3B30, false, "red")),
             java.util.Map.entry("rapid_punches", meta("Rapid Punches", 0xFFCFE8FF, false, "rapid_punches")),

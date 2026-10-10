@@ -39,13 +39,13 @@ public class CursedGearLayer<S extends HumanoidRenderState, M extends HumanoidMo
             }
             case WAIST -> {
                 // Across the small of the back.
-                ps.translate(0, 11f / 16f, -2.7f / 16f);
+                ps.translate(0, 11f / 16f, 2.7f / 16f);
                 ps.rotate(Axis.ZP.rotationDegrees(45f));
                 ps.scale(0.6f, 0.6f, 0.6f);
             }
             case BACK -> {
                 // Slung across the back from the left hip up to the right shoulder, the business end up there.
-                ps.translate(0, 6f / 16f, -2.9f / 16f);
+                ps.translate(0, 6f / 16f, 2.9f / 16f);
                 ps.rotate(Axis.ZP.rotationDegrees(grip == GripProfile.RANGED ? -60f : 180f));
                 ps.scale(0.95f, 0.95f, 0.95f);
             }

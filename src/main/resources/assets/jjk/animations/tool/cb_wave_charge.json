@@ -1,0 +1,101 @@
+{
+  "name": "cb_wave_charge",
+  "duration": 400,
+  "note": "Cursed Wave, held: the blade drawn far back low on the right, the energy gathering on it.",
+  "hold": true,
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "ATTACK",
+  "keys": [
+    {
+      "t": 400,
+      "ease": "EASE_OUT",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -14
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            24,
+            0,
+            14
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            18,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -3.5,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -24,
+            84,
+            4
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -30,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -30,
+            132,
+            -4
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -36,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            6,
+            66,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            4,
+            34,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            4,
+            -46,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

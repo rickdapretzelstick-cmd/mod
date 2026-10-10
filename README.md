@@ -585,7 +585,7 @@ passives, its own cooldowns.
 - **Rarity**: the starter tools are common (anyone can make as many as they like). Only a cursed **weapon of
   technique-level power is one per world**: so far, the Cursed Rifle.
 
-| Key | Slaughter Demon (from the sword: short, fast) | Cursed Cleaver (from the axe: slow, crushing) | Cursed Rifle (unique: the hunting lodge) |
+| Key | Slaughter Demon (from the iron sword: short, fast) | Cursed Cleaver (from the axe: slow, crushing) | Cursed Rifle (unique: the hunting lodge) |
 |---|---|---|---|
 | 1 | **Quickstep**: dart forward, cutting the first in your path. R during it: **Return Cut** back the way you came | **Heavy Swing** (hold): wind up, release; a full charge breaks guards. R during it: **Whirl** | **Snap Shot**: a hip shot, now |
 | 2 | **Flurry** (learned): four quick cuts. R: **Rising Flurry** launches | **Shoulder Charge**: drive through, slam into walls | **Aimed Shot** (hold): raise the scope, let it settle, let go |
@@ -608,6 +608,28 @@ Edge, Light Grip, Return Cut, Flurry, Parry, Precision, Rising Flurry, Long Parr
 Thousand Cuts); the Cleaver's Heft, Momentum, Heavy Swing, Splitter, Guard Break, Iron Wall, Whirl, Long Split, Enduring
 Wall, Shockwave and Executioner; the rifle's tree below.
 
+- **Cursed Blade** (from a **netherite sword** in a full Cursed Energy cauldron): a great cleaver of a blade with two
+  round holes through it, a white cloth wrap at its base, black thorns bursting from the guard and a wooden grip. It is
+  held in **both hands** (slung across the back while your technique is in use), and with it drawn your stance changes:
+  a low two-handed guard at rest, the blade carried forward at a walk and swept back at a run. Its M1s are its own heavy
+  two-handed cuts (four-hit chain, air chain, uppercut, down-slam, sprint cut, stomp, charged heavy), stronger and longer
+  than a fist.
+
+  | Key | Move |
+  |---|---|
+  | 1 | **Heavy Slash**: a two-handed diagonal cleave throwing a crimson arc; breaks guards. R during it: **Crimson Cross**, the blade comes straight back across the first cut |
+  | 2 | **Cursed Wave** (learned, hold): charge, let go: a crescent of cursed energy flies out (further the longer you charge), cutting everyone it passes and the grass, leaves and loose blocks in its way (put back like all battle damage); a wall stops it. R: **Twin Wave**, two splayed crescents |
+  | 3 | **Thorn Lunge** (learned): drive forward through everyone in a line; black thorns then erupt under them |
+  | 4 | **Thorn Guard** (learned): the blade raised, thorns bristling: a blow caught in the window is stopped and thorns burst up under the attacker (with Thorn Bloom, everyone near them) |
+  | R | **Rising Cut**: an upward cut that launches |
+  | G | **Black Thorn** (awakening node): the blade raised high and plunged into the ground; rings of black thorns tear outward, launching everything they reach and cratering the ground (restored later) |
+
+  Every move has its own full-body animation (wind-up, strike and recovery, timed to the hit) and its own HUD icon, red
+  arcs and black thorns, played the same for everyone nearby. Its tree (`data/jjk/mastery/tool/cursed_blade.json`): Edge
+  (Keen Edge, Long Reach, Crimson Cross), Wave (Cursed Wave, Far Wave, Twin Wave, the major Crimson Edge), Thorn (Thorn
+  Lunge, Deep Lunge), Guard (Thorn Guard, Thorn Bloom), then **Black Thorn**. Numbers are in `JJKConfig.cursedToolKits`
+  (`cb*`). The model, textures and icons come from `tools/gen_cursed_blade_assets.py` (a Blockbench project of the model
+  is written to `tools/blockbench/cursed_blade.bbmodel`).
 - **Cursed Rifle** (from the hunting lodge, below; **one per world**): a scoped rifle with four folded support arms round
   its barrel. It is a ranged tool for anyone, technique or not (in the hand, or equipped for the moveset above): its own **reserve** (100, refilling 5 a second, kept per player) pays for
   everything, and the server decides every shot and every hit.
