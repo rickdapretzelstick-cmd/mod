@@ -6,8 +6,17 @@
   "trigger": "jump",
   "realm": "cliff_realm",
   "curses": [
-    {"kind": "school_maw", "min": 1, "max": 1},
-    {"kind": "fly_head", "min": 2, "max": 4, "grade": "GRADE_4"}
+    {
+      "kind": "school_maw",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "fly_head",
+      "min": 2,
+      "max": 4,
+      "grade": "GRADE_4"
+    }
   ],
   "trail": 24,
   "reports": [
@@ -18,6 +27,14 @@
     {
       "headline": "Another Fall Near the Cliffs",
       "body": "For the second time this season someone has gone off the cliffs {dir} of here. {name} had complained for days of a voice from below the edge. The family asks that nobody else go looking. The children have started saying the cliff \"wants company\"; their parents would rather they didn't."
+    },
+    {
+      "headline": "A Shoe Left at the Cliff Edge",
+      "body": "Someone found a single shoe set neatly at the top of the cliffs {dir} of the village {dist}, laces tied, as if its owner meant to come back for it. {name}, who walks the ridge most mornings, says the grass there lies flat in a line toward the drop and nowhere else. Nobody has been reported missing yet, which somehow makes it worse."
+    },
+    {
+      "headline": "Shepherd Hears Calling From Below the Cliffs",
+      "body": "{name} brought the flock home early yesterday and would not say much, only that a voice had been calling {them} by name from under the lip of {landmark} {dir} of here {dist}. It knew things, {name} said, that nobody living should. The family has asked for the path up there to be fenced off."
     }
   ]
 }

@@ -66,12 +66,8 @@ public final class InvestigationState {
             return List.copyOf(incidents);
         }
 
-        public String story() {
-            return story;
-        }
-
-        public int storyStage() {
-            return storyStage;
+        public void setBoardForTest(BlockPos at) {
+            board = at.immutable();
         }
     }
 

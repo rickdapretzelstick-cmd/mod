@@ -154,10 +154,11 @@ public final class Investigations {
         StoryChains.decide(level, v, st);
         if (v.board == null && v.boardTries < 6 && level.isLoaded(v.bell)) {
             v.boardTries++;
-            v.board = placeBoard(level, v.bell);
+            v.board = placeNews(level, v.bell);
             st.markDirty();
         }
         stock(level, v, st, now);
+        refreshBoard(level, v, st, now);
     }
 
     /** Keeps the village's board stocked with reports (one new one at a time, a little apart). */
@@ -216,6 +217,25 @@ public final class Investigations {
     public static InvestigationState.Village village(ServerLevel level, BlockPos bell) {
         InvestigationState st = InvestigationState.get(level.getServer());
         return st.villages.computeIfAbsent(bell.asLong(), k -> new InvestigationState.Village(level.dimension().identifier().toString(), bell));
+    }
+
+    /**
+     * The village's news: its news house by the bell (in the village's style, the board inside), or where there is no room
+     * for one, a board in the open by the bell.
+     */
+    @Nullable
+    public static BlockPos placeNews(ServerLevel level, BlockPos bell) {
+        BlockPos inHouse = NewsHouse.placeNear(level, bell);
+        return inHouse != null ? inHouse : placeBoard(level, bell);
+    }
+
+    /** Pins up as many notices on the board as the village has news (0-4): the board's look follows its reports. */
+    public static void refreshBoard(ServerLevel level, InvestigationState.Village v, InvestigationState st, long now) {
+        if (v.board == null || !level.isLoaded(v.board)) return;
+        BlockState s = level.getBlockState(v.board);
+        if (!s.is(ProgressionBlocks.NEWS_BOARD)) return;
+        int n = Math.min(4, notes(v, st, now).size());
+        if (s.getValue(NewsBoardBlock.NOTICES) != n) level.setBlock(v.board, s.setValue(NewsBoardBlock.NOTICES, n), 3);
     }
 
     /** A board by the bell: on solid ground, in the open, facing the bell. */
@@ -549,6 +569,7 @@ public final class Investigations {
         long now = level.getServer().overworld().getGameTime();
         StoryChains.decide(level, v, st);
         stock(level, v, st, now);
+        refreshBoard(level, v, st, now);
         st.flush();
         ServerPlayNetworking.send(p, new NewsBoardPayload(villageName(v), notes(v, st, now, p.getAttached(dev.rick.jjk.registry.ModAttachments.INVESTIGATING))));
     }

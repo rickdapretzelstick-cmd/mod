@@ -6,8 +6,16 @@
   "trigger": "descend",
   "realm": "mine_realm",
   "curses": [
-    {"kind": "school_crawler", "min": 2, "max": 3},
-    {"kind": "school_maw", "min": 1, "max": 1}
+    {
+      "kind": "school_crawler",
+      "min": 2,
+      "max": 3
+    },
+    {
+      "kind": "school_maw",
+      "min": 1,
+      "max": 1
+    }
   ],
   "trail": 18,
   "reports": [
@@ -18,6 +26,14 @@
     {
       "headline": "The Old Mine Is Not Empty",
       "body": "Children playing near the boarded mine {dir} of here {dist} swear they heard scraping from inside, \"like a lot of hands\". {name}'s cousin went to look and now refuses to speak of it. The entrance should be left alone."
+    },
+    {
+      "headline": "Lamps Go Out in the Old Workings",
+      "body": "Two lads dared each other into the boarded mine {dir} of the village {dist} and came out white-faced. Every lamp they carried went out at the same spot, they say, about where the old rails bend, and something breathed in the dark beside them. {name} has nailed the boards back over the entrance; they were pried loose again by morning, from the inside."
+    },
+    {
+      "headline": "Rail Cart Found Outside the Mine",
+      "body": "An ore cart nobody has used in a generation was found sitting at the mouth of the old mine on the hillside {dir} of here {dist}, its wheels wet. {name} insists it was deep in the tunnel last season. There are scratches along its sides, low down, like something small and many-handed held on to it."
     }
   ]
 }

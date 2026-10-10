@@ -6,8 +6,16 @@
   "trigger": "night",
   "realm": "pasture_realm",
   "curses": [
-    {"kind": "school_crawler", "min": 1, "max": 2},
-    {"kind": "fly_head", "min": 2, "max": 3}
+    {
+      "kind": "school_crawler",
+      "min": 1,
+      "max": 2
+    },
+    {
+      "kind": "fly_head",
+      "min": 2,
+      "max": 3
+    }
   ],
   "trail": 14,
   "reports": [
@@ -18,6 +26,14 @@
     {
       "headline": "Strange Sounds From the Pasture",
       "body": "Several households report a buzzing, like a hive kicked over, from the fields {dir} of here {dist}. {name} went out with a lantern and came back with nothing to say except that something had been at the {animal}. The fencing is intact."
+    },
+    {
+      "headline": "Dogs Won't Go Near the Lower Field",
+      "body": "The dogs that guard the grazing land {dir} of the village {dist} have taken to lying in the road and whining rather than go out to it. {name} found the {animal} huddled in one corner of the fence at dawn, all of them facing the same empty patch of grass. The trough there has been knocked over three nights running."
+    },
+    {
+      "headline": "A Ring of Dead Grass in the Pasture",
+      "body": "Overnight a ring of grass has gone grey and brittle in the pasture {dir} of here {dist}, wide as a cart is long. {name} lost one of the {animal} inside it and swears the others will not step over the edge. Something has been buzzing there after dark; nobody has gone out with a lantern since."
     }
   ]
 }

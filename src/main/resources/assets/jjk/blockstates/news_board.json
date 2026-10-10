@@ -1,18 +1,78 @@
 {
   "variants": {
-    "facing=north": {
-      "model": "jjk:block/news_board"
+    "facing=north,notices=0": {
+      "model": "jjk:block/news_board_0"
     },
-    "facing=east": {
-      "model": "jjk:block/news_board",
+    "facing=north,notices=1": {
+      "model": "jjk:block/news_board_1"
+    },
+    "facing=north,notices=2": {
+      "model": "jjk:block/news_board_2"
+    },
+    "facing=north,notices=3": {
+      "model": "jjk:block/news_board_3"
+    },
+    "facing=north,notices=4": {
+      "model": "jjk:block/news_board_4"
+    },
+    "facing=east,notices=0": {
+      "model": "jjk:block/news_board_0",
       "y": 90
     },
-    "facing=south": {
-      "model": "jjk:block/news_board",
+    "facing=east,notices=1": {
+      "model": "jjk:block/news_board_1",
+      "y": 90
+    },
+    "facing=east,notices=2": {
+      "model": "jjk:block/news_board_2",
+      "y": 90
+    },
+    "facing=east,notices=3": {
+      "model": "jjk:block/news_board_3",
+      "y": 90
+    },
+    "facing=east,notices=4": {
+      "model": "jjk:block/news_board_4",
+      "y": 90
+    },
+    "facing=south,notices=0": {
+      "model": "jjk:block/news_board_0",
       "y": 180
     },
-    "facing=west": {
-      "model": "jjk:block/news_board",
+    "facing=south,notices=1": {
+      "model": "jjk:block/news_board_1",
+      "y": 180
+    },
+    "facing=south,notices=2": {
+      "model": "jjk:block/news_board_2",
+      "y": 180
+    },
+    "facing=south,notices=3": {
+      "model": "jjk:block/news_board_3",
+      "y": 180
+    },
+    "facing=south,notices=4": {
+      "model": "jjk:block/news_board_4",
+      "y": 180
+    },
+    "facing=west,notices=0": {
+      "model": "jjk:block/news_board_0",
+      "y": 270
+    },
+    "facing=west,notices=1": {
+      "model": "jjk:block/news_board_1",
+      "y": 270
+    },
+    "facing=west,notices=2": {
+      "model": "jjk:block/news_board_2",
+      "y": 270
+    },
+    "facing=west,notices=3": {
+      "model": "jjk:block/news_board_3",
+      "y": 270
+    },
+    "facing=west,notices=4": {
+      "model": "jjk:block/news_board_4",
       "y": 270
     }
   }

@@ -30,7 +30,7 @@
       "dev.rick.jjk.test.LodgeTests",
       "dev.rick.jjk.test.CursedKitTests",
       "dev.rick.jjk.test.RealmTests",
-      "dev.rick.jjk.test.StoryTests"
+      "dev.rick.jjk.test.NewsHouseTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.AnimFrameworkClientTest",
@@ -46,7 +46,7 @@
       "dev.rick.jjk.test.InvestigationClientTest",
       "dev.rick.jjk.test.RifleClientTest",
       "dev.rick.jjk.test.CursedGearClientTest",
-      "dev.rick.jjk.test.StoryClientTest"
+      "dev.rick.jjk.test.NewsHouseClientTest"
     ]
   },
   "depends": {
