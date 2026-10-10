@@ -54,11 +54,11 @@ public final class RifleStance {
     public static final RenderStateDataKey<View> VIEW = RenderStateDataKey.create(() -> "jjk:rifle_stance");
 
     /** Player pixels per rifle (Blockbench) pixel when it is in the hands. */
-    public static float SCALE = 0.40f;
+    public static float SCALE = 0.39f;
     // Points on the rifle model (Blockbench pixels: x right, y up, the muzzle toward -z).
     public static final Vector3f BUTT = new Vector3f(0, 12.6f, 22.9f);
     public static final Vector3f GRIP = new Vector3f(0, 9.0f, 5.6f);
-    public static final Vector3f FORE = new Vector3f(0, 7.6f, -7.5f);
+    public static final Vector3f FORE = new Vector3f(0, 7.6f, -5.0f);
     public static final Vector3f EYEPIECE = new Vector3f(0, 21f, 13.4f);
     public static final Vector3f MUZZLE = new Vector3f(0, 14f, -19.4f);
 
@@ -232,8 +232,8 @@ public final class RifleStance {
         float ready = 1;
         // The bladed ready stance: support foot forward, trigger side back, knees soft, the torso into the gun.
         float blade = 1 - v.sprintW;
-        b.r(Bone.HIPS, 0, 22, 0, blade);
-        b.r(Bone.CHEST, 6, 10, 0, ready);
+        b.r(Bone.HIPS, 0, 26, 0, blade);
+        b.r(Bone.CHEST, 6, 12, 0, ready);
         b.r(Bone.LEFT_THIGH, -14, -18, -4, ready);
         b.r(Bone.LEFT_SHIN, 16, 0, 0, ready);
         b.r(Bone.LEFT_FOOT, -2, 0, 0, ready);
@@ -360,9 +360,11 @@ public final class RifleStance {
         float pitch = Mth.clamp(v.pitch, -80, 80), yaw = Mth.clamp(v.yaw, -60, 60);
         float ready = 1 - v.ads;
         // Low ready: the muzzle down and in; sprinting, across the chest; scoped, exactly along the aim.
-        float rp = pitch + (22 + TUNE[3]) * ready * (1 - v.sprintW) + 46 * v.sprintW * ready;
-        float ry = yaw - 8 * ready * (1 - v.sprintW) - 42 * v.sprintW * ready;
-        float rr = 6 * ready + 24 * v.sprintW * ready;
+        // Sprinting it rides at high port: diagonal across the chest, the muzzle up by the support shoulder.
+        float sw = v.sprintW * ready;
+        float rp = Mth.lerp(sw, pitch + (22 + TUNE[3]) * ready, -42);
+        float ry = Mth.lerp(sw, yaw - 8 * ready, -58);
+        float rr = Mth.lerp(sw, 6 * ready, 35);
         // Recoil: back into the shoulder and the muzzle up, then settling (less braced or scoped).
         float kick = recoil(v.shotAge) * (1 - 0.35f * v.ads) * (1 - 0.4f * v.brace);
         rp -= 7 * kick;
@@ -386,9 +388,10 @@ public final class RifleStance {
             float t = v.bash;
             bashWind = t < 2 ? t / 2 : Math.max(0, 1 - (t - 2) / 1.5f);
             bashStrike = t < 2 ? 0 : t < 4 ? (t - 2) / 2 : Math.max(0, 1 - (t - 4) / 4f);
-            rp += 30 * bashWind + 40 * bashStrike;
-            ry += 20 * bashWind - 30 * bashStrike;
-            rr += 60 * bashStrike;
+            // Wound back with the muzzle rising over the shoulder, then the butt thrust out at chest height.
+            rp = Mth.lerp(bashWind, rp, -55);
+            rp = Mth.lerp(bashStrike, rp, -100);
+            ry = Mth.lerp(bashStrike, ry, -20);
         }
         Matrix3f rot = new Matrix3f().rotationYXZ(ry * Mth.DEG_TO_RAD, rp * Mth.DEG_TO_RAD, rr * Mth.DEG_TO_RAD).mul(BASE);
         Vector3f fwd = rot.transform(new Vector3f(0, 0, -1));
@@ -396,8 +399,8 @@ public final class RifleStance {
         // The stock in the shoulder pocket (follows the chest), lower and inboard sprinting.
         Matrix4f chest = bones[Bone.CHEST.ordinal()];
         Vector3f restChest = parts.rest(Bone.CHEST);
-        Vector3f pocket = new Vector3f(-2.4f + TUNE[0], 1.6f + TUNE[1], -2.6f + TUNE[2]);
-        pocket.lerp(new Vector3f(-1.2f, 4.6f, -3.4f), v.sprintW);
+        Vector3f pocket = new Vector3f(-2.4f + TUNE[0], 1.4f + TUNE[1], -1.8f + TUNE[2]);
+        pocket.lerp(new Vector3f(-2.6f, 8.5f, -3.0f), sw);
         Vector3f butt = chest.transformPosition(new Vector3f(pocket).sub(restChest));
         // Scoped: the eyepiece just in front of the eye (from the head's own transform, so it stays there).
         Matrix4f head = bones[Bone.HEAD.ordinal()];
@@ -408,8 +411,10 @@ public final class RifleStance {
         butt.lerp(buttAds, v.ads);
         // Kick back along the barrel; the bash drives the stock out.
         butt.sub(new Vector3f(fwd).mul(1.1f * kick));
-        butt.add(new Vector3f(fwd).mul(-2.5f * bashWind + 6.5f * bashStrike));
-        butt.add(0, 1.5f * bashWind, 0);
+        // (The barrel now points up and back: out toward the target is the body's forward.)
+        Vector3f ahead = chest.transformDirection(new Vector3f(0, 0, -1)).normalize();
+        butt.add(new Vector3f(ahead).mul(-1.5f * bashWind + 5f * bashStrike));
+        butt.add(0, 3.5f * bashStrike - 1f * bashWind, 0);
         out.identity().translate(butt).mul(new Matrix4f().set(rot)).scale(SCALE).translate(-BUTT.x, -BUTT.y, -BUTT.z);
     }
 
@@ -496,6 +501,17 @@ public final class RifleStance {
         float d = toT.length();
         float la = a.length(), lf = fist.length();
         float max = new Vector3f(a).add(fist).length() - 0.05f;
+        // Out of reach: the shoulder comes forward to it (protraction), up to a few pixels.
+        if (d > max && d > 1e-4f) {
+            float slide = Math.min(d - max + 0.05f, 3.5f);
+            Vector3f shift = new Vector3f(toT).mul(slide / d);
+            shoulder.add(shift);
+            Quaternionf inv = chest.getNormalizedRotation(new Quaternionf()).conjugate();
+            Vector3f local = inv.transform(new Vector3f(shift));
+            f.layer(Clip.POS, up, new float[] {-local.x, -local.y, -local.z}, w);
+            toT.set(target).sub(shoulder);
+            d = toT.length();
+        }
         float min = Math.abs(la - lf) + 0.3f;
         float dc = Mth.clamp(d, min, max);
         // |a + Rx(b) f|^2 = |a|^2 + |f|^2 + 2 a.y f.y cos(b) (f straight down the segment).

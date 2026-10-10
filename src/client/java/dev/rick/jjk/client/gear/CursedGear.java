@@ -23,12 +23,18 @@ public final class CursedGear {
 
     private CursedGear() {}
 
+    /** Test hook: client-only figures (a pose gallery's stand-ins) shown with a tool drawn. */
+    public static final java.util.Map<Integer, ItemStack> TEST_DRAWN = new java.util.HashMap<>();
+
     public static ItemStack equipped(Player p) {
+        ItemStack t = TEST_DRAWN.get(p.getId());
+        if (t != null) return t;
         ItemStack s = p.getAttached(ModAttachments.CURSED_ITEM);
         return s == null ? ItemStack.EMPTY : s;
     }
 
     public static boolean drawn(Player p) {
+        if (TEST_DRAWN.containsKey(p.getId())) return true;
         Boolean d = p.getAttached(ModAttachments.TOOL_DRAWN);
         return d != null && d && !equipped(p).isEmpty();
     }
