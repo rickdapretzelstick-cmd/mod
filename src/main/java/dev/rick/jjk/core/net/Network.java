@@ -64,6 +64,7 @@ public final class Network {
                     case OWNED -> "Already learned.";
                     case NEEDS -> "Learn what it builds on first.";
                     case POINTS -> "Not enough Mastery.";
+                    case DISABLED -> "Mastery is off: every cursed tool comes whole.";
                     default -> "That can't be learned.";
                 };
                 ctx.player().sendOverlayMessage(net.minecraft.network.chat.Component.literal(why).withStyle(net.minecraft.ChatFormatting.GRAY));

@@ -26,7 +26,7 @@ public final class JJKConfig {
      * The gameplay tuning this file was written for. When the mod's defaults change (the JJS wiki pass), older files have
      * their gameplay sections reset to the new defaults; the player's client settings are kept.
      */
-    public static final int CURRENT_VERSION = 10;
+    public static final int CURRENT_VERSION = 11;
     public int version;
 
     public General general = new General();
@@ -1163,6 +1163,11 @@ public final class JJKConfig {
      * economy at once, and set how quickly repeated kills of the same grade stop paying (fatigue).
      */
     public static final class MasteryRules {
+        /**
+         * The Mastery trees. Off (the default): no trees, no Mastery earned, and every cursed tool comes whole (every
+         * move and every upgrade, the rifle's beam at Maximum Output). On: tools are developed through their trees.
+         */
+        public boolean enabled = false;
         /** Every node's cost is multiplied by this. */
         public double costMultiplier = 1.0;
         /** Every exorcism's Mastery is multiplied by this. */

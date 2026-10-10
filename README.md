@@ -654,6 +654,11 @@ Wall, Shockwave and Executioner; the rifle's tree below.
 
 ### Mastery
 
+**Mastery is off by default** (`mastery.enabled` in `config/jjk.json`). With it off there are no trees and no Mastery
+is earned: every cursed tool comes whole, every move usable from the start (the rifle's Suppressing Volley, Lens Flare
+and Unfolding Array included, its beam at Maximum Output), at the base numbers. J just says so. Turn it on to develop
+tools through the trees described below.
+
 The **Mastery screen (J)** shows the tree of the **cursed tool** in your hand. Lanes are columns, tiers go down; lines
 join prerequisites; each node shows whether it is owned, available or locked, its cost, which move it belongs to and
 what it does. Click a node to read it, double-click (or Develop) to buy it. The server checks every purchase. Costs live

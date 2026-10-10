@@ -378,7 +378,7 @@ public final class Investigations {
             var d = Mastery.data(p).recordIncident(g.name());
             Mastery.set(p, d);
             String tree = topTree(p, earned == null ? null : earned.get(id));
-            if (tree != null) {
+            if (tree != null && Mastery.enabled()) {
                 Mastery.award(p, tree, bonus);
                 MasteryTree t = MasteryTrees.get(tree);
                 p.sendSystemMessage(Component.literal("It's over. Whatever was there won't trouble anyone again. (+" + bonus + " "

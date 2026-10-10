@@ -56,6 +56,7 @@ public class PrisonRealmTests {
     private static void fresh(GameTestHelper h) {
         MinecraftServer server = h.getLevel().getServer();
         JJKConfig.get().progression.enabled = true;
+        JJKConfig.get().mastery.enabled = true;
         JJKConfig.get().progression.infusionTicks = 20;
         PrisonRealm.adminReset(server);
         KitOwnership.get(server).release(GojoCharacter.ID);

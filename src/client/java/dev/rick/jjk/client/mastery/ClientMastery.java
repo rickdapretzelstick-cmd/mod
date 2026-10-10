@@ -8,6 +8,7 @@ public final class ClientMastery {
     private static MasteryData data = MasteryData.EMPTY;
     private static String kit = "";
     private static boolean gated;
+    private static boolean enabled;
     private static int version;
 
     private ClientMastery() {}
@@ -16,6 +17,7 @@ public final class ClientMastery {
         data = p.data();
         kit = p.kit();
         gated = p.gated();
+        enabled = p.enabled();
         version++;
     }
 
@@ -26,6 +28,11 @@ public final class ClientMastery {
     /** The kit this player legitimately owns ("" for none): the only technique tree they can develop. */
     public static String kit() {
         return kit;
+    }
+
+    /** Whether the server has the Mastery trees on. */
+    public static boolean enabled() {
+        return enabled;
     }
 
     public static boolean gated() {

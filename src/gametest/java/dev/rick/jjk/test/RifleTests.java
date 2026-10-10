@@ -38,6 +38,7 @@ public class RifleTests {
     static void floor(GameTestHelper h) {
         JJKConfig.get().general.autoAssignGojo = false;
         JJKConfig.get().progression.enabled = true;
+        JJKConfig.get().mastery.enabled = true;
         JJKConfig.get().rifle.beamRange = 12;
         for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) h.setBlock(x, 0, z, Blocks.STONE);
     }
@@ -355,6 +356,26 @@ public class RifleTests {
         equip(p, rifle);
         RifleServer.setEnergy(p, JJKConfig.get().rifle.capacity);
         h.assertTrue(!RifleServer.kitBeam(p), "no fresh beam for dying");
+        h.succeed();
+    }
+
+    @GameTest(maxTicks = 20, environment = ENV)
+    public void withMasteryOffTheRifleComesWhole(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
+        JJKConfig.get().mastery.enabled = false;
+        try {
+            h.assertTrue(RifleRules.beamUnlocked(p) && RifleRules.maximumOutput(p), "the beam, at Maximum Output, with nothing bought");
+            h.assertTrue(RifleRules.output(p) == 1f, "full output");
+            h.assertTrue(Mastery.unlocked(p, CursedTools.CURSED_RIFLE.unlockKey("volley")) && Mastery.unlocked(p, CursedTools.CURSED_RIFLE.unlockKey("lens_flare")),
+                    "Volley and Lens Flare too");
+            h.assertTrue(Mastery.purchase(p, CursedTools.CURSED_RIFLE.treeId(), "steady_hands") == Mastery.Result.DISABLED, "nothing to buy");
+            p.setShiftKeyDown(true);
+            h.assertTrue(press(p) && RifleServer.phase(p) == RifleServer.Phase.DEPLOY, "G opens the array");
+            letGo(p);
+        } finally {
+            JJKConfig.get().mastery.enabled = true;
+        }
         h.succeed();
     }
 }

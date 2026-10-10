@@ -53,6 +53,7 @@ public class ProgressionGameTests {
         JJKConfig cfg = JJKConfig.get();
         cfg.general.autoAssignGojo = false;
         cfg.progression.enabled = true;
+        cfg.mastery.enabled = true;
         cfg.progression.infusionTicks = 20;
     }
 

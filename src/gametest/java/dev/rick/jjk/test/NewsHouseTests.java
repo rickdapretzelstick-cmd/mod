@@ -26,6 +26,7 @@ public class NewsHouseTests {
     @GameTest(maxTicks = 40, padding = 24, environment = "jjk-test:news_a")
     public void theNewsHouseGoesUpByTheBellWithItsBoardInside(GameTestHelper h) {
         JJKConfig.get().progression.enabled = true;
+        JJKConfig.get().mastery.enabled = true;
         ServerLevel level = h.getLevel();
         for (int x = 0; x < 24; x++) for (int z = 0; z < 24; z++) h.setBlock(x, 0, z, Blocks.GRASS_BLOCK);
         BlockPos bell = h.absolutePos(new BlockPos(11, 1, 3));

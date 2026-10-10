@@ -38,6 +38,7 @@ public class RifleClashTests {
         JJKConfig cfg = JJKConfig.get();
         cfg.general.autoAssignGojo = false;
         cfg.progression.enabled = true;
+        cfg.mastery.enabled = true;
         cfg.rifle.beamRange = 14;
         cfg.yuta.beamRange = 13;
         cfg.yuta.beamQuickRange = 11;

@@ -37,6 +37,7 @@ public class SiteTests {
     private static ServerPlayer survivor(GameTestHelper h, double x, double z) {
         JJKConfig.get().general.autoAssignGojo = false;
         JJKConfig.get().progression.enabled = true;
+        JJKConfig.get().mastery.enabled = true;
         ServerPlayer p = h.makeMockServerPlayerInLevel();
         p.setGameMode(GameType.SURVIVAL);
         p.getAbilities().instabuild = false;
@@ -50,6 +51,7 @@ public class SiteTests {
     @GameTest(maxTicks = 400, padding = 24, environment = ENV)
     public void aCompletedSiteIsTakenDownAndNothingElseIs(GameTestHelper h) {
         JJKConfig.get().progression.enabled = true;
+        JJKConfig.get().mastery.enabled = true;
         ServerLevel level = h.getLevel();
         for (int x = -2; x < 16; x++) for (int z = -2; z < 16; z++) h.setBlock(x, 0, z, Blocks.STONE);
         // Something nearby the site never touches.
