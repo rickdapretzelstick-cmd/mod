@@ -132,6 +132,7 @@ public final class Investigations {
             if (phase == 0 && JJKConfig.get().mastery.newsBoards) visitVillages(level, p, st, now);
             if (phase % 5 == 0) triggers(level, p, st, now);
             if (phase == 50) LodgeRewards.visit(level, p, st);
+            if (phase == 25) StoryChains.deliver(p, st);
             if (phase % 10 == 0 && CursePerception.canPerceive(p)) residue(level, p, st);
         }
         if (now % 200 == 0) expire(st, now);
@@ -150,6 +151,7 @@ public final class Investigations {
             st.villages.put(v.bell.asLong(), v);
             st.markDirty();
         }
+        StoryChains.decide(level, v, st);
         if (v.board == null && v.boardTries < 6 && level.isLoaded(v.bell)) {
             v.boardTries++;
             v.board = placeBoard(level, v.bell);
@@ -160,9 +162,12 @@ public final class Investigations {
 
     /** Keeps the village's board stocked with reports (one new one at a time, a little apart). */
     static void stock(ServerLevel level, InvestigationState.Village v, InvestigationState st, long now) {
+        // The village's character storyline first: its current event is always on the board.
+        StoryChains.stock(level, v, st, now);
         int open = 0;
         for (String id : v.incidents) {
             Incident i = st.incidents.get(id);
+            if (i != null && StoryChains.isChain(i)) continue;
             if (i != null && (i.state == Incident.State.OPEN || i.state == Incident.State.ACTIVE)) open++;
         }
         if (open >= JJKConfig.get().mastery.reportsPerBoard) return;
@@ -176,7 +181,11 @@ public final class Investigations {
     public static Incident generate(ServerLevel level, InvestigationState.Village v, InvestigationState st, long now, @Nullable String only) {
         RandomSource r = RandomSource.create(now ^ v.bell.asLong() * 31 + v.incidents.size());
         List<IncidentTemplate> pool = new ArrayList<>();
-        for (IncidentTemplate t : IncidentTemplate.all()) if (only == null || t.id().equals(only)) for (int k = 0; k < Math.max(1, t.weight()); k++) pool.add(t);
+        for (IncidentTemplate t : IncidentTemplate.all()) {
+            // A storyline's events only ever come from its own village's storyline (StoryChains), never at random.
+            if (only == null ? dev.rick.jjk.progression.story.CharacterStories.ofTemplate(t.id()) != null : !t.id().equals(only)) continue;
+            for (int k = 0; k < Math.max(1, t.weight()); k++) pool.add(t);
+        }
         JJKConfig.MasteryRules cfg = JJKConfig.get().mastery;
         v.lastGenerated = now;
         for (int attempt = 0; attempt < 4 && !pool.isEmpty(); attempt++) {
@@ -230,7 +239,8 @@ public final class Investigations {
 
     private static void expire(InvestigationState st, long now) {
         for (Incident i : st.incidents.values()) {
-            if (i.state == Incident.State.OPEN && now - i.createdAt > STALE_TICKS) {
+            // A storyline's event waits as long as it takes: it is the village's own story.
+            if (i.state == Incident.State.OPEN && now - i.createdAt > STALE_TICKS && !StoryChains.isChain(i)) {
                 i.state = Incident.State.EXPIRED;
                 i.changedAt = now;
                 st.markDirty();
@@ -400,6 +410,7 @@ public final class Investigations {
             }
         }
         LodgeRewards.completed(server, in, st);
+        StoryChains.completed(server, in, st);
         JJK.LOGGER.info("[investigations] incident {} complete ({} participants)", in.id, in.participants.size());
     }
 
@@ -536,6 +547,7 @@ public final class Investigations {
             if (v.board == null) v.board = board.immutable();
         }
         long now = level.getServer().overworld().getGameTime();
+        StoryChains.decide(level, v, st);
         stock(level, v, st, now);
         st.flush();
         ServerPlayNetworking.send(p, new NewsBoardPayload(villageName(v), notes(v, st, now, p.getAttached(dev.rick.jjk.registry.ModAttachments.INVESTIGATING))));
@@ -550,6 +562,8 @@ public final class Investigations {
         List<NewsBoardPayload.Note> out = new ArrayList<>();
         List<String> ids = new ArrayList<>(v.incidents);
         java.util.Collections.reverse(ids);
+        // The village's storyline is what everyone is talking about: its report is pinned first.
+        ids.sort(java.util.Comparator.comparingInt(id -> st.incidents.get(id) != null && StoryChains.isChain(st.incidents.get(id)) ? 0 : 1));
         for (String id : ids) {
             Incident i = st.incidents.get(id);
             if (i == null || out.size() >= 6) continue;
@@ -601,6 +615,19 @@ public final class Investigations {
         if (level == null) return false;
         begin(level, p, in, t, st, level.getGameTime());
         return true;
+    }
+
+    /** Test/admin hook: completes an incident now, exactly as its last curse falling would. */
+    public static void completeForTest(MinecraftServer server, Incident in) {
+        InvestigationState st = InvestigationState.get(server);
+        in.state = Incident.State.ACTIVE;
+        in.curses.clear();
+        complete(server, in, st);
+    }
+
+    /** Test hook: someone took part in an incident (entered its realm, fought at it). */
+    public static void participateForTest(Incident in, ServerPlayer p) {
+        in.participants.add(p.getUUID());
     }
 
     /** Test hook: builds an incident's site now (as the first visit does once its ground is loaded). */

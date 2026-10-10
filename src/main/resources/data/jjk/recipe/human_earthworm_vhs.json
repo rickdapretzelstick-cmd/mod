@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "NBN",
+    "RER",
+    "NBN"
+  ],
+  "key": {
+    "N": "minecraft:iron_nugget",
+    "B": "minecraft:black_dye",
+    "R": "minecraft:redstone",
+    "E": "jjk:yuji_essence"
+  },
+  "result": {
+    "id": "jjk:human_earthworm_vhs",
+    "count": 1
+  }
+}

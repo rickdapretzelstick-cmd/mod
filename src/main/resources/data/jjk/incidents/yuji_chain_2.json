@@ -1,0 +1,26 @@
+{
+  "id": "yuji_chain_2",
+  "weight": 0,
+  "grade": "GRADE_3",
+  "site": "house",
+  "trigger": "threshold",
+  "realm": "house_realm",
+  "curses": [
+    {
+      "kind": "school_crawler",
+      "min": 2,
+      "max": 3
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "Moviegoer's Family Will Not Leave Their House",
+      "body": "The family of the resident lost at the theater have not been seen outside their cottage {dir} of the village {dist} for days. {name} knocked and the door swung open. {they} saw the family sitting in a row, watching a blank wall, and something standing among them that was shaped like a person and was not one."
+    },
+    {
+      "headline": "Neighbours Fear for the Family at the Cottage",
+      "body": "Since the theater took one of their own, the family at the cottage {dir} of here {dist} sit up every night facing the wall. {name} says one of them turned to look at {them} with a face that was folding in on itself."
+    }
+  ]
+}

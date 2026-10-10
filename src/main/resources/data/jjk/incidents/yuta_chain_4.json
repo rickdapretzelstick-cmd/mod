@@ -1,0 +1,38 @@
+{
+  "id": "yuta_chain_4",
+  "weight": 0,
+  "grade": "GRADE_2",
+  "site": "chapel",
+  "trigger": "interact",
+  "realm": "chapel_realm",
+  "curses": [
+    {
+      "kind": "school_maw",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "school_crawler",
+      "min": 2,
+      "max": 2,
+      "grade": "GRADE_3"
+    },
+    {
+      "kind": "fly_head",
+      "min": 2,
+      "max": 3,
+      "grade": "GRADE_3"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "A Promise at the Old Chapel",
+      "body": "An old chapel {dir} of the village {dist} has been found with its door unbarred and a ring left on the altar. {name} says the air inside is heavy with somebody's love, and that something else, something cruel, has come for it. Whoever touches the ring will have to decide what they believe about it."
+    },
+    {
+      "headline": "The Chapel Bell Rang Without Anyone",
+      "body": "The bell at the chapel {dir} of here {dist} rang at midnight. On the altar inside there is a ring nobody will touch. {name} heard two voices making a promise, and then a third laughing."
+    }
+  ]
+}

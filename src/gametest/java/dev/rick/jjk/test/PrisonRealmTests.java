@@ -47,8 +47,8 @@ import java.util.UUID;
  *   <li>escape progress is saved (survives the world data being reloaded);</li>
  *   <li>the rescue from outside: 5 s held next to it; walking away interrupts it;</li>
  *   <li>the cell holds: leaving it any way (another dimension too) puts the captive back; techniques are sealed;</li>
- *   <li>Gojo: the first genuine capture-and-release claims him, capture alone doesn't, a later captive doesn't, an admin
- *   release doesn't, and a release owed to a captive who was dead is applied (with the claim) once they are back;</li>
+ *   <li>Releases: a genuine capture-and-release is counted and makes nobody Gojo, capture alone isn't, an admin
+ *   release doesn't, and a release owed to a captive who was dead is applied once they are back;</li>
  *   <li>no duplicates: no second seal while one runs, the released realm is the same single cube again.</li>
  * </ol>
  */
@@ -119,6 +119,11 @@ public class PrisonRealmTests {
         return KitOwnership.get(h.getLevel().getServer()).isOwner(GojoCharacter.ID, p.getUUID());
     }
 
+    /** Genuine releases counted for a player (the Prison Realm no longer makes anyone Gojo). */
+    private static int releases(ServerPlayer p) {
+        return dev.rick.jjk.progression.TechniqueProgression.progression(p).counter(PrisonRealm.RELEASES);
+    }
+
     private static void cleanUp(GameTestHelper h, ServerPlayer... players) {
         PrisonRealm.adminReset(h.getLevel().getServer());
         KitOwnership.get(h.getLevel().getServer()).release(GojoCharacter.ID);
@@ -175,9 +180,9 @@ public class PrisonRealmTests {
                 .thenSucceed();
     }
 
-    // 2, 4, 8, 9. Sealed, escaped alone: Gojo for the first; a later captive gets nothing; capture alone grants nothing.
+    // 2, 4, 8, 9. Sealed, escaped alone: counted, and nobody becomes Gojo (he is earned through his storyline now).
     @GameTest(maxTicks = 1600, environment = "jjk-test:prison_b")
-    public void theFirstToEscapeIsGojoAndNobodyAfter(GameTestHelper h) {
+    public void anEscapeIsCountedAndMakesNobodyGojo(GameTestHelper h) {
         fresh(h);
         ServerLevel level = h.getLevel();
         ServerPlayer a = survivor(h, 3.5, 3.5);
@@ -214,15 +219,15 @@ public class PrisonRealmTests {
                     h.assertTrue(st(h).phase() == PrisonRealmState.Phase.ITEM, "escaped (stage " + st(h).stage() + ", seals " + Integer.bitCount(st(h).broken()) + ")");
                 })
                 .thenExecute(() -> {
-                    h.assertTrue(gojo(h, a), "the first genuine capture and escape makes them Gojo");
-                    h.assertTrue(Casters.get(a).character() == Characters.get(GojoCharacter.ID), "and they play Gojo");
+                    h.assertTrue(!gojo(h, a) && !KitOwnership.get(level.getServer()).isClaimed(GojoCharacter.ID), "a genuine escape makes nobody Gojo");
+                    h.assertTrue(releases(a) == 1, "it is counted");
                     h.assertTrue(a.position().distanceTo(Vec3.atBottomCenterOf(at[0])) < 5, "they stand beside the realm");
                     h.assertTrue(PrisonRealm.body(level) == null, "the realm's body is gone");
                     List<ItemEntity> cubes = level.getEntitiesOfClass(ItemEntity.class, new AABB(at[0]).inflate(4), e -> e.getItem().is(ProgressionItems.PRISON_REALM));
                     h.assertTrue(cubes.size() == 1 && id.equals(PrisonRealmItem.realmId(cubes.get(0).getItem())), "the same single realm is back on the ground");
                     cubes.get(0).discard();
                 })
-                // Someone else, later: sealed and escaped the same way, but Gojo is already someone's.
+                // Someone else, later: sealed and escaped the same way.
                 .thenExecute(() -> sealSelf(h, b, PrisonRealmItem.create(id)))
                 .thenWaitUntil(() -> h.assertTrue(sealed(h), "the second seal closed"))
                 .thenWaitUntil(() -> {
@@ -230,7 +235,7 @@ public class PrisonRealmTests {
                     h.assertTrue(st(h).phase() == PrisonRealmState.Phase.ITEM, "the second captive escaped");
                 })
                 .thenExecute(() -> {
-                    h.assertTrue(!gojo(h, b) && gojo(h, a), "the later captive is let out with nothing; Gojo stays with the first");
+                    h.assertTrue(!gojo(h, b) && releases(b) == 1 && !KitOwnership.get(level.getServer()).isClaimed(GojoCharacter.ID), "the later captive is let out and counted");
                     cleanUp(h, a, b);
                 })
                 .thenSucceed();
@@ -326,7 +331,7 @@ public class PrisonRealmTests {
                 })
                 .thenExecute(() -> {
                     h.assertTrue(held[0] >= PrisonRealm.RESCUE_TICKS, "it took the whole five seconds (" + held[0] + " ticks)");
-                    h.assertTrue(gojo(h, captive) && !gojo(h, friend), "the rescued captive is the first: Gojo (the rescuer gets nothing)");
+                    h.assertTrue(!gojo(h, captive) && releases(captive) == 1 && releases(friend) == 0, "the rescued captive's release is counted (the rescuer's isn't); nobody is Gojo");
                     h.assertTrue(!inCell(h, captive), "out");
                     friend.setShiftKeyDown(false);
                     cleanUp(h, captive, friend);
@@ -426,14 +431,14 @@ public class PrisonRealmTests {
                 })
                 .thenWaitUntil(() -> h.assertTrue(st(h).phase() == PrisonRealmState.Phase.ITEM && st(h).pending().size() == 1, "the release is owed"))
                 .thenExecute(() -> {
-                    h.assertTrue(!gojo(h, captive), "nothing yet while they are dead");
+                    h.assertTrue(releases(captive) == 0, "nothing yet while they are dead");
                     // Back (respawned / rejoined).
                     captive.setHealth(captive.getMaxHealth());
                 })
                 .thenIdle(2)
                 .thenExecute(() -> {
                     h.assertTrue(st(h).pending().isEmpty(), "applied once");
-                    h.assertTrue(gojo(h, captive), "with the claim");
+                    h.assertTrue(releases(captive) == 1 && !gojo(h, captive), "counted once they are back (and still not Gojo)");
                     h.assertTrue(!inCell(h, captive), "and they are out");
                     cleanUp(h, captive);
                 })
@@ -518,7 +523,7 @@ public class PrisonRealmTests {
                     h.assertTrue(st(h).phase() == PrisonRealmState.Phase.ITEM, "opened from outside");
                 })
                 .thenExecute(() -> {
-                    h.assertTrue(gojo(h, target) && !gojo(h, user), "the rescued captive is the first: Gojo");
+                    h.assertTrue(!gojo(h, target) && releases(target) == 1 && releases(user) == 0, "the rescued captive is counted; nobody is Gojo");
                     user.setShiftKeyDown(false);
                     cleanUp(h, user, target);
                 })

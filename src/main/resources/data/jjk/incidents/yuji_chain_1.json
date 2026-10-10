@@ -1,0 +1,32 @@
+{
+  "id": "yuji_chain_1",
+  "weight": 0,
+  "grade": "GRADE_3",
+  "site": "theater",
+  "trigger": "night",
+  "realm": "theater_realm",
+  "curses": [
+    {
+      "kind": "school_crawler",
+      "min": 2,
+      "max": 2
+    },
+    {
+      "kind": "fly_head",
+      "min": 2,
+      "max": 2,
+      "grade": "GRADE_4"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "Strange Activity Reported at Abandoned Theater",
+      "body": "Residents near the old theater {dir} of the village {dist} report hearing dialogue and music after midnight despite the building having no power. Several claim the same film appears to play every night. {name} entered three nights ago and has not returned."
+    },
+    {
+      "headline": "The Theater Is Showing a Film Again",
+      "body": "The theater {dir} of here {dist} closed years ago, yet music drifts out of it every night after dark. {name} looked through a crack in the boards and says the seats were full, and that every face in the audience was turned around, looking back at {them}."
+    }
+  ]
+}

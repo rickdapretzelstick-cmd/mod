@@ -47,7 +47,7 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
     public static final int STAGES = 5;
     public static final IntegerProperty INFUSION = IntegerProperty.create("infusion", 0, STAGES);
     /** While infusing: what it holds, an index into {@link CauldronInfusions#ALL}. */
-    public static final IntegerProperty HELD = IntegerProperty.create("held", 0, 7);
+    public static final IntegerProperty HELD = IntegerProperty.create("held", 0, 15);
     /** How often a full cauldron looks for glasses in it. */
     private static final int WATCH_TICKS = 5;
 
@@ -86,7 +86,7 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
         if (infusion >= 0) {
             if (state.getValue(LEVEL) < MAX_LEVEL || state.getValue(INFUSION) > 0) return InteractionResult.TRY_WITH_EMPTY_HAND;
             if (level instanceof ServerLevel server) {
-                var refused = CauldronInfusions.refused(server, infusion);
+                var refused = CauldronInfusions.refused(server, infusion, player instanceof net.minecraft.server.level.ServerPlayer sp ? sp : null);
                 if (refused != null) {
                     player.sendOverlayMessage(refused.copy().withStyle(net.minecraft.ChatFormatting.GRAY));
                     Fx.sound(server, Vec3.atCenterOf(pos), SoundEvents.SHULKER_HURT_CLOSED, 0.8f, 0.6f);
@@ -95,6 +95,7 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
                 // The cauldron takes it itself (its state holds it), so nothing loose can drift out.
                 stack.consume(1, player);
                 server.setBlock(pos, state.setValue(INFUSION, 1).setValue(HELD, infusion), Block.UPDATE_ALL);
+                CauldronInfusions.taken(server, pos, infusion, player instanceof net.minecraft.server.level.ServerPlayer sp ? sp : null);
                 Vec3 core = Vec3.atBottomCenterOf(pos).add(0, contentY(MAX_LEVEL) + 0.05, 0);
                 Fx.play(server, "prog_infuse", core, Vec3.ZERO, 1, -1);
                 Fx.sound(server, core, SoundEvents.BOTTLE_EMPTY, 0.8f, 0.5f);
@@ -175,7 +176,10 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
             // Anything it can take, tossed in, is taken too (the cauldron holds it from here).
             ItemEntity thrown = glassesIn(level, pos);
             int infusion = thrown == null ? -1 : CauldronInfusions.indexOf(thrown.getItem());
-            if (thrown != null && infusion >= 0 && CauldronInfusions.refused(level, infusion) == null) {
+            // Whoever tossed it in is the nearest player (a relic remembers its keeper; Creative makes a test relic).
+            net.minecraft.server.level.ServerPlayer by = thrown == null ? null
+                    : level.getNearestPlayer(thrown.getX(), thrown.getY(), thrown.getZ(), 8, false) instanceof net.minecraft.server.level.ServerPlayer sp ? sp : null;
+            if (thrown != null && infusion >= 0 && CauldronInfusions.refused(level, infusion, by) == null) {
                 ItemStack held = thrown.getItem();
                 if (held.getCount() > 1) {
                     ItemStack rest = held.copy();
@@ -185,6 +189,7 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
                     thrown.discard();
                 }
                 level.setBlock(pos, state.setValue(INFUSION, 1).setValue(HELD, infusion), Block.UPDATE_ALL);
+                CauldronInfusions.taken(level, pos, infusion, by);
                 Fx.play(level, "prog_infuse", core, Vec3.ZERO, 1, -1);
                 Fx.sound(level, core, SoundEvents.SCULK_SHRIEKER_SHRIEK, 0.5f, 1.6f);
                 level.scheduleTick(pos, this, stageTicks());
@@ -204,11 +209,13 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
         }
         // Collapse: the energy is spent into what it held, and that rises out awakened.
         level.setBlock(pos, Blocks.CAULDRON.defaultBlockState(), Block.UPDATE_ALL);
-        ItemStack result = CauldronInfusions.get(state.getValue(HELD)).result().apply(level);
+        ItemStack result = CauldronInfusions.get(state.getValue(HELD)).result().make(level, pos);
         if (result.is(ProgressionItems.PRISON_REALM)) Fx.sound(level, core, SoundEvents.ENDER_DRAGON_GROWL, 0.5f, 1.6f);
         ItemEntity out = new ItemEntity(level, core.x, core.y + 0.4, core.z, result);
         out.setDeltaMovement(0, 0.3, 0);
         out.setPickUpDelay(20);
+        // A one-of-a-kind relic never despawns on the ground.
+        if (result.getItem() instanceof dev.rick.jjk.progression.story.RelicItem) out.setUnlimitedLifetime();
         level.addFreshEntity(out);
         Fx.play(level, "prog_infuse_done", core, Vec3.ZERO, 1f, out.getId());
         Fx.sound(level, core, SoundEvents.ZOMBIE_VILLAGER_CURE, 0.7f, 1.4f);

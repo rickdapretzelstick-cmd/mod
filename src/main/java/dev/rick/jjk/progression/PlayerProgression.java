@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * A player's own answer to "what have I permanently acquired?": the kits they earned in Survival, which of them is their
- * current Survival kit, the kit they last picked in Creative to test with (kept when they go back to Survival, never
+ * current Survival kit, the kit they last picked in Creative to test with (put away when they leave Creative, never
  * ownership), and free-form progression flags and counters for acquisition paths to build on (a cursed
  * object eaten, a room cleared...). Persisted on the player (survives death, logout and dimension changes) and always
  * checked against {@link KitOwnership}, the world's authority, when they join.
@@ -74,6 +74,12 @@ public record PlayerProgression(List<String> kits, String kit, List<String> flag
     public PlayerProgression withFlag(String flag) {
         List<String> f = new ArrayList<>(flags);
         f.add(flag);
+        return new PlayerProgression(kits, kit, f, counters, testKit);
+    }
+
+    public PlayerProgression withoutFlag(String flag) {
+        List<String> f = new ArrayList<>(flags);
+        f.remove(flag);
         return new PlayerProgression(kits, kit, f, counters, testKit);
     }
 

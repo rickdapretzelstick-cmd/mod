@@ -375,11 +375,11 @@ from Every Last Drop, so the Awakening key never transforms him on its own.
 ## Survival progression
 
 In **Survival** you start as an ordinary person: no technique, no kit, and the K screen doesn't hand one out (it just
-says *"You have not awakened a cursed technique."*). Kits are earned in the world, and **each kit belongs to one
-player per world**. **Creative** is the sandbox: K picks any character, even one somebody owns, but a Creative pick is
-never ownership. It is your *test kit*: it stays when you go back to Survival (and through death and relogging) so you
-can try it there, until you pick something else in Creative, choose one of your own kits on K, or earn a kit. Survival
-alone still can't swap: there K only switches between kits you own. In Creative (or with progression off) the first card
+says *"You have not awakened a cursed technique."*). Kits are earned in the world through each character's
+**storyline** (below), and **each kit belongs to one player per world**. **Creative** is the sandbox: K picks any
+character, even one somebody owns, but a Creative pick is never ownership, completes no storyline and **stays in
+Creative**: leaving Creative puts it away, back to the kit you legitimately own (or none). Survival alone still can't
+swap: there K only switches between kits you own. In Creative (or with progression off) the first card
 on K is **No kit**: an ordinary person with no technique (in Creative it also puts any test kit away). `progression.enabled: false` in the config turns all of
 this off (free selection everywhere).
 
@@ -401,9 +401,94 @@ The path so far:
    into the building's lowest floor under a carpet and a ladder shaft. The first time anyone enters, the **Finger
    Bearer** takes shape over the seal at its heart (below).
 8. **Cursed Finger**: each room's Finger Bearer leaves exactly one when it dies, and a cleared room never fills again.
-   The first player to eat one becomes the world's **Yuji**, permanently (death, logout and dimension changes don't
-   release it). Anyone else who eats one afterwards is consumed by it and dies, whatever protects them. Nobody is told
-   in advance whether Yuji is taken.
+   It **no longer makes anyone Yuji** (Yuji is earned through his storyline). The world's Yuji, its vessel, can eat
+   one: it is absorbed and counted, for the Sukuna progression to come. Anyone else is consumed by it and dies, whatever
+   protects them.
+9. **Character storylines**: villages, Essences, relics and personal trials (next section) are how a technique is
+   earned.
+
+## Character storylines
+
+**Exploration is the character selection.** There is no menu: a player who wants Gojo goes looking for a Gojo village.
+
+```
+village storyline (4 events) → Essence → character object → full cauldron → the world's one relic → personal trial → base kit
+```
+
+**1. The village storyline.** Six villages in ten hold one character's storyline: Yuji, Gojo, Yuta, Ryu or Hakari.
+Which one is decided once, from the village itself and the world seed (never from who visits, never re-rolled). Its
+first report is pinned at the top of the news board and is recognisable without naming anyone:
+
+| Storyline | The first report | Where it goes from there |
+|---|---|---|
+| **Gojo** (space, distance, perception) | *Unusual Distance Reported Along the Northern Road*: a watchtower that never gets closer, a figure beside it at night | a cliff you fall from and land back on top of; a cottage larger inside than out; a second watchtower whose lamp shows the whole valley |
+| **Yuji** (cinema, human tragedy) | *Strange Activity Reported at Abandoned Theater*: the same film every night, and someone who went in | the family who stare at the wall; what is kept in the old mine; the final screening |
+| **Yuta** (love, protection) | *Unexplained Attacks Surround Local Resident*: people hurt approaching them, a woman's voice | the resident walking to the cliffs, kept from the edge; flowers where nobody died; a promise at the old chapel |
+| **Ryu** (output, destruction) | *Unexplained Destruction East of Village*: a flash, a single enormous impact | another flash, farther out; a tunnel blasted into the hill; the impact point |
+| **Hakari** (gambling, luck) | *Late-Night Activity Beneath Abandoned Storehouse*: bells, coins, someone winning for three nights | the winner who never leaves; coins at the bottom of the mine; the last round |
+
+Each storyline is four events (discovery, escalation, revelation, finale), each an ordinary investigation with its own
+place, trigger and realm: the board says roughly where, the **Cursed Compass** finds the exact spot, the report tells
+you what happened, and you work out what to do (walk up to the watchtower after dark, step through the cottage door,
+ring the storehouse bell, touch the shard at the bottom of the crater...). Every fight is in the Cursed Dimension, in a
+realm made of the event: the road that never arrives, the theater, the crater, the fight club under the storehouse, the
+chapel garden (plus the existing cliff, mine and house realms). New places: the **watchtower**, the **abandoned
+theater** (its projector is a jukebox), the **storehouse** (a bell over the trapdoor), the **crater** and the **old
+chapel**. A storyline's event never goes stale; completing one brings the next report; ordinary news carries on beside
+it.
+
+**2. The Essence.** The finale condenses that storyline's own Essence (*Yuji, Gojo, Yuta, Ryu, Hakari Essence*) for
+everyone who took part, handed over with a title card once they are back in the world (a logged-out participant gets
+theirs when they return).
+
+**3. The character object.** Each Essence is crafted into its character's object, which is **dormant**:
+
+| Essence | Object | Recipe |
+|---|---|---|
+| Yuji | **Human Earthworm VHS** | Essence in the middle, redstone either side, black dye above and below, iron nuggets in the corners |
+| Gojo | **Blindfold** (worn on the head) | three black wool over string · Essence · string |
+| Yuta | **Cursed Ring** | a diamond over iron · Essence · iron, iron below |
+| Ryu | **Comb** | three bones over bone · Essence · bone |
+| Hakari | **Scratch-Off Ticket** | paper and gold nuggets round the Essence |
+
+**4. Infusion.** Drop the object into a **full** Cursed Energy cauldron (like the glasses). Cursed energy erupts and it
+rises out **infused**: the world's one functional relic of that character. **One per character per world**, across
+every dimension, whoever is online: the world keeps a registry (`<world>/jjk_progression/unique_relics.dat`), and the
+claim is made atomically when the energy collapses, so two cauldrons racing for the same character produce exactly one
+relic (the other gives its object back). A relic carries the world's token: a copy is cold. It never despawns on the
+ground. If it is **destroyed** before its storyline is complete (lava, a cactus, the void) the world may forge another
+(from a new Essence); if its **keeper** (the last player to use it) loses it, they can infuse the object again and the
+lost one goes cold. Recovery never makes two. In Creative the cauldron makes a *test relic* that claims nothing.
+
+**5. The personal trial.** The relic still grants nothing. It is the key to that character's own story, and the player
+has to work out how to use it:
+
+- **Yuji: the VHS, played on a jukebox.** An ordinary film... until the man on the screen turns and looks at you. In
+  the theater, weapons do nothing to what rises out of the seats: **the body is the weapon** (bare fists strike with
+  cursed energy, hard; now and then a black spark). Three waves, the last at the final reel.
+- **Gojo: the Blindfold, worn.** Everything goes dark, and then you begin to see: curses glow, a flare warns of what is
+  about to strike. On a road that folds back on itself you fight by perception. Take it off too soon and it's over.
+  Then **the blindfold comes off**: a white-out, an iris of blue light, "I can see everything", and a last wave with
+  everything in view.
+- **Yuta: the Ring.** A presence fills the chapel garden and closes in whenever you look away. It only ever strikes what
+  comes for you: let it protect you (running from it frays the bond), then fight beside it while it holds what comes
+  near it. At the end it waits beside you: **use the ring** to accept the bond. It cannot be killed; that is not the
+  answer.
+- **Ryu: the Comb.** *"Are you satisfied?"* Wave after harder wave in the crater; after each, two pillars rise: walk to
+  the **gold** one for MORE, the **grey** one if you are satisfied (that ends it in failure). The fifth wave is *Every
+  Last Drop*: every blow you land is an enormous blast.
+- **Hakari: the Scratch-Off.** Scratch it: no win. Scratch again: no win, and the numbers moved. The third time, the
+  fight club. Every round the reels draw a wager against you (your health, cursed energy, healing, your grip, your
+  legs) for the round; win it and it comes back with interest. Round four: **7 · 7 · 7, JACKPOT**, and a fever.
+
+Completing the trial **claims the base kit**: the world records you as its Yuji (or Gojo...), through the same atomic
+one-owner registry as every path (`kit_ownership.dat`). Offline owners keep it; death, dimensions and restarts change
+nothing. **The base kit only**: every move and R variant, never the Awakening, which belongs to that character's own
+later storyline. Dying or leaving a trial (or a restart) fails it; the relic waits to be used again.
+
+**Admin** (op): `/jjk story villages | set <kit|none> [stage] | essence <kit> [player] | trial <kit> [claim] | complete |
+trials | awaken <kit> <player> on|off` · `/jjk relic list | reset <kit> | issue <kit> [player]`. Assets come from
+`tools/gen_story_assets.py`.
 
 ### The Finger Bearer
 
@@ -446,8 +531,8 @@ attacking. Perception comes from sources registered in `CursePerception` (today:
 **For kit acquisition paths.** Every path calls `TechniqueProgression.acquire(player, KitAcquisition)`. That claims the
 kit atomically in `KitOwnership` (the world's `kit → owner` record, `<world>/jjk_progression/kit_ownership.dat`), records
 it in the player's own progression data (checked against the world's record on every join), and runs the path's own
-outcome for *claimed*, *already yours* and *someone else's*. The fatal outcome belongs to the Cursed Finger; other
-paths define their own.
+outcome for *claimed*, *already yours* and *someone else's*. Today the only path is a completed personal trial
+(`RelicAcquisition`).
 
 **Admin** (op): `/jjk kit list | owner <kit> | info [player] | grant <kit> <player> | transfer <kit> <player> |
 release <kit> | repair | rooms`. `/jjk character` is still an admin override; under progression it lasts until the
@@ -456,7 +541,8 @@ player relogs or leaves Creative (a Creative K pick is the test kit above).
 ## Investigations, curses and Mastery
 
 The long loop of Survival: **villages report strange happenings → you investigate → you find and exorcise the curse
-behind it → the Mastery you earn develops your cursed tool and (once you have one) your own technique.**
+behind it → the Mastery you earn develops your cursed tool.** A technique is no longer developed through Mastery: it
+comes whole from its storyline, and grows through that character's own story.
 
 ### Curse grades and cursed damage
 
@@ -551,31 +637,22 @@ Wall, Shockwave and Executioner; the rifle's tree below.
 
 ### Mastery
 
-Two kinds of tree, both on the **Mastery screen (J)**: the **Cursed Tool** tab shows the tree of the tool in your hand;
-the **Technique** tab shows your own kit's tree, and only if you legitimately own that kit (a borrowed Creative test kit
-has none). Lanes are columns, tiers go down; lines join prerequisites; each node shows whether it is owned, available
-or locked, its cost, which move it belongs to and what it does. Click a node to read it, double-click (or Develop) to
-buy it. The server checks every purchase.
+The **Mastery screen (J)** shows the tree of the **cursed tool** in your hand. Lanes are columns, tiers go down; lines
+join prerequisites; each node shows whether it is owned, available or locked, its cost, which move it belongs to and
+what it does. Click a node to read it, double-click (or Develop) to buy it. The server checks every purchase. Costs live
+in each tree's JSON; `mastery.costMultiplier` scales them all.
 
-**Every move of every kit has nodes** (data: `data/jjk/mastery/technique/<kit>.json`), and they aren't just numbers:
-
-- **The R-combination variants are no longer free.** In Survival, on your own kit, each is a node of the move it comes
-  from: Gojo's Red + Limitless variants, Face Grater and the 0.2-second Domain; Hakari's Balls + Doors, Fever Crush and
-  Renewal; Yuji's Black Flash, Black Flash Chain, Improvised Weapon and World Cutting Slash; Yuta's Veilstep, Resolute
-  Black Flash, Second Wind's pummel, Rika Launch's feint, Outburst's last stage, Fakeout and Jacob's Ladder; Ryu's
-  charged and looping Granite Blast and the held "You weren't invited".
-- **Awakening is a node**: the most expensive one in each tree, needing a node from several lanes first (Gojo's
-  blindfold, Hakari's Idle Death Gamble, the King of Curses, True Love, Every Last Drop). Before it, the Awakening key
-  (and the domain counter that uses it) does nothing. The awakened moves have their own nodes below it.
-- Small upgrades (damage, cooldown, cost, a range or a radius) sit between them; milestones have a gold frame.
-
-Creative, progression switched off, and anything that isn't a player (dummies, curses) always have the whole kit. Costs
-live in each tree's JSON; `mastery.costMultiplier` scales them all.
+**The technique trees are retired.** Character progression no longer runs through Mastery currency, +damage nodes or a
+purchasable Awakening. A character's **base kit comes whole** from its storyline (every move and every R variant:
+Limitless variants, Face Grater, Black Flash, Veilstep, the charged Granite Blast...), and **the Awakening stays closed**
+until that character's own later storyline opens it (`/jjk story awaken` for testing). The tree files
+(`data/jjk/mastery/technique/<kit>.json`) stay for reference, and a node bought under the old system still counts, so
+no existing save loses anything. Creative, progression switched off, and anything that isn't a player (dummies,
+curses) always have the whole kit, Awakening included.
 
 **What exorcising pays.** Each curse is worth its grade's Mastery (Grade 4: 6, Grade 3: 14, Grade 1: 70...), split by
-damage share: first between the players who fought it, then each player's part between their trees (the tool and the
-technique they hit it with). Using both at once pays the same as either alone, never double. Your technique's share is
-only paid into a kit you own. Killing the same grade over and over pays less each time (fatigue, which wears off with
+damage share: first between the players who fought it, then each player's part between what they hit it with. Only a
+cursed tool's share is paid (a technique's share isn't: its tree is retired), and using both never pays double. Killing the same grade over and over pays less each time (fatigue, which wears off with
 time); investigations always pay at least 60%, and **completing an investigation adds a bonus** for everyone who took
 part (Grade 3: +26). Exorcisms and investigations are recorded per grade for the future **Sorcerer Grade** (Unranked →
 Grade 4 … Special Grade), which is kept apart from Mastery.
@@ -675,7 +752,7 @@ explosion, the void) another may be forged. Every cube carries the world's id fo
 `/jjk prison reset` (op) forgets a realm that was lost for good (say, in a deleted player's inventory).
 
 **Sealing.** Use it on a player in front of you (within 8 blocks), or on any creature, just for fun. **Sneak-use it with
-nobody in front of you to seal yourself** (so a solo player can earn Gojo). The cube lands at their feet and plays its whole sequence: it opens, the
+nobody in front of you to seal yourself**. The cube lands at their feet and plays its whole sequence: it opens, the
 restraints reach out at 2.6 s, they are drawn in, and the seal closes at 5.15 s. Until the restraints reach out they can
 get away by getting more than 6 blocks from it. Dying, logging out or leaving the dimension before it closes also fails
 the seal. A failed seal drops the cube where it lay, and only one seal can run at a time.
@@ -712,16 +789,14 @@ the captive both see the progress, and the cube shudders more as it gives.
 realm, turned with the mouse like F5. It is watching only: movement, jumping, attacking and using do nothing while it is
 on. V again, the release, death or a disconnect puts your own camera back.
 
-**Release and Gojo.** The cube opens, the captive steps out beside it, and the cube is an item again (the same realm,
-ready to use again). **The first player in the world to be genuinely sealed and then released, by their own escape or a
-rescue, becomes Gojo.** It goes through the same atomic one-owner kit claim as the Cursed Finger, so nothing can make a
-second Gojo this way. Capture alone grants nothing, everyone released after that is simply let out, and an admin
-release (`/jjk prison free`) grants nothing. A captive who is offline or dead at the moment of their release gets it
-(with the claim, if it is owed) the moment they are back. In Creative the release lets you try Gojo without claiming
-him. A restart during a seal fails it (the cube drops); a restart during a release finishes it.
+**Release.** The cube opens, the captive steps out beside it, and the cube is an item again (the same realm, ready to
+use again). The Prison Realm **no longer makes anyone Gojo** (he is earned through his storyline): a genuine seal and
+release, by their own escape or a rescue, is counted on the player for later progression, nothing more; an admin
+release (`/jjk prison free`) isn't. A captive who is offline or dead at the moment of their release gets it the moment
+they are back. A restart during a seal fails it (the cube drops); a restart during a release finishes it.
 
 **Creatures** can be sealed as well: held in the cell the same way, never despawned while inside, let out by a
-rescue. A creature never earns Gojo (nor does its rescuer), and if it dies or vanishes in there the realm opens on its
+rescue. If it dies or vanishes in there the realm opens on its
 own.
 
 `/jjk prison status` (op) shows where the realm is, who is inside and how far they've got.

@@ -43,6 +43,14 @@ public final class InvestigationState {
         int boardTries;
         final List<String> incidents = new ArrayList<>();
         long lastGenerated;
+        /**
+         * The character storyline this village holds (a character id, or "" for none), decided once from the village
+         * itself and the world, never from who visits ({@link StoryChains}); and how far along it is: 1-4 the event now
+         * reported, 5 finished.
+         */
+        String story = "";
+        boolean storyDecided;
+        int storyStage;
 
         Village(String dimension, BlockPos bell) {
             this.dimension = dimension;
@@ -56,6 +64,14 @@ public final class InvestigationState {
 
         public List<String> incidents() {
             return List.copyOf(incidents);
+        }
+
+        public String story() {
+            return story;
+        }
+
+        public int storyStage() {
+            return storyStage;
         }
     }
 
@@ -201,6 +217,9 @@ public final class InvestigationState {
                 if (v.board != null) c.putLong("Board", v.board.asLong());
                 c.putInt("BoardTries", v.boardTries);
                 c.putLong("LastGenerated", v.lastGenerated);
+                c.putString("Story", v.story);
+                c.putBoolean("StoryDecided", v.storyDecided);
+                c.putInt("StoryStage", v.storyStage);
                 ListTag ids = new ListTag();
                 for (String s : v.incidents) ids.add(StringTag.valueOf(s));
                 c.put("Incidents", ids);
@@ -262,6 +281,9 @@ public final class InvestigationState {
                 if (c.contains("Board")) v.board = BlockPos.of(c.getLongOr("Board", 0L));
                 v.boardTries = c.getIntOr("BoardTries", 0);
                 v.lastGenerated = c.getLongOr("LastGenerated", 0L);
+                v.story = c.getStringOr("Story", "");
+                v.storyDecided = c.getBooleanOr("StoryDecided", false);
+                v.storyStage = c.getIntOr("StoryStage", 0);
                 for (Tag s : c.getListOrEmpty("Incidents")) if (s instanceof StringTag st) v.incidents.add(st.value());
                 villages.put(v.bell.asLong(), v);
             }

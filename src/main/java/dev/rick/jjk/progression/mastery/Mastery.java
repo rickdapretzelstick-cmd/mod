@@ -87,12 +87,20 @@ public final class Mastery {
 
     /**
      * Whether a gated behaviour is available to {@code e}: a cursed tool's ({@code tool.<id>.<name>}) for any governed
-     * Survival player; a technique's ({@code red.limitless}, {@code gojo.awakening}...) when {@link #techniqueGated}.
+     * Survival player who bought its node; a technique's when {@link #techniqueGated}.
+     *
+     * <p>Techniques are no longer developed through Mastery. A character's base kit, earned through its storyline, comes
+     * whole (every move and every R variant); only the Awakening ({@code <kit>.awakening}) stays closed, until that
+     * character's own later storyline opens it ({@link TechniqueProgression#awakened}). An Awakening node bought under
+     * the old tree still counts, so no existing save loses it.
      */
     public static boolean unlocked(@Nullable LivingEntity e, String key) {
         boolean tool = key.startsWith("tool.");
         if (tool ? !gated(e) : !techniqueGated(e)) return true;
-        return effective((ServerPlayer) e).unlocks.contains(key);
+        ServerPlayer p = (ServerPlayer) e;
+        if (tool) return effective(p).unlocks.contains(key);
+        if (!key.endsWith(".awakening")) return true;
+        return TechniqueProgression.awakened(p, key.substring(0, key.length() - ".awakening".length())) || effective(p).unlocks.contains(key);
     }
 
     /** The multiplier on a move's number for {@code e} (1.0 untouched). */
@@ -134,10 +142,12 @@ public final class Mastery {
 
     // --- Earning and spending ---
 
-    /** Whether {@code p} may develop this tree: a technique tree only by its kit's legitimate owner. */
+    /**
+     * Whether {@code p} may develop this tree: cursed tool trees only. The technique trees are retired (character
+     * progression comes from story events and accomplishments now); their data stays for reference and old saves.
+     */
     public static boolean mayDevelop(ServerPlayer p, MasteryTree t) {
-        if (t.kind() == MasteryTree.Kind.TOOL) return true;
-        return KitOwnership.get(p.level().getServer()).isOwner(t.owner(), p.getUUID());
+        return t.kind() == MasteryTree.Kind.TOOL;
     }
 
     /** Adds Mastery to a tree (the server's reward paths call this; never the client). */

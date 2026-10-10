@@ -1,0 +1,32 @@
+{
+  "id": "yuji_chain_3",
+  "weight": 0,
+  "grade": "GRADE_2",
+  "site": "hillside",
+  "trigger": "descend",
+  "realm": "mine_realm",
+  "curses": [
+    {
+      "kind": "school_maw",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "school_crawler",
+      "min": 2,
+      "max": 2,
+      "grade": "GRADE_3"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "Missing Residents Traced to the Old Mine",
+      "body": "The tracks of the missing lead from the theater to the old mine {dir} of the village {dist}. {name} went down with a lantern and came back without it, saying the people down there were alive, and that they had been made into something long and soft that moved through the walls."
+    },
+    {
+      "headline": "What Is Being Kept in the Mine",
+      "body": "Miners refuse the old workings {dir} of here {dist}. {name} heard someone {they} knew calling for help from deep inside, and something answering in the same voice."
+    }
+  ]
+}

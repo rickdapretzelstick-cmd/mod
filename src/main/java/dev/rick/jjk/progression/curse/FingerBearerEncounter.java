@@ -23,9 +23,9 @@ import java.util.List;
 /**
  * What waits in a cursed battle room ({@link CursedEncounters#FINGER_BEARER}). The first time anyone sets foot in the
  * room, the Finger Bearer takes shape over the seal (unseen, unless they perceive curses), and the room is ACTIVE. Its
- * defeat clears the room for good and leaves the room's one Cursed Finger where it fell; eating that finger is the same
- * claim as any other ({@link dev.rick.jjk.progression.CursedFingerAcquisition}: the first eater in the world becomes its
- * Yuji, a stranger after that dies of it). A cleared room never spawns again, so a room gives one finger, ever.
+ * defeat clears the room for good and leaves the room's one Cursed Finger where it fell (eating it: {@link
+ * dev.rick.jjk.progression.CursedFingerAcquisition}; it no longer makes Yuji). A cleared room never spawns again, so a
+ * room gives one finger, ever.
  *
  * <p>The spirit is saved with its chunk and the room remembers its id. If it is ever lost without dying (a command, a
  * mod removing it), the room notices after a few checks with someone inside and raises it again; a chunk that is merely

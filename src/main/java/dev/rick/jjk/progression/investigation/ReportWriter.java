@@ -32,14 +32,37 @@ public final class ReportWriter {
         int pr = r.nextInt(3);
         String they = pr == 0 ? "he" : pr == 1 ? "she" : "they";
         String them = pr == 0 ? "him" : pr == 1 ? "her" : "them";
+        String their = pr == 0 ? "his" : pr == 1 ? "her" : "their";
         String body = rep.body() + " " + CLOSING[Mth.clamp(grade.severity, 0, CLOSING.length - 1)];
-        return new Written(fill(rep.headline(), name, they, them, village, site, landmark, r), fill(body, name, they, them, village, site, landmark, r));
+        return new Written(fill(rep.headline(), name, they, them, their, village, site, landmark, r),
+                fill(body, name, they, them, their, village, site, landmark, r));
     }
 
-    private static String fill(String s, String name, String they, String them, BlockPos village, BlockPos site, String landmark, RandomSource r) {
-        return s.replace("{name}", name).replace("{they}", they).replace("{them}", them)
-                .replace("{dir}", direction(village, site)).replace("{dist}", distance(village, site))
+    private static String fill(String s, String name, String they, String them, String their, BlockPos village, BlockPos site, String landmark, RandomSource r) {
+        String dir = direction(village, site);
+        String out = s.replace("{name}", name).replace("{they}", they).replace("{them}", them).replace("{their}", their)
+                .replace("{dir_cap}", Character.toUpperCase(dir.charAt(0)) + dir.substring(1)).replace("{dir}", dir)
+                .replace("{dist}", distance(village, site))
                 .replace("{landmark}", landmark).replace("{animal}", ANIMALS[Math.floorMod(name.hashCode(), ANIMALS.length)]);
+        return capitalise(out);
+    }
+
+    /** A pronoun that opens a sentence ("{they} saw...") starts with a capital, like the rest. */
+    static String capitalise(String s) {
+        StringBuilder b = new StringBuilder(s);
+        boolean start = true;
+        for (int i = 0; i < b.length(); i++) {
+            char c = b.charAt(i);
+            if (start && Character.isLetter(c)) {
+                b.setCharAt(i, Character.toUpperCase(c));
+                start = false;
+            } else if (c == '.' || c == '?' || c == '!') {
+                start = i + 1 < b.length() && b.charAt(i + 1) == ' ';
+            } else if (c != ' ' && c != '"') {
+                start = false;
+            }
+        }
+        return b.toString();
     }
 
     /** One of eight compass directions from the village to the place (north is -Z). */

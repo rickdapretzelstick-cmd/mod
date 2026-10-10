@@ -31,8 +31,8 @@ import java.util.function.Consumer;
  *   <li><b>One reward, split.</b> At death the curse's reward (its grade's Mastery) is divided by damage share: first
  *   between the players, then each player's part between their own trees. Fighting with a tool and a technique together
  *   pays the same total as either alone, never both in full.</li>
- *   <li><b>Only your own technique.</b> The technique share goes to a tree only its legitimate kit owner can develop;
- *   anyone else's technique share is simply not paid (a Creative test kit earns tool Mastery only).</li>
+ *   <li><b>Only cursed tools.</b> The technique trees are retired (a technique grows through its character's story now),
+ *   so a technique's share is simply not paid: only a cursed tool's share earns Mastery.</li>
  *   <li><b>Fatigue.</b> Each exorcism of a grade wears that grade's reward down ({@code 1 / (1 + fatigue)}), recovering
  *   with time: farming the same weak curses stops paying, moving up a grade or taking an investigation keeps it worth
  *   it. A curse tied to an investigation never pays less than {@link JJKConfig.MasteryRules#incidentFloor}.</li>

@@ -1,0 +1,32 @@
+{
+  "id": "yuta_chain_1",
+  "weight": 0,
+  "grade": "GRADE_3",
+  "site": "house",
+  "trigger": "approach",
+  "realm": "house_realm",
+  "curses": [
+    {
+      "kind": "school_crawler",
+      "min": 1,
+      "max": 2
+    },
+    {
+      "kind": "fly_head",
+      "min": 2,
+      "max": 3,
+      "grade": "GRADE_4"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "Unexplained Attacks Surround Local Resident",
+      "body": "Several people have reportedly been injured while approaching the same resident at the cottage {dir} of the village {dist} during moments of distress. Witnesses insist nobody else was nearby, although several described hearing what sounded like a woman's voice immediately before each incident."
+    },
+    {
+      "headline": "Neighbours Keep Their Distance From the Cottage",
+      "body": "{name} raised {their} voice at the young resident of the cottage {dir} of here {dist} and was thrown across the yard by nothing at all. Since then nobody goes near. The resident has asked everyone to stay away, and cries at night, and someone answers."
+    }
+  ]
+}

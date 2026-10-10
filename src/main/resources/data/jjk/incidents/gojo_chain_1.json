@@ -1,0 +1,32 @@
+{
+  "id": "gojo_chain_1",
+  "weight": 0,
+  "grade": "GRADE_3",
+  "site": "tower",
+  "trigger": "night",
+  "realm": "distance_realm",
+  "curses": [
+    {
+      "kind": "fly_head",
+      "min": 3,
+      "max": 4,
+      "grade": "GRADE_4"
+    },
+    {
+      "kind": "school_crawler",
+      "min": 1,
+      "max": 1
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "Unusual Distance Reported Along the {dir_cap}ern Road",
+      "body": "Several travelers claim the old watchtower {dir} of the village {dist} appears much closer than it actually is. {name} reportedly walked toward it for nearly an hour without getting any closer. Others insist they have seen a figure standing beside the tower after dark, although nobody has been found there."
+    },
+    {
+      "headline": "The Watchtower That Will Not Come Closer",
+      "body": "{name} set out at dusk for the old watchtower {dir} of here {dist} and came back at dawn, swearing {they} had walked all night and the tower had stayed exactly the same size. Children say a tall figure stands beside it at night, looking at the village, and that it has no eyes."
+    }
+  ]
+}

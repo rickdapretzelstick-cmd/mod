@@ -84,10 +84,17 @@ public final class CursedRealms {
         String entryLine();
     }
 
-    private static final Map<String, Layout> LAYOUTS = Map.of("cliff_realm", new CliffRealm(), "mine_realm", new MineRealm(), "forest_realm", new ForestRealm(),
-            "pasture_realm", new PastureRealm(), "house_realm", new HouseRealm(), "hollow_realm", new HollowRealm(), "finger_bearer_realm", new BattleRealm());
+    private static final Map<String, Layout> LAYOUTS = Map.ofEntries(Map.entry("cliff_realm", new CliffRealm()), Map.entry("mine_realm", new MineRealm()),
+            Map.entry("forest_realm", new ForestRealm()), Map.entry("pasture_realm", new PastureRealm()), Map.entry("house_realm", new HouseRealm()),
+            Map.entry("hollow_realm", new HollowRealm()), Map.entry("finger_bearer_realm", new BattleRealm()),
+            // The character storylines' realms (StoryRealms): their village events and their personal trials.
+            Map.entry("distance_realm", new StoryRealms.Distance()), Map.entry("theater_realm", new StoryRealms.Theater()),
+            Map.entry("crater_realm", new StoryRealms.Crater()), Map.entry("fight_club_realm", new StoryRealms.FightClub()),
+            Map.entry("chapel_realm", new StoryRealms.Chapel()));
     /** Arenas that belong to a cursed battle room (the Finger Bearer's), not an incident: their key starts with this. */
     public static final String ROOM = "room:";
+    /** Arenas that belong to a personal character trial ({@link dev.rick.jjk.progression.story.PersonalTrials}). */
+    public static final String TRIAL = "trial:";
 
     /** The layout for an id, or the plain hollow realm (an incident always has somewhere to fight). */
     static Layout layout(String id) {
@@ -337,6 +344,48 @@ public final class CursedRealms {
         arrive(p, realm, Vec3.atBottomCenterOf(a.origin).add(layout.arrival()), layout);
     }
 
+    /**
+     * Takes a player into a personal trial's realm now (one arena per trial, {@code key} without the prefix): built from
+     * {@code layoutId}, its rules run by the trial itself. They come back to where they stood.
+     */
+    public static InvestigationState.Arena enterTrial(ServerPlayer p, String trialKey, String layoutId, InvestigationState st) {
+        MinecraftServer server = p.level().getServer();
+        ServerLevel realm = level(server);
+        String key = TRIAL + trialKey;
+        String id = LAYOUTS.containsKey(layoutId) ? layoutId : "hollow_realm";
+        Layout layout = layout(id);
+        InvestigationState.Arena a = arenaOf(st, key);
+        if (a == null) {
+            int slot = 0;
+            while (st.arenas.containsKey(slot)) slot++;
+            a = new InvestigationState.Arena(slot, key, id, origin(server, slot));
+            a.openedAt = server.overworld().getGameTime();
+            st.arenas.put(slot, a);
+            forceLoad(realm, a.origin, true);
+            clear(realm, a.origin);
+            layout.build(realm, a.origin, RandomSource.create(trialKey.hashCode()));
+            JJK.LOGGER.info("[storylines] realm {} opened for trial {}", slot, trialKey);
+        }
+        if (!inRealm(p)) st.returns.put(p.getUUID(), new InvestigationState.Return(p.level().dimension().identifier().toString(), p.position(), p.getYRot()));
+        a.inside.add(p.getUUID());
+        a.emptyTicks = 0;
+        st.markDirty();
+        arrive(p, realm, Vec3.atBottomCenterOf(a.origin).add(layout.arrival()), layout);
+        return a;
+    }
+
+    /** Where players arrive in an arena (its layout's arrival, in the world). */
+    public static Vec3 arrivalOf(InvestigationState.Arena a) {
+        return Vec3.atBottomCenterOf(a.origin).add(layout(a.layout).arrival());
+    }
+
+    /** Where an arena's layout puts its curses, in the world. */
+    public static List<Vec3> curseSpotsOf(InvestigationState.Arena a) {
+        List<Vec3> out = new ArrayList<>();
+        for (Vec3 v : layout(a.layout).curseSpots()) out.add(Vec3.atBottomCenterOf(a.origin).add(v));
+        return out;
+    }
+
     private static void arrive(ServerPlayer p, ServerLevel realm, Vec3 at, Layout layout) {
         p.teleport(new TeleportTransition(realm, at, Vec3.ZERO, p.getYRot(), 10f, Set.<Relative>of(), TeleportTransition.DO_NOTHING));
         p.fallDistance = 0;
@@ -372,8 +421,9 @@ public final class CursedRealms {
         for (InvestigationState.Arena a : List.copyOf(st.arenas.values())) {
             Incident in = st.incidents.get(a.incident);
             boolean room = a.incident.startsWith(ROOM);
+            boolean trial = a.incident.startsWith(TRIAL);
             Layout layout = LAYOUTS.get(a.layout);
-            if ((in == null && !room) || layout == null) {
+            if ((in == null && !room && !trial) || layout == null) {
                 close(server, st, a, false);
                 continue;
             }
@@ -388,7 +438,19 @@ public final class CursedRealms {
                     keepInside(p, a, layout);
                 }
             }
-            if (room) {
+            if (trial) {
+                // A personal trial's own rules: it says when it is won (the claim already made) or lost.
+                int r = dev.rick.jjk.progression.story.PersonalTrials.tickArena(server, a, a.incident.substring(TRIAL.length()), realm);
+                if (r > 0) {
+                    if (a.wonTicks < 0) a.wonTicks = 0;
+                    if (++a.wonTicks >= WIN_DELAY) close(server, st, a, true);
+                    continue;
+                }
+                if (r < 0) {
+                    close(server, st, a, false);
+                    continue;
+                }
+            } else if (room) {
                 // The battle room's own rules: done when its spirit falls; its spirit raised again if lost.
                 int r = dev.rick.jjk.progression.curse.FingerBearerEncounter.tickArena(server, a, a.incident.substring(ROOM.length()), realm);
                 if (r > 0) {
@@ -437,6 +499,7 @@ public final class CursedRealms {
         forceLoad(realm, a.origin, false);
         st.arenas.remove(a.slot);
         if (!won && a.incident.startsWith(ROOM)) dev.rick.jjk.progression.curse.FingerBearerEncounter.arenaAbandoned(server, a.incident.substring(ROOM.length()));
+        if (a.incident.startsWith(TRIAL)) dev.rick.jjk.progression.story.PersonalTrials.arenaClosed(server, a.incident.substring(TRIAL.length()), won);
         if (!won && in != null && in.state == Incident.State.ACTIVE) {
             // Nobody finished it: the place goes quiet again, and can be tried again.
             in.state = Incident.State.OPEN;

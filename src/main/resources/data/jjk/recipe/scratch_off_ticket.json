@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PGP",
+    "PEP",
+    "PGP"
+  ],
+  "key": {
+    "P": "minecraft:paper",
+    "G": "minecraft:gold_nugget",
+    "E": "jjk:hakari_essence"
+  },
+  "result": {
+    "id": "jjk:scratch_off_ticket",
+    "count": 1
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "id": "gojo_chain_2",
+  "weight": 0,
+  "grade": "GRADE_3",
+  "site": "cliff",
+  "trigger": "jump",
+  "realm": "distance_realm",
+  "curses": [
+    {
+      "kind": "school_crawler",
+      "min": 2,
+      "max": 2
+    },
+    {
+      "kind": "fly_head",
+      "min": 2,
+      "max": 3,
+      "grade": "GRADE_4"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "Traveler Steps Off the Cliffs and Is Found at the Top",
+      "body": "{name} was seen to step off the cliffs {dir} of the village {dist}. The same traveler was found an hour later sitting at the top of the same cliff, unhurt, insisting {they} had fallen for a very long time. The edge is the same distance from the road it always was, but people who measure it keep getting different numbers."
+    },
+    {
+      "headline": "The Cliff Edge Keeps Moving",
+      "body": "Shepherds say the cliffs {dir} of here {dist} are closer to the road every morning, then further again by night. {name} jumped from the edge on a dare and says {they} landed back where {they} started. Since the watchtower business began, nobody trusts a distance any more."
+    }
+  ]
+}

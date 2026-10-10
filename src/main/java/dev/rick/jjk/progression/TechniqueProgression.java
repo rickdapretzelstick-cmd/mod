@@ -29,9 +29,9 @@ import java.util.UUID;
  *   acquired in the world ({@link PlayerProgression}, validated against {@link KitOwnership}); the character select
  *   screen can't hand them one.</li>
  *   <li><b>Creative</b> is the sandbox: the K menu picks any character, even one someone else owns. That pick is a
- *   <i>test kit</i>, never ownership: it stays when the player goes back to Survival (and through death and relogging)
- *   so they can test it there, until they pick something else in Creative, choose one of their own kits, or earn a
- *   kit. Survival alone can never swap: there the K menu only switches between kits the player owns.</li>
+ *   <i>test kit</i>, never ownership: it claims nothing, completes no storyline, and is put away the moment the player
+ *   leaves Creative (they go back to their legitimately owned kit, or none). Survival alone can never swap: there the K
+ *   menu only switches between kits the player owns.</li>
  * </ul>
  *
  * Kits are earned through {@link #acquire} (or {@link #tryClaimKit} directly), which every acquisition path calls with
@@ -99,14 +99,18 @@ public final class TechniqueProgression {
     }
 
     /**
-     * What the player plays in Survival: the test kit they last picked in Creative if any (never ownership), otherwise
-     * their legitimate kit, or nothing.
+     * What the player plays in Survival: their legitimate kit, or nothing. A Creative pick never follows them out of
+     * Creative (it is put away the moment they leave it), so it can never stand in for progression.
      */
     @Nullable
     public static JJKCharacter playableCharacter(ServerPlayer player) {
-        String test = progression(player).testKit();
-        JJKCharacter t = test.isEmpty() ? null : Characters.get(test);
-        return t != null ? t : legitimateCharacter(player);
+        return legitimateCharacter(player);
+    }
+
+    /** Puts away a Creative test kit (leaving Creative, joining or respawning outside it). */
+    static void dropTestKit(ServerPlayer player) {
+        PlayerProgression p = progression(player);
+        if (!p.testKit().isEmpty()) setProgression(player, p.withTestKit(""));
     }
 
     /**
@@ -168,6 +172,7 @@ public final class TechniqueProgression {
      */
     public static void restore(ServerPlayer player) {
         validate(player);
+        if (governs(player)) dropTestKit(player);
         CharacterService.assign(player, playableCharacter(player));
         WAS_SANDBOX.put(player.getUUID(), isSandbox(player));
         sync(player, true);
@@ -203,8 +208,11 @@ public final class TechniqueProgression {
         for (ServerPlayer p : players) {
             boolean sandbox = isSandbox(p);
             Boolean was = WAS_SANDBOX.put(p.getUUID(), sandbox);
-            // Out of Creative: they keep playing the test kit they picked there (or their legitimate kit, or none).
-            if (was != null && was && !sandbox) enforce(p);
+            // Out of Creative: the test kit is put away; they play their legitimate kit, or none.
+            if (was != null && was && !sandbox) {
+                dropTestKit(p);
+                enforce(p);
+            }
             sync(p, false);
         }
         if (WAS_SANDBOX.size() > players.size() * 2 + 8) {
@@ -259,6 +267,24 @@ public final class TechniqueProgression {
             case FAILED -> acquisition.onFailed(player);
         }
         return r;
+    }
+
+    /** The progression flag that opens a kit's Awakening (set by that character's later storyline, or an admin). */
+    public static String awakeningFlag(String kit) {
+        return "awakening:" + kit;
+    }
+
+    /** Whether this player's own kit {@code kit} may awaken: never from the base storyline, only a later one. */
+    public static boolean awakened(ServerPlayer player, String kit) {
+        return progression(player).hasFlag(awakeningFlag(kit));
+    }
+
+    /** Opens (or, admin, closes) a kit's Awakening for this player. */
+    public static void setAwakened(ServerPlayer player, String kit, boolean on) {
+        PlayerProgression p = progression(player);
+        String f = awakeningFlag(kit);
+        if (on && !p.hasFlag(f)) setProgression(player, p.withFlag(f));
+        if (!on && p.hasFlag(f)) setProgression(player, p.withoutFlag(f));
     }
 
     /** Adds to one of the player's progression counters (an acquisition path's own bookkeeping). */

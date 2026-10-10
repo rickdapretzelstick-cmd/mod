@@ -1,0 +1,32 @@
+{
+  "id": "ryu_chain_3",
+  "weight": 0,
+  "grade": "GRADE_2",
+  "site": "hillside",
+  "trigger": "descend",
+  "realm": "mine_realm",
+  "curses": [
+    {
+      "kind": "school_maw",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "school_crawler",
+      "min": 2,
+      "max": 2,
+      "grade": "GRADE_3"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "The Hillside Was Hollowed Out",
+      "body": "Something has blasted a tunnel straight into the hillside {dir} of the village {dist}, its walls fused smooth. {name} followed it a little way and heard a voice deep inside asking the same thing over and over: are you satisfied?"
+    },
+    {
+      "headline": "A Voice in the Blasted Tunnel",
+      "body": "Those who go into the new tunnel {dir} of here {dist} come out shaking. {name} says it was not the dark that frightened {them}. It was the voice asking, and how badly {they} wanted to answer no."
+    }
+  ]
+}

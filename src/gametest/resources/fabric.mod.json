@@ -29,7 +29,8 @@
       "dev.rick.jjk.test.RifleClashTests",
       "dev.rick.jjk.test.LodgeTests",
       "dev.rick.jjk.test.CursedKitTests",
-      "dev.rick.jjk.test.RealmTests"
+      "dev.rick.jjk.test.RealmTests",
+      "dev.rick.jjk.test.StoryTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.AnimFrameworkClientTest",

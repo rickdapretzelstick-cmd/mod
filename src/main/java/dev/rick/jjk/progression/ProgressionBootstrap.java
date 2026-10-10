@@ -6,7 +6,8 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 
 /**
  * Survival progression set-up (both sides): blocks, items, brewing, the cauldron, world generation, perception, curse
- * hostility, the battle-room encounters (the Finger Bearer), the kit registry and its commands.
+ * hostility, the battle-room encounters (the Finger Bearer), the kit registry, the character storylines (village events,
+ * relics, personal trials) and their commands.
  */
 public final class ProgressionBootstrap {
     private ProgressionBootstrap() {}
@@ -28,6 +29,8 @@ public final class ProgressionBootstrap {
         dev.rick.jjk.progression.mastery.CurseRewards.init();
         dev.rick.jjk.progression.investigation.Investigations.init();
         dev.rick.jjk.progression.investigation.CursedCompass.init();
+        dev.rick.jjk.progression.story.PersonalTrials.init();
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> ProgressionCommand.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> dev.rick.jjk.progression.story.StoryCommand.register(dispatcher));
     }
 }

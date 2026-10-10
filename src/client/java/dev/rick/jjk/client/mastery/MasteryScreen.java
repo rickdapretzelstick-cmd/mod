@@ -25,11 +25,10 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * The Mastery screen (default key J). Not a character select: it shows only what this player can develop.
- * <ul>
- *   <li>the <b>Technique</b> tab, for the kit they legitimately own (nothing for a borrowed Creative kit);</li>
- *   <li>the <b>Cursed Tool</b> tab, for the cursed tool in their hand.</li>
- * </ul>
+ * The Mastery screen (default key J). Not a character select: it shows only what this player can develop, which is
+ * now the <b>Cursed Tool</b> tree of the cursed tool in their hand. Techniques are no longer developed through a tree:
+ * a character's base kit comes whole from its storyline, and what lies beyond it (the Awakening) from that character's
+ * own later story, so there is no Technique tab.
  * The tree is drawn from its definition: lanes are columns, rows are tiers, prerequisite lines join them. Nodes show
  * their state (owned, available, locked), their tier by shape (small, mechanical, major, the Awakening) and, picked, their
  * full card on the right with a Develop button. The server checks every purchase again; this screen only asks.
@@ -55,11 +54,6 @@ public class MasteryScreen extends Screen {
     @Override
     protected void init() {
         tabs.clear();
-        String kit = ClientMastery.kit();
-        if (!kit.isEmpty()) {
-            MasteryTree t = MasteryTrees.get(MasteryTree.techniqueId(kit));
-            if (t != null) tabs.add(t);
-        }
         if (minecraft.player != null && minecraft.player.getMainHandItem().getItem() instanceof CursedToolItem tool) {
             MasteryTree t = MasteryTrees.get(tool.definition().treeId());
             if (t != null) tabs.add(t);

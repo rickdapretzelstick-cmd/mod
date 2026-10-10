@@ -183,9 +183,9 @@ public class CommonCurseTests {
             int before = Mastery.data(p).points("tool/slaughter_demon") + Mastery.data(p).points(MasteryTree.techniqueId("yuji"));
             m.hurtServer(h.getLevel(), h.getLevel().damageSources().genericKill(), 10_000f);
             int after = Mastery.data(p).points("tool/slaughter_demon") + Mastery.data(p).points(MasteryTree.techniqueId("yuji"));
-            h.assertTrue(paid[0] == CurseGrade.GRADE_3.mastery && after - before == paid[0], "the grade's Mastery once, not twice: " + paid[0]);
-            int tool = Mastery.data(p).points("tool/slaughter_demon");
-            h.assertTrue(Math.abs(tool - paid[0] / 2) <= 1, "half to each: tool got " + tool);
+            // Split by contribution: the tool's half is paid; the technique's half isn't (technique trees are retired).
+            h.assertTrue(Math.abs(paid[0] - CurseGrade.GRADE_3.mastery / 2) <= 1 && after - before == paid[0], "only the tool's half: " + paid[0]);
+            h.assertTrue(Mastery.data(p).points(MasteryTree.techniqueId("yuji")) == 0, "nothing into the retired technique tree");
             // Fatigue: the same grade again pays less.
             paid[0] = 0;
             SchoolMawEntity m2 = curse(h, ModEntities.SCHOOL_MAW, 6, 6);

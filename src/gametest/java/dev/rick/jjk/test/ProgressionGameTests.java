@@ -41,7 +41,7 @@ import java.util.List;
 /**
  * Survival progression: Survival starts with no kit and the select screen can't hand one out, Creative is a sandbox
  * whose picks are never ownership, each kit has one owner per world (kept across a reload, checked against player data),
- * the Cursed Finger (first eater becomes Yuji, a later eater dies, the owner eating another is harmless), Cursed Soul Sand
+ * the Cursed Finger (no longer makes Yuji: fatal to anyone but his vessel), Cursed Soul Sand
  * forming under bone blocks, the bottle → brewing → cauldron → Cursed Glasses chain, curse perception and curse
  * hostility. Kit ownership is world-wide, so these run as their own batch and each test claims different kits and
  * releases them afterwards.
@@ -102,7 +102,7 @@ public class ProgressionGameTests {
     }
 
     @GameTest(maxTicks = 60, environment = ENV)
-    public void survivalStartsWithNothingAndACreativePickIsKeptForTesting(GameTestHelper h) {
+    public void survivalStartsWithNothingAndACreativePickStaysInCreative(GameTestHelper h) {
         ServerPlayer p = survivor(h, 1, 1);
         ownership(h).release("ryu");
         ownership(h).release("hakari");
@@ -118,20 +118,15 @@ public class ProgressionGameTests {
                 .thenExecute(() -> p.setGameMode(GameType.SURVIVAL))
                 .thenIdle(3)
                 .thenExecute(() -> {
-                    h.assertTrue(Casters.get(p).character() == Characters.get("ryu"), "back in Survival the Creative pick is kept to test with");
-                    h.assertTrue(!ownership(h).isClaimed("ryu") && !TechniqueProgression.progression(p).owns("ryu"), "and it is still not theirs");
+                    h.assertTrue(Casters.get(p).character() == null, "back in Survival the Creative pick is gone: they own nothing");
+                    h.assertTrue(TechniqueProgression.progression(p).testKit().isEmpty(), "the test kit is put away");
+                    h.assertTrue(!ownership(h).isClaimed("ryu") && !TechniqueProgression.progression(p).owns("ryu"), "and it was never theirs");
                     h.assertValueEqual(CharacterService.select(p, "gojo"), TechniqueProgression.NOT_AWAKENED, "Survival alone still can't swap");
-                    // Through a respawn or a relog (restore runs on both) it stays too.
-                    TechniqueProgression.restore(p);
-                    h.assertTrue(Casters.get(p).character() == Characters.get("ryu"), "kept through a respawn/relog");
-                    // Earning a kit replaces it at once.
                     h.assertValueEqual(TechniqueProgression.tryClaimKit(p, "hakari", "test"), KitOwnership.ClaimResult.CLAIMED, "earns Hakari");
                 })
                 .thenIdle(2)
                 .thenExecute(() -> {
-                    h.assertTrue(Casters.get(p).character() == Characters.get("hakari"), "the earned kit replaces the test kit");
-                    h.assertTrue(TechniqueProgression.progression(p).testKit().isEmpty(), "the test kit is put away");
-                    // Back to Creative, picking nothing: the next Survival trip has only their own kit.
+                    h.assertTrue(Casters.get(p).character() == Characters.get("hakari"), "the earned kit is theirs");
                     p.setGameMode(GameType.CREATIVE);
                 })
                 .thenIdle(2)
@@ -141,10 +136,9 @@ public class ProgressionGameTests {
                 })
                 .thenIdle(3)
                 .thenExecute(() -> {
-                    h.assertTrue(Casters.get(p).character() == Characters.get("ryu"), "testing Ryu in Survival again");
-                    h.assertTrue(CharacterService.select(p, "hakari") == null && Casters.get(p).character() == Characters.get("hakari"),
-                            "choosing their own kit in Survival works");
-                    h.assertTrue(TechniqueProgression.progression(p).testKit().isEmpty(), "and puts the test kit away");
+                    h.assertTrue(Casters.get(p).character() == Characters.get("hakari"), "leaving Creative puts them back on the kit they own");
+                    TechniqueProgression.restore(p);
+                    h.assertTrue(Casters.get(p).character() == Characters.get("hakari"), "and a respawn/relog keeps it");
                     ownership(h).release("hakari");
                     p.discard();
                 })
@@ -152,18 +146,20 @@ public class ProgressionGameTests {
     }
 
     @GameTest(maxTicks = 60, environment = ENV)
-    public void cursedFingerMakesTheFirstEaterYujiAndKillsTheNext(GameTestHelper h) {
+    public void cursedFingerNoLongerMakesYujiItKillsAnyoneButHisVessel(GameTestHelper h) {
         ServerPlayer a = survivor(h, 1, 1);
         ServerPlayer b = survivor(h, 3, 3);
         ownership(h).release(YujiCharacter.ID);
-        h.assertValueEqual(TechniqueProgression.acquire(a, CursedFingerAcquisition.INSTANCE), KitOwnership.ClaimResult.CLAIMED, "A claims Yuji");
-        h.assertValueEqual(TechniqueProgression.acquire(b, CursedFingerAcquisition.INSTANCE), KitOwnership.ClaimResult.TAKEN, "B finds Yuji taken");
-        h.assertValueEqual(TechniqueProgression.acquire(a, CursedFingerAcquisition.INSTANCE), KitOwnership.ClaimResult.ALREADY_OWNER, "A again: their own case");
+        // Nobody is Yuji yet: a finger is still fatal, and makes nobody anything.
+        CursedFingerAcquisition.eat(b);
+        h.assertTrue(!ownership(h).isClaimed(YujiCharacter.ID), "eating a finger claims nothing");
+        // The world's Yuji (earned elsewhere) holds one.
+        h.assertValueEqual(TechniqueProgression.tryClaimKit(a, YujiCharacter.ID, "test"), KitOwnership.ClaimResult.CLAIMED, "A is Yuji");
+        CursedFingerAcquisition.eat(a);
         h.runAfterDelay(3, () -> {
-            h.assertTrue(a.isAlive() && Casters.get(a).character() == Characters.get(YujiCharacter.ID), "A survives as Yuji");
-            h.assertTrue(TechniqueProgression.progression(a).counter(CursedFingerAcquisition.FINGERS_EATEN) == 2, "A's fingers are counted");
-            h.assertTrue(!b.isAlive(), "B is consumed by the finger");
-            h.assertTrue(ownership(h).isOwner(YujiCharacter.ID, a.getUUID()), "Yuji still belongs to A");
+            h.assertTrue(a.isAlive() && Casters.get(a).character() == Characters.get(YujiCharacter.ID), "the vessel survives it");
+            h.assertTrue(TechniqueProgression.progression(a).counter(CursedFingerAcquisition.FINGERS_EATEN) == 1, "and it is counted");
+            h.assertTrue(!b.isAlive(), "anyone else is consumed by it");
             ownership(h).release(YujiCharacter.ID);
             a.discard();
             b.discard();

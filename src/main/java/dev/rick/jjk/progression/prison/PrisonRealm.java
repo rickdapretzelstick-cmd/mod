@@ -52,7 +52,7 @@ import java.util.UUID;
 
 /**
  * The Prison Realm: forging the world's one realm, sealing someone in it, the cell they are held in, the two ways out
- * (a solo escape from inside, or a rescue from outside) and the release that may make them the world's Gojo. Every
+ * (a solo escape from inside, or a rescue from outside) and the release. Every
  * decision is made here, on the server, against {@link PrisonRealmState}; the entity, the blocks and the client only
  * show it.
  *
@@ -80,10 +80,9 @@ import java.util.UUID;
  *   <li><b>Rescue.</b> Anyone outside can open the grounded realm: sneak and hold use on it, staying within
  *   {@value #RESCUE_REACH} blocks, for 5 s; taking damage, letting go or walking off interrupts it.</li>
  *   <li><b>Release.</b> The cube opens, the captive steps out beside it and the cube is an item again (the same realm).
- *   If the seal was genuine and the release was an escape or a rescue, the captive claims Gojo through the atomic kit
- *   claim: the first player in the world to get there becomes Gojo, nobody after them does. A captive who is offline
- *   or dead at that moment gets their release (and the claim) the moment they are back. An admin freeing someone
- *   (/jjk prison free) never grants anything.</li>
+ *   A genuine seal and release (an escape or a rescue) is counted ({@link #RELEASES}); it no longer makes anyone Gojo,
+ *   who is earned through his storyline. A captive who is offline or dead at that moment gets their release the
+ *   moment they are back. An admin freeing someone (/jjk prison free) never counts.</li>
  * </ul>
  */
 public final class PrisonRealm {
@@ -792,7 +791,7 @@ public final class PrisonRealm {
         return true;
     }
 
-    /** The captive steps out beside the realm, the cell is given back, the cube is an item again; Gojo if earned. */
+    /** The captive steps out beside the realm, the cell is given back, the cube is an item again. */
     static void finishRelease(MinecraftServer server, PrisonRealmState st) {
         if (st.phase != PrisonRealmState.Phase.SEALED || st.releasing.isEmpty()) return;
         Release kind;
@@ -848,11 +847,17 @@ public final class PrisonRealm {
         if (p instanceof ServerPlayer sp) ServerPlayNetworking.send(sp, new PrisonPayload(false, 0L, 0, 0, 0));
     }
 
-    /** Out: Gojo if this was a genuine seal and release (the claim decides whether he is still free). */
+    /** Progression counter: genuine seals a player has come out of (kept for later progression; it no longer makes Gojo). */
+    public static final String RELEASES = "prison_realm_releases";
+
+    /**
+     * Out. A genuine seal and release is counted, nothing more: Gojo is earned through his storyline now (a village's
+     * watchtower, the Blindfold and his personal trial), not by coming out of the Prison Realm.
+     */
     private static void arrive(ServerPlayer p, boolean genuine) {
         Fx.play(p.level(), "prog_prison_release", p.position().add(0, 1, 0), Vec3.ZERO, 1f, p.getId());
-        if (genuine) TechniqueProgression.acquire(p, PrisonRealmAcquisition.INSTANCE);
-        else p.sendOverlayMessage(Component.literal("Freed from the Prison Realm.").withStyle(ChatFormatting.GRAY));
+        if (genuine && !TechniqueProgression.isSandbox(p)) TechniqueProgression.addCounter(p, RELEASES, 1);
+        p.sendOverlayMessage(Component.literal(genuine ? "Out of the Prison Realm." : "Freed from the Prison Realm.").withStyle(ChatFormatting.GRAY));
     }
 
     /** Releases owed to captives who were offline or dead: applied once they are back and alive. */

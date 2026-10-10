@@ -69,6 +69,11 @@ public final class CursedDamage {
         if (source.typeHolder().unwrapKey().map(k -> k.identifier().getNamespace().equals(JJK.MOD_ID)).orElse(false) || direct instanceof TechniqueEntity) {
             return cause instanceof LivingEntity le && Casters.active(le) != null ? Kind.TECHNIQUE : Kind.CURSED_ENERGY;
         }
+        // Bare fists a personal trial has filled with cursed energy (Yuji's body as the weapon, Hakari's fever...).
+        if (cause instanceof ServerPlayer sp && direct == sp && (weapon == null || weapon.isEmpty())
+                && dev.rick.jjk.progression.story.PersonalTrials.cursedFists(sp)) {
+            return Kind.CURSED_ENERGY;
+        }
         return Kind.MUNDANE;
     }
 

@@ -1,0 +1,32 @@
+{
+  "id": "yuji_chain_4",
+  "weight": 0,
+  "grade": "GRADE_2",
+  "site": "theater",
+  "trigger": "interact",
+  "realm": "theater_realm",
+  "curses": [
+    {
+      "kind": "school_maw",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "school_crawler",
+      "min": 3,
+      "max": 3,
+      "grade": "GRADE_3"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "The Final Screening",
+      "body": "The theater {dir} of the village {dist} has posted a new bill: tonight only, HUMAN EARTHWORM. Nobody put it there. The projector in the booth is loaded and waiting, and {name} says that when {they} touched it, it was warm, as though it had only just stopped."
+    },
+    {
+      "headline": "Somebody Must Stop the Film",
+      "body": "Every night the film at the theater {dir} of here {dist} runs a little longer, and every morning someone else is missing. The projector waits in the booth. {name} says whoever starts it will be seen by whatever is on the screen."
+    }
+  ]
+}

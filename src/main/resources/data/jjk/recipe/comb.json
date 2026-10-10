@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BBB",
+    "BEB"
+  ],
+  "key": {
+    "B": "minecraft:bone",
+    "E": "jjk:ryu_essence"
+  },
+  "result": {
+    "id": "jjk:comb",
+    "count": 1
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "id": "ryu_chain_4",
+  "weight": 0,
+  "grade": "GRADE_2",
+  "site": "crater",
+  "trigger": "interact",
+  "realm": "crater_realm",
+  "curses": [
+    {
+      "kind": "school_maw",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "school_crawler",
+      "min": 3,
+      "max": 3,
+      "grade": "GRADE_3"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "The Last Flash",
+      "body": "The largest crater yet lies {dir} of the village {dist}, and at its centre something still stands upright: a black shard that hums when touched. {name} says it is the point everything struck, and that it is still waiting for more."
+    },
+    {
+      "headline": "Something Waits at the Impact Point",
+      "body": "{name} says a black shard stands at the bottom of the newest crater {dir} of here {dist}, still warm, still humming. The craters have stopped, the elders say, because it has finally found a place to wait."
+    }
+  ]
+}

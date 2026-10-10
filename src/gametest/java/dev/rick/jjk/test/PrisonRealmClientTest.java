@@ -24,7 +24,7 @@ import java.util.UUID;
 /**
  * The Prison Realm through a real client: the cube opening and sealing on the player, the cell from inside, the outside
  * view (its key; watching only: movement keys do nothing while it is on; off again restores the player's own camera),
- * the escape and the release beside the realm, with Gojo claimed. Opt-in: screenshots in
+ * the escape and the release beside the realm (which claims nothing). Opt-in: screenshots in
  * build/run/clientGameTest/screenshots as pr*.png.
  */
 public class PrisonRealmClientTest implements FabricClientGameTest {
@@ -122,8 +122,7 @@ public class PrisonRealmClientTest implements FabricClientGameTest {
             ctx.takeScreenshot("pr6_released");
             if (ctx.computeOnClient(mc -> PrisonClient.sealed() || PrisonClient.viewing())) throw new AssertionError("the client knows it is out");
             boolean gojo = server.computeOnServer(srv -> KitOwnership.get(srv).isOwner("gojo", srv.getPlayerList().getPlayers().getFirst().getUUID()));
-            if (!gojo) throw new AssertionError("the first escape claims Gojo");
-            if (!ctx.computeOnClient(mc -> "gojo".equals(ClientState.character))) throw new AssertionError("and the client plays Gojo");
+            if (gojo) throw new AssertionError("an escape no longer claims Gojo (he is earned through his storyline)");
             server.runOnServer(srv -> {
                 PrisonRealm.adminReset(srv);
                 KitOwnership.get(srv).release("gojo");

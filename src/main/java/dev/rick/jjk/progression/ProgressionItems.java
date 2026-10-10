@@ -50,6 +50,26 @@ public final class ProgressionItems {
 
     public static final Item CURSED_RIFLE = tool(dev.rick.jjk.progression.tool.CursedTools.CURSED_RIFLE, Rarity.EPIC);
 
+    // --- Character storylines (see progression.story): Essence -> object -> infused relic (one per world) ---
+
+    public static final Item YUJI_ESSENCE = essence("yuji_essence", "Condensed from a film that never stopped playing.");
+    public static final Item GOJO_ESSENCE = essence("gojo_essence", "Condensed from a distance that would not close.");
+    public static final Item YUTA_ESSENCE = essence("yuta_essence", "Condensed from a love that would not let go.");
+    public static final Item RYU_ESSENCE = essence("ryu_essence", "Condensed from a hunger that was never satisfied.");
+    public static final Item HAKARI_ESSENCE = essence("hakari_essence", "Condensed from a winning streak that never ended.");
+
+    public static final Item HUMAN_EARTHWORM_VHS = item("human_earthworm_vhs", Item::new, object("A worn tape. The label reads HUMAN EARTHWORM."));
+    public static final Item BLINDFOLD = item("blindfold", Item::new, object("A band of black cloth.").equippable(EquipmentSlot.HEAD));
+    public static final Item CURSED_RING = item("cursed_ring", Item::new, object("A plain silver ring, cold to the touch."));
+    public static final Item COMB = item("comb", Item::new, object("A fine-tooth comb. Made for serious hair."));
+    public static final Item SCRATCH_OFF_TICKET = item("scratch_off_ticket", Item::new, object("Three panels left to scratch."));
+
+    public static final Item INFUSED_HUMAN_EARTHWORM_VHS = relic("infused_human_earthworm_vhs", "yuji", "Something in the film is waiting to be watched.", false);
+    public static final Item INFUSED_BLINDFOLD = relic("infused_blindfold", "gojo", "Behind it, the dark is full of light.", true);
+    public static final Item INFUSED_CURSED_RING = relic("infused_cursed_ring", "yuta", "Someone is always close when you wear it.", false);
+    public static final Item INFUSED_COMB = relic("infused_comb", "ryu", "Are you satisfied?", false);
+    public static final Item INFUSED_SCRATCH_OFF_TICKET = relic("infused_scratch_off_ticket", "hakari", "Feeling lucky?", false);
+
     public static final Item CURSED_SOUL_SAND = item("cursed_soul_sand", p -> new BlockItem(ProgressionBlocks.CURSED_SOUL_SAND, p),
             new Item.Properties().useBlockDescriptionPrefix());
 
@@ -59,6 +79,31 @@ public final class ProgressionItems {
     /** Decoration only (a placed rack or scope isn't any lodge's: only a lodge's own do anything). */
     public static final Item GUN_RACK = item("gun_rack", p -> new BlockItem(ProgressionBlocks.GUN_RACK, p), new Item.Properties().useBlockDescriptionPrefix());
     public static final Item MOUNTED_SCOPE = item("mounted_scope", p -> new BlockItem(ProgressionBlocks.MOUNTED_SCOPE, p), new Item.Properties().useBlockDescriptionPrefix());
+
+    /** A character storyline's Essence: the reward for its village storyline, presented, never mob loot. */
+    private static Item essence(String name, String lore) {
+        return item(name, Item::new, new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant()
+                .component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
+                .component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(java.util.List.of(
+                        net.minecraft.network.chat.Component.literal(lore)))));
+    }
+
+    /** A dormant character object: crafted from an Essence, nothing yet. */
+    private static Item.Properties object(String lore) {
+        return new Item.Properties().stacksTo(1).rarity(Rarity.RARE).fireResistant()
+                .component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(java.util.List.of(
+                        net.minecraft.network.chat.Component.literal(lore), net.minecraft.network.chat.Component.literal("Dormant."))));
+    }
+
+    /** An infused relic: one live per world ({@link dev.rick.jjk.progression.story.UniqueRelics}). */
+    private static Item relic(String name, String kit, String lore, boolean worn) {
+        Item.Properties p = new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant()
+                .component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
+                .component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(java.util.List.of(
+                        net.minecraft.network.chat.Component.literal(lore))));
+        if (worn) p = p.equippable(EquipmentSlot.HEAD);
+        return item(name, props -> new dev.rick.jjk.progression.story.RelicItem(kit, props), p);
+    }
 
     private static Item item(String name, java.util.function.Function<Item.Properties, Item> factory, Item.Properties properties) {
         // 26.3: the properties carry the item's id; vanilla's Items.register* helpers are private.
@@ -92,6 +137,11 @@ public final class ProgressionItems {
             e.accept(CURSED_ENERGY_BOTTLE);
             e.accept(CURSED_FINGER);
             e.accept(DORMANT_PRISON_REALM);
+        });
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.INGREDIENTS).register(e -> {
+            for (Item i : new Item[] {YUJI_ESSENCE, GOJO_ESSENCE, YUTA_ESSENCE, RYU_ESSENCE, HAKARI_ESSENCE,
+                    HUMAN_EARTHWORM_VHS, BLINDFOLD, CURSED_RING, COMB, SCRATCH_OFF_TICKET}) e.accept(i);
+            // The infused relics are only ever made by a cauldron (a Creative copy carries no token: a test relic).
         });
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(e -> {
             e.accept(GLASSES);

@@ -129,31 +129,24 @@ public class MasteryTests {
     }
 
     @GameTest(environment = "jjk-test:mastery_c")
-    public void purchasesFollowOwnershipPrerequisitesAndCost(GameTestHelper h) {
+    public void techniqueTreesAreRetiredToolTreesStillDevelop(GameTestHelper h) {
         ServerPlayer owner = survivor(h);
         own(owner, "gojo");
         String tree = MasteryTree.techniqueId("gojo");
-        h.assertTrue(Mastery.purchase(owner, tree, "red_limitless") == Mastery.Result.NEEDS, "needs Concentrated Red first");
-        h.assertTrue(Mastery.purchase(owner, tree, "red_focus") == Mastery.Result.POINTS, "not enough Mastery");
-        Mastery.award(owner, tree, 100);
-        h.assertTrue(Mastery.data(owner).points(tree) == 100, "awarded");
-        h.assertTrue(!Mastery.unlocked(owner, "red.limitless"), "variant locked before its node");
-        h.assertTrue(Mastery.purchase(owner, tree, "red_focus") == Mastery.Result.OK, "bought");
-        h.assertTrue(Math.abs(Mastery.param(owner, "red.damage") - 1.15) < 1e-6, "its effect applies");
-        h.assertTrue(Mastery.purchase(owner, tree, "red_limitless") == Mastery.Result.OK, "then the variant");
-        h.assertTrue(Mastery.unlocked(owner, "red.limitless"), "variant open");
-        h.assertTrue(Mastery.data(owner).points(tree) == 100 - 20 - 60, "paid for both");
-        h.assertTrue(Mastery.purchase(owner, tree, "red_focus") == Mastery.Result.OWNED, "no buying twice");
-        // Someone who doesn't own Gojo can't develop his tree at all.
-        ServerPlayer other = survivor(h);
-        Mastery.award(other, tree, 500);
-        h.assertTrue(Mastery.data(other).points(tree) == 0, "no Mastery for a technique that isn't theirs");
-        h.assertTrue(Mastery.purchase(other, tree, "red_focus") == Mastery.Result.NOT_YOURS, "not theirs");
-        // A tool tree is anyone's.
-        Mastery.award(other, "tool/slaughter_demon", 8);
-        h.assertTrue(Mastery.purchase(other, "tool/slaughter_demon", "keen_edge") == Mastery.Result.OK, "tool trees are open to all");
-        Mastery.respec(owner, tree);
-        h.assertTrue(Mastery.data(owner).points(tree) == 100 && !Mastery.unlocked(owner, "red.limitless"), "respec refunds and relocks");
+        // A technique comes whole from its storyline: every move and R variant, no nodes to buy.
+        h.assertTrue(Mastery.unlocked(owner, "red.limitless") && Mastery.unlocked(owner, "rapid_punches.face_grater"), "the base kit is whole");
+        Mastery.award(owner, tree, 500);
+        h.assertTrue(Mastery.data(owner).points(tree) == 0, "no Mastery into a technique tree");
+        h.assertTrue(Mastery.purchase(owner, tree, "red_focus") == Mastery.Result.NOT_YOURS, "nothing to buy in it");
+        // Cursed tool trees still develop: prerequisites and cost.
+        String tool = "tool/slaughter_demon";
+        h.assertTrue(Mastery.purchase(owner, tool, "flurry") != Mastery.Result.OK, "needs what it builds on (and Mastery)");
+        Mastery.award(owner, tool, 8);
+        h.assertTrue(Mastery.data(owner).points(tool) == 8, "awarded");
+        h.assertTrue(Mastery.purchase(owner, tool, "keen_edge") == Mastery.Result.OK, "bought");
+        h.assertTrue(Mastery.purchase(owner, tool, "keen_edge") == Mastery.Result.OWNED, "no buying twice");
+        Mastery.respec(owner, tool);
+        h.assertTrue(Mastery.data(owner).points(tool) == 8, "respec refunds");
         h.succeed();
     }
 
@@ -161,7 +154,8 @@ public class MasteryTests {
     public void gatingAppliesOnlyToASurvivalPlayerOnTheirOwnKit(GameTestHelper h) {
         ServerPlayer p = survivor(h);
         own(p, "gojo");
-        h.assertTrue(Mastery.techniqueGated(p) && !Mastery.unlocked(p, "gojo.awakening"), "Survival on their own kit: gated");
+        h.assertTrue(Mastery.techniqueGated(p) && !Mastery.unlocked(p, "gojo.awakening"), "Survival on their own kit: the Awakening is closed");
+        h.assertTrue(Mastery.unlocked(p, "red.limitless"), "but the base kit is whole");
         p.setGameMode(GameType.CREATIVE);
         h.assertTrue(Mastery.unlocked(p, "gojo.awakening") && Mastery.unlocked(p, "tool.cursed_cleaver.heavy_swing"), "Creative: everything");
         p.setGameMode(GameType.SURVIVAL);
@@ -182,21 +176,18 @@ public class MasteryTests {
     }
 
     @GameTest(maxTicks = 120, environment = "jjk-test:mastery_e")
-    public void awakeningNeedsItsNode(GameTestHelper h) {
+    public void awakeningWaitsForItsOwnStory(GameTestHelper h) {
         ServerPlayer p = survivor(h);
         own(p, "gojo");
         AbilityCaster c = Casters.get(p);
         c.setAwakening(c.maxAwakening());
         boolean pressed = c.input(AbilitySlot.ULTIMATE, true, 0, 0, null);
-        h.assertTrue(!pressed && "mastery".equals(c.lastRefusal), "refused without its node: " + c.lastRefusal);
-        String tree = MasteryTree.techniqueId("gojo");
-        MasteryData d = Mastery.data(p);
-        MasteryTree t = MasteryTrees.get(tree);
-        List<String> all = t.nodes().stream().map(MasteryNode::id).toList();
-        for (String id : all) d = d.buy(tree, id, 0);
-        Mastery.set(p, d);
+        h.assertTrue(!pressed && "mastery".equals(c.lastRefusal), "refused: the base storyline never grants the Awakening: " + c.lastRefusal);
+        // A later storyline (or an admin) opens it.
+        TechniqueProgression.setAwakened(p, "gojo", true);
         h.assertTrue(Mastery.unlocked(p, "gojo.awakening"), "now open");
         h.assertTrue(c.input(AbilitySlot.ULTIMATE, true, 0, 0, null), "awakening starts: " + c.lastRefusal);
+        TechniqueProgression.setAwakened(p, "gojo", false);
         h.succeed();
     }
 

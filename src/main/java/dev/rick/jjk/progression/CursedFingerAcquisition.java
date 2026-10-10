@@ -1,7 +1,5 @@
 package dev.rick.jjk.progression;
 
-import dev.rick.jjk.core.character.CharacterService;
-import dev.rick.jjk.core.character.Characters;
 import dev.rick.jjk.core.fx.Fx;
 import dev.rick.jjk.registry.ModDamageTypes;
 import dev.rick.jjk.yuji.YujiCharacter;
@@ -12,74 +10,45 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Eating a Cursed Finger. The first player to do it in a world becomes its Yuji, permanently. A different player who eats
- * one afterwards gets nothing and is consumed by it: they die (a dedicated damage type that nothing, not a totem nor a
- * technique, can hold off). Yuji's own owner eating another is kept apart for later Sukuna progression: for now it is
- * only counted.
- *
- * <p>Nobody is warned beforehand: whether Yuji is taken is not something a player is told.
+ * Eating a Cursed Finger. It is <b>no longer a way to become Yuji</b>: Yuji is earned through his storyline (a village's
+ * theater, the Human Earthworm VHS and his personal trial, see {@link dev.rick.jjk.progression.story}). The fingers stay
+ * for the Sukuna progression to come:
+ * <ul>
+ *   <li>The world's legitimate Yuji, its vessel, can hold one: it is absorbed and counted ({@link #FINGERS_EATEN}).</li>
+ *   <li>Anyone else is consumed by it and dies (a dedicated damage type that nothing, not a totem nor a technique, can
+ *   hold off), whether or not the world has a Yuji yet. Nobody is warned beforehand.</li>
+ *   <li>In Creative nothing happens beyond the taste.</li>
+ * </ul>
  */
-public final class CursedFingerAcquisition implements KitAcquisition {
-    public static final CursedFingerAcquisition INSTANCE = new CursedFingerAcquisition();
+public final class CursedFingerAcquisition {
     /** Progression counter: fingers this player has eaten (their own record, for later progression). */
     public static final String FINGERS_EATEN = "cursed_fingers_eaten";
 
     private CursedFingerAcquisition() {}
 
-    @Override
-    public String id() {
-        return "cursed_finger";
-    }
-
-    @Override
-    public String kit() {
-        return YujiCharacter.ID;
-    }
-
-    @Override
-    public void onClaimed(ServerPlayer player) {
-        TechniqueProgression.addCounter(player, FINGERS_EATEN, 1);
+    /** What eating one does to {@code player} (the finger is already gone). */
+    public static void eat(ServerPlayer player) {
+        if (TechniqueProgression.isSandbox(player)) {
+            player.sendOverlayMessage(Component.literal("Creative: the finger does nothing to you.").withStyle(ChatFormatting.GRAY));
+            return;
+        }
         ServerLevel level = player.level();
         Vec3 at = player.position().add(0, 1, 0);
-        Fx.play(level, "prog_finger_claim", at, Vec3.ZERO, 1f, player.getId());
-        Fx.sound(level, at, SoundEvents.WITHER_SPAWN, 0.6f, 1.6f);
-        player.sendSystemMessage(Component.literal("Something ancient settles inside you... and you are still yourself.")
-                .withStyle(ChatFormatting.DARK_RED, ChatFormatting.ITALIC));
-    }
-
-    @Override
-    public void onAlreadyOwned(ServerPlayer player) {
-        // Yuji's own vessel: no second claim, no stranger's fate. Counted for the Sukuna progression to come.
         TechniqueProgression.addCounter(player, FINGERS_EATEN, 1);
-        ServerLevel level = player.level();
-        Fx.play(level, "prog_finger_absorb", player.position().add(0, 1, 0), Vec3.ZERO, 1f, player.getId());
-        Fx.sound(level, player.position(), SoundEvents.WARDEN_HEARTBEAT, 1f, 0.7f);
-    }
-
-    @Override
-    public void onTaken(ServerPlayer player, @Nullable KitOwnership.Owner owner) {
-        TechniqueProgression.addCounter(player, FINGERS_EATEN, 1);
-        ServerLevel level = player.level();
-        Vec3 at = player.position().add(0, 1, 0);
+        if (KitOwnership.get(level.getServer()).isOwner(YujiCharacter.ID, player.getUUID())) {
+            // The vessel: it settles inside him. Counted for the Sukuna progression to come.
+            Fx.play(level, "prog_finger_absorb", at, Vec3.ZERO, 1f, player.getId());
+            Fx.sound(level, player.position(), SoundEvents.WARDEN_HEARTBEAT, 1f, 0.7f);
+            player.sendSystemMessage(Component.literal("Something ancient settles inside you... and you are still yourself.")
+                    .withStyle(ChatFormatting.DARK_RED, ChatFormatting.ITALIC));
+            return;
+        }
         Fx.play(level, "prog_finger_overload", at, Vec3.ZERO, 1f, player.getId());
         Fx.sound(level, at, SoundEvents.WARDEN_SONIC_BOOM, 0.9f, 0.6f);
         // Once the eating has finished (so the rest of their fingers drop with everything else).
         TechniqueProgression.endOfTick(() -> overwhelm(player));
-    }
-
-    @Override
-    public void onSandbox(ServerPlayer player) {
-        // Creative: try Yuji out without claiming anything (the same as picking him on the K screen).
-        CharacterService.assign(player, Characters.get(YujiCharacter.ID));
-        player.sendOverlayMessage(Component.literal("Creative: Yuji for testing (not claimed)").withStyle(ChatFormatting.GRAY));
-    }
-
-    @Override
-    public void onFailed(ServerPlayer player) {
-        player.sendOverlayMessage(Component.literal("The finger crumbles to dust.").withStyle(ChatFormatting.GRAY));
     }
 
     /** Kills the player outright: no totem, armour, resistance, Jackpot or Decadence holds it off. */

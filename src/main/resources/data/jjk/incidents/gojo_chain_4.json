@@ -1,0 +1,38 @@
+{
+  "id": "gojo_chain_4",
+  "weight": 0,
+  "grade": "GRADE_2",
+  "site": "tower",
+  "trigger": "interact",
+  "realm": "distance_realm",
+  "curses": [
+    {
+      "kind": "school_maw",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "school_crawler",
+      "min": 2,
+      "max": 2,
+      "grade": "GRADE_3"
+    },
+    {
+      "kind": "fly_head",
+      "min": 3,
+      "max": 4,
+      "grade": "GRADE_3"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "The Watchtower Has No Top",
+      "body": "A second watchtower now stands {dir} of the village {dist}, and it was not there last month. {name} climbed it and says the ladder went up much further than the tower is tall, and that at the top an old lamp is still lit, though nobody has been up to light it. Everyone who has looked into that lamp says the same thing afterwards: that they saw the whole valley at once."
+    },
+    {
+      "headline": "Final Warning: Stay Away From the Tower",
+      "body": "The elders ask that nobody approach the tower {dir} of here {dist}. Its lamp burns all night now. {name} touched it and was found the next morning far out on the road, unable to say how {they} had crossed the distance in between."
+    }
+  ]
+}

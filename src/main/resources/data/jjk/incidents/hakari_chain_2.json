@@ -1,0 +1,26 @@
+{
+  "id": "hakari_chain_2",
+  "weight": 0,
+  "grade": "GRADE_3",
+  "site": "storehouse",
+  "trigger": "threshold",
+  "realm": "fight_club_realm",
+  "curses": [
+    {
+      "kind": "school_crawler",
+      "min": 2,
+      "max": 3
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "The Winner Who Never Leaves",
+      "body": "{name} lost everything in one night at the storehouse {dir} of the village {dist} and says the same winner was still there when {they} left, laughing, fighting anyone who would put money down. Those who fight him never win. Those who walk out never get their money back."
+    },
+    {
+      "headline": "Fights for Coin Under the Storehouse",
+      "body": "Travelers say there is a ring under the storehouse {dir} of here {dist}, and that every bout is a wager. {name} bet {their} boots and walked home barefoot through the snow, grinning, unable to stop."
+    }
+  ]
+}

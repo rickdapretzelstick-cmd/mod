@@ -91,5 +91,20 @@
   "block.jjk.gun_rack": "Gun Rack",
   "block.jjk.mounted_scope": "Mounted Scope",
   "key.jjk.switch_moveset": "Switch Technique / Cursed Tool",
-  "item.jjk.cursed_compass": "Cursed Compass"
+  "item.jjk.cursed_compass": "Cursed Compass",
+  "item.jjk.yuji_essence": "Yuji Essence",
+  "item.jjk.gojo_essence": "Gojo Essence",
+  "item.jjk.yuta_essence": "Yuta Essence",
+  "item.jjk.ryu_essence": "Ryu Essence",
+  "item.jjk.hakari_essence": "Hakari Essence",
+  "item.jjk.human_earthworm_vhs": "Human Earthworm VHS",
+  "item.jjk.blindfold": "Blindfold",
+  "item.jjk.cursed_ring": "Cursed Ring",
+  "item.jjk.comb": "Comb",
+  "item.jjk.scratch_off_ticket": "Scratch-Off Ticket",
+  "item.jjk.infused_human_earthworm_vhs": "Infused Human Earthworm VHS",
+  "item.jjk.infused_blindfold": "Infused Blindfold",
+  "item.jjk.infused_cursed_ring": "Infused Cursed Ring",
+  "item.jjk.infused_comb": "Infused Comb",
+  "item.jjk.infused_scratch_off_ticket": "Infused Scratch-Off Ticket"
 }

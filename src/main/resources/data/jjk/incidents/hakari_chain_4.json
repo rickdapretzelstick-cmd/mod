@@ -1,0 +1,38 @@
+{
+  "id": "hakari_chain_4",
+  "weight": 0,
+  "grade": "GRADE_2",
+  "site": "storehouse",
+  "trigger": "interact",
+  "realm": "fight_club_realm",
+  "curses": [
+    {
+      "kind": "school_maw",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "school_crawler",
+      "min": 2,
+      "max": 2,
+      "grade": "GRADE_3"
+    },
+    {
+      "kind": "fly_head",
+      "min": 2,
+      "max": 3,
+      "grade": "GRADE_3"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "Last Round at the Storehouse",
+      "body": "A bell has been hung over the trapdoor of the storehouse {dir} of the village {dist}. {name} says anyone who rings it is entered into the final round, all or nothing, and that the house has never once lost."
+    },
+    {
+      "headline": "Ring the Bell, Take the Bet",
+      "body": "The elders have tried to burn the storehouse {dir} of here {dist} twice and it would not catch. The bell over the trapdoor waits. {name} says whoever rings it had better be very lucky."
+    }
+  ]
+}

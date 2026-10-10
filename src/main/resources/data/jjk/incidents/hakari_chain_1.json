@@ -1,0 +1,32 @@
+{
+  "id": "hakari_chain_1",
+  "weight": 0,
+  "grade": "GRADE_3",
+  "site": "storehouse",
+  "trigger": "night",
+  "realm": "fight_club_realm",
+  "curses": [
+    {
+      "kind": "school_crawler",
+      "min": 2,
+      "max": 2
+    },
+    {
+      "kind": "fly_head",
+      "min": 2,
+      "max": 2,
+      "grade": "GRADE_4"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "Late-Night Activity Beneath Abandoned Storehouse",
+      "body": "Residents have complained about music, shouting and bells beneath an abandoned storehouse {dir} of the village {dist} after midnight. Several unfamiliar travelers have been seen entering carrying coins but leaving empty-handed. {name} claims someone inside has been winning for three nights without stopping."
+    },
+    {
+      "headline": "Bells Under the Old Storehouse",
+      "body": "{name} swears the floor of the abandoned storehouse {dir} of here {dist} shakes after midnight to the sound of a crowd cheering and bells ringing a jackpot. By day it is empty, with a trapdoor nobody will open."
+    }
+  ]
+}

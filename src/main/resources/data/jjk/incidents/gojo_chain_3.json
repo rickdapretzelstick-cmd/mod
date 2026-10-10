@@ -1,0 +1,31 @@
+{
+  "id": "gojo_chain_3",
+  "weight": 0,
+  "grade": "GRADE_3",
+  "site": "house",
+  "trigger": "threshold",
+  "realm": "house_realm",
+  "curses": [
+    {
+      "kind": "school_crawler",
+      "min": 2,
+      "max": 2
+    },
+    {
+      "kind": "school_maw",
+      "min": 1,
+      "max": 1
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "Rooms Larger Than the House",
+      "body": "The cottage {dir} of the village {dist} is small enough to walk round in a minute. {name} stepped through its door and walked for ten before {they} reached the back wall. Inside, by that account, something kept count of every step and stood just where {they} could not quite see it."
+    },
+    {
+      "headline": "A Door That Opens Onto More House",
+      "body": "Those who have looked through the door of the empty cottage {dir} of here {dist} describe a hall too long to fit inside it. {name} says something in there was watching the space itself, as if it were deciding where everything should go."
+    }
+  ]
+}

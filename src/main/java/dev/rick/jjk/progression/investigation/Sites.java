@@ -53,7 +53,13 @@ public final class Sites {
             "pasture", new Kind(Sites::findPasture, Sites::buildPasture, "the grazing land"),
             "hillside", new Kind(Sites::findHillside, Sites::buildMine, "the hillside"),
             "lodge", new Kind(LodgeSite::find, LodgeSite::build, "out in the woods"),
-            "house", new Kind(Sites::findPasture, Sites::buildHouse, "the old house"));
+            "house", new Kind(Sites::findPasture, Sites::buildHouse, "the old house"),
+            // The character storylines' places (StorySites).
+            "tower", new Kind(Sites::findPasture, StorySites::buildTower, "the old watchtower"),
+            "theater", new Kind(Sites::findPasture, StorySites::buildTheater, "the old theater"),
+            "storehouse", new Kind(Sites::findPasture, StorySites::buildStorehouse, "the abandoned storehouse"),
+            "crater", new Kind(Sites::findPasture, StorySites::buildCrater, "the hills"),
+            "chapel", new Kind(Sites::findPasture, StorySites::buildChapel, "the old chapel"));
 
     private Sites() {}
 
