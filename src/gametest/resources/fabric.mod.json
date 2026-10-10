@@ -33,6 +33,19 @@
       "dev.rick.jjk.test.NewsHouseTests"
     ],
     "fabric-client-gametest": [
+      "dev.rick.jjk.test.AnimFrameworkClientTest",
+      "dev.rick.jjk.test.GojoClientGameTest",
+      "dev.rick.jjk.test.HakariClientGameTest",
+      "dev.rick.jjk.test.YujiClientGameTest",
+      "dev.rick.jjk.test.YutaClientGameTest",
+      "dev.rick.jjk.test.FingerBearerClientGameTest",
+      "dev.rick.jjk.test.BeamClashCameraClientTest",
+      "dev.rick.jjk.test.RikaViewClientTest",
+      "dev.rick.jjk.test.NoKitClientTest",
+      "dev.rick.jjk.test.PrisonRealmClientTest",
+      "dev.rick.jjk.test.InvestigationClientTest",
+      "dev.rick.jjk.test.RifleClientTest",
+      "dev.rick.jjk.test.CursedGearClientTest",
       "dev.rick.jjk.test.NewsHouseClientTest"
     ]
   },
