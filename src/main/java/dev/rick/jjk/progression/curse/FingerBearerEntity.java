@@ -202,6 +202,17 @@ public class FingerBearerEntity extends Monster implements dev.rick.jjk.progress
         }
     }
 
+    /**
+     * In a realm but not its arena's own spirit: an arena that closed, or one left from before a crash (a later arena in
+     * the same place loads the old body back with its chunk).
+     */
+    private boolean strayInRealm() {
+        var a = dev.rick.jjk.progression.investigation.CursedRealms.arenaHere(this);
+        if (a == null || !a.incident.startsWith(dev.rick.jjk.progression.investigation.CursedRealms.ROOM) || level().getServer() == null) return true;
+        var room = dev.rick.jjk.progression.CursedEncounters.byKey(level().getServer(), a.incident.substring(dev.rick.jjk.progression.investigation.CursedRealms.ROOM.length()));
+        return room == null || room.spirit == null || !room.spirit.equals(getUUID());
+    }
+
     public boolean rewarded() {
         return rewarded;
     }
@@ -967,6 +978,11 @@ public class FingerBearerEntity extends Monster implements dev.rick.jjk.progress
     public void tick() {
         super.tick();
         if (level().isClientSide()) return;
+        // Raised in a realm arena that has since closed: it goes with it.
+        if (tickCount % 40 == 7 && !isDeadOrDying() && dev.rick.jjk.progression.investigation.CursedRealms.inRealm(this) && strayInRealm()) {
+            discard();
+            return;
+        }
         if (entityData.get(MOVE) != (byte) move.ordinal()) entityData.set(MOVE, (byte) move.ordinal());
         // Stagger resistance: the mod's hitstun stops it thinking, but never for long and never mid-move.
         if (Combat.has(this, CombatStatus.HITSTUN)) {

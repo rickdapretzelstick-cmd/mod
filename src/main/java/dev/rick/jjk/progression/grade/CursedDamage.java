@@ -61,17 +61,30 @@ public final class CursedDamage {
         if (cause instanceof ServerPlayer && weapon != null && weapon.getItem() instanceof CursedToolItem && (direct == cause || direct instanceof Projectile)) {
             return Kind.CURSED_TOOL;
         }
+        // A move of an equipped cursed tool's moveset (the Cursed Item slot), or its basic attacks while it is in use.
+        if (cause instanceof ServerPlayer sp && dev.rick.jjk.registry.ModDamageTypes.isOurs(source)
+                && dev.rick.jjk.progression.tool.kit.CursedKits.credited(sp) != null) {
+            return Kind.CURSED_TOOL;
+        }
         if (source.typeHolder().unwrapKey().map(k -> k.identifier().getNamespace().equals(JJK.MOD_ID)).orElse(false) || direct instanceof TechniqueEntity) {
             return cause instanceof LivingEntity le && Casters.active(le) != null ? Kind.TECHNIQUE : Kind.CURSED_ENERGY;
         }
         return Kind.MUNDANE;
     }
 
-    /** The cursed tool behind a {@link Kind#CURSED_TOOL} hit, or null. */
+    /** The cursed tool behind a {@link Kind#CURSED_TOOL} hit (in the hand that struck, or the moveset that did), or null. */
     @Nullable
-    public static CursedToolItem tool(DamageSource source) {
+    public static dev.rick.jjk.progression.tool.CursedToolDefinition tool(DamageSource source) {
         ItemStack weapon = source.getWeaponItem();
-        return weapon != null && weapon.getItem() instanceof CursedToolItem t ? t : null;
+        if (weapon != null && weapon.getItem() instanceof CursedToolItem t && (source.getDirectEntity() == source.getEntity() || source.getDirectEntity() instanceof Projectile)
+                && !dev.rick.jjk.registry.ModDamageTypes.isOurs(source)) {
+            return t.definition();
+        }
+        if (source.getEntity() instanceof ServerPlayer sp && dev.rick.jjk.registry.ModDamageTypes.isOurs(source)) {
+            var kit = dev.rick.jjk.progression.tool.kit.CursedKits.credited(sp);
+            if (kit != null) return kit;
+        }
+        return weapon != null && weapon.getItem() instanceof CursedToolItem t ? t.definition() : null;
     }
 
     /**
@@ -82,8 +95,8 @@ public final class CursedDamage {
         if (!(victim instanceof GradedCurse g)) return amount;
         Kind k = classify(source);
         if (k == Kind.CURSED_TOOL && source.getEntity() instanceof ServerPlayer p) {
-            CursedToolItem tool = tool(source);
-            if (tool != null) amount *= (float) Mastery.param(p, tool.definition().paramKey("damage"));
+            var tool = tool(source);
+            if (tool != null) amount *= (float) Mastery.param(p, tool.paramKey("damage"));
         }
         if (k == Kind.CURSED_TOOL || k == Kind.CURSED_ENERGY) amount *= 1f - g.curseGrade().resistance;
         return amount;

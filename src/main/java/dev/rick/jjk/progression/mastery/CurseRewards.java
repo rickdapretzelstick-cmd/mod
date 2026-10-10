@@ -68,8 +68,8 @@ public final class CurseRewards {
         if (!(source.getEntity() instanceof ServerPlayer p)) return null;
         return switch (CursedDamage.classify(source)) {
             case CURSED_TOOL -> {
-                CursedToolItem t = CursedDamage.tool(source);
-                yield t == null ? null : t.definition().treeId();
+                var t = CursedDamage.tool(source);
+                yield t == null ? null : t.treeId();
             }
             case TECHNIQUE, CURSED_ENERGY -> {
                 var caster = dev.rick.jjk.core.ability.Casters.getOrNull(p);

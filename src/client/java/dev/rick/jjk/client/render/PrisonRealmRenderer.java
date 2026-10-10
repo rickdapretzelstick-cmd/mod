@@ -33,8 +33,8 @@ import java.util.Map;
 public class PrisonRealmRenderer extends EntityRenderer<PrisonRealmEntity, PrisonRealmRenderer.State> {
     public static final Identifier TEXTURE = JJK.id("textures/entity/prison_realm.png");
     private static final RenderType SOLID = RenderTypes.entityCutout(TEXTURE);
-    /** Model pixels to blocks: the closed cube is 12 px, about 1.1 blocks across here (open, it spans nearly 4). */
-    public static final float SCALE = 1.5f / 16f;
+    /** Model pixels to blocks: the closed cube is 12 px, a quarter of a block here (as small as a die; open, under one). */
+    public static final float SCALE = 0.33f / 16f;
     static final String FULL = "prison_realm_full_sequence", IDLE = "prison_realm_idle", OPEN = "prison_realm_open";
 
     public static class State extends EntityRenderState {

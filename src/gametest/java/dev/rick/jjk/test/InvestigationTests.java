@@ -134,7 +134,13 @@ public class InvestigationTests {
         Incident pasture = incident(h, "livestock", new BlockPos(5, 1, 5), 1, 0);
         Vec3 near = h.absoluteVec(new Vec3(8, 1, 8));
         p.setPos(near.x, near.y, near.z);
-        h.assertTrue(Investigations.fired(p, pasture, pasture.def()), "walking into the pasture");
+        Investigations.nightForTest = false;
+        boolean byDay = Investigations.fired(p, pasture, pasture.def());
+        Investigations.nightForTest = true;
+        boolean byNight = Investigations.fired(p, pasture, pasture.def());
+        Investigations.nightForTest = null;
+        h.assertTrue(!byDay, "by day the pasture is only a pasture");
+        h.assertTrue(byNight, "walking into it after dark");
         h.succeed();
     }
 
@@ -144,9 +150,10 @@ public class InvestigationTests {
         ServerLevel level = h.getLevel();
         Incident in = incident(h, "cliff_fall", new BlockPos(5, 1, 5), 1, 0);
         ServerPlayer p = survivor(h, 6.5, 1, 5.5);
+        p.setOnGround(true);
         Vec3 start = p.position();
         InvestigationState st = InvestigationState.get(level.getServer());
-        Investigations.begin(level, p, in, in.def(), st, level.getGameTime());
+        CursedRealms.enter(p, in, st);
         h.assertTrue(CursedRealms.inRealm(p), "pulled into the realm");
         h.assertTrue(in.state() == Incident.State.ACTIVE, "the incident is under way");
         var arena = CursedRealms.arenaOf(st, in.id);
@@ -157,20 +164,22 @@ public class InvestigationTests {
         BlockPos origin = arena.origin;
         ServerLevel realm = CursedRealms.level(level.getServer());
         h.assertTrue(!realm.getBlockState(origin).isAir(), "the arena was built");
-        boolean[] killed = new boolean[1];
         h.succeedWhen(() -> {
-            if (!killed[0]) {
-                killed[0] = true;
-                for (UUID id : in.curses()) {
+            Incident now = InvestigationState.get(level.getServer()).incident(in.id);
+            if (now != null && now.state() != Incident.State.COMPLETE) {
+                // Exorcise whatever is still there (a curse whose chunk isn't ready yet is found on a later tick).
+                for (UUID id : now.curses()) {
                     Entity e = Investigations.curseEntity(level.getServer(), id);
-                    if (e instanceof LivingEntity le) le.hurtServer((ServerLevel) le.level(), le.damageSources().genericKill(), 10_000f);
+                    if (e instanceof LivingEntity le && le.isAlive()) le.hurtServer((ServerLevel) le.level(), le.damageSources().genericKill(), 10_000f);
                 }
                 h.fail("exorcising");
             }
-            h.assertTrue(in.state() == Incident.State.COMPLETE, "complete once the last falls");
+            // Read back by id: another test may have reloaded the investigation save meanwhile (a simulated restart).
+            Incident live = InvestigationState.get(level.getServer()).incident(in.id);
+            h.assertTrue(live != null && live.state() == Incident.State.COMPLETE, "complete once the last falls");
             h.assertTrue(!CursedRealms.inRealm(p) && p.level().dimension() == Level.OVERWORLD, "sent home");
             h.assertTrue(p.position().distanceTo(start) < 3, "where they came from");
-            h.assertTrue(CursedRealms.arenaOf(st, in.id) == null && realm.getBlockState(origin).isAir(), "the arena is gone, void again");
+            h.assertTrue(CursedRealms.arenaOf(InvestigationState.get(level.getServer()), in.id) == null && realm.getBlockState(origin).isAir(), "the arena is gone, void again");
             h.assertTrue(dev.rick.jjk.progression.mastery.Mastery.data(p).incidents().getOrDefault(in.grade.name(), 0) == 1, "recorded");
         });
     }
@@ -182,13 +191,15 @@ public class InvestigationTests {
         Incident in = incident(h, "old_mine", new BlockPos(5, 1, 5), 1, 0);
         ServerPlayer p = survivor(h, 5.5, 1, 5.5);
         InvestigationState st = InvestigationState.get(level.getServer());
-        Investigations.begin(level, p, in, in.def(), st, level.getGameTime());
+        CursedRealms.enter(p, in, st);
         h.assertTrue(CursedRealms.inRealm(p), "in");
         CursedRealms.sendHome(p, st);
         h.assertTrue(!CursedRealms.inRealm(p), "fled");
         h.succeedWhen(() -> {
-            h.assertTrue(CursedRealms.arenaOf(st, in.id) == null, "the empty realm closes");
-            h.assertTrue(in.state() == Incident.State.OPEN && in.curses().isEmpty(), "and the incident is open to try again");
+            InvestigationState now = InvestigationState.get(level.getServer());
+            Incident live = now.incident(in.id);
+            h.assertTrue(CursedRealms.arenaOf(now, in.id) == null, "the empty realm closes");
+            h.assertTrue(live != null && live.state() == Incident.State.OPEN && live.curses().isEmpty(), "and the incident is open to try again");
         });
     }
 }

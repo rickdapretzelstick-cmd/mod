@@ -36,7 +36,8 @@ public final class CauldronInfusions {
                 return id != null ? dev.rick.jjk.progression.prison.PrisonRealmItem.create(id) : new ItemStack(ProgressionItems.DORMANT_PRISON_REALM);
             }, l -> dev.rick.jjk.progression.prison.PrisonRealm.canForge(l.getServer()), "The energy recoils: a Prison Realm already exists in this world."),
             new Infusion(() -> Items.IRON_SWORD, l -> new ItemStack(ProgressionItems.SLAUGHTER_DEMON), null, ""),
-            new Infusion(() -> Items.IRON_AXE, l -> new ItemStack(ProgressionItems.CURSED_CLEAVER), null, ""));
+            new Infusion(() -> Items.IRON_AXE, l -> new ItemStack(ProgressionItems.CURSED_CLEAVER), null, ""),
+            new Infusion(() -> Items.COMPASS, l -> new ItemStack(ProgressionItems.CURSED_COMPASS), null, ""));
 
     private CauldronInfusions() {}
 

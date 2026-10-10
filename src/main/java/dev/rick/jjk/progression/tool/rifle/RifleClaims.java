@@ -14,9 +14,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * Which Cursed Rifles are real. The rifle is not unique (anyone who sees a lodge investigation through earns one), but
- * every rifle a lodge hands out carries a claim id, recorded in the world's investigation save with whose it is. A
- * player has at most one live claim: the recovery route (a lodge's rack, for someone who earned a rifle there and no
+ * Which Cursed Rifles are real. The rifle is the one unique cursed tool: one per world. Every rifle a lodge hands out
+ * carries a claim id, recorded in the world's investigation save with whose it is, and while anyone holds the live claim
+ * no lodge gives another ({@link #bearer}). Its bearer has at most one live claim: the recovery route (a lodge's rack, for someone who earned a rifle there and no
  * longer carries it) issues a new rifle and retires the old id, so the lost one, wherever it is, goes cold rather than
  * making two. A rifle with no claim id (Creative, an operator's give) always works.
  */
@@ -67,6 +67,13 @@ public final class RifleClaims {
             }
         }
         return false;
+    }
+
+    /** Whoever holds the world's one live rifle claim, or null if nobody does yet. */
+    @Nullable
+    public static UUID bearer(MinecraftServer server) {
+        var claims = InvestigationState.get(server).rifleClaims();
+        return claims.isEmpty() ? null : claims.values().iterator().next();
     }
 
     /** Whether {@code p} has ever been issued a rifle (a live claim on record). */

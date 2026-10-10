@@ -1,0 +1,98 @@
+{
+  "name": "kit_holster_back",
+  "duration": 380,
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "COMBAT",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -50,
+            -10,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -40,
+            30,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "t": 220,
+      "ease": "EASE_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -168,
+            20,
+            24
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -80,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            -4,
+            10,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            -6,
+            -8,
+            0
+          ]
+        }
+      },
+      "marker": "sling"
+    },
+    {
+      "t": 380,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            0,
+            0,
+            6
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            0,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            0,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

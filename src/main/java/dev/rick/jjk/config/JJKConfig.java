@@ -26,7 +26,7 @@ public final class JJKConfig {
      * The gameplay tuning this file was written for. When the mod's defaults change (the JJS wiki pass), older files have
      * their gameplay sections reset to the new defaults; the player's client settings are kept.
      */
-    public static final int CURRENT_VERSION = 9;
+    public static final int CURRENT_VERSION = 10;
     public int version;
 
     public General general = new General();
@@ -55,6 +55,8 @@ public final class JJKConfig {
     public Progression progression = new Progression();
     public MasteryRules mastery = new MasteryRules();
     public Rifle rifle = new Rifle();
+    public CursedToolKits cursedTools = new CursedToolKits();
+    public Realms realms = new Realms();
 
     public static JJKConfig get() {
         return instance;
@@ -1218,6 +1220,59 @@ public final class JJKConfig {
         public double beamCarveEdge = 0.8;
     }
 
+    /**
+     * Cursed tools as equippable movesets (the Cursed Item slot): switching, and each kit's numbers. Damage figures are
+     * before the tool's Mastery and a curse's grade.
+     */
+    public static final class CursedToolKits {
+        /** Ticks after a technique/tool moveset switch before another switch (switching never resets a cooldown). */
+        public int switchLockTicks = 6;
+        /** Ticks into a move during which R turns it into its R variant (once that variant is learned). */
+        public int variantWindow = 8;
+        // Slaughter Demon.
+        public float sdQuickstepDamage = 6f, sdQuickstepReach = 5f;
+        public int sdQuickstepCooldown = 100;
+        public float sdFlurryDamage = 2.2f;
+        public int sdFlurryHits = 4, sdFlurryCooldown = 160;
+        public float sdSeverDamage = 8f;
+        public int sdSeverCooldown = 200;
+        public int sdParryWindow = 14, sdParryCooldown = 220;
+        public float sdRiposteDamage = 9f;
+        public float sdDrawCutDamage = 4f;
+        public int sdDrawCutCooldown = 60;
+        public float sdUltimateDamage = 7f;
+        public int sdUltimateTargets = 5, sdUltimateCooldown = 1200;
+        // Cursed Cleaver.
+        public float clHeavyDamage = 10f;
+        public int clHeavyMaxCharge = 30, clHeavyCooldown = 120;
+        public float clChargeDamage = 7f;
+        public int clChargeCooldown = 180;
+        public float clSplitDamage = 9f;
+        public int clSplitCooldown = 220;
+        public int clWallTicks = 50, clWallCooldown = 300;
+        public float clWallReduction = 0.6f, clWallCounterDamage = 10f;
+        public float clHaftDamage = 3f;
+        public int clHaftCooldown = 80;
+        public float clUltimateDamage = 16f;
+        public int clUltimateCooldown = 1200;
+        // Cursed Rifle (its shots and beam use the Rifle section).
+        public int rfVolleyShots = 3, rfVolleyCooldown = 140;
+        public int rfFlareCooldown = 260;
+    }
+
+    /**
+     * Cursed realms: every cursed-event fight happens in one. The pull (its length), the compass (how near a reported
+     * place it starts to read, and how near it starts to react), and orphan safety.
+     */
+    public static final class Realms {
+        /** Ticks between setting an event off and arriving in its realm (the transition). */
+        public int transitionTicks = 36;
+        /** Within this many blocks of the event, a Cursed Compass held on it points at its source. */
+        public double compassRange = 160;
+        /** Closer than this, the compass begins to tremble; closer than {@code compassHere}, it reacts to it. */
+        public double compassNear = 40, compassHere = 6;
+    }
+
     /** Beam clashes (True Love Beam against Every Last Drop): the duel's tuning lives in the session; these are reach. */
     public static final class BeamClash {
         public boolean enabled = true;
@@ -1291,5 +1346,7 @@ public final class JJKConfig {
         if (progression == null) progression = new Progression();
         if (mastery == null) mastery = new MasteryRules();
         if (rifle == null) rifle = new Rifle();
+        if (cursedTools == null) cursedTools = new CursedToolKits();
+        if (realms == null) realms = new Realms();
     }
 }

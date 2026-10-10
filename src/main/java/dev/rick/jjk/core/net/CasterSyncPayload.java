@@ -15,7 +15,9 @@ public record CasterSyncPayload(String character, float energy, float maxEnergy,
         buf.writeVarInt(p.flags); buf.writeUtf(p.activeCast); buf.writeVarInt(p.castTicks);
         buf.writeFloat(p.awakening); buf.writeFloat(p.awakeningMax); buf.writeUtf(p.abilities);
     }, buf -> new CasterSyncPayload(buf.readUtf(), buf.readFloat(), buf.readFloat(), buf.readVarIntArray(), buf.readVarIntArray(), buf.readVarIntArray(), buf.readVarInt(), buf.readUtf(), buf.readVarInt(), buf.readFloat(), buf.readFloat(), buf.readUtf()));
-    public static final int FLAG_INFINITY = 1, FLAG_NO_COST = 2, FLAG_GUARDING = 4, FLAG_STANCE = 8, FLAG_AWAKENED = 16, FLAG_REFILL_LOCKED = 32;
+    public static final int FLAG_INFINITY = 1, FLAG_NO_COST = 2, FLAG_GUARDING = 4, FLAG_STANCE = 8, FLAG_AWAKENED = 16, FLAG_REFILL_LOCKED = 32,
+            /** The keys use the equipped cursed tool's moveset; and whether there is a technique to switch back to. */
+            FLAG_TOOL = 64, FLAG_CAN_SWITCH = 128;
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;

@@ -1,0 +1,176 @@
+{
+  "name": "cl_haft",
+  "duration": 340,
+  "note": "A short, sharp jab with the butt of the haft.",
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "ATTACK",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "chest": {
+          "rot": [
+            4,
+            20,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -60,
+            10,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -50,
+            40,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "t": 80,
+      "ease": "EASE_IN",
+      "bones": {
+        "chest": {
+          "rot": [
+            18,
+            -10,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -90,
+            -20,
+            0
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            0,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -90,
+            20,
+            0
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            0,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -1.5,
+            4
+          ]
+        }
+      },
+      "marker": "haft"
+    },
+    {
+      "t": 340,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "head": {
+          "rot": [
+            2,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            10,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            2,
+            6,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -46,
+            -18,
+            4
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -30,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -50,
+            34,
+            -4
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -34,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            10,
+            0,
+            6
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -12,
+            0,
+            -6
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            8,
+            0,
+            0
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            10,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -1.5,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

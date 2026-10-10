@@ -1,0 +1,232 @@
+{
+  "name": "cl_counter",
+  "duration": 620,
+  "note": "Out of the wall, everything absorbed goes into one wide swing back.",
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "ATTACK",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -14
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            24,
+            0,
+            14
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            18,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -3.5,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            70,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -80,
+            80,
+            20
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -80,
+            90,
+            10
+          ]
+        }
+      }
+    },
+    {
+      "t": 140,
+      "ease": "EASE_IN",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -14
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            24,
+            0,
+            14
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            18,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -4,
+            4
+          ]
+        },
+        "chest": {
+          "rot": [
+            16,
+            -80,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            6,
+            -50,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -90,
+            -90,
+            -20
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -86,
+            -60,
+            -20
+          ]
+        }
+      },
+      "marker": "counter"
+    },
+    {
+      "t": 620,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "head": {
+          "rot": [
+            2,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            10,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            2,
+            6,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -46,
+            -18,
+            4
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -30,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -50,
+            34,
+            -4
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -34,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            10,
+            0,
+            6
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -12,
+            0,
+            -6
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            8,
+            0,
+            0
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            10,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -1.5,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

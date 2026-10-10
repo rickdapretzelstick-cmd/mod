@@ -40,11 +40,24 @@ public final class AbilityCaster {
     private float energy;
     private int regenDelay;
     private static final int MODES = JJKCharacter.MODES;
+    /** The block of slots after the technique's movesets: the equipped cursed tool's kit. */
+    private static final int TOOL_BLOCK = MODES;
+    private static final int BLOCKS = MODES + 1;
     // Indexed by idx(): one block of slots per moveset (an ability bound in several movesets uses its first block).
-    private final int[] cooldowns = new int[SLOTS * MODES];
-    private final int[] maxCooldowns = new int[SLOTS * MODES];
-    private final int[] charges = new int[SLOTS * MODES];
-    private final int[] lockout = new int[SLOTS * MODES];
+    private final int[] cooldowns = new int[SLOTS * BLOCKS];
+    private final int[] maxCooldowns = new int[SLOTS * BLOCKS];
+    private final int[] charges = new int[SLOTS * BLOCKS];
+    private final int[] lockout = new int[SLOTS * BLOCKS];
+    /**
+     * The equipped cursed tool's kit (from the Cursed Item slot): a second source of abilities beside the innate
+     * technique, on the same framework. Its cooldowns live in their own block, and are kept per kit when it is
+     * unequipped (so swapping items never resets them).
+     */
+    @Nullable private JJKCharacter toolKit;
+    /** With both a technique and a tool kit: whether the tool's moveset is the one in use. */
+    private boolean toolSelected;
+    private int switchLock;
+    private final java.util.Map<String, long[]> savedToolBlocks = new java.util.HashMap<>();
     // Awakening.
     private float awakening;
     private boolean awakened;
@@ -84,8 +97,9 @@ public final class AbilityCaster {
             character.onRemoved(this);
         }
         character = c;
-        java.util.Arrays.fill(cooldowns, 0);
-        java.util.Arrays.fill(lockout, 0);
+        // The technique's blocks only: the cursed tool's cooldowns are its own.
+        java.util.Arrays.fill(cooldowns, 0, SLOTS * MODES, 0);
+        java.util.Arrays.fill(lockout, 0, SLOTS * MODES, 0);
         toggles.clear();
         melee.reset();
         if (c != null) {
@@ -100,7 +114,113 @@ public final class AbilityCaster {
 
     @Nullable
     public Ability ability(AbilitySlot slot) {
+        if (usingTool()) return toolKit.ability(slot, JJKCharacter.BASE);
         return character == null ? null : character.ability(slot, mode());
+    }
+
+    // --- The cursed tool's moveset ---
+
+    @Nullable
+    public JJKCharacter toolKit() {
+        return toolKit;
+    }
+
+    /** Whether the moveset in use is the equipped cursed tool's (always, for someone with no technique). */
+    public boolean usingTool() {
+        return toolKit != null && (character == null || toolSelected);
+    }
+
+    /** The kit whose moves the keys use right now: the cursed tool's or the technique's (null: neither). */
+    @Nullable
+    public JJKCharacter activeKit() {
+        return usingTool() ? toolKit : character;
+    }
+
+    /** Whether this caster fights with anything of this mod's (a technique or a cursed tool's kit). */
+    public boolean armed() {
+        return character != null || toolKit != null;
+    }
+
+    public boolean toolSelected() {
+        return toolSelected;
+    }
+
+    /**
+     * Equips (or, null, unequips) a cursed tool's kit. A cast of the old kit ends; its cooldowns are kept for when it
+     * comes back, counting down meanwhile.
+     */
+    public void setToolKit(@Nullable JJKCharacter kit) {
+        if (toolKit == kit) return;
+        long now = owner.level().getGameTime();
+        if (toolKit != null) {
+            if (cast != null && !cast.isFinished() && toolKit.abilitiesAllModes().contains(cast.ability)) interrupt("removed");
+            for (AbilityInstance o : List.copyOf(overlays)) if (toolKit.abilitiesAllModes().contains(o.ability)) o.interrupt("removed");
+            for (Ability a : toolKit.abilitiesAllModes()) if (a.kind() == Ability.Kind.TOGGLE && a.isToggled(this)) a.toggleOff(this, "unequipped");
+            long[] saved = new long[SLOTS * 4 + 1];
+            for (int s = 0; s < SLOTS; s++) {
+                int i = TOOL_BLOCK * SLOTS + s;
+                saved[s] = cooldowns[i];
+                saved[SLOTS + s] = maxCooldowns[i];
+                saved[2 * SLOTS + s] = charges[i];
+                saved[3 * SLOTS + s] = lockout[i];
+            }
+            saved[SLOTS * 4] = now;
+            savedToolBlocks.put(toolKit.id, saved);
+            toolKit.onRemoved(this);
+        }
+        toolKit = kit;
+        long[] saved = kit == null ? null : savedToolBlocks.get(kit.id);
+        for (int s = 0; s < SLOTS; s++) {
+            int i = TOOL_BLOCK * SLOTS + s;
+            if (saved != null) {
+                int elapsed = (int) Math.min(Integer.MAX_VALUE, Math.max(0, now - saved[SLOTS * 4]));
+                cooldowns[i] = (int) Math.max(0, saved[s] - elapsed);
+                maxCooldowns[i] = (int) saved[SLOTS + s];
+                charges[i] = (int) saved[2 * SLOTS + s];
+                lockout[i] = 0;
+            } else {
+                cooldowns[i] = 0;
+                maxCooldowns[i] = 0;
+                lockout[i] = 0;
+                Ability a = kit == null ? null : kit.ability(AbilitySlot.values()[s], JJKCharacter.BASE);
+                charges[i] = a == null ? 0 : a.maxCharges(this);
+            }
+        }
+        if (kit != null) kit.onAssigned(this);
+        melee.reset();
+        dirty = true;
+    }
+
+    /** Restores which moveset was chosen (a player's choice is saved). */
+    public void setToolSelected(boolean selected) {
+        if (toolSelected == selected) return;
+        toolSelected = selected;
+        dirty = true;
+    }
+
+    /** Why switching movesets isn't possible right now, or null. */
+    @Nullable
+    public String switchBlocked() {
+        if (toolKit == null || character == null) return "nothing_to_switch";
+        if (switchLock > 0) return "too_soon";
+        if (isBusy()) return "busy";
+        if (melee.isCommitted()) return "attacking";
+        if (Combat.state(owner).actionsLocked()) return "stunned";
+        return null;
+    }
+
+    /**
+     * Swaps between the innate technique and the cursed tool's moveset. Never resets a cooldown, never refunds anything,
+     * and only from a free moment (not mid-cast, mid-swing or stunned), with a short lock after.
+     */
+    public boolean switchMoveset() {
+        String why = switchBlocked();
+        if (why != null) return refuse(why);
+        toolSelected = !toolSelected;
+        switchLock = Math.max(1, JJKConfig.get().cursedTools.switchLockTicks);
+        lastRefusal = null;
+        dirty = true;
+        return true;
     }
 
     /** The moveset in use right now (0 base, 1 awakened, others the character's own). */
@@ -108,8 +228,9 @@ public final class AbilityCaster {
         return character == null ? 0 : Math.max(0, Math.min(MODES - 1, character.mode(this)));
     }
 
-    /** Cooldown array index for a slot in the current mode. */
+    /** Cooldown array index for a slot in the current moveset (the cursed tool's block while it is in use). */
     private int idx(AbilitySlot slot) {
+        if (usingTool()) return TOOL_BLOCK * SLOTS + slot.ordinal();
         return idx(slot, mode());
     }
 
@@ -123,6 +244,7 @@ public final class AbilityCaster {
 
     @Nullable
     private Ability abilityAt(int index) {
+        if (index / SLOTS == TOOL_BLOCK) return toolKit == null ? null : toolKit.ability(AbilitySlot.values()[index % SLOTS], JJKCharacter.BASE);
         if (character == null) return null;
         return character.ability(AbilitySlot.values()[index % SLOTS], index / SLOTS);
     }
@@ -147,7 +269,7 @@ public final class AbilityCaster {
     }
 
     private void refillCharges() {
-        for (int i = 0; i < SLOTS * MODES; i++) {
+        for (int i = 0; i < SLOTS * BLOCKS; i++) {
             Ability a = abilityAt(i);
             charges[i] = a == null ? 0 : a.maxCharges(this);
         }
@@ -268,6 +390,14 @@ public final class AbilityCaster {
 
     /** Starts the cooldown of whichever slot (the current moveset first, then the others) holds this ability. */
     public void startCooldown(Ability ability, int ticks) {
+        if (toolKit != null) {
+            for (AbilitySlot s : AbilitySlot.values()) {
+                if (toolKit.ability(s, JJKCharacter.BASE) == ability) {
+                    startCooldownAt(TOOL_BLOCK * SLOTS + s.ordinal(), ability, ticks);
+                    return;
+                }
+            }
+        }
         if (character == null) return;
         int cur = mode();
         for (int k = 0; k < MODES; k++) {
@@ -322,7 +452,8 @@ public final class AbilityCaster {
 
     /** Every running cooldown finishes {@code ticks} sooner. */
     public void reduceCooldowns(int ticks) {
-        for (int i = 0; i < cooldowns.length; i++) {
+        // The technique's own: a technique's passive never speeds up a cursed tool's moves.
+        for (int i = 0; i < SLOTS * MODES; i++) {
             if (cooldowns[i] > 0) cooldowns[i] = Math.max(1, cooldowns[i] - ticks);
         }
         dirty = true;
@@ -425,8 +556,9 @@ public final class AbilityCaster {
         }
         if (state.actionsLocked()) return refuse("stunned");
         if (ability.isTechnique() && state.techniquesLocked()) return refuse("technique_locked");
+        JJKCharacter kit = activeKit();
         // The character can take the press itself (a combination during another move's wind-up, a follow-up).
-        if (character.interceptInput(this, slot, ability, targetHint)) {
+        if (kit.interceptInput(this, slot, ability, targetHint)) {
             lastRefusal = null;
             dirty = true;
             return true;
@@ -438,7 +570,7 @@ public final class AbilityCaster {
         if (melee.isCommitted() && slot != AbilitySlot.GUARD && !ability.usableDuringMelee()) return refuse("attacking");
         if (!isReady(slot)) return refuse("cooldown");
         // Before its Mastery node, the Awakening key (the transformation, or the domain that is a kit's way in) is shut.
-        if (slot == AbilitySlot.ULTIMATE && !awakened && !awakeningUnlocked()) return refuse("mastery");
+        if (slot == AbilitySlot.ULTIMATE && !usingTool() && !awakened && !awakeningUnlocked()) return refuse("mastery");
         float meterCost = ability.awakeningCost(this);
         if (meterCost > 0 && !canAffordAwakening(meterCost)) {
             Fx.play(level, "no_energy", owner.position().add(0, 1, 0), net.minecraft.world.phys.Vec3.ZERO, 1f, owner.getId());
@@ -473,7 +605,7 @@ public final class AbilityCaster {
         lastAbilityAt = owner.level().getGameTime();
         AbilityInstance inst = ability.activate(ctx);
         lastRefusal = null;
-        character.onAbilityUsed(this, ability, slot);
+        kit.onAbilityUsed(this, ability, slot);
         if (inst == null) return true;
         if (ability.usableWhileCasting()) {
             overlays.add(inst);
@@ -546,6 +678,9 @@ public final class AbilityCaster {
         if (character != null) {
             for (Ability a : character.abilitiesAllModes()) if (a.kind() == Ability.Kind.TOGGLE && a.isToggled(this)) a.toggleOff(this, reason);
         }
+        if (toolKit != null) {
+            for (Ability a : toolKit.abilitiesAllModes()) if (a.kind() == Ability.Kind.TOGGLE && a.isToggled(this)) a.toggleOff(this, reason);
+        }
         applySlow(1f);
     }
 
@@ -567,23 +702,24 @@ public final class AbilityCaster {
     // --- Tick ---
 
     public void tick() {
-        if (character == null) return;
+        if (character == null && toolKit == null) return;
         JJKConfig cfg = JJKConfig.get();
+        if (switchLock > 0) switchLock--;
 
         if (regenDelay > 0) regenDelay--;
-        else if (energy < maxEnergy()) {
+        else if (character != null && energy < maxEnergy()) {
             energy = Math.min(maxEnergy(), energy + character.regenPerSecond() / 20f);
         }
 
         if (refillDelay > 0 && --refillDelay == 0) dirty = true;
         if (awakened) {
             // Awakening is a timer: it drains, and when it's empty Gojo returns to his base kit.
-            if (!noCost()) awakening -= character.awakeningDrainPerSecond() / 20f;
+            if (!noCost() && character != null) awakening -= character.awakeningDrainPerSecond() / 20f;
             if (awakening <= 0 && !isCasting()) endAwakening("expired");
             else if (owner.tickCount % 5 == 0) dirty = true;
         }
 
-        for (int i = 0; i < SLOTS * MODES; i++) {
+        for (int i = 0; i < SLOTS * BLOCKS; i++) {
             if (lockout[i] > 0) lockout[i]--;
             if (cooldowns[i] > 0 && --cooldowns[i] == 0) {
                 Ability a = abilityAt(i);
@@ -616,7 +752,7 @@ public final class AbilityCaster {
             }
         }
         // Faster casting (a character's speed buff) runs the casts extra ticks now and then.
-        float speed = Math.max(1f, character.castSpeed(this));
+        float speed = character == null ? 1f : Math.max(1f, character.castSpeed(this));
         castSpeedCarry += speed - 1f;
         int steps = 1;
         while (castSpeedCarry >= 1f) {
@@ -634,14 +770,16 @@ public final class AbilityCaster {
             }
         }
 
-        character.tick(this);
+        if (character != null) character.tick(this);
+        if (toolKit != null) toolKit.tick(this);
         melee.tick(this);
 
         float slow = 1f;
         if (cast != null && !cast.isFinished()) slow = Math.min(slow, cast.movementMultiplier());
         for (AbilityInstance o : overlays) slow = Math.min(slow, o.movementMultiplier());
         slow = Math.min(slow, melee.movementMultiplier());
-        slow = Math.min(slow, character.movementMultiplier(this));
+        if (character != null) slow = Math.min(slow, character.movementMultiplier(this));
+        if (toolKit != null) slow = Math.min(slow, toolKit.movementMultiplier(this));
         applySlow(slow);
 
         if (owner instanceof ServerPlayer sp) sync(sp, cfg);
@@ -677,6 +815,8 @@ public final class AbilityCaster {
         if (Combat.isGuarding(owner)) flags |= CasterSyncPayload.FLAG_GUARDING;
         if (awakened) flags |= CasterSyncPayload.FLAG_AWAKENED;
         if (refillDelay > 0) flags |= CasterSyncPayload.FLAG_REFILL_LOCKED;
+        if (usingTool()) flags |= CasterSyncPayload.FLAG_TOOL;
+        if (toolKit != null && character != null) flags |= CasterSyncPayload.FLAG_CAN_SWITCH;
         int[] cd = new int[SLOTS], maxCd = new int[SLOTS], ch = new int[SLOTS];
         StringBuilder ids = new StringBuilder();
         for (AbilitySlot s : AbilitySlot.values()) {
@@ -688,7 +828,8 @@ public final class AbilityCaster {
             if (s.ordinal() > 0) ids.append(',');
             if (a != null) ids.append(a.id);
         }
-        return new CasterSyncPayload(character == null ? "" : character.id, energy, maxEnergy(), cd, maxCd, ch, flags,
+        JJKCharacter shown = activeKit();
+        return new CasterSyncPayload(shown == null ? "" : shown.id, energy, maxEnergy(), cd, maxCd, ch, flags,
                 isCasting() ? cast.ability.id : "", isCasting() ? cast.age() : 0, awakening, maxAwakening(), ids.toString());
     }
 

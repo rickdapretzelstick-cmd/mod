@@ -129,7 +129,7 @@ final class RifleFx {
                     for (int i = 0; i < 6; i++) Flashes.bolt(from, from.add(randomUnit().scale(1 + 1.5 * output)).add(d.scale(1.2)), 0.05f, WHITE, 1f, 4, now + i / 2);
                     burst(level, from, q(12), 0.2, Sprite.SMOKE, SMOKE, 0.7f, 18);
                 }
-                if (mc.player != null && mc.player.position().distanceTo(from) < 16) ScreenEffects.flash(output >= 0.99f ? 0x4070C8FF : 0x306A5AFF, 6);
+                if (mc.player != null && mc.player.position().distanceTo(from) < 16) ScreenEffects.flash(output >= 0.99f ? 0x40FFA040 : 0x30E07020, 6);
                 ClientFx.distanceShake(from, 40 + 40 * output, 0.6f + output * 0.6f);
             }
             case "rifle_beam_pulse" -> {

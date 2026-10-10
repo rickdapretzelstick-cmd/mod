@@ -63,6 +63,8 @@ public final class RifleServer {
         long beamReadyAt;
         int sentPhase = -1;
         float sentEnergy = -1;
+        /** Held through the equipped rifle's moveset (a kit key) rather than the use key. */
+        boolean kitHold;
     }
 
     private static final Map<UUID, State> STATES = new HashMap<>();
@@ -89,6 +91,88 @@ public final class RifleServer {
 
     public static boolean isRifle(ItemStack s) {
         return s.getItem() instanceof CursedToolItem t && t.definition() == CursedTools.CURSED_RIFLE;
+    }
+
+    /**
+     * The rifle a player is fighting with: the one in their hand, else the one in their Cursed Item slot while its
+     * moveset is the one in use. Empty when neither.
+     */
+    public static ItemStack weapon(ServerPlayer p) {
+        if (isRifle(p.getMainHandItem())) return p.getMainHandItem();
+        ItemStack eq = dev.rick.jjk.progression.tool.kit.CursedSlot.get(p);
+        var c = dev.rick.jjk.core.ability.Casters.getOrNull(p);
+        return isRifle(eq) && c != null && c.usingTool() ? eq : ItemStack.EMPTY;
+    }
+
+    public static boolean wielding(ServerPlayer p) {
+        return !weapon(p).isEmpty();
+    }
+
+    // --- The equipped rifle's moveset (RifleKit) ---
+
+    /** Snap Shot: a hip shot at once. */
+    public static boolean kitShot(ServerPlayer p) {
+        ItemStack w = weapon(p);
+        if (w.isEmpty() || !(p.level() instanceof ServerLevel level)) return false;
+        if (RifleClaims.inertReason(p, w) != null) return false;
+        State s = state(p);
+        if (s.phase != Phase.IDLE && s.phase != Phase.AIM) return false;
+        int aim = s.aimTicks;
+        s.aimTicks = 0;
+        shoot(level, p, w, s);
+        s.aimTicks = aim;
+        return true;
+    }
+
+    /** Aimed Shot pressed: raise the scope (released: fire). */
+    public static boolean kitAim(ServerPlayer p) {
+        ItemStack w = weapon(p);
+        if (w.isEmpty() || !(p.level() instanceof ServerLevel)) return false;
+        String inert = RifleClaims.inertReason(p, w);
+        if (inert != null) {
+            p.sendOverlayMessage(Component.literal(inert).withStyle(ChatFormatting.GRAY));
+            return false;
+        }
+        State s = state(p);
+        if (s.phase != Phase.IDLE) return false;
+        s.kitHold = true;
+        set(p, s, Phase.AIM, 0);
+        s.aimTicks = 0;
+        return true;
+    }
+
+    /** Unfolding Array pressed: the arms deploy (held: charge; released when ready: fire). */
+    public static boolean kitBeam(ServerPlayer p) {
+        ItemStack w = weapon(p);
+        if (w.isEmpty() || !(p.level() instanceof ServerLevel level)) return false;
+        if (RifleClaims.inertReason(p, w) != null) return false;
+        State s = state(p);
+        if (s.phase != Phase.IDLE && s.phase != Phase.AIM) return false;
+        if (!RifleRules.beamUnlocked(p)) return false;
+        if (level.getGameTime() < s.beamReadyAt) {
+            p.sendOverlayMessage(Component.literal("The array is still cooling.").withStyle(ChatFormatting.GRAY));
+            return false;
+        }
+        if (energy(p) < RifleRules.beamCost(p)) {
+            p.sendOverlayMessage(Component.literal("The reserve is too low to open the array.").withStyle(ChatFormatting.GRAY));
+            return false;
+        }
+        s.kitHold = true;
+        beginDeploy(level, p, s);
+        return true;
+    }
+
+    /** A kit key let go: the same as letting go of use. */
+    public static void kitRelease(ServerPlayer p) {
+        State s = STATES.get(p.getUUID());
+        if (s == null || !s.kitHold || !(p.level() instanceof ServerLevel level)) return;
+        s.kitHold = false;
+        release(level, p, weapon(p), 0);
+    }
+
+    /** Whether the rifle is busy with a phase a kit move would interrupt. */
+    public static boolean busy(ServerPlayer p) {
+        return phase(p) != Phase.IDLE;
     }
 
     static State state(ServerPlayer p) {
@@ -288,14 +372,14 @@ public final class RifleServer {
             float e = energy(p);
             if (e < cfg().capacity && !array) setEnergy(p, e + cfg().regenPerSecond / 20f);
             if (s != null) tick(level, p, s);
-            if (s != null || isRifle(p.getMainHandItem())) sync(p, s == null ? state(p) : s, false);
+            if (s != null || wielding(p)) sync(p, s == null ? state(p) : s, false);
         }
     }
 
     static void tick(ServerLevel level, ServerPlayer p, State s) {
         s.age++;
-        boolean held = isRifle(p.getMainHandItem());
-        boolean using = held && p.isUsingItem() && isRifle(p.getUseItem());
+        boolean held = wielding(p);
+        boolean using = held && (p.isUsingItem() && isRifle(p.getUseItem()) || s.kitHold);
         if (!p.isAlive()) {
             drop(p);
             return;
@@ -354,6 +438,7 @@ public final class RifleServer {
     }
 
     static void set(ServerPlayer p, State s, Phase phase, int duration) {
+        if (phase == Phase.IDLE || phase == Phase.RETRACT || phase == Phase.COOLDOWN || phase == Phase.FIRE) s.kitHold = false;
         s.phase = phase;
         s.age = 0;
         s.duration = duration;

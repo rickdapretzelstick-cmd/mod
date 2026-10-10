@@ -44,6 +44,10 @@ public final class ProgressionItems {
     public static final Item SLAUGHTER_DEMON = tool(dev.rick.jjk.progression.tool.CursedTools.SLAUGHTER_DEMON, Rarity.RARE);
     public static final Item CURSED_CLEAVER = tool(dev.rick.jjk.progression.tool.CursedTools.CURSED_CLEAVER, Rarity.RARE);
 
+    /** A compass steeped in cursed energy: it follows the incident its carrier is investigating. */
+    public static final Item CURSED_COMPASS = item("cursed_compass", dev.rick.jjk.progression.investigation.CursedCompassItem::new,
+            new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
+
     public static final Item CURSED_RIFLE = tool(dev.rick.jjk.progression.tool.CursedTools.CURSED_RIFLE, Rarity.EPIC);
 
     public static final Item CURSED_SOUL_SAND = item("cursed_soul_sand", p -> new BlockItem(ProgressionBlocks.CURSED_SOUL_SAND, p),
@@ -92,6 +96,7 @@ public final class ProgressionItems {
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(e -> {
             e.accept(GLASSES);
             e.accept(CURSED_GLASSES);
+            e.accept(CURSED_COMPASS);
             e.accept(SLAUGHTER_DEMON);
             e.accept(CURSED_CLEAVER);
             e.accept(CURSED_RIFLE);

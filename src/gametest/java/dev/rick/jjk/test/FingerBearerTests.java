@@ -121,8 +121,26 @@ public class FingerBearerTests {
 
     // --- Spawning in the battle room ---
 
-    @GameTest(maxTicks = 200, padding = 16, environment = ENV)
-    public void risesOverItsSealWhenSomeoneEntersTheRoom(GameTestHelper h) {
+    /** The room's realm arena, if it is open. */
+    private static dev.rick.jjk.progression.investigation.InvestigationState.Arena arena(GameTestHelper h, CursedEncounters.Room room) {
+        var st = dev.rick.jjk.progression.investigation.InvestigationState.get(h.getLevel().getServer());
+        return dev.rick.jjk.progression.investigation.CursedRealms.arenaOf(st, dev.rick.jjk.progression.investigation.CursedRealms.ROOM + CursedEncounters.keyOf(room));
+    }
+
+    /** Finger Bearers in a room's realm arena. */
+    private static List<FingerBearerEntity> realmBearers(GameTestHelper h, dev.rick.jjk.progression.investigation.InvestigationState.Arena a) {
+        ServerLevel realm = dev.rick.jjk.progression.investigation.CursedRealms.level(h.getLevel().getServer());
+        // By the whole entity list, not a box query: the far-off arena's chunk may not be entity-accessible to a mock player.
+        List<FingerBearerEntity> out = new java.util.ArrayList<>();
+        AABB box = new AABB(a.origin).inflate(20);
+        for (net.minecraft.world.entity.Entity e : realm.getAllEntities()) {
+            if (e instanceof FingerBearerEntity fb && !fb.isRemoved() && box.contains(fb.position())) out.add(fb);
+        }
+        return out;
+    }
+
+    @GameTest(maxTicks = 300, padding = 16, environment = ENV)
+    public void enteringTheRoomPullsYouIntoItsRealmWhereItRises(GameTestHelper h) {
         setup(h);
         BlockPos seal = seal(h, 4, 4);
         h.runAfterDelay(20, () -> {
@@ -132,24 +150,29 @@ public class FingerBearerTests {
             ServerPlayer p = survivor(h, 1, 1, false);
             h.succeedWhen(() -> {
                 CursedEncounters.Room room = room(h, seal);
+                h.assertTrue(dev.rick.jjk.progression.investigation.CursedRealms.inRealm(p), "taken into the room's realm");
+                var a = arena(h, room);
+                h.assertTrue(a != null && a.inside().contains(p.getUUID()), "in its arena");
                 h.assertTrue(room.state == CursedEncounters.State.ACTIVE && room.spirit != null, "the room is active with its spirit");
-                List<FingerBearerEntity> found = bearers(h);
-                h.assertTrue(found.size() == 1, "exactly one Finger Bearer");
+                List<FingerBearerEntity> found = realmBearers(h, a);
+                h.assertTrue(found.size() == 1, "exactly one Finger Bearer, in the realm: " + found.size() + " near " + a.origin);
+                h.assertTrue(bearers(h).isEmpty(), "and none in the room itself");
                 FingerBearerEntity fb = found.getFirst();
-                h.assertTrue(fb.getUUID().equals(room.spirit) && seal.equals(fb.home()), "it is the room's spirit, tied to the seal");
-                h.assertTrue(fb.position().distanceTo(Vec3.atBottomCenterOf(seal).add(0, 1, 0)) < 2, "it stands over the seal");
+                h.assertTrue(fb.getUUID().equals(room.spirit) && a.origin.equals(fb.home()), "it is the room's spirit, tied to the arena");
                 h.assertTrue(CursePerception.requiresPerception(fb), "hidden from those who can't perceive curses");
-                // The room's record survives a reload.
                 CursedEncounters.unload();
                 CursedEncounters.Room again = room(h, seal);
                 h.assertTrue(again.state == CursedEncounters.State.ACTIVE && fb.getUUID().equals(again.spirit), "spirit and state saved");
-                fb.discard();
+                var st = dev.rick.jjk.progression.investigation.InvestigationState.get(h.getLevel().getServer());
+                dev.rick.jjk.progression.investigation.CursedRealms.close(h.getLevel().getServer(), st, a, false);
+                h.assertTrue(!dev.rick.jjk.progression.investigation.CursedRealms.inRealm(p), "home when it closes");
+                h.assertTrue(room(h, seal).state == CursedEncounters.State.DORMANT && room(h, seal).spirit == null, "an abandoned fight leaves the room waiting");
                 p.discard();
             });
         });
     }
 
-    @GameTest(maxTicks = 400, padding = 16, environment = ENV)
+    @GameTest(maxTicks = 500, padding = 16, environment = ENV)
     public void aSpiritLostWithoutDyingIsRaisedAgain(GameTestHelper h) {
         setup(h);
         BlockPos seal = seal(h, 4, 4);
@@ -158,14 +181,17 @@ public class FingerBearerTests {
         h.succeedWhen(() -> {
             CursedEncounters.Room room = room(h, seal);
             h.assertTrue(room != null && room.spirit != null, "spawned");
+            var a = arena(h, room);
+            h.assertTrue(a != null, "in its realm");
             if (first[0] == null) {
                 first[0] = room.spirit;
-                bearers(h).forEach(e -> e.discard());
-                h.fail("removed; waiting for the room to notice");
+                realmBearers(h, a).forEach(e -> e.discard());
+                h.fail("removed; waiting for the realm to notice");
             }
             h.assertTrue(!room.spirit.equals(first[0]), "a new spirit was raised");
-            h.assertTrue(bearers(h).size() == 1, "one spirit, not two");
-            bearers(h).forEach(e -> e.discard());
+            h.assertTrue(realmBearers(h, a).size() == 1, "one spirit, not two: " + realmBearers(h, a).size());
+            var st = dev.rick.jjk.progression.investigation.InvestigationState.get(h.getLevel().getServer());
+            dev.rick.jjk.progression.investigation.CursedRealms.close(h.getLevel().getServer(), st, a, false);
             p.discard();
         });
     }
@@ -398,35 +424,42 @@ public class FingerBearerTests {
         });
     }
 
-    @GameTest(maxTicks = 300, padding = 16, environment = ENV)
-    public void defeatClearsTheRoomForGoodAndLeavesExactlyOneFinger(GameTestHelper h) {
+    @GameTest(maxTicks = 400, padding = 16, environment = ENV)
+    public void defeatInItsRealmClearsTheRoomForGoodAndGivesTheKillerExactlyOneFinger(GameTestHelper h) {
         setup(h);
         BlockPos seal = seal(h, 4, 4);
         ServerPlayer p = survivor(h, 1, 1, true);
+        Vec3 start = p.position();
         boolean[] killed = new boolean[1];
         long[] at = new long[1];
+        dev.rick.jjk.progression.investigation.InvestigationState.Arena[] arena = new dev.rick.jjk.progression.investigation.InvestigationState.Arena[1];
         h.succeedWhen(() -> {
             CursedEncounters.Room room = room(h, seal);
             h.assertTrue(room != null && room.state != CursedEncounters.State.DORMANT, "the spirit has risen");
             if (!killed[0]) {
-                FingerBearerEntity fb = bearers(h).getFirst();
-                // Two players' last blows in the same tick: still one defeat, one finger.
-                fb.hurtServer(h.getLevel(), h.getLevel().damageSources().playerAttack(p), 10_000f);
-                fb.die(h.getLevel().damageSources().playerAttack(p));
+                arena[0] = arena(h, room);
+                h.assertTrue(arena[0] != null && !realmBearers(h, arena[0]).isEmpty(), "in its realm: " + (arena[0] == null ? "no arena" : realmBearers(h, arena[0]).size()));
+                FingerBearerEntity fb = realmBearers(h, arena[0]).getFirst();
+                // Two last blows in the same tick: still one defeat, one finger.
+                fb.hurtServer((ServerLevel) fb.level(), fb.level().damageSources().playerAttack(p), 10_000f);
+                fb.die(fb.level().damageSources().playerAttack(p));
                 killed[0] = true;
                 at[0] = h.getTick();
                 h.fail("killed; waiting");
             }
             h.assertTrue(room.state == CursedEncounters.State.CLEARED, "the room is cleared");
-            List<ItemEntity> fingers = h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(seal).inflate(10),
-                    e -> e.getItem().is(ProgressionItems.CURSED_FINGER));
-            h.assertTrue(fingers.size() == 1 && fingers.getFirst().getItem().getCount() == 1, "exactly one Cursed Finger");
-            // Two seal checks later: the body has dissolved and nothing has risen again.
+            int fingers = 0;
+            for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+                if (p.getInventory().getItem(i).is(ProgressionItems.CURSED_FINGER)) fingers += p.getInventory().getItem(i).getCount();
+            }
+            h.assertTrue(fingers == 1, "exactly one Cursed Finger, in the killer's hands: " + fingers);
+            h.assertTrue(!dev.rick.jjk.progression.investigation.CursedRealms.inRealm(p) && p.position().distanceTo(start) < 3, "home, where they stood in the room");
+            var st = dev.rick.jjk.progression.investigation.InvestigationState.get(h.getLevel().getServer());
+            h.assertTrue(dev.rick.jjk.progression.investigation.CursedRealms.arenaOf(st, arena[0].incident) == null, "the realm is gone");
             h.assertTrue(h.getTick() - at[0] > 2 * 40 + 10, "waiting for two more seal checks");
-            h.assertTrue(bearers(h).stream().noneMatch(e -> !e.isRemoved()), "a cleared room never raises another");
+            h.assertTrue(bearers(h).isEmpty() && !dev.rick.jjk.progression.investigation.CursedRealms.inRealm(p), "a cleared room never takes anyone again");
             CursedEncounters.unload();
             h.assertTrue(room(h, seal).state == CursedEncounters.State.CLEARED, "cleared is saved");
-            fingers.forEach(ItemEntity::discard);
             p.discard();
         });
     }

@@ -1,0 +1,94 @@
+{
+  "name": "cl_exec_leap",
+  "duration": 400,
+  "note": "In the air: the cleaver held as high as it goes, knees tucked.",
+  "hold": true,
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "SPECIAL",
+  "keys": [
+    {
+      "t": 400,
+      "ease": "EASE_OUT",
+      "bones": {
+        "chest": {
+          "rot": [
+            -30,
+            0,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            -20,
+            0,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -178,
+            10,
+            10
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -30,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -178,
+            -10,
+            -10
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -30,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            -70,
+            0,
+            0
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            90,
+            0,
+            0
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -40,
+            0,
+            0
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            80,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            1,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

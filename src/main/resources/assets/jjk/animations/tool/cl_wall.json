@@ -1,0 +1,94 @@
+{
+  "name": "cl_wall",
+  "duration": 220,
+  "note": "Braced, the cleaver held flat across the front like a bar.",
+  "hold": true,
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "ATTACK",
+  "keys": [
+    {
+      "t": 220,
+      "ease": "EASE_OUT",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -14
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            24,
+            0,
+            14
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            18,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -4,
+            -0.5
+          ]
+        },
+        "chest": {
+          "rot": [
+            10,
+            0,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            6,
+            0,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -80,
+            -40,
+            0
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -50,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -80,
+            40,
+            0
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -50,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

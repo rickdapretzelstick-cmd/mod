@@ -22,7 +22,7 @@ public final class BeamClashVisuals {
     private BeamClashVisuals() {}
 
     static float[] color(String kind) {
-        if ("rifle".equals(kind)) return new float[] {0.45f, 0.82f, 1f};
+        if ("rifle".equals(kind)) return new float[] {1f, 0.55f, 0.12f};
         return "eld".equals(kind) ? new float[] {0.35f, 0.7f, 1f} : new float[] {1f, 0.42f, 1f};
     }
 

@@ -24,6 +24,8 @@ from PIL import Image, ImageEnhance
 
 ROOT = os.path.join(os.path.dirname(__file__), '..', 'src', 'main', 'resources', 'assets', 'jjk')
 EASE = {'catmullrom': 'EASE_IN_OUT', 'linear': 'LINEAR', 'step': 'STEP', 'bezier': 'EASE_IN_OUT'}
+# The pack's cube held at its own size is a fist-sized block; the Prison Realm is as small as a die.
+DIE = 0.4
 CHAN = {'rotation': 'rot', 'position': 'pos', 'scale': 'scale'}
 
 
@@ -101,6 +103,10 @@ def items(pack):
     rgb.save(os.path.join(tdir, 'dormant_prison_realm.png'))
     print('wrote textures/item/prison_realm.png and dormant_prison_realm.png')
     model = json.load(open(os.path.join(base, 'models', 'item', 'prison_realm.json')))
+    # It is a cube about the size of a die: shrink it in the hand and on the ground (the inventory icon stays readable).
+    for ctx, t in model.get('display', {}).items():
+        if ctx != 'gui' and 'scale' in t:
+            t['scale'] = [round(v * DIE, 3) for v in t['scale']]
     for name in ('prison_realm', 'dormant_prison_realm'):
         m = copy.deepcopy(model)
         m['textures'] = {'0': 'jjk:item/' + name, 'particle': 'jjk:item/' + name}

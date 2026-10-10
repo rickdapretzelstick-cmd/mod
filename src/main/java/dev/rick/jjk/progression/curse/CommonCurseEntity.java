@@ -325,8 +325,23 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     public void tick() {
         super.tick();
         if (level().isClientSide()) return;
+        // An incident's curse only exists in its realm arena: one found anywhere else (the overworld after a crash, an
+        // arena that closed while its chunk was unloaded) is a leftover, and goes.
+        if (!incident.isEmpty() && tickCount % 40 == 5 && orphaned()) {
+            discard();
+            return;
+        }
         // The mod's hitstun stops it thinking for a moment, never long (a common curse is skittish, not helpless).
         if (Combat.has(this, CombatStatus.HITSTUN) && tickCount % 20 == 0) Combat.state(this).remove(CombatStatus.HITSTUN);
+    }
+
+    /** Bound to an incident whose arena isn't here (or isn't open any more). */
+    private boolean orphaned() {
+        var arena = dev.rick.jjk.progression.investigation.CursedRealms.arenaHere(this);
+        if (arena == null || !arena.incident.equals(incident) || level().getServer() == null) return true;
+        // Its incident's arena, but not one of the curses this fight raised (one left over from an earlier attempt).
+        var in = dev.rick.jjk.progression.investigation.InvestigationState.get(level().getServer()).incidents().get(incident);
+        return in == null || !in.curses().contains(getUUID());
     }
 
     @Override

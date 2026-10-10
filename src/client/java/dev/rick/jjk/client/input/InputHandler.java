@@ -36,6 +36,8 @@ public final class InputHandler {
     /** Opens the character select screen. */
     private static KeyMapping characterKey;
     private static KeyMapping masteryKey;
+    /** Switches between the innate technique's moveset and the equipped cursed tool's. */
+    private static KeyMapping switchKey;
 
     private static final int HEAVY_HOLD_TICKS = 7;
     private static boolean attackHeld;
@@ -64,6 +66,7 @@ public final class InputHandler {
         bind(AbilitySlot.DASH, "dash", InputConstants.KEY_Q);
         characterKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.character_menu", InputConstants.Type.KEYBOARD, InputConstants.KEY_K, CATEGORY));
         masteryKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.mastery", InputConstants.Type.KEYBOARD, InputConstants.KEY_J, CATEGORY));
+        switchKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.switch_moveset", InputConstants.Type.KEYBOARD, InputConstants.KEY_X, CATEGORY));
         modeKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.combat_mode", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY));
     }
 
@@ -142,6 +145,13 @@ public final class InputHandler {
             return;
         }
         boolean canAct = mc.gui.screen() == null && ClientState.hasCharacter() && player.isAlive();
+        while (switchKey.consumeClick()) {
+            if (canAct && ClientState.canSwitchMoveset()) {
+                // Keys held across a switch would release onto the other moveset: let them go first.
+                releaseAll(player);
+                ClientPlayNetworking.send(new dev.rick.jjk.core.net.MovesetSwitchPayload());
+            }
+        }
         for (Map.Entry<AbilitySlot, KeyMapping> e : KEYS.entrySet()) {
             AbilitySlot slot = e.getKey();
             boolean down = canAct && e.getValue().isDown();

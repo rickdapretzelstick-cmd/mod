@@ -1,0 +1,252 @@
+{
+  "name": "cl_exec_crash",
+  "duration": 900,
+  "note": "The landing: everything comes down at once.",
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "SPECIAL",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "chest": {
+          "rot": [
+            -30,
+            0,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -178,
+            10,
+            10
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -178,
+            -10,
+            -10
+          ]
+        }
+      }
+    },
+    {
+      "t": 120,
+      "ease": "EASE_IN",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -14
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            24,
+            0,
+            14
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            18,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -9,
+            3
+          ]
+        },
+        "chest": {
+          "rot": [
+            64,
+            0,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            24,
+            0,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            0,
+            -10,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -4,
+            20,
+            0
+          ]
+        }
+      },
+      "marker": "crash"
+    },
+    {
+      "t": 620,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "leftThigh": {
+          "rot": [
+            -30,
+            0,
+            -14
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            30,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            24,
+            0,
+            14
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            18,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -9,
+            3
+          ]
+        },
+        "chest": {
+          "rot": [
+            60,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "t": 900,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "head": {
+          "rot": [
+            2,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            10,
+            0
+          ]
+        },
+        "hips": {
+          "rot": [
+            2,
+            6,
+            0
+          ]
+        },
+        "rightArm": {
+          "rot": [
+            -46,
+            -18,
+            4
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -30,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -50,
+            34,
+            -4
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -34,
+            0,
+            0
+          ]
+        },
+        "rightThigh": {
+          "rot": [
+            10,
+            0,
+            6
+          ]
+        },
+        "leftThigh": {
+          "rot": [
+            -12,
+            0,
+            -6
+          ]
+        },
+        "rightShin": {
+          "rot": [
+            8,
+            0,
+            0
+          ]
+        },
+        "leftShin": {
+          "rot": [
+            10,
+            0,
+            0
+          ]
+        },
+        "root": {
+          "pos": [
+            0,
+            -1.5,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

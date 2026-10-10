@@ -42,8 +42,11 @@ public class MasteryTests {
             "resolute_slash.black_flash", "second_wind.pummel", "energy_ripple.fakeout", "authentic_mutual_love.jacobs_ladder",
             "rika_launch.feint", "severing_path.veilstep", "outburst.full_stage", "yuta.awakening",
             "granite_blast.dash", "granite_blast.charged", "not_invited.held", "ryu.awakening",
-            "tool.slaughter_demon.flurry", "tool.slaughter_demon.precision", "tool.slaughter_demon.quickstep", "tool.slaughter_demon.severing_point",
-            "tool.cursed_cleaver.heavy_swing", "tool.cursed_cleaver.guard_break", "tool.cursed_cleaver.shockwave", "tool.cursed_cleaver.momentum");
+            "tool.slaughter_demon.flurry", "tool.slaughter_demon.precision", "tool.slaughter_demon.sd_quickstep_r", "tool.slaughter_demon.severing_point",
+            "tool.slaughter_demon.parry", "tool.slaughter_demon.sd_flurry_r", "tool.slaughter_demon.thousand_cuts",
+            "tool.cursed_cleaver.heavy_swing", "tool.cursed_cleaver.guard_break", "tool.cursed_cleaver.shockwave", "tool.cursed_cleaver.momentum",
+            "tool.cursed_cleaver.splitter", "tool.cursed_cleaver.iron_wall", "tool.cursed_cleaver.cl_heavy_r", "tool.cursed_cleaver.executioner",
+            "tool.cursed_rifle.volley", "tool.cursed_rifle.lens_flare", "tool.cursed_rifle.beam");
 
     private static ServerPlayer survivor(GameTestHelper h) {
         JJKConfig.get().general.autoAssignGojo = false;

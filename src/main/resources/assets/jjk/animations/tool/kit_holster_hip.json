@@ -1,0 +1,98 @@
+{
+  "name": "kit_holster_hip",
+  "duration": 320,
+  "blendIn": 40,
+  "blendOut": 160,
+  "priority": "COMBAT",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -40,
+            10,
+            0
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -30,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "t": 200,
+      "ease": "EASE_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -6,
+            56,
+            18
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -64,
+            0,
+            0
+          ]
+        },
+        "rightHand": {
+          "rot": [
+            26,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            -18,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            10,
+            12,
+            0
+          ]
+        }
+      },
+      "marker": "sheathe"
+    },
+    {
+      "t": 320,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            0,
+            10,
+            6
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -6,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

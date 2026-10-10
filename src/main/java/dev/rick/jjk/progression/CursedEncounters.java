@@ -100,6 +100,17 @@ public final class CursedEncounters {
         ENCOUNTERS.put(id, encounter);
     }
 
+    /** A room's key (its dimension and seal), as cursed realms name its arena. */
+    public static String keyOf(Room room) {
+        return key(room.dimension, room.seal);
+    }
+
+    @Nullable
+    public static Room byKey(MinecraftServer server, String key) {
+        ensureLoaded(server);
+        return ROOMS.get(key);
+    }
+
     private static String key(String dimension, BlockPos pos) {
         return dimension + "@" + pos.getX() + "," + pos.getY() + "," + pos.getZ();
     }

@@ -93,6 +93,11 @@ public final class ClientFx {
             RifleFx.play(p, mc, level, pos, dir, s, mine, now);
             return;
         }
+        // Being pulled into a cursed realm: the screen goes dark and pulses (a HUD overlay, never skipped by detail level).
+        if (p.id().equals("realm_transition")) {
+            dev.rick.jjk.client.hud.RealmTransitionOverlay.start((int) s);
+            return;
+        }
         // The Finger Bearer, the battle-room curse.
         if (p.id().startsWith("fb_") || p.id().startsWith("curse_")) {
             FingerBearerFx.play(p, level, pos, dir, s, now);

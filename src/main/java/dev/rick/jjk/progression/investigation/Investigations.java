@@ -84,6 +84,16 @@ public final class Investigations {
             }
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> rejoin(handler.player));
+        // Logging out mid-pull: set down somewhere safe, not left hanging where the pull caught them.
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> CursedRealms.cancelPull(handler.player));
+        // Nothing hurts someone being pulled in (the cliff's fall never lands).
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> !(entity instanceof ServerPlayer sp && CursedRealms.pulling(sp)));
+        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp) || hand != net.minecraft.world.InteractionHand.MAIN_HAND) {
+                return net.minecraft.world.InteractionResult.PASS;
+            }
+            return use(sp, hit.getBlockPos()) ? net.minecraft.world.InteractionResult.SUCCESS : net.minecraft.world.InteractionResult.PASS;
+        });
         ServerPlayerEvents.AFTER_RESPAWN.register((old, now, alive) -> {
             // Died in a realm: they respawn at home as usual; the realm forgets them.
             if (!CursedRealms.inRealm(now)) {
@@ -268,21 +278,65 @@ public final class Investigations {
             case DESCEND -> p.position().distanceToSqr(Vec3.atBottomCenterOf(Sites.mineEnd(in))) <= 2.5 * 2.5;
             // The scope is used, never walked into: it has its own deliberate steps (LodgeScope).
             case SCOPE -> false;
+            case NIGHT -> night(p.level()) && dx * dx + dz * dz <= 12 * 12 && Math.abs(p.getY() - site.y) < 8;
+            case THRESHOLD -> {
+                BlockPos door = in.mark("door");
+                yield door != null && p.position().distanceToSqr(Vec3.atBottomCenterOf(door)) <= 0.9 * 0.9;
+            }
+            // Used, never walked into (the bed, the object: see use()).
+            case SLEEP, INTERACT -> false;
         };
     }
 
-    /** Sets an incident off for a player: into its realm, or its curses appear here. */
-    public static void begin(ServerLevel level, ServerPlayer p, Incident in, IncidentTemplate t, InvestigationState st, long now) {
-        if (t.usesRealm()) {
-            CursedRealms.enter(p, in, st);
-            return;
+    /** Tests: pretend it is (or isn't) night, without touching the world's clock. Null: the real clock. */
+    public static Boolean nightForTest;
+
+    /** After dark (the hours a bed can be slept in). */
+    static boolean night(net.minecraft.world.level.Level level) {
+        if (nightForTest != null) return nightForTest;
+        long t = Math.floorMod(level.getOverworldClockTime(), 24000L);
+        return t >= 12542 && t <= 23459;
+    }
+
+    /**
+     * Something at a site was used (right-clicked): a bed whose incident is set off by lying down in it, or the object an
+     * incident is set off by using. True if that set one off (the use is spent on it: you never get to sleep).
+     */
+    public static boolean use(ServerPlayer p, BlockPos pos) {
+        if (CursedRealms.inRealm(p) || CursedRealms.pulling(p) || p.isSpectator()) return false;
+        InvestigationState st = InvestigationState.get(p.level().getServer());
+        String dim = p.level().dimension().identifier().toString();
+        for (Incident in : List.copyOf(st.incidents.values())) {
+            if (in.state != Incident.State.OPEN || !in.dimension.equals(dim)) continue;
+            IncidentTemplate t = in.def();
+            if (t == null) continue;
+            String mark = switch (t.trigger()) {
+                case SLEEP -> "bed";
+                case INTERACT -> "object";
+                default -> null;
+            };
+            if (mark == null) continue;
+            BlockPos m = in.mark(mark);
+            // A bed is two blocks: either half counts.
+            if (m == null || m.distManhattan(pos) > 1) continue;
+            begin((ServerLevel) p.level(), p, in, t, st, p.level().getServer().overworld().getGameTime());
+            return true;
         }
-        spawnCurses(level, in, in.site.above(), List.of(new Vec3(3, 0.5, 2), new Vec3(-3, 0.5, 3), new Vec3(2, 1.5, -3), new Vec3(-2, 2, -2), new Vec3(4, 2, 0)), 16);
-        in.state = Incident.State.ACTIVE;
-        in.changedAt = now;
-        in.participants.add(p.getUUID());
-        st.markDirty();
-        p.sendOverlayMessage(Component.literal("Something here has noticed you.").withStyle(net.minecraft.ChatFormatting.DARK_RED, net.minecraft.ChatFormatting.ITALIC));
+        return false;
+    }
+
+    /**
+     * Sets an incident off for a player: the place takes them. Every cursed-event fight happens in a cursed realm (an
+     * incident whose template names no realm, or one this build doesn't have, uses the plain hollow one): the player is
+     * held where they stand for a moment while the world goes dark ({@link CursedRealms#pull}), then arrives.
+     */
+    public static void begin(ServerLevel level, ServerPlayer p, Incident in, IncidentTemplate t, InvestigationState st, long now) {
+        if (CursedRealms.pulling(p) || CursedRealms.inRealm(p)) return;
+        CursedRealms.pull(p, CursedRealms.safeReturn(level, p, in), () -> {
+            InvestigationState s2 = InvestigationState.get(level.getServer());
+            Incident live = s2.incidents.get(in.id);
+            if (live != null && (live.state == Incident.State.OPEN || live.state == Incident.State.ACTIVE)) CursedRealms.enter(p, live, s2);
+        });
     }
 
     /** Spawns an incident's curses around {@code origin}, bound to it. */
@@ -484,10 +538,15 @@ public final class Investigations {
         long now = level.getServer().overworld().getGameTime();
         stock(level, v, st, now);
         st.flush();
-        ServerPlayNetworking.send(p, new NewsBoardPayload(villageName(v), notes(v, st, now)));
+        ServerPlayNetworking.send(p, new NewsBoardPayload(villageName(v), notes(v, st, now, p.getAttached(dev.rick.jjk.registry.ModAttachments.INVESTIGATING))));
     }
 
     public static List<NewsBoardPayload.Note> notes(InvestigationState.Village v, InvestigationState st, long now) {
+        return notes(v, st, now, null);
+    }
+
+    /** The board's notices, marking the one {@code tracked} (the reader's investigation). */
+    public static List<NewsBoardPayload.Note> notes(InvestigationState.Village v, InvestigationState st, long now, @Nullable String tracked) {
         List<NewsBoardPayload.Note> out = new ArrayList<>();
         List<String> ids = new ArrayList<>(v.incidents);
         java.util.Collections.reverse(ids);
@@ -496,8 +555,8 @@ public final class Investigations {
             if (i == null || out.size() >= 6) continue;
             int days = (int) Math.max(0, (now - i.createdAt) / 24000);
             switch (i.state) {
-                case OPEN -> out.add(new NewsBoardPayload.Note(i.headline, i.body, 0, days));
-                case ACTIVE -> out.add(new NewsBoardPayload.Note(i.headline, i.body, 1, days));
+                case OPEN, ACTIVE -> out.add(new NewsBoardPayload.Note(i.id, i.headline, i.body, i.state == Incident.State.OPEN ? 0 : 1, days,
+                        place(v, i), i.id.equals(tracked)));
                 case COMPLETE -> {
                     if (now - i.changedAt <= 48000) {
                         out.add(new NewsBoardPayload.Note("Update: " + i.headline, "Since the last notice there has been nothing more of it. "
@@ -508,6 +567,18 @@ public final class Investigations {
             }
         }
         return out;
+    }
+
+    /**
+     * Roughly where a report places it: a direction and a distance rounded to the nearest fifty blocks from the village
+     * ("about 150 blocks northeast of Ashford"). Never closer than that: finding the exact place is the compass's job.
+     */
+    public static String place(InvestigationState.Village v, Incident i) {
+        int dx = i.site.getX() - v.bell.getX(), dz = i.site.getZ() - v.bell.getZ();
+        double d = Math.sqrt((double) dx * dx + (double) dz * dz);
+        if (d < 40) return "In " + villageName(v) + " itself";
+        long rounded = Math.max(50, Math.round(d / 50.0) * 50);
+        return "About " + rounded + " blocks " + ReportWriter.direction(v.bell, i.site) + " of " + villageName(v);
     }
 
     private static String villageName(InvestigationState.Village v) {

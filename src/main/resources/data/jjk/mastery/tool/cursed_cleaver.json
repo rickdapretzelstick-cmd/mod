@@ -3,28 +3,215 @@
   "kind": "TOOL",
   "owner": "cursed_cleaver",
   "title": "Cursed Cleaver",
-  "lanes": ["Weight", "Charge", "Break"],
+  "lanes": [
+    "Weight",
+    "Charge",
+    "Ground",
+    "Wall"
+  ],
   "nodes": [
-    {"id": "heft", "name": "Heft", "tier": "SMALL", "cost": 8, "lane": 0, "row": 0,
-     "description": "You learn where the weight sits. +15% damage.",
-     "effects": [{"param": "tool.cursed_cleaver.damage", "mul": 1.15}]},
-    {"id": "heavy_swing", "name": "Heavy Swing", "tier": "MECHANICAL", "cost": 18, "lane": 1, "row": 0,
-     "description": "Use and hold to wind up, release to bring the cleaver down in front of you. Longer holds hit far harder.",
-     "effects": [{"unlock": "tool.cursed_cleaver.heavy_swing"}]},
-    {"id": "momentum", "name": "Momentum", "tier": "MECHANICAL", "cost": 18, "lane": 0, "row": 1, "requires": ["heft"],
-     "description": "Your swings carry through: every hit throws the target back.",
-     "effects": [{"unlock": "tool.cursed_cleaver.momentum"}]},
-    {"id": "settled_stance", "name": "Settled Stance", "tier": "SMALL", "cost": 14, "lane": 1, "row": 1, "requires": ["heavy_swing"],
-     "description": "+10% attack speed between heavy blows.",
-     "effects": [{"param": "tool.cursed_cleaver.speed", "mul": 1.1}]},
-    {"id": "guard_break", "name": "Guard Break", "tier": "MECHANICAL", "cost": 28, "lane": 2, "row": 2, "requires": ["heavy_swing"],
-     "description": "A Heavy Swing smashes straight through a guard and leaves the target open.",
-     "effects": [{"unlock": "tool.cursed_cleaver.guard_break"}]},
-    {"id": "iron_weight", "name": "Iron Weight", "tier": "SMALL", "cost": 22, "lane": 0, "row": 2, "requires": ["momentum"],
-     "description": "+15% damage.",
-     "effects": [{"param": "tool.cursed_cleaver.damage", "mul": 1.15}]},
-    {"id": "shockwave", "name": "Shockwave", "tier": "MAJOR", "cost": 60, "lane": 1, "row": 3, "requires": ["guard_break", "iron_weight"],
-     "description": "Milestone. A fully charged Heavy Swing splits the ground: everything nearby is hit and thrown into the air.",
-     "effects": [{"unlock": "tool.cursed_cleaver.shockwave"}]}
+    {
+      "id": "heft",
+      "name": "Heft",
+      "tier": "SMALL",
+      "cost": 8,
+      "lane": 0,
+      "row": 0,
+      "description": "The weight is on your side now. +15% damage with every move.",
+      "effects": [
+        {
+          "param": "tool.cursed_cleaver.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "momentum",
+      "name": "Momentum",
+      "tier": "MECHANICAL",
+      "cost": 16,
+      "lane": 1,
+      "row": 0,
+      "description": "Shoulder Charge (2) runs 20% faster; in the hand, every hit throws them back.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_cleaver.momentum"
+        },
+        {
+          "param": "tool.cursed_cleaver.cl_charge_speed",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "heavy_swing",
+      "name": "Heavy Swing",
+      "tier": "MECHANICAL",
+      "cost": 14,
+      "lane": 0,
+      "row": 1,
+      "requires": [
+        "heft"
+      ],
+      "description": "Heavy Swing (1) reaches 20% further; in the hand, use and hold to wind it up.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_cleaver.heavy_swing"
+        },
+        {
+          "param": "tool.cursed_cleaver.cl_heavy_reach",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "splitter",
+      "name": "Ground Splitter",
+      "tier": "MECHANICAL",
+      "cost": 26,
+      "lane": 2,
+      "row": 1,
+      "requires": [
+        "heft"
+      ],
+      "description": "New move (3): an overhead slam that sends a crack along the ground, launching what it runs under.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_cleaver.splitter"
+        }
+      ]
+    },
+    {
+      "id": "guard_break",
+      "name": "Guard Break",
+      "tier": "MECHANICAL",
+      "cost": 24,
+      "lane": 1,
+      "row": 1,
+      "requires": [
+        "momentum"
+      ],
+      "description": "Shoulder Charge comes back 20% sooner; in the hand, a heavy swing smashes through a guard.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_cleaver.guard_break"
+        },
+        {
+          "param": "tool.cursed_cleaver.cl_charge_cooldown",
+          "mul": 0.8
+        }
+      ]
+    },
+    {
+      "id": "iron_wall",
+      "name": "Iron Wall",
+      "tier": "MECHANICAL",
+      "cost": 28,
+      "lane": 3,
+      "row": 1,
+      "requires": [
+        "momentum"
+      ],
+      "description": "New move (4, hold): plant your feet. Blows are blunted and can't stagger you, and what you took comes back in the swing that ends it.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_cleaver.iron_wall"
+        }
+      ]
+    },
+    {
+      "id": "whirl",
+      "name": "Whirl",
+      "tier": "MECHANICAL",
+      "cost": 22,
+      "lane": 0,
+      "row": 2,
+      "requires": [
+        "heavy_swing"
+      ],
+      "description": "R variant of Heavy Swing: press R as you wind up and the release becomes a spin hitting all around.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_cleaver.cl_heavy_r"
+        }
+      ]
+    },
+    {
+      "id": "long_split",
+      "name": "Long Split",
+      "tier": "SMALL",
+      "cost": 16,
+      "lane": 2,
+      "row": 2,
+      "requires": [
+        "splitter"
+      ],
+      "description": "Ground Splitter's crack runs 50% further.",
+      "effects": [
+        {
+          "param": "tool.cursed_cleaver.cl_splitter_length",
+          "mul": 1.5
+        }
+      ]
+    },
+    {
+      "id": "enduring_wall",
+      "name": "Enduring Wall",
+      "tier": "SMALL",
+      "cost": 16,
+      "lane": 3,
+      "row": 2,
+      "requires": [
+        "iron_wall"
+      ],
+      "description": "Iron Wall holds 50% longer.",
+      "effects": [
+        {
+          "param": "tool.cursed_cleaver.cl_iron_wall_duration",
+          "mul": 1.5
+        }
+      ]
+    },
+    {
+      "id": "shockwave",
+      "name": "Shockwave",
+      "tier": "MAJOR",
+      "cost": 45,
+      "lane": 1,
+      "row": 3,
+      "requires": [
+        "whirl",
+        "guard_break"
+      ],
+      "description": "A full-charge Heavy Swing hits everything round the impact and throws it up.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_cleaver.shockwave"
+        }
+      ]
+    },
+    {
+      "id": "executioner",
+      "name": "Executioner's Arc",
+      "tier": "AWAKENING",
+      "cost": 120,
+      "lane": 2,
+      "row": 4,
+      "requires": [
+        "shockwave",
+        "long_split",
+        "enduring_wall"
+      ],
+      "description": "Ultimate (G): leap and crash down in a wide arc that breaks guards. You know this blade now.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_cleaver.executioner"
+        },
+        {
+          "param": "tool.cursed_cleaver.cl_executioner_radius",
+          "mul": 1.0
+        }
+      ]
+    }
   ]
 }
