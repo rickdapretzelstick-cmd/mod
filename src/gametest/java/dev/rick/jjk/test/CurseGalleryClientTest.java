@@ -17,7 +17,11 @@ public class CurseGalleryClientTest implements FabricClientGameTest {
             "school_maw:idle@600,move@250,attack@500,attack@700,lash@520,slam@820,slam@920,recover@600,stagger@200,death@1200;"
                     + "school_crawler:idle@400,move@150,move@450,crouch@560,attack@250,sprawl@600,swipe@380,swipe@520,feint@200,stagger@200,death@1200;"
                     + "fly_head:idle@0,idle@50,attack@400,attack@800,spit@500,spit@650,grounded@800,hurt@100,death@1200;"
-                    + "forest_stalker:idle@600,move@200,move@650,telegraph@900,lunge@300,exposed@800,rake@350,rake@500,retreat@400,stagger@200,death@1200";
+                    + "forest_stalker:idle@600,move@200,move@650,telegraph@900,lunge@300,exposed@800,rake@350,rake@500,retreat@400,stagger@200,death@1200;"
+                    + "grave_hound:idle@400,move@120,crouch@450,attack@200,stumble@500,bite@200,howl@800,death@1200;"
+                    + "veiled_bride:idle@800,move@400,flicker@600,grasp@380,wail@600,wail@720,breath@600,death@1200;"
+                    + "bloat_toad:idle@500,hop@250,squat@850,flop@400,on_back@600,belch@300,belch@520,death@1200;"
+                    + "brood_mother:idle@600,move@300,birth@1100,recoil@800,spit@600,spit@720,slap@420,death@1200";
 
     @Override
     public void runTest(ClientGameTestContext ctx) {
@@ -33,8 +37,8 @@ public class CurseGalleryClientTest implements FabricClientGameTest {
                 String[] kv = part.split(":");
                 String kind = kv[0];
                 boolean flies = kind.equals("fly_head");
-                double back = kind.equals("fly_head") ? 2.4 : kind.equals("school_crawler") ? 2.6 : 3.2;
-                server.runCommand("tp @a 0.5 -60 " + (0.5 - back) + " 0 " + (flies ? 4 : 22));
+                double back = switch (kind) { case "fly_head" -> 2.4; case "school_crawler", "grave_hound" -> 2.6; case "veiled_bride" -> 4.4; case "bloat_toad", "brood_mother" -> 3.6; default -> 3.2; };
+                server.runCommand("tp @a 0.5 -60 " + (0.5 - back) + " 0 " + (flies ? 4 : kind.equals("veiled_bride") ? 2 : 22));
                 server.runCommand("summon jjk:" + kind + " 0.5 " + (flies ? -58.6 : -60) + " 0.5 {NoAI:1b,NoGravity:1b,Rotation:[180f,0f],Tags:[\"gal\"]}");
                 ctx.waitTicks(25);
                 int[] yaws = {180, 90, 135, 0};

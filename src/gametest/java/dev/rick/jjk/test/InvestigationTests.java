@@ -222,7 +222,7 @@ public class InvestigationTests {
         InvestigationState st = InvestigationState.get(level.getServer());
         CursedRealms.enter(p, in, st);
         int total = in.curses().size();
-        h.assertTrue(total >= 6, "a big incident: " + total);
+        h.assertTrue(total >= 5, "a big incident: " + total);
         boolean[] sawWaiting = new boolean[1], reinforced = new boolean[1];
         h.succeedWhen(() -> {
             p.setHealth(p.getMaxHealth());

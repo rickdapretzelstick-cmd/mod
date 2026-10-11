@@ -57,6 +57,10 @@ public class JJKClient implements ClientModInitializer {
         // Placeholder: the forest stalker borrows the crawler's model, darkened and a little larger.
         EntityRendererRegistry.register(ModEntities.FOREST_STALKER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "forest_stalker", 0.7f));
         EntityRendererRegistry.register(ModEntities.SCHOOL_MAW, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_maw", 0.6f));
+        EntityRendererRegistry.register(ModEntities.GRAVE_HOUND, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "grave_hound", 0.5f));
+        EntityRendererRegistry.register(ModEntities.VEILED_BRIDE, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "veiled_bride", 0.5f));
+        EntityRendererRegistry.register(ModEntities.BLOAT_TOAD, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "bloat_toad", 0.9f));
+        EntityRendererRegistry.register(ModEntities.BROOD_MOTHER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "brood_mother", 0.7f));
         EntityRendererRegistry.register(ModEntities.PRISON_REALM, dev.rick.jjk.client.render.PrisonRealmRenderer::new);
         EntityRendererRegistry.register(ModEntities.CURSED_BREACH, dev.rick.jjk.client.render.CursedBreachRenderer::new);
         dev.rick.jjk.progression.investigation.CursedBreachEntity.clientTick = dev.rick.jjk.client.render.CursedBreachRenderer::clientTick;

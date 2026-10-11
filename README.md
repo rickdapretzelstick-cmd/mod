@@ -557,7 +557,9 @@ what exorcising it is worth and how bad the reports about it sound (`CurseGrade`
 
 ### The common curses
 
-Three common curses (`fly_head`, `school_crawler`, `school_maw`) and the lodge's Hunter's Shade (`forest_stalker`).
+Seven common curses (`fly_head`, `school_crawler`, `school_maw`, `grave_hound`, `veiled_bride`, `bloat_toad`,
+`brood_mother`) and the lodge's Hunter's Shade (`forest_stalker`). Incidents mix them (four incidents are built
+around the newer ones: the hound kennel, the jilted bride's chapel, the millpond toad and the brood nest).
 Their Blockbench models, painted textures and every clip (idle, move, each attack's wind-up and strike, the punish
 states, hurt, stagger, death) are built by `tools/gen_curse_models.py`; change that script and re-run it rather than
 editing the outputs. Seen only through Cursed Glasses, like the Finger Bearer, and each fights differently:
@@ -571,6 +573,13 @@ editing the outputs. Seen only through Cursed Glasses, like the Finger Bearer, a
   two pairs of veined wings that beat ten times a second, dangling insect legs and antennae.
 - **Hunter's Shade**: a gaunt, long-limbed thing crouched on digitigrade legs in a tattered hunter's hood and cloak, a
   bare deer's skull for a face with a light deep in each socket, antlers, and long black claws.
+- **Grave Hound**: a flayed, eyeless dog: raw red muscle over bare ribs, a bone skull with pinprick embers for sockets.
+- **Veiled Bride**: tall and thin in a stained wedding dress, a lace veil over a pale face with black eyes and a long
+  grin, withered flowers in its hair, arms that reach its knees and grey nails.
+- **Bloat Toad**: a warty toad the size of a cart with human teeth, human hands for front feet, and a throat sac that
+  pulses.
+- **Brood Mother**: a stooped, spindly thing with a cluster of green eyes, dragging a huge veined egg sac with shapes
+  moving in it.
 
 
 | Curse | Grade | How it fights | How to beat it |
@@ -578,6 +587,10 @@ editing the outputs. Seen only through Cursed Glasses, like the Finger Bearer, a
 | **Fly Head** | 4 | comes in swarms that circle you just out of reach on wobbling orbits, one at a time diving to bite or puffing up to spit a slow gob of bile (three in a fan at Grade 3) | sidestep the dive or the spit; hit it mid-dive (or let it dive into the floor) and it's swatted down, open, for 2 s; a swatted one scatters |
 | **School Crawler** | 4 (strong) | scuttles round you toward your blind side, presses flat (the tell, with its lane on the floor) and pounces; sometimes the crouch is a feint and it darts sideways first, then springs after a short crouch; up close, a raking swipe, then backs off; Grade 3 springs twice | dodge the real spring: it skids past and lies sprawled (exposed) for 1.5 s; a pounce into a wall stuns it for almost 3 s |
 | **School Maw** | 3 | slow, all mouth: its tongue lashes out along a marked line and reels you in front of its jaw, and the bite follows at once; otherwise a long gaping bite (its reach marked on the floor); crowd it or get round its side and it slams the ground in a marked ring; below half health it's enraged (runs red, rests less, bites twice); Grade 3 lashes again after a miss | get out of the line; jump the slam or leave the ring; a missed bite leaves it hunched over (exposed) 1.4 s |
+| **Grave Hound** | 4 | runs in packs, loping round you; drops low (its lane marked) and leaps, or snaps up close; from the edge of a fight it howls, and every curse nearby attacks again at once | dodge the leap: it sprawls exposed; stagger it out of the howl |
+| **Veiled Bride** | 3 | slow and tall; its veil lifts and it flickers, reappearing behind you, arms closing a beat later; or it throws its head back and wails, hurting everything in a marked cone | turn or step away when it flickers (a missed grasp leaves it exposed); get out of the cone, then punish while it catches its breath |
+| **Bloat Toad** | 3 | hops heavily toward you; squats and swells, its landing spot marked by a ring, then belly-flops onto it; crowd it and it belches you away | leave the ring: it lands on its back, kicking and exposed, for 2 s |
+| **Brood Mother** | 3 | hangs back dragging its egg sac; the sac swells and bursts into Fly Heads (two at a time, three alive at most); lobs acid that leaves a burning pool | kill it first: after each birth it is exposed, and its brood dies with it |
 
 **What every curse shares** (`CommonCurseEntity`):
 

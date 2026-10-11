@@ -244,6 +244,15 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         return (flags() & FLAG_STAGGERED) != 0;
     }
 
+    /** Test hooks: its rest before it may act again. */
+    public int restTicksForTest() {
+        return restTicks;
+    }
+
+    public void setRestForTest(int ticks) {
+        restTicks = ticks;
+    }
+
     public boolean dormant() {
         return (flags() & FLAG_DORMANT) != 0;
     }

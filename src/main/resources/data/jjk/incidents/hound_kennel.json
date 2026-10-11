@@ -1,0 +1,30 @@
+{
+  "id": "hound_kennel",
+  "weight": 3,
+  "grade": "GRADE_4",
+  "site": "pasture",
+  "trigger": "breach",
+  "realm": "pasture_realm",
+  "curses": [
+    {
+      "kind": "grave_hound",
+      "min": 3,
+      "max": 4
+    }
+  ],
+  "trail": 14,
+  "reports": [
+    {
+      "headline": "Howling Where No Dogs Are Kept",
+      "body": "Every night this week, something has howled out in the grazing land {dir} of the village {dist}. {name} keeps no dogs, and neither does anyone else out that way. In the morning the {animal} were found pressed into one corner of the field, and the gate had been chewed through."
+    },
+    {
+      "headline": "Graves Dug Up Along the Pasture Wall",
+      "body": "The old graves by the wall of the grazing land {dir} of here {dist} have been dug open, not by a spade: by claws. {name} heard panting in the dark and saw, for a moment, what looked like dogs without any skin on them. Nobody has gone back."
+    },
+    {
+      "headline": "A Pack Seen at Dusk",
+      "body": "{name} swears a pack of dogs crossed the road near the grazing land {dir} of the village {dist} at dusk, red as meat and silent, and that none of them had eyes. The {animal} there will not settle at night."
+    }
+  ]
+}

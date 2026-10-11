@@ -7,14 +7,15 @@
   "realm": "crater_realm",
   "curses": [
     {
-      "kind": "school_crawler",
+      "kind": "grave_hound",
       "min": 2,
-      "max": 2
+      "max": 3,
+      "grade": "GRADE_4"
     },
     {
       "kind": "fly_head",
       "min": 2,
-      "max": 3,
+      "max": 2,
       "grade": "GRADE_4"
     }
   ],

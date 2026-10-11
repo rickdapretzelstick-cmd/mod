@@ -1,0 +1,35 @@
+{
+  "id": "brood_nest",
+  "weight": 2,
+  "grade": "GRADE_3",
+  "site": "house",
+  "trigger": "breach",
+  "realm": "house_realm",
+  "curses": [
+    {
+      "kind": "brood_mother",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "school_crawler",
+      "min": 1,
+      "max": 1
+    }
+  ],
+  "trail": 16,
+  "reports": [
+    {
+      "headline": "Buzzing in the Walls of the Old House",
+      "body": "The old house {dir} of the village {dist} has started to buzz, the whole building, like a hive. {name} looked through a window and saw the ceiling of one room covered in something pale and wet, and things moving inside it."
+    },
+    {
+      "headline": "Flies Thick as Smoke Around the Old House",
+      "body": "There are flies around the old house {dir} of here {dist}, so many that from the road it looks like the place is smoking. {name} swears some of them had faces. The flies leave the village alone, for now."
+    },
+    {
+      "headline": "Egg Sacs Found in the Old House",
+      "body": "{name} went into the old house {dir} of the village {dist} to board it up and came out white. {name} says there was a thing in the back room dragging an egg sac as big as itself, and the eggs had little heads in them."
+    }
+  ]
+}

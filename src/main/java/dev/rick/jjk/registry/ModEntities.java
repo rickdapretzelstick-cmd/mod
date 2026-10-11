@@ -69,10 +69,22 @@ public final class ModEntities {
     public static final EntityType<dev.rick.jjk.progression.curse.SchoolMawEntity> SCHOOL_MAW = register("school_maw",
             EntityType.Builder.<dev.rick.jjk.progression.curse.SchoolMawEntity>of(dev.rick.jjk.progression.curse.SchoolMawEntity::new, MobCategory.MONSTER)
                     .sized(1.15f, 1.55f).eyeHeight(1.2f).clientTrackingRange(10).noLootTable());
-    /** The hunting lodge's curse (a placeholder model: the School Crawler's). */
+    /** The hunting lodge's curse. */
     public static final EntityType<dev.rick.jjk.progression.curse.ForestStalkerEntity> FOREST_STALKER = register("forest_stalker",
             EntityType.Builder.<dev.rick.jjk.progression.curse.ForestStalkerEntity>of(dev.rick.jjk.progression.curse.ForestStalkerEntity::new, MobCategory.MONSTER)
                     .sized(1.2f, 1.2f).eyeHeight(0.8f).clientTrackingRange(10).noLootTable());
+    public static final EntityType<dev.rick.jjk.progression.curse.GraveHoundEntity> GRAVE_HOUND = register("grave_hound",
+            EntityType.Builder.<dev.rick.jjk.progression.curse.GraveHoundEntity>of(dev.rick.jjk.progression.curse.GraveHoundEntity::new, MobCategory.MONSTER)
+                    .sized(0.9f, 0.85f).eyeHeight(0.6f).clientTrackingRange(10).noLootTable());
+    public static final EntityType<dev.rick.jjk.progression.curse.VeiledBrideEntity> VEILED_BRIDE = register("veiled_bride",
+            EntityType.Builder.<dev.rick.jjk.progression.curse.VeiledBrideEntity>of(dev.rick.jjk.progression.curse.VeiledBrideEntity::new, MobCategory.MONSTER)
+                    .sized(0.7f, 2.3f).eyeHeight(2.0f).clientTrackingRange(10).noLootTable());
+    public static final EntityType<dev.rick.jjk.progression.curse.BloatToadEntity> BLOAT_TOAD = register("bloat_toad",
+            EntityType.Builder.<dev.rick.jjk.progression.curse.BloatToadEntity>of(dev.rick.jjk.progression.curse.BloatToadEntity::new, MobCategory.MONSTER)
+                    .sized(1.4f, 1.2f).eyeHeight(0.9f).clientTrackingRange(10).noLootTable());
+    public static final EntityType<dev.rick.jjk.progression.curse.BroodMotherEntity> BROOD_MOTHER = register("brood_mother",
+            EntityType.Builder.<dev.rick.jjk.progression.curse.BroodMotherEntity>of(dev.rick.jjk.progression.curse.BroodMotherEntity::new, MobCategory.MONSTER)
+                    .sized(1.2f, 1.7f).eyeHeight(1.4f).clientTrackingRange(10).noLootTable());
     public static final EntityType<TrainingDummy> TRAINING_DUMMY = register("training_dummy",
             EntityType.Builder.<TrainingDummy>of(TrainingDummy::new, MobCategory.MISC).sized(0.6f, 1.95f).clientTrackingRange(10));
 
@@ -90,5 +102,9 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(SCHOOL_CRAWLER, dev.rick.jjk.progression.curse.SchoolCrawlerEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(SCHOOL_MAW, dev.rick.jjk.progression.curse.SchoolMawEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(FOREST_STALKER, dev.rick.jjk.progression.curse.ForestStalkerEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(GRAVE_HOUND, dev.rick.jjk.progression.curse.GraveHoundEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(VEILED_BRIDE, dev.rick.jjk.progression.curse.VeiledBrideEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(BLOAT_TOAD, dev.rick.jjk.progression.curse.BloatToadEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(BROOD_MOTHER, dev.rick.jjk.progression.curse.BroodMotherEntity.createAttributes());
     }
 }

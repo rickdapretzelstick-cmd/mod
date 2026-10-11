@@ -25,6 +25,7 @@
       "dev.rick.jjk.test.MasteryTests",
       "dev.rick.jjk.test.CommonCurseTests",
       "dev.rick.jjk.test.CurseFightTests",
+      "dev.rick.jjk.test.NewCurseTests",
       "dev.rick.jjk.test.InvestigationTests",
       "dev.rick.jjk.test.RifleTests",
       "dev.rick.jjk.test.RifleClashTests",

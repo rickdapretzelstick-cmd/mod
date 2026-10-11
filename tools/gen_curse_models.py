@@ -1123,6 +1123,507 @@ def forest_stalker():
     write_clips('forest_stalker', clips)
 
 
+
+def sway_keys(c, duration, fn, steps):
+    return osc(c, fn, duration, steps)
+
+
+def hurt_clip(base, recoil):
+    c = ClipBuilder(400, 'SPECIAL', blendIn=30)
+    c.at(0, base)
+    c.at(90, merge(base, recoil))
+    c.at(400, base)
+    return c.done()
+
+
+def stagger_clip(base, fn):
+    c = ClipBuilder(1700, 'SPECIAL', blendIn=30, blendOut=200)
+    for t, s_ in ((0, 0), (120, 1), (400, -1), (700, 1), (1000, -0.6), (1300, 0.3), (1700, 0)):
+        c.at(t, merge(base, fn(1 - t / 1700, s_)))
+    return c.done()
+
+
+def death_clip(base, mid, end):
+    c = ClipBuilder(1200, 'RAGDOLL', hold=True, blendIn=40)
+    c.at(0, base)
+    c.at(300, merge(base, mid))
+    c.at(800, merge(base, end))
+    c.at(1200, merge(base, end))
+    return c.done()
+
+
+# ----------------------------------------------------------------------------------------------------------- Grave Hound
+
+def grave_hound():
+    mats = {
+        'skin': Mat('#8c2f29', blotch='#55140f', blotch_amt=0.55, blotch_scale=3, lines='#e8c8a8', line_count=5),
+        'skin_dark': Mat('#5c1c18', blotch='#3a0e0b', blotch_amt=0.5, lines='#c8a888', line_count=3),
+        'ribs': Mat('#dccbaa', bands='#7a2620', grain=0.04),
+        'bone': Mat('#ddd0b2', blotch='#a49272', blotch_amt=0.4, lines='#6e6146', line_count=3),
+        'socket': Mat('#070505', grain=0.0, shade=False, rim=0.0),
+        'glow': Mat('#ff3a20', grain=0.0, shade=False, rim=0.0, highlight='#ffd0a0'),
+        'tooth': Mat('#efe6c8', grain=0.04, rim=0.08),
+        'claw': Mat('#1e1816', grain=0.06, highlight='#5a4a44', rim=0.1),
+        'flesh': Mat('#4a0a10', blotch='#200306', blotch_amt=0.5, rim=0.05),
+    }
+    m = Model('grave_hound', mats)
+    m.bone('root', [0, 0, 0])
+    m.bone('body', [0, 9, 2], 'root')
+    m.bone('neck', [0, 10.5, -3.5], 'body')
+    m.bone('head', [0, 11, -6.8], 'neck')
+    m.bone('jaw', [0, 9.8, -8.5], 'head')
+    m.bone('tail', [0, 10.2, 8], 'body')
+    m.bone('tail2', [0, 10.2, 12], 'tail')
+    for n, z in (('front', -2.6), ('back', 6.2)):
+        m.bone_pair('leg_' + n, [2.6, 8.2, z], 'body', 'body')
+        m.bone_pair('shin_' + n, [2.6, 4.6, z], 'leg_%s_left' % n, 'leg_%s_right' % n)
+
+    m.cube('body', [-3, 6.5, -4], [3, 11.6, 3], 'skin')
+    for sd in (1, -1):
+        m.cube('body', [sd * 3, 7.2, -3.4], [sd * 3.35, 11.2, 2.4], 'ribs')
+    m.cube('body', [-2.4, 7.2, 3], [2.4, 10.9, 8.2], 'skin')
+    for z in (-3.4, -1.4, 0.6, 2.6, 4.6, 6.6):
+        m.cube('body', [-0.5, 11.4, z], [0.5, 12.5, z + 1], 'bone')
+    m.cube('neck', [-1.8, 8.8, -7.2], [1.8, 12.2, -3.2], 'skin')
+    m.cube('head', [-2.4, 9.8, -11], [2.4, 13.6, -6.4], 'bone')
+    m.cube('head', [-1.6, 9.8, -15.2], [1.6, 12.2, -11], 'skin')
+    m.cube('head', [-1.0, 11.4, -15.4], [1.0, 12.0, -15.2], 'socket')
+    for sd in (1, -1):
+        m.cube('head', [sd * 1.1, 11.6, -11.15], [sd * 2.2, 12.6, -10.95], 'socket')
+        m.cube('head', [sd * 1.5, 11.9, -11.25], [sd * 1.9, 12.3, -11.1], 'glow')
+        m.cube('head', [sd * 1.6, 13.4, -8.4], [sd * 2.4, 15.2, -7.4], 'bone', rot=[-25, 0, -sd * 15], origin=[sd * 2, 13.4, -7.9])
+    rr = random.Random(21)
+    teeth_row(m, 'head', -1.5, 1.5, 9.9, 1.3, -15.3, 0.5, 0.6, True, rng=rr)
+    for sd in (1, -1):
+        for z in (-14, -12.6):
+            m.cube('head', [sd * 1.5 - 0.25, 8.9, z - 0.25], [sd * 1.5 + 0.25, 9.9, z + 0.25], 'tooth')
+    m.cube('jaw', [-1.5, 8.3, -15], [1.5, 9.8, -8.4], 'skin_dark')
+    teeth_row(m, 'jaw', -1.3, 1.3, 9.8, 1.0, -14.9, 0.5, 0.65, False, rng=rr)
+    m.cube('tail', [-0.6, 9.6, 8], [0.6, 10.8, 12.2], 'skin')
+    m.cube('tail2', [-0.4, 9.8, 12], [0.4, 10.6, 16.2], 'bone')
+    for n, z in (('front', -2.6), ('back', 6.2)):
+        L, S_ = 'leg_%s_left' % n, 'shin_%s_left' % n
+        m.pair(L, 'leg_%s_right' % n, [1.6, 4.4, z - 1.1], [3.6, 8.8, z + 1.3], 'skin')
+        m.pair(S_, 'shin_%s_right' % n, [1.85, 0.8, z - 0.8], [3.35, 4.8, z + 0.8], 'skin_dark')
+        m.pair(S_, 'shin_%s_right' % n, [1.6, 0, z - 1.8], [3.6, 0.9, z + 0.9], 'skin_dark')
+        for k in range(2):
+            m.pair(S_, 'shin_%s_right' % n, [1.8 + k * 1.0, 0, z - 2.5], [2.4 + k * 1.0, 0.6, z - 1.8], 'claw')
+    ground(m)
+    m.write()
+
+    legs4 = ('leg_front_left', 'leg_front_right', 'leg_back_left', 'leg_back_right')
+    base = {b: R(0) for b in legs4}
+    base.update({'body': RP([0, 0, 0], [0, 0, 0]), 'neck': R(0), 'head': R(0), 'jaw': R(4), 'tail': R(-10), 'tail2': R(0)})
+    clips = {}
+    c = ClipBuilder(1600, 'IDLE', loop=True, blendIn=200, blendOut=200)
+    osc(c, lambda ph: merge(base, {'body': RP([0, 0, 0], [0, 0.3 * sin(ph, 2), 0]), 'neck': R(4 * sin(ph), 10 * sin(ph, 1, 0.3), 0),
+                                   'head': R(6 * max(0, sin(ph, 3)), 0, 8 * sin(ph, 1, 0.5)), 'jaw': R(6 + 6 * max(0, sin(ph, 2))),
+                                   'tail': R(-10, 18 * sin(ph, 2)), 'tail2': R(0, 20 * sin(ph, 2, 0.2))}), 1600, 16)
+    clips['idle'] = c.done()
+    c = ClipBuilder(500, 'MOVEMENT', loop=True, blendIn=100, blendOut=150)
+    osc(c, lambda ph: merge(base, {'body': RP([6 * sin(ph), 0, 0], [0, 0.9 * abs(sin(ph)), 0]),
+                                   'leg_front_left': R(-38 * sin(ph)), 'leg_front_right': R(-38 * sin(ph, 1, 0.08)),
+                                   'leg_back_left': R(38 * sin(ph)), 'leg_back_right': R(38 * sin(ph, 1, 0.08)),
+                                   'shin_front_left': R(20 * max(0, sin(ph, 1, 0.25))), 'shin_front_right': R(20 * max(0, sin(ph, 1, 0.33))),
+                                   'shin_back_left': R(-20 * max(0, -sin(ph, 1, 0.25))), 'shin_back_right': R(-20 * max(0, -sin(ph, 1, 0.33))),
+                                   'neck': R(-6 * sin(ph)), 'jaw': R(18), 'tail': R(-25, 10 * sin(ph))}), 500, 10)
+    clips['move'] = c.done()
+    crouch = merge(base, {'body': RP([4, 0, 0], [0, -2.6, 0.5]), 'leg_front_left': R(-30), 'leg_front_right': R(-30),
+                          'shin_front_left': R(60), 'shin_front_right': R(60), 'leg_back_left': R(-40), 'leg_back_right': R(-40),
+                          'shin_back_left': R(70), 'shin_back_right': R(70), 'neck': R(14), 'head': R(-8), 'jaw': R(30), 'tail': R(10)})
+    c = ClipBuilder(500, 'ATTACK', blendIn=60)
+    c.at(0, base)
+    c.at(300, crouch)
+    for t, j in ((380, 1), (440, -1), (500, 1)):
+        c.at(t, merge(crouch, {'body': RP([4, 0, 1.5 * j], [0, -2.8, 0.5])}))
+    clips['crouch'] = c.done()
+    leap = merge(base, {'body': RP([-12, 0, 0], [0, 1.5, -1]), 'leg_front_left': R(-70), 'leg_front_right': R(-70),
+                        'leg_back_left': R(70), 'leg_back_right': R(70), 'neck': R(-10), 'head': R(-14), 'jaw': R(55), 'tail': R(-30)})
+    c = ClipBuilder(600, 'ATTACK', blendIn=30)
+    c.at(0, crouch)
+    c.at(100, leap)
+    c.at(450, merge(leap, {'body': RP([8, 0, 0], [0, 0.5, -1])}))
+    c.at(600, merge(base, {'jaw': R(20)}))
+    clips['attack'] = c.done()
+
+    def flop(ph):
+        return merge(base, {'body': RP([0, 0, 72], [0, -3.4, 0]), 'neck': R(10, 0, -20), 'jaw': R(30 + 8 * sin(ph, 3)),
+                            'leg_front_left': R(-30 * sin(ph, 4)), 'leg_front_right': R(30 * sin(ph, 4, 0.3)),
+                            'leg_back_left': R(30 * sin(ph, 4, 0.5)), 'leg_back_right': R(-30 * sin(ph, 4, 0.7)), 'tail': R(10)})
+    c = ClipBuilder(1300, 'ATTACK', blendIn=60)
+    for k in range(8):
+        c.at(k * 150, flop(k / 7))
+    c.at(1300, merge(base, {'body': RP([0, 0, 20], [0, -1.5, 0])}))
+    clips['stumble'] = c.done()
+    c = ClipBuilder(600, 'ATTACK', blendIn=40)
+    c.at(0, base)
+    c.at(200, merge(base, {'body': RP([-6, 0, 0], [0, 0.4, 1]), 'neck': R(-16), 'head': R(-10), 'jaw': R(55)}))
+    c.at(300, merge(base, {'body': RP([10, 0, 0], [0, -0.6, -2]), 'neck': R(22), 'head': R(8), 'jaw': R(0)}))
+    c.at(600, base)
+    clips['bite'] = c.done()
+    sit = merge(base, {'body': RP([-24, 0, 0], [0, -1, 1.5]), 'leg_back_left': R(-60), 'leg_back_right': R(-60),
+                       'shin_back_left': R(80), 'shin_back_right': R(80), 'leg_front_left': R(20), 'leg_front_right': R(20)})
+    c = ClipBuilder(1200, 'ATTACK', blendIn=80)
+    c.at(0, base)
+    c.at(400, merge(sit, {'neck': R(-40), 'head': R(-20), 'jaw': R(10)}))
+    for k, t in enumerate(range(600, 1201, 100)):
+        c.at(t, merge(sit, {'neck': R(-58 + 3 * (k % 2)), 'head': R(-24), 'jaw': R(44 + 4 * (k % 2)), 'tail': R(-20, 10 * (1 if k % 2 else -1))}))
+    clips['howl'] = c.done()
+    clips['hurt'] = hurt_clip(base, {'body': RP([-10, 0, 12], [0, 0.6, 1.5]), 'neck': R(-20, 0, -10), 'jaw': R(40)})
+    clips['stagger'] = stagger_clip(base, lambda k, s_: {'body': RP([-16 * k, 0, 30 * s_ * k], [0, 1 * k, 2 * k]), 'neck': R(-24 * k, 20 * s_ * k, 0),
+                                                         'jaw': R(40 * k), 'leg_front_left': R(-40 * k * s_), 'leg_back_right': R(40 * k * s_)})
+    clips['death'] = death_clip(base, {'body': RP([-20, 0, 40], [0, 1, 0]), 'jaw': R(50)},
+                                {'body': RP([0, 0, 88], [0, -3.6, 0]), 'neck': R(20, 0, -10), 'jaw': R(46), 'leg_front_left': R(-30),
+                                 'leg_front_right': R(-40), 'leg_back_left': R(30), 'leg_back_right': R(40), 'tail': R(20)})
+    write_clips('grave_hound', clips)
+
+
+# ----------------------------------------------------------------------------------------------------------- Veiled Bride
+
+def veiled_bride():
+    mats = {
+        'dress': Mat('#d6d0c2', blotch='#857a66', blotch_amt=0.5, blotch_scale=4, lines='#5e5444', line_count=4, holes=0.03),
+        'veil': Mat('#ebe7df', grain=0.04, rim=0.0, holes=0.28, lines='#b8b0a0', line_count=3),
+        'skin': Mat('#a3a9b2', blotch='#6e7682', blotch_amt=0.45, lines='#4a5466', line_count=4),
+        'socket': Mat('#060507', grain=0.0, shade=False, rim=0.0),
+        'glow': Mat('#e8f0ff', grain=0.0, shade=False, rim=0.0),
+        'flesh': Mat('#3a0a0e', grain=0.05, rim=0.0),
+        'tooth': Mat('#e6decc', grain=0.04, rim=0.08),
+        'claw': Mat('#34323a', grain=0.05, highlight='#7a7880', rim=0.1),
+        'flower': Mat('#5a1a24', blotch='#2a0a10', blotch_amt=0.5, spots='#8a3040', spot_count=6),
+    }
+    m = Model('veiled_bride', mats)
+    m.bone('root', [0, 0, 0])
+    m.bone('body', [0, 16, 0], 'root')
+    m.bone('skirt', [0, 16, 0], 'body')
+    m.bone('torso', [0, 16, 0], 'body')
+    m.bone('head', [0, 30.5, 0], 'torso')
+    m.bone('veil', [0, 36.5, 0], 'head')
+    m.bone_pair('arm', [4, 29.5, 0], 'torso', 'torso', rot=(0, 0, 4))
+    m.bone_pair('forearm', [4.6, 20.5, 0], 'arm_left', 'arm_right')
+    m.bone_pair('hand', [4.6, 11, 0], 'forearm_left', 'forearm_right')
+    m.cube('skirt', [-5.6, 0, -4.6], [5.6, 6, 4.6], 'dress')
+    m.cube('skirt', [-4.8, 6, -4], [4.8, 11, 4], 'dress')
+    m.cube('skirt', [-4, 11, -3.4], [4, 16.2, 3.4], 'dress')
+    m.cube('skirt', [-5.9, 0, 2.5], [5.9, 2, 7], 'dress')
+    m.cube('torso', [-2.8, 16, -1.8], [2.8, 24, 1.8], 'dress')
+    m.cube('torso', [-3.4, 24, -2.2], [3.4, 29, 2.2], 'dress')
+    m.cube('torso', [-1, 29, -0.8], [1, 31, 0.8], 'skin')
+    m.cube('head', [-2.3, 30.8, -2.3], [2.3, 35.6, 2.3], 'skin')
+    for sd in (1, -1):
+        m.cube('head', [sd * 0.4, 33.4, -2.45], [sd * 1.5, 34.5, -2.3], 'socket')
+        m.cube('head', [sd * 0.75, 33.75, -2.5], [sd * 1.1, 34.1, -2.42], 'glow')
+    m.cube('head', [-1.9, 31.8, -2.42], [1.9, 32.7, -2.3], 'flesh')
+    rr = random.Random(31)
+    teeth_row(m, 'head', -1.8, 1.8, 32.7, 0.5, -2.48, 0.2, 0.45, True, rng=rr)
+    teeth_row(m, 'head', -1.6, 1.6, 31.8, 0.4, -2.48, 0.2, 0.5, False, rng=rr)
+    for x, z in ((-1.8, -1), (0, -1.8), (1.8, -0.6), (1.2, 1.4), (-1.2, 1.5)):
+        m.cube('head', [x - 0.5, 35.5, z - 0.5], [x + 0.5, 36.4, z + 0.5], 'flower')
+    m.cube('veil', [-2.9, 29.6, -2.8], [2.9, 36.8, 2.8], 'veil')
+    m.cube('veil', [-2.6, 36.8, -2.5], [2.6, 37.3, 2.5], 'veil')
+    m.cube('veil', [-2.7, 16, 2.6], [2.7, 30, 3.3], 'veil')
+    m.pair('arm_left', 'arm_right', [3.2, 20, -0.8], [4.8, 30, 0.8], 'skin')
+    m.pair('arm_left', 'arm_right', [3.0, 24, -1.1], [5.0, 30.2, 1.1], 'dress')
+    m.pair('forearm_left', 'forearm_right', [3.85, 11, -0.65], [5.35, 20.6, 0.65], 'skin')
+    m.pair('hand_left', 'hand_right', [3.6, 8, -1], [5.6, 11.2, 1], 'skin')
+    for k in range(4):
+        m.pair('hand_left', 'hand_right', [3.65 + k * 0.5, 3.4, -0.3 - (k % 2) * 0.3], [4.05 + k * 0.5, 8.1, 0.2 - (k % 2) * 0.3], 'claw')
+    m.write()
+
+    base = {'body': RP([0, 0, 0], [0, 0, 0]), 'skirt': R(0), 'torso': R(0), 'head': R(0, 0, 8), 'veil': R(0),
+            'arm_left': R(0), 'arm_right': R(0), 'forearm_left': R(0), 'forearm_right': R(0), 'hand_left': R(0), 'hand_right': R(0)}
+    clips = {}
+    c = ClipBuilder(3000, 'IDLE', loop=True, blendIn=250, blendOut=250)
+    osc(c, lambda ph: merge(base, {'body': RP([0, 0, 2 * sin(ph)], [0, 0.4 * sin(ph, 2), 0]), 'head': R(4 * sin(ph, 1, 0.3), 6 * sin(ph), 10 + 10 * sin(ph, 1, 0.2)),
+                                   'veil': R(3 * sin(ph, 2), 0, 3 * sin(ph, 1, 0.4)), 'skirt': R(0, 0, -2 * sin(ph)),
+                                   'hand_left': R(10 * max(0, sin(ph, 4))), 'hand_right': R(10 * max(0, sin(ph, 3, 0.3))),
+                                   'arm_left': R(2 * sin(ph)), 'arm_right': R(-2 * sin(ph))}), 3000, 12)
+    clips['idle'] = c.done()
+    c = ClipBuilder(1500, 'MOVEMENT', loop=True, blendIn=200, blendOut=200)
+    osc(c, lambda ph: merge(base, {'body': RP([6, 0, 3 * sin(ph)], [0, 0.6 * sin(ph, 2), 0]), 'skirt': R(-4, 0, -4 * sin(ph)),
+                                   'head': R(-6, 0, 14), 'veil': R(-8 - 3 * sin(ph, 2)), 'arm_left': R(14 + 6 * sin(ph)), 'arm_right': R(14 - 6 * sin(ph)),
+                                   'forearm_left': R(8), 'forearm_right': R(8)}), 1500, 12)
+    clips['move'] = c.done()
+    c = ClipBuilder(800, 'ATTACK', blendIn=60)
+    c.at(0, base)
+    for k, t in enumerate(range(100, 801, 50)):
+        j = 1 if k % 2 else -1
+        u = min(1, t / 600)
+        c.at(t, merge(base, {'body': RP([0, 2 * j * u, 2 * j * u], [0, 0.8 * u, 0]), 'veil': {'rot': [-22 * u, 0, 4 * j], 'pos': [0, 1.5 * u, 0]},
+                             'arm_left': R(-10 * u, 0, 45 * u), 'arm_right': R(-10 * u, 0, -45 * u), 'head': R(-10 * u, 0, 30 * u * j)}))
+    clips['flicker'] = c.done()
+    c = ClipBuilder(700, 'ATTACK', blendIn=40)
+    c.at(0, base)
+    reach = merge(base, {'torso': R(14), 'head': R(10, 0, 0), 'arm_left': R(-110, 0, 30), 'arm_right': R(-110, 0, -30),
+                         'forearm_left': R(-10), 'forearm_right': R(-10), 'hand_left': R(-20), 'hand_right': R(-20)})
+    c.at(330, reach)
+    c.at(400, merge(reach, {'torso': R(24), 'arm_left': R(-80, 20, -12), 'arm_right': R(-80, -20, 12)}))
+    c.at(700, base)
+    clips['grasp'] = c.done()
+    c = ClipBuilder(900, 'ATTACK', blendIn=60)
+    c.at(0, base)
+    back = merge(base, {'torso': R(-14), 'head': R(-40, 0, 0), 'veil': R(-20), 'arm_left': R(20, 0, 70), 'arm_right': R(20, 0, -70)})
+    c.at(600, back)
+    c.at(700, merge(base, {'torso': R(18), 'head': R(24, 0, 0), 'veil': R(-35), 'arm_left': R(-30, 0, 80), 'arm_right': R(-30, 0, -80)}))
+    c.at(900, merge(base, {'torso': R(16), 'head': R(20, 0, 0), 'arm_left': R(-20, 0, 60), 'arm_right': R(-20, 0, -60)}))
+    clips['wail'] = c.done()
+
+    def hunch(ph):
+        return merge(base, {'body': RP([0, 0, 0], [0, -1 + 0.5 * sin(ph, 2), 0]), 'torso': R(38 + 3 * sin(ph, 2)), 'head': R(34, 0, 20),
+                            'veil': R(10), 'arm_left': R(30, 0, 4), 'arm_right': R(28, 0, -4), 'forearm_left': R(10), 'forearm_right': R(12)})
+    c = ClipBuilder(1500, 'ATTACK', blendIn=80)
+    for k in range(7):
+        c.at(k * 250, hunch(k / 6))
+    clips['breath'] = c.done()
+    clips['hurt'] = hurt_clip(base, {'torso': R(-14, 0, 8), 'head': R(-20, 0, -14), 'arm_left': R(-30, 0, 30), 'arm_right': R(-20, 0, -26)})
+    clips['stagger'] = stagger_clip(base, lambda k, s_: {'torso': R(-20 * k, 0, 18 * s_ * k), 'head': R(-24 * k, 0, -20 * s_ * k),
+                                                         'arm_left': R(-60 * k, 0, 50 * k), 'arm_right': R(-50 * k, 0, -55 * k), 'veil': R(-20 * k)})
+    clips['death'] = death_clip(base, {'torso': R(-20, 0, 10), 'head': R(-30), 'arm_left': R(-100, 0, 40), 'arm_right': R(-90, 0, -40)},
+                                {'body': RP([0, 0, 82], [0, -7, 0]), 'torso': R(10, 0, 0), 'head': R(20, 0, 30), 'arm_left': R(-30, 0, 70),
+                                 'arm_right': R(-60, 0, -40), 'veil': R(20)})
+    write_clips('veiled_bride', clips)
+
+
+# ----------------------------------------------------------------------------------------------------------- Bloat Toad
+
+def bloat_toad():
+    mats = {
+        'skin': Mat('#6a7a3a', blotch='#3a4a1e', blotch_amt=0.6, blotch_scale=3, spots='#a6a062', spot_count=6, lines='#2e3a14', line_count=2),
+        'skin_dark': Mat('#4a5426', blotch='#2e3614', blotch_amt=0.5),
+        'belly': Mat('#cbbb7c', blotch='#9a8a50', blotch_amt=0.4, bands='#a89860'),
+        'wart': Mat('#8f8f4c', blotch='#5a5a2a', blotch_amt=0.5, rim=0.1),
+        'hand': Mat('#c4ac94', blotch='#8e7660', blotch_amt=0.4, lines='#6a5040', line_count=2),
+        'flesh': Mat('#5a1a20', blotch='#2a080c', blotch_amt=0.5, rim=0.05),
+        'tooth': Mat('#ece4ca', grain=0.04, rim=0.08),
+        'sclera': Mat('#e8dcb0', lines='#a04030', line_count=3, rim=0.1),
+        'iris': Mat('#e88a12', blotch='#8a4a04', blotch_amt=0.4, shade=False, rim=0.05),
+        'pupil': Mat('#060404', grain=0.0, shade=False, highlight='#ffffff'),
+        'claw': Mat('#2a2622', grain=0.05, rim=0.1),
+    }
+    m = Model('bloat_toad', mats)
+    m.bone('root', [0, 0, 0])
+    m.bone('body', [0, 8, 1], 'root')
+    m.bone('head', [0, 10, -5.5], 'body')
+    m.bone('jaw', [0, 7, -5], 'body')
+    m.bone('throat', [0, 5.5, -6.5], 'body')
+    m.bone_pair('arm', [6.4, 7, -5.2], 'body', 'body')
+    m.bone_pair('hand', [6.8, 1.5, -6.2], 'arm_left', 'arm_right')
+    m.bone_pair('thigh', [7.5, 7, 5.5], 'body', 'body')
+    m.bone_pair('foot', [9, 2, 4.5], 'thigh_left', 'thigh_right')
+    m.cube('body', [-9, 3, -6], [9, 15, 9], 'skin')
+    m.cube('body', [-7.5, 2.4, -5], [7.5, 3, 7.5], 'belly')
+    m.cube('body', [-6.5, 15, -3], [6.5, 16.6, 6.5], 'skin')
+    rr = random.Random(41)
+    for _ in range(22):
+        x, z = rr.uniform(-8, 8), rr.uniform(-4, 8)
+        y = 15 if abs(x) < 6 and -3 < z < 6.5 else rr.uniform(6, 14.5)
+        w = rr.uniform(0.8, 1.8)
+        if abs(x) >= 6 or not (-3 < z < 6.5):
+            side = 1 if x > 0 else -1
+            m.cube('body', [side * 9 - (0 if side > 0 else 0.7), y, z], [side * 9 + (0.7 if side > 0 else 0), y + w, z + w], 'wart')
+        else:
+            m.cube('body', [x, 16.6, z], [x + w, 17.2 + w * 0.3, z + w], 'wart')
+    eye(m, 'body', -2.0, 13.4, 9.05, 1.2, pupil=True)
+    eye(m, 'body', 2.4, 12.6, 9.05, 1.0, pupil=True)
+    m.cube('head', [-8.6, 7, -10], [8.6, 13, -5.4], 'skin')
+    m.cube('head', [-8.2, 6.6, -9.6], [8.2, 7.0, -5.6], 'flesh')
+    for sd in (1, -1):
+        m.cube('head', [sd * 3.2, 12, -9], [sd * 7, 15.4, -5.6], 'skin')
+        eye(m, 'head', sd * 5.1, 14.1, -9.2, 3.0)
+    teeth_row(m, 'head', -7.6, 7.6, 7.0, 1.1, -10.1, 0.6, 1.2, True, rng=rr)
+    m.cube('jaw', [-8.6, 4.4, -10.3], [8.6, 7, -5], 'skin')
+    m.cube('jaw', [-7.6, 7, -9.4], [7.6, 7.2, -5.6], 'flesh')
+    teeth_row(m, 'jaw', -7.2, 7.2, 7.0, 0.9, -10.25, 0.6, 1.3, False, rng=rr)
+    m.cube('throat', [-4, 3.4, -9.4], [4, 5.4, -5], 'belly')
+    m.pair('arm_left', 'arm_right', [5.6, 2.4, -6.4], [7.6, 8, -4], 'skin')
+    m.pair('hand_left', 'hand_right', [5.4, 0, -8], [8.6, 1.4, -5], 'hand')
+    for k in range(4):
+        m.pair('hand_left', 'hand_right', [5.3 + k * 0.85, 0, -10.2 + abs(k - 1.5) * 0.4], [5.9 + k * 0.85, 0.8, -8], 'hand')
+        m.pair('hand_left', 'hand_right', [5.35 + k * 0.85, 0, -10.6 + abs(k - 1.5) * 0.4], [5.85 + k * 0.85, 0.6, -10.2 + abs(k - 1.5) * 0.4], 'claw')
+    m.pair('thigh_left', 'thigh_right', [6.5, 3, 2.5], [11.2, 9.5, 9], 'skin')
+    m.pair('foot_left', 'foot_right', [7.6, 0, -0.5], [11.8, 1.6, 7], 'skin_dark')
+    for k in range(3):
+        m.pair('foot_left', 'foot_right', [7.8 + k * 1.4, 0, -2.4], [8.8 + k * 1.4, 0.8, -0.5], 'skin_dark')
+    ground(m)
+    m.write()
+
+    base = {'body': {'rot': [0, 0, 0], 'pos': [0, 0, 0], 'scale': [1, 1, 1]}, 'head': R(0), 'jaw': R(2), 'throat': S(1, 1, 1),
+            'arm_left': R(0), 'arm_right': R(0), 'thigh_left': R(0), 'thigh_right': R(0), 'foot_left': R(0), 'foot_right': R(0)}
+    clips = {}
+    c = ClipBuilder(2000, 'IDLE', loop=True, blendIn=200, blendOut=200)
+    osc(c, lambda ph: merge(base, {'body': {'rot': [0, 0, 0], 'pos': [0, 0.2 * sin(ph), 0], 'scale': [1 + 0.02 * sin(ph), 1 + 0.03 * sin(ph), 1 + 0.02 * sin(ph)]},
+                                   'throat': S(1 + 0.25 * max(0, sin(ph, 2)), 1 + 0.5 * max(0, sin(ph, 2)), 1 + 0.25 * max(0, sin(ph, 2))),
+                                   'jaw': R(2 + 3 * max(0, sin(ph, 1, 0.6)))}), 2000, 16)
+    clips['idle'] = c.done()
+    c = ClipBuilder(800, 'MOVEMENT', loop=True, blendIn=120, blendOut=150)
+    osc(c, lambda ph: merge(base, {'body': {'rot': [0, 0, 4 * sin(ph)], 'pos': [0, 0.4 * abs(sin(ph)), 0], 'scale': [1, 1, 1]},
+                                   'arm_left': R(-20 * sin(ph)), 'arm_right': R(20 * sin(ph)), 'thigh_left': R(10 * sin(ph)), 'thigh_right': R(-10 * sin(ph))}), 800, 8)
+    clips['move'] = c.done()
+    squat = merge(base, {'body': {'rot': [4, 0, 0], 'pos': [0, -1.6, 0], 'scale': [1.06, 0.94, 1.06]}, 'thigh_left': R(-25), 'thigh_right': R(-25),
+                         'foot_left': R(25), 'foot_right': R(25), 'arm_left': R(10, 0, 10), 'arm_right': R(10, 0, -10)})
+    c = ClipBuilder(500, 'ATTACK', blendIn=40)
+    c.at(0, base)
+    c.at(120, squat)
+    c.at(250, merge(base, {'body': {'rot': [-14, 0, 0], 'pos': [0, 0.8, 0], 'scale': [0.96, 1.08, 0.96]}, 'thigh_left': R(45), 'thigh_right': R(45),
+                           'foot_left': R(-30), 'foot_right': R(-30), 'arm_left': R(-40), 'arm_right': R(-40)}))
+    c.at(500, base)
+    clips['hop'] = c.done()
+    c = ClipBuilder(900, 'ATTACK', blendIn=60)
+    c.at(0, base)
+    for k, t in enumerate(range(300, 901, 100)):
+        u = min(1, t / 900)
+        c.at(t, merge(squat, {'body': {'rot': [4, 0, 2 * (1 if k % 2 else -1)], 'pos': [0, -2.4 * u, 0], 'scale': [1 + 0.14 * u, 1 + 0.08 * u, 1 + 0.14 * u]},
+                              'throat': S(1 + 0.5 * u, 1 + 0.8 * u, 1 + 0.5 * u), 'jaw': R(-2)}))
+    clips['squat'] = c.done()
+    spread = merge(base, {'body': {'rot': [12, 0, 0], 'pos': [0, 0, 0], 'scale': [1.08, 0.95, 1.08]}, 'arm_left': R(-30, 0, 60), 'arm_right': R(-30, 0, -60),
+                          'thigh_left': R(30, 0, 50), 'thigh_right': R(30, 0, -50), 'jaw': R(30)})
+    c = ClipBuilder(800, 'ATTACK', blendIn=40)
+    c.at(0, merge(base, {'body': {'rot': [-20, 0, 0], 'pos': [0, 0, 0], 'scale': [0.95, 1.1, 0.95]}, 'thigh_left': R(60), 'thigh_right': R(60)}))
+    c.at(250, spread)
+    c.at(800, spread)
+    clips['flop'] = c.done()
+
+    def back(ph):
+        k = sin(ph, 5)
+        return merge(base, {'body': {'rot': [0, 0, 178], 'pos': [0, 2.0, 0], 'scale': [1, 1, 1]}, 'jaw': R(24 + 8 * sin(ph, 3)),
+                            'arm_left': R(-40 * k, 0, 20), 'arm_right': R(40 * k, 0, -20), 'thigh_left': R(30 * sin(ph, 5, 0.3)), 'thigh_right': R(-30 * sin(ph, 5, 0.6)),
+                            'foot_left': R(20 * k), 'foot_right': R(-20 * k), 'throat': S(1.2, 1.4, 1.2)})
+    c = ClipBuilder(2000, 'ATTACK', blendIn=80)
+    for k in range(9):
+        c.at(k * 200, back(k / 8))
+    c.at(2000, merge(base, {'body': {'rot': [0, 0, 40], 'pos': [0, 0.5, 0], 'scale': [1, 1, 1]}}))
+    clips['on_back'] = c.done()
+    c = ClipBuilder(800, 'ATTACK', blendIn=60)
+    c.at(0, base)
+    c.at(300, merge(base, {'body': {'rot': [-10, 0, 0], 'pos': [0, 0.4, 0], 'scale': [1.05, 1.05, 1.05]}, 'head': R(-26), 'jaw': R(10), 'throat': S(1.6, 2.0, 1.6)}))
+    c.at(500, merge(base, {'body': {'rot': [10, 0, 0], 'pos': [0, -0.4, -1], 'scale': [0.97, 0.97, 0.97]}, 'head': R(-34), 'jaw': R(58), 'throat': S(0.8, 0.8, 0.8)}))
+    c.at(800, base)
+    clips['belch'] = c.done()
+    clips['hurt'] = hurt_clip(base, {'body': {'rot': [-8, 0, 6], 'pos': [0, 0.4, 1], 'scale': [0.96, 1.04, 0.96]}, 'head': R(-14), 'jaw': R(30)})
+    clips['stagger'] = stagger_clip(base, lambda k, s_: {'body': {'rot': [-12 * k, 0, 20 * s_ * k], 'pos': [0, 1.5 * k, 1.5 * k], 'scale': [1, 1, 1]},
+                                                         'jaw': R(40 * k), 'arm_left': R(-40 * k, 0, 30 * k), 'arm_right': R(-30 * k, 0, -40 * k)})
+    clips['death'] = death_clip(base, {'body': {'rot': [0, 0, 60], 'pos': [0, 1, 0], 'scale': [1, 1, 1]}, 'jaw': R(40)},
+                                {'body': {'rot': [0, 0, 178], 'pos': [0, 2.0, 0], 'scale': [1.02, 0.9, 1.02]}, 'jaw': R(50), 'arm_left': R(-60, 0, 30),
+                                 'arm_right': R(-70, 0, -30), 'thigh_left': R(40), 'thigh_right': R(50), 'throat': S(0.8, 0.8, 0.8)})
+    write_clips('bloat_toad', clips)
+
+
+# ----------------------------------------------------------------------------------------------------------- Brood Mother
+
+BROOD_LEGS = ((1, -0.2, 26), (2, 3.8, -24))
+
+
+def brood_mother():
+    mats = {
+        'skin': Mat('#7a6a74', blotch='#4a3c46', blotch_amt=0.55, blotch_scale=3, lines='#2e2228', line_count=3),
+        'skin_dark': Mat('#4e424a', blotch='#2e242c', blotch_amt=0.5),
+        'ribs': Mat('#8a7a84', bands='#3a2e36', grain=0.04),
+        'sac': Mat('#e2d8b4', blotch='#5a4a34', blotch_amt=0.75, blotch_scale=2, lines='#8a3a6a', line_count=8, rim=0.08),
+        'growth': Mat('#b8a888', blotch='#6a5a40', blotch_amt=0.5, lines='#8a3a6a', line_count=3),
+        'sclera': Mat('#f0ead0', rim=0.1),
+        'iris': Mat('#8cff3a', blotch='#3a8a10', blotch_amt=0.3, shade=False, rim=0.05),
+        'pupil': Mat('#060404', grain=0.0, shade=False, highlight='#ffffff'),
+        'flesh': Mat('#4a0a14', grain=0.05, rim=0.05),
+        'tooth': Mat('#e6dcc0', grain=0.04, rim=0.08),
+        'claw': Mat('#1e1a1c', grain=0.05, highlight='#5a5258', rim=0.1),
+    }
+    m = Model('brood_mother', mats)
+    m.bone('root', [0, 0, 0])
+    m.bone('body', [0, 12, 2], 'root')
+    m.bone('torso', [0, 13.5, 1], 'body', rot=(-28, 0, 0))
+    m.bone('head', [0, 22, -0.5], 'torso', rot=(24, 0, 0))
+    m.bone('jaw', [0, 21.6, -3], 'head')
+    m.bone('sac', [0, 15, 4], 'body')
+    m.bone_pair('arm', [3.4, 21, 0.5], 'torso', 'torso', rot=(-10, 0, 10))
+    m.bone_pair('forearm', [4, 13.5, 0.5], 'arm_left', 'arm_right', rot=(30, 0, 0))
+    for n, z, splay in BROOD_LEGS:
+        m.bone_pair('leg%d' % n, [2.4, 12, z], 'body', 'body', rot=(0, splay, 38))
+        m.bone_pair('shin%d' % n, [7.5, 12, z], 'leg%d_left' % n, 'leg%d_right' % n, rot=(0, 0, -16))
+    m.cube('body', [-2.6, 10.4, -1.2], [2.6, 13.8, 4.4], 'skin')
+    m.cube('torso', [-2.6, 13.5, -1.4], [2.6, 22, 2.4], 'skin')
+    for sd in (1, -1):
+        m.cube('torso', [sd * 2.6, 15, -1], [sd * 2.9, 20.5, 2], 'ribs')
+    m.cube('head', [-2.1, 20.6, -4.6], [2.1, 25, -0.4], 'skin')
+    m.cube('head', [-1.6, 25, -3.6], [1.6, 26, -1], 'skin_dark')
+    for (x, y, sz) in ((-1.1, 23.6, 1.0), (1.0, 23.8, 1.1), (0, 24.7, 0.7), (-1.5, 22.6, 0.6), (1.5, 22.7, 0.6), (0, 22.6, 0.5)):
+        eye(m, 'head', x, y, -4.6, sz, pupil=sz > 0.6)
+    m.cube('jaw', [-1.7, 19.8, -4.9], [1.7, 21, -1.4], 'skin_dark')
+    rr = random.Random(51)
+    teeth_row(m, 'jaw', -1.5, 1.5, 21.0, 0.7, -4.95, 0.3, 0.5, False, rng=rr)
+    teeth_row(m, 'head', -1.6, 1.6, 21.0, 0.6, -4.7, 0.3, 0.5, True, rng=rr)
+    m.cube('sac', [-5.8, 7.5, 3.6], [5.8, 20.5, 15.5], 'sac')
+    m.cube('sac', [-4.6, 20.5, 5], [4.6, 22, 13.5], 'sac')
+    m.cube('sac', [-4.4, 6.4, 5.5], [4.4, 7.5, 13], 'sac')
+    for _ in range(9):
+        x, y, z = rr.uniform(-5.4, 4.4), rr.uniform(9, 19), rr.uniform(5, 14)
+        w = rr.uniform(0.8, 1.6)
+        side = rr.choice((1, -1))
+        m.cube('sac', [side * 5.8 - (0 if side > 0 else w * 0.5), y, z], [side * 5.8 + (w * 0.5 if side > 0 else 0), y + w, z + w], 'growth')
+    m.pair('arm_left', 'arm_right', [2.9, 13.5, -0.1], [4.1, 21.4, 1.1], 'skin')
+    m.pair('forearm_left', 'forearm_right', [3.4, 5.5, 0], [4.6, 14, 1], 'skin')
+    for k in range(3):
+        m.pair('forearm_left', 'forearm_right', [3.1 + k * 0.6, 1.5, 0.1], [3.5 + k * 0.6, 5.8, 0.6], 'claw')
+    for n, z, _ in BROOD_LEGS:
+        m.pair('leg%d_left' % n, 'leg%d_right' % n, [2.4, 11.4, z - 0.55], [7.8, 12.6, z + 0.55], 'skin')
+        m.pair('shin%d_left' % n, 'shin%d_right' % n, [7.0, -1.5, z - 0.45], [8.0, 12.4, z + 0.45], 'skin_dark')
+        m.pair('shin%d_left' % n, 'shin%d_right' % n, [7.1, -2.4, z - 0.35], [7.9, -1.5, z + 0.35], 'claw')
+    ground(m)
+    m.write()
+
+    legs = [('leg%d_%s' % (n, sd), sg) for n, _, _ in BROOD_LEGS for sd, sg in (('left', 1), ('right', -1))]
+    base = {'body': RP([0, 0, 0], [0, 0, 0]), 'torso': R(0), 'head': R(0), 'jaw': R(4), 'sac': {'rot': [0, 0, 0], 'scale': [1, 1, 1]},
+            'arm_left': R(0), 'arm_right': R(0), 'forearm_left': R(0), 'forearm_right': R(0)}
+    clips = {}
+    c = ClipBuilder(2400, 'IDLE', loop=True, blendIn=200, blendOut=200)
+    osc(c, lambda ph: merge(base, {'sac': {'rot': [2 * sin(ph), 0, 0], 'scale': [1 + 0.04 * sin(ph, 2), 1 + 0.05 * sin(ph, 2), 1 + 0.04 * sin(ph, 2)]},
+                                   'torso': R(3 * sin(ph)), 'head': R(0, 14 * sin(ph, 1, 0.3), 10 * sin(ph, 2)), 'jaw': R(4 + 8 * max(0, sin(ph, 3))),
+                                   'arm_left': R(4 * sin(ph)), 'arm_right': R(-4 * sin(ph))}), 2400, 16)
+    clips['idle'] = c.done()
+    c = ClipBuilder(1200, 'MOVEMENT', loop=True, blendIn=150, blendOut=150)
+    osc(c, lambda ph: merge(base, {'body': RP([0, 0, 4 * sin(ph)], [0, 0.5 * abs(sin(ph)), 0]), 'sac': {'rot': [4 * sin(ph, 2), 0, -3 * sin(ph)], 'scale': [1, 1, 1]},
+                                   'torso': R(4), 'head': R(-4), 'arm_left': R(-14 * sin(ph)), 'arm_right': R(14 * sin(ph))},
+                            {b: {'rot': [0, -sg * 18 * sin(ph, 1, 0.5 * (i % 2)), sg * 12 * max(0, sin(ph, 1, 0.25 + 0.5 * (i % 2)))]} for i, (b, sg) in enumerate(legs)}), 1200, 12)
+    clips['move'] = c.done()
+    c = ClipBuilder(1200, 'ATTACK', blendIn=60)
+    c.at(0, base)
+    for k, t in enumerate(range(200, 1201, 100)):
+        u = t / 1200
+        j = 1 if k % 2 else -1
+        c.at(t, merge(base, {'torso': R(-20 * u), 'head': R(-14 * u, 0, 10 * j * u), 'jaw': R(30 * u),
+                             'sac': {'rot': [-6 * u, 2 * j, 2 * j], 'scale': [1 + 0.3 * u, 1 + 0.25 * u, 1 + 0.3 * u]},
+                             'arm_left': R(-60 * u, 0, -20 * u), 'arm_right': R(-60 * u, 0, 20 * u)}))
+    clips['birth'] = c.done()
+
+    def sag(ph):
+        return merge(base, {'body': RP([0, 0, 0], [0, -0.8 + 0.3 * sin(ph, 2), 0]), 'torso': R(26 + 3 * sin(ph, 2)), 'head': R(28, 0, 14), 'jaw': R(34),
+                            'sac': {'rot': [22, 0, 4 * sin(ph)], 'scale': [0.82, 0.62, 0.86]}, 'arm_left': R(30), 'arm_right': R(26)})
+    c = ClipBuilder(1800, 'ATTACK', blendIn=60)
+    for k in range(10):
+        c.at(k * 200, sag(k / 9))
+    c.at(1800, merge(base, {'sac': {'rot': [8, 0, 0], 'scale': [0.9, 0.8, 0.92]}}))
+    clips['recoil'] = c.done()
+    c = ClipBuilder(1000, 'ATTACK', blendIn=60)
+    c.at(0, base)
+    c.at(600, merge(base, {'torso': R(-26), 'head': R(-22), 'jaw': R(10), 'arm_left': R(-30, 0, -30), 'arm_right': R(-30, 0, 30)}))
+    c.at(700, merge(base, {'torso': R(16), 'head': R(18), 'jaw': R(46)}))
+    c.at(1000, base)
+    clips['spit'] = c.done()
+    c = ClipBuilder(800, 'ATTACK', blendIn=60)
+    c.at(0, base)
+    c.at(400, merge(base, {'torso': R(-12, 20, 0), 'arm_right': R(-160, 0, -20), 'forearm_right': R(-20), 'head': R(-10)}))
+    c.at(500, merge(base, {'torso': R(18, -24, 0), 'arm_right': R(-40, 0, 30), 'forearm_right': R(10), 'head': R(10)}))
+    c.at(800, base)
+    clips['slap'] = c.done()
+    clips['hurt'] = hurt_clip(base, {'torso': R(-16, 0, 10), 'head': R(-18), 'jaw': R(30), 'sac': {'rot': [-10, 0, 8], 'scale': [1.05, 0.95, 1.05]}})
+    clips['stagger'] = stagger_clip(base, lambda k, s_: {'torso': R(-22 * k, 0, 18 * s_ * k), 'head': R(-20 * k, 16 * s_ * k, 0), 'jaw': R(40 * k),
+                                                         'sac': {'rot': [-14 * k, 0, 20 * s_ * k], 'scale': [1, 1, 1]},
+                                                         'arm_left': R(-60 * k, 0, -40 * k), 'arm_right': R(-50 * k, 0, 45 * k)})
+    clips['death'] = death_clip(base, {'torso': R(-20), 'head': R(-30), 'jaw': R(40), 'sac': {'rot': [0, 0, 0], 'scale': [1.15, 1.1, 1.15]}},
+                                {'body': RP([0, 0, 0], [0, -5.5, 0]), 'torso': R(60, 0, 20), 'head': R(20, 30, 0), 'jaw': R(44),
+                                 'sac': {'rot': [30, 0, 30], 'scale': [0.75, 0.5, 0.8]}, 'arm_left': R(-40, 0, -60), 'arm_right': R(-70, 0, 50)})
+    write_clips('brood_mother', clips)
+
+
 KINDS = {}
 
 
@@ -1133,5 +1634,5 @@ def main():
 
 
 if __name__ == '__main__':
-    KINDS.update({k: globals()[k] for k in ('school_maw', 'school_crawler', 'fly_head', 'forest_stalker') if k in globals()})
+    KINDS.update({k: globals()[k] for k in ('school_maw', 'school_crawler', 'fly_head', 'forest_stalker', 'grave_hound', 'veiled_bride', 'bloat_toad', 'brood_mother') if k in globals()})
     main()

@@ -12,9 +12,15 @@
       "max": 1
     },
     {
+      "kind": "bloat_toad",
+      "min": 1,
+      "max": 1,
+      "grade": "GRADE_3"
+    },
+    {
       "kind": "school_crawler",
-      "min": 3,
-      "max": 3,
+      "min": 2,
+      "max": 2,
       "grade": "GRADE_3"
     }
   ],
