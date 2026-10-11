@@ -286,6 +286,12 @@ public final class Incident {
         return guardian;
     }
 
+    /** The contract's designated curse, anchor or guardian (null for an infestation). */
+    @Nullable
+    public UUID objectiveTarget() {
+        return objectiveTarget;
+    }
+
     public int capture() {
         return capture;
     }

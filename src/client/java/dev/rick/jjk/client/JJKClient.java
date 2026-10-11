@@ -191,6 +191,7 @@ public class JJKClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.Start.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.start(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.State.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.state(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.Judge.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.judge(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.Meter.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.meter(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.StoryPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.StoryOverlay.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.EncounterPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.EncounterHud.apply(p));
         dev.rick.jjk.client.investigation.CursedCompassClient.init();
@@ -336,6 +337,7 @@ public class JJKClient implements ClientModInitializer {
         dev.rick.jjk.client.clash.BeamClashCamera.tick(mc);
         dev.rick.jjk.client.training.TrainingClient.tick(mc);
         dev.rick.jjk.client.training.TrainingCamera.tick(mc);
+        dev.rick.jjk.client.training.ContestCamera.tick(mc);
         dev.rick.jjk.client.prison.PrisonClient.tick(mc);
         InputHandler.tick(mc);
         ambientTicks++;

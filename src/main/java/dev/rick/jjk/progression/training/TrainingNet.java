@@ -27,9 +27,12 @@ public final class TrainingNet {
         PayloadTypeRegistry.clientboundPlay().register(Start.TYPE, Start.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(State.TYPE, State.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Judge.TYPE, Judge.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Meter.TYPE, Meter.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(Input.TYPE, (p, ctx) -> {
             // The same skill check drives a seal's containment (progression.guardian.EssenceCapture).
-            if (!dev.rick.jjk.progression.guardian.EssenceCapture.input(ctx.player(), p)) TrainingSessions.input(ctx.player(), p);
+            if (dev.rick.jjk.progression.guardian.EssenceCapture.input(ctx.player(), p)) return;
+            if (dev.rick.jjk.progression.contest.StrengthContests.input(ctx.player(), p)) return;
+            TrainingSessions.input(ctx.player(), p);
         });
         ServerPlayNetworking.registerGlobalReceiver(Answer.TYPE, (p, ctx) -> TrainingSessions.answer(ctx.player(), p.kit(), p.accept()));
     }
@@ -121,6 +124,22 @@ public final class TrainingNet {
             for (int i = 0; i < n; i++) checks.add(TrainingCheck.read(buf));
             return new Start(session, attempt, kit, title, practice, seed, intro, dur, p2, p3, max, cam, look, labels, colors, checks);
         });
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return TYPE;
+        }
+    }
+
+    /** Server → contestant: a strength contest's tug-of-war meter (0-100; 100 breaks free) and the line it must end above. */
+    public record Meter(int session, float meter, float threshold, String foe) implements CustomPacketPayload {
+        public static final Type<Meter> TYPE = new Type<>(JJK.id("training_meter"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, Meter> CODEC = StreamCodec.of((buf, p) -> {
+            buf.writeVarInt(p.session);
+            buf.writeFloat(p.meter);
+            buf.writeFloat(p.threshold);
+            buf.writeUtf(p.foe, 64);
+        }, buf -> new Meter(buf.readVarInt(), buf.readFloat(), buf.readFloat(), buf.readUtf(64)));
 
         @Override
         public Type<? extends CustomPacketPayload> type() {

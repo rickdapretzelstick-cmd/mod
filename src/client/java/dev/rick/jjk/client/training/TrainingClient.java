@@ -93,6 +93,23 @@ public final class TrainingClient {
         return attempt != null && mc.player != null;
     }
 
+    /** A strength contest (the same skill check, taps only, with its tug-of-war meter and cinematic camera). */
+    public static boolean contest() {
+        return attempt != null && "contest".equals(attempt.start.kit());
+    }
+
+    /** The contest's meter as the server last sent it (0-100), the line it must end above, and who it is against. */
+    public static float meter = 50, threshold = 50;
+    public static String foe = "";
+
+    public static void meter(TrainingNet.Meter m) {
+        Attempt a = attempt;
+        if (a == null || a.start.session() != m.session()) return;
+        meter = m.meter();
+        threshold = m.threshold();
+        foe = m.foe();
+    }
+
     /** A seal's containment (the same skill check, no scene: the world stays in view). */
     public static boolean containment() {
         return attempt != null && "capture".equals(attempt.start.kit());
@@ -124,7 +141,10 @@ public final class TrainingClient {
         lastHeard = System.nanoTime();
         send(TrainingNet.READY, -1, -1, 0);
         if (mc.gui.screen() instanceof TrainingScreens.ResultScreen) mc.gui.setScreen(null);
-        if (!"capture".equals(s.kit())) TrainingCamera.begin();
+        if ("contest".equals(s.kit())) {
+            meter = 50;
+            ContestCamera.begin();
+        } else if (!"capture".equals(s.kit())) TrainingCamera.begin();
     }
 
     public static void state(TrainingNet.State s) {
@@ -216,6 +236,8 @@ public final class TrainingClient {
         advance();
         if (!a.down[g]) return;
         a.down[g] = false;
+        // A contest is taps only: letting go means nothing.
+        if ("contest".equals(a.start.kit())) return;
         double t = a.clock;
         TrainingCheck c = a.eval.holding(g);
         int id = c == null ? -1 : c.id();
@@ -286,7 +308,7 @@ public final class TrainingClient {
             for (TrainingEvaluator.Outcome o : a.eval.expire(a.clock - 60)) predict(a, o, a.clock);
         }
         // A containment has no Retry/Leave: the remnant waits, and another seal use starts again.
-        if (a.state == TrainingNet.FAILURE && a.stateSeconds() > 2.0 && !a.offeredRetry && mc.gui.screen() == null && !containment()) {
+        if (a.state == TrainingNet.FAILURE && a.stateSeconds() > 2.0 && !a.offeredRetry && mc.gui.screen() == null && !containment() && !contest()) {
             a.offeredRetry = true;
             mc.gui.setScreen(new TrainingScreens.ResultScreen(false));
         }
@@ -299,10 +321,12 @@ public final class TrainingClient {
         if (mc.gui.screen() instanceof TrainingScreens.ResultScreen) mc.gui.setScreen(null);
         attempt = null;
         TrainingCamera.reset();
+        ContestCamera.reset();
     }
 
     public static void reset() {
         attempt = null;
         TrainingCamera.reset();
+        ContestCamera.reset();
     }
 }

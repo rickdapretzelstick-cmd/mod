@@ -448,6 +448,8 @@ public final class JJKConfig {
         public boolean combatMode = true;
         /** The small "current / max CE" readout beside the CE bar. */
         public boolean showCeNumbers = true;
+        /** Reduced Camera Motion: cinematic cameras (strength contests) hold a still shot, without orbit, push-in or FOV change. */
+        public boolean reducedCameraMotion = false;
     }
 
     /**
@@ -1347,6 +1349,21 @@ public final class JJKConfig {
         public int victoryTicks = 80, failureTicks = 40;
         /** Ticks an offer to begin stays answerable. */
         public int offerTicks = 600;
+        /**
+         * Strength contests (progression.contest): a grab, telegraphed, then a 0-100 tug-of-war meter pushed by tap checks.
+         * {@code contestKinds} lists exactly which curses may grab (a fly head never can, whatever is listed).
+         */
+        public boolean contests = true;
+        public java.util.List<String> contestKinds = new java.util.ArrayList<>(java.util.List.of("school_maw", "grave_hound", "veiled_bride",
+                "brood_mother", "bloat_toad", "school_crawler", "forest_stalker"));
+        /** The grab: its reach, the telegraph before it closes, how far you must be to escape it, and how often a ready curse tries. */
+        public double contestGrabRange = 2.6, contestEscapeRange = 3.4;
+        public int contestTelegraphTicks = 16;
+        public float contestChancePerSecond = 0.15f;
+        /** Contest length and intro; after any contest you can't be grabbed again for a while (by any curse); a curse waits too. */
+        public int contestDurationMs = 6_000, contestIntroMs = 900, contestProtectSeconds = 12, contestCurseCooldownSeconds = 20;
+        /** At most this many contests per Grade 1 guardian attempt. */
+        public int contestsPerGuardianAttempt = 2;
         /** Containing a Grade 1 essence with a seal: its intro, its length (6-8 s), and the misses that fail it (one allowed). */
         public int captureIntroMs = 1_500, captureDurationMs = 7_000, captureMaxMisses = 2;
     }

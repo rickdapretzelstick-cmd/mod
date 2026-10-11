@@ -41,6 +41,13 @@ public abstract class CameraMixin {
             setPosition(new net.minecraft.world.phys.Vec3(beams[0], beams[1], beams[2]));
             setRotation((float) beams[3], (float) beams[4]);
         }
+        // A strength contest: its cinematic shot (no shake: the HUD and the view stay readable).
+        double[] contest = dev.rick.jjk.client.training.ContestCamera.apply(position(), yRot, xRot);
+        if (contest != null) {
+            setPosition(new net.minecraft.world.phys.Vec3(contest[0], contest[1], contest[2]));
+            setRotation((float) contest[3], (float) contest[4]);
+            return;
+        }
         // Character training: the scene's fixed shot.
         double[] training = dev.rick.jjk.client.training.TrainingCamera.apply(position(), yRot, xRot);
         if (training != null) {
@@ -63,6 +70,11 @@ public abstract class CameraMixin {
 
     @Inject(method = "calculateFov", at = @At("RETURN"), cancellable = true)
     private void jjk$fov(float partialTicks, CallbackInfoReturnable<Float> cir) {
+        float contest = dev.rick.jjk.client.training.ContestCamera.fov();
+        if (!Float.isNaN(contest)) {
+            cir.setReturnValue(contest);
+            return;
+        }
         float m = ScreenEffects.fovMultiplier(partialTicks) * dev.rick.jjk.client.rifle.RifleClient.zoom();
         if (m != 1f) cir.setReturnValue(cir.getReturnValue() * m);
     }

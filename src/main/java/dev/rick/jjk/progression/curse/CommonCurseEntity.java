@@ -417,6 +417,39 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         onStaggered(level);
     }
 
+    // --- Strength contests (progression.contest.StrengthContests) ---
+
+    /** Ticks it is held in place by a strength contest (its telegraph, then the contest itself). */
+    private int contestHold;
+
+    /** Holds it still (no actions, no movement) for {@code ticks}; renewed while a contest lasts. */
+    public void holdForContest(int ticks) {
+        contestHold = Math.max(contestHold, ticks);
+        getNavigation().stop();
+        setDeltaMovement(Vec3.ZERO);
+    }
+
+    public void releaseFromContest() {
+        contestHold = 0;
+    }
+
+    /** Free to start a grab: awake, not mid-action, not resting, not held. */
+    public boolean readyToGrab() {
+        return !dormant && action == 0 && restTicks <= 0 && contestHold <= 0 && freezeTicks <= 0;
+    }
+
+    /** It lost a strength contest: thrown off balance and wide open, as a stagger. */
+    public void lostContest(ServerLevel level, @Nullable Entity by) {
+        contestHold = 0;
+        stagger(level, by);
+    }
+
+    /** It won a strength contest: it rests a moment before it acts again (no free follow-up). */
+    public void wonContest(int rest) {
+        contestHold = 0;
+        restTicks = Math.max(restTicks, rest);
+    }
+
     /** It was just staggered (kinds tidy up their own state). */
     protected void onStaggered(ServerLevel level) {
     }
@@ -447,6 +480,14 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         }
         if (exposedTicks > 0) exposedTicks--;
         if (++sinceHit > POISE_REGEN_DELAY && poise >= 0 && poise < maxPoise()) poise = Math.min(maxPoise(), poise + maxPoise() / 40f);
+        if (contestHold > 0) {
+            // Locked in a strength contest (or its telegraph): nothing else happens.
+            contestHold--;
+            getNavigation().stop();
+            setDeltaMovement(new Vec3(0, getDeltaMovement().y, 0));
+            syncFlags();
+            return;
+        }
         if (freezeTicks > 0) {
             // Hitstop: held in the moment of the hit (its timers wait too).
             freezeTicks--;

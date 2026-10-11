@@ -131,6 +131,32 @@ public final class TrainingSchedule {
         return p.finish();
     }
 
+    /** The settings a strength contest is built and judged with (tap checks only, its own length). */
+    public static JJKConfig.Training contestRules(JJKConfig.Training cfg) {
+        JJKConfig.Training c = containmentRules(cfg);
+        c.durationMs = cfg.contestDurationMs;
+        c.introMs = cfg.contestIntroMs;
+        c.phase2AtMs = cfg.contestDurationMs / 3;
+        c.phase3AtMs = cfg.contestDurationMs * 2 / 3;
+        c.maxMisses = 1_000;
+        return c;
+    }
+
+    /** A strength contest: taps only, one circle after another (never two windows at once), steady and readable. */
+    public static List<TrainingCheck> contest(long seed, JJKConfig.Training cfg) {
+        Plan p = new Plan(contestRules(cfg), new SplittableRandom(seed));
+        int[] speed = {1400, 1550, 1700};
+        int t = 700, last = -1;
+        while (t < p.cfg.durationMs - 300) {
+            int g = p.other(last);
+            TrainingCheck k = p.place(g, t, 0, speed[g], TrainingCheck.PLAIN, 620);
+            if (k == null) break;
+            last = g;
+            t = k.atMs() + 520 + p.r.nextInt(120);
+        }
+        return p.finish();
+    }
+
     private static int disturbed(int period, int mod) {
         return switch (mod) {
             case TrainingCheck.FAST -> Math.round(period * 0.72f);

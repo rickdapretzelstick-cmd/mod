@@ -38,13 +38,21 @@ public final class TrainingHud {
         boolean live = a.state == TrainingNet.ACTIVE;
         boolean shown = a.state == TrainingNet.INTRO || live || a.state == TrainingNet.FAILURE && a.stateSeconds() < 2.2;
 
-        if (a.state == TrainingNet.INTRO) title(g, font, w, h, a.start.title(), "Press each key as its needle crosses the arc", 0xFFFFFFFF);
+        if (a.state == TrainingNet.INTRO) title(g, font, w, h, a.start.title(), TrainingClient.contest() ? "Tap each key as its needle crosses the arc: push the meter to the right"
+                : "Press each key as its needle crosses the arc", 0xFFFFFFFF);
         boolean seal = TrainingClient.containment();
-        if (a.state == TrainingNet.SUCCESS) {
+        if (TrainingClient.contest()) {
+            if (a.state == TrainingNet.SUCCESS) title(g, font, w, h, "BROKE FREE", "It's wide open: strike now.", PERFECT);
+            if (a.state == TrainingNet.FAILURE) title(g, font, w, h, "✘ OVERPOWERED", "It throws you off.", MISS);
+            if (a.state == TrainingNet.INTRO || a.state == TrainingNet.ACTIVE || a.state == TrainingNet.SUCCESS || a.state == TrainingNet.FAILURE) {
+                tug(g, font, w, cy - r - 30);
+            }
+        }
+        if (a.state == TrainingNet.SUCCESS && !TrainingClient.contest()) {
             if (seal) title(g, font, w, h, "ESSENCE SEALED", "A Sealed Grade 1 Essence is yours.", PERFECT);
             else title(g, font, w, h, a.start.practice() ? "PRACTICE COMPLETE" : "TRAINING COMPLETE", "Steady.", PERFECT);
         }
-        if (a.state == TrainingNet.FAILURE) title(g, font, w, h, seal ? "✘ IT SLIPPED LOOSE" : "✘ FAILED",
+        if (a.state == TrainingNet.FAILURE && !TrainingClient.contest()) title(g, font, w, h, seal ? "✘ IT SLIPPED LOOSE" : "✘ FAILED",
                 seal ? "Your seal is unspent. Use it on the remnant again." : a.start.maxMisses() + " mistakes", MISS);
         if (!shown) return;
 
@@ -53,12 +61,14 @@ public final class TrainingHud {
         int phase = TrainingSchedule.phase(cfgPhase(a), Math.max(0, t));
         double left = Mth.clamp((a.start.durationMs() - Math.max(0, t)) / 1000.0, 0, a.start.durationMs() / 1000.0);
         String head = a.state == TrainingNet.INTRO ? "GET READY" : "PHASE " + phase + " / 3";
-        g.text(font, head, w / 2 - 75 - font.width(head) - 10 - a.start.maxMisses() * 9 - 6, top - 3, 0xFFE0E6F0, true);
+        // A contest has no mistake limit (its meter decides): no pips, no phase label.
+        boolean tug = TrainingClient.contest();
+        if (!tug) g.text(font, head, w / 2 - 75 - font.width(head) - 10 - a.start.maxMisses() * 9 - 6, top - 3, 0xFFE0E6F0, true);
         int bw = 150, bx = w / 2 - bw / 2;
         g.fill(bx - 1, top - 1, bx + bw + 1, top + 4, 0xC0000000);
         g.fill(bx, top, bx + (int) Math.round(bw * left / (a.start.durationMs() / 1000.0)), top + 3, 0xFFB8C8E0);
         g.text(font, String.format(java.util.Locale.ROOT, "%.1fs", left), bx + bw + 6, top - 3, 0xFFFFFFFF, true);
-        int max = a.start.maxMisses();
+        int max = tug ? 0 : a.start.maxMisses();
         int pipsX = bx - 8 - max * 9;
         for (int i = 0; i < max; i++) {
             boolean used = i < a.misses;
@@ -73,6 +83,22 @@ public final class TrainingHud {
         c.phase2AtMs = a.start.phase2AtMs();
         c.phase3AtMs = a.start.phase3AtMs();
         return c;
+    }
+
+    /** A strength contest's tug-of-war meter: 0 (overpowered) on the left, 100 (free) on the right, the line it must end above. */
+    private static void tug(GuiGraphicsExtractor g, Font font, int w, int y) {
+        int bw = 180, bx = w / 2 - bw / 2, bh = 7;
+        float m = Mth.clamp(TrainingClient.meter, 0, 100);
+        g.fill(bx - 2, y - 2, bx + bw + 2, y + bh + 2, 0xD0000000);
+        g.fill(bx, y, bx + bw, y + bh, 0xFF3A1820);
+        int fill = Math.round(bw * m / 100f);
+        boolean above = m >= TrainingClient.threshold;
+        g.fill(bx, y, bx + fill, y + bh, above ? 0xFFFFC36A : 0xFFE0506A);
+        int tx = bx + Math.round(bw * TrainingClient.threshold / 100f);
+        g.fill(tx, y - 3, tx + 1, y + bh + 3, 0xFFFFFFFF);
+        g.text(font, TrainingClient.foe.isEmpty() ? "CURSE" : TrainingClient.foe.toUpperCase(java.util.Locale.ROOT), bx - 6 - font.width(TrainingClient.foe.isEmpty() ? "CURSE" : TrainingClient.foe.toUpperCase(java.util.Locale.ROOT)),
+                y - 1, 0xFFE0506A, true);
+        g.text(font, "YOU", bx + bw + 6, y - 1, 0xFFFFC36A, true);
     }
 
     private static void title(GuiGraphicsExtractor g, Font font, int w, int h, String title, String sub, int color) {
