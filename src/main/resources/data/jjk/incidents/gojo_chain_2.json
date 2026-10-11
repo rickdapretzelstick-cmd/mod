@@ -3,7 +3,7 @@
   "weight": 0,
   "grade": "GRADE_3",
   "site": "cliff",
-  "trigger": "jump",
+  "trigger": "breach",
   "realm": "distance_realm",
   "curses": [
     {

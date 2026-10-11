@@ -3,13 +3,19 @@
   "weight": 0,
   "grade": "GRADE_3",
   "site": "storehouse",
-  "trigger": "night",
+  "trigger": "breach",
   "realm": "fight_club_realm",
   "curses": [
     {
       "kind": "school_crawler",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "grave_hound",
       "min": 2,
-      "max": 2
+      "max": 2,
+      "grade": "GRADE_4"
     },
     {
       "kind": "fly_head",

@@ -138,6 +138,22 @@ public final class Rig {
         return a.sub(b);
     }
 
+    /** Vanilla's pose of the top parts this frame (before a solve overwrites it), to solve again from. */
+    public static net.minecraft.client.model.geom.PartPose[] base(Parts p) {
+        ModelPart[] top = {p.head, p.body, p.arm[0], p.arm[1], p.leg[0], p.leg[1]};
+        net.minecraft.client.model.geom.PartPose[] out = new net.minecraft.client.model.geom.PartPose[top.length];
+        for (int i = 0; i < top.length; i++) out[i] = top[i].storePose();
+        return out;
+    }
+
+    public static void restore(Parts p, net.minecraft.client.model.geom.PartPose[] base) {
+        ModelPart[] top = {p.head, p.body, p.arm[0], p.arm[1], p.leg[0], p.leg[1]};
+        for (int i = 0; i < top.length; i++) {
+            top[i].loadPose(base[i]);
+            top[i].xScale = top[i].yScale = top[i].zScale = 1;
+        }
+    }
+
     /** Copies the vanilla overlays' visibility (skin customisation) onto their pieces on the lower segments. */
     public static void syncOverlays(Parts parts) {
         for (ModelPart[] o : parts.overlays) o[1].visible = o[0].visible;

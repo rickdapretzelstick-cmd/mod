@@ -66,6 +66,7 @@ public class FingerBearerTests {
         JJKConfig cfg = JJKConfig.get();
         cfg.general.autoAssignGojo = false;
         cfg.progression.enabled = true;
+        cfg.mastery.enabled = true;
         for (int x = 0; x < 8; x++) for (int z = 0; z < 8; z++) h.setBlock(x, 0, z, Blocks.STONE);
     }
 
@@ -121,6 +122,19 @@ public class FingerBearerTests {
 
     // --- Spawning in the battle room ---
 
+    /** Walks into the room's breach (the one way into its realm), once it is up over the seal. */
+    private static void goThrough(GameTestHelper h, BlockPos seal, ServerPlayer p) {
+        if (dev.rick.jjk.progression.investigation.CursedRealms.inRealm(p) || dev.rick.jjk.progression.investigation.CursedRealms.pulling(p)) return;
+        CursedEncounters.Room r = room(h, seal);
+        h.assertTrue(r != null, "the room is known");
+        var b = dev.rick.jjk.progression.investigation.CursedBreaches.find(h.getLevel(), dev.rick.jjk.progression.investigation.CursedRealms.ROOM
+                + CursedEncounters.keyOf(r), seal.above());
+        h.assertTrue(b != null, "a breach hangs over the seal");
+        h.assertTrue(!dev.rick.jjk.progression.investigation.CursedRealms.pulling(p), "walking in alone takes nobody");
+        dev.rick.jjk.progression.investigation.CursedBreaches.useForTest(p, b);
+        h.fail("going through the breach");
+    }
+
     /** The room's realm arena, if it is open. */
     private static dev.rick.jjk.progression.investigation.InvestigationState.Arena arena(GameTestHelper h, CursedEncounters.Room room) {
         var st = dev.rick.jjk.progression.investigation.InvestigationState.get(h.getLevel().getServer());
@@ -140,7 +154,7 @@ public class FingerBearerTests {
     }
 
     @GameTest(maxTicks = 300, padding = 16, environment = ENV)
-    public void enteringTheRoomPullsYouIntoItsRealmWhereItRises(GameTestHelper h) {
+    public void theRoomsBreachTakesYouIntoItsRealmWhereItRises(GameTestHelper h) {
         setup(h);
         BlockPos seal = seal(h, 4, 4);
         h.runAfterDelay(20, () -> {
@@ -149,6 +163,7 @@ public class FingerBearerTests {
             h.assertTrue(bearers(h).isEmpty(), "nothing rises in an empty room");
             ServerPlayer p = survivor(h, 1, 1, false);
             h.succeedWhen(() -> {
+                goThrough(h, seal, p);
                 CursedEncounters.Room room = room(h, seal);
                 h.assertTrue(dev.rick.jjk.progression.investigation.CursedRealms.inRealm(p), "taken into the room's realm");
                 var a = arena(h, room);
@@ -179,6 +194,7 @@ public class FingerBearerTests {
         ServerPlayer p = survivor(h, 1, 1, false);
         UUID[] first = new UUID[1];
         h.succeedWhen(() -> {
+            goThrough(h, seal, p);
             CursedEncounters.Room room = room(h, seal);
             h.assertTrue(room != null && room.spirit != null, "spawned");
             var a = arena(h, room);
@@ -434,6 +450,7 @@ public class FingerBearerTests {
         long[] at = new long[1];
         dev.rick.jjk.progression.investigation.InvestigationState.Arena[] arena = new dev.rick.jjk.progression.investigation.InvestigationState.Arena[1];
         h.succeedWhen(() -> {
+            if (!killed[0]) goThrough(h, seal, p);
             CursedEncounters.Room room = room(h, seal);
             h.assertTrue(room != null && room.state != CursedEncounters.State.DORMANT, "the spirit has risen");
             if (!killed[0]) {

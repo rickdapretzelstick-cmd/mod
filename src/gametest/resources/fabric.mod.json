@@ -24,6 +24,8 @@
       "dev.rick.jjk.test.DomainClashRulesTests",
       "dev.rick.jjk.test.MasteryTests",
       "dev.rick.jjk.test.CommonCurseTests",
+      "dev.rick.jjk.test.CurseFightTests",
+      "dev.rick.jjk.test.NewCurseTests",
       "dev.rick.jjk.test.InvestigationTests",
       "dev.rick.jjk.test.RifleTests",
       "dev.rick.jjk.test.RifleClashTests",
@@ -31,6 +33,7 @@
       "dev.rick.jjk.test.CursedKitTests",
       "dev.rick.jjk.test.RealmTests",
       "dev.rick.jjk.test.StoryTests",
+      "dev.rick.jjk.test.NewsHouseTests",
       "dev.rick.jjk.test.SiteTests",
       "dev.rick.jjk.test.BladeTests"
     ],
@@ -49,6 +52,8 @@
       "dev.rick.jjk.test.RifleClientTest",
       "dev.rick.jjk.test.CursedGearClientTest",
       "dev.rick.jjk.test.StoryClientTest",
+      "dev.rick.jjk.test.NewsHouseClientTest",
+      "dev.rick.jjk.test.BreachClientTest",
       "dev.rick.jjk.test.BladeClientTest"
     ]
   },

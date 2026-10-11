@@ -15,23 +15,47 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(AvatarRenderer.class)
 public abstract class AvatarRendererMixin {
     /**
-     * Third person: a drawn cursed tool goes in the main hand (when the hand is empty), held by its grip profile (two
+     * Third person: a drawn cursed tool goes in the main hand (in place of whatever is there), held by its grip profile (two
      * hands brought together on anything two-handed); a holstered one is handed to the gear layer.
      */
     @Inject(method = "extractRenderState(Lnet/minecraft/world/entity/Avatar;Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;F)V", at = @At("TAIL"))
     private void jjk$cursedGear(net.minecraft.world.entity.Avatar entity, net.minecraft.client.renderer.entity.state.AvatarRenderState state, float partialTicks,
                                 CallbackInfo ci) {
         if (!(entity instanceof net.minecraft.world.entity.player.Player p)) return;
+        state.setData(dev.rick.jjk.client.rifle.RifleStance.VIEW, null);
         net.minecraft.world.item.ItemStack tool = dev.rick.jjk.client.gear.CursedGear.equipped(p);
         if (tool.isEmpty()) {
             state.setData(dev.rick.jjk.client.gear.CursedGear.HOLSTERED, null);
+            dev.rick.jjk.client.rifle.RifleStance.untrack(p.getId());
             return;
         }
         var grip = dev.rick.jjk.client.gear.CursedGear.grip(tool);
         state.setData(dev.rick.jjk.client.gear.CursedGear.GRIP, grip);
         var resolver = net.minecraft.client.Minecraft.getInstance().getItemModelResolver();
         net.minecraft.world.entity.HumanoidArm main = p.getMainArm();
-        boolean drawn = dev.rick.jjk.client.gear.CursedGear.drawn(p) && p.getMainHandItem().isEmpty();
+        // Drawn, the tool is what the hands hold (whatever sits in the hotbar slot is put away meanwhile).
+        boolean drawn = dev.rick.jjk.client.gear.CursedGear.drawn(p);
+        dev.rick.jjk.client.rifle.RifleStance.Carry carry = null;
+        if (dev.rick.jjk.progression.tool.rifle.RifleServer.isRifle(tool)) {
+            // The rifle's draw and stow take a moment: on the back until the hand has it, in the hands until it's slung.
+            carry = dev.rick.jjk.client.rifle.RifleStance.carry(p, drawn, p.level().getGameTime() + partialTicks);
+            drawn = carry != dev.rick.jjk.client.rifle.RifleStance.Carry.BACK;
+        }
+        if (drawn && carry != null) {
+            // The rifle fights with the whole body: its stance places the gun and both hands (RifleStance); nothing is
+            // drawn in the hands the vanilla way, and the arms take no vanilla pose of their own.
+            state.setData(dev.rick.jjk.client.rifle.RifleStance.VIEW, dev.rick.jjk.client.rifle.RifleStance.extract(p, state, partialTicks,
+                    carry == dev.rick.jjk.client.rifle.RifleStance.Carry.STOWING));
+            state.rightHandItemState.clear();
+            state.leftHandItemState.clear();
+            state.rightHandItemStack = net.minecraft.world.item.ItemStack.EMPTY;
+            state.leftHandItemStack = net.minecraft.world.item.ItemStack.EMPTY;
+            state.rightArmPose = net.minecraft.client.model.HumanoidModel.ArmPose.EMPTY;
+            state.leftArmPose = net.minecraft.client.model.HumanoidModel.ArmPose.EMPTY;
+            state.setData(dev.rick.jjk.client.gear.CursedGear.HOLSTERED, null);
+            return;
+        }
+        dev.rick.jjk.client.rifle.RifleStance.forget(p.getId());
         if (drawn) {
             var ctx = main == net.minecraft.world.entity.HumanoidArm.RIGHT ? net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
                     : net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
@@ -46,8 +70,18 @@ public abstract class AvatarRendererMixin {
             var pose = net.minecraft.client.model.HumanoidModel.ArmPose.ITEM;
             if (main == net.minecraft.world.entity.HumanoidArm.RIGHT) state.rightArmPose = pose;
             else state.leftArmPose = pose;
+            // A two-handed tool leaves nothing in the other hand.
+            if (grip.twoHanded) {
+                if (main == net.minecraft.world.entity.HumanoidArm.RIGHT) {
+                    state.leftHandItemState.clear();
+                    state.leftHandItemStack = net.minecraft.world.item.ItemStack.EMPTY;
+                } else {
+                    state.rightHandItemState.clear();
+                    state.rightHandItemStack = net.minecraft.world.item.ItemStack.EMPTY;
+                }
+            }
             // Both hands on it: the off arm comes in to the haft, the stock or the grip.
-            if (grip.twoHanded && grip != dev.rick.jjk.progression.tool.kit.GripProfile.RANGED && p.getOffhandItem().isEmpty()) {
+            if (grip.twoHanded && grip != dev.rick.jjk.progression.tool.kit.GripProfile.RANGED) {
                 if (main == net.minecraft.world.entity.HumanoidArm.RIGHT) state.leftArmPose = pose;
                 else state.rightArmPose = pose;
             }

@@ -56,12 +56,9 @@ public final class CursedCompass {
         return InvestigationState.get(p.level().getServer()).incidents().get(id);
     }
 
-    /** Exactly where an incident is anchored: what its trigger is at (the mine's end, the lodge's anomaly), else its site. */
+    /** Exactly where an incident is anchored: its Cursed Breach. */
     public static BlockPos anchor(Incident in) {
-        IncidentTemplate t = in.def();
-        if (t != null && t.trigger() == IncidentTemplate.Trigger.DESCEND) return Sites.mineEnd(in);
-        BlockPos a = in.mark("anomaly");
-        return a != null ? a : in.site;
+        return CursedBreaches.anchor(in);
     }
 
     /** What a player's compass can feel right now. */

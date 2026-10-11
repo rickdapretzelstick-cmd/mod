@@ -13,7 +13,11 @@ public final class CurseKinds {
             "fly_head", ModEntities.FLY_HEAD,
             "school_crawler", ModEntities.SCHOOL_CRAWLER,
             "school_maw", ModEntities.SCHOOL_MAW,
-            "forest_stalker", ModEntities.FOREST_STALKER);
+            "forest_stalker", ModEntities.FOREST_STALKER,
+            "grave_hound", ModEntities.GRAVE_HOUND,
+            "veiled_bride", ModEntities.VEILED_BRIDE,
+            "bloat_toad", ModEntities.BLOAT_TOAD,
+            "brood_mother", ModEntities.BROOD_MOTHER);
 
     private CurseKinds() {}
 

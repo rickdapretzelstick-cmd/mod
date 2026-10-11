@@ -37,6 +37,7 @@ public class RealmTests {
     private static void floor(GameTestHelper h) {
         JJKConfig.get().general.autoAssignGojo = false;
         JJKConfig.get().progression.enabled = true;
+        JJKConfig.get().mastery.enabled = true;
         for (int x = 0; x < 10; x++) for (int z = 0; z < 10; z++) h.setBlock(x, 0, z, Blocks.STONE);
     }
 
@@ -157,7 +158,7 @@ public class RealmTests {
     }
 
     @GameTest(maxTicks = 60, environment = "jjk-test:realm_e")
-    public void theEmptyHouseIsSetOffByLyingInItsBed(GameTestHelper h) {
+    public void theEmptyHousesBreachIsInsideIt(GameTestHelper h) {
         floor(h);
         ServerLevel level = h.getLevel();
         Incident in = incident(h, "empty_house", new BlockPos(5, 1, 5), 1, 0);
@@ -166,9 +167,15 @@ public class RealmTests {
         h.assertTrue(bed != null && door != null, "the house has its door and its bed");
         h.assertTrue(level.getBlockState(bed).getBlock() instanceof net.minecraft.world.level.block.BedBlock, "a bed stands there");
         ServerPlayer p = survivor(h, 5.5, 1, 5.5);
-        h.assertTrue(!Investigations.use(p, door.above(3)), "using anything else does nothing");
-        h.assertTrue(Investigations.use(p, bed), "lying down in it does");
-        h.assertTrue(CursedRealms.pulling(p), "and the pull begins");
+        h.assertTrue(!CursedRealms.pulling(p), "lying in the bed (the old trigger) does nothing by itself");
+        BlockPos anchor = dev.rick.jjk.progression.investigation.CursedBreaches.anchor(in);
+        h.assertTrue(anchor.distSqr(bed) <= 4 * 4, "the breach hangs inside the house");
+        dev.rick.jjk.progression.investigation.CursedBreaches.ensure(level, in.id, anchor);
+        var breach = dev.rick.jjk.progression.investigation.CursedBreaches.find(level, in.id, anchor);
+        h.assertTrue(breach != null, "there is a breach");
+        p.setPos(breach.position().add(1, 0, 0));
+        dev.rick.jjk.progression.investigation.CursedBreaches.useForTest(p, breach);
+        h.assertTrue(CursedRealms.pulling(p), "using it begins the pull");
         CursedRealms.finishPullForTest(p);
         InvestigationState st = InvestigationState.get(level.getServer());
         var a = CursedRealms.arenaOf(st, in.id);
@@ -201,5 +208,42 @@ public class RealmTests {
         CursedCompass.investigate(p, in.id);
         h.assertTrue(p.getAttached(ModAttachments.INVESTIGATING) == null, "choosing it again sets it aside");
         h.succeed();
+    }
+
+    @GameTest(maxTicks = 80, environment = "jjk-test:realm_drops")
+    public void nothingBreakingInARealmArenaLeavesDropsButThrownItemsStay(GameTestHelper h) {
+        JJKConfig.get().general.autoAssignGojo = false;
+        JJKConfig.get().progression.enabled = true;
+        for (int x = 0; x < 9; x++) for (int z = 0; z < 9; z++) h.setBlock(x, 0, z, Blocks.STONE);
+        ServerLevel level = h.getLevel();
+        InvestigationState st = InvestigationState.get(level.getServer());
+        InvestigationState.Village v = Investigations.village(level, h.absolutePos(new BlockPos(-40, 1, -40)));
+        Incident in = Investigations.create(level, v, st, IncidentTemplate.get("livestock"), new Sites.Site(h.absolutePos(new BlockPos(4, 1, 4)), 1, 0),
+                level.getGameTime(), RandomSource.create(3));
+        ServerPlayer p = h.makeMockServerPlayerInLevel();
+        p.setGameMode(GameType.CREATIVE);
+        p.setPos(h.absoluteVec(new Vec3(4.5, 1, 4.5)));
+        CursedRealms.enter(p, in, st);
+        var arena = CursedRealms.arenaOf(st, in.id);
+        h.assertTrue(arena != null, "an arena is open");
+        ServerLevel realm = CursedRealms.level(level.getServer());
+        BlockPos at = arena.origin.above(3).east(3);
+        realm.setBlock(at.below(), Blocks.STONE.defaultBlockState(), 3);
+        realm.setBlock(at, Blocks.OAK_PLANKS.defaultBlockState(), 3);
+        h.assertTrue(CursedRealms.inArena(realm, at), "that spot is in the arena");
+        h.assertTrue(dev.rick.jjk.util.Destruction.destroy(realm, at, 100f, null), "a technique breaks a block there");
+        var loose = new net.minecraft.world.entity.item.ItemEntity(realm, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5, new ItemStack(Blocks.COBBLESTONE));
+        h.assertTrue(!realm.addFreshEntity(loose), "a loose drop never comes into the arena");
+        var thrown = new net.minecraft.world.entity.item.ItemEntity(realm, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 1.5, new ItemStack(ProgressionItems.CURSED_GLASSES));
+        thrown.setThrower(p);
+        h.assertTrue(realm.addFreshEntity(thrown), "an item someone threw does");
+        h.runAfterDelay(1, () -> {
+            var items = realm.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, new AABB(at).inflate(4), e -> e.isAlive());
+            h.assertTrue(items.stream().noneMatch(e -> e.getItem().is(Blocks.OAK_PLANKS.asItem())), "the broken block dropped nothing");
+            h.assertTrue(thrown.isAlive(), "an item someone threw stays");
+            thrown.discard();
+            CursedRealms.close(level.getServer(), st, arena, false);
+            h.succeed();
+        });
     }
 }

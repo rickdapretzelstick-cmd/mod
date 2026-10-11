@@ -78,12 +78,10 @@ public final class LodgeScope {
         Looking l = LOOKING.get(p.getUUID());
         if (l != null && l.scope.equals(pos)) {
             if (l.revealed) {
-                // The deliberate step: follow the trail.
-                Incident in = st.incidents.get(l.incident);
+                // What it showed: where the trail ends, the air is torn (the incident's breach is out there).
                 stop(p);
-                if (in != null && in.state == Incident.State.OPEN && in.def() != null) {
-                    Investigations.begin(level, p, in, in.def(), st, level.getGameTime());
-                }
+                p.sendOverlayMessage(Component.literal("Where the trail ends, out in the trees, the air itself is torn open.")
+                        .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
             } else {
                 stop(p);
             }
@@ -169,7 +167,7 @@ public final class LodgeScope {
             Investigations.hear(p, p.getEyePosition(), SoundEvents.SOUL_ESCAPE.value(), 1.4f, 0.5f);
             send(p, l, 1f, true);
             Investigations.clue(p, in, Investigations.CLUE_ANOMALY, null);
-            p.sendOverlayMessage(Component.literal("A crooked trail through the trees, and something standing on it. Use the scope again to follow.")
+            p.sendOverlayMessage(Component.literal("A crooked trail through the trees, and something standing on it, where the air is torn.")
                     .withStyle(ChatFormatting.DARK_RED, ChatFormatting.ITALIC));
         }
     }

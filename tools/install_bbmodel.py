@@ -9,8 +9,8 @@ Installs a Blockbench model (4.x or 5.x, embedded texture) for the mod's BbModel
     textures/entity/<name>.png; the animations are removed from the model file.
   - animations/<name>/<name>_<clip>.json (rig <name>): each animation, as tools/bbanim_to_clips.py converts them.
 
-Used for the common curses (fly_head, school_crawler, school_maw). tools/install_prison_realm.py does the same plus
-the Prison Realm's item models.
+First used for the common curses (fly_head, school_crawler, school_maw), which tools/gen_curse_models.py now builds
+from scratch instead. tools/install_prison_realm.py does the same plus the Prison Realm's item models.
 """
 import base64
 import io

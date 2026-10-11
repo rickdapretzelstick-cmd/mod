@@ -43,6 +43,7 @@ public class BladeTests {
     private static ServerPlayer wielder(GameTestHelper h, double x, double z) {
         JJKConfig.get().general.autoAssignGojo = false;
         JJKConfig.get().progression.enabled = true;
+        JJKConfig.get().mastery.enabled = true;
         for (int i = -1; i < 24; i++) for (int k = -1; k < 24; k++) h.setBlock(i, 0, k, Blocks.STONE);
         ServerPlayer p = h.makeMockServerPlayerInLevel();
         p.setGameMode(GameType.SURVIVAL);
@@ -85,6 +86,7 @@ public class BladeTests {
         h.assertTrue(i >= 0 && CauldronInfusions.get(i).result().make(h.getLevel(), h.absolutePos(BlockPos.ZERO)).is(ProgressionItems.CURSED_BLADE),
                 "a netherite sword in a full cauldron becomes the Cursed Blade");
         JJKConfig.get().general.autoAssignGojo = false;
+        JJKConfig.get().mastery.enabled = true;
         ServerPlayer p = h.makeMockServerPlayerInLevel();
         p.setGameMode(GameType.SURVIVAL);
         p.connection.handleAcceptPlayerLoad(new net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket());

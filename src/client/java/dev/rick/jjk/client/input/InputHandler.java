@@ -135,7 +135,13 @@ public final class InputHandler {
             if (mc.gui.screen() == null) dev.rick.jjk.client.ClientProgression.openCharacterSelect(null);
         }
         while (masteryKey.consumeClick()) {
-            if (mc.gui.screen() == null) mc.gui.setScreen(new dev.rick.jjk.client.mastery.MasteryScreen());
+            if (mc.gui.screen() != null) continue;
+            if (!dev.rick.jjk.client.mastery.ClientMastery.enabled()) {
+                player.sendOverlayMessage(net.minecraft.network.chat.Component.literal("Mastery is off: every cursed tool comes whole.")
+                        .withStyle(net.minecraft.ChatFormatting.GRAY));
+                continue;
+            }
+            mc.gui.setScreen(new dev.rick.jjk.client.mastery.MasteryScreen());
         }
         if (!dev.rick.jjk.client.CombatMode.enabled()) {
             // Vanilla Minecraft mode: none of this mod's keys do anything. Swallow their presses so nothing fires later.
@@ -146,7 +152,8 @@ public final class InputHandler {
         }
         boolean canAct = mc.gui.screen() == null && ClientState.hasCharacter() && player.isAlive();
         while (switchKey.consumeClick()) {
-            if (canAct && ClientState.canSwitchMoveset()) {
+            // Drawing or holstering a cursed tool works with no technique too.
+            if (mc.gui.screen() == null && player.isAlive() && ClientState.canSwitchMoveset()) {
                 // Keys held across a switch would release onto the other moveset: let them go first.
                 releaseAll(player);
                 ClientPlayNetworking.send(new dev.rick.jjk.core.net.MovesetSwitchPayload());

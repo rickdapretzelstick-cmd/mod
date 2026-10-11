@@ -43,6 +43,7 @@ public class InvestigationTests {
     private static void floor(GameTestHelper h) {
         JJKConfig.get().general.autoAssignGojo = false;
         JJKConfig.get().progression.enabled = true;
+        JJKConfig.get().mastery.enabled = true;
         for (int x = 0; x < 10; x++) for (int z = 0; z < 10; z++) h.setBlock(x, 0, z, Blocks.STONE);
     }
 
@@ -113,34 +114,43 @@ public class InvestigationTests {
         h.succeed();
     }
 
-    @GameTest(maxTicks = 20, environment = "jjk-test:inv_c")
-    public void triggersFireOnlyOnTheRightAction(GameTestHelper h) {
+    @GameTest(maxTicks = 60, environment = "jjk-test:inv_c")
+    public void everyIncidentIsEnteredTheSameWayThroughItsBreach(GameTestHelper h) {
         floor(h);
+        ServerLevel level = h.getLevel();
         Incident cliff = incident(h, "cliff_fall", new BlockPos(5, 1, 5), 1, 0);
-        IncidentTemplate t = cliff.def();
+        Investigations.buildForTest(level, cliff);
         ServerPlayer p = survivor(h, 5.5, 1, 5.5);
-        p.setOnGround(true);
-        p.setDeltaMovement(Vec3.ZERO);
-        h.assertTrue(!Investigations.fired(p, cliff, t), "standing at the edge does nothing");
-        // Off the edge, falling, past where it happened.
+        // Jumping off the edge (the old trigger) does nothing now: nothing is set off by accident.
         Vec3 at = h.absoluteVec(new Vec3(6.6, -1.5, 5.5));
         p.setPos(at.x, at.y, at.z);
         p.setOnGround(false);
         p.setDeltaMovement(new Vec3(0, -0.6, 0));
-        h.assertTrue(Investigations.fired(p, cliff, t), "jumping from it does");
-        Vec3 far = h.absoluteVec(new Vec3(5.5, -1.5, 15));
-        p.setPos(far.x, far.y, far.z);
-        h.assertTrue(!Investigations.fired(p, cliff, t), "falling somewhere else doesn't");
-        Incident pasture = incident(h, "livestock", new BlockPos(5, 1, 5), 1, 0);
-        Vec3 near = h.absoluteVec(new Vec3(8, 1, 8));
-        p.setPos(near.x, near.y, near.z);
-        Investigations.nightForTest = false;
-        boolean byDay = Investigations.fired(p, pasture, pasture.def());
-        Investigations.nightForTest = true;
-        boolean byNight = Investigations.fired(p, pasture, pasture.def());
-        Investigations.nightForTest = null;
-        h.assertTrue(!byDay, "by day the pasture is only a pasture");
-        h.assertTrue(byNight, "walking into it after dark");
+        h.assertTrue(!CursedRealms.pulling(p) && cliff.state() == Incident.State.OPEN, "falling from the cliff sets nothing off");
+        p.setPos(h.absoluteVec(new Vec3(5.5, 1, 4.5)));
+        BlockPos anchor = dev.rick.jjk.progression.investigation.CursedBreaches.anchor(cliff);
+        h.assertTrue(anchor.distManhattan(cliff.site) <= 2, "its breach hangs at the lip, where it happened");
+        h.assertTrue(dev.rick.jjk.progression.investigation.CursedCompass.anchor(cliff).equals(anchor), "the compass points at the breach");
+        dev.rick.jjk.progression.investigation.CursedBreaches.ensure(level, cliff.id, anchor);
+        dev.rick.jjk.progression.investigation.CursedBreaches.ensure(level, cliff.id, anchor);
+        var breach = dev.rick.jjk.progression.investigation.CursedBreaches.find(level, cliff.id, anchor);
+        h.assertTrue(breach != null, "a breach is there");
+        h.assertTrue(level.getEntitiesOfClass(dev.rick.jjk.progression.investigation.CursedBreachEntity.class,
+                new net.minecraft.world.phys.AABB(anchor).inflate(4), e -> cliff.id.equals(e.target())).size() == 1, "only ever one");
+        dev.rick.jjk.progression.investigation.CursedBreaches.useForTest(p, breach);
+        h.assertTrue(CursedRealms.pulling(p), "using it begins the pull");
+        CursedRealms.finishPullForTest(p);
+        h.assertTrue(CursedRealms.inRealm(p) && cliff.state() == Incident.State.ACTIVE, "into the cliff's realm");
+        InvestigationState st = InvestigationState.get(level.getServer());
+        var arena = CursedRealms.arenaOf(st, cliff.id);
+        CursedRealms.close(level.getServer(), st, arena, false);
+        // Every other kind of place: its breach is somewhere in the place itself, never far off.
+        for (String t : List.of("livestock", "old_mine", "empty_house")) {
+            Incident in = incident(h, t, new BlockPos(5, 1, 5), 1, 0);
+            Investigations.buildForTest(level, in);
+            BlockPos b = dev.rick.jjk.progression.investigation.CursedBreaches.anchor(in);
+            h.assertTrue(b.distSqr(in.site) <= 12 * 12, t + "'s breach is at its place: " + b + " vs " + in.site);
+        }
         h.succeed();
     }
 
@@ -200,6 +210,43 @@ public class InvestigationTests {
             Incident live = now.incident(in.id);
             h.assertTrue(CursedRealms.arenaOf(now, in.id) == null, "the empty realm closes");
             h.assertTrue(live != null && live.state() == Incident.State.OPEN && live.curses().isEmpty(), "and the incident is open to try again");
+        });
+    }
+
+    @GameTest(maxTicks = 400, environment = "jjk-test:inv_f")
+    public void aBigIncidentComesInWavesWithReinforcements(GameTestHelper h) {
+        floor(h);
+        ServerLevel level = h.getLevel();
+        Incident in = incident(h, "gojo_chain_4", new BlockPos(5, 1, 5), 1, 0);
+        ServerPlayer p = survivor(h, 6.5, 1, 5.5);
+        InvestigationState st = InvestigationState.get(level.getServer());
+        CursedRealms.enter(p, in, st);
+        int total = in.curses().size();
+        h.assertTrue(total >= 5, "a big incident: " + total);
+        boolean[] sawWaiting = new boolean[1], reinforced = new boolean[1];
+        h.succeedWhen(() -> {
+            p.setHealth(p.getMaxHealth());
+            Incident now = InvestigationState.get(level.getServer()).incident(in.id);
+            h.assertTrue(now != null, "still there");
+            List<dev.rick.jjk.progression.curse.CommonCurseEntity> awake = new java.util.ArrayList<>(), waiting = new java.util.ArrayList<>();
+            for (UUID id : now.curses()) {
+                if (Investigations.curseEntity(level.getServer(), id) instanceof dev.rick.jjk.progression.curse.CommonCurseEntity c && c.isAlive()) {
+                    (c.dormant() ? waiting : awake).add(c);
+                }
+            }
+            if (awake.size() + waiting.size() < now.curses().size()) h.fail("loading");
+            if (!sawWaiting[0]) {
+                h.assertTrue(waiting.size() == total - Investigations.firstWave(total), "the rest wait for a later wave: " + waiting.size() + " of " + total);
+                sawWaiting[0] = true;
+            }
+            if (waiting.isEmpty()) reinforced[0] = true;
+            if (!reinforced[0]) {
+                h.assertTrue(awake.size() >= 1, "the first wave is never all gone before the reinforcements come");
+                // Exorcise the first wave one by one, down to the last one standing.
+                if (awake.size() > 1) awake.get(0).hurtServer((ServerLevel) awake.get(0).level(), awake.get(0).damageSources().genericKill(), 10_000f);
+                h.fail("first wave");
+            }
+            h.assertTrue(awake.size() >= 2, "reinforcements came in with one of the first wave still standing: " + awake.size());
         });
     }
 }

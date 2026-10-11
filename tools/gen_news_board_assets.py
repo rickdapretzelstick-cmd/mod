@@ -71,14 +71,31 @@ model = {
         {'from': [-0.5, 15, 6], 'to': [16.5, 16, 10], 'faces': {f: {'texture': '#wood'} for f in ('north', 'south', 'east', 'west', 'up', 'down')}},
     ],
 }
-notes = [((2, 8, 7.0), (7, 14, 7.5)), ((8.5, 9, 7.0), (13.5, 13.5, 7.5)), ((5, 5.5, 7.0), (10, 9, 7.5)), ((11, 6, 7.0), (14.5, 8.5, 7.5))]
-for i, (a, b) in enumerate(notes):
-    model['elements'].append({'from': list(a), 'to': list(b), 'faces': {'north': {'uv': [1, 0, 15, 16], 'texture': '#paper'}}})
-write_json(model, 'models', 'block', 'news_board.json')
-write_json({'variants': {
-    'facing=north': {'model': 'jjk:block/news_board'},
-    'facing=east': {'model': 'jjk:block/news_board', 'y': 90},
-    'facing=south': {'model': 'jjk:block/news_board', 'y': 180},
-    'facing=west': {'model': 'jjk:block/news_board', 'y': 270}}}, 'blockstates', 'news_board.json')
-write_json({'model': {'type': 'minecraft:model', 'model': 'jjk:block/news_board'}}, 'items', 'news_board.json')
+# The notices pinned up: as many as the village has news (the block's "notices" state, 0-4). Each sits at its own slight
+# angle, as pinned by hand; an empty board keeps only the pin holes and a torn corner.
+notes = [((2, 8, 7.0), (7, 14, 7.5), 4), ((8.5, 9, 7.0), (13.5, 13.5, 7.5), -6), ((5, 5.5, 7.0), (10, 9, 7.5), 3), ((11, 6, 7.0), (14.5, 8.5, 7.5), -3)]
+import copy
+for n in range(5):
+    m = copy.deepcopy(model)
+    for a, b, angle in notes[:n]:
+        e = {'from': list(a), 'to': list(b), 'faces': {'north': {'uv': [1, 0, 15, 16], 'texture': '#paper'}}}
+        cx, cy = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+        e['rotation'] = {'angle': angle if abs(angle) in (0, 22.5, 45) else 0, 'axis': 'z', 'origin': [cx, cy, 7.0]}
+        if e['rotation']['angle'] == 0:
+            del e['rotation']
+        m['elements'].append(e)
+    if n == 0:
+        m['elements'].append({'from': [3, 10, 7.1], 'to': [4.5, 11.5, 7.5], 'faces': {'north': {'uv': [0, 14, 2, 16], 'texture': '#paper'}}})
+    write_json(m, 'models', 'block', 'news_board_%d.json' % n)
+# The old single model stays as the item's (four notices).
+write_json({'parent': 'jjk:block/news_board_4'}, 'models', 'block', 'news_board.json')
+variants = {}
+for facing, y in (('north', 0), ('east', 90), ('south', 180), ('west', 270)):
+    for n in range(5):
+        v = {'model': 'jjk:block/news_board_%d' % n}
+        if y:
+            v['y'] = y
+        variants['facing=%s,notices=%d' % (facing, n)] = v
+write_json({'variants': variants}, 'blockstates', 'news_board.json')
+write_json({'model': {'type': 'minecraft:model', 'model': 'jjk:block/news_board_4'}}, 'items', 'news_board.json')
 print('news board assets written')

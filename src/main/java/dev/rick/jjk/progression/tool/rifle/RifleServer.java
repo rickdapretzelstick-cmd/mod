@@ -43,10 +43,11 @@ import java.util.UUID;
  * reserve pays, and the beam's whole sequence. Clients are told the phase (to play the matching clip, for everyone
  * nearby) and draw what the server says.
  *
- * <p>Controls (the cursed tools' use key): hold use to raise the scope, let go to fire (a quick tap is a hip shot,
- * swaying more). Once Unfolding Array is learned, sneak and hold use instead: the arms deploy, the lenses charge, the
- * rifle reaches its ready state; let go then to fire the beam. Letting go early, switching items, running the reserve
- * dry, dying or leaving all cancel it, and the arms retract.
+ * <p>The rifle fights only from the Cursed Item slot, with its moveset drawn ({@link dev.rick.jjk.progression.tool.kit.RifleKit}):
+ * held in the hand it is just an item. Snap Shot fires from the hip; Aimed Shot is held to raise the scope and let go to
+ * fire; once Unfolding Array is learned, holding G deploys the arms, charges the lenses and reaches the ready state, and
+ * letting go then fires the beam. Letting go early, holstering or unequipping it, running the reserve dry, dying,
+ * leaving or changing dimension all cancel it, and the arms retract.
  *
  * <p>The reserve ({@link ModAttachments#RIFLE_ENERGY}) is the rifle's own cursed energy, kept per player and refilling
  * over time: it never depends on a technique.
@@ -65,6 +66,8 @@ public final class RifleServer {
         float sentEnergy = -1;
         /** Held through the equipped rifle's moveset (a kit key) rather than the use key. */
         boolean kitHold;
+        /** G was let go while the array was still opening or charging: it fires the moment it's ready. */
+        boolean released;
     }
 
     private static final Map<UUID, State> STATES = new HashMap<>();
@@ -74,6 +77,13 @@ public final class RifleServer {
     public static void init() {
         ServerTickEvents.END_SERVER_TICK.register(RifleServer::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((h, s) -> drop(h.player));
+        // A beam belongs to the level it was opened in: another dimension starts the rifle at rest.
+        net.fabricmc.fabric.api.entity.event.v1.ServerEntityLevelChangeEvents.AFTER_PLAYER_CHANGE_LEVEL.register((p, from, to) -> {
+            if (STATES.containsKey(p.getUUID())) {
+                drop(p);
+                sync(p, state(p), true);
+            }
+        });
         ServerLivingEntityEvents.AFTER_DEATH.register((e, src) -> {
             if (e instanceof ServerPlayer p && STATES.containsKey(p.getUUID())) {
                 drop(p);
@@ -94,14 +104,13 @@ public final class RifleServer {
     }
 
     /**
-     * The rifle a player is fighting with: the one in their hand, else the one in their Cursed Item slot while its
-     * moveset is the one in use. Empty when neither.
+     * The rifle a player is fighting with: the one in their Cursed Item slot, while its moveset is the one in use (drawn).
+     * A rifle merely held in the hand never counts. Empty otherwise.
      */
     public static ItemStack weapon(ServerPlayer p) {
-        if (isRifle(p.getMainHandItem())) return p.getMainHandItem();
         ItemStack eq = dev.rick.jjk.progression.tool.kit.CursedSlot.get(p);
-        var c = dev.rick.jjk.core.ability.Casters.getOrNull(p);
-        return isRifle(eq) && c != null && c.usingTool() ? eq : ItemStack.EMPTY;
+        var c = Casters.getOrNull(p);
+        return isRifle(eq) && c != null && c.usingTool() && c.toolKit() instanceof dev.rick.jjk.progression.tool.kit.RifleKit ? eq : ItemStack.EMPTY;
     }
 
     public static boolean wielding(ServerPlayer p) {
@@ -162,6 +171,15 @@ public final class RifleServer {
         return true;
     }
 
+    /** Why the array can't open right now (still cooling, the reserve too low), or null. */
+    @Nullable
+    public static String beamRefusal(ServerPlayer p) {
+        State s = state(p);
+        if (p.level().getGameTime() < s.beamReadyAt) return "The array is still cooling.";
+        if (energy(p) < RifleRules.beamCost(p)) return "The reserve is too low to open the array.";
+        return null;
+    }
+
     /** A kit key let go: the same as letting go of use. */
     public static void kitRelease(ServerPlayer p) {
         State s = STATES.get(p.getUUID());
@@ -202,36 +220,15 @@ public final class RifleServer {
         p.setAttached(ModAttachments.RIFLE_ENERGY, Math.max(0f, Math.min(cfg().capacity, v)));
     }
 
-    // --- Input (from the item, through RifleBehavior) ---
+    // --- Input ---
 
-    /** Use pressed. True starts holding the use key (aiming or charging); false refuses. */
+    /** The rifle used from the hand: it only says where it has to go. */
     static boolean use(ServerLevel level, ServerPlayer p, ItemStack stack) {
-        Casters.get(p);
-        String inert = RifleClaims.inertReason(p, stack);
-        if (inert != null) {
-            p.sendOverlayMessage(Component.literal(inert).withStyle(ChatFormatting.GRAY));
-            return false;
-        }
-        State s = state(p);
-        if (s.phase != Phase.IDLE && s.phase != Phase.AIM) return false;
-        if (p.isShiftKeyDown() && RifleRules.beamUnlocked(p)) {
-            if (level.getGameTime() < s.beamReadyAt) {
-                p.sendOverlayMessage(Component.literal("The array is still cooling.").withStyle(ChatFormatting.GRAY));
-                return false;
-            }
-            if (energy(p) < RifleRules.beamCost(p)) {
-                p.sendOverlayMessage(Component.literal("The reserve is too low to open the array.").withStyle(ChatFormatting.GRAY));
-                return false;
-            }
-            beginDeploy(level, p, s);
-            return true;
-        }
-        set(p, s, Phase.AIM, 0);
-        s.aimTicks = 0;
-        return true;
+        p.sendOverlayMessage(Component.literal("Put the Cursed Rifle in your Cursed Item slot to fight with it.").withStyle(ChatFormatting.GRAY));
+        return false;
     }
 
-    /** Use released after {@code held} ticks. */
+    /** The held key let go after {@code held} ticks. */
     static void release(ServerLevel level, ServerPlayer p, ItemStack stack, int held) {
         State s = state(p);
         switch (s.phase) {
@@ -239,7 +236,8 @@ public final class RifleServer {
                 shoot(level, p, stack, s);
                 set(p, s, Phase.IDLE, 0);
             }
-            case DEPLOY, CHARGE -> cancel(level, p, s, null);
+            // Let go while it builds: it carries on and fires as soon as it's ready (never an in-and-out).
+            case DEPLOY, CHARGE -> s.released = true;
             case READY -> fireBeam(level, p, s, null);
             default -> {}
         }
@@ -257,17 +255,10 @@ public final class RifleServer {
         }
         setEnergy(p, energy(p) - cost);
         p.getCooldowns().addCooldown(stack, RifleRules.shotInterval(p));
-        boolean scoped = s.aimTicks >= 4;
-        float[] drift = RifleAim.drift(level.getGameTime(), p.getId(), s.aimTicks, RifleRules.sway(p), RifleRules.settleTicks(p), scoped, cfg().hipSwayDegrees);
-        Vec3 dir = RifleAim.apply(p.getYRot(), p.getXRot(), drift);
-        Vec3 from = p.getEyePosition();
-        double range = cfg().shotRange;
-        var clip = level.clip(new ClipContext(from, from.add(dir.scale(range)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
-        double reach = clip.getType() == HitResult.Type.MISS ? range : clip.getLocation().distanceTo(from);
-        LivingEntity target = firstAlong(level, p, from, dir, reach);
-        double at = target == null ? reach : target.getBoundingBox().inflate(0.25).clip(from, from.add(dir.scale(reach))).map(v -> v.distanceTo(from)).orElse(reach);
-        Vec3 end = from.add(dir.scale(at));
-        Vec3 muzzle = muzzle(p, dir);
+        // Exactly where the crosshair is: the view's own ray decides the hit; the muzzle is only where it's seen to leave.
+        RifleAim.Solution aim = RifleAim.solve(level, p, cfg().shotRange);
+        LivingEntity target = aim.target();
+        Vec3 muzzle = aim.muzzle(), end = aim.point(), dir = aim.dir();
         Fx.play(level, "rifle_shot", muzzle, end.subtract(muzzle), target != null ? 1f : 0f, p.getId());
         Fx.sound(level, muzzle, SoundEvents.FIREWORK_ROCKET_BLAST, 1.6f, 0.55f);
         Fx.sound(level, muzzle, SoundEvents.GENERIC_EXPLODE, 0.35f, 1.9f);
@@ -276,29 +267,18 @@ public final class RifleServer {
             float dmg = target instanceof GradedCurse ? cfg().shotDamage : RifleRules.shotDamage(p);
             HitResolver.resolve(Hit.builder(p, "rifle_shot").damage(dmg).tag(AttackTag.PROJECTILE).knockback(Knockback.directional(dir, 0.35, 0.08))
                     .hitstun(6).origin(muzzle).noComboScaling().fx("curse_bite", 0.7f).build(), target);
-        } else if (clip.getType() != HitResult.Type.MISS) {
+        } else if (aim.struck()) {
             Fx.play(level, "rifle_impact", end, dir.scale(-1), 1f, p.getId());
         }
+        lastShot = aim;
     }
 
-    /** The first living thing the round meets before {@code reach}. */
-    @Nullable
-    static LivingEntity firstAlong(ServerLevel level, ServerPlayer p, Vec3 from, Vec3 dir, double reach) {
-        Vec3 to = from.add(dir.scale(reach));
-        LivingEntity best = null;
-        double bestT = Double.MAX_VALUE;
-        List<LivingEntity> near = level.getEntitiesOfClass(LivingEntity.class, new AABB(from, to).inflate(1.0),
-                e -> e != p && e.isAlive() && !e.isSpectator() && Targeting.canTarget(p, e));
-        for (LivingEntity e : near) {
-            Optional<Vec3> hit = e.getBoundingBox().inflate(0.25).clip(from, to);
-            if (hit.isEmpty()) continue;
-            double t = hit.get().distanceToSqr(from);
-            if (t < bestT) {
-                bestT = t;
-                best = e;
-            }
-        }
-        return best;
+    /** The last shot's aiming (tests). */
+    @Nullable public static RifleAim.Solution lastShot;
+
+    /** Where the beam goes: from the muzzle toward what the crosshair is on (or along the aim, at its full reach). */
+    static Vec3 beamDir(ServerLevel level, ServerPlayer p) {
+        return RifleAim.solve(level, p, cfg().beamRange).visualDir();
     }
 
     /** Where the barrel ends (the model's beam_origin, held at the right side). */
@@ -332,8 +312,8 @@ public final class RifleServer {
         }
         if (at == null && BeamClashManager.tryCounter(Casters.get(p))) return true;
         setEnergy(p, energy(p) - cost);
-        Vec3 dir = at == null ? p.getLookAngle() : at.subtract(p.getEyePosition()).normalize();
-        s.beam.fire(muzzle(p, dir), dir, RifleRules.beamTicks(p));
+        Vec3 dir = at == null ? beamDir(level, p) : at.subtract(muzzle(p, p.getLookAngle())).normalize();
+        s.beam.fire(muzzle(p, RifleAim.direction(p)), dir, RifleRules.beamTicks(p));
         set(p, s, Phase.FIRE, s.beam.lifetime());
         return true;
     }
@@ -355,10 +335,24 @@ public final class RifleServer {
         Fx.sound(level, p.getEyePosition(), SoundEvents.PISTON_CONTRACT, 0.7f, 0.8f);
     }
 
-    /** A player gone (death, logout): nothing of theirs may keep running. */
+    /**
+     * A player gone (death, logout, another dimension): nothing of theirs may keep running, and the rifle is at rest. The
+     * array's cooldown is kept (dying or relogging never resets it).
+     */
     static void drop(ServerPlayer p) {
-        State s = STATES.remove(p.getUUID());
-        if (s != null && s.beam != null) s.beam.stop();
+        State s = STATES.get(p.getUUID());
+        if (s == null) return;
+        if (s.beam != null) {
+            if (s.phase == Phase.FIRE && p.level() instanceof ServerLevel level) s.beamReadyAt = level.getGameTime() + cfg().beamCooldown;
+            s.beam.stop();
+            s.beam = null;
+        }
+        s.phase = Phase.IDLE;
+        s.age = 0;
+        s.duration = 0;
+        s.aimTicks = 0;
+        s.kitHold = false;
+        s.sentPhase = -1;
     }
 
     // --- Every tick ---
@@ -379,7 +373,7 @@ public final class RifleServer {
     static void tick(ServerLevel level, ServerPlayer p, State s) {
         s.age++;
         boolean held = wielding(p);
-        boolean using = held && (p.isUsingItem() && isRifle(p.getUseItem()) || s.kitHold);
+        boolean using = held && s.kitHold;
         if (!p.isAlive()) {
             drop(p);
             return;
@@ -387,15 +381,18 @@ public final class RifleServer {
         switch (s.phase) {
             case IDLE -> {}
             case AIM -> {
-                if (!using) set(p, s, Phase.IDLE, 0);
+                // Sprinting drops the scope (no shot).
+                if (!using || p.isSprinting()) set(p, s, Phase.IDLE, 0);
                 else s.aimTicks++;
             }
             case DEPLOY, CHARGE, READY -> {
-                if (!using) {
+                // Holstered or unequipped: the array folds away. Letting go of G only means "fire when ready".
+                if (!held) {
                     cancel(level, p, s, null);
                     return;
                 }
-                if (s.beam != null) s.beam.aim(muzzle(p, p.getLookAngle()), p.getLookAngle());
+                if (!s.kitHold) s.released = true;
+                if (s.beam != null) s.beam.aim(muzzle(p, RifleAim.direction(p)), beamDir(level, p));
                 if (s.phase == Phase.DEPLOY && s.age >= s.duration) {
                     set(p, s, Phase.CHARGE, RifleRules.chargeTicks(p));
                 } else if (s.phase == Phase.CHARGE) {
@@ -406,8 +403,14 @@ public final class RifleServer {
                         Fx.sound(level, p.getEyePosition(), SoundEvents.BEACON_POWER_SELECT, 1.2f, 1.6f);
                         // Ready and held: still answerable, for as long as it is held.
                         if (s.beam != null) BeamClashManager.threaten(s.beam, level.getGameTime() + 40);
+                        // Already let go: straight out.
+                        if (s.released) fireBeam(level, p, s, null);
                     }
                 } else if (s.phase == Phase.READY) {
+                    if (s.released) {
+                        fireBeam(level, p, s, null);
+                        return;
+                    }
                     setEnergy(p, energy(p) - cfg().readyDrainPerSecond / 20f);
                     if (energy(p) < RifleRules.beamCost(p)) cancel(level, p, s, "The reserve gave out.");
                     else if (s.age % 10 == 0) Fx.play(level, "rifle_charge", muzzle(p, p.getLookAngle()), p.getLookAngle(), 1f, p.getId());
@@ -419,6 +422,7 @@ public final class RifleServer {
                 if (b == null || !held) {
                     if (b != null) b.stop();
                     s.beam = null;
+                    s.beamReadyAt = level.getGameTime() + cfg().beamCooldown;
                     set(p, s, Phase.COOLDOWN, cfg().cooldownTicks);
                     return;
                 }
@@ -439,6 +443,7 @@ public final class RifleServer {
 
     static void set(ServerPlayer p, State s, Phase phase, int duration) {
         if (phase == Phase.IDLE || phase == Phase.RETRACT || phase == Phase.COOLDOWN || phase == Phase.FIRE) s.kitHold = false;
+        if (phase == Phase.IDLE || phase == Phase.DEPLOY || phase == Phase.FIRE || phase == Phase.RETRACT) s.released = false;
         s.phase = phase;
         s.age = 0;
         s.duration = duration;
@@ -463,19 +468,12 @@ public final class RifleServer {
         if (s != null && p.level() instanceof ServerLevel level) tick(level, p, s);
     }
 
-    /** Test hooks: the same input the item gives. */
-    public static boolean useForTest(ServerPlayer p) {
-        return use((ServerLevel) p.level(), p, p.getMainHandItem());
-    }
-
-    public static void releaseForTest(ServerPlayer p) {
-        release((ServerLevel) p.level(), p, p.getMainHandItem(), 20);
-    }
-
     /** Test hook: set a phase directly (e.g. straight to READY). */
     public static void forcePhaseForTest(ServerPlayer p, Phase phase) {
         State s = state(p);
         if (s.beam == null && phase != Phase.IDLE && phase != Phase.AIM) s.beam = new RifleBeam(p, (ServerLevel) p.level(), RifleRules.output(p));
         set(p, s, phase, 0);
+        // As if its key were held through it.
+        s.kitHold = phase == Phase.AIM || phase == Phase.DEPLOY || phase == Phase.CHARGE || phase == Phase.READY;
     }
 }

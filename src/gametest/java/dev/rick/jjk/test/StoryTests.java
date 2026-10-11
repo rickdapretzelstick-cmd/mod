@@ -51,6 +51,7 @@ public class StoryTests {
     private static ServerPlayer survivor(GameTestHelper h, double x, double z) {
         JJKConfig.get().general.autoAssignGojo = false;
         JJKConfig.get().progression.enabled = true;
+        JJKConfig.get().mastery.enabled = true;
         for (int i = 0; i < 6; i++) for (int k = 0; k < 6; k++) h.setBlock(i, 0, k, Blocks.STONE);
         ServerPlayer p = h.makeMockServerPlayerInLevel();
         p.setGameMode(GameType.SURVIVAL);

@@ -6,7 +6,6 @@ import dev.rick.jjk.client.anim.Clip;
 import dev.rick.jjk.client.anim.PoseFrame;
 import dev.rick.jjk.core.net.RifleStatePayload;
 import dev.rick.jjk.core.net.ScopeViewPayload;
-import dev.rick.jjk.progression.tool.rifle.RifleAim;
 import dev.rick.jjk.progression.tool.rifle.RifleServer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
@@ -156,9 +155,8 @@ public final class RifleClient {
                 clips(e.getKey(), s, now);
             }
         }
-        float want = 1f;
-        if (scopeOn) want = 0.28f;
-        else if (scoped(mc)) want = 0.42f;
+        // The lodge's mounted scope (the rifle's own is RifleScope, smoothed per frame).
+        float want = scopeOn ? 0.28f : 1f;
         zoom += (want - zoom) * 0.35f;
         if (Math.abs(zoom - want) < 0.002f) zoom = want;
     }
@@ -173,25 +171,14 @@ public final class RifleClient {
 
     // --- The local shooter ---
 
-    /** Whether the local player is looking down the rifle's scope (held aim). */
+    /** Whether the local player is looking down the rifle's scope (its overlay fully up). */
     public static boolean scoped(Minecraft mc) {
-        if (mc.player == null) return false;
-        State s = STATES.get(mc.player.getId());
-        return s != null && s.phase == RifleServer.Phase.AIM && mc.level != null && mc.level.getGameTime() - s.since >= 4;
+        return RifleScope.overlay() >= 0.999f;
     }
 
-    /** The reticle's drift right now (the same as the server's aim), in degrees {yaw, pitch}. */
-    public static float[] drift(Minecraft mc) {
-        State s = mc.player == null ? null : STATES.get(mc.player.getId());
-        if (s == null || mc.level == null) return new float[] {0, 0};
-        long now = mc.level.getGameTime();
-        int aim = (int) (now - s.since);
-        return RifleAim.drift(now, mc.player.getId(), aim, s.sway, s.settle, aim >= 4,
-                dev.rick.jjk.config.JJKConfig.get().rifle.hipSwayDegrees);
-    }
-
+    /** The field of view multiplier this frame: the lodge's scope, or the rifle's. */
     public static float zoom() {
-        return zoom;
+        return scopeOn ? zoom : RifleScope.zoom();
     }
 
     @Nullable private static Vec3 scopeEye;
@@ -222,6 +209,7 @@ public final class RifleClient {
     }
 
     public static void clear() {
+        RifleScope.reset();
         for (int id : STATES.keySet()) ClientAnimations.forget(animKey(id));
         STATES.clear();
         scopeOn = false;

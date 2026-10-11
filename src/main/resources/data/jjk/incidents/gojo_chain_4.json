@@ -3,7 +3,7 @@
   "weight": 0,
   "grade": "GRADE_2",
   "site": "tower",
-  "trigger": "interact",
+  "trigger": "breach",
   "realm": "distance_realm",
   "curses": [
     {
@@ -12,15 +12,21 @@
       "max": 1
     },
     {
+      "kind": "veiled_bride",
+      "min": 1,
+      "max": 1,
+      "grade": "GRADE_3"
+    },
+    {
       "kind": "school_crawler",
-      "min": 2,
+      "min": 1,
       "max": 2,
       "grade": "GRADE_3"
     },
     {
       "kind": "fly_head",
-      "min": 3,
-      "max": 4,
+      "min": 2,
+      "max": 3,
       "grade": "GRADE_3"
     }
   ],

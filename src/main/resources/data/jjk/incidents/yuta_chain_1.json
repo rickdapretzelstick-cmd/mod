@@ -3,7 +3,7 @@
   "weight": 0,
   "grade": "GRADE_3",
   "site": "house",
-  "trigger": "approach",
+  "trigger": "breach",
   "realm": "house_realm",
   "curses": [
     {

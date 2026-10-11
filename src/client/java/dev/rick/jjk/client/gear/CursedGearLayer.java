@@ -23,6 +23,11 @@ public class CursedGearLayer<S extends HumanoidRenderState, M extends HumanoidMo
 
     @Override
     public void submit(PoseStack ps, SubmitNodeCollector c, int light, S state, float yRot, float xRot) {
+        dev.rick.jjk.client.rifle.RifleStance.View rifle = state.getData(dev.rick.jjk.client.rifle.RifleStance.VIEW);
+        if (rifle != null && rifle.placed && !state.isInvisible) {
+            dev.rick.jjk.client.rifle.RifleItemRenderer.submitPlaced(ps, c, light, rifle);
+            return;
+        }
         ItemStackRenderState item = state.getData(CursedGear.HOLSTERED);
         GripProfile grip = state.getData(CursedGear.GRIP);
         if (item == null || item.isEmpty() || grip == null || state.isInvisible) return;

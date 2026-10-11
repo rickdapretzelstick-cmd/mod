@@ -186,11 +186,16 @@ public final class BbModel {
 
     /** Draws the model through {@code base} (already placed, turned and scaled to pixels) with the given pose. */
     public void render(PoseStack.Pose base, VertexConsumer buf, Posing pose, int light, int argb) {
-        Matrix4f m = new Matrix4f();
-        for (Group g : roots) draw(base, buf, g, m, pose, light, argb);
+        render(base, buf, pose, light, argb, OverlayTexture.NO_OVERLAY);
     }
 
-    private void draw(PoseStack.Pose base, VertexConsumer buf, Group g, Matrix4f parent, Posing pose, int light, int argb) {
+    /** As {@link #render(PoseStack.Pose, VertexConsumer, Posing, int, int)}, with an overlay (a white or red flash). */
+    public void render(PoseStack.Pose base, VertexConsumer buf, Posing pose, int light, int argb, int overlay) {
+        Matrix4f m = new Matrix4f();
+        for (Group g : roots) draw(base, buf, g, m, pose, light, argb, overlay);
+    }
+
+    private void draw(PoseStack.Pose base, VertexConsumer buf, Group g, Matrix4f parent, Posing pose, int light, int argb, int overlay) {
         Matrix4f m = new Matrix4f(parent);
         apply(m, g, pose);
         for (Cube c : g.cubes) {
@@ -198,15 +203,15 @@ public final class BbModel {
             if (c.rot.x != 0 || c.rot.y != 0 || c.rot.z != 0) {
                 cm.translate(c.origin).rotate(new Quaternionf().rotationZYX(c.rot.z, c.rot.y, c.rot.x)).translate(-c.origin.x, -c.origin.y, -c.origin.z);
             }
-            cube(base, buf, c, cm, light, argb);
+            cube(base, buf, c, cm, light, argb, overlay);
         }
-        for (Group child : g.children) draw(base, buf, child, m, pose, light, argb);
+        for (Group child : g.children) draw(base, buf, child, m, pose, light, argb, overlay);
     }
 
     private static final Vector3f[] NORMALS = {new Vector3f(0, 0, -1), new Vector3f(0, 0, 1), new Vector3f(1, 0, 0), new Vector3f(-1, 0, 0),
             new Vector3f(0, 1, 0), new Vector3f(0, -1, 0)};
 
-    private static void cube(PoseStack.Pose base, VertexConsumer buf, Cube c, Matrix4f m, int light, int argb) {
+    private static void cube(PoseStack.Pose base, VertexConsumer buf, Cube c, Matrix4f m, int light, int argb, int overlay) {
         float x1 = c.from.x, y1 = c.from.y, z1 = c.from.z, x2 = c.to.x, y2 = c.to.y, z2 = c.to.z;
         // Corners per face, in UV order: top-left, top-right, bottom-right, bottom-left (as seen from outside).
         float[][][] quads = {
@@ -229,7 +234,7 @@ public final class BbModel {
             for (int k = 0; k < 4; k++) {
                 m.transformPosition(q[k][0], q[k][1], q[k][2], v);
                 float[] t = tex[(k + turns) % 4];
-                buf.addVertex(base, v.x, v.y, v.z).setColor(argb).setUv(t[0], t[1]).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
+                buf.addVertex(base, v.x, v.y, v.z).setColor(argb).setUv(t[0], t[1]).setOverlay(overlay).setLight(light)
                         .setNormal(base, n.x, n.y, n.z);
             }
         }

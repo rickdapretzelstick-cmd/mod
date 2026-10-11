@@ -125,9 +125,12 @@ public final class AbilityCaster {
         return toolKit;
     }
 
-    /** Whether the moveset in use is the equipped cursed tool's (always, for someone with no technique). */
+    /**
+     * Whether the moveset in use is the equipped cursed tool's: the tool is drawn. Equipped is not drawn: a tool can sit
+     * holstered (slung, sheathed) with or without a technique beside it.
+     */
     public boolean usingTool() {
-        return toolKit != null && (character == null || toolSelected);
+        return toolKit != null && toolSelected;
     }
 
     /** The kit whose moves the keys use right now: the cursed tool's or the technique's (null: neither). */
@@ -201,7 +204,7 @@ public final class AbilityCaster {
     /** Why switching movesets isn't possible right now, or null. */
     @Nullable
     public String switchBlocked() {
-        if (toolKit == null || character == null) return "nothing_to_switch";
+        if (toolKit == null) return "nothing_to_switch";
         if (switchLock > 0) return "too_soon";
         if (isBusy()) return "busy";
         if (melee.isCommitted()) return "attacking";
@@ -210,7 +213,8 @@ public final class AbilityCaster {
     }
 
     /**
-     * Swaps between the innate technique and the cursed tool's moveset. Never resets a cooldown, never refunds anything,
+     * Draws or holsters the cursed tool: swaps between the innate technique (or, with none, bare hands) and the tool's
+     * moveset. Never resets a cooldown, never refunds anything,
      * and only from a free moment (not mid-cast, mid-swing or stunned), with a short lock after.
      */
     public boolean switchMoveset() {
@@ -291,7 +295,7 @@ public final class AbilityCaster {
 
     /** Builds the meter through combat (not while awakened or shortly after it ended). */
     public void gainAwakening(float amount) {
-        if (character == null || awakened || refillDelay > 0 || amount <= 0) return;
+        if (!armed() || awakened || refillDelay > 0 || amount <= 0) return;
         float before = awakening;
         awakening = Math.min(maxAwakening(), awakening + amount);
         if ((int) before != (int) awakening || awakening >= maxAwakening()) dirty = true;
@@ -816,7 +820,7 @@ public final class AbilityCaster {
         if (awakened) flags |= CasterSyncPayload.FLAG_AWAKENED;
         if (refillDelay > 0) flags |= CasterSyncPayload.FLAG_REFILL_LOCKED;
         if (usingTool()) flags |= CasterSyncPayload.FLAG_TOOL;
-        if (toolKit != null && character != null) flags |= CasterSyncPayload.FLAG_CAN_SWITCH;
+        if (toolKit != null) flags |= CasterSyncPayload.FLAG_CAN_SWITCH;
         int[] cd = new int[SLOTS], maxCd = new int[SLOTS], ch = new int[SLOTS];
         StringBuilder ids = new StringBuilder();
         for (AbilitySlot s : AbilitySlot.values()) {

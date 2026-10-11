@@ -46,18 +46,10 @@ public final class FingerBearerEncounter {
 
     static void tick(ServerLevel level, CursedEncounters.Room room, List<ServerPlayer> inside) {
         if (inRealm) {
-            // The room itself stays empty: whoever walks in is taken to its realm, where it waits.
-            for (ServerPlayer p : inside) {
-                if (dev.rick.jjk.progression.investigation.CursedRealms.pulling(p) || dev.rick.jjk.progression.investigation.CursedRealms.inRealm(p)) continue;
-                String key = CursedEncounters.keyOf(room);
-                dev.rick.jjk.progression.investigation.CursedRealms.pull(p, p.position(), () -> {
-                    CursedEncounters.Room live = CursedEncounters.byKey(level.getServer(), key);
-                    if (live != null && live.state != CursedEncounters.State.CLEARED) {
-                        dev.rick.jjk.progression.investigation.CursedRealms.enterRoom(p, key,
-                                dev.rick.jjk.progression.investigation.InvestigationState.get(level.getServer()));
-                    }
-                });
-            }
+            // The room itself stays empty: over its seal hangs a Cursed Breach, and whoever uses it is taken to the
+            // realm where it waits (CursedBreaches). Nothing happens just by walking in.
+            if (!inside.isEmpty()) dev.rick.jjk.progression.investigation.CursedBreaches.ensure(level,
+                    dev.rick.jjk.progression.investigation.CursedRealms.ROOM + CursedEncounters.keyOf(room), room.seal.above());
             return;
         }
         Entity existing = room.spirit == null ? null : level.getEntity(room.spirit);
@@ -68,6 +60,17 @@ public final class FingerBearerEncounter {
         if (inside.isEmpty()) return;
         if (room.state == CursedEncounters.State.ACTIVE && room.spirit != null && ++room.missing < MISSING_CHECKS) return;
         spawn(level, room);
+    }
+
+    /** Takes a player through a battle room's breach into its realm (after the pull). */
+    public static void pullIntoRealm(ServerPlayer p, String key) {
+        var server = p.level().getServer();
+        dev.rick.jjk.progression.investigation.CursedRealms.pull(p, p.position(), () -> {
+            CursedEncounters.Room live = CursedEncounters.byKey(server, key);
+            if (live != null && live.state != CursedEncounters.State.CLEARED) {
+                dev.rick.jjk.progression.investigation.CursedRealms.enterRoom(p, key, dev.rick.jjk.progression.investigation.InvestigationState.get(server));
+            }
+        });
     }
 
     /** Raises the room's Finger Bearer over its seal. */

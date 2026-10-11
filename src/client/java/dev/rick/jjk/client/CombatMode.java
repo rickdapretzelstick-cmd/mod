@@ -26,10 +26,19 @@ public final class CombatMode {
         Minecraft mc = Minecraft.getInstance();
         // Let go of anything being held so a charge doesn't keep going after the switch.
         InputHandler.releaseAll(mc.player);
+        // Off, a drawn cursed tool is put away (and comes back out when it's on again).
+        sync();
         if (mc.player != null) {
             mc.player.sendOverlayMessage(on
                     ? Component.literal("JJK Combat Mode: ON").withStyle(ChatFormatting.AQUA)
                     : Component.literal("Vanilla Minecraft Mode: JJK abilities and HUD off").withStyle(ChatFormatting.GRAY));
+        }
+    }
+
+    /** Tells the server whether Combat Mode is on (a drawn cursed tool is holstered while it's off). */
+    public static void sync() {
+        if (net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.canSend(dev.rick.jjk.core.net.CombatModePayload.TYPE)) {
+            net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(new dev.rick.jjk.core.net.CombatModePayload(enabled()));
         }
     }
 

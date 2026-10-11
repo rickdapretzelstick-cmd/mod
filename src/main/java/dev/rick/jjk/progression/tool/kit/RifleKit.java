@@ -56,6 +56,15 @@ public final class RifleKit extends CursedToolKit {
         bind(AbilitySlot.ULTIMATE, new Array());
     }
 
+    /**
+     * Every rifle move needs the rifle drawn from the Cursed Item slot (its moveset in use: never just held) and at rest
+     * (no scope up, no array out).
+     */
+    static @Nullable String ready(AbilityContext ctx) {
+        if (!(ctx.user() instanceof ServerPlayer p) || !RifleServer.wielding(p)) return "no_tool";
+        return RifleServer.busy(p) ? "busy" : null;
+    }
+
     static final class Snap extends ToolMove {
         Snap() {
             super("rf_snap", CursedTools.CURSED_RIFLE, null);
@@ -73,16 +82,39 @@ public final class RifleKit extends CursedToolKit {
 
         @Override
         public @Nullable String checkActivation(AbilityContext ctx) {
-            if (!(ctx.user() instanceof ServerPlayer p) || RifleServer.busy(p)) return "busy";
-            return super.checkActivation(ctx);
+            String why = ready(ctx);
+            return why != null ? why : super.checkActivation(ctx);
         }
 
         @Override
         public @Nullable AbilityInstance activate(AbilityContext ctx) {
-            if (ctx.user() instanceof ServerPlayer p) RifleServer.kitShot(p);
-            return null;
+            return new ToolMove.Instance(this, ctx) {
+                @Override
+                public void start() {
+                    // Startup: the rifle snaps up to the shoulder; the round leaves the muzzle on the marked tick.
+                    Anim.play(user, "rf_snap");
+                    setPhase(0, SNAP_RECOVER);
+                }
+
+                @Override
+                public void tick() {
+                    if (!(user instanceof ServerPlayer p) || !RifleServer.wielding(p)) {
+                        finish();
+                        return;
+                    }
+                    if (age == SNAP_FIRE) RifleServer.kitShot(p);
+                    if (age >= SNAP_RECOVER) finish();
+                }
+            };
         }
     }
+
+    /** Snap Shot's fire tick and its end (the rf_snap clip's marker and length). */
+    public static final int SNAP_FIRE = 3, SNAP_RECOVER = 9;
+    /** Suppressing Volley's first round (the rest follow every {@link #VOLLEY_GAP}), and its recovery after the last. */
+    public static final int VOLLEY_FIRST = 3, VOLLEY_GAP = 4, VOLLEY_RECOVER = 5;
+    /** Lens Flare's flash tick and end. */
+    public static final int FLARE_AT = 3, FLARE_END = 11;
 
     static final class Aimed extends ToolMove {
         Aimed() {
@@ -101,8 +133,8 @@ public final class RifleKit extends CursedToolKit {
 
         @Override
         public @Nullable String checkActivation(AbilityContext ctx) {
-            if (!(ctx.user() instanceof ServerPlayer p) || RifleServer.busy(p)) return "busy";
-            return super.checkActivation(ctx);
+            String why = ready(ctx);
+            return why != null ? why : super.checkActivation(ctx);
         }
 
         @Override
@@ -173,8 +205,8 @@ public final class RifleKit extends CursedToolKit {
 
         @Override
         public @Nullable String checkActivation(AbilityContext ctx) {
-            if (!(ctx.user() instanceof ServerPlayer p) || RifleServer.busy(p)) return "busy";
-            return super.checkActivation(ctx);
+            String why = ready(ctx);
+            return why != null ? why : super.checkActivation(ctx);
         }
 
         @Override
@@ -182,9 +214,14 @@ public final class RifleKit extends CursedToolKit {
             return new ToolMove.Instance(this, ctx) {
                 private int fired;
 
+                private int volleyEnd() {
+                    return VOLLEY_FIRST + (cfg().rfVolleyShots - 1) * VOLLEY_GAP + VOLLEY_RECOVER;
+                }
+
                 @Override
                 public void start() {
-                    setPhase(0, cfg().rfVolleyShots * 4 + 2);
+                    Anim.play(user, "rf_volley");
+                    setPhase(0, volleyEnd());
                 }
 
                 @Override
@@ -194,13 +231,18 @@ public final class RifleKit extends CursedToolKit {
 
                 @Override
                 public void tick() {
-                    if (age % 4 == 1 && fired < cfg().rfVolleyShots && user instanceof ServerPlayer p) {
+                    // Holstered or unequipped mid-volley: the rest of it never fires.
+                    if (user instanceof ServerPlayer w && !RifleServer.wielding(w)) {
+                        finish();
+                        return;
+                    }
+                    if (age >= VOLLEY_FIRST && (age - VOLLEY_FIRST) % VOLLEY_GAP == 0 && fired < cfg().rfVolleyShots && user instanceof ServerPlayer p) {
                         fired++;
                         // Each round cycles the bolt on its own; the volley ignores the interval between them.
                         p.getCooldowns().removeCooldown(p.getCooldowns().getCooldownGroup(RifleServer.weapon(p)));
                         RifleServer.kitShot(p);
                     }
-                    if (age >= cfg().rfVolleyShots * 4 + 2) finish();
+                    if (age >= volleyEnd()) finish();
                 }
             };
         }
@@ -222,21 +264,46 @@ public final class RifleKit extends CursedToolKit {
         }
 
         @Override
+        public @Nullable String checkActivation(AbilityContext ctx) {
+            String why = ready(ctx);
+            return why != null ? why : super.checkActivation(ctx);
+        }
+
+        @Override
         public @Nullable AbilityInstance activate(AbilityContext ctx) {
-            LivingEntity user = ctx.user();
-            Vec3 eye = user.getEyePosition(), look = user.getLookAngle();
-            var clip = ctx.level().clip(new ClipContext(eye, eye.add(look.scale(32)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, user));
-            Vec3 at = clip.getLocation();
-            dev.rick.jjk.core.anim.Anim.play(user, "rf_flare");
-            Fx.play(ctx.level(), "rifle_ready", at, look.scale(-1), 1f, user.getId());
-            Fx.sound(ctx.level(), at, SoundEvents.BEACON_POWER_SELECT, 1.4f, 2f);
-            for (LivingEntity t : HitboxQuery.targets(user, HitShape.sphere(at, 4.0 * param(user, "radius")), 0, false)) {
-                t.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 50, 0, false, false));
-                Statuses.apply(t, CombatStatus.HITSTUN, 16);
-                var c = dev.rick.jjk.core.ability.Casters.getOrNull(t);
-                if (c != null) c.interrupt("stunned");
-            }
-            return null;
+            return new ToolMove.Instance(this, ctx) {
+                @Override
+                public void start() {
+                    // Startup: the rifle cants on its side to bring a lens to bear; the flash on the marked tick.
+                    Anim.play(user, "rf_flare");
+                    Fx.sound(ctx.level(), user.getEyePosition(), SoundEvents.SPYGLASS_USE, 1f, 1.6f);
+                    setPhase(0, FLARE_END);
+                }
+
+                @Override
+                public void tick() {
+                    if (!(user instanceof ServerPlayer p) || !RifleServer.wielding(p)) {
+                        finish();
+                        return;
+                    }
+                    if (age == FLARE_AT) flash(p);
+                    if (age >= FLARE_END) finish();
+                }
+
+                private void flash(ServerPlayer p) {
+                    Vec3 eye = p.getEyePosition(), look = p.getLookAngle();
+                    var clip = ctx.level().clip(new ClipContext(eye, eye.add(look.scale(32)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
+                    Vec3 at = clip.getLocation();
+                    Fx.play(ctx.level(), "rifle_flare", RifleServer.muzzle(p, look), at.subtract(RifleServer.muzzle(p, look)), 1f, p.getId());
+                    Fx.sound(ctx.level(), at, SoundEvents.BEACON_POWER_SELECT, 1.4f, 2f);
+                    for (LivingEntity t : HitboxQuery.targets(p, HitShape.sphere(at, 4.0 * param(p, "radius")), 0, false)) {
+                        t.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 50, 0, false, false));
+                        Statuses.apply(t, CombatStatus.HITSTUN, 16);
+                        var c = dev.rick.jjk.core.ability.Casters.getOrNull(t);
+                        if (c != null) c.interrupt("stunned");
+                    }
+                }
+            };
         }
     }
 
@@ -256,24 +323,32 @@ public final class RifleKit extends CursedToolKit {
         }
 
         @Override
+        public @Nullable String checkActivation(AbilityContext ctx) {
+            String why = ready(ctx);
+            return why != null ? why : super.checkActivation(ctx);
+        }
+
+        @Override
         public @Nullable AbilityInstance activate(AbilityContext ctx) {
             return new ToolMove.Instance(this, ctx) {
                 @Override
                 public void start() {
                     Anim.play(user, "rf_bash");
-                    setPhase(0, 8);
+                    Fx.sound(ctx.level(), user.getEyePosition(), SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0.9f, 0.7f);
+                    setPhase(0, 9);
                 }
 
                 @Override
                 public void tick() {
                     if (age == 2) {
                         Vec3 dir = HakariCombat.flat(user);
+                        Fx.sound(ctx.level(), user.getEyePosition(), SoundEvents.SHIELD_BLOCK.value(), 0.8f, 0.6f);
                         for (LivingEntity t : HakariCombat.front(user, 2.2, 1.6, 2.0)) {
                             HakariCombat.hit(strike(user, 3f).origin(user.getEyePosition()).knockback(Knockback.directional(dir, 1.1, 0.25)).hitstun(12)
                                     .fx("hit_light", 0.9f).build(), t);
                         }
                     }
-                    if (age >= 8) finish();
+                    if (age >= 9) finish();
                 }
             };
         }
@@ -294,11 +369,23 @@ public final class RifleKit extends CursedToolKit {
             return 4;
         }
 
+        /** The rifle's ultimate: only with the meter full, and it spends all of it. */
+        @Override
+        public float awakeningCost(dev.rick.jjk.core.ability.AbilityCaster caster) {
+            return caster.maxAwakening();
+        }
+
         @Override
         public @Nullable String checkActivation(AbilityContext ctx) {
-            if (!(ctx.user() instanceof ServerPlayer p)) return "busy";
+            if (!(ctx.user() instanceof ServerPlayer p) || !RifleServer.wielding(p)) return "no_tool";
             if (!RifleRules.beamUnlocked(p)) return "mastery";
             if (RifleServer.phase(p) != RifleServer.Phase.IDLE && RifleServer.phase(p) != RifleServer.Phase.AIM) return "busy";
+            // Refused before the meter is spent, never after.
+            String why = RifleServer.beamRefusal(p);
+            if (why != null) {
+                p.sendOverlayMessage(net.minecraft.network.chat.Component.literal(why).withStyle(net.minecraft.ChatFormatting.GRAY));
+                return "busy";
+            }
             return null;
         }
 

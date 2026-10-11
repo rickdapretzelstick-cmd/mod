@@ -73,6 +73,10 @@ public final class InvestigationState {
         public int storyStage() {
             return storyStage;
         }
+
+        public void setBoardForTest(BlockPos at) {
+            board = at.immutable();
+        }
     }
 
     /** A cursed-realm arena in use: its slot in the realm dimension, its incident, and who is in it. */

@@ -98,6 +98,7 @@ public final class CurseRewards {
 
     static void payOut(LivingEntity victim, GradedCurse g) {
         Map<UUID, Map<String, Float>> book = BOOK.remove(victim.getUUID());
+        if (!Mastery.enabled()) return;
         if (book == null || book.isEmpty() || victim.level().getServer() == null) return;
         CurseGrade grade = g.curseGrade();
         boolean incident = !g.incidentId().isEmpty();

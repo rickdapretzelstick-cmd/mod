@@ -57,6 +57,8 @@ public final class Destruction {
             refund();
             return false;
         }
+        // A cursed realm's arena is rebuilt whole each time: what breaks there is just gone (no drops, nothing to restore).
+        if (dev.rick.jjk.progression.investigation.CursedRealms.inArena(level, pos)) return level.destroyBlock(pos, false, breaker, 512);
         if (WorldRestoration.enabled()) return WorldRestoration.destroy(level, pos, state, breaker, source);
         return level.destroyBlock(pos, JJKConfig.get().general.destroyedBlocksDropItems, breaker, 512);
     }

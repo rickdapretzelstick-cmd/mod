@@ -3,7 +3,7 @@
   "weight": 0,
   "grade": "GRADE_2",
   "site": "crater",
-  "trigger": "interact",
+  "trigger": "breach",
   "realm": "crater_realm",
   "curses": [
     {
@@ -12,9 +12,15 @@
       "max": 1
     },
     {
+      "kind": "grave_hound",
+      "min": 2,
+      "max": 2,
+      "grade": "GRADE_3"
+    },
+    {
       "kind": "school_crawler",
-      "min": 3,
-      "max": 3,
+      "min": 2,
+      "max": 2,
       "grade": "GRADE_3"
     }
   ],

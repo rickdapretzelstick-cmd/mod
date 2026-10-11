@@ -398,8 +398,9 @@ The path so far:
    units are spent, and **Cursed Glasses** rise out.
 6. **Cursed Glasses** let their wearer perceive curses.
 7. **Battle rooms**: Woodland Mansions and Igloos hide a cursed chamber far below them, reached by a trapdoor set
-   into the building's lowest floor under a carpet and a ladder shaft. The first time anyone enters, the **Finger
-   Bearer** takes shape over the seal at its heart (below).
+   into the building's lowest floor under a carpet and a ladder shaft. Over the seal at its heart hangs a **Cursed
+   Breach** (the same as every incident's): use it and you are taken to the room's realm, a round hall of black stone,
+   where the **Finger Bearer** takes shape (below). Its finger goes to whoever lands the last blow.
 8. **Cursed Finger**: each room's Finger Bearer leaves exactly one when it dies, and a cleared room never fills again.
    It **no longer makes anyone Yuji** (Yuji is earned through his storyline). The world's Yuji, its vessel, can eat
    one: it is absorbed and counted, for the Sukuna progression to come. Anyone else is consumed by it and dies, whatever
@@ -556,15 +557,54 @@ what exorcising it is worth and how bad the reports about it sound (`CurseGrade`
 
 ### The common curses
 
-Three curses from the supplied pack (`fly_head`, `school_crawler`, `school_maw`: Blockbench models, textures and
-idle/move/attack/hurt/death clips, installed by `tools/install_bbmodel.py`). Seen only through Cursed Glasses, like the
-Finger Bearer, and each fights differently:
+Seven common curses (`fly_head`, `school_crawler`, `school_maw`, `grave_hound`, `veiled_bride`, `bloat_toad`,
+`brood_mother`) and the lodge's Hunter's Shade (`forest_stalker`). Incidents mix them (four incidents are built
+around the newer ones: the hound kennel, the jilted bride's chapel, the millpond toad and the brood nest).
+Their Blockbench models, painted textures and every clip (idle, move, each attack's wind-up and strike, the punish
+states, hurt, stagger, death) are built by `tools/gen_curse_models.py`; change that script and re-run it rather than
+editing the outputs. Seen only through Cursed Glasses, like the Finger Bearer, and each fights differently:
+
+- **School Maw**: a squat purple bruiser that is mostly mouth: a hinged skull and jaw full of yellowed teeth, a cluster
+  of mismatched eyes on top, long knuckle-walking arms, and a tongue with an eye on its tip that slides out in four
+  lengths for the lash.
+- **School Crawler**: a pale grub of a body with a human face split by a huge grin, five eyes, and six jointed arms it
+  scuttles on like a spider (a tripod gait), plus a stinger tail.
+- **Fly Head**: a bloated, sickly head with bulging red compound eyes, a single human eye between them, a toothy grin,
+  two pairs of veined wings that beat ten times a second, dangling insect legs and antennae.
+- **Hunter's Shade**: a gaunt, long-limbed thing crouched on digitigrade legs in a tattered hunter's hood and cloak, a
+  bare deer's skull for a face with a light deep in each socket, antlers, and long black claws.
+- **Grave Hound**: a flayed, eyeless dog: raw red muscle over bare ribs, a bone skull with pinprick embers for sockets.
+- **Veiled Bride**: tall and thin in a stained wedding dress, a lace veil over a pale face with black eyes and a long
+  grin, withered flowers in its hair, arms that reach its knees and grey nails.
+- **Bloat Toad**: a warty toad the size of a cart with human teeth, human hands for front feet, and a throat sac that
+  pulses.
+- **Brood Mother**: a stooped, spindly thing with a cluster of green eyes, dragging a huge veined egg sac with shapes
+  moving in it.
+
 
 | Curse | Grade | How it fights | How to beat it |
 |---|---|---|---|
-| **Fly Head** | 4 | comes in swarms that circle you just out of reach on wobbling orbits, one diving at a time to bite | sidestep the dive (it overshoots); a swatted one scatters for a moment |
-| **School Crawler** | 4 (strong) | scuttles round you at mid range, presses flat (the tell) and pounces; up close, a raking swipe, then backs off | sidestep the pounce: it skids past and lies sprawled for 1.5 s |
-| **School Maw** | 3 | slow, all mouth: its tongue lashes out along a line and reels you in front of its jaw, and the bite follows at once; otherwise a long gaping bite | get out of the tongue's line; a missed bite leaves it hunched over 1.4 s |
+| **Fly Head** | 4 | comes in swarms that circle you just out of reach on wobbling orbits, one at a time diving to bite or puffing up to spit a slow gob of bile (three in a fan at Grade 3) | sidestep the dive or the spit; hit it mid-dive (or let it dive into the floor) and it's swatted down, open, for 2 s; a swatted one scatters |
+| **School Crawler** | 4 (strong) | scuttles round you toward your blind side, presses flat (the tell, with its lane on the floor) and pounces; sometimes the crouch is a feint and it darts sideways first, then springs after a short crouch; up close, a raking swipe, then backs off; Grade 3 springs twice | dodge the real spring: it skids past and lies sprawled (exposed) for 1.5 s; a pounce into a wall stuns it for almost 3 s |
+| **School Maw** | 3 | slow, all mouth: its tongue lashes out along a marked line and reels you in front of its jaw, and the bite follows at once; otherwise a long gaping bite (its reach marked on the floor); crowd it or get round its side and it slams the ground in a marked ring; below half health it's enraged (runs red, rests less, bites twice); Grade 3 lashes again after a miss | get out of the line; jump the slam or leave the ring; a missed bite leaves it hunched over (exposed) 1.4 s |
+| **Grave Hound** | 4 | runs in packs, loping round you; drops low (its lane marked) and leaps, or snaps up close; from the edge of a fight it howls, and every curse nearby attacks again at once | dodge the leap: it sprawls exposed; stagger it out of the howl |
+| **Veiled Bride** | 3 | slow and tall; its veil lifts and it flickers, reappearing behind you, arms closing a beat later; or it throws its head back and wails, hurting everything in a marked cone | turn or step away when it flickers (a missed grasp leaves it exposed); get out of the cone, then punish while it catches its breath |
+| **Bloat Toad** | 3 | hops heavily toward you; squats and swells, its landing spot marked by a ring, then belly-flops onto it; crowd it and it belches you away | leave the ring: it lands on its back, kicking and exposed, for 2 s |
+| **Brood Mother** | 3 | hangs back dragging its egg sac; the sac swells and bursts into Fly Heads (two at a time, three alive at most); lobs acid that leaves a burning pool | kill it first: after each birth it is exposed, and its brood dies with it |
+
+**What every curse shares** (`CommonCurseEntity`):
+
+- **Readable wind-ups.** Winding up, a curse glows a pulsing orange outline and runs red; lunges, lashes, bites and
+  slams mark their lane, reach or ring on the floor for exactly as long as the wind-up lasts.
+- **Hits that land.** A hit holds it in a short hitstop (it shudders in place; your view kicks a touch). Enough damage
+  in a short time breaks its **poise** and **staggers** it out of whatever it was doing, except an armoured move (the
+  Maw's bite and slam), after which it reels anyway.
+- **Punish windows.** A whiffed attack, a crash or a stagger leaves it **exposed**: it flashes white and gold, takes
+  1.5x damage (the Hunter's Shade 1.6x), and the first hit into the opening rings out and pays you Awakening meter.
+- **Taking turns.** At most two curses commit to attacking you at once; the others hold back and circle.
+- **No cheap healing.** It only mends after 10 s with nothing to fight and no hits.
+- **Waves.** An incident with three or more curses mixes the kinds and sends about three in five at once; the rest
+  manifest as reinforcements when one of the first wave is left standing.
 
 ### Cursed tools
 
@@ -587,11 +627,11 @@ passives, its own cooldowns.
 
 | Key | Slaughter Demon (from the iron sword: short, fast) | Cursed Cleaver (from the axe: slow, crushing) | Cursed Rifle (unique: the hunting lodge) |
 |---|---|---|---|
-| 1 | **Quickstep**: dart forward, cutting the first in your path. R during it: **Return Cut** back the way you came | **Heavy Swing** (hold): wind up, release; a full charge breaks guards. R during it: **Whirl** | **Snap Shot**: a hip shot, now |
+| 1 | **Quickstep**: dart forward, cutting the first in your path. R during it: **Return Cut** back the way you came | **Heavy Swing** (hold): wind up, release; a full charge breaks guards. R during it: **Whirl** | **Snap Shot**: snapped to the shoulder, fired on the 3rd tick |
 | 2 | **Flurry** (learned): four quick cuts. R: **Rising Flurry** launches | **Shoulder Charge**: drive through, slam into walls | **Aimed Shot** (hold): raise the scope, let it settle, let go |
-| 3 | **Severing Point** (learned): a weakened Grade 3-or-lower curse is cut apart | **Ground Splitter** (learned): a crack runs along the ground | **Suppressing Volley** (learned): three quick shots |
-| 4 | **Mirror Parry** (learned): a stance; a blow caught in it is turned and answered from behind | **Iron Wall** (learned, hold): absorb blows, then swing back harder for each | **Lens Flare** (learned): a lens flashes where you aim: blinded and staggered |
-| R | **Draw Cut**: a wide sweep from the sheath | **Haft Strike**: a fast interrupt | **Stock Bash**: a shove for room |
+| 3 | **Severing Point** (learned): a weakened Grade 3-or-lower curse is cut apart | **Ground Splitter** (learned): a crack runs along the ground | **Suppressing Volley** (learned): braced and scoped, three rounds 4 ticks apart |
+| 4 | **Mirror Parry** (learned): a stance; a blow caught in it is turned and answered from behind | **Iron Wall** (learned, hold): absorb blows, then swing back harder for each | **Lens Flare** (learned): canted on its side, a lens flashes where you aim (3rd tick): blinded and staggered |
+| R | **Draw Cut**: a wide sweep from the sheath | **Haft Strike**: a fast interrupt | **Stock Bash**: a butt-stroke for room (lands on the 2nd tick) |
 | G | **Thousand Cuts** (awakening node): flicker between up to five foes | **Executioner's Arc** (awakening node): leap and crash | **Unfolding Array** (hold): the beam |
 
 **How they look.** Each tool has a grip profile (one hand, dagger, spear, two hands, heavy, ranged). Holstered (your
@@ -600,8 +640,8 @@ the point trailing back; the Cleaver and the Rifle are slung diagonally across y
 shoulder. Switch to the tool and you draw it (a short reach to the hip or over the shoulder, and the sound of it) into
 your hand, even with the hand slot empty, in first person and third; two-handed tools bring the off arm in. Every move
 has its own animation, shaped by the grip (`animations/tool/`, generated by `tools/gen_tool_kit_anims.py`): the blade's
-low darts and decisive cuts, the Cleaver's wide stances and blows the whole body drops into, the Rifle's stock bash and
-flare. Whether a tool is drawn is synced, so other players see the same.
+low darts and decisive cuts, the Cleaver's wide stances and blows the whole body drops into; the Rifle's body is built
+live by its stance (below). Whether a tool is drawn is synced, so other players see the same.
 
 The trees (`data/jjk/mastery/tool/*.json`): Slaughter Demon's Footwork, Edge, Stance and Kill lanes (Long Step, Keen
 Edge, Light Grip, Return Cut, Flurry, Parry, Precision, Rising Flurry, Long Parry, Extra Cut, Severing Point, Deep Sever,
@@ -631,17 +671,34 @@ Wall, Shockwave and Executioner; the rifle's tree below.
   (`cb*`). The model, textures and icons come from `tools/gen_cursed_blade_assets.py` (a Blockbench project of the model
   is written to `tools/blockbench/cursed_blade.bbmodel`).
 - **Cursed Rifle** (from the hunting lodge, below; **one per world**): a scoped rifle with four folded support arms round
-  its barrel. It is a ranged tool for anyone, technique or not (in the hand, or equipped for the moveset above): its own **reserve** (100, refilling 5 a second, kept per player) pays for
-  everything, and the server decides every shot and every hit.
-  - **Normal shots**: hold use to raise the scope (the view zooms, the reticle settles), let go to fire. A quick tap is a
-    hip shot and sways far more. Each shot costs 12, deals 7 and needs 18 ticks for the bolt to cycle. The reticle
-    drifts exactly as the server's aim does: where it sits is where the round goes. The rifle plays its `normal_shot`
-    clip, with a muzzle flash, a tracer to the impact and a kick of the view.
-  - **The beam** (once Unfolding Array is learned): sneak and hold use. The arms unfold (`deploy`), the lenses build
-    (`charge`), and it holds ready (`charged_hold`, draining 4 a second). Let go to fire (`beam_fire`: the arms stay
-    deployed for the whole beam), then it vents (`cooldown`) and folds away (`retract`); 12 seconds before the next.
-    Letting go early, switching items, running the reserve dry, dying or leaving cancel it at any point and the arms
-    retract. Every client nearby plays the same clips at the server's timing. The beam is the shared square torrent
+  its barrel. It is a ranged tool for anyone, technique or not, and it **fights only from the Cursed Item slot**: put it
+  there and switch to its moveset (with no technique it is simply yours). Held in the hand it is just an item, and use
+  only tells you where it goes. Holstering it, taking it out of the slot, dying, leaving or changing dimension end
+  whatever it was doing, and the array's cooldown survives all of them. Its own **reserve** (100, refilling 5 a second,
+  kept per player) pays for everything, and the server decides every shot and every hit.
+  - **How it is held** (`client/rifle/RifleStance.java`): the whole body fights with it. A bladed stance (support foot
+    forward, knees soft), the stock in the shoulder pocket at a relaxed low ready; aim runs head, shoulders, torso, arms.
+    Both hands are solved onto the rifle every frame (trigger hand on the pistol grip, support hand under the fore-end,
+    the shoulders reaching forward when they must), so they never float: through walking, strafing, backing up, the
+    high-port carry while sprinting, jumping, falling, landing, crouching, hit reactions and every move. Aiming brings
+    the scope's eyepiece to the eye. Each shot kicks the rifle back into the shoulder. Unfolding Array plants the feet
+    wide and sinks into a brace as the arms deploy, shudders through the charge, holds a live brace, is driven back by
+    the beam, then straightens. The rifle model's own clips (arms, iris) play on it in step. First person shows the same
+    action (`RifleFirstPerson`): both arms on the rifle, the eyepiece up to the eye before the scope view, the brace, the
+    kick, the bash. Everything follows the server's phase and move timing, so every client sees the same; shots and the
+    beam leave the drawn muzzle. Every move has its own HUD icon.
+  - **Normal shots**: Aimed Shot (2, hold) raises the scope (the view zooms, the reticle settles); let go to fire. Snap
+    Shot (1) fires from the hip. Each shot costs 12, deals 7 and needs 18 ticks for the bolt to cycle. There is no sway
+    or spread: every shot (and the beam) goes exactly where the crosshair, or the scope's centre, is; the round is seen
+    leaving the end of the barrel, and a barrel blocked by a wall stops it there. The rifle plays its `normal_shot`
+    clip, with a muzzle flash, a tracer from the barrel to the impact and the kick in the rifle, never a turn of the view.
+    The scope rises with the rifle, tightens the view smoothly and fades its optic in; sprinting drops it.
+  - **The beam** (once Unfolding Array is learned; it is the rifle's ultimate: **G with the meter full**, which it
+    spends). Press G: the arms unfold (`deploy`) and the lenses build (`charge`). Let go any time: it fires the moment
+    it's ready (`beam_fire`: the arms stay out for the whole beam), then it vents (`cooldown`) and folds away
+    (`retract`); 12 seconds before the next. Keep G held and it waits ready (`charged_hold`, draining 4 a second,
+    still able to answer a beam clash) until you let go. Holstering, running the reserve dry, dying or leaving cancel it
+    and the arms retract. Every client nearby plays the same clips at the server's timing. The beam is the shared square torrent
     (the same profile as True Love Beam and Every Last Drop: the drawn beam is the hitbox), starting at the model's
     `beam_origin`; it carves terrain that is restored like all battle damage.
   - **Its tree** (`data/jjk/mastery/tool/cursed_rifle.json`): Marksman (Steady Hands, Settle, Heavy Rounds: less sway,
@@ -655,11 +712,16 @@ Wall, Shockwave and Executioner; the rifle's tree below.
     is a narrower (2.2 blocks), dimmer orange beam at 0.45 output; the lens upgrades raise it to at most 0.8.
   - **Beam clashes**: the rifle is one more ultimate beam in the shared system (below), with no special rules. A rifle
     holding its charge can answer True Love Beam, Every Last Drop or another rifle in the counter window (it opens when
-    the opponent starts charging; let go of use to answer), and is answered the same way from the moment its arms start
+    the opponent starts charging; let go of G to answer), and is answered the same way from the moment its arms start
     to deploy. Charging alone never starts a clash. Its clash strength is freshness x output: the first unlock is
     overpowered by a fresh full-power beam; Maximum Output meets one on even terms (the full, doubled duel).
 
 ### Mastery
+
+**Mastery is off by default** (`mastery.enabled` in `config/jjk.json`). With it off there are no trees and no Mastery
+is earned: every cursed tool comes whole, every move usable from the start (the rifle's Suppressing Volley, Lens Flare
+and Unfolding Array included, its beam at Maximum Output), at the base numbers. J just says so. Turn it on to develop
+tools through the trees described below.
 
 The **Mastery screen (J)** shows the tree of the **cursed tool** in your hand. Lanes are columns, tiers go down; lines
 join prerequisites; each node shows whether it is owned, available or locked, its cost, which move it belongs to and
@@ -683,7 +745,11 @@ Grade 4 … Special Grade), which is kept apart from Mastery.
 
 ### Village news boards and investigations
 
-Walk into a village and its **news board** goes up by the bell: a weathered board with notices pinned to it. Read it
+Walk into a village and its **news house** goes up by the bell, built in the village's own style (plains, desert,
+savanna, taiga or snowy): a small gabled building, door toward the bell, with the **news board** on its back wall, a
+lectern where someone keeps the record (a librarian's work site, so villagers come and use the place), a desk strewn
+with papers, a bookshelf and a barrel of old notices. The board shows as many pinned notices as the village has news
+(none to four). Where there's no flat open ground for the house, the board stands in the open by the bell. Read it
 (use it). It is local news, not a quest log: missing people, livestock found worried at in the night, strange sounds,
 a fall from the cliffs. Nothing says *curse*, nothing has a marker or a waypoint; a report says roughly where
 (*"the cliffs northeast of the village (a short walk out)"*) and its tone says how bad it is.
@@ -694,13 +760,21 @@ grassland, a hillside for a mine). At the place there are physical traces (flowe
 the grass, a boarded mine entrance), and through Cursed Glasses a faint **trail of cursed residue** leads the last
 stretch. No checklist, no HUD.
 
-| Incident | Grade | What sets it off | Where the fight is |
+**Every incident is entered the same way: through its Cursed Breach.** Report → travel to the area → the Cursed
+Compass → the place itself → a **Cursed Breach** hanging there → **use it (right-click)** → a short pull → its cursed
+realm. A breach is an upright tear in the air: black at its heart, a ragged crimson edge that crawls, cracks running
+out into the air round it, a thin ring turning slowly, motes and dust drawn in and swallowed, a low drone, and a slow
+pulse (faster once someone is already through: use it to join them in the same fight). Nothing else sets an incident
+off: no jump, no bed, no doorway at midnight. Where the breach hangs is the place's story; how you go in never changes.
+
+| Incident | Grade | Where its breach hangs | Where the fight is |
 |---|---|---|---|
-| **A fall from the cliffs** | 3 | jumping off the edge where it happened | pulled into a cursed realm before you land: the cliff, broken off and hanging in a red void |
-| **Livestock lost in the night** | 4 | walking into the pasture after dark | a cursed realm: an endless dead field at night |
-| **The old mine** | 3 | going down to the end of the tunnel | a cursed realm: a low cavern of wet rock |
-| **Nobody will stay in the old house** | 3 | lying down in the abandoned cottage's bed (any hour: you never get to sleep) | a cursed realm: the house's rooms, laid end to end and too long |
-| **Gunshots at the old hunting lodge** (uncommon) | 3 | holding the lodge's mounted scope on what's out in the trees, then using it again | a cursed realm: the woods through the scope, distorted |
+| **A fall from the cliffs** | 3 | at the lip of the cliff, where it happened | the cliff, broken off and hanging in a red void |
+| **Livestock lost in the night** | 4 | in the pasture, among the bones | an endless dead field at night |
+| **The old mine** | 3 | at the far end of the tunnel, deep in the hill | a low cavern of wet rock |
+| **Nobody will stay in the old house** | 3 | inside the abandoned cottage, between the door and the bed | the house's rooms, laid end to end and too long |
+| **Gunshots at the old hunting lodge** (uncommon) | 3 | out in the trees, where the scope shows the figure | the woods through the scope, distorted |
+| Character storylines | – | at each site's centrepiece (the theater's projector, the watchtower's lamp, the storehouse bell, the crater's shard, the chapel altar), or as above for the shared kinds of place | that event's realm |
 
 **The hunting lodge.** Reported as gunshots after sunset round an old hunting lodge, with a landmark that is really
 there (*"beyond the northern ridge, near the spruce forest"*: a ridge only if the ground rises between them, the woods
@@ -709,15 +783,16 @@ the back wall and a rifle scope mounted on the front windowsill. Round it: two a
 and blackened where they were shot at, a line of tracks that just stops, and now and then (far more often at night) a
 distant gunshot with nobody there. Each one you find is noted once (per player, saved with the incident).
 Put your eye to the scope (use it): through Cursed Glasses something out in the trees doesn't belong. Hold the scope
-on it and it resolves into a crooked trail and a figure standing on it, with a heartbeat; use the scope again,
-deliberately, to follow it in. Without perception the spot only "doesn't sit right". Inside is the distorted forest:
+on it and it resolves into a crooked trail and a figure standing on it, with a heartbeat, where the air is torn: the
+lodge's breach is out there, at the end of the trail. Without perception the spot only "doesn't sit right" (the
+breach is there either way; the scope only shows you where to walk). Inside is the distorted forest:
 trunks that kink and lean the wrong way, the same hunting stand again and again, a path that doubles back. It holds the
 **Hunter's Shade** (Grade 3, 48 health): it keeps to the trees, slips out of your line of sight when you look straight
 at it, and closes in cover to cover when you don't. Before it attacks it shows itself: it stops dead in the open, its
 eyes light, a dry rattle carries, and about a second later it lunges straight along the line it locked. Sidestep and it
 crashes down **exposed** for two seconds (taking 60% more damage); crowd it and it rakes after a short wind-up and
-breaks away. Nothing it does comes from out of sight. A starter cursed tool beats it. *(Its model is a placeholder:
-the School Crawler's, darkened and scaled up.)*
+breaks away. Nothing it does comes from out of sight. A starter cursed tool beats it. It has its own
+model and clips (`tools/gen_curse_models.py`): a gaunt antlered skull-faced thing in a hunter's tattered hood.
 
 When it falls, everyone who went in is **owed a Cursed Rifle**, saved with the incident apart from its completion: the
 rack's seal breaks and the rifle rests on it. The first of them to take it from the rack, deliberately, **bears the
@@ -755,9 +830,8 @@ behind. Anyone who sets the incident off while it is open joins the same arena (
 
 - **The transition** (about two seconds): you are held where it caught you, sound dulls to a heartbeat, the edges of
   the screen close in black and pulse twice, the view goes dark, and you arrive; the dark lifts over a second and a
-  half. Nothing hurts you meanwhile, so **the cliff's fall never lands**: you are caught mid-air.
-- **What sets them off** is one generic list every incident template picks from: jumping off a drop, going down to a
-  depth, coming close (or coming close after dark), crossing a threshold, lying in a bed, using an object, a scope.
+  half. Nothing hurts you meanwhile.
+- **What sets them off**: only ever using the incident's Cursed Breach (above).
 - **The way back** is solid ground near where you were taken: where you stood, or (caught mid-jump) the ground back
   from the edge. When the last curse falls, everyone inside is sent there a few seconds later.
 - **Death** respawns you as usual and the arena carries on for the rest. A realm nobody is in for a minute (everyone

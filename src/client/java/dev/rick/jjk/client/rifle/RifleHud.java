@@ -7,25 +7,37 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.util.Mth;
 
 /**
- * The Cursed Rifle's screen for whoever holds it:
+ * The Cursed Rifle's screen for whoever has it drawn (from the Cursed Item slot):
  * <ul>
- *   <li>through the scope, a dark scope ring and a reticle that drifts exactly as the server's aim does (where it sits
- *   is where the round goes), settling the longer the aim is held;</li>
- *   <li>a hip shot's wide circle when aiming hasn't settled into the scope;</li>
- *   <li>the reserve bar, and the beam's state while the array is out: deploying, the charge filling, READY (let go to
- *   fire), firing, cooling;</li>
- *   <li>the lodge's mounted scope: the same ring, and a faint mark of how long the aim has been held on what's out there.</li>
+ *   <li><b>The scope</b> ({@link RifleScope}): a precision optic first. The glass is clear at the centre, darkening
+ *   toward a machined tube with etched range ticks and four small crimson sigils; outside it is black. The reticle is
+ *   drawn in real screen pixels on the exact centre of the screen, which is the view direction every shot is fired
+ *   along: thin crosshair lines with heavier outer posts, range dots below, a lit crimson dot at the centre. It never
+ *   moves. The array's state shows only round the outside: arcs filling as the lenses charge, locking when ready, a
+ *   flash as it fires.</li>
+ *   <li>Unscoped, the vanilla crosshair is the aim (no spread to show).</li>
+ *   <li>The reserve bar, and the beam's state while the array is out: deploying, the charge filling, READY (let go to
+ *   fire), firing, cooling.</li>
+ *   <li>The lodge's mounted scope: the same optic, and a faint mark of how long the aim has been held on what's out there.</li>
  * </ul>
  */
 public final class RifleHud {
     private RifleHud() {}
 
+    static final net.minecraft.resources.Identifier OPTIC = dev.rick.jjk.JJK.id("textures/gui/rifle_scope.png");
+
+    /** Whether the vanilla crosshair should stand down (the scope's own reticle is up). */
+    public static boolean hidesCrosshair() {
+        return RifleClient.scopeOn() || RifleScope.overlay() > 0.35f;
+    }
+
     public static void render(GuiGraphicsExtractor g) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
         int w = g.guiWidth(), h = g.guiHeight();
+        float time = mc.level.getGameTime() + mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
         if (RifleClient.scopeOn()) {
-            scopeRing(g, w, h, 0, 0, 0xFF000000);
+            optic(g, mc, w, h, 1f, null, time);
             float k = RifleClient.scopeProgress();
             if (k > 0 && !RifleClient.scopeRevealed()) {
                 int bw = 60, filled = Math.round(bw * k);
@@ -34,31 +46,11 @@ public final class RifleHud {
             }
             return;
         }
-        if (!RifleServer.isRifle(mc.player.getMainHandItem())) return;
+        if (!dev.rick.jjk.client.gear.CursedGear.rifleDrawn(mc.player)) return;
         RifleClient.State s = RifleClient.orIdle(mc.player.getId());
         Font font = mc.font;
-        float time = mc.level.getGameTime() + mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
-        if (s.phase == RifleServer.Phase.AIM) {
-            float[] drift = RifleClient.drift(mc);
-            // Degrees to pixels at the zoomed field of view.
-            float fov = mc.options.fov().get() * RifleClient.zoom();
-            float px = h / fov;
-            int dx = Math.round(drift[0] * px), dy = Math.round(drift[1] * px);
-            if (RifleClient.scoped(mc)) {
-                scopeRing(g, w, h, 0, 0, 0xF0000000);
-                int cx = w / 2 + dx, cy = h / 2 + dy;
-                int c = 0xE0E0E8FF;
-                g.fill(cx - 14, cy, cx - 3, cy + 1, c);
-                g.fill(cx + 3, cy, cx + 14, cy + 1, c);
-                g.fill(cx, cy - 14, cx + 1, cy - 3, c);
-                g.fill(cx, cy + 3, cx + 1, cy + 14, c);
-                g.fill(cx, cy, cx + 1, cy + 1, 0xFFFF6060);
-            } else {
-                // Not settled into the scope yet: a hip shot goes anywhere in here.
-                int r = Math.round(dev.rick.jjk.config.JJKConfig.get().rifle.hipSwayDegrees * px);
-                ring(g, w / 2, h / 2, r, 0x80FFFFFF);
-            }
-        }
+        float a = RifleScope.overlay();
+        if (a > 0.001f) optic(g, mc, w, h, a, s, time);
         // The reserve.
         int bw = 82, x = w / 2 + 96, y = h - 22;
         float e = s.capacity <= 0 ? 0 : Mth.clamp(s.energy / s.capacity, 0, 1);
@@ -87,19 +79,110 @@ public final class RifleHud {
         }
     }
 
-    /** The scope's view: black outside a circle (drawn as bands), offset by {@code ox, oy}. */
-    private static void scopeRing(GuiGraphicsExtractor g, int w, int h, int ox, int oy, int colour) {
-        int r = (int) (Math.min(w, h) * 0.46f);
-        int cx = w / 2 + ox, cy = h / 2 + oy;
-        g.fill(0, 0, w, Math.max(0, cy - r), colour);
-        g.fill(0, Math.min(h, cy + r), w, h, colour);
-        for (int y = cy - r; y < cy + r; y += 2) {
-            int dy = y - cy;
-            int half = (int) Math.sqrt(Math.max(0, r * r - dy * dy));
-            g.fill(0, y, Math.max(0, cx - half), y + 2, colour);
-            g.fill(Math.min(w, cx + half), y, w, y + 2, colour);
+    /**
+     * The optic at opacity {@code alpha}: the overlay texture centred (black either side of it), then the reticle and,
+     * for the rifle's own scope, the array's state round the outside.
+     */
+    private static void optic(GuiGraphicsExtractor g, Minecraft mc, int w, int h, float alpha, RifleClient.State s, float time) {
+        int al = Math.round(255 * alpha) << 24;
+        // As large as the screen is tall: a centred square, with black filling out the sides.
+        int size = h, x0 = (w - size) / 2;
+        int black = al | 0x040306;
+        g.fill(0, 0, x0, h, black);
+        g.fill(x0 + size, 0, w, h, black);
+        g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, OPTIC, x0, 0, 0, 0, size, size, 512, 512, 512, 512, al | 0xFFFFFF);
+
+        // The reticle, in real pixels on the screen's exact centre (between pixels on an even screen: the dot spans it).
+        float scale = mc.getWindow().getGuiScale();
+        int W = mc.getWindow().getWidth(), H = mc.getWindow().getHeight();
+        var pose = g.pose();
+        pose.pushMatrix();
+        pose.scale(1 / scale, 1 / scale);
+        float cx = W / 2f, cy = H / 2f;
+        int lens = Math.round(H * 0.5f * 0.86f);
+        int line = al | 0x0C0C10, post = al | 0x08080C, glow = Math.round(70 * alpha) << 24 | 0xFF2850;
+        int t1 = Math.max(1, Math.round(scale * 0.5f)), t3 = Math.max(2, Math.round(scale * 1.4f));
+        int gap = Math.round(lens * 0.05f), inner = Math.round(lens * 0.55f), outer = Math.round(lens * 0.98f);
+        hline(g, cx, cy, gap, inner, t1, line);
+        vline(g, cx, cy, gap, inner, t1, line);
+        hline(g, cx, cy, inner, outer, t3, post);
+        vline(g, cx, cy, inner, outer, t3, post);
+        // Range marks below the centre (holdover), shorter as they go down.
+        for (int i = 1; i <= 4; i++) {
+            float y = cy + lens * 0.11f * i;
+            int half = Math.round(lens * (0.035f - 0.004f * i));
+            rect(g, cx - half, y - t1 / 2f, cx + half, y + t1 / 2f, line);
         }
-        ring(g, cx, cy, r, 0xFF101014);
+        // The centre: a soft glow, then the lit dot.
+        int d = Math.max(2, Math.round(scale));
+        rect(g, cx - d * 2, cy - d * 2, cx + d * 2, cy + d * 2, glow);
+        rect(g, cx - d / 2f, cy - d / 2f, cx + d / 2f, cy + d / 2f, al | 0xFF3050);
+
+        if (s != null) arrayState(g, s, cx, cy, lens, alpha, time, scale);
+        // A few motes of cursed energy drifting round the outer rim only.
+        for (int i = 0; i < 10; i++) {
+            double ang = time * 0.02 * (i % 2 == 0 ? 1 : -1) + i * 0.628;
+            float rr = lens * (1.04f + 0.03f * (float) Math.sin(time * 0.07 + i));
+            float mx = cx + (float) Math.cos(ang) * rr, my = cy + (float) Math.sin(ang) * rr;
+            int ma = Math.round(alpha * (60 + 50 * (float) Math.sin(time * 0.11 + i * 1.7)));
+            int m = Math.max(1, Math.round(scale * 0.8f));
+            rect(g, mx - m, my - m, mx + m, my + m, Math.max(0, ma) << 24 | 0x9A3DFF);
+        }
+        pose.popMatrix();
+    }
+
+    /** The array's charge, ready lock and firing flash, round the outside of the glass only. */
+    private static void arrayState(GuiGraphicsExtractor g, RifleClient.State s, float cx, float cy, int lens, float alpha, float time, float scale) {
+        float k = switch (s.phase) {
+            case CHARGE -> s.progress(time);
+            case READY, FIRE -> 1f;
+            default -> 0f;
+        };
+        if (k <= 0) return;
+        boolean ready = s.phase == RifleServer.Phase.READY || s.phase == RifleServer.Phase.FIRE;
+        float pulse = ready ? 0.75f + 0.25f * (float) Math.sin(time * 0.6f) : 1f;
+        int col = ready ? 0xFFB070 : 0xFF6A3A;
+        int ca = Math.round(220 * alpha * pulse) << 24;
+        int dot = Math.max(1, Math.round(scale * 0.9f));
+        // Four arcs, one per lens, each filling clockwise from its sigil.
+        float r = lens * 0.93f;
+        for (int q = 0; q < 4; q++) {
+            double from = q * Math.PI / 2 - Math.PI / 2 + 0.18, span = (Math.PI / 2 - 0.36) * k;
+            int steps = Math.max(6, (int) (span * r / (dot * 2.2)));
+            for (int i = 0; i <= steps; i++) {
+                double ang = from + span * i / steps;
+                float x = cx + (float) Math.cos(ang) * r, y = cy + (float) Math.sin(ang) * r;
+                rect(g, x - dot, y - dot, x + dot, y + dot, ca | col);
+            }
+        }
+        if (s.phase == RifleServer.Phase.FIRE) {
+            float f = Math.max(0, 1 - (time - s.since) / 6f);
+            if (f > 0) {
+                int fa = Math.round(150 * f * alpha) << 24;
+                float rr = lens * (0.93f + 0.06f * (1 - f));
+                for (int i = 0; i < 96; i++) {
+                    double ang = i * Math.PI * 2 / 96;
+                    float x = cx + (float) Math.cos(ang) * rr, y = cy + (float) Math.sin(ang) * rr;
+                    rect(g, x - dot, y - dot, x + dot, y + dot, fa | 0xFFFFFF);
+                }
+            }
+        }
+    }
+
+    private static void hline(GuiGraphicsExtractor g, float cx, float cy, int from, int to, int t, int col) {
+        rect(g, cx - to, cy - t / 2f, cx - from, cy + t / 2f, col);
+        rect(g, cx + from, cy - t / 2f, cx + to, cy + t / 2f, col);
+    }
+
+    private static void vline(GuiGraphicsExtractor g, float cx, float cy, int from, int to, int t, int col) {
+        rect(g, cx - t / 2f, cy - to, cx + t / 2f, cy - from, col);
+        rect(g, cx - t / 2f, cy + from, cx + t / 2f, cy + to, col);
+    }
+
+    /** A filled rectangle in (scaled) pixels, rounded to whole pixels around its true centre. */
+    private static void rect(GuiGraphicsExtractor g, float x0, float y0, float x1, float y1, int col) {
+        int a = Math.round(x0), b = Math.round(y0);
+        g.fill(a, b, Math.max(a + 1, Math.round(x1)), Math.max(b + 1, Math.round(y1)), col);
     }
 
     private static void ring(GuiGraphicsExtractor g, int cx, int cy, int r, int colour) {

@@ -1,0 +1,26 @@
+{
+  "name": "rf_snap",
+  "duration": 450,
+  "note": "Snap Shot: the rifle snaps to the shoulder (3 ticks), fires, comes back down.",
+  "blendIn": 0,
+  "blendOut": 0,
+  "priority": "ATTACK",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {}
+    },
+    {
+      "t": 150,
+      "ease": "EASE_IN_OUT",
+      "bones": {},
+      "marker": "fire"
+    },
+    {
+      "t": 450,
+      "ease": "EASE_IN_OUT",
+      "bones": {}
+    }
+  ]
+}

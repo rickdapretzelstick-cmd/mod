@@ -80,6 +80,7 @@ public final class CursedKits {
             CursedSlot.set(p, ItemStack.EMPTY);
             p.spawnAtLocation(level, s);
         });
+        net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((h, s) -> COMBAT_OFF.remove(h.player.getUUID()));
         ServerPlayerEvents.COPY_FROM.register((old, now, alive) -> {
             ItemStack s = CursedSlot.get(old);
             if (!s.isEmpty()) CursedSlot.set(now, s.copy());
@@ -95,10 +96,12 @@ public final class CursedKits {
         AbilityCaster c = Casters.get(p);
         CursedToolKit want = equipped(p);
         JJKCharacter had = c.toolKit();
+        // Drawn or holstered: the player's choice (X), drawn at first for someone with no technique beside it; never
+        // drawn while their Combat Mode is off (it comes back out when Combat Mode does).
         Boolean chosen = p.getAttached(ModAttachments.TOOL_MOVESET);
-        c.setToolSelected(chosen != null && chosen);
-        // Drawn or holstered, for everyone watching (and the first-person hand).
-        boolean drawn = want != null && (c.character() == null || c.toolSelected());
+        boolean wants = chosen != null ? chosen : c.character() == null;
+        c.setToolSelected(want != null && wants && !COMBAT_OFF.contains(p.getUUID()));
+        boolean drawn = want != null && c.toolSelected();
         Boolean was = p.getAttached(ModAttachments.TOOL_DRAWN);
         if (was == null || was != drawn) {
             p.setAttached(ModAttachments.TOOL_DRAWN, drawn);
@@ -113,15 +116,34 @@ public final class CursedKits {
         c.setToolKit(want);
         if (want != null && p.level() instanceof ServerLevel level) {
             Fx.sound(level, p.position(), SoundEvents.ARMOR_EQUIP_NETHERITE.value(), 0.8f, 0.7f);
-            String how = c.character() == null ? "its moves are yours" : "switch movesets to use it";
+            String how = c.character() == null ? "drawn (X holsters it)" : "X draws it";
             p.sendOverlayMessage(Component.literal(want.def.displayName() + " equipped: " + how + ".").withStyle(ChatFormatting.DARK_PURPLE));
         }
     }
 
-    /** A player asks to switch between their technique and their cursed tool's moveset. */
+    private static String want(ServerPlayer p) {
+        CursedToolKit k = equipped(p);
+        return k == null ? "" : k.def.displayName();
+    }
+
+    /** Players whose JJK Combat Mode is off (their client said so): no tool drawn. */
+    private static final java.util.Set<java.util.UUID> COMBAT_OFF = new java.util.HashSet<>();
+
+    /** A player's client turned Combat Mode on or off. */
+    public static void setCombatMode(ServerPlayer p, boolean on) {
+        boolean changed = on ? COMBAT_OFF.remove(p.getUUID()) : COMBAT_OFF.add(p.getUUID());
+        if (changed) update(p);
+    }
+
+    public static boolean combatModeOff(ServerPlayer p) {
+        return COMBAT_OFF.contains(p.getUUID());
+    }
+
+    /** A player asks to draw or holster their cursed tool (switching from or to their technique, if they have one). */
     public static boolean switchMoveset(ServerPlayer p) {
         AbilityCaster c = Casters.get(p);
         update(p);
+        if (COMBAT_OFF.contains(p.getUUID())) return false;
         if (!c.switchMoveset()) return false;
         p.setAttached(ModAttachments.TOOL_MOVESET, c.toolSelected());
         if (p.level() instanceof ServerLevel level) {
@@ -129,7 +151,7 @@ public final class CursedKits {
             Fx.sound(level, p.position(), c.usingTool() ? SoundEvents.ARMOR_EQUIP_IRON.value() : SoundEvents.AMETHYST_BLOCK_CHIME, 0.7f, 1.3f);
         }
         JJKCharacter k = c.activeKit();
-        p.sendOverlayMessage(Component.literal(k == null ? "" : k.displayName()).withStyle(c.usingTool() ? ChatFormatting.DARK_PURPLE : ChatFormatting.AQUA));
+        p.sendOverlayMessage(Component.literal(k == null ? want(p) + " holstered" : k.displayName()).withStyle(c.usingTool() ? ChatFormatting.DARK_PURPLE : ChatFormatting.AQUA));
         return true;
     }
 }

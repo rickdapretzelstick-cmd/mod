@@ -55,9 +55,15 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.FLY_HEAD, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "fly_head", 0.35f));
         EntityRendererRegistry.register(ModEntities.SCHOOL_CRAWLER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_crawler", 0.6f));
         // Placeholder: the forest stalker borrows the crawler's model, darkened and a little larger.
-        EntityRendererRegistry.register(ModEntities.FOREST_STALKER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_crawler", 0.7f, 1.15f, 0xFF5A5866));
+        EntityRendererRegistry.register(ModEntities.FOREST_STALKER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "forest_stalker", 0.7f));
         EntityRendererRegistry.register(ModEntities.SCHOOL_MAW, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_maw", 0.6f));
+        EntityRendererRegistry.register(ModEntities.GRAVE_HOUND, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "grave_hound", 0.5f));
+        EntityRendererRegistry.register(ModEntities.VEILED_BRIDE, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "veiled_bride", 0.5f));
+        EntityRendererRegistry.register(ModEntities.BLOAT_TOAD, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "bloat_toad", 0.9f));
+        EntityRendererRegistry.register(ModEntities.BROOD_MOTHER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "brood_mother", 0.7f));
         EntityRendererRegistry.register(ModEntities.PRISON_REALM, dev.rick.jjk.client.render.PrisonRealmRenderer::new);
+        EntityRendererRegistry.register(ModEntities.CURSED_BREACH, dev.rick.jjk.client.render.CursedBreachRenderer::new);
+        dev.rick.jjk.progression.investigation.CursedBreachEntity.clientTick = dev.rick.jjk.client.render.CursedBreachRenderer::clientTick;
         EntityRendererRegistry.register(ModEntities.CURSED_ENERGY_SHOT, dev.rick.jjk.client.render.FingerBearerRenderer.Shot::new);
 
         InputHandler.init();
@@ -78,6 +84,10 @@ public class JJKClient implements ClientModInitializer {
         HudElementRegistry.addLast(JJK.id("story_overlay"), (g, delta) -> dev.rick.jjk.client.hud.StoryOverlay.render(g, delta));
         HudElementRegistry.addLast(JJK.id("realm_transition"), (g, delta) -> dev.rick.jjk.client.hud.RealmTransitionOverlay.render(g, delta));
         HudElementRegistry.addLast(JJK.id("rifle_hud"), (g, delta) -> dev.rick.jjk.client.rifle.RifleHud.render(g));
+        // Under the rifle's scope its own reticle is the aim: the vanilla crosshair stands down.
+        HudElementRegistry.replaceElement(net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CROSSHAIR, vanilla -> (g, delta) -> {
+            if (!dev.rick.jjk.client.rifle.RifleHud.hidesCrosshair()) vanilla.extractRenderState(g, delta);
+        });
         HudElementRegistry.addLast(JJK.id("prison_view"), (g, delta) -> dev.rick.jjk.client.prison.PrisonClient.renderHud(g));
         // Every custom HUD layer is skipped in Vanilla Minecraft mode.
         HudElementRegistry.addLast(JJK.id("combat_hud"), (g, delta) -> {
@@ -119,6 +129,8 @@ public class JJKClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(JJKClient::tick);
         ClientTickEvents.START_CLIENT_TICK.register(InputHandler::beforeVanillaKeys);
         ClientTickEvents.START_CLIENT_TICK.register(dev.rick.jjk.client.prison.PrisonClient::beforeInput);
+        // The server holsters a drawn cursed tool while Combat Mode is off: tell it where this client stands.
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> CombatMode.sync());
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             InputHandler.releaseAll(null);
             ClientState.reset();

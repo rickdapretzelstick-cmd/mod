@@ -12,7 +12,8 @@
     "ProjectileMixin",
     "ServerLevelSpawnMixin",
     "AbstractContainerMenuAccessor",
-    "InventoryMenuMixin"
+    "InventoryMenuMixin",
+    "CreativeCursedSlotSyncMixin"
   ],
   "injectors": {
     "defaultRequire": 1

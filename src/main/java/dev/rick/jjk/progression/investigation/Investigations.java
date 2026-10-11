@@ -88,12 +88,6 @@ public final class Investigations {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> CursedRealms.cancelPull(handler.player));
         // Nothing hurts someone being pulled in (the cliff's fall never lands).
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> !(entity instanceof ServerPlayer sp && CursedRealms.pulling(sp)));
-        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
-            if (world.isClientSide() || !(player instanceof ServerPlayer sp) || hand != net.minecraft.world.InteractionHand.MAIN_HAND) {
-                return net.minecraft.world.InteractionResult.PASS;
-            }
-            return use(sp, hit.getBlockPos()) ? net.minecraft.world.InteractionResult.SUCCESS : net.minecraft.world.InteractionResult.PASS;
-        });
         ServerPlayerEvents.AFTER_RESPAWN.register((old, now, alive) -> {
             // Died in a realm: they respawn at home as usual; the realm forgets them.
             if (!CursedRealms.inRealm(now)) {
@@ -122,6 +116,8 @@ public final class Investigations {
     // --- The loop ---
 
     private static void tick(MinecraftServer server) {
+        // No loose drops in an open arena, whatever else is switched on.
+        CursedRealms.sweepDrops(server, InvestigationState.get(server));
         if (!JJKConfig.get().progression.enabled) return;
         InvestigationState st = InvestigationState.get(server);
         long now = server.overworld().getGameTime();
@@ -155,10 +151,11 @@ public final class Investigations {
         StoryChains.decide(level, v, st);
         if (v.board == null && v.boardTries < 6 && level.isLoaded(v.bell)) {
             v.boardTries++;
-            v.board = placeBoard(level, v.bell);
+            v.board = placeNews(level, v.bell);
             st.markDirty();
         }
         stock(level, v, st, now);
+        refreshBoard(level, v, st, now);
     }
 
     /** Keeps the village's board stocked with reports (one new one at a time, a little apart). */
@@ -237,6 +234,25 @@ public final class Investigations {
         return st.villages.computeIfAbsent(bell.asLong(), k -> new InvestigationState.Village(level.dimension().identifier().toString(), bell));
     }
 
+    /**
+     * The village's news: its news house by the bell (in the village's style, the board inside), or where there is no room
+     * for one, a board in the open by the bell.
+     */
+    @Nullable
+    public static BlockPos placeNews(ServerLevel level, BlockPos bell) {
+        BlockPos inHouse = NewsHouse.placeNear(level, bell);
+        return inHouse != null ? inHouse : placeBoard(level, bell);
+    }
+
+    /** Pins up as many notices on the board as the village has news (0-4): the board's look follows its reports. */
+    public static void refreshBoard(ServerLevel level, InvestigationState.Village v, InvestigationState st, long now) {
+        if (v.board == null || !level.isLoaded(v.board)) return;
+        BlockState s = level.getBlockState(v.board);
+        if (!s.is(ProgressionBlocks.NEWS_BOARD)) return;
+        int n = Math.min(4, notes(v, st, now).size());
+        if (s.getValue(NewsBoardBlock.NOTICES) != n) level.setBlock(v.board, s.setValue(NewsBoardBlock.NOTICES, n), 3);
+    }
+
     /** A board by the bell: on solid ground, in the open, facing the bell. */
     @Nullable
     public static BlockPos placeBoard(ServerLevel level, BlockPos bell) {
@@ -284,8 +300,12 @@ public final class Investigations {
                 st.markDirty();
             }
             if (in.featureBuilt && !in.marks.isEmpty()) lodgeClues(level, p, in, now);
-            if (d2 > 24 * 24 || !in.featureBuilt) continue;
-            if (fired(p, in, t)) begin(level, p, in, t, st, now);
+        }
+        // Every open (or under-way) incident whose site is built has its breach: the one way in.
+        for (Incident in : List.copyOf(st.incidents.values())) {
+            if ((in.state != Incident.State.OPEN && in.state != Incident.State.ACTIVE) || !in.featureBuilt || !in.dimension.equals(dim)) continue;
+            if (p.position().distanceToSqr(Vec3.atBottomCenterOf(in.site)) > 64 * 64) continue;
+            CursedBreaches.ensure(level, in.id, CursedBreaches.anchor(in));
         }
     }
 
@@ -295,67 +315,8 @@ public final class Investigations {
         return true;
     }
 
-    /** Whether this player has just set the incident off. */
-    public static boolean fired(ServerPlayer p, Incident in, IncidentTemplate t) {
-        Vec3 site = Vec3.atBottomCenterOf(in.site);
-        double dx = p.getX() - site.x, dz = p.getZ() - site.z;
-        return switch (t.trigger()) {
-            // Off the edge, falling, just past where it happened.
-            case JUMP -> dx * dx + dz * dz <= 4.0 * 4.0 && p.getY() < site.y - 1.5 && p.getDeltaMovement().y < -0.25 && !p.onGround()
-                    && dx * in.dirX + dz * in.dirZ > -0.5;
-            case APPROACH -> dx * dx + dz * dz <= 12 * 12 && Math.abs(p.getY() - site.y) < 8;
-            case DESCEND -> p.position().distanceToSqr(Vec3.atBottomCenterOf(Sites.mineEnd(in))) <= 2.5 * 2.5;
-            // The scope is used, never walked into: it has its own deliberate steps (LodgeScope).
-            case SCOPE -> false;
-            case NIGHT -> night(p.level()) && dx * dx + dz * dz <= 12 * 12 && Math.abs(p.getY() - site.y) < 8;
-            case THRESHOLD -> {
-                BlockPos door = in.mark("door");
-                yield door != null && p.position().distanceToSqr(Vec3.atBottomCenterOf(door)) <= 0.9 * 0.9;
-            }
-            // Used, never walked into (the bed, the object: see use()).
-            case SLEEP, INTERACT -> false;
-        };
-    }
-
-    /** Tests: pretend it is (or isn't) night, without touching the world's clock. Null: the real clock. */
-    public static Boolean nightForTest;
-
-    /** After dark (the hours a bed can be slept in). */
-    static boolean night(net.minecraft.world.level.Level level) {
-        if (nightForTest != null) return nightForTest;
-        long t = Math.floorMod(level.getOverworldClockTime(), 24000L);
-        return t >= 12542 && t <= 23459;
-    }
-
     /**
-     * Something at a site was used (right-clicked): a bed whose incident is set off by lying down in it, or the object an
-     * incident is set off by using. True if that set one off (the use is spent on it: you never get to sleep).
-     */
-    public static boolean use(ServerPlayer p, BlockPos pos) {
-        if (CursedRealms.inRealm(p) || CursedRealms.pulling(p) || p.isSpectator()) return false;
-        InvestigationState st = InvestigationState.get(p.level().getServer());
-        String dim = p.level().dimension().identifier().toString();
-        for (Incident in : List.copyOf(st.incidents.values())) {
-            if (in.state != Incident.State.OPEN || !in.dimension.equals(dim)) continue;
-            IncidentTemplate t = in.def();
-            if (t == null) continue;
-            String mark = switch (t.trigger()) {
-                case SLEEP -> "bed";
-                case INTERACT -> "object";
-                default -> null;
-            };
-            if (mark == null) continue;
-            BlockPos m = in.mark(mark);
-            // A bed is two blocks: either half counts.
-            if (m == null || m.distManhattan(pos) > 1) continue;
-            begin((ServerLevel) p.level(), p, in, t, st, p.level().getServer().overworld().getGameTime());
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Sets an incident off for a player: the place takes them. Every cursed-event fight happens in a cursed realm (an
+     * Sets an incident off for a player (they used its {@link CursedBreachEntity breach}): the place takes them. Every cursed-event fight happens in a cursed realm (an
      * incident whose template names no realm, or one this build doesn't have, uses the plain hollow one): the player is
      * held where they stand for a moment while the world goes dark ({@link CursedRealms#pull}), then arrives.
      */
@@ -368,13 +329,17 @@ public final class Investigations {
         });
     }
 
-    /** Spawns an incident's curses around {@code origin}, bound to it. */
+    /**
+     * Spawns an incident's curses around {@code origin}, bound to it. Three or more come in waves: the kinds are mixed,
+     * about three in five manifest at once, and the rest wait unseen ({@link CommonCurseEntity#setDormant}) to come in
+     * as reinforcements once the first wave is nearly gone ({@link #curseFell}).
+     */
     static void spawnCurses(ServerLevel level, Incident in, BlockPos origin, List<Vec3> spots, int radius) {
         IncidentTemplate t = in.def();
         if (t == null) return;
         RandomSource r = RandomSource.create(in.id.hashCode() * 7L + level.getGameTime());
         in.curses.clear();
-        int n = 0;
+        List<CommonCurseEntity> all = new java.util.ArrayList<>();
         for (IncidentTemplate.CurseSpawn cs : t.curses()) {
             EntityType<? extends CommonCurseEntity> type = CurseKinds.type(cs.kind());
             if (type == null) continue;
@@ -382,16 +347,29 @@ public final class Investigations {
             for (int i = 0; i < count; i++) {
                 CommonCurseEntity c = type.create(level, EntitySpawnReason.EVENT);
                 if (c == null) continue;
-                Vec3 at = Vec3.atBottomCenterOf(origin).add(spots.get(n++ % spots.size())).add(r.nextDouble() - 0.5, 0, r.nextDouble() - 0.5);
-                c.setPos(at.x, at.y, at.z);
-                c.setYRot(r.nextFloat() * 360f);
                 c.setGrade(cs.grade() != null ? cs.grade() : in.grade);
-                c.bind(in.id, origin, radius);
-                level.addFreshEntity(c);
-                in.curses.add(c.getUUID());
+                all.add(c);
             }
         }
+        // Mixed: a wave is never all one kind when the incident has more than one.
+        for (int i = all.size() - 1; i > 0; i--) java.util.Collections.swap(all, i, r.nextInt(i + 1));
+        int firstWave = firstWave(all.size());
+        for (int n = 0; n < all.size(); n++) {
+            CommonCurseEntity c = all.get(n);
+            Vec3 at = Vec3.atBottomCenterOf(origin).add(spots.get(n % spots.size())).add(r.nextDouble() - 0.5, 0, r.nextDouble() - 0.5);
+            c.setPos(at.x, at.y, at.z);
+            c.setYRot(r.nextFloat() * 360f);
+            c.bind(in.id, origin, radius);
+            if (n >= firstWave) c.setDormant(true);
+            level.addFreshEntity(c);
+            in.curses.add(c.getUUID());
+        }
         dev.rick.jjk.core.fx.Fx.play(level, "fb_manifest", Vec3.atBottomCenterOf(origin).add(0, 1, 0), Vec3.ZERO, 1f);
+    }
+
+    /** How many of {@code total} curses manifest at the start (the rest are reinforcements). */
+    public static int firstWave(int total) {
+        return total < 3 ? total : Math.max(2, Math.round(total * 0.6f));
     }
 
     /** One of an incident's curses has been exorcised; the last one completes it. */
@@ -403,6 +381,21 @@ public final class Investigations {
         if (c.getKillCredit() instanceof ServerPlayer p) in.participants.add(p.getUUID());
         st.markDirty();
         if (in.curses.isEmpty() && in.state == Incident.State.ACTIVE) complete(server, in, st);
+        else if (c.level() instanceof ServerLevel level) reinforce(level, in);
+    }
+
+    /** With at most one of the first wave left standing, the waiting curses come in. */
+    static void reinforce(ServerLevel level, Incident in) {
+        List<CommonCurseEntity> waiting = new java.util.ArrayList<>();
+        int awake = 0;
+        for (UUID id : in.curses) {
+            if (!(level.getEntity(id) instanceof CommonCurseEntity e) || !e.isAlive()) continue;
+            if (e.dormant()) waiting.add(e);
+            else awake++;
+        }
+        if (waiting.isEmpty() || awake > (waiting.size() >= 2 ? 1 : 0)) return;
+        for (CommonCurseEntity e : waiting) e.manifest(level);
+        dev.rick.jjk.core.fx.Fx.sound(level, waiting.get(0).position(), net.minecraft.sounds.SoundEvents.WARDEN_ROAR, 0.6f, 1.5f);
     }
 
     /** Everyone who took part gets the investigation bonus; the village hears it's over. */
@@ -419,7 +412,7 @@ public final class Investigations {
             var d = Mastery.data(p).recordIncident(g.name());
             Mastery.set(p, d);
             String tree = topTree(p, earned == null ? null : earned.get(id));
-            if (tree != null) {
+            if (tree != null && Mastery.enabled()) {
                 Mastery.award(p, tree, bonus);
                 MasteryTree t = MasteryTrees.get(tree);
                 p.sendSystemMessage(Component.literal("It's over. Whatever was there won't trouble anyone again. (+" + bonus + " "
@@ -568,6 +561,7 @@ public final class Investigations {
         long now = level.getServer().overworld().getGameTime();
         StoryChains.decide(level, v, st);
         stock(level, v, st, now);
+        refreshBoard(level, v, st, now);
         st.flush();
         ServerPlayNetworking.send(p, new NewsBoardPayload(villageName(v), notes(v, st, now, p.getAttached(dev.rick.jjk.registry.ModAttachments.INVESTIGATING))));
     }

@@ -40,7 +40,12 @@ public final class Mastery {
 
     private record Effective(Set<String> unlocks, Map<String, Double> mul, Map<String, Double> add) {}
 
-    public enum Result { OK, UNKNOWN, NOT_YOURS, OWNED, NEEDS, POINTS, FAILED }
+    public enum Result { OK, UNKNOWN, NOT_YOURS, OWNED, NEEDS, POINTS, FAILED, DISABLED }
+
+    /** Whether the Mastery trees are in play at all ({@code JJKConfig.mastery.enabled}). */
+    public static boolean enabled() {
+        return dev.rick.jjk.config.JJKConfig.get().mastery.enabled;
+    }
 
     private Mastery() {}
 
@@ -96,6 +101,8 @@ public final class Mastery {
      */
     public static boolean unlocked(@Nullable LivingEntity e, String key) {
         boolean tool = key.startsWith("tool.");
+        // With the trees off, every tool comes whole.
+        if (tool && !enabled()) return true;
         if (tool ? !gated(e) : !techniqueGated(e)) return true;
         ServerPlayer p = (ServerPlayer) e;
         if (tool) return effective(p).unlocks.contains(key);
@@ -106,6 +113,7 @@ public final class Mastery {
     /** The multiplier on a move's number for {@code e} (1.0 untouched). */
     public static double param(@Nullable LivingEntity e, String key) {
         if (!(e instanceof ServerPlayer p)) return 1.0;
+        if (!enabled()) return 1.0;
         Effective eff = effective(p);
         return eff.mul.getOrDefault(key, 1.0) + eff.add.getOrDefault(key, 0.0);
     }
@@ -152,7 +160,7 @@ public final class Mastery {
 
     /** Adds Mastery to a tree (the server's reward paths call this; never the client). */
     public static void award(ServerPlayer p, String treeId, int amount) {
-        if (amount <= 0) return;
+        if (amount <= 0 || !enabled()) return;
         MasteryTree t = MasteryTrees.get(treeId);
         if (t == null || !mayDevelop(p, t)) return;
         set(p, data(p).earn(treeId, amount));
@@ -160,6 +168,7 @@ public final class Mastery {
 
     /** Buys a node, if the player may: their tree, not owned yet, every prerequisite owned, enough Mastery. */
     public static Result purchase(ServerPlayer p, String treeId, String nodeId) {
+        if (!enabled()) return Result.DISABLED;
         MasteryTree t = MasteryTrees.get(treeId);
         if (t == null) return Result.UNKNOWN;
         MasteryNode n = t.node(nodeId);
@@ -194,6 +203,6 @@ public final class Mastery {
 
     public static void sync(ServerPlayer p) {
         String kit = TechniqueProgression.legitimateCharacter(p) == null ? "" : TechniqueProgression.legitimateCharacter(p).id;
-        ServerPlayNetworking.send(p, new MasterySyncPayload(data(p), kit, techniqueGated(p)));
+        ServerPlayNetworking.send(p, new MasterySyncPayload(data(p), kit, techniqueGated(p), enabled()));
     }
 }
