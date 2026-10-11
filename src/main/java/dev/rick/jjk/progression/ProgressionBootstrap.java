@@ -30,6 +30,7 @@ public final class ProgressionBootstrap {
         dev.rick.jjk.progression.investigation.Investigations.init();
         dev.rick.jjk.progression.investigation.CursedCompass.init();
         dev.rick.jjk.progression.story.PersonalTrials.init();
+        dev.rick.jjk.progression.moment.Moments.init();
         dev.rick.jjk.progression.guardian.EssenceCapture.init();
         dev.rick.jjk.progression.contest.StrengthContests.init();
         dev.rick.jjk.progression.story.Vessels.register();

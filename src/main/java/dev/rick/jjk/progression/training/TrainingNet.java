@@ -29,9 +29,8 @@ public final class TrainingNet {
         PayloadTypeRegistry.clientboundPlay().register(Judge.TYPE, Judge.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Meter.TYPE, Meter.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(Input.TYPE, (p, ctx) -> {
-            // The same skill check drives a seal's containment (progression.guardian.EssenceCapture).
-            if (dev.rick.jjk.progression.guardian.EssenceCapture.input(ctx.player(), p)) return;
-            if (dev.rick.jjk.progression.contest.StrengthContests.input(ctx.player(), p)) return;
+            // The same skill check drives every moment (progression.moment.Moments) as well as training.
+            if (dev.rick.jjk.progression.moment.Moments.input(ctx.player(), p)) return;
             TrainingSessions.input(ctx.player(), p);
         });
         ServerPlayNetworking.registerGlobalReceiver(Answer.TYPE, (p, ctx) -> TrainingSessions.answer(ctx.player(), p.kit(), p.accept()));

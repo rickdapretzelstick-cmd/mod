@@ -82,7 +82,9 @@ public final class PersonalTrials {
     record Eligibility(@Nullable String why, boolean practice, boolean test) {}
 
     static Eligibility eligibility(ServerPlayer p, ItemStack stack, CharacterStory story) {
-        if (CursedRealms.inRealm(p) || CursedRealms.pulling(p) || TrainingSessions.inTraining(p)) return new Eligibility("", false, false);
+        if (CursedRealms.inRealm(p) || CursedRealms.pulling(p) || TrainingSessions.inTraining(p) || dev.rick.jjk.progression.moment.Moments.active(p)) {
+            return new Eligibility("", false, false);
+        }
         boolean test = isTestUse(p, stack);
         if (!test && !UniqueRelics.get(p.level().getServer()).isLive(story.relicKey(), RelicItem.token(stack))) {
             return new Eligibility("It is cold and silent. Whatever lived in it has gone.", false, false);
