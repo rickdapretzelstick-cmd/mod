@@ -121,6 +121,7 @@ public class InvestigationTests {
         Incident cliff = incident(h, "cliff_fall", new BlockPos(5, 1, 5), 1, 0);
         Investigations.buildForTest(level, cliff);
         ServerPlayer p = survivor(h, 5.5, 1, 5.5);
+        dev.rick.jjk.progression.investigation.Clearance.set(p, 1);
         // Jumping off the edge (the old trigger) does nothing now: nothing is set off by accident.
         Vec3 at = h.absoluteVec(new Vec3(6.6, -1.5, 5.5));
         p.setPos(at.x, at.y, at.z);

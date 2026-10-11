@@ -1,0 +1,32 @@
+{
+  "id": "crawler_culvert",
+  "weight": 3,
+  "grade": "GRADE_4",
+  "site": "hillside",
+  "trigger": "breach",
+  "realm": "mine_realm",
+  "objective": "designated",
+  "curses": [
+    {
+      "kind": "school_crawler",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "grave_hound",
+      "min": 2,
+      "max": 2
+    }
+  ],
+  "trail": 14,
+  "reports": [
+    {
+      "headline": "Something Living in the Old Culvert",
+      "body": "Children playing by the hillside {dir} of the village {dist} say there is something in the drain that crawls on too many hands. {name} saw it once, a pale back turning in the dark, and something like dogs waiting behind it."
+    },
+    {
+      "headline": "The Thing Under the Hill",
+      "body": "{name} lost a lamb at the hillside {dir} of here {dist}. The tracks went into the old culvert and the lamb did not come out. One of them in there is bigger than the rest. Folk say it is the one that leads them."
+    }
+  ]
+}

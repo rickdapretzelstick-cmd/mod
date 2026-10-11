@@ -1,0 +1,17 @@
+{
+  "id": "guardian_chapel",
+  "weight": 1,
+  "grade": "GRADE_1",
+  "site": "chapel",
+  "trigger": "breach",
+  "realm": "guardian_arena",
+  "objective": "guardian",
+  "curses": [],
+  "trail": 24,
+  "reports": [
+    {
+      "headline": "Something Old Wakes at the Chapel",
+      "body": "The bells of the chapel {dir} of the village {dist} rang on their own at midnight. {name} saw a shape in the doorway that filled it. The elders say whoever faces it must go alone, and carry a seal to bind what it leaves behind."
+    }
+  ]
+}

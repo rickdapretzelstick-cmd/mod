@@ -24,7 +24,23 @@ import java.util.Map;
  * or realm is one entry in the matching registry.
  */
 public record IncidentTemplate(String id, int weight, CurseGrade grade, String site, Trigger trigger, String realm,
-                               List<CurseSpawn> curses, int trail, List<Report> reports, String reward) {
+                               List<CurseSpawn> curses, int trail, List<Report> reports, String reward, Objective objective) {
+    /**
+     * What a contract asks. INFESTATION: exorcise every curse in it. DESIGNATED: exorcise the one marked curse (the rest
+     * scatter when it falls). ANCHOR: destroy the cursed anchor its curses guard. GUARDIAN: defeat the Grade 1 guardian
+     * (a solo challenge; its essence is captured afterwards with an Exorcism Seal).
+     */
+    public enum Objective {
+        INFESTATION("Clear a bounded infestation"), DESIGNATED("Exorcise a designated curse"), ANCHOR("Destroy a guarded cursed anchor"),
+        GUARDIAN("Defeat the Grade 1 guardian (solo challenge)");
+
+        public final String text;
+
+        Objective(String text) {
+            this.text = text;
+        }
+    }
+
     /**
      * How an incident is entered once a player has found it. One way only: its Cursed Breach, used ({@link CursedBreaches}).
      * Older templates' triggers (a jump, a bed, a doorway at night...) all read as this.
@@ -84,7 +100,9 @@ public record IncidentTemplate(String id, int weight, CurseGrade grade, String s
         for (CurseSpawn c : curses) if (!CurseKinds.exists(c.kind())) throw new IllegalArgumentException("unknown curse " + c.kind());
         return new IncidentTemplate(o.get("id").getAsString(), o.has("weight") ? o.get("weight").getAsInt() : 1,
                 CurseGrade.valueOf(o.get("grade").getAsString()), site, Trigger.BREACH,
-                realm, curses, o.has("trail") ? o.get("trail").getAsInt() : 16, reports, o.has("reward") ? o.get("reward").getAsString() : "");
+                realm, curses, o.has("trail") ? o.get("trail").getAsInt() : 16, reports, o.has("reward") ? o.get("reward").getAsString() : "",
+                o.has("objective") ? Objective.valueOf(o.get("objective").getAsString().toUpperCase(java.util.Locale.ROOT))
+                        : CurseGrade.valueOf(o.get("grade").getAsString()) == CurseGrade.GRADE_1 ? Objective.GUARDIAN : Objective.INFESTATION);
     }
 
     @Nullable

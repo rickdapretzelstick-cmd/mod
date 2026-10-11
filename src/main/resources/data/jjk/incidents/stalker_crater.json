@@ -1,0 +1,33 @@
+{
+  "id": "stalker_crater",
+  "weight": 2,
+  "grade": "GRADE_2",
+  "site": "crater",
+  "trigger": "breach",
+  "realm": "crater_realm",
+  "objective": "designated",
+  "curses": [
+    {
+      "kind": "forest_stalker",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "grave_hound",
+      "min": 2,
+      "max": 2,
+      "grade": "GRADE_3"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "Hunted at the Crater",
+      "body": "Something stalks the old crater {dir} of the village {dist}. {name} felt eyes on {them} the whole way round its rim, and once saw a long shape move between the stones, quicker than a man. The dogs that follow it are only its hounds."
+    },
+    {
+      "headline": "The Thing at the Crater's Edge",
+      "body": "The crater {dir} of here {dist} has claimed two hunters. {name} found their bows snapped and a trail of long, careful footprints leading down into it."
+    }
+  ]
+}

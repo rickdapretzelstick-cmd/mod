@@ -58,6 +58,7 @@ public final class JJKConfig {
     public CursedToolKits cursedTools = new CursedToolKits();
     public Realms realms = new Realms();
     public Training training = new Training();
+    public Clearance clearance = new Clearance();
 
     public static JJKConfig get() {
         return instance;
@@ -1157,6 +1158,12 @@ public final class JJKConfig {
         /** The Finger Bearer, the curse waiting in each battle room: its health and a scale on every hit it lands. */
         public double fingerBearerHealth = 300;
         public float fingerBearerDamage = 1f;
+        /**
+         * The old per-village character storylines (four events ending in a character Essence). Retired: a character's
+         * catalyst now comes from a Grade 1 guardian's essence captured with an Exorcism Seal. On only for old worlds that
+         * want to finish a storyline already under way.
+         */
+        public boolean villageStorylines = false;
     }
 
     /**
@@ -1280,6 +1287,22 @@ public final class JJKConfig {
     }
 
     /**
+     * News clearance: which contracts a player may take. Everyone starts at {@link #startGrade} (4 = Grade 4); completing
+     * {@link #contractsToAdvance} distinct contracts of their current grade opens the next one. Grade 1 contracts are the
+     * essence guardians (solo).
+     */
+    public static final class Clearance {
+        public int startGrade = 4;
+        public int contractsToAdvance = 2;
+        /** Credit for a contract needs real part in it: at least this share of its curses' total health dealt, or the objective. */
+        public float minDamageShare = 0.1f;
+        /** ...or at least this much damage outright (a big group's share can be small). */
+        public float minDamage = 20f;
+        /** Chance a board's new report is one grade above the reader's clearance (shown as locked, a goal to aim for). */
+        public float aboveClearanceChance = 0.2f;
+    }
+
+    /**
      * Character training (the relic's personal trial): the shared three-gauge skill check. Every timing here is in
      * milliseconds of elapsed time (never frames). Phase windows are the full width of the GOOD arc; PERFECT is a
      * fraction of it, centred. Per-character schedules are built from these by {@code TrainingSchedule}.
@@ -1387,5 +1410,6 @@ public final class JJKConfig {
         if (cursedTools == null) cursedTools = new CursedToolKits();
         if (realms == null) realms = new Realms();
         if (training == null) training = new Training();
+        if (clearance == null) clearance = new Clearance();
     }
 }

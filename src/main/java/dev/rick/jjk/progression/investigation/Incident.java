@@ -60,6 +60,18 @@ public final class Incident {
     @Nullable ListTag footprintRaw;
     /** The site has been taken down (it is never built or taken down again). */
     boolean siteCleared;
+    /** A solo contract's challenger (Grade 1), fixed when they first enter. */
+    @Nullable UUID challenger;
+    /** Damage each player dealt this contract's curses (participation credit), and their total health when they rose. */
+    final java.util.Map<UUID, Float> damage = new java.util.LinkedHashMap<>();
+    float totalHealth;
+    /** Who completed its objective (the designated curse's or the anchor's last blow). */
+    @Nullable UUID objectiveBy;
+    /** The designated curse or the cursed anchor, for those objectives. */
+    @Nullable UUID objectiveTarget;
+    /** Its Grade 1 guardian: the body and the visual variant, chosen once and kept for every retry. */
+    String guardian = "";
+    int variant;
 
     public Incident(String id, String template, CurseGrade grade, String dimension, BlockPos village, BlockPos site, int dirX, int dirZ,
                     long createdAt, String headline, String body) {
@@ -174,6 +186,15 @@ public final class Incident {
         if (footprint != null) t.put("Footprint", SiteFootprint.save(footprint));
         else if (footprintRaw != null) t.put("Footprint", footprintRaw);
         t.putBoolean("SiteCleared", siteCleared);
+        if (challenger != null) t.putString("Challenger", challenger.toString());
+        CompoundTag dmg = new CompoundTag();
+        damage.forEach((u, d) -> dmg.putFloat(u.toString(), d));
+        t.put("Damage", dmg);
+        t.putFloat("TotalHealth", totalHealth);
+        if (objectiveBy != null) t.putString("ObjectiveBy", objectiveBy.toString());
+        if (objectiveTarget != null) t.putString("ObjectiveTarget", objectiveTarget.toString());
+        t.putString("Guardian", guardian);
+        t.putInt("Variant", variant);
         return t;
     }
 
@@ -199,6 +220,17 @@ public final class Incident {
             i.rewardsClaimed.addAll(rc);
             i.siteCleared = t.getBooleanOr("SiteCleared", false);
             if (t.get("Footprint") instanceof ListTag fp && !fp.isEmpty()) i.footprintRaw = fp;
+            i.challenger = uuidOrNull(t.getStringOr("Challenger", ""));
+            CompoundTag dmg = t.getCompoundOrEmpty("Damage");
+            for (String k : dmg.keySet()) {
+                UUID u = uuidOrNull(k);
+                if (u != null) i.damage.put(u, dmg.getFloatOr(k, 0f));
+            }
+            i.totalHealth = t.getFloatOr("TotalHealth", 0f);
+            i.objectiveBy = uuidOrNull(t.getStringOr("ObjectiveBy", ""));
+            i.objectiveTarget = uuidOrNull(t.getStringOr("ObjectiveTarget", ""));
+            i.guardian = t.getStringOr("Guardian", "");
+            i.variant = t.getIntOr("Variant", 0);
             CompoundTag mk = t.getCompoundOrEmpty("Marks");
             for (String k : mk.keySet()) i.marks.put(k, BlockPos.of(mk.getLongOr(k, 0L)));
             CompoundTag cl = t.getCompoundOrEmpty("Clues");
@@ -212,6 +244,33 @@ public final class Incident {
         } catch (RuntimeException e) {
             return null;
         }
+    }
+
+    @Nullable
+    private static UUID uuidOrNull(String s) {
+        if (s == null || s.isEmpty()) return null;
+        try {
+            return UUID.fromString(s);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    @Nullable
+    public UUID challenger() {
+        return challenger;
+    }
+
+    public String guardian() {
+        return guardian;
+    }
+
+    public int variant() {
+        return variant;
+    }
+
+    public java.util.Map<UUID, Float> damage() {
+        return java.util.Map.copyOf(damage);
     }
 
     private static void uuid(Tag x, List<UUID> into) {

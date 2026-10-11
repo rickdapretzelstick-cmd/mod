@@ -1,0 +1,33 @@
+{
+  "id": "kennel_master",
+  "weight": 2,
+  "grade": "GRADE_2",
+  "site": "pasture",
+  "trigger": "breach",
+  "realm": "pasture_realm",
+  "objective": "infestation",
+  "curses": [
+    {
+      "kind": "grave_hound",
+      "min": 2,
+      "max": 2
+    },
+    {
+      "kind": "school_maw",
+      "min": 1,
+      "max": 1,
+      "grade": "GRADE_3"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "The Pack Has a Master",
+      "body": "The skinless dogs are back in the grazing land {dir} of the village {dist}, bigger than before, and now something walks with them: {name} says it has a mouth where its chest should be. The {animal} are gone."
+    },
+    {
+      "headline": "Howling, and Something Worse",
+      "body": "Last night the howling {dir} of here {dist} stopped all at once, and then something laughed. {name} found the fence torn out and tracks too wide for any dog."
+    }
+  ]
+}

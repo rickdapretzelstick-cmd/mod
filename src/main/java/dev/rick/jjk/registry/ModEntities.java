@@ -88,6 +88,11 @@ public final class ModEntities {
     public static final EntityType<TrainingDummy> TRAINING_DUMMY = register("training_dummy",
             EntityType.Builder.<TrainingDummy>of(TrainingDummy::new, MobCategory.MISC).sized(0.6f, 1.95f).clientTrackingRange(10));
 
+    /** A "destroy a guarded cursed anchor" contract's objective. */
+    public static final EntityType<dev.rick.jjk.progression.investigation.CursedAnchorEntity> CURSED_ANCHOR = register("cursed_anchor",
+            EntityType.Builder.<dev.rick.jjk.progression.investigation.CursedAnchorEntity>of(dev.rick.jjk.progression.investigation.CursedAnchorEntity::new,
+                    MobCategory.MISC).sized(1.1f, 2.6f).clientTrackingRange(10).fireImmune());
+
     private ModEntities() {}
 
     private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {
@@ -97,6 +102,7 @@ public final class ModEntities {
 
     public static void init() {
         FabricDefaultAttributeRegistry.register(TRAINING_DUMMY, TrainingDummy.createAttributes());
+        FabricDefaultAttributeRegistry.register(CURSED_ANCHOR, dev.rick.jjk.progression.investigation.CursedAnchorEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(FINGER_BEARER, dev.rick.jjk.progression.curse.FingerBearerEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(FLY_HEAD, dev.rick.jjk.progression.curse.FlyHeadEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(SCHOOL_CRAWLER, dev.rick.jjk.progression.curse.SchoolCrawlerEntity.createAttributes());

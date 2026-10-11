@@ -98,7 +98,9 @@ public final class CursedRealms {
             Map.entry("crater_realm", new StoryRealms.Crater()), Map.entry("fight_club_realm", new StoryRealms.FightClub()),
             Map.entry("chapel_realm", new StoryRealms.Chapel()),
             // The one reusable room every character's training is held in (each scene dresses it).
-            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.ID, new dev.rick.jjk.progression.training.TrainingRoom()));
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.ID, new dev.rick.jjk.progression.training.TrainingRoom()),
+            // The compact arena every Grade 1 guardian contract uses.
+            Map.entry(GuardianArena.ID, new GuardianArena()));
     /** Arenas that belong to a cursed battle room (the Finger Bearer's), not an incident: their key starts with this. */
     public static final String ROOM = "room:";
     /** Arenas that belong to a personal character trial ({@link dev.rick.jjk.progression.story.PersonalTrials}). */
@@ -497,6 +499,12 @@ public final class CursedRealms {
         }
     }
 
+    /** The arena at a spot in the realm (or null). */
+    @Nullable
+    public static InvestigationState.Arena arenaAtPos(MinecraftServer server, Vec3 pos) {
+        return arenaAt(InvestigationState.get(server), pos);
+    }
+
     /** Whether {@code pos} in {@code level} lies in an open realm arena (in the realm dimension, or wherever arenas are built). */
     public static boolean inArena(ServerLevel level, BlockPos pos) {
         MinecraftServer server = level.getServer();
@@ -534,6 +542,11 @@ public final class CursedRealms {
         st.arenas.remove(a.slot);
         if (!won && a.incident.startsWith(ROOM)) dev.rick.jjk.progression.curse.FingerBearerEncounter.arenaAbandoned(server, a.incident.substring(ROOM.length()));
         if (a.incident.startsWith(TRIAL)) dev.rick.jjk.progression.story.PersonalTrials.arenaClosed(server, a.incident.substring(TRIAL.length()), won);
+        // A lost guardian fight: its challenger is offered the rematch straight away (same contract, same guardian).
+        if (!won && in != null && in.state == Incident.State.ACTIVE && in.grade == dev.rick.jjk.progression.grade.CurseGrade.GRADE_1 && in.challenger != null) {
+            ServerPlayer c = server.getPlayerList().getPlayer(in.challenger);
+            if (c != null) NextTick.later(server, () -> ContractCommand.offerRematch(c));
+        }
         if (!won && in != null && in.state == Incident.State.ACTIVE) {
             // Nobody finished it: the place goes quiet again, and can be tried again.
             in.state = Incident.State.OPEN;

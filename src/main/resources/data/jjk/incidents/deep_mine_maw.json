@@ -1,0 +1,39 @@
+{
+  "id": "deep_mine_maw",
+  "weight": 3,
+  "grade": "GRADE_2",
+  "site": "hillside",
+  "trigger": "breach",
+  "realm": "mine_realm",
+  "objective": "infestation",
+  "curses": [
+    {
+      "kind": "school_maw",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "bloat_toad",
+      "min": 1,
+      "max": 1,
+      "grade": "GRADE_3"
+    },
+    {
+      "kind": "school_crawler",
+      "min": 1,
+      "max": 1,
+      "grade": "GRADE_3"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "The Mine That Eats",
+      "body": "The old mine {dir} of the village {dist} has started taking men again. {name} went in with a lantern and came out without it, talking about a mouth as wide as the shaft. Something swollen croaks in the deep water there too."
+    },
+    {
+      "headline": "Three Miners Missing",
+      "body": "Three went down the hillside workings {dir} of here {dist} and none came up. The props are snapped as though something huge pushed through. {name} will not say what {they} heard in the dark."
+    }
+  ]
+}

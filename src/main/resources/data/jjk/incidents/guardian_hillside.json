@@ -1,0 +1,17 @@
+{
+  "id": "guardian_hillside",
+  "weight": 1,
+  "grade": "GRADE_1",
+  "site": "hillside",
+  "trigger": "breach",
+  "realm": "guardian_arena",
+  "objective": "guardian",
+  "curses": [],
+  "trail": 24,
+  "reports": [
+    {
+      "headline": "It Waits at the Hill",
+      "body": "The hillside {dir} of here {dist} has gone silent: no birds, no wind. {name} says what waits there is nothing like anything folk have chased before. It is old, and strong, and it lets one challenger at a time come close. Whoever goes should carry a seal."
+    }
+  ]
+}

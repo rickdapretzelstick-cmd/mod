@@ -116,6 +116,8 @@ public final class InvestigationState {
     final Map<UUID, Return> returns = new LinkedHashMap<>();
     /** Every Cursed Rifle issued and still live: its claim id → whose it is (a recovered rifle replaces its old id). */
     final Map<String, UUID> rifleClaims = new LinkedHashMap<>();
+    /** News clearance per player ({@link Clearance}). */
+    final Map<UUID, Clearance.Record> clearance = new LinkedHashMap<>();
     int nextId;
     private boolean dirty;
 
@@ -263,6 +265,7 @@ public final class InvestigationState {
                 rc.add(c);
             }
             t.put("RifleClaims", rc);
+            Clearance.saveAll(clearance, t);
             Path tmp = f.resolveSibling(FILE + ".tmp");
             NbtIo.writeCompressed(t, tmp);
             Files.move(tmp, f, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
@@ -316,6 +319,7 @@ public final class InvestigationState {
                 } catch (IllegalArgumentException ignored) {
                 }
             }
+            Clearance.loadAll(t, clearance);
             JJK.LOGGER.info("Loaded investigations: {} villages, {} incidents, {} arenas", villages.size(), incidents.size(), arenas.size());
         } catch (Exception e) {
             Path backup = f.resolveSibling(FILE + ".corrupt-" + System.currentTimeMillis());

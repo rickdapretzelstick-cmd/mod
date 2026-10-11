@@ -109,6 +109,16 @@ public final class CursedBreaches {
         InvestigationState st = InvestigationState.get(level.getServer());
         Incident in = st.incidents().get(e.target);
         if (in == null || in.def() == null) return;
+        // Clearance is checked again at the breach: nobody is carried past their own grade, and a solo contract is solo.
+        String refusal = Clearance.refusal(p, in);
+        if (refusal != null) {
+            p.sendOverlayMessage(Component.literal(refusal).withStyle(ChatFormatting.GRAY));
+            return;
+        }
+        if (in.grade == dev.rick.jjk.progression.grade.CurseGrade.GRADE_1 && in.challenger == null) {
+            in.challenger = p.getUUID();
+            st.markDirty();
+        }
         p.sendOverlayMessage(Component.literal(s == 1 ? "Someone is already on the other side." : "The air gives way under your hand.")
                 .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
         Investigations.begin(level, p, in, in.def(), st, level.getServer().overworld().getGameTime());

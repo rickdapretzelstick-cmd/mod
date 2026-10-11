@@ -1,0 +1,33 @@
+{
+  "id": "brood_anchor",
+  "weight": 3,
+  "grade": "GRADE_2",
+  "site": "house",
+  "trigger": "breach",
+  "realm": "house_realm",
+  "objective": "anchor",
+  "curses": [
+    {
+      "kind": "brood_mother",
+      "min": 1,
+      "max": 1
+    },
+    {
+      "kind": "grave_hound",
+      "min": 2,
+      "max": 2,
+      "grade": "GRADE_3"
+    }
+  ],
+  "trail": 18,
+  "reports": [
+    {
+      "headline": "Something Nesting in the Empty House",
+      "body": "The house {dir} of the village {dist} that nobody lives in has a black stone growing through its floor, and it pulses like a heart. {name} saw a swollen thing tending it, and lean shapes guarding the door."
+    },
+    {
+      "headline": "The House That Breathes",
+      "body": "{name} swears the empty house {dir} of here {dist} breathes at night. Inside, {they} saw a dark stone standing where the hearth should be, and things guarding it that hissed when the lamp came near."
+    }
+  ]
+}

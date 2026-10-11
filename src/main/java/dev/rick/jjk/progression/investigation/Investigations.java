@@ -82,6 +82,34 @@ public final class Investigations {
             if (entity instanceof CommonCurseEntity c && !c.incidentId().isEmpty() && entity.level().getServer() != null) {
                 curseFell(entity.level().getServer(), c);
             }
+            if (entity instanceof CursedAnchorEntity a && !a.incidentId().isEmpty() && entity.level().getServer() != null) {
+                MinecraftServer server = entity.level().getServer();
+                InvestigationState st = InvestigationState.get(server);
+                Incident in = st.incidents.get(a.incidentId());
+                if (in != null && in.state == Incident.State.ACTIVE) {
+                    objectiveMet(server, in, st, source.getEntity() instanceof ServerPlayer p ? p : null);
+                }
+            }
+        });
+        // Participation: who dealt a contract's curses how much (credit needs real part in the fight, not the last hit).
+        ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, base, taken, blocked) -> {
+            String incident = entity instanceof CommonCurseEntity c ? c.incidentId() : entity instanceof CursedAnchorEntity a ? a.incidentId() : "";
+            if (incident.isEmpty() || taken <= 0 || entity.level().getServer() == null) return;
+            if (!(source.getEntity() instanceof ServerPlayer p)) return;
+            Incident in = InvestigationState.get(entity.level().getServer()).incidents.get(incident);
+            if (in == null || in.state != Incident.State.ACTIVE) return;
+            in.damage.merge(p.getUUID(), Math.min(taken, entity.getMaxHealth()), Float::sum);
+        });
+        // No building in a guardian's arena: no towers, no walls, no safe ledges.
+        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+            if (!(player instanceof ServerPlayer sp) || !(player.getItemInHand(hand).getItem() instanceof net.minecraft.world.item.BlockItem)) return net.minecraft.world.InteractionResult.PASS;
+            if (!CursedRealms.inRealm(sp)) return net.minecraft.world.InteractionResult.PASS;
+            InvestigationState.Arena a = CursedRealms.arenaAtPos(sp.level().getServer(), sp.position());
+            if (a != null && GuardianArena.ID.equals(a.layout)) {
+                sp.sendOverlayMessage(Component.literal("Nothing you build here would hold.").withStyle(net.minecraft.ChatFormatting.GRAY));
+                return net.minecraft.world.InteractionResult.FAIL;
+            }
+            return net.minecraft.world.InteractionResult.PASS;
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> rejoin(handler.player));
         // Logging out mid-pull: set down somewhere safe, not left hanging where the pull caught them.
@@ -148,20 +176,24 @@ public final class Investigations {
             st.villages.put(v.bell.asLong(), v);
             st.markDirty();
         }
-        StoryChains.decide(level, v, st);
+        if (JJKConfig.get().progression.villageStorylines) StoryChains.decide(level, v, st);
         if (v.board == null && v.boardTries < 6 && level.isLoaded(v.bell)) {
             v.boardTries++;
             v.board = placeNews(level, v.bell);
             st.markDirty();
         }
-        stock(level, v, st, now);
+        stock(level, v, st, now, p);
         refreshBoard(level, v, st, now);
     }
 
-    /** Keeps the village's board stocked with reports (one new one at a time, a little apart). */
     static void stock(ServerLevel level, InvestigationState.Village v, InvestigationState st, long now) {
-        // The village's character storyline first: its current event is always on the board.
-        StoryChains.stock(level, v, st, now);
+        stock(level, v, st, now, null);
+    }
+
+    /** Keeps the village's board stocked with reports (one new one at a time, a little apart). */
+    static void stock(ServerLevel level, InvestigationState.Village v, InvestigationState st, long now, @Nullable ServerPlayer reader) {
+        // (Old worlds only) the village's character storyline first: its current event is always on the board.
+        if (JJKConfig.get().progression.villageStorylines) StoryChains.stock(level, v, st, now);
         int open = 0;
         for (String id : v.incidents) {
             Incident i = st.incidents.get(id);
@@ -170,18 +202,33 @@ public final class Investigations {
         }
         if (open >= JJKConfig.get().mastery.reportsPerBoard) return;
         if (open > 0 && now - v.lastGenerated < 2400) return;
-        Incident made = generate(level, v, st, now, null);
+        Incident made = generate(level, v, st, now, null, reader);
         if (made != null) JJK.LOGGER.info("[investigations] reported {} ({}) near {}: {}", made.id, made.template, v.bell.toShortString(), made.headline);
     }
 
     /** Makes one incident for a village: a template that has a place to happen around it. */
     @Nullable
     public static Incident generate(ServerLevel level, InvestigationState.Village v, InvestigationState st, long now, @Nullable String only) {
+        return generate(level, v, st, now, only, null);
+    }
+
+    /**
+     * Makes one incident for a village. With a reader (the player whose visit stocks the board), it is shaped by their
+     * News clearance: mostly their own grade, sometimes an easier one, now and then one grade above (shown as locked, a
+     * goal). Grade 1 guardian contracts appear only for readers cleared for them, one at a time per board.
+     */
+    @Nullable
+    public static Incident generate(ServerLevel level, InvestigationState.Village v, InvestigationState st, long now, @Nullable String only,
+                                    @Nullable ServerPlayer reader) {
         RandomSource r = RandomSource.create(now ^ v.bell.asLong() * 31 + v.incidents.size());
         List<IncidentTemplate> pool = new ArrayList<>();
+        int target = only == null ? targetGrade(reader, v, st, r) : 0;
         for (IncidentTemplate t : IncidentTemplate.all()) {
             // A storyline's events only ever come from its own village's storyline (StoryChains), never at random.
             if (only == null ? dev.rick.jjk.progression.story.CharacterStories.ofTemplate(t.id()) != null : !t.id().equals(only)) continue;
+            if (only == null && t.weight() <= 0) continue;
+            if (only == null && target > 0 && Clearance.number(t.grade()) != target) continue;
+            if (only == null && target == 0 && t.grade() == CurseGrade.GRADE_1) continue;
             for (int k = 0; k < Math.max(1, t.weight()); k++) pool.add(t);
         }
         JJKConfig.MasteryRules cfg = JJKConfig.get().mastery;
@@ -199,6 +246,27 @@ public final class Investigations {
         }
         st.markDirty();
         return null;
+    }
+
+    /** The grade a new report on this board should be, for this reader (0 = any but Grade 1). */
+    static int targetGrade(@Nullable ServerPlayer reader, InvestigationState.Village v, InvestigationState st, RandomSource r) {
+        if (reader == null) return 0;
+        int access = Clearance.access(reader);
+        float roll = r.nextFloat();
+        int target;
+        if (access > 1 && roll < JJKConfig.get().clearance.aboveClearanceChance) target = access - 1;
+        else if (roll < 0.75f || access >= 4) target = access;
+        else target = access + 1 + r.nextInt(Math.max(1, 4 - access));
+        target = Math.max(1, Math.min(4, target));
+        // A guardian only for someone cleared for it, and one open guardian contract per board at a time.
+        if (target == 1 && access > 1) target = 2;
+        if (target == 1) {
+            for (String id : v.incidents) {
+                Incident i = st.incidents.get(id);
+                if (i != null && i.grade == CurseGrade.GRADE_1 && (i.state == Incident.State.OPEN || i.state == Incident.State.ACTIVE)) return 2;
+            }
+        }
+        return target;
     }
 
     /** Sites this close together could overlap (a lodge's grounds reach about thirty blocks out). */
@@ -222,6 +290,12 @@ public final class Investigations {
         ReportWriter.Written w = ReportWriter.write(t, t.grade(), v.bell, s.pos(), Sites.describe(t.site(), level, v.bell, s.pos()), r);
         Incident in = new Incident(st.newId(), t.id(), t.grade(), level.dimension().identifier().toString(), v.bell, s.pos(), s.dirX(), s.dirZ(), now,
                 w.headline(), w.body());
+        if (t.objective() == IncidentTemplate.Objective.GUARDIAN) {
+            // One body and one look, chosen now and kept for every retry.
+            var body = dev.rick.jjk.progression.guardian.Guardians.pick(r);
+            in.guardian = body.id();
+            in.variant = r.nextInt(Math.max(1, body.variants()));
+        }
         st.incidents.put(in.id, in);
         v.incidents.add(in.id);
         st.markDirty();
@@ -340,6 +414,10 @@ public final class Investigations {
         RandomSource r = RandomSource.create(in.id.hashCode() * 7L + level.getGameTime());
         in.curses.clear();
         List<CommonCurseEntity> all = new java.util.ArrayList<>();
+        if (t.objective() == IncidentTemplate.Objective.GUARDIAN) {
+            spawnGuardian(level, in, origin, spots, radius);
+            return;
+        }
         for (IncidentTemplate.CurseSpawn cs : t.curses()) {
             EntityType<? extends CommonCurseEntity> type = CurseKinds.type(cs.kind());
             if (type == null) continue;
@@ -354,6 +432,8 @@ public final class Investigations {
         // Mixed: a wave is never all one kind when the incident has more than one.
         for (int i = all.size() - 1; i > 0; i--) java.util.Collections.swap(all, i, r.nextInt(i + 1));
         int firstWave = firstWave(all.size());
+        in.totalHealth = 0;
+        for (CommonCurseEntity c : all) in.totalHealth += c.getMaxHealth();
         for (int n = 0; n < all.size(); n++) {
             CommonCurseEntity c = all.get(n);
             Vec3 at = Vec3.atBottomCenterOf(origin).add(spots.get(n % spots.size())).add(r.nextDouble() - 0.5, 0, r.nextDouble() - 0.5);
@@ -364,7 +444,80 @@ public final class Investigations {
             level.addFreshEntity(c);
             in.curses.add(c.getUUID());
         }
+        in.objectiveTarget = null;
+        in.objectiveBy = null;
+        if (t.objective() == IncidentTemplate.Objective.DESIGNATED && !all.isEmpty()) {
+            // The designated curse: of the contract's first kind, in the first wave, marked so it can be told apart.
+            String kind = t.curses().get(0).kind();
+            CommonCurseEntity target = null;
+            for (int n = 0; n < Math.min(firstWave, all.size()); n++) {
+                if (all.get(n).curseKind().equals(kind)) {
+                    target = all.get(n);
+                    break;
+                }
+            }
+            if (target == null) target = all.get(0);
+            target.setDormant(false);
+            target.setGlowingTag(true);
+            in.objectiveTarget = target.getUUID();
+        } else if (t.objective() == IncidentTemplate.Objective.ANCHOR) {
+            CursedAnchorEntity a = dev.rick.jjk.registry.ModEntities.CURSED_ANCHOR.create(level, EntitySpawnReason.EVENT);
+            if (a != null) {
+                Vec3 at = Vec3.atBottomCenterOf(origin).add(spots.isEmpty() ? new Vec3(0, 0, 6) : spots.get(0));
+                double hp = switch (in.grade) {
+                    case GRADE_4 -> 40;
+                    case GRADE_3 -> 70;
+                    default -> 110;
+                };
+                a.setup(in.id, at, hp);
+                level.addFreshEntity(a);
+                in.objectiveTarget = a.getUUID();
+                in.totalHealth += (float) hp;
+            }
+        }
         dev.rick.jjk.core.fx.Fx.play(level, "fb_manifest", Vec3.atBottomCenterOf(origin).add(0, 1, 0), Vec3.ZERO, 1f);
+    }
+
+    /** A Grade 1 contract's guardian: its chosen body (or its stand-in), its chosen look, alone in the arena. */
+    static void spawnGuardian(ServerLevel level, Incident in, BlockPos origin, List<Vec3> spots, int radius) {
+        if (in.guardian.isEmpty()) {
+            var body = dev.rick.jjk.progression.guardian.Guardians.pick(level.getRandom());
+            in.guardian = body.id();
+            in.variant = level.getRandom().nextInt(Math.max(1, body.variants()));
+        }
+        in.curses.clear();
+        in.objectiveTarget = null;
+        in.objectiveBy = null;
+        CommonCurseEntity g = dev.rick.jjk.progression.guardian.Guardians.type(in.guardian).create(level, EntitySpawnReason.EVENT);
+        if (g == null) return;
+        g.setGrade(CurseGrade.GRADE_1);
+        if (g instanceof dev.rick.jjk.progression.guardian.GuardianBody b) b.setGuardianVariant(in.variant);
+        Vec3 at = Vec3.atBottomCenterOf(origin).add(spots.isEmpty() ? new Vec3(0, 0, 7) : spots.get(0));
+        g.setPos(at.x, at.y, at.z);
+        g.setYRot(180f);
+        g.bind(in.id, origin, radius);
+        level.addFreshEntity(g);
+        in.curses.add(g.getUUID());
+        in.objectiveTarget = g.getUUID();
+        in.totalHealth = g.getMaxHealth();
+        dev.rick.jjk.core.fx.Fx.play(level, "fb_manifest", at.add(0, 1, 0), Vec3.ZERO, 1.6f);
+    }
+
+    /** The objective is met: what's left of the contract's curses scatters, and it completes. */
+    static void objectiveMet(MinecraftServer server, Incident in, InvestigationState st, @Nullable ServerPlayer by) {
+        if (by != null) {
+            in.objectiveBy = by.getUUID();
+            in.participants.add(by.getUUID());
+        }
+        for (UUID id : List.copyOf(in.curses)) {
+            Entity e = curseEntity(server, id);
+            if (e != null && e.isAlive()) {
+                if (e.level() instanceof ServerLevel l) dev.rick.jjk.core.fx.Fx.play(l, "curse_scatter", e.position().add(0, 1, 0), Vec3.ZERO, 1f);
+                e.discard();
+            }
+        }
+        in.curses.clear();
+        if (in.state == Incident.State.ACTIVE) complete(server, in, st);
     }
 
     /** How many of {@code total} curses manifest at the start (the rest are reinforcements). */
@@ -378,9 +531,25 @@ public final class Investigations {
         Incident in = st.incidents.get(c.incidentId());
         if (in == null) return;
         in.curses.remove(c.getUUID());
-        if (c.getKillCredit() instanceof ServerPlayer p) in.participants.add(p.getUUID());
+        ServerPlayer killer = c.getKillCredit() instanceof ServerPlayer p ? p : null;
+        if (killer != null) in.participants.add(killer.getUUID());
         st.markDirty();
-        if (in.curses.isEmpty() && in.state == Incident.State.ACTIVE) complete(server, in, st);
+        IncidentTemplate t = in.def();
+        IncidentTemplate.Objective obj = t == null ? IncidentTemplate.Objective.INFESTATION : t.objective();
+        if (in.state != Incident.State.ACTIVE) return;
+        if ((obj == IncidentTemplate.Objective.DESIGNATED || obj == IncidentTemplate.Objective.GUARDIAN) && c.getUUID().equals(in.objectiveTarget)) {
+            objectiveMet(server, in, st, killer);
+            return;
+        }
+        if (obj == IncidentTemplate.Objective.ANCHOR) {
+            // The guards falling isn't the objective; the anchor is.
+            if (c.level() instanceof ServerLevel level) reinforce(level, in);
+            return;
+        }
+        if (in.curses.isEmpty()) {
+            if (killer != null) in.objectiveBy = killer.getUUID();
+            complete(server, in, st);
+        }
         else if (c.level() instanceof ServerLevel level) reinforce(level, in);
     }
 
@@ -421,9 +590,29 @@ public final class Investigations {
                 p.sendSystemMessage(Component.literal("It's over. Whatever was there won't trouble anyone again.").withStyle(net.minecraft.ChatFormatting.GRAY));
             }
         }
+        creditClearance(server, in, st);
         LodgeRewards.completed(server, in, st);
         StoryChains.completed(server, in, st);
         JJK.LOGGER.info("[investigations] incident {} complete ({} participants)", in.id, in.participants.size());
+    }
+
+    /**
+     * News clearance for a completed contract: once to each participant who took a real part (a meaningful share of the
+     * damage, or the objective itself) and was cleared for its grade. Offline participants are credited too.
+     */
+    static void creditClearance(MinecraftServer server, Incident in, InvestigationState st) {
+        JJKConfig.Clearance cfg = JJKConfig.get().clearance;
+        java.util.Set<UUID> who = new java.util.LinkedHashSet<>(in.participants);
+        who.addAll(in.damage.keySet());
+        float total = Math.max(1f, in.totalHealth);
+        for (UUID id : who) {
+            float d = in.damage.getOrDefault(id, 0f);
+            boolean meaningful = d >= cfg.minDamage || d >= total * cfg.minDamageShare || id.equals(in.objectiveBy);
+            if (!meaningful) continue;
+            ServerPlayer p = server.getPlayerList().getPlayer(id);
+            if (p != null) Clearance.award(p, in);
+            else Clearance.awardOffline(st, id, in);
+        }
     }
 
     /** The tree a participant earned most in during this incident (one they may develop). */
@@ -559,11 +748,11 @@ public final class Investigations {
             if (v.board == null) v.board = board.immutable();
         }
         long now = level.getServer().overworld().getGameTime();
-        StoryChains.decide(level, v, st);
-        stock(level, v, st, now);
+        if (JJKConfig.get().progression.villageStorylines) StoryChains.decide(level, v, st);
+        stock(level, v, st, now, p);
         refreshBoard(level, v, st, now);
         st.flush();
-        ServerPlayNetworking.send(p, new NewsBoardPayload(villageName(v), notes(v, st, now, p.getAttached(dev.rick.jjk.registry.ModAttachments.INVESTIGATING))));
+        ServerPlayNetworking.send(p, new NewsBoardPayload(villageName(v), notes(v, st, now, p.getAttached(dev.rick.jjk.registry.ModAttachments.INVESTIGATING), p)));
     }
 
     public static List<NewsBoardPayload.Note> notes(InvestigationState.Village v, InvestigationState st, long now) {
@@ -572,6 +761,32 @@ public final class Investigations {
 
     /** The board's notices, marking the one {@code tracked} (the reader's investigation). */
     public static List<NewsBoardPayload.Note> notes(InvestigationState.Village v, InvestigationState st, long now, @Nullable String tracked) {
+        return notes(v, st, now, tracked, null);
+    }
+
+    /**
+     * The contract sheet under a notice, for its reader: threat grade, objective, the clearance it needs and theirs (with
+     * progress to the next grade), and for a Grade 1 guardian a reminder that it is solo and to bring an Exorcism Seal.
+     */
+    public static String brief(Incident i, @Nullable ServerPlayer reader) {
+        IncidentTemplate t = i.def();
+        StringBuilder b = new StringBuilder();
+        b.append("Threat: ").append(i.grade.display).append("  ·  Objective: ").append(t == null ? "Investigate" : t.objective().text);
+        b.append("\nRequires: ").append(Clearance.requirement(i));
+        if (reader != null) {
+            boolean ok = Clearance.allows(reader, i);
+            b.append(ok ? "  ·  Cleared" : "  ·  LOCKED").append(" (you: ").append(Clearance.name(Clearance.access(reader))).append(")");
+            b.append("\n").append(Clearance.progress(reader));
+        }
+        if (i.grade == CurseGrade.GRADE_1) {
+            var body = dev.rick.jjk.progression.guardian.Guardians.body(i.guardian);
+            b.append("\nSolo challenge").append(body == null ? "" : ": " + body.name()).append(". Bring an Exorcism Seal: its essence can only be captured with one.");
+        }
+        return b.toString();
+    }
+
+    public static List<NewsBoardPayload.Note> notes(InvestigationState.Village v, InvestigationState st, long now, @Nullable String tracked,
+                                                    @Nullable ServerPlayer reader) {
         List<NewsBoardPayload.Note> out = new ArrayList<>();
         List<String> ids = new ArrayList<>(v.incidents);
         java.util.Collections.reverse(ids);
@@ -583,7 +798,7 @@ public final class Investigations {
             int days = (int) Math.max(0, (now - i.createdAt) / 24000);
             switch (i.state) {
                 case OPEN, ACTIVE -> out.add(new NewsBoardPayload.Note(i.id, i.headline, i.body, i.state == Incident.State.OPEN ? 0 : 1, days,
-                        place(v, i), i.id.equals(tracked)));
+                        place(v, i), i.id.equals(tracked), brief(i, reader)));
                 case COMPLETE -> {
                     if (now - i.changedAt <= 48000) {
                         out.add(new NewsBoardPayload.Note("Update: " + i.headline, "Since the last notice there has been nothing more of it. "
@@ -647,6 +862,28 @@ public final class Investigations {
     }
 
     /** Test hook: someone took part in an incident (entered its realm, fought at it). */
+    /** Test hook: records damage a player dealt this contract's curses. */
+    public static void damageForTest(Incident in, ServerPlayer p, float amount) {
+        in.participants.add(p.getUUID());
+        in.damage.merge(p.getUUID(), amount, Float::sum);
+    }
+
+    /** Test hook: makes a player a solo contract's challenger (as entering its breach does). */
+    public static void challengeForTest(Incident in, ServerPlayer p) {
+        in.challenger = p.getUUID();
+    }
+
+    /** Test hook: the grade a board would pick for a reader with this seed. */
+    public static int targetGradeForTest(ServerPlayer reader, InvestigationState.Village v, long seed) {
+        return targetGrade(reader, v, InvestigationState.get(reader.level().getServer()), RandomSource.create(seed));
+    }
+
+    /** Test hook: the designated curse, anchor or guardian of a running contract. */
+    @Nullable
+    public static UUID objectiveTargetForTest(Incident in) {
+        return in.objectiveTarget;
+    }
+
     public static void participateForTest(Incident in, ServerPlayer p) {
         in.participants.add(p.getUUID());
     }

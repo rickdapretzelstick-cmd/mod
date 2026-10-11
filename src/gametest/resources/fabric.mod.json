@@ -34,6 +34,7 @@
       "dev.rick.jjk.test.RealmTests",
       "dev.rick.jjk.test.StoryTests",
       "dev.rick.jjk.test.TrainingTests",
+      "dev.rick.jjk.test.ClearanceTests",
       "dev.rick.jjk.test.NewsHouseTests",
       "dev.rick.jjk.test.SiteTests"
     ],

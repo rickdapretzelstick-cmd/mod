@@ -44,6 +44,11 @@ public final class CursedCompass {
             p.sendOverlayMessage(Component.literal("That report is out of date.").withStyle(ChatFormatting.GRAY));
             return;
         }
+        String refusal = Clearance.refusal(p, in);
+        if (refusal != null) {
+            p.sendOverlayMessage(Component.literal(refusal).withStyle(ChatFormatting.GRAY));
+            return;
+        }
         p.setAttached(ModAttachments.INVESTIGATING, id);
         p.sendOverlayMessage(Component.literal("Investigating: " + in.headline).withStyle(ChatFormatting.DARK_PURPLE));
     }

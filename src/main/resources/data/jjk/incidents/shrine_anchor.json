@@ -1,0 +1,27 @@
+{
+  "id": "shrine_anchor",
+  "weight": 2,
+  "grade": "GRADE_4",
+  "site": "pasture",
+  "trigger": "breach",
+  "realm": "pasture_realm",
+  "objective": "anchor",
+  "curses": [
+    {
+      "kind": "grave_hound",
+      "min": 2,
+      "max": 2
+    }
+  ],
+  "trail": 14,
+  "reports": [
+    {
+      "headline": "A Black Stone in the Pasture",
+      "body": "Overnight a stone stood up in the grazing land {dir} of the village {dist}: tall, black, and humming. The {animal} will not go near it, and {name} says something like dogs paces round it after dark, as if it were theirs to keep."
+    },
+    {
+      "headline": "The Humming Stone",
+      "body": "Nobody put it there. A black stone {dir} of here {dist} hums when the wind drops, and since it came the {animal} have been sick. {name} saw shapes circling it at dusk and turned back."
+    }
+  ]
+}

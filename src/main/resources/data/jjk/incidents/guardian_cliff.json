@@ -1,0 +1,17 @@
+{
+  "id": "guardian_cliff",
+  "weight": 1,
+  "grade": "GRADE_1",
+  "site": "cliff",
+  "trigger": "breach",
+  "realm": "guardian_arena",
+  "objective": "guardian",
+  "curses": [],
+  "trail": 24,
+  "reports": [
+    {
+      "headline": "A Presence Above the Drop",
+      "body": "Everyone near the cliffs {dir} of the village {dist} feels it now: a weight in the air, as if something enormous were holding its breath. {name} saw it standing at the edge at dusk, far too tall, and did not go closer. The elders say only someone who has proven themselves should answer this, and alone, with a seal ready to bind what it leaves behind."
+    }
+  ]
+}

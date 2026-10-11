@@ -31,5 +31,6 @@
       "headline": "The Pond Below the Cliffs Has Gone Foul",
       "body": "The pond under the cliffs {dir} of the village {dist} has turned thick and green overnight. {name} says the water bulged as {they} watched, like something breathing under it, and that it had eyes on top, orange ones."
     }
-  ]
+  ],
+  "objective": "designated"
 }

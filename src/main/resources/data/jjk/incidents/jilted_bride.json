@@ -32,5 +32,6 @@
       "headline": "Rotten Flowers on the Chapel Steps",
       "body": "Every morning there are dead flowers on the steps of the old chapel {dir} of the village {dist}, a bride's bouquet gone black. {name} cleared them away twice; the third time {they} heard the doors creak open behind {them} and ran."
     }
-  ]
+  ],
+  "objective": "designated"
 }

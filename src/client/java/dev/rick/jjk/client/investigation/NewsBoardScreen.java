@@ -169,7 +169,7 @@ public class NewsBoardScreen extends Screen {
         boolean now = !n.tracked();
         List<NewsBoardPayload.Note> notes = new java.util.ArrayList<>();
         for (NewsBoardPayload.Note x : board.notes()) {
-            notes.add(new NewsBoardPayload.Note(x.id(), x.headline(), x.body(), x.status(), x.daysAgo(), x.place(), x == n ? now : now ? false : x.tracked()));
+            notes.add(new NewsBoardPayload.Note(x.id(), x.headline(), x.body(), x.status(), x.daysAgo(), x.place(), x == n ? now : now ? false : x.tracked(), x.brief()));
         }
         board = new NewsBoardPayload(board.village(), notes);
     }
@@ -188,6 +188,14 @@ public class NewsBoardScreen extends Screen {
         y = text(g, n.headline(), x0 + 32, y, w - 44, 1.0f, 0xFF2A2018, 3) + 4;
         if (!n.place().isEmpty()) y = text(g, "Reported Location: " + n.place(), x0 + 32, y, w - 44, 0.7f, 0xFF5A4A3A, 2);
         y = text(g, "Filed: " + ago(n.daysAgo()), x0 + 32, y, w - 44, 0.7f, 0xFF5A4A3A, 1) + 3;
+        // The contract sheet: threat, objective, the clearance it needs and yours.
+        if (!n.brief().isEmpty()) {
+            for (String line : n.brief().split("\n")) {
+                int col = line.contains("LOCKED") ? 0xFF9A2A20 : line.startsWith("Solo") ? 0xFF6A2A80 : 0xFF4A3A2A;
+                y = text(g, line, x0 + 32, y, w - 44, 0.62f, col, 2);
+            }
+            y += 2;
+        }
         g.fill(x0 + 32, y, x0 + w - 12, y + 1, 0xFFC8B898);
         y += 5;
         int bodyLines = Math.max(1, (y0 + h - 40 - y) / 8);

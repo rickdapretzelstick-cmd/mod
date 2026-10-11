@@ -32,5 +32,6 @@ public final class ProgressionBootstrap {
         dev.rick.jjk.progression.story.PersonalTrials.init();
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> ProgressionCommand.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> dev.rick.jjk.progression.story.StoryCommand.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> dev.rick.jjk.progression.investigation.ContractCommand.register(dispatcher));
     }
 }

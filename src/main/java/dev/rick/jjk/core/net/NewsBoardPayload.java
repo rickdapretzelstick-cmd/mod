@@ -17,9 +17,13 @@ public record NewsBoardPayload(String village, List<Note> notes) implements Cust
      * One notice: the incident it is about ({@code id}, so it can be chosen as the investigation), its text, roughly where
      * it was reported ({@code place}), and whether the reader is already investigating it.
      */
-    public record Note(String id, String headline, String body, int status, int daysAgo, String place, boolean tracked) {
+    public record Note(String id, String headline, String body, int status, int daysAgo, String place, boolean tracked, String brief) {
         public Note(String headline, String body, int status, int daysAgo) {
-            this("", headline, body, status, daysAgo, "", false);
+            this("", headline, body, status, daysAgo, "", false, "");
+        }
+
+        public Note(String id, String headline, String body, int status, int daysAgo, String place, boolean tracked) {
+            this(id, headline, body, status, daysAgo, place, tracked, "");
         }
     }
 
@@ -35,13 +39,15 @@ public record NewsBoardPayload(String village, List<Note> notes) implements Cust
             buf.writeVarInt(n.daysAgo);
             buf.writeUtf(n.place, 256);
             buf.writeBoolean(n.tracked);
+            buf.writeUtf(n.brief, 1024);
         }
     }, buf -> {
         String v = buf.readUtf(128);
         int n = Math.min(16, buf.readVarInt());
         List<Note> notes = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            notes.add(new Note(buf.readUtf(64), buf.readUtf(256), buf.readUtf(4096), buf.readVarInt(), buf.readVarInt(), buf.readUtf(256), buf.readBoolean()));
+            notes.add(new Note(buf.readUtf(64), buf.readUtf(256), buf.readUtf(4096), buf.readVarInt(), buf.readVarInt(), buf.readUtf(256), buf.readBoolean(),
+                    buf.readUtf(1024)));
         }
         return new NewsBoardPayload(v, notes);
     });
