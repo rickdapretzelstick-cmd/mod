@@ -19,6 +19,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContex
 import net.minecraft.client.CameraType;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -113,12 +114,33 @@ public class CursedGearClientTest implements FabricClientGameTest {
                 InvestigationState.Village v = Investigations.village(level, p.blockPosition().offset(-80, 0, 0));
                 Incident inc = Investigations.create(level, v, st, IncidentTemplate.get("old_mine"), new Sites.Site(p.blockPosition().offset(12, 0, -10), 1, 0),
                         level.getGameTime(), RandomSource.create(5));
+                // Cleared for any grade: the report must be one this player may take.
+                dev.rick.jjk.progression.investigation.Clearance.set(p, 1);
                 CursedCompass.investigate(p, inc.id);
             });
             ctx.waitTicks(40);
             int state = ctx.computeOnClient(mc -> dev.rick.jjk.client.investigation.CursedCompassClient.state());
             if (state != dev.rick.jjk.core.net.CompassPayload.TRAIL) throw new AssertionError("the compass has a trail: " + state);
             ctx.takeScreenshot("gear_compass_trail");
+            // Facing the source the needle points ahead (0 turns, frame 16: straight up); turned away, straight back (0.5).
+            for (int k = 0; k < 2; k++) {
+                final boolean away = k == 1;
+                ctx.runOnClient(mc -> {
+                    Vec3 src = dev.rick.jjk.client.investigation.CursedCompassClient.source();
+                    double dx = src.x - mc.player.getX(), dz = src.z - mc.player.getZ();
+                    float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz)) + (away ? 180f : 0f);
+                    mc.player.setYRot(yaw);
+                    mc.player.setYHeadRot(yaw);
+                    mc.player.yRotO = yaw;
+                    mc.player.setXRot(20f);
+                });
+                ctx.waitTicks(60);
+                float needle = ctx.computeOnClient(mc -> dev.rick.jjk.client.investigation.CursedCompassClient.angle());
+                float want = away ? 0.5f : 0f;
+                float off = Math.abs(net.minecraft.util.Mth.positiveModulo(needle - want + 0.5f, 1f) - 0.5f);
+                if (off > 0.06f) throw new AssertionError("compass needle " + needle + " should read " + want + (away ? " (source behind)" : " (source ahead)"));
+                ctx.takeScreenshot(away ? "gear_compass_source_behind" : "gear_compass_source_ahead");
+            }
 
             // A pull into a realm: the dark closing in.
             server.runOnServer(srv -> {

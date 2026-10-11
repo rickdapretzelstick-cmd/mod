@@ -33,7 +33,7 @@ public final class CursedCompassClient {
     private static int state = CompassPayload.DORMANT;
     private static Vec3 source = Vec3.ZERO;
     private static long lastHeard = -1000;
-    /** The needle, in turns (0..1, vanilla compass convention: 0.5 points straight ahead), and its speed. */
+    /** The needle, in turns (0..1, vanilla compass convention: 0 points straight ahead, 0.5 straight back), and its speed. */
     private static float angle, speed;
     private static long lastTick = Long.MIN_VALUE;
     private static float wander;
@@ -57,6 +57,11 @@ public final class CursedCompassClient {
 
     public static int state() {
         return state;
+    }
+
+    /** Where the compass's trail leads (for tests). */
+    public static Vec3 source() {
+        return source;
     }
 
     /** The needle's current reading (for tests). */
@@ -110,7 +115,7 @@ public final class CursedCompassClient {
                 }
                 // Dormant or slack: it hangs (pointing back at the holder).
                 default -> {
-                    target = 0f;
+                    target = 0.5f;
                     stiffness = s == CompassPayload.GONE ? 0.01f : 0.05f;
                     damping = 0.85f;
                 }

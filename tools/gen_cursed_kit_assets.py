@@ -54,8 +54,8 @@ print('slot icon written')
 
 
 # --- The Cursed Compass: a darkened compass, violet rim, a pale-blue needle; 32 frames like the vanilla compass ---
-# Frame 0 points straight up (ahead), frames go counter-clockwise; the item model maps the jjk:cursed_compass property the same
-# way the vanilla compass maps its own (0.5 = ahead = frame 0).
+# Frames match the vanilla compass's: frame 16 points straight up (the target dead ahead: the property reads 0.0, which the
+# item model maps to frame 16), frame 0 points straight down (behind you), frame 8 left, frame 24 right.
 random.seed(23)
 CASE = (34, 30, 42)
 RIM_DARK, RIM_LIGHT = (70, 40, 110), (130, 80, 200)
@@ -88,10 +88,10 @@ def compass_base():
 BASE = compass_base()
 for f in range(32):
     img = BASE.copy()
-    # Counter-clockwise, as the vanilla compass's frames run (frame 8 points left): drawn clockwise, the needle was
-    # mirrored, and a target off to one side read as the other.
+    # As the vanilla frames run: down (0), left (8), up (16), right (24). Drawing frame 0 pointing up put every target
+    # ahead of you behind you, and the other way round.
     a = f / 32 * 2 * math.pi
-    dx, dy = -math.sin(a), -math.cos(a)
+    dx, dy = -math.sin(a), math.cos(a)
     # The tail (dull) then the head (bright pale blue with a violet tip).
     for i in range(-3, 6):
         t = i * 0.8
