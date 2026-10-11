@@ -77,11 +77,6 @@ public abstract class Moment {
         return p == null || !p.isAlive() ? "" : null;
     }
 
-    /** Whether a hold check's release counts (taps-only moments ignore releases). */
-    protected boolean acceptsRelease() {
-        return true;
-    }
-
     /** What CANCEL / LEAVE from the client does: null ignores it (you can't leave), else the message it ends with. */
     @Nullable
     protected String cancelled() {
@@ -163,7 +158,9 @@ public abstract class Moment {
             return;
         }
         if (state != TrainingNet.ACTIVE) return;
-        if (in.action() == TrainingNet.PRESS || in.action() == TrainingNet.RELEASE && acceptsRelease()) {
+        // Releases always go through: they let the key go (a tap check ignores them, a hold check is decided by them),
+        // and a key never let go would refuse every later press on it.
+        if (in.action() == TrainingNet.PRESS || in.action() == TrainingNet.RELEASE) {
             TrainingEvaluator.Outcome o = eval.input(in.seq(), in.action(), in.gauge(), in.check(), in.clientMs(), clock);
             if (o != null) judge(p, o);
         }

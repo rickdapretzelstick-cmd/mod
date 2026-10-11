@@ -163,7 +163,9 @@ public class ContestTests {
             h.assertTrue(p.getHealth() == php, "another curse can't hit the locked player");
             play(p, TrainingCheck.GOOD);
             StrengthContests.Session s = StrengthContests.of(p);
-            h.assertTrue(s != null && Boolean.TRUE.equals(s.won()), "every check GOOD breaks free (meter " + (s == null ? -1 : s.meter()) + ")");
+            h.assertTrue(s != null && Boolean.TRUE.equals(s.won()), "every check GOOD breaks free (meter " + (s == null ? -1 : s.meter()) + ", verdicts "
+                    + (s == null ? "" : java.util.Arrays.toString(s.evaluator().results())) + ", checks " + (s == null ? "" : s.checks().stream()
+                    .map(k -> k.gauge() + "@" + k.atMs() + "/" + k.goodMs()).toList()) + ")");
             h.assertTrue(hound.isStaggered() && hound.isExposed(), "it reels, wide open");
             for (int i = 0; i < 40 && StrengthContests.active(p); i++) StrengthContests.advanceForTest(p, 50);
             h.assertTrue(!StrengthContests.active(p), "the contest is over");

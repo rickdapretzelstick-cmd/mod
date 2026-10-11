@@ -59,7 +59,11 @@ public final class StrengthContests {
     private static final Map<UUID, Long> CURSE_READY = new HashMap<>();
     /** Per guardian attempt (its arena's encounter id): contests so far. */
     private static final Map<UUID, Integer> PER_ATTEMPT = new HashMap<>();
-    private static boolean noRandomGrabs;
+    /**
+     * Grabs by chance never happen inside gametests (they would lock other tests' players and hold their curses): the
+     * contest tests start theirs on purpose.
+     */
+    private static boolean noRandomGrabs = System.getProperty("fabric-api.gametest") != null || System.getProperty("fabric.client.gametest") != null;
 
     private StrengthContests() {}
 
@@ -120,12 +124,6 @@ public final class StrengthContests {
             if (c != null) c.holdForContest(4);
             // Locked face to face: neither drifts.
             p.setDeltaMovement(Vec3.ZERO);
-        }
-
-        @Override
-        protected boolean acceptsRelease() {
-            // Taps only: a release means nothing.
-            return false;
         }
 
         @Override

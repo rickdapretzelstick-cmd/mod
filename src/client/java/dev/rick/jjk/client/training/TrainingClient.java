@@ -236,8 +236,6 @@ public final class TrainingClient {
         advance();
         if (!a.down[g]) return;
         a.down[g] = false;
-        // A contest is taps only: letting go means nothing.
-        if ("contest".equals(a.start.kit())) return;
         double t = a.clock;
         TrainingCheck c = a.eval.holding(g);
         int id = c == null ? -1 : c.id();
