@@ -2,8 +2,10 @@ package dev.rick.jjk.progression.contest;
 
 import dev.rick.jjk.JJK;
 import dev.rick.jjk.config.JJKConfig;
+import dev.rick.jjk.core.anim.Anim;
 import dev.rick.jjk.core.clash.ClashCommon;
 import dev.rick.jjk.core.fx.Fx;
+import dev.rick.jjk.core.fx.Impact;
 import dev.rick.jjk.progression.curse.CommonCurseEntity;
 import dev.rick.jjk.progression.investigation.CursedRealms;
 import dev.rick.jjk.progression.investigation.Incident;
@@ -70,19 +72,108 @@ public final class StrengthContests {
     /** A grab being telegraphed: who, at whom, and when it closes. */
     record Telegraph(UUID curse, UUID player, long closesAt) {}
 
+    /**
+     * The kinds with a grapple of their own ({@code <kind>_grapple*} clips from tools/gen_curse_models.py), and how far
+     * apart the two stand locked together (its reach: a toad's bulk keeps you further off than a bride's hands).
+     */
+    static final Map<String, Double> GRAPPLE_REACH = Map.of("school_maw", 1.6, "school_crawler", 1.5, "forest_stalker", 1.25,
+            "grave_hound", 1.45, "veiled_bride", 1.2, "bloat_toad", 1.9, "brood_mother", 1.7);
+    /** The player's beat for a good tap on each key (the HUD's PUSH, BRACE, HEAVE; tools/gen_contest_anims.py). */
+    static final String[] BEATS = {"grapple_push", "grapple_brace", "grapple_heave"};
+    /** How far the meter moves the pair: winning drives it back by up to this, losing lets it bear in as far. */
+    static final double DRIFT = 0.5;
+    /** Ink frames on perfect taps are kept rare: at most one per this many ticks (the win always gets its own). */
+    static final int FRAME_GAP_TICKS = 30;
+
     /** One contest: the player, the curse that grabbed them, its preset, and the meter between them. */
     public static final class Session extends Moment {
         public final UUID curse;
         public final ContestPreset preset;
         public final String foe;
+        /** The curse's kind, whether it has a grapple of its own, and how far apart the two are held. */
+        public final String kind;
+        final boolean rig;
+        final double reach;
         double meter = ContestPreset.START;
         @Nullable Boolean won;
+        int lastFrame = -FRAME_GAP_TICKS;
+        int beats;
 
-        Session(UUID player, UUID curse, ContestPreset preset, String foe) {
+        Session(UUID player, UUID curse, ContestPreset preset, String foe, String kind, double width) {
             super(player, curse);
             this.curse = curse;
             this.preset = preset;
             this.foe = foe;
+            this.kind = kind;
+            this.rig = GRAPPLE_REACH.containsKey(kind);
+            this.reach = GRAPPLE_REACH.getOrDefault(kind, width * 0.5 + 0.9);
+        }
+
+        /** Beats played so far (one per verdict), for tests. */
+        public int beats() {
+            return beats;
+        }
+
+        /** The flat direction from the player to the curse. */
+        private static Vec3 toward(ServerPlayer p, Entity c) {
+            Vec3 d = c.position().subtract(p.position()).multiply(1, 0, 1);
+            return d.lengthSqr() < 1e-4 ? Vec3.directionFromRotation(0, p.getYRot()).multiply(1, 0, 1).normalize() : d.normalize();
+        }
+
+        /** Where their hands meet. */
+        private static Vec3 contact(ServerPlayer p, CommonCurseEntity c) {
+            return p.position().add(toward(p, c).scale(0.55)).add(0, 1.15, 0);
+        }
+
+        /** The grab lands: the curse is set at its kind's reach, the two face each other and lock into the grip. */
+        void stage(ServerPlayer p, CommonCurseEntity c) {
+            Vec3 want = p.position().add(toward(p, c).scale(reach));
+            Vec3 to = new Vec3(want.x, c.getY(), want.z);
+            if (c.level().noCollision(c, c.getBoundingBox().move(to.subtract(c.position())))) c.teleportTo(to.x, to.y, to.z);
+            face(p, c);
+            Anim.play(p, "grapple_hold");
+            if (rig) Anim.playOn(c, kind + "_grapple");
+        }
+
+        private static void face(ServerPlayer p, CommonCurseEntity c) {
+            ClashCommon.face(p, c.position().add(0, Math.min(c.getBbHeight() * 0.6, 1.4), 0));
+            c.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, p.getEyePosition());
+            c.setYBodyRot(c.getYHeadRot());
+        }
+
+        /** The meter shows in the bodies: winning, you drive it back; losing, it bears in on you (eased, never into a wall). */
+        private void drift(ServerPlayer p, CommonCurseEntity c) {
+            double d = reach + (meter - ContestPreset.START) / (ContestPreset.MAX - ContestPreset.START) * DRIFT;
+            Vec3 want = p.position().add(toward(p, c).scale(Math.max(0.8, d)));
+            Vec3 step = new Vec3(want.x - c.getX(), 0, want.z - c.getZ()).scale(0.25);
+            if (step.lengthSqr() < 1e-5 || !c.level().noCollision(c, c.getBoundingBox().move(step))) return;
+            c.setPos(c.position().add(step));
+        }
+
+        /** One verdict as a beat of the grapple: who gives ground, the shove of air where they push, the bodies' clips. */
+        private void beat(ServerPlayer p, ServerLevel l, CommonCurseEntity c, int result, int gauge) {
+            beats++;
+            Vec3 at = contact(p, c), dir = toward(p, c);
+            if (result == TrainingCheck.MISS) {
+                Anim.play(p, "grapple_strain");
+                if (rig) Anim.playOn(c, kind + "_grapple_press");
+                Impact.shove(l, at, dir.scale(-1), 0.8f);
+                Fx.shake(l, p.position(), 6, 0.35f, 6);
+                return;
+            }
+            boolean perfect = result == TrainingCheck.PERFECT;
+            Anim.play(p, BEATS[Math.floorMod(gauge, BEATS.length)]);
+            if (rig) Anim.playOn(c, kind + "_grapple_shove");
+            Impact.shove(l, at, dir, perfect ? 1.2f : 0.7f);
+            // A brace digs the feet in: the dust kicks up round them.
+            if (gauge == 1) Impact.dust(l, p.position(), perfect ? 1.0f : 0.7f);
+            if (perfect) {
+                Fx.shake(l, p.position(), 6, 0.45f, 5);
+                if (stateTicks - lastFrame >= FRAME_GAP_TICKS) {
+                    lastFrame = stateTicks;
+                    Impact.frame(p, Impact.INK, 0.5f);
+                }
+            }
         }
 
         public double meter() {
@@ -121,8 +212,13 @@ public final class StrengthContests {
         protected void hold(ServerPlayer p) {
             ClashCommon.hold(p);
             CommonCurseEntity c = curse(p);
-            if (c != null) c.holdForContest(4);
-            // Locked face to face: neither drifts.
+            if (c != null) {
+                c.holdForContest(4);
+                // Locked face to face, the pair giving and taking ground with the meter.
+                drift(p, c);
+                c.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, p.getEyePosition());
+                c.setYBodyRot(c.getYHeadRot());
+            }
             p.setDeltaMovement(Vec3.ZERO);
         }
 
@@ -142,6 +238,9 @@ public final class StrengthContests {
             if (p.level() instanceof ServerLevel l) {
                 if (o.result() == TrainingCheck.MISS) Fx.sound(l, p.position(), SoundEvents.PLAYER_HURT_SWEET_BERRY_BUSH, 0.6f, 0.7f);
                 else Fx.sound(l, p.position(), SoundEvents.ANVIL_LAND, 0.25f, o.result() == TrainingCheck.PERFECT ? 1.9f : 1.5f);
+                CommonCurseEntity c = curse(p);
+                int gauge = o.check() >= 0 && o.check() < checks().size() ? checks().get(o.check()).gauge() : 0;
+                if (c != null && state == TrainingNet.ACTIVE) beat(p, l, c, o.result(), gauge);
             }
             decide(p, false);
         }
@@ -170,7 +269,8 @@ public final class StrengthContests {
         }
 
         void sendMeter(ServerPlayer p) {
-            ServerPlayNetworking.send(p, new TrainingNet.Meter(id, (float) meter, (float) preset.threshold(), foe));
+            Entity c = ((ServerLevel) p.level()).getEntity(curse);
+            ServerPlayNetworking.send(p, new TrainingNet.Meter(id, (float) meter, (float) preset.threshold(), foe, c == null ? -1 : c.getId(), kind));
         }
 
         /** Over at either end of the meter, or (at {@code timeout}) by which side of the line it ends on. */
@@ -182,7 +282,7 @@ public final class StrengthContests {
         }
 
         /** The result: broken free (it reels, wide open) or overpowered (the hit, and thrown). */
-        private void finish(ServerPlayer p, boolean win) {
+        void finish(ServerPlayer p, boolean win) {
             won = win;
             sendMeter(p);
             setState(p, win ? TrainingNet.SUCCESS : TrainingNet.FAILURE);
@@ -192,16 +292,29 @@ public final class StrengthContests {
             Vec3 away = p.position().subtract(c.position()).multiply(1, 0, 1);
             away = away.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : away.normalize();
             if (win) {
+                // The reversal: time slows on the heave, the frame inks, and it is thrown down hard enough to split the ground.
+                Anim.play(p, "grapple_throw");
                 c.lostContest(level, p);
                 c.setDeltaMovement(c.getDeltaMovement().add(-away.x * 0.6, 0.2, -away.z * 0.6));
+                Impact.slowMotion(p, 450);
+                Impact.frame(p, Impact.INK, 1f);
+                Impact.crack(level, c.position(), away.scale(-1), 1.6f);
+                Impact.dust(level, c.position(), 1.3f);
+                Impact.shove(level, contact(p, c), away.scale(-1), 1.4f);
                 Fx.sound(level, c.position(), SoundEvents.ANVIL_PLACE, 0.6f, 1.6f);
                 p.sendOverlayMessage(Component.literal("You break its hold. It's wide open!").withStyle(ChatFormatting.GOLD));
             } else {
+                // Overpowered: the world goes negative for a beat and you are flung off it.
+                Anim.play(p, "grapple_thrown");
+                if (rig) Anim.playOn(c, kind + "_grapple_fling");
                 c.wonContest(30);
                 ClashCommon.release(p);
                 p.hurtServer(level, level.damageSources().mobAttack(c), preset.loseDamage());
                 p.setDeltaMovement(away.x * 0.9, 0.35, away.z * 0.9);
                 p.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(p));
+                Impact.frame(p, Impact.NEGATIVE, 0.8f);
+                Impact.shove(level, contact(p, c), away, 1.2f);
+                Impact.dust(level, p.position(), 0.9f);
                 Fx.sound(level, p.position(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, 1f, 0.6f);
                 p.sendOverlayMessage(Component.literal("It overpowers you.").withStyle(ChatFormatting.RED));
             }
@@ -216,8 +329,13 @@ public final class StrengthContests {
             PROTECTED.put(player, now + cfg.contestProtectSeconds * 20L);
             CURSE_READY.put(curse, now + cfg.contestCurseCooldownSeconds * 20L);
             if (p != null && won == null) {
+                // Broken off (no result): both let go of the grip.
                 CommonCurseEntity c = curse(p);
-                if (c != null) c.releaseFromContest();
+                if (c != null) {
+                    c.releaseFromContest();
+                    if (rig) Anim.playOn(c, "");
+                }
+                Anim.releaseHeld(p);
             }
         }
     }
@@ -353,7 +471,7 @@ public final class StrengthContests {
     public static boolean begin(MinecraftServer server, CommonCurseEntity c, ServerPlayer p) {
         if (unavailable(p) != null) return false;
         JJKConfig.Training cfg = JJKConfig.get().training;
-        Session s = new Session(p.getUUID(), c.getUUID(), presetFor(c), c.getName().getString());
+        Session s = new Session(p.getUUID(), c.getUUID(), presetFor(c), c.getName().getString(), c.curseKind(), c.getBbWidth());
         JJKConfig.Training rules = s.rules();
         long seed = p.getRandom().nextLong();
         List<TrainingCheck> checks = TrainingSchedule.contest(seed, cfg);
@@ -371,8 +489,8 @@ public final class StrengthContests {
             }
             c.holdForContest(10);
             ClashCommon.hold(p);
-            // Face to face.
-            c.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, p.getEyePosition());
+            // Face to face, at its reach, locked into the grip.
+            s.stage(p, c);
             Vec3 mid = c.position().add(0, c.getBbHeight() * 0.6, 0);
             ServerPlayNetworking.send(p, new TrainingNet.Start(s.id, 1, KIT, "BREAK ITS HOLD", false, chosen, cfg.contestIntroMs, cfg.contestDurationMs,
                     rules.phase2AtMs, rules.phase3AtMs, rules.maxMisses, p.getEyePosition(), mid, List.of("PUSH", "BRACE", "HEAVE"),
@@ -461,6 +579,12 @@ public final class StrengthContests {
     public static void stepForTest(MinecraftServer server) {
         tick(server);
         Moments.tickForTest(server);
+    }
+
+    /** Tests: decides a running contest now (broken free or overpowered), as its checks would have. */
+    public static void finishForTest(ServerPlayer p, boolean win) {
+        Session s = of(p);
+        if (s != null && s.state() == TrainingNet.ACTIVE) s.finish(p, win);
     }
 
     public static boolean protectedForTest(ServerPlayer p) {

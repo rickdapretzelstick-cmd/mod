@@ -274,6 +274,8 @@ def write_clips(kind, clips):
             d['loop'] = True
         if c.get('hold'):
             d['hold'] = True
+        if c.get('tremble'):
+            d['tremble'] = c['tremble']
         with open(os.path.join(out, kind + '_' + name + '.json'), 'w') as fh:
             json.dump(d, fh, indent=1)
     print(kind, len(clips), 'clips')
@@ -338,6 +340,44 @@ TAU = math.pi * 2
 
 def sin(ph, k=1.0, off=0.0):
     return math.sin(TAU * (ph * k + off))
+
+
+def grapple_set(base, grip, shove, press, wind, throw):
+    """
+    A strength contest's clips (progression.contest.StrengthContests), all from one grip pose (merged over `base`):
+    grapple (the grab closing into the grip), grapple_shove (a good tap pushes it back), grapple_press (a miss: it bears
+    down) and grapple_fling (it won: a heave from `wind` and a throw at `throw`). All but the fling end in the grip and
+    hold it, trembling with the strain, until the next one replaces it.
+    """
+    g = merge(base, grip)
+    out = {}
+    c = ClipBuilder(380, 'SPECIAL', hold=True, blendIn=60, blendOut=160)
+    c.at(0, base)
+    c.at(150, merge(g, press))
+    c.at(380, g)
+    out['grapple'] = c.done()
+    c = ClipBuilder(520, 'SPECIAL', hold=True, blendIn=30, blendOut=160)
+    c.at(0, g)
+    c.at(90, merge(g, shove))
+    c.at(200, merge(g, shove))
+    c.at(520, g)
+    out['grapple_shove'] = c.done()
+    c = ClipBuilder(600, 'SPECIAL', hold=True, blendIn=40, blendOut=160)
+    c.at(0, g)
+    c.at(180, merge(g, press))
+    c.at(300, merge(g, press))
+    c.at(600, g)
+    out['grapple_press'] = c.done()
+    c = ClipBuilder(820, 'SPECIAL', blendIn=40, blendOut=220)
+    c.at(0, g)
+    c.at(280, merge(g, wind))
+    c.at(400, merge(g, throw))
+    c.at(560, merge(g, throw))
+    c.at(820, base)
+    out['grapple_fling'] = c.done()
+    for k in ('grapple', 'grapple_shove', 'grapple_press'):
+        out[k]['tremble'] = 1.6
+    return out
 
 
 # ----------------------------------------------------------------------------------------------------------- posing math
@@ -621,6 +661,18 @@ def school_maw():
     c.at(1200, merge(stance(), {'body': RP([-88, 0, 14], [0, -6.5, 8.5]), 'head': R(-6), 'jaw': R(60), 'arm_left': R(-124, 0, -72),
                                 'arm_right': R(-114, 0, 72), 'leg_left': R(-54), 'leg_right': R(-44), 'tongue': R(34), 'tongue2': RP([24, 0, 0], [0, 0, -4])}))
     clips['death'] = c.done()
+    # Strength contests: both claws clamp on and the jaws work at your shoulder.
+    clips.update(grapple_set(
+        stance(),
+        {'body': RP([12, 0, 0], [0, -0.6, -1.5]), 'head': R(-12), 'jaw': R(34), 'arm_left': R(-64, 22, -12), 'arm_right': R(-64, -22, 12),
+         'forearm_left': R(-26), 'forearm_right': R(-26), 'leg_left': R(-18), 'leg_right': R(8), 'foot_left': R(14), 'foot_right': R(-2)},
+        {'body': RP([-8, 0, 5], [0, 0.4, 2.2]), 'head': R(-26, 0, 6), 'jaw': R(50), 'arm_left': R(-46, 12, -20), 'arm_right': R(-50, -12, 18)},
+        {'body': RP([22, 0, -3], [0, -1.4, -3.2]), 'head': R(6), 'jaw': R(56), 'arm_left': R(-84, 26, -6), 'arm_right': R(-84, -26, 6),
+         'forearm_left': R(-42), 'forearm_right': R(-42)},
+        {'body': RP([-24, 0, -10], [0, 2, 1.5]), 'head': R(-20), 'jaw': R(22), 'arm_left': R(-150, 0, -20), 'arm_right': R(-150, 0, 20),
+         'forearm_left': R(-30), 'forearm_right': R(-30)},
+        {'body': RP([30, 0, 14], [0, -2.4, -3]), 'head': R(10), 'jaw': R(46), 'arm_left': R(-40, 0, -34), 'arm_right': R(-30, 0, 30),
+         'forearm_left': R(-6), 'forearm_right': R(-6)}))
     write_clips('school_maw', clips)
 
 
@@ -813,6 +865,22 @@ def school_crawler():
     c.at(800, curled)
     c.at(1200, merge(curled, legs(lambda n, sd, sg: (limb(sg, 0, 76), {'rot': [0, 0, -sg * 95]}))))
     clips['death'] = c.done()
+    # Strength contests: reared up on its back legs, the front pair locked round you, the middle pair braced.
+    clips.update(grapple_set(
+        merge({'body': RP([0, 0, 0], [0, 0, 0]), 'head': R(0), 'jaw': R(5), 'tail': R(0), 'tail2': R(0)}, rest_legs),
+        merge({'body': RP([-14, 0, 0], [0, 2.2, -1.5]), 'head': R(-10), 'jaw': R(48), 'tail': R(-12), 'tail2': R(-8)},
+              legs(lambda n, sd, sg: ((limb(sg, 64, 44), {'rot': [-36, 0, -sg * 34]}) if n == 1 else
+                                      (limb(sg, 24, 16), {'rot': [0, 0, -sg * 8]}) if n == 2 else
+                                      (limb(sg, -54, 8), {'rot': [30, 0, sg * 10]})))),
+        merge({'body': RP([-26, 0, 6], [0, 2.8, 1.2]), 'head': R(-24, 0, 8), 'jaw': R(60)},
+              {'arm1_left': limb(1, 48, 56), 'arm1_right': limb(-1, 52, 56)}),
+        merge({'body': RP([4, 0, 0], [0, 1.2, -3]), 'head': R(4), 'jaw': R(62)},
+              {'arm1_left': limb(1, 78, 30), 'arm1_right': limb(-1, 78, 30),
+               'forearm1_left': {'rot': [-48, 0, -40]}, 'forearm1_right': {'rot': [-48, 0, 40]}}),
+        merge({'body': RP([-30, 0, -18], [0, 3.4, 0.5]), 'head': R(-20), 'jaw': R(30)},
+              {'arm1_left': limb(1, 90, 70), 'arm1_right': limb(-1, 90, 70)}),
+        merge({'body': RP([12, 0, 26], [0, 0, -2.5]), 'head': R(10, 20, 0), 'jaw': R(50)},
+              {'arm1_left': limb(1, 20, 30), 'arm1_right': limb(-1, 30, 20)})))
     write_clips('school_crawler', clips)
 
 
@@ -1120,6 +1188,20 @@ def forest_stalker():
     c.at(800, dead)
     c.at(1200, dead)
     clips['death'] = c.done()
+    # Strength contests: hunched over you, both claws on your shoulders, its face in yours.
+    clips.update(grapple_set(
+        stance(),
+        {'hips': RP([0, 0, 0], [0, -1.2, 0]), 'torso': R(22), 'neck': R(-12), 'head': R(-10), 'jaw': R(30),
+         'arm_left': R(-92, 10, -14), 'arm_right': R(-92, -10, 14), 'forearm_left': R(-30), 'forearm_right': R(-30),
+         'hand_left': R(-24), 'hand_right': R(-24), 'leg_left': R(-24), 'leg_right': R(18), 'shin_left': R(24), 'shin_right': R(6), 'cloak': R(-16)},
+        {'hips': RP([0, 0, 0], [0, -0.6, 0]), 'torso': R(4, 0, 6), 'neck': R(-24), 'head': R(-22, 0, 8), 'jaw': R(44),
+         'arm_left': R(-74, 16, -22), 'arm_right': R(-78, -14, 20), 'cloak': R(-6)},
+        {'hips': RP([0, 0, 0], [0, -2, 0]), 'torso': R(36), 'neck': R(-4), 'head': R(-2), 'jaw': R(48),
+         'arm_left': R(-104, 6, -8), 'arm_right': R(-104, -6, 8), 'forearm_left': R(-44), 'forearm_right': R(-44), 'cloak': R(-30)},
+        {'hips': RP([0, 0, 0], [0, 0.6, 0]), 'torso': R(-16, -24, 0), 'neck': R(-8), 'head': R(-14), 'jaw': R(20),
+         'arm_left': R(-160, 0, -16), 'arm_right': R(-160, 0, 16), 'forearm_left': R(-20), 'forearm_right': R(-20), 'cloak': R(-4)},
+        {'hips': RP([0, 0, 0], [0, -1.6, 0]), 'torso': R(34, 30, 0), 'neck': R(-6), 'head': R(-6), 'jaw': R(46),
+         'arm_left': R(-60, 0, -30), 'arm_right': R(-30, 0, 40), 'forearm_left': R(-8), 'forearm_right': R(-8), 'cloak': R(-44)}))
     write_clips('forest_stalker', clips)
 
 
@@ -1275,6 +1357,17 @@ def grave_hound():
     clips['death'] = death_clip(base, {'body': RP([-20, 0, 40], [0, 1, 0]), 'jaw': R(50)},
                                 {'body': RP([0, 0, 88], [0, -3.6, 0]), 'neck': R(20, 0, -10), 'jaw': R(46), 'leg_front_left': R(-30),
                                  'leg_front_right': R(-40), 'leg_back_left': R(30), 'leg_back_right': R(40), 'tail': R(20)})
+    # Strength contests: jaws locked on your arm, hindquarters down, tugging.
+    clips.update(grapple_set(
+        base,
+        {'body': RP([-10, 0, 0], [0, -1.2, 1.2]), 'neck': R(-18), 'head': R(-6), 'jaw': R(14), 'tail': R(-30),
+         'leg_front_left': R(-34), 'leg_front_right': R(-26), 'shin_front_left': R(30), 'shin_front_right': R(24),
+         'leg_back_left': R(-30), 'leg_back_right': R(-36), 'shin_back_left': R(56), 'shin_back_right': R(62)},
+        {'body': RP([-18, 0, 8], [0, -0.8, 2.4]), 'neck': R(-34, 14, 0), 'head': R(-12, 0, 10), 'jaw': R(22), 'tail': R(-10)},
+        {'body': RP([6, 0, 0], [0, -1.6, -1.6]), 'neck': R(10), 'head': R(8), 'jaw': R(6), 'tail': R(-44),
+         'leg_front_left': R(-56), 'leg_front_right': R(-50), 'leg_back_left': R(20), 'leg_back_right': R(14)},
+        {'body': RP([-20, -30, 0], [0, -0.4, 1.6]), 'neck': R(-30, 30, 0), 'head': R(-10, 20, 0), 'jaw': R(10), 'tail': R(-20, 30)},
+        {'body': RP([8, 34, 10], [0, -1.4, -1]), 'neck': R(16, -40, 0), 'head': R(6, -24, 0), 'jaw': R(50), 'tail': R(-10, -30)}))
     write_clips('grave_hound', clips)
 
 
@@ -1381,6 +1474,19 @@ def veiled_bride():
     clips['death'] = death_clip(base, {'torso': R(-20, 0, 10), 'head': R(-30), 'arm_left': R(-100, 0, 40), 'arm_right': R(-90, 0, -40)},
                                 {'body': RP([0, 0, 82], [0, -7, 0]), 'torso': R(10, 0, 0), 'head': R(20, 0, 30), 'arm_left': R(-30, 0, 70),
                                  'arm_right': R(-60, 0, -40), 'veil': R(20)})
+    # Strength contests: she looms over you, both long hands at your throat, the veil hanging into your face.
+    clips.update(grapple_set(
+        base,
+        {'torso': R(22), 'head': R(18, 0, 6), 'veil': R(8), 'arm_left': R(-96, 14, -6), 'arm_right': R(-96, -14, 6),
+         'forearm_left': R(-22), 'forearm_right': R(-22), 'hand_left': R(-30), 'hand_right': R(-30)},
+        {'body': RP([0, 0, 0], [0, 0.6, 1.4]), 'torso': R(4, 0, -6), 'head': R(-12, 0, -10), 'veil': R(-18),
+         'arm_left': R(-82, 0, 26), 'arm_right': R(-86, 0, -22), 'forearm_left': R(-8), 'forearm_right': R(-8)},
+        {'body': RP([0, 0, 0], [0, 0.8, -1.2]), 'torso': R(34), 'head': R(30, 0, 12), 'veil': R(16),
+         'arm_left': R(-112, 0, 8), 'arm_right': R(-112, 0, -8), 'forearm_left': R(-36), 'forearm_right': R(-36), 'hand_left': R(-44), 'hand_right': R(-44)},
+        {'body': RP([0, 0, 0], [0, 1.6, 0.6]), 'torso': R(-12, 20, 0), 'head': R(-24), 'veil': R(-24),
+         'arm_left': R(-170, 0, 10), 'arm_right': R(-170, 0, -10), 'forearm_left': R(-10), 'forearm_right': R(-10)},
+        {'body': RP([0, 0, 0], [0, -0.4, -1]), 'torso': R(30, -26, 0), 'head': R(24), 'veil': R(-34),
+         'arm_left': R(-40, 0, 60), 'arm_right': R(-50, 0, -30), 'forearm_left': R(0), 'forearm_right': R(0)}))
     write_clips('veiled_bride', clips)
 
 
@@ -1505,6 +1611,19 @@ def bloat_toad():
     clips['death'] = death_clip(base, {'body': {'rot': [0, 0, 60], 'pos': [0, 1, 0], 'scale': [1, 1, 1]}, 'jaw': R(40)},
                                 {'body': {'rot': [0, 0, 178], 'pos': [0, 2.0, 0], 'scale': [1.02, 0.9, 1.02]}, 'jaw': R(50), 'arm_left': R(-60, 0, 30),
                                  'arm_right': R(-70, 0, -30), 'thigh_left': R(40), 'thigh_right': R(50), 'throat': S(0.8, 0.8, 0.8)})
+    # Strength contests: it bears its whole bulk down on you, both forelegs pinning, the throat swelling.
+    clips.update(grapple_set(
+        base,
+        {'body': {'rot': [14, 0, 0], 'pos': [0, -0.6, -1.4], 'scale': [1.06, 0.96, 1.06]}, 'head': R(-10), 'jaw': R(22), 'throat': S(1.3, 1.5, 1.3),
+         'arm_left': R(-56, 0, 14), 'arm_right': R(-56, 0, -14), 'thigh_left': R(-20), 'thigh_right': R(-20), 'foot_left': R(18), 'foot_right': R(18)},
+        {'body': {'rot': [-4, 0, 6], 'pos': [0, 0.2, 1.2], 'scale': [0.96, 1.06, 0.96]}, 'head': R(-24), 'jaw': R(36), 'throat': S(0.9, 0.9, 0.9),
+         'arm_left': R(-36, 0, 26), 'arm_right': R(-40, 0, -22)},
+        {'body': {'rot': [24, 0, 0], 'pos': [0, -1.2, -2.6], 'scale': [1.14, 0.9, 1.14]}, 'head': R(4), 'jaw': R(44), 'throat': S(1.7, 2.0, 1.7),
+         'arm_left': R(-70, 0, 8), 'arm_right': R(-70, 0, -8)},
+        {'body': {'rot': [-22, 0, 0], 'pos': [0, 1.4, 0.6], 'scale': [0.94, 1.12, 0.94]}, 'head': R(-30), 'jaw': R(12), 'throat': S(1.8, 2.2, 1.8),
+         'arm_left': R(-120, 0, 10), 'arm_right': R(-120, 0, -10), 'thigh_left': R(-40), 'thigh_right': R(-40)},
+        {'body': {'rot': [28, 0, 10], 'pos': [0, -1.6, -2.4], 'scale': [1.12, 0.9, 1.12]}, 'head': R(-4), 'jaw': R(60), 'throat': S(0.8, 0.8, 0.8),
+         'arm_left': R(-30, 0, 40), 'arm_right': R(-20, 0, -50), 'thigh_left': R(30), 'thigh_right': R(30)}))
     write_clips('bloat_toad', clips)
 
 
@@ -1621,6 +1740,20 @@ def brood_mother():
     clips['death'] = death_clip(base, {'torso': R(-20), 'head': R(-30), 'jaw': R(40), 'sac': {'rot': [0, 0, 0], 'scale': [1.15, 1.1, 1.15]}},
                                 {'body': RP([0, 0, 0], [0, -5.5, 0]), 'torso': R(60, 0, 20), 'head': R(20, 30, 0), 'jaw': R(44),
                                  'sac': {'rot': [30, 0, 30], 'scale': [0.75, 0.5, 0.8]}, 'arm_left': R(-40, 0, -60), 'arm_right': R(-70, 0, 50)})
+    # Strength contests: the claws hook into you and pull you toward the swollen sac, its legs splayed to hold.
+    clips.update(grapple_set(
+        base,
+        merge({'body': RP([0, 0, 0], [0, -0.8, 0]), 'torso': R(18), 'head': R(10), 'jaw': R(30), 'sac': {'rot': [-6, 0, 0], 'scale': [1.08, 1.06, 1.08]},
+               'arm_left': R(-88, 0, 12), 'arm_right': R(-88, 0, -12), 'forearm_left': R(-34), 'forearm_right': R(-34)},
+              {b: {'rot': [0, 0, sg * 14]} for b, sg in legs}),
+        {'torso': R(-6, 0, 8), 'head': R(-18, 0, -8), 'jaw': R(44), 'sac': {'rot': [-14, 0, 6], 'scale': [1.12, 1.0, 1.12]},
+         'arm_left': R(-70, 0, 26), 'arm_right': R(-74, 0, -22), 'forearm_left': R(-16), 'forearm_right': R(-16)},
+        {'body': RP([0, 0, 0], [0, -1.4, -1]), 'torso': R(30), 'head': R(22), 'jaw': R(50), 'sac': {'rot': [6, 0, 0], 'scale': [1.2, 1.14, 1.2]},
+         'arm_left': R(-96, 0, 4), 'arm_right': R(-96, 0, -4), 'forearm_left': R(-58), 'forearm_right': R(-58)},
+        {'torso': R(-20, 24, 0), 'head': R(-20), 'jaw': R(16), 'sac': {'rot': [-10, 0, 0], 'scale': [1.0, 1.1, 1.0]},
+         'arm_left': R(-150, 0, -10), 'arm_right': R(-150, 0, 10), 'forearm_left': R(-24), 'forearm_right': R(-24)},
+        {'torso': R(26, -30, 0), 'head': R(16), 'jaw': R(46), 'sac': {'rot': [14, 0, -8], 'scale': [1.1, 1.0, 1.1]},
+         'arm_left': R(-40, 0, -40), 'arm_right': R(-30, 0, 50), 'forearm_left': R(0), 'forearm_right': R(0)}))
     write_clips('brood_mother', clips)
 
 

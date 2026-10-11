@@ -131,14 +131,17 @@ public final class TrainingNet {
     }
 
     /** Server → contestant: a strength contest's tug-of-war meter (0-100; 100 breaks free) and the line it must end above. */
-    public record Meter(int session, float meter, float threshold, String foe) implements CustomPacketPayload {
+    /** A strength contest's meter, and who it is against: their name, entity id and kind (for the grapple's shots). */
+    public record Meter(int session, float meter, float threshold, String foe, int foeId, String kind) implements CustomPacketPayload {
         public static final Type<Meter> TYPE = new Type<>(JJK.id("training_meter"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Meter> CODEC = StreamCodec.of((buf, p) -> {
             buf.writeVarInt(p.session);
             buf.writeFloat(p.meter);
             buf.writeFloat(p.threshold);
             buf.writeUtf(p.foe, 64);
-        }, buf -> new Meter(buf.readVarInt(), buf.readFloat(), buf.readFloat(), buf.readUtf(64)));
+            buf.writeVarInt(p.foeId);
+            buf.writeUtf(p.kind, 64);
+        }, buf -> new Meter(buf.readVarInt(), buf.readFloat(), buf.readFloat(), buf.readUtf(64), buf.readVarInt(), buf.readUtf(64)));
 
         @Override
         public Type<? extends CustomPacketPayload> type() {

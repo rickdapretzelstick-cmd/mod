@@ -71,7 +71,11 @@ public class ContestTests {
             if (to > 0) StrengthContests.advanceForTest(p, to);
             if (s.state() != TrainingNet.ACTIVE) break;
             int ms = verdict == TrainingCheck.PERFECT ? c.atMs() : verdict == TrainingCheck.GOOD ? c.atMs() + c.goodMs() / 2 - 8 : -1;
-            if (ms >= 0) StrengthContests.input(p, new TrainingNet.Input(s.id, 1, ++seq, TrainingNet.PRESS, c.gauge(), c.id(), ms));
+            if (ms >= 0) {
+                // A tap, as a real client sends it: down, then up (a key never let go refuses its next press).
+                StrengthContests.input(p, new TrainingNet.Input(s.id, 1, ++seq, TrainingNet.PRESS, c.gauge(), c.id(), ms));
+                StrengthContests.input(p, new TrainingNet.Input(s.id, 1, ++seq, TrainingNet.RELEASE, c.gauge(), c.id(), ms + 1));
+            }
         }
         for (int i = 0; i < 200 && s.state() == TrainingNet.ACTIVE; i++) StrengthContests.advanceForTest(p, 50);
     }
@@ -178,6 +182,48 @@ public class ContestTests {
         hound.discard();
         second.discard();
         other.discard();
+        p.discard();
+        h.succeed();
+    }
+
+    @GameTest(environment = "jjk-test:contest_g")
+    public void aGrabIsAGrappleWithABeatOnEveryVerdict(GameTestHelper h) {
+        MinecraftServer server = h.getLevel().getServer();
+        ServerPlayer p = survivor(h);
+        CommonCurseEntity hound = curse(h, ModEntities.GRAVE_HOUND, p, 2.4);
+        StrengthContests.setManualClockForTest(true);
+        try {
+            h.assertTrue(StrengthContests.begin(server, hound, p), "grabbed (" + StrengthContests.unavailable(p) + ")");
+            StrengthContests.Session s = StrengthContests.of(p);
+            h.assertTrue("grave_hound".equals(s.kind), "the grapple is the hound's own: " + s.kind);
+            double d = Math.sqrt(Math.pow(hound.getX() - p.getX(), 2) + Math.pow(hound.getZ() - p.getZ(), 2));
+            h.assertTrue(Math.abs(d - 1.45) < 0.1, "staged at its reach, face to face: " + d);
+            h.assertTrue(dev.rick.jjk.core.anim.Anim.isHolding(p), "the player is in the grip (a held pose)");
+            play(p, TrainingCheck.GOOD);
+            h.assertTrue(Boolean.TRUE.equals(s.won()), "every check GOOD breaks free");
+            h.assertTrue(s.beats() >= 3, "a beat for every verdict on the way: " + s.beats());
+            h.assertTrue(!dev.rick.jjk.core.anim.Anim.isHolding(p), "broken free, the grip is let go (the throw)");
+            for (int i = 0; i < 40 && StrengthContests.active(p); i++) StrengthContests.advanceForTest(p, 50);
+            // Overpowered by another: thrown off it, no grip left held either.
+            StrengthContests.forgetForTest(p, null);
+            CommonCurseEntity maw = curse(h, ModEntities.SCHOOL_MAW, p, -2.2);
+            h.assertTrue(StrengthContests.begin(server, maw, p), "grabbed again (" + StrengthContests.unavailable(p) + ")");
+            StrengthContests.Session t = StrengthContests.of(p);
+            // Losing ground (nothing pressed for a while): it bears in on them, a little at a time.
+            StrengthContests.input(p, new TrainingNet.Input(t.id, 1, 1, TrainingNet.READY, -1, -1, 0));
+            StrengthContests.advanceForTest(p, JJKConfig.get().training.contestIntroMs + 1);
+            for (int i = 0; i < 24 && t.state() == TrainingNet.ACTIVE; i++) StrengthContests.advanceForTest(p, 50);
+            double close = Math.sqrt(Math.pow(maw.getX() - p.getX(), 2) + Math.pow(maw.getZ() - p.getZ(), 2));
+            h.assertTrue(t.meter() < ContestPreset.START && close < 1.6 - 0.015, "it bears in as they lose ground: " + close + " (meter " + t.meter() + ")");
+            play(p, TrainingCheck.MISS);
+            h.assertTrue(Boolean.FALSE.equals(t.won()) && t.beats() >= 1, "every check missed is overpowered, with a beat each: " + t.beats());
+            h.assertTrue(!dev.rick.jjk.core.anim.Anim.isHolding(p), "and thrown off it");
+            for (int i = 0; i < 40 && StrengthContests.active(p); i++) StrengthContests.advanceForTest(p, 50);
+            maw.discard();
+        } finally {
+            StrengthContests.setManualClockForTest(false);
+        }
+        hound.discard();
         p.discard();
         h.succeed();
     }

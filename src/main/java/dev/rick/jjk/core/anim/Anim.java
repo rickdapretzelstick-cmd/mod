@@ -23,7 +23,9 @@ public final class Anim {
             "open_clap", "open_draw", "open_aim", "rush_run", "rush_chase", "rush_leap", "shrine_sign",
             // Cursed Partners
             "yuta_guard_katana", "yuta_heavy_charge", "yuta_steel_heavy_charge", "yuta_outburst_grip", "yuta_domain_sign",
-            "yuta_jacobs_ladder");
+            "yuta_jacobs_ladder",
+            // Strength contests (the grip and its beats, each ending in the grip)
+            "grapple_hold", "grapple_push", "grapple_brace", "grapple_heave", "grapple_strain");
     /** Entities currently showing a held pose. */
     private static final java.util.Set<LivingEntity> HOLDING = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
 

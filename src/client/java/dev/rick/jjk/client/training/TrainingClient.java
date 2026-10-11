@@ -101,6 +101,9 @@ public final class TrainingClient {
     /** The contest's meter as the server last sent it (0-100), the line it must end above, and who it is against. */
     public static float meter = 50, threshold = 50;
     public static String foe = "";
+    /** The curse's entity id here (-1 if unknown) and its kind (for the grapple's shots). */
+    public static int foeId = -1;
+    public static String kind = "";
 
     public static void meter(TrainingNet.Meter m) {
         Attempt a = attempt;
@@ -108,6 +111,8 @@ public final class TrainingClient {
         meter = m.meter();
         threshold = m.threshold();
         foe = m.foe();
+        foeId = m.foeId();
+        kind = m.kind();
     }
 
     /** A seal's containment (the same skill check, no scene: the world stays in view). */
@@ -143,6 +148,8 @@ public final class TrainingClient {
         if (mc.gui.screen() instanceof TrainingScreens.ResultScreen) mc.gui.setScreen(null);
         if ("contest".equals(s.kit())) {
             meter = 50;
+            foeId = -1;
+            kind = "";
             ContestCamera.begin();
         } else if (!"capture".equals(s.kit())) TrainingCamera.begin();
     }
@@ -181,6 +188,7 @@ public final class TrainingClient {
             a.lastVerdict[g] = j.result();
             a.lastAt[g] = a.clock;
         }
+        if (contest()) ContestCamera.verdict(j.check(), j.result());
     }
 
     // --- Clock and input ---
@@ -251,6 +259,7 @@ public final class TrainingClient {
         a.lastVerdict[g] = o.result();
         a.lastAt[g] = t;
         if (o.result() == TrainingCheck.MISS) a.misses = Math.max(a.misses, a.eval.misses());
+        if (contest()) ContestCamera.verdict(o.check(), o.result());
     }
 
     /** Lets go of every held training key (focus lost, a screen opened, the challenge over). */
