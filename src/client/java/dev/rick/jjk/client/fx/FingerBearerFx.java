@@ -30,6 +30,8 @@ final class FingerBearerFx {
     static final float[] VIOLET_LIGHT = {0.85f, 0.6f, 1f};
     static final float[] WARN = {0.9f, 0.15f, 0.35f};
     static final float[] DUST = {0.35f, 0.33f, 0.36f};
+    static final float[] GOLD = {1f, 0.82f, 0.35f};
+    static final float[] SICK = {0.55f, 0.85f, 0.2f};
 
     private FingerBearerFx() {}
 
@@ -181,6 +183,46 @@ final class FingerBearerFx {
                     Vec3 at = pos.add(dir.scale(i / (double) Math.max(1, n - 1)));
                     add(level, at, Vec3.ZERO, Sprite.GLOW, WARN, 0.75f, 0.09f, 0.02f, 6 + i / 3);
                 }
+            }
+            case "curse_warn_line" -> {
+                // A straight attack's path on the floor for its wind-up (dir = the path, s = ticks): a red lane.
+                int life = Math.max(4, Math.round(s));
+                double len = dir.length();
+                if (len < 1e-3) break;
+                Vec3 step = dir.scale(1 / len);
+                for (double d = 0.5; d <= len; d += 0.7) Flashes.ground(pos.add(step.scale(d)), 0.45f, 0.45f, WARN, 0.3f, life, now);
+                Vec3 side = new Vec3(-step.z, 0, step.x).scale(0.5);
+                int n = q(Math.max(4, (int) (len * 3)));
+                for (int i = 0; i < n; i++) {
+                    Vec3 at = pos.add(step.scale(len * i / n)).add(side.scale(i % 2 == 0 ? 1 : -1));
+                    add(level, at.add(0, 0.05, 0), new Vec3(0, 0.004, 0), Sprite.GLOW, WARN, 0.85f, 0.11f, 0.14f, life);
+                }
+            }
+            case "curse_exposed" -> {
+                // Opened up: a bright gold ring bursts off it and stars circle (the cue to go in).
+                float k = Math.max(0.6f, s);
+                Flashes.flash(pos, 0.3f, 1.6f * k, GOLD, 0.8f, 7, now);
+                ring3d(level, pos, up, 0.3, q(20), 0.35 * k, GOLD, 0.12f, 10);
+                for (int i = 0; i < q(5); i++) {
+                    double a = Mth.TWO_PI * i / 5;
+                    add(level, pos.add(Math.cos(a) * 0.5 * k, 0.6, Math.sin(a) * 0.5 * k), new Vec3(0, 0.01, 0), Sprite.STAR, GOLD, 0.9f, 0.13f, 0.06f, 26)
+                            .spin(0.3f);
+                }
+            }
+            case "curse_punish" -> {
+                // The opening punished: a white-gold crack of light.
+                Flashes.flash(pos, 0.4f, 2.4f, new float[] {1f, 0.97f, 0.85f}, 0.95f, 6, now);
+                ClientFx.sparks(level, pos, up, q(16), 0.6, GOLD, 0.09f, 10);
+                burst(level, pos, q(10), 0.22, Sprite.GLOW, GOLD, 0.12f, 9);
+            }
+            case "curse_spit" -> {
+                // A gob of cursed bile in flight (dir = its velocity).
+                add(level, pos, dir.scale(0.3), Sprite.GLOW, SICK, 0.9f, 0.22f, 0.12f, 4);
+                add(level, pos, randomUnit().scale(0.02), Sprite.SMOKE, CORE, 0.5f, 0.12f, 0.2f, 8);
+            }
+            case "curse_spit_burst" -> {
+                Flashes.flash(pos, 0.2f, 1f, SICK, 0.7f, 5, now);
+                burst(level, pos, q(10), 0.12, Sprite.GLOW, SICK, 0.1f, 10);
             }
             case "curse_pounce" -> burst(level, pos, q(8), 0.07, Sprite.SMOKE, DUST, 0.45f, 16);
             case "curse_scatter" -> {

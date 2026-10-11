@@ -52,10 +52,36 @@ import java.util.UUID;
  *   investigation's completion.</li>
  *   <li><b>Clips</b>: {@code <kind>_attack/_hurt/_death} are played from the server; idle and move run on the client.</li>
  * </ul>
+ *
+ * <p>And the rules that make fighting one feel fair and worth getting good at:
+ * <ul>
+ *   <li><b>Readable wind-ups</b>: while a kind is winding up ({@link #windingUp(int)}) the client sees it glow a pulsing
+ *   warning red; lunges and slams also mark their path on the floor ({@link #warnLine}, {@link #warnRing}).</li>
+ *   <li><b>Hits that land</b>: a hit freezes it for a few ticks (hitstop) and shakes the attacker's view a touch; enough
+ *   damage in a short time breaks its <b>poise</b> and <b>staggers</b> it, whatever it was doing (unless that move is
+ *   armoured, {@link #armored(int)}).</li>
+ *   <li><b>Punish windows</b>: a whiffed attack or a stagger leaves it <b>exposed</b> ({@link #expose}): it flashes,
+ *   takes {@link #exposedTaken()} times the damage, and the first hit into the opening rings out and pays the attacker
+ *   Awakening meter.</li>
+ *   <li><b>Taking turns</b>: at most {@link #MAX_ATTACKERS} curses commit to an attack on the same target at once
+ *   ({@link #mayCommit}); the rest keep their distance and menace.</li>
+ *   <li>It only regains health after {@link #CALM_TICKS} with nothing to fight and no hits (no healing up behind a wall
+ *   mid-fight).</li>
+ * </ul>
  */
 public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     private static final EntityDataAccessor<Byte> ACTION = SynchedEntityData.defineId(CommonCurseEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> GRADE = SynchedEntityData.defineId(CommonCurseEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> FLAGS = SynchedEntityData.defineId(CommonCurseEntity.class, EntityDataSerializers.BYTE);
+    public static final int FLAG_EXPOSED = 1, FLAG_WINDUP = 2, FLAG_FROZEN = 4, FLAG_ENRAGED = 8, FLAG_STAGGERED = 16;
+    /** The shared stagger action (no kind uses this id for its own). */
+    public static final int STAGGERED = 100;
+    public static final int STAGGER_TICKS = 34, POISE_REGEN_DELAY = 50;
+    /** How many curses may commit to attacking one target at the same moment. */
+    public static final int MAX_ATTACKERS = 2;
+    public static final float EXPOSED_TAKEN = 1.5f;
+    /** How long it must go without a target or a hit before it mends. */
+    public static final int CALM_TICKS = 200;
 
     private CurseGrade grade;
     private String incident = "";
@@ -70,6 +96,15 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     private int unseen;
     private int repath;
     private boolean graded;
+    private float poise = -1;
+    private int sinceHit = 999;
+    /** Ticks left exposed (taking extra damage), and whether the opening has been punished yet. */
+    private int exposedTicks;
+    private boolean punished;
+    /** Hitstop: ticks its thinking is held after a hit. */
+    private int freezeTicks;
+    private int lastFreeze = -100;
+    private int calm;
 
     protected CommonCurseEntity(EntityType<? extends CommonCurseEntity> type, Level level, CurseGrade grade) {
         super(type, level);
@@ -143,11 +178,141 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         return level().isClientSide() ? entityData.get(ACTION) : action;
     }
 
+    // --- Fight rules shared by every kind ---
+
+    /** Whether {@code action} is a wind-up: the beat its prey should read and react to (drawn glowing). */
+    protected boolean windingUp(int action) {
+        return false;
+    }
+
+    /** Whether {@code action} commits it to an attack (counts against {@link #MAX_ATTACKERS}); recoveries don't. */
+    protected boolean committing(int action) {
+        return action != 0 && action != STAGGERED;
+    }
+
+    /** Whether {@code action} can't be broken by a stagger (the poise still drops; it staggers once it's done). */
+    protected boolean armored(int action) {
+        return false;
+    }
+
+    /** How much damage in a short time breaks its poise. */
+    protected float maxPoise() {
+        return (float) (baseHealth() * curseGrade().health * 0.4);
+    }
+
+    /** Damage taken while exposed or staggered, as a multiple. */
+    protected float exposedTaken() {
+        return EXPOSED_TAKEN;
+    }
+
+    /** Whether it's enraged (drawn with a darker, angrier glow); kinds decide when. */
+    protected boolean enraged() {
+        return false;
+    }
+
+    private int flags() {
+        if (level().isClientSide()) return entityData.get(FLAGS);
+        int f = 0;
+        if (exposedTicks > 0) f |= FLAG_EXPOSED;
+        if (action != 0 && windingUp(action)) f |= FLAG_WINDUP;
+        if (freezeTicks > 0) f |= FLAG_FROZEN;
+        if (enraged()) f |= FLAG_ENRAGED;
+        if (action == STAGGERED) f |= FLAG_STAGGERED;
+        return f;
+    }
+
+    public boolean isExposed() {
+        return (flags() & FLAG_EXPOSED) != 0;
+    }
+
+    public boolean isWindingUp() {
+        return (flags() & FLAG_WINDUP) != 0;
+    }
+
+    public boolean isFrozen() {
+        return (flags() & FLAG_FROZEN) != 0;
+    }
+
+    public boolean isEnraged() {
+        return (flags() & FLAG_ENRAGED) != 0;
+    }
+
+    public boolean isStaggered() {
+        return (flags() & FLAG_STAGGERED) != 0;
+    }
+
+    public boolean committing() {
+        return committing(action);
+    }
+
+    /** Its poise broke during an armoured move (it staggers as soon as that move lets it). */
+    protected boolean poiseBroken() {
+        return poise == 0;
+    }
+
+    public float poise() {
+        return poise < 0 ? maxPoise() : poise;
+    }
+
+    /** Opens it up for {@code ticks}: it takes {@link #exposedTaken()} times the damage, and glows so you know. */
+    protected void expose(ServerLevel level, int ticks) {
+        if (exposedTicks <= 0) punished = false;
+        exposedTicks = Math.max(exposedTicks, ticks);
+        fx(level, "curse_exposed", position().add(0, getBbHeight() * 0.6, 0), Vec3.ZERO, Math.max(0.6f, getBbWidth()));
+        sound(level, net.minecraft.sounds.SoundEvents.ANVIL_LAND, 0.35f, 1.9f);
+    }
+
+    /**
+     * Whether it may commit to an attack on {@code target} now: fewer than {@link #MAX_ATTACKERS} others (of any kind)
+     * are already winding up or attacking the same target.
+     */
+    protected boolean mayCommit(ServerLevel level, LivingEntity target) {
+        int n = 0;
+        for (CommonCurseEntity o : level.getEntitiesOfClass(CommonCurseEntity.class, getBoundingBox().inflate(24),
+                e -> e != this && e.isAlive() && e.getTarget() == target)) {
+            if (o.committing() && ++n >= MAX_ATTACKERS) return false;
+        }
+        return true;
+    }
+
+    /** The floor marking of a straight attack, from its feet along {@code path}, for {@code ticks}. */
+    protected void warnLine(ServerLevel level, Vec3 path, int ticks) {
+        fx(level, "curse_warn_line", position().add(0, 0.05, 0), path, ticks);
+    }
+
+    /** The floor marking of an area attack around {@code at}, of {@code radius}, for {@code ticks}. */
+    protected void warnRing(ServerLevel level, Vec3 at, float radius, int ticks) {
+        fx(level, "fb_smash_warn", at, new Vec3(ticks, 0, 0), radius);
+    }
+
+    /** Breaks off whatever it was doing and reels for {@link #STAGGER_TICKS}, wide open. */
+    protected void stagger(ServerLevel level, @Nullable Entity by) {
+        action = STAGGERED;
+        actionTicks = 0;
+        struck.clear();
+        getNavigation().stop();
+        poise = maxPoise();
+        Anim.playOn(this, clipPrefix() + "_hurt");
+        if (by != null) {
+            Vec3 away = flatDir(by.position()).scale(-1);
+            setDeltaMovement(away.x * 0.45, Math.max(getDeltaMovement().y, 0.18), away.z * 0.45);
+        }
+        expose(level, STAGGER_TICKS);
+        fx(level, "fb_stagger", position().add(0, getBbHeight() * 0.8, 0), Vec3.ZERO, 1f);
+        sound(level, dev.rick.jjk.registry.ModSounds.get("guard_break"), 0.7f, 1.3f);
+        onStaggered(level);
+    }
+
+    /** It was just staggered (kinds tidy up their own state). */
+    protected void onStaggered(ServerLevel level) {
+    }
+
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder b) {
         super.defineSynchedData(b);
         b.define(ACTION, (byte) 0);
         b.define(GRADE, (byte) 0);
+        b.define(FLAGS, (byte) 0);
     }
 
     @Override
@@ -161,9 +326,22 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     protected void customServerAiStep(ServerLevel level) {
         super.customServerAiStep(level);
         if (!graded) setGrade(grade);
+        if (exposedTicks > 0) exposedTicks--;
+        if (++sinceHit > POISE_REGEN_DELAY && poise >= 0 && poise < maxPoise()) poise = Math.min(maxPoise(), poise + maxPoise() / 40f);
+        if (freezeTicks > 0) {
+            // Hitstop: held in the moment of the hit (its timers wait too).
+            freezeTicks--;
+            syncFlags();
+            return;
+        }
         if (restTicks > 0) restTicks--;
         LivingEntity target = validTarget(level);
-        if (action != 0) {
+        calm = target != null || sinceHit < 2 ? 0 : calm + 1;
+        if (action == STAGGERED) {
+            actionTicks++;
+            setDeltaMovement(getDeltaMovement().multiply(0.7, 1, 0.7));
+            if (actionTicks >= STAGGER_TICKS) finishAction(12);
+        } else if (action != 0) {
             actionTicks++;
             tickAction(level, target);
         } else if (target == null) {
@@ -172,6 +350,12 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
             fight(level, target, distanceTo(target));
         }
         if (entityData.get(ACTION) != (byte) action) entityData.set(ACTION, (byte) action);
+        syncFlags();
+    }
+
+    private void syncFlags() {
+        byte f = (byte) flags();
+        if (entityData.get(FLAGS) != f) entityData.set(FLAGS, f);
     }
 
     /** No action under way and a target in reach: approach, position and start actions. */
@@ -194,6 +378,8 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         actionTicks = 0;
         struck.clear();
         rest(restAfter);
+        // Its poise broke during an armoured move: it reels now that the move is done.
+        if (poise == 0 && level() instanceof ServerLevel level) stagger(level, null);
     }
 
     /** No one to fight: drift back toward home, or idle about. */
@@ -206,7 +392,10 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         } else if (d > homeRadius * homeRadius * 0.25 && (getNavigation().isDone() || tickCount % 60 == 0)) {
             getNavigation().moveTo(h.x, h.y, h.z, 0.8);
         }
-        if (getHealth() < getMaxHealth() && tickCount % 40 == 0) heal(getMaxHealth() * 0.03f);
+        // It mends only once the fight is well over (breaking line of sight mid-fight doesn't buy it health).
+        if (getHealth() < getMaxHealth() && tickCount % 40 == 0 && calm > CALM_TICKS) {
+            heal(getMaxHealth() * 0.03f);
+        }
     }
 
     @Nullable
@@ -309,13 +498,46 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
 
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
-        boolean hurt = super.hurtServer(level, source, damage);
-        if (hurt && isAlive()) {
-            if (action == 0) Anim.playOn(this, clipPrefix() + "_hurt");
-            onHurt(level, source);
+        boolean open = exposedTicks > 0;
+        float dealt = open ? damage * exposedTaken() : damage;
+        float before = getHealth();
+        boolean hurt = super.hurtServer(level, source, dealt);
+        if (hurt) {
+            Entity by = source.getEntity();
+            float lost = Math.max(0, before - getHealth());
+            if (open && !punished && by instanceof LivingEntity attacker) {
+                // Punished the opening: it rings out, and the attacker's meter is paid for reading it.
+                punished = true;
+                fx(level, "curse_punish", position().add(0, getBbHeight() * 0.6, 0), Vec3.ZERO, 1f);
+                sound(level, dev.rick.jjk.registry.ModSounds.get("clash_perfect"), 0.8f, 1.2f);
+                dev.rick.jjk.core.character.AwakeningGain.gain(attacker, PUNISH_METER);
+            }
+            if (isAlive()) {
+                // Hitstop: a beat held on the impact, longer for a big hit; the attacker feels it too.
+                // (Never back to back: a flurry doesn't hold it frozen.)
+                if (tickCount - lastFreeze >= 8) {
+                    freezeTicks = Math.max(freezeTicks, lost >= 6 || open ? 4 : 2);
+                    lastFreeze = tickCount;
+                }
+                if (by instanceof ServerPlayer sp) {
+                    Fx.camera(sp, dev.rick.jjk.core.net.CameraPayload.SHAKE, lost >= 6 || open ? 0.22f : 0.12f, 3, 0);
+                }
+                sinceHit = 0;
+                if (poise < 0) poise = maxPoise();
+                poise = Math.max(0, poise - lost);
+                if (poise <= 0 && action != STAGGERED && !armored(action)) {
+                    stagger(level, by);
+                } else if (action == 0) {
+                    Anim.playOn(this, clipPrefix() + "_hurt");
+                }
+                onHurt(level, source);
+            }
         }
         return hurt;
     }
+
+    /** Awakening meter paid for the first hit into an opening. */
+    public static final float PUNISH_METER = 6f;
 
     /** A hit landed on it (for reactions: the fly heads scatter). */
     protected void onHurt(ServerLevel level, DamageSource source) {

@@ -89,6 +89,21 @@ public class ForestStalkerEntity extends CommonCurseEntity {
         return action() == TELEGRAPH;
     }
 
+    @Override
+    protected boolean windingUp(int a) {
+        return a == TELEGRAPH || a == RAKE && actionTicks < RAKE_HIT;
+    }
+
+    @Override
+    protected boolean committing(int a) {
+        return a == TELEGRAPH || a == LUNGE || a == RAKE;
+    }
+
+    @Override
+    protected float exposedTaken() {
+        return EXPOSED_TAKEN;
+    }
+
     /** Whether {@code e} is looking at it (within about 22 degrees) and can see it. */
     boolean watchedBy(LivingEntity e) {
         Vec3 to = position().add(0, getBbHeight() * 0.5, 0).subtract(e.getEyePosition());
@@ -100,14 +115,15 @@ public class ForestStalkerEntity extends CommonCurseEntity {
     protected void fight(ServerLevel level, LivingEntity target, double d) {
         getLookControl().setLookAt(target);
         boolean seen = hasLineOfSight(target);
-        if (restTicks <= 0 && d <= 2.3 && seen) {
+        boolean mayGo = restTicks <= 0 && mayCommit(level, target);
+        if (mayGo && d <= 2.3 && seen) {
             begin(RAKE, "attack");
             sound(level, SoundEvents.SPIDER_AMBIENT, 1.1f, 0.6f);
             fx(level, "curse_tell", position().add(forward().scale(0.6)).add(0, 0.7, 0), Vec3.ZERO, 0.7f);
             return;
         }
         // Commits from the open only: it must be visible to its prey, and at lunging range.
-        if (restTicks <= 0 && stalked > 50 && d >= 4 && d <= 10 && seen && target.hasLineOfSight(this)) {
+        if (mayGo && stalked > 50 && d >= 4 && d <= 10 && seen && target.hasLineOfSight(this)) {
             begin(TELEGRAPH, null);
             stalked = 0;
             aim = flatDir(target.position());
@@ -175,7 +191,11 @@ public class ForestStalkerEntity extends CommonCurseEntity {
                     aim = flatDir(target.position());
                 }
                 if (actionTicks % 6 == 0) fx(level, "stalker_eyes", position().add(0, getBbHeight() * 0.7, 0), aim, 1f);
-                if (actionTicks == LOCK_AT) sound(level, SoundEvents.SPIDER_STEP, 1.4f, 0.5f);
+                if (actionTicks == LOCK_AT) {
+                    sound(level, SoundEvents.SPIDER_STEP, 1.4f, 0.5f);
+                    // Locked: the line it will spring along shows on the ground.
+                    warnLine(level, aim.scale(8), TELEGRAPH_TICKS - LOCK_AT + 2);
+                }
                 if (actionTicks >= TELEGRAPH_TICKS) {
                     action = LUNGE;
                     actionTicks = 0;
@@ -201,7 +221,7 @@ public class ForestStalkerEntity extends CommonCurseEntity {
                         // Overshot: down in the leaves, open.
                         action = EXPOSED;
                         sound(level, SoundEvents.SPIDER_HURT, 1f, 0.5f);
-                        fx(level, "fb_stagger", position().add(0, 0.9, 0), Vec3.ZERO, 1f);
+                        expose(level, EXPOSED_TICKS);
                     }
                 }
             }
@@ -237,11 +257,6 @@ public class ForestStalkerEntity extends CommonCurseEntity {
             }
             default -> finishAction(10);
         }
-    }
-
-    @Override
-    public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
-        return super.hurtServer(level, source, action == EXPOSED ? damage * EXPOSED_TAKEN : damage);
     }
 
     /** Test hooks. */

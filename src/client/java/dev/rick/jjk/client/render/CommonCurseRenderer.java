@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
@@ -27,6 +28,10 @@ import org.jetbrains.annotations.Nullable;
  * front -Z), its texture ({@code textures/entity/<kind>.png}) and its clips ({@code animations/<kind>/}). The server
  * plays the attack, hurt and death clips; here the idle and move loops follow how fast it is actually moving, but only
  * while nothing more important (an attack, a flinch, the death) is playing. Only drawn for a player who perceives curses.
+ *
+ * <p>Its fight state reads at a glance: winding up, it pulses a hot warning orange (lit, so it shows in the dark);
+ * exposed or staggered, it flashes white and gold; frozen in a hit's hitstop it shudders; staggered it reels; enraged it
+ * runs red.
  */
 public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRenderer<T, CommonCurseRenderer.State> {
     private final String kind;
@@ -38,6 +43,9 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
         public float yaw;
         public float hurt;
         public boolean visible;
+        public boolean windup, exposed, frozen, staggered, enraged;
+        public float now;
+        public int id;
         @Nullable public PoseFrame pose;
     }
 
@@ -72,6 +80,13 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
         s.yaw = Mth.rotLerp(partial, e.yBodyRotO, e.yBodyRot);
         s.hurt = e.hurtTime > 0 ? e.hurtTime / 10f : 0f;
         float now = e.level().getGameTime() + partial;
+        s.now = now;
+        s.id = e.getId();
+        s.windup = e.isWindingUp();
+        s.exposed = e.isExposed();
+        s.frozen = e.isFrozen();
+        s.staggered = e.isStaggered();
+        s.enraged = e.isEnraged();
         if (e.deathTime == 0) {
             double dx = e.getX() - e.xo, dy = e.getY() - e.yo, dz = e.getZ() - e.zo;
             boolean flies = e.isNoGravity();
@@ -95,14 +110,43 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
         BbModel model = BbModels.get(kind);
         if (model == null || !s.visible) return;
         ps.pushPose();
+        if (s.frozen) {
+            // Hitstop: a shudder in place.
+            float j = 0.035f * scale;
+            ps.translate(Mth.sin(s.now * 9.1f + s.id) * j, 0, Mth.cos(s.now * 7.3f + s.id) * j);
+        }
         ps.rotate(Axis.YP.rotationDegrees(180f - s.yaw));
+        if (s.staggered) ps.rotate(Axis.ZP.rotationDegrees(Mth.sin(s.now * 0.9f) * 9f));
         ps.scale(scale / 16f, scale / 16f, scale / 16f);
         BbModel.Posing pose = RikaRenderer.posing(s.pose);
-        int tint = s.hurt > 0 ? 0xFF000000 | 0xFF << 16 | Math.round(255 - 110 * s.hurt) << 8 | Math.round(255 - 110 * s.hurt) : baseTint;
-        int light = s.lightCoords;
-        c.submitCustomGeometry(ps, solid, (p, buf) -> model.render(p, buf, pose, light, tint));
+        Look look = look(s, baseTint);
+        int light = look.lit ? 0xF000F0 : s.lightCoords;
+        c.submitCustomGeometry(ps, solid, (p, buf) -> model.render(p, buf, pose, light, look.tint, look.overlay));
         ps.popPose();
         super.submit(s, ps, c, cam);
+    }
+
+    /** How it's drawn this frame: the colour it's multiplied by, the overlay flash, and whether it's lit regardless. */
+    public record Look(int tint, int overlay, boolean lit) {}
+
+    public static Look look(State s, int baseTint) {
+        if (s.hurt > 0 && !s.exposed) {
+            int gb = Math.round(255 - 110 * s.hurt);
+            return new Look(0xFF000000 | 0xFF << 16 | gb << 8 | gb, OverlayTexture.NO_OVERLAY, false);
+        }
+        if (s.exposed) {
+            // Open: flashing white and gold, four ticks each.
+            boolean white = ((int) s.now / 3) % 2 == 0;
+            return new Look(white ? 0xFFFFFFFF : 0xFFFFE08A, OverlayTexture.pack(OverlayTexture.u(white ? 0.55f : 0.25f), OverlayTexture.v(false)), true);
+        }
+        if (s.windup) {
+            // About to commit: a hot pulse.
+            float p = 0.5f + 0.5f * Mth.sin(s.now * 1.3f);
+            int g = Math.round(110 + 50 * p), b = Math.round(60 + 30 * p);
+            return new Look(0xFF000000 | 0xFF << 16 | g << 8 | b, OverlayTexture.pack(OverlayTexture.u(0.2f + 0.35f * p), OverlayTexture.v(false)), true);
+        }
+        if (s.enraged) return new Look(0xFFFF9C9C, OverlayTexture.NO_OVERLAY, false);
+        return new Look(baseTint, OverlayTexture.NO_OVERLAY, false);
     }
 
     /** For tests and previews: the texture this renderer draws with. */

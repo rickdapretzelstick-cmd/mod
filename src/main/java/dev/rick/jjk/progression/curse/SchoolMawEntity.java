@@ -30,16 +30,24 @@ import org.jetbrains.annotations.Nullable;
  *   you are yanked in front of its mouth, and the bite follows at once: get out of the line, or guard.</li>
  *   <li><b>Bite</b>: its jaw gapes for most of a second (the tell, and a sound), then slams shut on the space in front of
  *   it, heavy enough to hurt. Whiffed, it stays hunched over for over a second: the punish window.</li>
- *   <li>It shrugs off knockback and doesn't flinch mid-bite.</li>
+ *   <li><b>Ground slam</b>: crowd it, or get round its side, and it rears up (a red ring on the floor around it), then
+ *   slams the ground: everything on the floor in the ring is thrown back. Jump it, or be outside the ring.</li>
+ *   <li><b>Enraged</b> (below half health, it runs red): it rests less, and a whiffed bite snaps a second time before
+ *   it hunches over. Grade 3 and up, a lash that misses is thrown again.</li>
+ *   <li>It shrugs off knockback and doesn't flinch mid-bite or mid-slam (its poise still drops: it reels once the move
+ *   is done). The bite's reach and the lash's line are marked on the floor while it winds up.</li>
  * </ul>
  */
 public class SchoolMawEntity extends CommonCurseEntity {
-    static final int BITE = 1, LASH = 2, RECOVER = 3;
+    static final int BITE = 1, LASH = 2, RECOVER = 3, SLAM = 4, SLAM_RECOVER = 5;
     public static final int BITE_HIT = 14, BITE_END = 20, LASH_FIRE = 10, LASH_END = 18, RECOVER_TICKS = 28, PULLED_BITE_HIT = 7;
-    public static final double LASH_RANGE = 8.5, BITE_REACH = 2.2;
+    public static final int SLAM_HIT = 18, SLAM_RECOVER_TICKS = 18, CROWDED_TICKS = 40;
+    public static final double LASH_RANGE = 8.5, BITE_REACH = 2.2, SLAM_RADIUS = 3.2;
     private Vec3 aim = Vec3.ZERO;
     private int biteAt = BITE_HIT;
-    private boolean bitSomeone;
+    private boolean bitSomeone, secondBite, secondLash;
+    /** Ticks its target has stayed right up against it. */
+    private int crowded;
 
     public SchoolMawEntity(EntityType<? extends SchoolMawEntity> type, Level level) {
         super(type, level, CurseGrade.GRADE_3);
@@ -67,21 +75,56 @@ public class SchoolMawEntity extends CommonCurseEntity {
     }
 
     @Override
+    protected boolean windingUp(int a) {
+        return a == BITE && actionTicks < biteAt || a == LASH && actionTicks < LASH_FIRE || a == SLAM && actionTicks < SLAM_HIT;
+    }
+
+    @Override
+    protected boolean committing(int a) {
+        return a == BITE || a == LASH || a == SLAM;
+    }
+
+    @Override
+    protected boolean armored(int a) {
+        return a == BITE || a == SLAM;
+    }
+
+    @Override
+    protected boolean enraged() {
+        return getHealth() <= getMaxHealth() * 0.5f && isAlive();
+    }
+
+    @Override
+    protected void rest(int ticks) {
+        super.rest(enraged() ? Math.round(ticks * 0.6f) : ticks);
+    }
+
+    @Override
     protected void fight(ServerLevel level, LivingEntity target, double d) {
         turnToward(target.position(), 10f);
         getLookControl().setLookAt(target);
-        if (restTicks <= 0) {
+        crowded = d <= SLAM_RADIUS ? crowded + 1 : Math.max(0, crowded - 2);
+        if (restTicks <= 0 && mayCommit(level, target)) {
+            // Crowded too long, or got round its side: it slams the floor around it.
+            boolean flanked = d <= SLAM_RADIUS && forward().dot(flatDir(target.position())) < 0.35;
+            if (d <= SLAM_RADIUS && (crowded >= CROWDED_TICKS || flanked)) {
+                startSlam(level);
+                return;
+            }
             if (d <= BITE_REACH + 0.4) {
+                secondBite = false;
                 startBite(level, BITE_HIT);
                 return;
             }
             if (d >= 3.5 && d <= LASH_RANGE && hasLineOfSight(target) && lineClear(level, target)) {
-                begin(LASH, null);
-                aim = target.position().add(0, target.getBbHeight() * 0.5, 0).subtract(mouth()).normalize();
-                sound(level, SoundEvents.SLIME_SQUISH, 1.2f, 0.6f);
-                fx(level, "curse_tell", mouth(), Vec3.ZERO, 0.8f);
+                secondLash = false;
+                startLash(level, target);
                 return;
             }
+        } else if (restTicks <= 0 && d < 4) {
+            // Another curse has the opening: it holds back and menaces.
+            walkTo(position().add(flatDir(target.position()).scale(-2.5)), 0.8);
+            return;
         }
         if (d > 2) walkTo(target.position(), 1.0);
         else getNavigation().stop();
@@ -93,6 +136,28 @@ public class SchoolMawEntity extends CommonCurseEntity {
         bitSomeone = false;
         sound(level, SoundEvents.RAVAGER_ROAR, 0.6f, 1.5f);
         fx(level, "curse_tell", mouth(), Vec3.ZERO, 1f);
+        warnRing(level, position().add(forward().scale(1.4)).add(0, 0.05, 0), 1.3f, hitAt);
+    }
+
+    private void startLash(ServerLevel level, LivingEntity target) {
+        begin(LASH, null);
+        aim = target.position().add(0, target.getBbHeight() * 0.5, 0).subtract(mouth()).normalize();
+        sound(level, SoundEvents.SLIME_SQUISH, 1.2f, 0.6f);
+        fx(level, "curse_tell", mouth(), Vec3.ZERO, 0.8f);
+        warnLine(level, new Vec3(aim.x, 0, aim.z).normalize().scale(LASH_RANGE), LASH_FIRE);
+    }
+
+    private void startSlam(ServerLevel level) {
+        begin(SLAM, "attack");
+        crowded = 0;
+        sound(level, SoundEvents.RAVAGER_ROAR, 0.9f, 0.8f);
+        fx(level, "curse_tell", position().add(0, getBbHeight() + 0.2, 0), Vec3.ZERO, 1.2f);
+        warnRing(level, position().add(0, 0.05, 0), (float) SLAM_RADIUS, SLAM_HIT);
+    }
+
+    /** Test hook: starts the slam now. */
+    public void forceSlamForTest() {
+        if (level() instanceof ServerLevel level) startSlam(level);
     }
 
     private Vec3 mouth() {
@@ -122,11 +187,16 @@ public class SchoolMawEntity extends CommonCurseEntity {
                 }
                 if (actionTicks >= biteAt + (BITE_END - BITE_HIT)) {
                     if (bitSomeone) finishAction(34);
-                    else {
+                    else if (poiseBroken()) finishAction(0);
+                    else if (enraged() && !secondBite && target != null && distanceTo(target) < BITE_REACH + 1.5) {
+                        // Enraged: it snaps again before it gives up.
+                        secondBite = true;
+                        startBite(level, 10);
+                    } else {
                         // Missed: hunched over, mouth hanging open.
                         action = RECOVER;
                         actionTicks = 0;
-                        fx(level, "fb_stagger", position().add(0, 1.6, 0), Vec3.ZERO, 1f);
+                        expose(level, RECOVER_TICKS);
                     }
                 }
             }
@@ -153,7 +223,41 @@ public class SchoolMawEntity extends CommonCurseEntity {
                         return;
                     }
                 }
-                if (actionTicks >= LASH_END) finishAction(40);
+                if (actionTicks >= LASH_END) {
+                    if (curseGrade().rank() >= 1 && !secondLash && target != null && distanceTo(target) >= 3.5 && distanceTo(target) <= LASH_RANGE
+                            && lineClear(level, target)) {
+                        // Grade 3 and up: a missed lash is thrown again.
+                        secondLash = true;
+                        startLash(level, target);
+                    } else {
+                        finishAction(40);
+                    }
+                }
+            }
+            case SLAM -> {
+                setDeltaMovement(getDeltaMovement().multiply(0.1, 1, 0.1));
+                if (actionTicks == SLAM_HIT) {
+                    Vec3 c = position();
+                    for (LivingEntity e : HitboxQuery.targets(this, HitShape.sphere(c.add(0, 0.6, 0), SLAM_RADIUS), 0.1, true)) {
+                        // Only what's on the floor: a jump clears it.
+                        if (e.getY() - getY() > 1.1) continue;
+                        Vec3 out = new Vec3(e.getX() - c.x, 0, e.getZ() - c.z);
+                        out = out.lengthSqr() < 1e-4 ? forward() : out.normalize();
+                        strike(e, Hit.builder(this, "maw_slam").damage(dmg(1.1f)).tag(AttackTag.MELEE, AttackTag.HEAVY)
+                                .knockback(Knockback.directional(out, 0.9, 0.45)).hitstun(12).guardDamage(3).origin(c).fx("curse_bite", 1.2f));
+                    }
+                    fx(level, "fb_smash", c.add(0, 0.05, 0), Vec3.ZERO, (float) SLAM_RADIUS);
+                    Fx.sound(level, c, SoundEvents.GENERIC_EXPLODE, 0.8f, 0.7f);
+                    Fx.shake(level, c, 10, 0.45f, 8);
+                }
+                if (actionTicks >= SLAM_HIT + 2) {
+                    action = SLAM_RECOVER;
+                    actionTicks = 0;
+                }
+            }
+            case SLAM_RECOVER -> {
+                setDeltaMovement(getDeltaMovement().multiply(0.3, 1, 0.3));
+                if (actionTicks >= SLAM_RECOVER_TICKS) finishAction(30);
             }
             case RECOVER -> {
                 setDeltaMovement(getDeltaMovement().multiply(0.3, 1, 0.3));
