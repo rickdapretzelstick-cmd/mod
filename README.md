@@ -557,9 +557,21 @@ what exorcising it is worth and how bad the reports about it sound (`CurseGrade`
 
 ### The common curses
 
-Three curses from the supplied pack (`fly_head`, `school_crawler`, `school_maw`: Blockbench models, textures and
-idle/move/attack/hurt/death clips, installed by `tools/install_bbmodel.py`). Seen only through Cursed Glasses, like the
-Finger Bearer, and each fights differently:
+Three common curses (`fly_head`, `school_crawler`, `school_maw`) and the lodge's Hunter's Shade (`forest_stalker`).
+Their Blockbench models, painted textures and every clip (idle, move, each attack's wind-up and strike, the punish
+states, hurt, stagger, death) are built by `tools/gen_curse_models.py`; change that script and re-run it rather than
+editing the outputs. Seen only through Cursed Glasses, like the Finger Bearer, and each fights differently:
+
+- **School Maw**: a squat purple bruiser that is mostly mouth: a hinged skull and jaw full of yellowed teeth, a cluster
+  of mismatched eyes on top, long knuckle-walking arms, and a tongue with an eye on its tip that slides out in four
+  lengths for the lash.
+- **School Crawler**: a pale grub of a body with a human face split by a huge grin, five eyes, and six jointed arms it
+  scuttles on like a spider (a tripod gait), plus a stinger tail.
+- **Fly Head**: a bloated, sickly head with bulging red compound eyes, a single human eye between them, a toothy grin,
+  two pairs of veined wings that beat ten times a second, dangling insect legs and antennae.
+- **Hunter's Shade**: a gaunt, long-limbed thing crouched on digitigrade legs in a tattered hunter's hood and cloak, a
+  bare deer's skull for a face with a light deep in each socket, antlers, and long black claws.
+
 
 | Curse | Grade | How it fights | How to beat it |
 |---|---|---|---|
@@ -744,8 +756,8 @@ trunks that kink and lean the wrong way, the same hunting stand again and again,
 at it, and closes in cover to cover when you don't. Before it attacks it shows itself: it stops dead in the open, its
 eyes light, a dry rattle carries, and about a second later it lunges straight along the line it locked. Sidestep and it
 crashes down **exposed** for two seconds (taking 60% more damage); crowd it and it rakes after a short wind-up and
-breaks away. Nothing it does comes from out of sight. A starter cursed tool beats it. *(Its model is a placeholder:
-the School Crawler's, darkened and scaled up.)*
+breaks away. Nothing it does comes from out of sight. A starter cursed tool beats it. It has its own
+model and clips (`tools/gen_curse_models.py`): a gaunt antlered skull-faced thing in a hunter's tattered hood.
 
 When it falls, everyone who went in is **owed a Cursed Rifle**, saved with the incident apart from its completion: the
 rack's seal breaks and the rifle rests on it. The first of them to take it from the rack, deliberately, **bears the

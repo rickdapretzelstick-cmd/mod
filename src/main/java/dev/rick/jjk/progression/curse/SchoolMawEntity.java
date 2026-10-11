@@ -131,7 +131,7 @@ public class SchoolMawEntity extends CommonCurseEntity {
     }
 
     private void startBite(ServerLevel level, int hitAt) {
-        begin(BITE, "attack");
+        begin(BITE, hitAt >= BITE_HIT ? "attack" : "bite_quick");
         biteAt = hitAt;
         bitSomeone = false;
         sound(level, SoundEvents.RAVAGER_ROAR, 0.6f, 1.5f);
@@ -140,7 +140,7 @@ public class SchoolMawEntity extends CommonCurseEntity {
     }
 
     private void startLash(ServerLevel level, LivingEntity target) {
-        begin(LASH, null);
+        begin(LASH, "lash");
         aim = target.position().add(0, target.getBbHeight() * 0.5, 0).subtract(mouth()).normalize();
         sound(level, SoundEvents.SLIME_SQUISH, 1.2f, 0.6f);
         fx(level, "curse_tell", mouth(), Vec3.ZERO, 0.8f);
@@ -148,7 +148,7 @@ public class SchoolMawEntity extends CommonCurseEntity {
     }
 
     private void startSlam(ServerLevel level) {
-        begin(SLAM, "attack");
+        begin(SLAM, "slam");
         crowded = 0;
         sound(level, SoundEvents.RAVAGER_ROAR, 0.9f, 0.8f);
         fx(level, "curse_tell", position().add(0, getBbHeight() + 0.2, 0), Vec3.ZERO, 1.2f);
@@ -196,6 +196,7 @@ public class SchoolMawEntity extends CommonCurseEntity {
                         // Missed: hunched over, mouth hanging open.
                         action = RECOVER;
                         actionTicks = 0;
+                        dev.rick.jjk.core.anim.Anim.playOn(this, clipPrefix() + "_recover");
                         expose(level, RECOVER_TICKS);
                     }
                 }
@@ -253,6 +254,7 @@ public class SchoolMawEntity extends CommonCurseEntity {
                 if (actionTicks >= SLAM_HIT + 2) {
                     action = SLAM_RECOVER;
                     actionTicks = 0;
+                    dev.rick.jjk.core.anim.Anim.playOn(this, clipPrefix() + "_recover");
                 }
             }
             case SLAM_RECOVER -> {

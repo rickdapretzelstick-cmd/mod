@@ -36,8 +36,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Too close</b>: crowd it and it rakes (a short, visible wind-up), then breaks away to the trees.</li>
  * </ul>
  * Nothing it does is unseen or unavoidable: it only attacks from where its prey can see it, every attack has its tell,
- * and the punish after a dodged lunge is long enough for a starter cursed tool. Its model is a placeholder (the School
- * Crawler's, darkened) until it has its own.
+ * and the punish after a dodged lunge is long enough for a starter cursed tool. It looks the part: a gaunt, long-limbed
+ * thing in a tattered hunter's hood and cloak, a deer's skull for a face with a light deep in each socket, and antlers.
  */
 public class ForestStalkerEntity extends CommonCurseEntity {
     static final int TELEGRAPH = 1, LUNGE = 2, EXPOSED = 3, RAKE = 4, BREAK_AWAY = 5;
@@ -63,12 +63,6 @@ public class ForestStalkerEntity extends CommonCurseEntity {
     @Override
     public String curseKind() {
         return "forest_stalker";
-    }
-
-    /** Placeholder model: it borrows the School Crawler's model and clips. */
-    @Override
-    protected String clipPrefix() {
-        return "school_crawler";
     }
 
     @Override
@@ -117,14 +111,14 @@ public class ForestStalkerEntity extends CommonCurseEntity {
         boolean seen = hasLineOfSight(target);
         boolean mayGo = restTicks <= 0 && mayCommit(level, target);
         if (mayGo && d <= 2.3 && seen) {
-            begin(RAKE, "attack");
+            begin(RAKE, "rake");
             sound(level, SoundEvents.SPIDER_AMBIENT, 1.1f, 0.6f);
             fx(level, "curse_tell", position().add(forward().scale(0.6)).add(0, 0.7, 0), Vec3.ZERO, 0.7f);
             return;
         }
         // Commits from the open only: it must be visible to its prey, and at lunging range.
         if (mayGo && stalked > 50 && d >= 4 && d <= 10 && seen && target.hasLineOfSight(this)) {
-            begin(TELEGRAPH, null);
+            begin(TELEGRAPH, "telegraph");
             stalked = 0;
             aim = flatDir(target.position());
             getNavigation().stop();
@@ -200,7 +194,7 @@ public class ForestStalkerEntity extends CommonCurseEntity {
                     action = LUNGE;
                     actionTicks = 0;
                     landed = false;
-                    Anim.playOn(this, clipPrefix() + "_attack");
+                    Anim.playOn(this, clipPrefix() + "_lunge");
                     setDeltaMovement(aim.x * 1.25, 0.32, aim.z * 1.25);
                     sound(level, SoundEvents.PHANTOM_SWOOP, 1.3f, 0.7f);
                     fx(level, "curse_pounce", position(), aim, 1.2f);
@@ -220,6 +214,7 @@ public class ForestStalkerEntity extends CommonCurseEntity {
                     } else {
                         // Overshot: down in the leaves, open.
                         action = EXPOSED;
+                        Anim.playOn(this, clipPrefix() + "_exposed");
                         sound(level, SoundEvents.SPIDER_HURT, 1f, 0.5f);
                         expose(level, EXPOSED_TICKS);
                     }
@@ -250,6 +245,7 @@ public class ForestStalkerEntity extends CommonCurseEntity {
             }
             case BREAK_AWAY -> {
                 // Back to the trees.
+                if (actionTicks == 1) Anim.playOn(this, clipPrefix() + "_retreat");
                 if (target != null && (cover == null || actionTicks == 1)) cover = findCover(level, target);
                 Vec3 away = cover != null ? flatDir(cover) : target == null ? forward().scale(-1) : flatDir(target.position()).scale(-1);
                 setDeltaMovement(away.x * 0.3, getDeltaMovement().y, away.z * 0.3);
@@ -265,7 +261,7 @@ public class ForestStalkerEntity extends CommonCurseEntity {
         stalked = 999;
         restTicks = 0;
         aim = flatDir(target.position());
-        begin(TELEGRAPH, null);
+        begin(TELEGRAPH, "telegraph");
     }
 
     public int actionTicksForTest() {

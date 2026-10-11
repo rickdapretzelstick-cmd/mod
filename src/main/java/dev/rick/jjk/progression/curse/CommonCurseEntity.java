@@ -315,7 +315,7 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         struck.clear();
         getNavigation().stop();
         poise = maxPoise();
-        Anim.playOn(this, clipPrefix() + "_hurt");
+        Anim.playOn(this, clipPrefix() + "_stagger");
         if (by != null) {
             Vec3 away = flatDir(by.position()).scale(-1);
             setDeltaMovement(away.x * 0.45, Math.max(getDeltaMovement().y, 0.18), away.z * 0.45);

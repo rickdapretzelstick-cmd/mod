@@ -92,7 +92,7 @@ public class SchoolCrawlerEntity extends CommonCurseEntity {
         getLookControl().setLookAt(target);
         if (restTicks <= 0 && mayCommit(level, target)) {
             if (d <= 2.4) {
-                begin(SWIPE, "attack");
+                begin(SWIPE, "swipe");
                 sound(level, SoundEvents.SPIDER_AMBIENT, 1f, 1.3f);
                 return;
             }
@@ -121,7 +121,7 @@ public class SchoolCrawlerEntity extends CommonCurseEntity {
     }
 
     private void startWindup(ServerLevel level, LivingEntity target, int ticks, boolean feint) {
-        begin(POUNCE_WINDUP, null);
+        begin(POUNCE_WINDUP, "crouch");
         windupTicks = ticks;
         feinting = feint;
         aim = flatDir(target.position());
@@ -157,6 +157,7 @@ public class SchoolCrawlerEntity extends CommonCurseEntity {
                     actionTicks = 0;
                     feinting = false;
                     feintDir = new Vec3(-aim.z, 0, aim.x).scale(getRandom().nextBoolean() ? 1 : -1);
+                    dev.rick.jjk.core.anim.Anim.playOn(this, clipPrefix() + "_feint");
                     sound(level, SoundEvents.SPIDER_STEP, 1f, 1.5f);
                     fx(level, "curse_pounce", position(), feintDir, 0.6f);
                     return;
@@ -165,7 +166,7 @@ public class SchoolCrawlerEntity extends CommonCurseEntity {
                     action = POUNCE;
                     actionTicks = 0;
                     landed = false;
-                    dev.rick.jjk.core.anim.Anim.playOn(this, curseKind() + "_attack");
+                    dev.rick.jjk.core.anim.Anim.playOn(this, clipPrefix() + "_attack");
                     setDeltaMovement(aim.x * 0.95, 0.38, aim.z * 0.95);
                     sound(level, SoundEvents.SPIDER_HURT, 1f, 0.7f);
                     fx(level, "curse_pounce", position(), aim, 1f);
@@ -188,6 +189,7 @@ public class SchoolCrawlerEntity extends CommonCurseEntity {
                         action = SPRAWL;
                         actionTicks = 0;
                         sprawlTicks = CRASH_TICKS;
+                        dev.rick.jjk.core.anim.Anim.playOn(this, clipPrefix() + "_sprawl");
                         setDeltaMovement(aim.scale(-0.25).add(0, 0.2, 0));
                         sound(level, SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR, 0.8f, 1.3f);
                         expose(level, CRASH_TICKS);
@@ -200,6 +202,7 @@ public class SchoolCrawlerEntity extends CommonCurseEntity {
                         action = SPRAWL;
                         actionTicks = 0;
                         sprawlTicks = SPRAWL_TICKS;
+                        dev.rick.jjk.core.anim.Anim.playOn(this, clipPrefix() + "_sprawl");
                         expose(level, SPRAWL_TICKS);
                     }
                 }

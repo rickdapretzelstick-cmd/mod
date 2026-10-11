@@ -105,7 +105,7 @@ public class FlyHeadEntity extends CommonCurseEntity {
     /** Test hooks. */
     public void forceSpitForTest(LivingEntity target) {
         setTarget(target);
-        begin(SPIT_WINDUP, "attack");
+        begin(SPIT_WINDUP, "spit");
     }
 
     public void forceDiveForTest(LivingEntity target) {
@@ -135,7 +135,7 @@ public class FlyHeadEntity extends CommonCurseEntity {
         getLookControl().setLookAt(target);
         if (restTicks <= 0 && distance < 10 && hasLineOfSight(target) && noOtherDiving(level) && mayCommit(level, target)) {
             if (distance > 4 && getRandom().nextFloat() < 0.4f) {
-                begin(SPIT_WINDUP, "attack");
+                begin(SPIT_WINDUP, "spit");
                 sound(level, SoundEvents.LLAMA_SPIT, 0.6f, 0.6f);
             } else {
                 begin(WINDUP, "attack");
@@ -233,6 +233,7 @@ public class FlyHeadEntity extends CommonCurseEntity {
         action = GROUNDED;
         actionTicks = 0;
         struck.clear();
+        dev.rick.jjk.core.anim.Anim.playOn(this, clipPrefix() + "_grounded");
         setNoGravity(false);
         setDeltaMovement(getDeltaMovement().multiply(0.2, 0, 0.2).add(0, -0.4, 0));
         sound(level, SoundEvents.SILVERFISH_HURT, 1f, 0.7f);
