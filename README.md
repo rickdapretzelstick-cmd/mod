@@ -405,63 +405,102 @@ The path so far:
    It **no longer makes anyone Yuji** (Yuji is earned through his storyline). The world's Yuji, its vessel, can eat
    one: it is absorbed and counted, for the Sukuna progression to come. Anyone else is consumed by it and dies, whatever
    protects them.
-9. **Character storylines**: villages, Essences, relics and personal trials (next section) are how a technique is
-   earned.
+9. **Character progression**: news clearance, Grade 1 guardians, the Exorcism Seal, essence-bearing items, relics and
+   training (next section) are how a technique is earned.
 
-## Character storylines
+## Character progression: from the news to a base kit
 
-**Exploration is the character selection.** There is no menu: a player who wants Gojo goes looking for a Gojo village.
+**Exploration and the news are the character selection.** There is no menu, and no character-specific storyline:
+every character is earned the same way.
 
 ```
-village storyline (4 events) → Essence → character object → full cauldron → the world's one relic → training → base kit
+News board → Cursed Compass → Cursed Breach → Cursed Dimension → defeat a Grade 1 guardian
+  → Exorcism Seal captures its essence → Sealed Grade 1 Essence + a character's ordinary item (cauldron)
+  → essence-bearing item → full cursed-energy cauldron → the world's one relic → training → base kit
 ```
 
-**1. The village storyline.** Six villages in ten hold one character's storyline: Yuji, Gojo, Yuta, Ryu or Hakari.
-Which one is decided once, from the village itself and the world seed (never from who visits, never re-rolled). Its
-first report is pinned at the top of the news board and is recognisable without naming anyone:
+Gojo's Prison Realm stays a separate, later requirement for his ultimate; Cursed Fingers and Sukuna are untouched;
+there is no mastery tree in this path.
 
-| Storyline | The first report | Where it goes from there |
+**1. News clearance (per player).** Everyone starts at **Grade 4 clearance**. Completing **two different contracts** of
+your current grade raises you one grade (4 → 3 → 2 → 1). A board's contracts follow its reader: mostly your grade, now
+and then one above it (shown **LOCKED** in red with what it needs). Each report shows where, the threat grade, the
+objective (*designated curse*: one marked curse is the target; *infestation*: clear them all; *guarded anchor*: destroy
+the anchor its guards protect), your clearance and progress, and, for Grade 1, that it is **Solo** and to bring an
+Exorcism Seal. Rules: every contract has its own id and credits each player once; a failed or abandoned contract never
+lowers clearance; credit needs a real part in it (at least 20 damage or 10% of its curses' health, or the objective
+itself); nobody is carried past their clearance (the compass and the breach refuse a locked contract); clearance is
+saved per player; older worlds' completed-incident records migrate to a matching clearance once. `/contract
+clearance` shows yours; ops: `/contract set <player> <grade>` and `/contract reset <player>`.
+
+**2. Grade 1 contracts are guardian encounters.** Once you hold Grade 1 clearance, guardian contracts appear: a solo
+fight in a compact walled arena with one Grade 1 guardian (its body and look are chosen when the contract is posted and
+kept for every retry). Nobody else can enter once you have taken it. Lose and you are offered an immediate **rematch**
+(`/contract rematch`): same contract, same guardian, no new materials.
+
+**3. The Exorcism Seal and the remnant.** Crafted from ordinary materials: **gold nugget above and below, paper · ink sac ·
+paper across the middle → 2 seals**. A defeated guardian leaves a **remnant**: a slowly turning knot of dark energy where
+it fell, harmless, unhurtable. Use a seal on it (right-click) to **contain** it: about **7 seconds** of the shared skill
+check with all three circles going at once (keys **V / B / N**), one mistake allowed, the second fails. A failure spends
+**nothing**: the remnant waits and you can try again at once. Success spends **exactly one seal** and gives **exactly one
+Sealed Grade 1 Essence**; with a full inventory it is held for you (owner-bound) and arrives as soon as you have room.
+No seal? Leave through the **way-out breach** beside the arena's arrival point: the capture is kept, the guardian does
+not come back, nothing stays loaded, and the contract's overworld breach takes only you back to the remnant. Capture
+state is saved with the contract (restarts included).
+
+**4. The ordinary items and the essence.** Each character's item is crafted from everyday materials, and starts
+**ordinary** (its tooltip says so):
+
+| Character | Item | Recipe |
 |---|---|---|
-| **Gojo** (space, distance, perception) | *Unusual Distance Reported Along the Northern Road*: a watchtower that never gets closer, a figure beside it at night | a cliff you fall from and land back on top of; a cottage larger inside than out; a second watchtower whose lamp shows the whole valley |
-| **Yuji** (cinema, human tragedy) | *Strange Activity Reported at Abandoned Theater*: the same film every night, and someone who went in | the family who stare at the wall; what is kept in the old mine; the final screening |
-| **Yuta** (love, protection) | *Unexplained Attacks Surround Local Resident*: people hurt approaching them, a woman's voice | the resident walking to the cliffs, kept from the edge; flowers where nobody died; a promise at the old chapel |
-| **Ryu** (output, destruction) | *Unexplained Destruction East of Village*: a flash, a single enormous impact | another flash, farther out; a tunnel blasted into the hill; the impact point |
-| **Hakari** (gambling, luck) | *Late-Night Activity Beneath Abandoned Storehouse*: bells, coins, someone winning for three nights | the winner who never leaves; coins at the bottom of the mine; the last round |
+| Yuji | **Human Earthworm VHS** | paper in the middle, redstone either side, black dye above and below, iron nuggets in the corners |
+| Gojo | **Blindfold** (worn on the head) | black wool · string · black wool |
+| Yuta | **Cursed Ring** | iron nuggets in a ring (top, sides, bottom) |
+| Ryu | **Comb** | three bone meal over three sticks |
+| Hakari | **Scratch-Off Ticket** | gold nugget · paper · gold nugget |
 
-Each storyline is four events (discovery, escalation, revelation, finale), each an ordinary investigation with its own
-place, trigger and realm: the board says roughly where, the **Cursed Compass** finds the exact spot, the report tells
-you what happened, and you work out what to do (walk up to the watchtower after dark, step through the cottage door,
-ring the storehouse bell, touch the shard at the bottom of the crater...). Every fight is in the Cursed Dimension, in a
-realm made of the event: the road that never arrives, the theater, the crater, the fight club under the storehouse, the
-chapel garden (plus the existing cliff, mine and house realms). New places: the **watchtower**, the **abandoned
-theater** (its projector is a jukebox), the **storehouse** (a bell over the trapdoor), the **crater** and the **old
-chapel**. A storyline's event never goes stale; completing one brings the next report; ordinary news carries on beside
-it.
+Hold a **Sealed Grade 1 Essence** in one hand and an ordinary item in the other and use a **cauldron** (empty, or
+holding cursed energy but not mid-ritual): the essence binds into it, with no cursed energy spent. Everything is
+checked first (an ordinary character item, one at a time, the character still free in this world) and nothing is
+consumed if it's refused. The result is **essence-bearing** (glinting; in its data and tooltip). An ordinary item
+dropped into a full cauldron is refused. (Older worlds' storyline Essences still craft straight into essence-bearing
+items; the village storylines themselves are off by default: `progression.villageStorylines`.)
 
-**2. The Essence.** The finale condenses that storyline's own Essence (*Yuji, Gojo, Yuta, Ryu, Hakari Essence*) for
-everyone who took part, handed over with a title card once they are back in the world (a logged-out participant gets
-theirs when they return).
-
-**3. The character object.** Each Essence is crafted into its character's object, which is **dormant**:
-
-| Essence | Object | Recipe |
-|---|---|---|
-| Yuji | **Human Earthworm VHS** | Essence in the middle, redstone either side, black dye above and below, iron nuggets in the corners |
-| Gojo | **Blindfold** (worn on the head) | three black wool over string · Essence · string |
-| Yuta | **Cursed Ring** | a diamond over iron · Essence · iron, iron below |
-| Ryu | **Comb** | three bones over bone · Essence · bone |
-| Hakari | **Scratch-Off Ticket** | paper and gold nuggets round the Essence |
-
-**4. Infusion.** Drop the object into a **full** Cursed Energy cauldron (like the glasses). Cursed energy erupts and it
+**5. Infusion.** Drop the **essence-bearing** item into a **full** Cursed Energy cauldron (like the glasses). Cursed energy erupts and it
 rises out **infused**: the world's one functional relic of that character. **One per character per world**, across
 every dimension, whoever is online: the world keeps a registry (`<world>/jjk_progression/unique_relics.dat`), and the
 claim is made atomically when the energy collapses, so two cauldrons racing for the same character produce exactly one
-relic (the other gives its object back). A relic carries the world's token: a copy is cold. It never despawns on the
-ground. If it is **destroyed** before its storyline is complete (lava, a cactus, the void) the world may forge another
-(from a new Essence); if its **keeper** (the last player to use it) loses it, they can infuse the object again and the
-lost one goes cold. Recovery never makes two. In Creative the cauldron makes a *test relic* that claims nothing.
+relic (the other gives its essence-bearing item back, as does a cauldron broken mid-ritual). A relic carries the world's token: a copy is cold. It never despawns on the
+ground. If it is **destroyed** the world may forge another (from a new essence-bearing item); if its **keeper** (the
+last player to use it) loses it, they can infuse again and the lost one goes cold. Recovery never makes two. In
+Creative the cauldron makes a *test relic* that claims nothing.
 
-**5. The personal trial: character training.** The relic still grants nothing. Used the way that character would
+**6. Strength contests.** Some curses grab. Which ones is explicit (`training.contestKinds`: maw, grave hound, veiled
+bride, brood mother, bloat toad, crawler, stalker, and every Grade 1 guardian; a **fly head never**). A grab is always
+**telegraphed**: the curse stops and rears, a warning ring closes on you for 0.8 s; step out of reach (dash) and it
+grabs nothing. If it lands, the two of you are locked in a **6-second contest**: tap checks on the same three circles
+(no holds), each one pushing a **0-100 tug-of-war meter** against the curse's pressure. Reach 100 and you **break
+free** (it reels, staggered and wide open); hit 0, or end under the preset's line, and you are **overpowered** (you take
+its hit and are thrown). Presets by grade:
+
+| Preset | Pressure /s | GOOD | PERFECT | MISS | End line | Loss damage |
+|---|---|---|---|---|---|---|
+| Grade 4 | 2 | +16 | +22 | -8 | 40 | 4 |
+| Grade 3 | 3 | +15 | +21 | -9 | 45 | 6 |
+| Grade 2 | 4 | +13 | +19 | -10 | 50 | 8 |
+| Grade 1 | 4.5 | +12 | +18 | -11 | 55 | 10 |
+| **Guardian** | **5** | **+12** | **+18** | **-12** | **60** | 12 |
+| Special Grade | 6 | +11 | +17 | -13 | 65 | 14 |
+
+While locked, nobody else can hurt either of you (no cheap shots, no rescues that skip the contest). After any contest
+you can't be grabbed again for 12 s by **any** curse (one protection timer per player), the curse that grabbed waits
+20 s, and a guardian grabs at most **twice per attempt**. Leaving, dying, or the curse vanishing ends it with no
+result. The server owns it all (schedule, clock, meter, result). The camera cuts to a cinematic side-on shot of both
+of you that orbits about 25°, pushes in and eases the FOV from 65 to 58; it stays out of walls, the HUD stays fixed,
+and **Reduced Camera Motion** (`client.reducedCameraMotion` in `config/jjk.json`) holds one still shot at FOV 62.
+Tuning: `training.contest*` in the config.
+
+**7. The personal trial: character training.** The relic still grants nothing. Used the way that character would
 (the VHS played on a jukebox, the Blindfold worn for five seconds, the Ring, the Comb or the Scratch-Off used), it offers
 **Begin Training**. The server checks you may (the world's live relic, the kit unclaimed or already yours, nobody else
 in a claiming session of it), takes you to a private training room in the cursed realm and saves where you stood.
