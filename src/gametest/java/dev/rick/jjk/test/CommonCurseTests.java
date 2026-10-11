@@ -89,7 +89,9 @@ public class CommonCurseTests {
         float g3 = maw.getMaxHealth();
         maw.setGrade(CurseGrade.GRADE_4);
         float g4 = maw.getMaxHealth();
-        h.assertTrue(Math.abs(g3 - 26 * CurseGrade.GRADE_3.health) < 0.01 && Math.abs(g4 - 26) < 0.01, "health follows the grade: " + g3 + " / " + g4);
+        var t = JJKConfig.get().curses;
+        double want3 = 26 * CurseGrade.GRADE_3.health * t.at(t.health, CurseGrade.GRADE_3.rank()), want4 = 26 * t.at(t.health, CurseGrade.GRADE_4.rank());
+        h.assertTrue(Math.abs(g3 - want3) < 0.01 && Math.abs(g4 - want4) < 0.01, "health follows the grade (and its tuning): " + g3 + " / " + g4);
         h.assertTrue(maw.getHealth() == maw.getMaxHealth(), "full health at its grade");
         h.assertTrue(maw.curseGrade() == CurseGrade.GRADE_4 && maw.requiresCursePerception(), "graded, and hidden");
         h.succeed();

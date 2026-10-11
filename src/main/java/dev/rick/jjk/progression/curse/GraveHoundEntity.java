@@ -95,7 +95,8 @@ public class GraveHoundEntity extends CommonCurseEntity {
                 sound(level, SoundEvents.HOGLIN_ANGRY, 1f, 1.4f);
                 return;
             }
-            if (d >= 3.5 && d <= 8 && hasLineOfSight(target)) {
+            if (d >= 3.5 && d <= 8 && hasLineOfSight(target) && gapReady()) {
+                gapUsed();
                 begin(LEAP_WINDUP, "crouch");
                 aim = flatDir(target.position());
                 sound(level, SoundEvents.HOGLIN_ANGRY, 1.2f, 1.2f);

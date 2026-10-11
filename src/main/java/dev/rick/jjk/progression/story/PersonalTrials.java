@@ -333,6 +333,12 @@ public final class PersonalTrials {
         };
     }
 
+    /** The curses a trial raised that it still counts (for the encounter watch), or none. */
+    public static List<UUID> curses(String key) {
+        Run run = RUNS.get(key);
+        return run == null ? List.of() : List.copyOf(run.curses);
+    }
+
     /** Called by the realm every tick for a trial arena: 1 won, -1 lost (close it), 0 running. */
     public static int tickArena(MinecraftServer server, InvestigationState.Arena a, String key, ServerLevel realm) {
         Run run = RUNS.get(key);

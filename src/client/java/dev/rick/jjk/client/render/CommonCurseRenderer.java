@@ -36,6 +36,8 @@ import org.jetbrains.annotations.Nullable;
 public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRenderer<T, CommonCurseRenderer.State> {
     private final String kind;
     private final RenderType solid;
+    /** Its silhouette, into the glow-outline pass (drawn through walls): a realm fight's revealed curses. */
+    private final RenderType outline;
     private final float scale;
     private final int baseTint;
 
@@ -47,6 +49,9 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
         public float now;
         public int id;
         @Nullable public PoseFrame pose;
+        /** Revealed to this player by their realm fight: outlined through walls, its distance shown over it. */
+        public boolean revealed;
+        public int distance;
     }
 
     public CommonCurseRenderer(EntityRendererProvider.Context ctx, String kind, float shadow) {
@@ -60,6 +65,7 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
         this.scale = scale;
         this.baseTint = baseTint;
         this.solid = RenderTypes.entityCutout(JJK.id("textures/entity/" + kind + ".png"));
+        this.outline = RenderTypes.outline(JJK.id("textures/entity/" + kind + ".png"));
         this.shadowRadius = shadow;
     }
 
@@ -87,6 +93,13 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
         s.frozen = e.isFrozen();
         s.staggered = e.isStaggered();
         s.enraged = e.isEnraged();
+        s.revealed = dev.rick.jjk.client.hud.EncounterHud.revealed(e);
+        if (s.revealed) {
+            // A violet outline, not the team colour.
+            s.outlineColor = 0xC070FF;
+            var me = net.minecraft.client.Minecraft.getInstance().player;
+            s.distance = me == null ? 0 : (int) Math.round(me.distanceTo(e));
+        }
         if (e.deathTime == 0) {
             double dx = e.getX() - e.xo, dy = e.getY() - e.yo, dz = e.getZ() - e.zo;
             boolean flies = e.isNoGravity();
@@ -122,6 +135,10 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
         Look look = look(s, baseTint);
         int light = look.lit ? 0xF000F0 : s.lightCoords;
         c.submitCustomGeometry(ps, solid, (p, buf) -> model.render(p, buf, pose, light, look.tint, look.overlay));
+        if (s.revealed && s.outlineColor != EntityRenderState.NO_OUTLINE) {
+            int oc = 0xFF000000 | s.outlineColor;
+            c.submitCustomGeometry(ps, outline, (p, buf) -> model.render(p, buf, pose, 0xF000F0, oc, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY));
+        }
         if (look.glow != 0) {
             // The glow: the model again, added on top (bright in any light).
             // A thin shell just outside its surface (drawn on the surface itself, the body would cover it).
@@ -132,6 +149,11 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
             ps.popPose();
         }
         ps.popPose();
+        if (s.revealed) {
+            // Over it, through walls: a marker and how far it is.
+            c.submitNameTag(ps, new net.minecraft.world.phys.Vec3(0, s.boundingBoxHeight + 0.6, 0), 0,
+                    net.minecraft.network.chat.Component.literal("\u25BC " + s.distance + " m").withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE), true, 0xF000F0, cam);
+        }
         super.submit(s, ps, c, cam);
     }
 

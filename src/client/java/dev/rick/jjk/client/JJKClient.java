@@ -82,6 +82,7 @@ public class JJKClient implements ClientModInitializer {
         // The animation debugger works in either mode (it only shows once turned on).
         HudElementRegistry.addLast(JJK.id("anim_debug"), (g, delta) -> dev.rick.jjk.client.anim.AnimDebug.renderHud(g));
         HudElementRegistry.addLast(JJK.id("story_overlay"), (g, delta) -> dev.rick.jjk.client.hud.StoryOverlay.render(g, delta));
+        HudElementRegistry.addLast(JJK.id("encounter_hud"), (g, delta) -> dev.rick.jjk.client.hud.EncounterHud.render(g, delta));
         HudElementRegistry.addLast(JJK.id("realm_transition"), (g, delta) -> dev.rick.jjk.client.hud.RealmTransitionOverlay.render(g, delta));
         HudElementRegistry.addLast(JJK.id("rifle_hud"), (g, delta) -> dev.rick.jjk.client.rifle.RifleHud.render(g));
         // Under the rifle's scope its own reticle is the aim: the vanilla crosshair stands down.
@@ -160,6 +161,7 @@ public class JJKClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.MasterySyncPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.mastery.ClientMastery.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.CompassPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.investigation.CursedCompassClient.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.StoryPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.StoryOverlay.apply(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.EncounterPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.EncounterHud.apply(p));
         dev.rick.jjk.client.investigation.CursedCompassClient.init();
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.NewsBoardPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.investigation.NewsBoardScreen.show(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.RifleStatePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.rifle.RifleClient.apply(p));

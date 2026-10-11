@@ -62,6 +62,7 @@ public final class CursedBreaches {
     /** Whether a breach still leads anywhere, and if someone is already through it. -1: closed for good. */
     static int status(ServerLevel level, CursedBreachEntity e) {
         var server = level.getServer();
+        if (e.target.startsWith(EncounterWatch.EXIT)) return EncounterWatch.exitStatus(level, e);
         if (e.target.startsWith(CursedRealms.ROOM)) {
             CursedEncounters.Room room = CursedEncounters.byKey(server, e.target.substring(CursedRealms.ROOM.length()));
             if (room == null || room.state == CursedEncounters.State.CLEARED) return -1;
@@ -93,6 +94,11 @@ public final class CursedBreaches {
 
     /** Someone reaches into a breach. */
     static void use(ServerPlayer p, CursedBreachEntity e) {
+        // An Emergency Return, inside a stalled fight: the way out.
+        if (e.target.startsWith(EncounterWatch.EXIT)) {
+            if (!p.isSpectator()) EncounterWatch.startChannel(p, e);
+            return;
+        }
         if (!(p.level() instanceof ServerLevel level) || p.isSpectator() || CursedRealms.pulling(p) || CursedRealms.inRealm(p)) return;
         if (p.position().distanceToSqr(e.position()) > 6 * 6) return;
         int s = status(level, e);

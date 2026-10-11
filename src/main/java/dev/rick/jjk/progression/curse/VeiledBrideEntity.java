@@ -89,7 +89,8 @@ public class VeiledBrideEntity extends CommonCurseEntity {
                 startWail(level, target);
                 return;
             }
-            if (seen && d >= 4 && d <= 16) {
+            if (seen && d >= 4 && d <= 16 && gapReady()) {
+                gapUsed();
                 begin(FLICKER, "flicker");
                 sound(level, SoundEvents.ENDERMAN_STARE, 0.5f, 1.6f);
                 fx(level, "curse_tell", position().add(0, getBbHeight() * 0.85, 0), Vec3.ZERO, 1f);
