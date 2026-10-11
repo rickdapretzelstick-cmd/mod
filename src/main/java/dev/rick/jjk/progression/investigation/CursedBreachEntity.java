@@ -30,7 +30,10 @@ import java.util.function.Consumer;
  * incident, duplicate across a reload, or be left behind. It can't be hurt, pushed or moved.
  */
 public class CursedBreachEntity extends Entity {
-    /** 0 waiting; 1 someone is already inside (it churns faster: the fight is on, and you can join it). */
+    /**
+     * 0 waiting; 1 someone is already inside (it churns faster: the fight is on, and you can join it); 2 an Emergency
+     * Return inside a stalled fight (pale: the way out).
+     */
     private static final EntityDataAccessor<Integer> STATE = SynchedEntityData.defineId(CursedBreachEntity.class, EntityDataSerializers.INT);
     /** The client's per-tick look (particles, sound): set by the client mod, a no-op on a dedicated server. */
     public static Consumer<CursedBreachEntity> clientTick = e -> {};

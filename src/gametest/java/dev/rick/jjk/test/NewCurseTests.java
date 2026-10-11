@@ -118,7 +118,9 @@ public class NewCurseTests {
         c.setRestForTest(500);
         d.forceHowlForTest();
         h.assertTrue(d.howling() && d.isWindingUp(), "it throws its head back (glowing)");
-        h.succeedWhen(() -> h.assertTrue(c.restTicksForTest() == 0, "the curses around it attack again at once: " + c.restTicksForTest()));
+        h.succeedWhen(() -> h.assertTrue(c.restTicksForTest() == 0, "the curses around it attack again at once: " + c.restTicksForTest()
+                + " (hound action " + d.actionForTest() + ", alive " + d.isAlive() + "/" + c.isAlive() + ", apart " + String.format("%.1f", d.distanceTo(c))
+                + ", hound at " + d.position() + ", crawler at " + c.position() + ")"));
     }
 
     @GameTest(maxTicks = 120, environment = "jjk-test:curse_y")

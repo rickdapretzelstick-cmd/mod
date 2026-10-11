@@ -215,6 +215,11 @@ public final class PersonalTrials {
 
     // --- The realm's hooks for a trial arena ---
 
+    /** The curses a trial arena counts (for the encounter watch): training raises none. */
+    public static List<UUID> curses(String key) {
+        return List.of();
+    }
+
     /** Called by the realm every tick for a trial arena: 0 running, -1 close it. */
     public static int tickArena(MinecraftServer server, dev.rick.jjk.progression.investigation.InvestigationState.Arena a, String key, ServerLevel realm) {
         return TrainingSessions.tickArena(key);

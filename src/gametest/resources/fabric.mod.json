@@ -36,7 +36,9 @@
       "dev.rick.jjk.test.TrainingTests",
       "dev.rick.jjk.test.ClearanceTests",
       "dev.rick.jjk.test.NewsHouseTests",
-      "dev.rick.jjk.test.SiteTests"
+      "dev.rick.jjk.test.SiteTests",
+      "dev.rick.jjk.test.BladeTests",
+      "dev.rick.jjk.test.EncounterTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.TrainingClientTest",
@@ -55,7 +57,9 @@
       "dev.rick.jjk.test.CursedGearClientTest",
       "dev.rick.jjk.test.StoryClientTest",
       "dev.rick.jjk.test.NewsHouseClientTest",
-      "dev.rick.jjk.test.BreachClientTest"
+      "dev.rick.jjk.test.BreachClientTest",
+      "dev.rick.jjk.test.BladeClientTest",
+      "dev.rick.jjk.test.EncounterClientTest"
     ]
   },
   "depends": {

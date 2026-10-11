@@ -26,7 +26,7 @@ public final class JJKConfig {
      * The gameplay tuning this file was written for. When the mod's defaults change (the JJS wiki pass), older files have
      * their gameplay sections reset to the new defaults; the player's client settings are kept.
      */
-    public static final int CURRENT_VERSION = 11;
+    public static final int CURRENT_VERSION = 12;
     public int version;
 
     public General general = new General();
@@ -59,6 +59,8 @@ public final class JJKConfig {
     public Realms realms = new Realms();
     public Training training = new Training();
     public Clearance clearance = new Clearance();
+    public Curses curses = new Curses();
+    public Encounters encounters = new Encounters();
 
     public static JJKConfig get() {
         return instance;
@@ -1268,6 +1270,19 @@ public final class JJKConfig {
         public int clHaftCooldown = 80;
         public float clUltimateDamage = 16f;
         public int clUltimateCooldown = 1200;
+        // Cursed Blade.
+        public float cbHeavyDamage = 11f, cbCrossDamage = 7f;
+        public int cbHeavyCooldown = 110;
+        public float cbWaveDamage = 9f, cbWaveRange = 20f;
+        public int cbWaveMaxCharge = 28, cbWaveCooldown = 200;
+        public float cbLungeDamage = 7f, cbLungeThornDamage = 5f, cbLungeDistance = 8f;
+        public int cbLungeCooldown = 180;
+        public int cbGuardWindow = 22, cbGuardCooldown = 240;
+        public float cbGuardCounterDamage = 9f;
+        public float cbRisingDamage = 6f;
+        public int cbRisingCooldown = 90;
+        public float cbUltimateDamage = 14f, cbUltimateRadius = 9f;
+        public int cbUltimateCooldown = 1400;
         // Cursed Rifle (its shots and beam use the Rifle section).
         public int rfVolleyShots = 3, rfVolleyCooldown = 140;
         public int rfFlareCooldown = 260;
@@ -1332,6 +1347,74 @@ public final class JJKConfig {
         public int victoryTicks = 80, failureTicks = 40;
         /** Ticks an offer to begin stays answerable. */
         public int offerTicks = 600;
+    }
+
+    /**
+     * The common curses' fighting strength, per grade (index 0 = Grade 4, 1 = Grade 3, 2 = Grade 2, 3 = Grade 1, 4 = Special
+     * Grade), on top of each grade's own scaling in {@code CurseGrade}. Kept so that each grade is clearly stronger than
+     * the one below it, and Special Grade clearly above Grade 1.
+     */
+    public static final class Curses {
+        /** Max health multiplier per grade. */
+        public double[] health = {1.15, 1.25, 1.3, 1.35, 1.4};
+        /** Hit damage multiplier per grade. */
+        public double[] damage = {1.1, 1.15, 1.2, 1.25, 1.3};
+        /** How much sooner it acts again after an action, per grade (higher: shorter rests). */
+        public double[] aggression = {1.1, 1.15, 1.2, 1.25, 1.3};
+        /** Movement speed multiplier per grade (pursuit). */
+        public double[] speed = {1.05, 1.08, 1.1, 1.12, 1.15};
+        /** How hard it is to stagger, per grade (multiplies its poise). */
+        public double[] poise = {1.0, 1.1, 1.2, 1.35, 1.6};
+        /** After a stagger ends, ticks in which it can't be staggered again (no stagger-locking a curse forever). */
+        public int staggerImmunityTicks = 50;
+        /** Least ticks between two gap closers (pounce, lunge, leap, flicker) from the same curse, before aggression. */
+        public int gapCloserCooldown = 70;
+        /** Ticks it keeps hunting where it last saw its target after losing sight of it, before giving up. */
+        public int searchTicks = 160;
+        /** Hits don't land through solid blocks between the blow's origin and the target. */
+        public boolean blockedByWalls = true;
+        /** Multiplayer: each extra player inside an arena adds this much to its curses' health ... */
+        public double healthPerExtraPlayer = 0.3;
+        /** ... up to this multiplier. */
+        public double maxPlayerScaling = 1.9;
+
+        public double at(double[] values, int rank) {
+            if (values == null || values.length == 0) return 1.0;
+            return values[Math.max(0, Math.min(values.length - 1, rank))];
+        }
+    }
+
+    /**
+     * Realm encounters: what keeps a fight from ever trapping someone. Its own curses are tracked and reconciled against
+     * the world; when only a few are left and nothing has happened for a while they are revealed; one that is genuinely
+     * stuck is brought back into the fight; and if the fight still can't progress, an Emergency Return opens (leaving that
+     * way forfeits the rewards). All times in ticks.
+     */
+    public static final class Encounters {
+        /** How often the tracked curses are checked against the world. */
+        public int reconcileInterval = 20;
+        /** Checks in a row a tracked curse must be missing from loaded ground before its record is dropped as stale. */
+        public int staleChecks = 3;
+        /** The reveal: at most this many curses left ... */
+        public int revealMaxRemaining = 3;
+        /** ... and this long with no combat between the players and them. */
+        public int revealAfter = 400;
+        /** After the reveal, this long without reaching a curse before it is checked for being stuck. */
+        public int recoverAfter = 400;
+        /** A curse this long without moving (and unable to path to anyone) counts as stuck. */
+        public int stuckStillTicks = 200;
+        /** Recovery puts a curse at least this far from every player ... */
+        public double recoverMinDistance = 7;
+        /** ... and no further than this from the nearest one. */
+        public double recoverMaxDistance = 18;
+        /** After being brought back, it waits this long before attacking. */
+        public int recoverAttackDelay = 40;
+        /** Emergency Return opens after this long with no progress since the reveal ... */
+        public int emergencyAfter = 2000;
+        /** ... or after this many failed recoveries. */
+        public int emergencyAfterFailures = 3;
+        /** How long the Emergency Return must be channelled, uninterrupted. */
+        public int emergencyChannelTicks = 60;
     }
 
     /** Beam clashes (True Love Beam against Every Last Drop): the duel's tuning lives in the session; these are reach. */
@@ -1401,6 +1484,8 @@ public final class JJKConfig {
         if (maxRed == null) maxRed = new MaxRed();
         if (client == null) client = new Client();
         if (hakari == null) hakari = new Hakari();
+        if (curses == null) curses = new Curses();
+        if (encounters == null) encounters = new Encounters();
         if (gojo == null) gojo = new Gojo();
         if (yuji == null) yuji = new Yuji();
         if (yuta == null) yuta = new Yuta();

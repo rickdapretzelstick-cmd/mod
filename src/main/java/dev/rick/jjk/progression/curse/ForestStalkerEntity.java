@@ -117,7 +117,8 @@ public class ForestStalkerEntity extends CommonCurseEntity {
             return;
         }
         // Commits from the open only: it must be visible to its prey, and at lunging range.
-        if (mayGo && stalked > 50 && d >= 4 && d <= 10 && seen && target.hasLineOfSight(this)) {
+        if (mayGo && stalked > 50 && d >= 4 && d <= 10 && seen && target.hasLineOfSight(this) && gapReady()) {
+            gapUsed();
             begin(TELEGRAPH, "telegraph");
             stalked = 0;
             aim = flatDir(target.position());

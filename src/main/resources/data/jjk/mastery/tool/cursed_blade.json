@@ -1,0 +1,228 @@
+{
+  "id": "tool/cursed_blade",
+  "kind": "TOOL",
+  "owner": "cursed_blade",
+  "title": "Cursed Blade",
+  "lanes": [
+    "Edge",
+    "Wave",
+    "Thorn",
+    "Guard"
+  ],
+  "nodes": [
+    {
+      "id": "keen_edge",
+      "name": "Keen Edge",
+      "tier": "SMALL",
+      "cost": 8,
+      "lane": 0,
+      "row": 0,
+      "description": "The blade bites deeper into curses. +15% damage against them with every move.",
+      "effects": [
+        {
+          "param": "tool.cursed_blade.damage",
+          "mul": 1.15
+        }
+      ]
+    },
+    {
+      "id": "cursed_wave",
+      "name": "Cursed Wave",
+      "tier": "MECHANICAL",
+      "cost": 18,
+      "lane": 1,
+      "row": 0,
+      "description": "Learn Cursed Wave (2): hold to charge, let go to throw a crescent of cursed energy.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_blade.cursed_wave"
+        }
+      ]
+    },
+    {
+      "id": "long_reach",
+      "name": "Long Reach",
+      "tier": "SMALL",
+      "cost": 12,
+      "lane": 0,
+      "row": 1,
+      "requires": [
+        "keen_edge"
+      ],
+      "description": "Heavy Slash (1) reaches 20% further.",
+      "effects": [
+        {
+          "param": "tool.cursed_blade.cb_heavy_slash_reach",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "far_wave",
+      "name": "Far Wave",
+      "tier": "SMALL",
+      "cost": 14,
+      "lane": 1,
+      "row": 1,
+      "requires": [
+        "cursed_wave"
+      ],
+      "description": "Cursed Wave (2) flies 40% further.",
+      "effects": [
+        {
+          "param": "tool.cursed_blade.cb_cursed_wave_range",
+          "mul": 1.4
+        }
+      ]
+    },
+    {
+      "id": "thorn_lunge",
+      "name": "Thorn Lunge",
+      "tier": "MECHANICAL",
+      "cost": 24,
+      "lane": 2,
+      "row": 1,
+      "requires": [
+        "keen_edge"
+      ],
+      "description": "Learn Thorn Lunge (3): drive through a line of them, then the thorns erupt under everyone it went through.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_blade.thorn_lunge"
+        }
+      ]
+    },
+    {
+      "id": "thorn_guard",
+      "name": "Thorn Guard",
+      "tier": "MECHANICAL",
+      "cost": 26,
+      "lane": 3,
+      "row": 1,
+      "requires": [
+        "cursed_wave"
+      ],
+      "description": "Learn Thorn Guard (4): a blow caught in its window is stopped, and thorns burst up under the attacker.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_blade.thorn_guard"
+        }
+      ]
+    },
+    {
+      "id": "crimson_cross",
+      "name": "Crimson Cross",
+      "tier": "MECHANICAL",
+      "cost": 22,
+      "lane": 0,
+      "row": 2,
+      "requires": [
+        "long_reach"
+      ],
+      "description": "R during Heavy Slash's opening: the blade comes straight back across the first cut.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_blade.cb_heavy_slash_r"
+        }
+      ]
+    },
+    {
+      "id": "twin_wave",
+      "name": "Twin Wave",
+      "tier": "MECHANICAL",
+      "cost": 24,
+      "lane": 1,
+      "row": 2,
+      "requires": [
+        "far_wave"
+      ],
+      "description": "R during Cursed Wave's charge: two crescents, splayed.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_blade.cb_cursed_wave_r"
+        }
+      ]
+    },
+    {
+      "id": "deep_lunge",
+      "name": "Deep Lunge",
+      "tier": "SMALL",
+      "cost": 16,
+      "lane": 2,
+      "row": 2,
+      "requires": [
+        "thorn_lunge"
+      ],
+      "description": "Thorn Lunge (3) drives 30% further.",
+      "effects": [
+        {
+          "param": "tool.cursed_blade.cb_thorn_lunge_distance",
+          "mul": 1.3
+        }
+      ]
+    },
+    {
+      "id": "thorn_bloom",
+      "name": "Thorn Bloom",
+      "tier": "MECHANICAL",
+      "cost": 20,
+      "lane": 3,
+      "row": 2,
+      "requires": [
+        "thorn_guard"
+      ],
+      "description": "Thorn Guard's (4) thorns bloom: everyone near the attacker is caught too, and the window is 25% longer.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_blade.thorn_bloom"
+        },
+        {
+          "param": "tool.cursed_blade.cb_thorn_guard_window",
+          "mul": 1.25
+        }
+      ]
+    },
+    {
+      "id": "crimson_edge",
+      "name": "Crimson Edge",
+      "tier": "MAJOR",
+      "cost": 45,
+      "lane": 1,
+      "row": 3,
+      "requires": [
+        "crimson_cross",
+        "twin_wave"
+      ],
+      "description": "The cursed energy runs along the whole edge: +20% damage against curses with every move.",
+      "effects": [
+        {
+          "param": "tool.cursed_blade.damage",
+          "mul": 1.2
+        }
+      ]
+    },
+    {
+      "id": "black_thorn",
+      "name": "Black Thorn",
+      "tier": "AWAKENING",
+      "cost": 120,
+      "lane": 2,
+      "row": 4,
+      "requires": [
+        "crimson_edge",
+        "deep_lunge",
+        "thorn_bloom"
+      ],
+      "description": "Learn Black Thorn (G): the blade driven into the ground, rings of black thorns tearing outward.",
+      "effects": [
+        {
+          "unlock": "tool.cursed_blade.black_thorn"
+        },
+        {
+          "param": "tool.cursed_blade.cb_black_thorn_radius",
+          "mul": 1.0
+        }
+      ]
+    }
+  ]
+}

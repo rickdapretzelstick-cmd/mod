@@ -61,6 +61,11 @@ public final class CursedRealms {
     /** Half-width and height of the box an arena may use (and that is cleared). */
     static final int RADIUS = 26, HEIGHT = 40;
     static final int WIN_DELAY = 60, ABANDON_AFTER = 1200;
+    /**
+     * Half-width of the ground kept loaded round an open arena: wider than the arena itself, so a curse knocked or
+     * leashed out past its edge is still loaded and ticking (and so still counted), never lost to an unloaded chunk.
+     */
+    static final int LOADED = RADIUS + 24;
 
     /** How an arena looks, where players land and where its curses wait. */
     public interface Layout {
@@ -320,6 +325,7 @@ public final class CursedRealms {
         }
         in.participants.add(p.getUUID());
         a.inside.add(p.getUUID());
+        a.members.add(p.getUUID());
         a.emptyTicks = 0;
         st.markDirty();
         arrive(p, realm, Vec3.atBottomCenterOf(a.origin).add(layout.arrival()), layout);
@@ -349,6 +355,7 @@ public final class CursedRealms {
         }
         if (!inRealm(p)) st.returns.put(p.getUUID(), new InvestigationState.Return(p.level().dimension().identifier().toString(), p.position(), p.getYRot()));
         a.inside.add(p.getUUID());
+        a.members.add(p.getUUID());
         a.emptyTicks = 0;
         st.markDirty();
         arrive(p, realm, Vec3.atBottomCenterOf(a.origin).add(layout.arrival()), layout);
@@ -378,6 +385,7 @@ public final class CursedRealms {
         }
         if (!inRealm(p)) st.returns.put(p.getUUID(), new InvestigationState.Return(p.level().dimension().identifier().toString(), p.position(), p.getYRot()));
         a.inside.add(p.getUUID());
+        a.members.add(p.getUUID());
         a.emptyTicks = 0;
         st.markDirty();
         arrive(p, realm, Vec3.atBottomCenterOf(a.origin).add(layout.arrival()), layout);
@@ -446,6 +454,7 @@ public final class CursedRealms {
             for (ServerPlayer p : realm.players()) {
                 if (inRealm(p) && arenaAt(st, p.position()) == a && p.isAlive()) {
                     a.inside.add(p.getUUID());
+        a.members.add(p.getUUID());
                     keepInside(p, a, layout);
                 }
             }
@@ -478,6 +487,10 @@ public final class CursedRealms {
                 if (++a.wonTicks >= WIN_DELAY) close(server, st, a, true);
                 continue;
             }
+            // The encounter's own watch: its tracked curses reconciled, the last ones revealed, a stuck one brought back,
+            // and, if the fight still can't go on, the Emergency Return.
+            EncounterWatch.tick(server, st, a, realm, layout, in);
+            if (st.arenas.get(a.slot) != a) continue;
             if (a.inside.isEmpty()) {
                 if (++a.emptyTicks >= ABANDON_AFTER) close(server, st, a, false);
             } else {
@@ -532,12 +545,19 @@ public final class CursedRealms {
 
     /** Ends an arena: everyone inside goes home, its curses vanish (if any are left), its blocks are cleared. */
     public static void close(MinecraftServer server, InvestigationState st, InvestigationState.Arena a, boolean won) {
+        // Only once: a second close (a duplicate event, a race between a win and an abandon) does nothing.
+        if (st.arenas.get(a.slot) != a) return;
         ServerLevel realm = level(server);
         Incident in = st.incidents.get(a.incident);
         for (ServerPlayer p : List.copyOf(realm.players())) {
             if (inRealm(p) && arenaAt(st, p.position()) == a) sendHome(p, st);
         }
-        clear(realm, a.origin);
+        EncounterWatch.closing(server, a, true);
+        try {
+            clear(realm, a.origin);
+        } finally {
+            EncounterWatch.closing(server, a, false);
+        }
         forceLoad(realm, a.origin, false);
         st.arenas.remove(a.slot);
         if (!won && a.incident.startsWith(ROOM)) dev.rick.jjk.progression.curse.FingerBearerEncounter.arenaAbandoned(server, a.incident.substring(ROOM.length()));
@@ -554,7 +574,7 @@ public final class CursedRealms {
             in.changedAt = server.overworld().getGameTime();
         }
         st.markDirty();
-        JJK.LOGGER.info("[investigations] realm {} closed ({})", a.slot, won ? "won" : "abandoned");
+        JJK.LOGGER.info("[investigations] realm {} closed ({}, encounter {})", a.slot, won ? "won" : "abandoned", a.encounter);
     }
 
     /** Sends a player back where they came from (or to the world spawn if that's lost). */
@@ -569,6 +589,11 @@ public final class CursedRealms {
             to = server.getLevel(ResourceKey.create(Registries.DIMENSION, Identifier.parse(r.dimension())));
             at = r.pos();
             yaw = r.yaw();
+            // The saved place must still be somewhere to stand (not built over, not left over the void or in lava).
+            if (to != null && !safeToStand(to, p, at)) {
+                JJK.LOGGER.warn("[investigations] {}'s return point {} in {} is no longer safe: sending them to their respawn point", p.getName().getString(), at, r.dimension());
+                to = null;
+            }
         }
         if (to == null || at == null) {
             TeleportTransition t = p.findRespawnPositionAndUseSpawnBlock(false, TeleportTransition.DO_NOTHING);
@@ -580,11 +605,40 @@ public final class CursedRealms {
         p.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING, 40, 0, false, false));
     }
 
+    /** Whether a player can be put down at {@code at}: room to stand, no lava, and ground within a few blocks under. */
+    static boolean safeToStand(ServerLevel level, ServerPlayer p, Vec3 at) {
+        if (at.y < level.getMinY() + 1 || at.y > level.getMaxY()) return false;
+        BlockPos feet = BlockPos.containing(at);
+        level.getChunk(feet);
+        if (!level.noCollision(p, p.getDimensions(net.minecraft.world.entity.Pose.STANDING).makeBoundingBox(at))) return false;
+        if (!level.getFluidState(feet).isEmpty() && level.getFluidState(feet).is(net.minecraft.tags.FluidTags.LAVA)) return false;
+        for (int dy = 1; dy <= 6; dy++) {
+            BlockPos q = feet.below(dy);
+            BlockState s = level.getBlockState(q);
+            if (s.getFluidState().is(net.minecraft.tags.FluidTags.LAVA)) return false;
+            if (!s.getCollisionShape(level, q).isEmpty() || !s.getFluidState().isEmpty()) return true;
+        }
+        return false;
+    }
+
     /** Keeps an open arena's ground loaded and ticking (its curses fight on whoever is there), and lets it go after. */
     private static void forceLoad(ServerLevel realm, BlockPos origin, boolean on) {
-        for (int cx = (origin.getX() - RADIUS) >> 4; cx <= (origin.getX() + RADIUS) >> 4; cx++) {
-            for (int cz = (origin.getZ() - RADIUS) >> 4; cz <= (origin.getZ() + RADIUS) >> 4; cz++) realm.setChunkForced(cx, cz, on);
+        for (int cx = (origin.getX() - LOADED) >> 4; cx <= (origin.getX() + LOADED) >> 4; cx++) {
+            for (int cz = (origin.getZ() - LOADED) >> 4; cz <= (origin.getZ() + LOADED) >> 4; cz++) realm.setChunkForced(cx, cz, on);
         }
+    }
+
+    /**
+     * Whether the ground an arena keeps loaded has its entities loaded too (until it has, a curse that isn't found
+     * there might just not be loaded yet, not gone).
+     */
+    static boolean entitiesLoaded(ServerLevel realm, BlockPos origin) {
+        for (int cx = (origin.getX() - LOADED) >> 4; cx <= (origin.getX() + LOADED) >> 4; cx++) {
+            for (int cz = (origin.getZ() - LOADED) >> 4; cz <= (origin.getZ() + LOADED) >> 4; cz++) {
+                if (!realm.areEntitiesLoaded(net.minecraft.world.level.ChunkPos.pack(cx, cz))) return false;
+            }
+        }
+        return true;
     }
 
     /** Clears an arena's box back to void, and anything left standing in it. */

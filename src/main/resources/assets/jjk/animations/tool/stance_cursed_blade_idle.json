@@ -1,0 +1,156 @@
+{
+  "name": "stance_cursed_blade_idle",
+  "duration": 2400,
+  "note": "Idle: the blade held low across the body in both hands, breathing.",
+  "loop": true,
+  "layer": "UPPER_BODY",
+  "blendIn": 200,
+  "blendOut": 200,
+  "priority": "IDLE",
+  "keys": [
+    {
+      "t": 0,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -40,
+            -14,
+            4
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -34,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -46,
+            34,
+            -4
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -40,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            12,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            2,
+            -6,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "t": 1200,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -43,
+            -14,
+            4
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -36,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -49,
+            34,
+            -4
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -42,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            6,
+            13,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            3,
+            -6,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "t": 2400,
+      "ease": "EASE_IN_OUT",
+      "bones": {
+        "rightArm": {
+          "rot": [
+            -40,
+            -14,
+            4
+          ]
+        },
+        "rightForearm": {
+          "rot": [
+            -34,
+            0,
+            0
+          ]
+        },
+        "leftArm": {
+          "rot": [
+            -46,
+            34,
+            -4
+          ]
+        },
+        "leftForearm": {
+          "rot": [
+            -40,
+            0,
+            0
+          ]
+        },
+        "chest": {
+          "rot": [
+            4,
+            12,
+            0
+          ]
+        },
+        "head": {
+          "rot": [
+            2,
+            -6,
+            0
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -26,6 +26,7 @@ import org.joml.Vector3f;
  */
 public class CursedBreachRenderer extends EntityRenderer<CursedBreachEntity, CursedBreachRenderer.State> {
     static final float[] INK = {0.03f, 0.0f, 0.02f}, RIM = {0.42f, 0.03f, 0.1f}, GLOW = {0.78f, 0.12f, 0.24f}, VIOLET = {0.45f, 0.16f, 0.62f};
+    static final float[] EXIT_INK = {0.10f, 0.10f, 0.14f}, EXIT_RIM = {0.75f, 0.78f, 0.9f}, EXIT_GLOW = {0.92f, 0.9f, 0.7f};
 
     public static class State extends EntityRenderState {
         float age;
@@ -63,6 +64,9 @@ public class CursedBreachRenderer extends EntityRenderer<CursedBreachEntity, Cur
 
     @Override
     public void submit(State s, PoseStack ps, SubmitNodeCollector c, CameraRenderState cam) {
+        // An Emergency Return (state 2) is the same tear, pale: a way out, not a way in.
+        boolean exit = s.breach == 2;
+        final float[] gl = exit ? EXIT_GLOW : GLOW, rm = exit ? EXIT_RIM : RIM, ink = exit ? EXIT_INK : INK, vi = exit ? EXIT_GLOW : VIOLET;
         float t = s.age * (s.breach == 1 ? 1.8f : 1f);
         // A slow heartbeat: a swell every 80 ticks (faster once someone is through).
         float beatPhase = (t % 80f) / 80f;
@@ -87,23 +91,23 @@ public class CursedBreachRenderer extends EntityRenderer<CursedBreachEntity, Cur
         c.submitCustomGeometry(ps, Glow.ADDITIVE, (pose, buf) -> {
             for (int i = 0; i < seg; i++) {
                 float m = 2.1f + 0.3f * beat;
-                buf.addVertex(pose, ex[i], ey[i], 0).setColor(GLOW[0], GLOW[1], GLOW[2], 0.10f + 0.08f * beat);
-                buf.addVertex(pose, ex[i] * m, ey[i] * 1.35f, 0).setColor(GLOW[0], GLOW[1], GLOW[2], 0f);
-                buf.addVertex(pose, ex[i + 1] * m, ey[i + 1] * 1.35f, 0).setColor(GLOW[0], GLOW[1], GLOW[2], 0f);
-                buf.addVertex(pose, ex[i + 1], ey[i + 1], 0).setColor(GLOW[0], GLOW[1], GLOW[2], 0.10f + 0.08f * beat);
+                buf.addVertex(pose, ex[i], ey[i], 0).setColor(gl[0], gl[1], gl[2], 0.10f + 0.08f * beat);
+                buf.addVertex(pose, ex[i] * m, ey[i] * 1.35f, 0).setColor(gl[0], gl[1], gl[2], 0f);
+                buf.addVertex(pose, ex[i + 1] * m, ey[i + 1] * 1.35f, 0).setColor(gl[0], gl[1], gl[2], 0f);
+                buf.addVertex(pose, ex[i + 1], ey[i + 1], 0).setColor(gl[0], gl[1], gl[2], 0.10f + 0.08f * beat);
             }
         });
         // 2. The black heart, opaque at the centre, its edge a dark crimson.
         c.submitCustomGeometry(ps, INK_TYPE, (pose, buf) -> {
             for (int i = 0; i < seg; i++) {
-                buf.addVertex(pose, 0, 0, 0).setColor(INK[0], INK[1], INK[2], 1f);
-                buf.addVertex(pose, ex[i] * 0.8f, ey[i] * 0.9f, 0).setColor(INK[0], INK[1], INK[2], 0.98f);
-                buf.addVertex(pose, ex[i + 1] * 0.8f, ey[i + 1] * 0.9f, 0).setColor(INK[0], INK[1], INK[2], 0.98f);
-                buf.addVertex(pose, 0, 0, 0).setColor(INK[0], INK[1], INK[2], 1f);
-                buf.addVertex(pose, ex[i] * 0.8f, ey[i] * 0.9f, 0).setColor(INK[0], INK[1], INK[2], 0.98f);
-                buf.addVertex(pose, ex[i], ey[i], 0).setColor(RIM[0], RIM[1], RIM[2], 0.9f);
-                buf.addVertex(pose, ex[i + 1], ey[i + 1], 0).setColor(RIM[0], RIM[1], RIM[2], 0.9f);
-                buf.addVertex(pose, ex[i + 1] * 0.8f, ey[i + 1] * 0.9f, 0).setColor(INK[0], INK[1], INK[2], 0.98f);
+                buf.addVertex(pose, 0, 0, 0).setColor(ink[0], ink[1], ink[2], 1f);
+                buf.addVertex(pose, ex[i] * 0.8f, ey[i] * 0.9f, 0).setColor(ink[0], ink[1], ink[2], 0.98f);
+                buf.addVertex(pose, ex[i + 1] * 0.8f, ey[i + 1] * 0.9f, 0).setColor(ink[0], ink[1], ink[2], 0.98f);
+                buf.addVertex(pose, 0, 0, 0).setColor(ink[0], ink[1], ink[2], 1f);
+                buf.addVertex(pose, ex[i] * 0.8f, ey[i] * 0.9f, 0).setColor(ink[0], ink[1], ink[2], 0.98f);
+                buf.addVertex(pose, ex[i], ey[i], 0).setColor(rm[0], rm[1], rm[2], 0.9f);
+                buf.addVertex(pose, ex[i + 1], ey[i + 1], 0).setColor(rm[0], rm[1], rm[2], 0.9f);
+                buf.addVertex(pose, ex[i + 1] * 0.8f, ey[i + 1] * 0.9f, 0).setColor(ink[0], ink[1], ink[2], 0.98f);
             }
         });
         // 3. The burning rim, just outside the edge (additive), brightest on each pulse.
@@ -111,10 +115,10 @@ public class CursedBreachRenderer extends EntityRenderer<CursedBreachEntity, Cur
         c.submitCustomGeometry(ps, Glow.ADDITIVE, (pose, buf) -> {
             for (int i = 0; i < seg; i++) {
                 float o = 1.18f + 0.05f * beat;
-                buf.addVertex(pose, ex[i] * 0.97f, ey[i] * 0.98f, 0.01f).setColor(GLOW[0], GLOW[1], GLOW[2], rimA);
-                buf.addVertex(pose, ex[i] * o, ey[i] * 1.06f, 0.01f).setColor(GLOW[0], GLOW[1], GLOW[2], 0f);
-                buf.addVertex(pose, ex[i + 1] * o, ey[i + 1] * 1.06f, 0.01f).setColor(GLOW[0], GLOW[1], GLOW[2], 0f);
-                buf.addVertex(pose, ex[i + 1] * 0.97f, ey[i + 1] * 0.98f, 0.01f).setColor(GLOW[0], GLOW[1], GLOW[2], rimA);
+                buf.addVertex(pose, ex[i] * 0.97f, ey[i] * 0.98f, 0.01f).setColor(gl[0], gl[1], gl[2], rimA);
+                buf.addVertex(pose, ex[i] * o, ey[i] * 1.06f, 0.01f).setColor(gl[0], gl[1], gl[2], 0f);
+                buf.addVertex(pose, ex[i + 1] * o, ey[i + 1] * 1.06f, 0.01f).setColor(gl[0], gl[1], gl[2], 0f);
+                buf.addVertex(pose, ex[i + 1] * 0.97f, ey[i + 1] * 0.98f, 0.01f).setColor(gl[0], gl[1], gl[2], rimA);
             }
         });
         // 4. Cracks in the air running out from the edge, re-drawn a few times a second.
@@ -127,10 +131,10 @@ public class CursedBreachRenderer extends EntityRenderer<CursedBreachEntity, Cur
                 float dxn = x0 == 0 ? 0 : Math.signum(x0), ang = (rnd.nextFloat() - 0.5f) * 1.2f;
                 float x1 = x0 + (dxn * Mth.cos(ang)) * len, y1 = y0 + Mth.sin(ang) * len + (y0 > 0 ? 0.1f : -0.1f) * len;
                 float wd = 0.018f, a = (0.35f + 0.4f * beat) * (0.5f + rnd.nextFloat() * 0.5f);
-                buf.addVertex(pose, x0, y0 - wd, 0.02f).setColor(GLOW[0], GLOW[1], GLOW[2], a);
-                buf.addVertex(pose, x1, y1 - wd * 0.3f, 0.02f).setColor(GLOW[0], GLOW[1], GLOW[2], 0f);
-                buf.addVertex(pose, x1, y1 + wd * 0.3f, 0.02f).setColor(GLOW[0], GLOW[1], GLOW[2], 0f);
-                buf.addVertex(pose, x0, y0 + wd, 0.02f).setColor(GLOW[0], GLOW[1], GLOW[2], a);
+                buf.addVertex(pose, x0, y0 - wd, 0.02f).setColor(gl[0], gl[1], gl[2], a);
+                buf.addVertex(pose, x1, y1 - wd * 0.3f, 0.02f).setColor(gl[0], gl[1], gl[2], 0f);
+                buf.addVertex(pose, x1, y1 + wd * 0.3f, 0.02f).setColor(gl[0], gl[1], gl[2], 0f);
+                buf.addVertex(pose, x0, y0 + wd, 0.02f).setColor(gl[0], gl[1], gl[2], a);
             }
         });
         // 5. One thin ring of cursed energy turning slowly round it, tilted.
@@ -138,7 +142,7 @@ public class CursedBreachRenderer extends EntityRenderer<CursedBreachEntity, Cur
         ps.rotate(Axis.ZP.rotationDegrees(18f));
         ps.rotate(Axis.XP.rotationDegrees(78f));
         ps.rotate(Axis.YP.rotationDegrees(t * 1.4f));
-        Glow.ring(c, ps, 0.85f + 0.12f * beat, 0.035f, VIOLET[0], VIOLET[1], VIOLET[2], 0.25f + 0.25f * beat);
+        Glow.ring(c, ps, 0.85f + 0.12f * beat, 0.035f, vi[0], vi[1], vi[2], 0.25f + 0.25f * beat);
         ps.popPose();
         ps.popPose();
         super.submit(s, ps, c, cam);

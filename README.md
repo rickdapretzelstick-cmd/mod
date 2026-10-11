@@ -624,6 +624,46 @@ editing the outputs. Seen only through Cursed Glasses, like the Finger Bearer, a
 - **No cheap healing.** It only mends after 10 s with nothing to fight and no hits.
 - **Waves.** An incident with three or more curses mixes the kinds and sends about three in five at once; the rest
   manifest as reinforcements when one of the first wave is left standing.
+- **Harder to fight, still fair** (`JJKConfig.curses`, per grade). Each grade gets a little more health, damage,
+  aggression (shorter rests), pursuit speed and poise on top of its own scaling (Grade 4 x1.15 health and x1.1
+  damage, up to Special Grade x1.4 and x1.3), so the ladder from Grade 4 to Special Grade stays clear. Hit from out of
+  its sight, a curse turns on you instead of standing there; it hunts where it last saw you for about 8 s before giving
+  up; chasing and getting nowhere, it jumps, re-paths and tries another way round. Its blows never land through a
+  wall. Right after a stagger it can't be staggered again for 2.5 s (no stagger-locking), and pounces, lunges, leaps
+  and flickers are never back to back (a cooldown between gap closers, shortened only a little by aggression). In a
+  realm fight its health scales with the players in it: +30% for each one after the first, at most x1.9.
+
+### Realm fights can't trap anyone
+
+Each realm fight is its own encounter (`EncounterWatch`): its own id, its members, its patch of the void, and only the
+curses it raised itself (never another fight's, a summon, or anything else in the dimension). Timings are in
+`JJKConfig.encounters`.
+
+- **Tracking.** A curse that leaves without dying (removed, sent to another dimension) is dropped from its fight at
+  once; the records are also checked against the world every second, and one missing from loaded ground for three
+  checks in a row is dropped as stale (an unloaded curse is never taken for dead: the arena keeps a margin of ground
+  around it loaded). A spawn that fails is never counted. A held-back wave comes in whenever nothing of the first is
+  left, not only when one dies. The last record going wins the fight, exactly once: rewards and the trip home never
+  happen twice.
+- **Reveal.** With three or fewer curses left and no combat for 20 s (or any number after 40 s), everyone in the fight
+  (and only they) sees how many remain, each one outlined in violet through walls with its distance over it, and a
+  pointer to the nearest on the HUD. During normal fighting the count stays a quiet line at the top of the screen.
+- **Recovery.** A revealed curse that, 20 s later, has gone nowhere for 10 s, isn't fighting anyone and can't path to
+  anyone, or one found in a wall, in lava or off the arena (two checks in a row), is brought back: the same curse with
+  the same health, set down on solid, safe ground inside the arena, at least 7 blocks from every player and within 18
+  of one, in front of a player and in their sight, with a flash and a sound, and 2 s before it may attack. A brief
+  loss of sight, an attack, or players keeping away from a curse that is still moving don't count.
+- **Emergency Return.** If recovery fails three times, or the fight still hasn't moved 100 s after the reveal, a pale
+  breach opens beside each player in it, with a message: the fight has stalled, and leaving abandons it and its
+  rewards. Use it and hold still, unhurt, for 3 s (a hit or a step breaks the channel; the breach stays open). That
+  player goes home (to their respawn point if the saved place is no longer safe) and is struck from the fight's
+  rewards; the others fight on, and when nobody is left the fight closes as abandoned: its curses go, its ground is
+  cleared and the incident can be tried again. Winning normally still sends everyone home on its own.
+- **Disconnects and restarts.** Logging out leaves you in the fight; a fight with nobody in it for a minute closes as
+  abandoned. A restart closes every fight (the incidents reopen); anyone who logs back in inside the realm without a
+  fight to be in is sent home.
+- **Diagnostics.** `[encounters]` lines in the server log: curses that left without dying, stale records, failed
+  spawns, reveals, recoveries (and failures), Emergency Returns and aborted fights.
 
 ### Cursed tools
 
@@ -644,7 +684,7 @@ passives, its own cooldowns.
 - **Rarity**: the starter tools are common (anyone can make as many as they like). Only a cursed **weapon of
   technique-level power is one per world**: so far, the Cursed Rifle.
 
-| Key | Slaughter Demon (from the sword: short, fast) | Cursed Cleaver (from the axe: slow, crushing) | Cursed Rifle (unique: the hunting lodge) |
+| Key | Slaughter Demon (from the iron sword: short, fast) | Cursed Cleaver (from the axe: slow, crushing) | Cursed Rifle (unique: the hunting lodge) |
 |---|---|---|---|
 | 1 | **Quickstep**: dart forward, cutting the first in your path. R during it: **Return Cut** back the way you came | **Heavy Swing** (hold): wind up, release; a full charge breaks guards. R during it: **Whirl** | **Snap Shot**: snapped to the shoulder, fired on the 3rd tick |
 | 2 | **Flurry** (learned): four quick cuts. R: **Rising Flurry** launches | **Shoulder Charge**: drive through, slam into walls | **Aimed Shot** (hold): raise the scope, let it settle, let go |
@@ -667,6 +707,28 @@ Edge, Light Grip, Return Cut, Flurry, Parry, Precision, Rising Flurry, Long Parr
 Thousand Cuts); the Cleaver's Heft, Momentum, Heavy Swing, Splitter, Guard Break, Iron Wall, Whirl, Long Split, Enduring
 Wall, Shockwave and Executioner; the rifle's tree below.
 
+- **Cursed Blade** (from a **netherite sword** in a full Cursed Energy cauldron): a great cleaver of a blade with two
+  round holes through it, a white cloth wrap at its base, black thorns bursting from the guard and a wooden grip. It is
+  held in **both hands** (slung across the back while your technique is in use), and with it drawn your stance changes:
+  a low two-handed guard at rest, the blade carried forward at a walk and swept back at a run. Its M1s are its own heavy
+  two-handed cuts (four-hit chain, air chain, uppercut, down-slam, sprint cut, stomp, charged heavy), stronger and longer
+  than a fist.
+
+  | Key | Move |
+  |---|---|
+  | 1 | **Heavy Slash**: a two-handed diagonal cleave throwing a crimson arc; breaks guards. R during it: **Crimson Cross**, the blade comes straight back across the first cut |
+  | 2 | **Cursed Wave** (learned, hold): charge, let go: a crescent of cursed energy flies out (further the longer you charge), cutting everyone it passes and the grass, leaves and loose blocks in its way (put back like all battle damage); a wall stops it. R: **Twin Wave**, two splayed crescents |
+  | 3 | **Thorn Lunge** (learned): drive forward through everyone in a line; black thorns then erupt under them |
+  | 4 | **Thorn Guard** (learned): the blade raised, thorns bristling: a blow caught in the window is stopped and thorns burst up under the attacker (with Thorn Bloom, everyone near them) |
+  | R | **Rising Cut**: an upward cut that launches |
+  | G | **Black Thorn** (awakening node): the blade raised high and plunged into the ground; rings of black thorns tear outward, launching everything they reach and cratering the ground (restored later) |
+
+  Every move has its own full-body animation (wind-up, strike and recovery, timed to the hit) and its own HUD icon, red
+  arcs and black thorns, played the same for everyone nearby. Its tree (`data/jjk/mastery/tool/cursed_blade.json`): Edge
+  (Keen Edge, Long Reach, Crimson Cross), Wave (Cursed Wave, Far Wave, Twin Wave, the major Crimson Edge), Thorn (Thorn
+  Lunge, Deep Lunge), Guard (Thorn Guard, Thorn Bloom), then **Black Thorn**. Numbers are in `JJKConfig.cursedToolKits`
+  (`cb*`). The model, textures and icons come from `tools/gen_cursed_blade_assets.py` (a Blockbench project of the model
+  is written to `tools/blockbench/cursed_blade.bbmodel`).
 - **Cursed Rifle** (from the hunting lodge, below; **one per world**): a scoped rifle with four folded support arms round
   its barrel. It is a ranged tool for anyone, technique or not, and it **fights only from the Cursed Item slot**: put it
   there and switch to its moveset (with no technique it is simply yours). Held in the hand it is just an item, and use

@@ -91,6 +91,14 @@ public final class InvestigationState {
         int emptyTicks;
         /** Ticks since the last curse fell (the walk home waits a moment). */
         int wonTicks = -1;
+        /** This fight's own id (in its records and the log). */
+        public UUID encounter = UUID.randomUUID();
+        /** Everyone who has fought in it. */
+        final Set<UUID> members = new LinkedHashSet<>();
+        /** Who left it by Emergency Return: the fight is abandoned for them, and they are owed nothing from it. */
+        final Set<UUID> forfeited = new LinkedHashSet<>();
+        /** The encounter watch's working state (a restart ends every fight, so it needn't be saved). */
+        final EncounterWatch.Watch watch = new EncounterWatch.Watch();
 
         Arena(int slot, String incident, String layout, BlockPos origin) {
             this.slot = slot;
@@ -101,6 +109,14 @@ public final class InvestigationState {
 
         public Set<UUID> inside() {
             return Set.copyOf(inside);
+        }
+
+        public Set<UUID> forfeited() {
+            return Set.copyOf(forfeited);
+        }
+
+        public EncounterWatch.Watch watch() {
+            return watch;
         }
     }
 
@@ -242,6 +258,11 @@ public final class InvestigationState {
                 c.putString("Incident", a.incident);
                 c.putString("Layout", a.layout);
                 c.putLong("Origin", a.origin.asLong());
+                c.putLong("EncounterMost", a.encounter.getMostSignificantBits());
+                c.putLong("EncounterLeast", a.encounter.getLeastSignificantBits());
+                ListTag ms = new ListTag();
+                for (UUID m : a.members) ms.add(net.minecraft.nbt.StringTag.valueOf(m.toString()));
+                c.put("Members", ms);
                 as.add(c);
             }
             t.put("Arenas", as);
@@ -302,6 +323,13 @@ public final class InvestigationState {
             for (Tag x : t.getListOrEmpty("Arenas")) {
                 if (!(x instanceof CompoundTag c)) continue;
                 Arena a = new Arena(c.getIntOr("Slot", 0), c.getStringOr("Incident", ""), c.getStringOr("Layout", ""), BlockPos.of(c.getLongOr("Origin", 0L)));
+                if (c.contains("EncounterMost")) a.encounter = new UUID(c.getLongOr("EncounterMost", 0L), c.getLongOr("EncounterLeast", 0L));
+                for (Tag m : c.getListOrEmpty("Members")) {
+                    try {
+                        a.members.add(UUID.fromString(m.asString().orElse("")));
+                    } catch (IllegalArgumentException ignored) {
+                    }
+                }
                 arenas.put(a.slot, a);
             }
             for (Tag x : t.getListOrEmpty("Returns")) {

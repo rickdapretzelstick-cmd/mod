@@ -107,6 +107,22 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     private int calm;
     /** Held back for a later wave: not there yet (unseen, untouchable, still). */
     private boolean dormant;
+    /** Health multiplier for the players fighting it (multiplayer scaling; 1 alone). */
+    private double playerScale = 1.0;
+    /** Its kind's own movement speed, before the grade's pursuit bonus. */
+    private double baseSpeed = -1;
+    /** Ticks after a stagger in which it can't be staggered again. */
+    private int staggerImmune;
+    /** When it last used a gap closer (pounce, lunge, leap, flicker). */
+    private int lastGapAt = -10000;
+    /** Where it last saw its target, and how much longer it keeps hunting there after losing it. */
+    @Nullable private Vec3 lastSeen;
+    private int searchFor;
+    /** Chasing without getting anywhere: where it was, and for how many checks. */
+    @Nullable private Vec3 chaseAnchor;
+    private int chaseStuck;
+    /** Ticks until it may attack, after being brought back into the fight. */
+    private int returnDelay;
 
     protected CommonCurseEntity(EntityType<? extends CommonCurseEntity> type, Level level, CurseGrade grade) {
         super(type, level);
@@ -137,15 +153,47 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     /** The kind's base hit (before the grade). */
     protected abstract float baseDamage();
 
+    private static dev.rick.jjk.config.JJKConfig.Curses tuning() {
+        return dev.rick.jjk.config.JJKConfig.get().curses;
+    }
+
+    /** Its max health at its grade, tuning and player scaling. */
+    private double gradedHealth(CurseGrade g) {
+        var t = tuning();
+        return baseHealth() * g.health * t.at(t.health, g.rank()) * playerScale;
+    }
+
     /** Sets the grade and rescales health to it (full health). */
     public void setGrade(CurseGrade g) {
         grade = g;
         entityData.set(GRADE, (byte) g.rank());
         AttributeInstance hp = getAttribute(Attributes.MAX_HEALTH);
-        if (hp != null) hp.setBaseValue(baseHealth() * g.health);
+        if (hp != null) hp.setBaseValue(gradedHealth(g));
+        AttributeInstance speed = getAttribute(Attributes.MOVEMENT_SPEED);
+        if (speed != null) {
+            if (baseSpeed < 0) baseSpeed = speed.getBaseValue();
+            speed.setBaseValue(baseSpeed * tuning().at(tuning().speed, g.rank()));
+        }
         setHealth(getMaxHealth());
         xpReward = 3 + g.rank() * 4;
         graded = true;
+    }
+
+    /**
+     * Scales it for the number of players fighting it (1 alone): its max health changes, the share of health it has
+     * left doesn't (a second player arriving mid-fight doesn't heal it).
+     */
+    public void setPlayerScale(double scale) {
+        if (Math.abs(scale - playerScale) < 1e-3) return;
+        float frac = getMaxHealth() > 0 ? getHealth() / getMaxHealth() : 1f;
+        playerScale = scale;
+        AttributeInstance hp = getAttribute(Attributes.MAX_HEALTH);
+        if (hp != null) hp.setBaseValue(gradedHealth(grade));
+        setHealth(Math.max(1f, getMaxHealth() * frac));
+    }
+
+    public double playerScale() {
+        return playerScale;
     }
 
     /** Ties it to an investigation and a place: it stays within {@code radius} of {@code at}, and doesn't despawn. */
@@ -168,12 +216,13 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
 
     /** Damage of one of its hits at its grade. */
     protected float dmg(float scale) {
-        return baseDamage() * scale * grade.damage;
+        return (float) (baseDamage() * scale * grade.damage * tuning().at(tuning().damage, grade.rank()));
     }
 
     /** A rest between actions, shortened by the grade's aggression. */
     protected void rest(int ticks) {
-        restTicks = Math.max(restTicks, Math.round(ticks / grade.aggression) + getRandom().nextInt(8));
+        double aggression = grade.aggression * tuning().at(tuning().aggression, grade.rank());
+        restTicks = Math.max(restTicks, (int) Math.round(ticks / aggression) + getRandom().nextInt(8));
     }
 
     public int action() {
@@ -199,7 +248,8 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
 
     /** How much damage in a short time breaks its poise. */
     protected float maxPoise() {
-        return (float) (baseHealth() * curseGrade().health * 0.4);
+        CurseGrade g = curseGrade();
+        return (float) (baseHealth() * g.health * 0.4 * tuning().at(tuning().poise, g.rank()));
     }
 
     /** Damage taken while exposed or staggered, as a multiple. */
@@ -307,6 +357,38 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         return true;
     }
 
+    /**
+     * Whether a gap closer (pounce, lunge, leap, flicker) is ready: never two back to back, however aggressive the grade,
+     * so its prey always gets a moment to recover and answer between them.
+     */
+    protected boolean gapReady() {
+        double aggression = grade.aggression * tuning().at(tuning().aggression, grade.rank());
+        return tickCount - lastGapAt >= tuning().gapCloserCooldown / aggression;
+    }
+
+    /** A gap closer has started (see {@link #gapReady()}). */
+    protected void gapUsed() {
+        lastGapAt = tickCount;
+    }
+
+    /**
+     * Brought back into the fight by its encounter (it was stuck somewhere it couldn't get out of): whatever it was doing
+     * is dropped, and it waits {@code delay} ticks before it may attack, so its return can't be an unavoidable hit.
+     */
+    public void returnedToFight(int delay) {
+        if (action != STAGGERED) {
+            action = 0;
+            actionTicks = 0;
+            struck.clear();
+        }
+        getNavigation().stop();
+        setDeltaMovement(Vec3.ZERO);
+        returnDelay = Math.max(returnDelay, delay);
+        restTicks = Math.max(restTicks, delay);
+        chaseAnchor = null;
+        chaseStuck = 0;
+    }
+
     /** The floor marking of a straight attack, from its feet along {@code path}, for {@code ticks}. */
     protected void warnLine(ServerLevel level, Vec3 path, int ticks) {
         fx(level, "curse_warn_line", position().add(0, 0.05, 0), path, ticks);
@@ -372,19 +454,38 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
             return;
         }
         if (restTicks > 0) restTicks--;
+        if (staggerImmune > 0) staggerImmune--;
+        if (returnDelay > 0) returnDelay--;
         LivingEntity target = validTarget(level);
         calm = target != null || sinceHit < 2 ? 0 : calm + 1;
         if (action == STAGGERED) {
             actionTicks++;
             setDeltaMovement(getDeltaMovement().multiply(0.7, 1, 0.7));
-            if (actionTicks >= STAGGER_TICKS) finishAction(12);
+            if (actionTicks >= STAGGER_TICKS) {
+                finishAction(12);
+                staggerImmune = tuning().staggerImmunityTicks;
+            }
         } else if (action != 0) {
             actionTicks++;
             tickAction(level, target);
         } else if (target == null) {
-            wander(level);
+            if (searchFor > 0 && lastSeen != null) {
+                // Lost sight of its prey: it hunts where it saw them last before giving up.
+                searchFor--;
+                if (position().distanceToSqr(lastSeen) < 2.25) searchFor = Math.min(searchFor, 20);
+                walkTo(lastSeen, 1.1);
+            } else {
+                wander(level);
+            }
         } else if (!Combat.actionsLocked(this)) {
-            fight(level, target, distanceTo(target));
+            if (returnDelay > 0) {
+                // Just brought back: it finds its footing and faces them before it may attack.
+                turnToward(target.position(), 10f);
+                getNavigation().stop();
+            } else {
+                fight(level, target, distanceTo(target));
+                unstick(target);
+            }
         }
         if (entityData.get(ACTION) != (byte) action) entityData.set(ACTION, (byte) action);
         syncFlags();
@@ -435,6 +536,39 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         }
     }
 
+    /**
+     * Chasing and getting nowhere (a ledge, a corner, a doorway it can't path through): it jumps and re-paths, and if
+     * that doesn't help, tries another way round. Checked once a second while it isn't in the middle of an action.
+     */
+    private void unstick(LivingEntity target) {
+        if (action != 0 || tickCount % 20 != 0) return;
+        if (distanceTo(target) < 3.5 || isNoGravity()) {
+            chaseAnchor = position();
+            chaseStuck = 0;
+            return;
+        }
+        if (chaseAnchor != null && position().distanceToSqr(chaseAnchor) < 0.36) {
+            chaseStuck++;
+            if (chaseStuck == 2) {
+                if (onGround()) jumpFromGround();
+                getNavigation().stop();
+                repath = 0;
+                getNavigation().moveTo(target, 1.2);
+            } else if (chaseStuck >= 4) {
+                // Another way round: a spot off to one side of the line to its prey.
+                Vec3 to = flatDir(target.position());
+                Vec3 side = new Vec3(-to.z, 0, to.x).scale(getRandom().nextBoolean() ? 4 : -4);
+                Vec3 spot = position().add(side).add(to.scale(2));
+                getNavigation().moveTo(spot.x, spot.y, spot.z, 1.2);
+                repath = 30;
+                chaseStuck = 0;
+            }
+        } else {
+            chaseStuck = 0;
+        }
+        chaseAnchor = position();
+    }
+
     @Nullable
     private LivingEntity validTarget(ServerLevel level) {
         LivingEntity t = getTarget();
@@ -444,9 +578,12 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
                 t = null;
             } else if (hasLineOfSight(t)) {
                 unseen = 0;
+                lastSeen = t.position();
+                searchFor = 0;
             } else if (++unseen > 120) {
                 setTarget(null);
                 t = null;
+                if (lastSeen != null) searchFor = tuning().searchTicks;
             }
         }
         if (t == null && tickCount % 10 == 0) t = acquire(level);
@@ -493,11 +630,20 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         }
     }
 
-    /** Lands one hit, once per target per action. */
+    /** Lands one hit, once per target per action (never through a wall). */
     @Nullable
     protected HitResult strike(LivingEntity target, Hit.Builder hit) {
-        if (!struck.add(target.getUUID()) || !Targeting.canTarget(this, target)) return null;
-        return HitResolver.resolve(hit.noComboScaling().build(), target);
+        if (struck.contains(target.getUUID()) || !Targeting.canTarget(this, target)) return null;
+        Hit h = hit.noComboScaling().build();
+        if (tuning().blockedByWalls && !reachable(h.origin, target)) return null;
+        struck.add(target.getUUID());
+        return HitResolver.resolve(h, target);
+    }
+
+    /** Whether a blow from {@code origin} can reach {@code target}: nothing solid between them. */
+    private boolean reachable(Vec3 origin, LivingEntity target) {
+        Vec3 from = origin.distanceToSqr(position()) < 1e-4 ? getEyePosition() : origin;
+        return dev.rick.jjk.core.hitbox.HitboxQuery.hasLineOfSight(level(), from, target) || hasLineOfSight(target);
     }
 
     // --- Facing ---
@@ -562,7 +708,9 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
                 }
                 sinceHit = 0;
                 if (poise < 0) poise = maxPoise();
-                poise = Math.max(0, poise - lost);
+                // Just out of a stagger: it can't be broken again at once (no stagger-locking it to death).
+                poise = Math.max(staggerImmune > 0 ? 1 : 0, poise - lost);
+                retaliate(level, by);
                 if (poise <= 0 && action != STAGGERED && !armored(action)) {
                     stagger(level, by);
                 } else if (action == 0) {
@@ -572,6 +720,22 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
             }
         }
         return hurt;
+    }
+
+    /**
+     * Hit by someone it isn't fighting (from out of its sight, or while it chased someone else far off): it turns on
+     * them. A curse never just stands there being hit.
+     */
+    private void retaliate(ServerLevel level, @Nullable Entity by) {
+        if (!(by instanceof LivingEntity attacker) || attacker == this || attacker == getTarget()) return;
+        if (attacker instanceof CommonCurseEntity || !stillValid(level, attacker)) return;
+        LivingEntity t = getTarget();
+        if (t == null || !hasLineOfSight(t) || distanceTo(t) > distanceTo(attacker) + 6) {
+            setTarget(attacker);
+            unseen = 0;
+            lastSeen = attacker.position();
+            searchFor = 0;
+        }
     }
 
     /** Awakening meter paid for the first hit into an opening. */
@@ -595,12 +759,17 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         if (Combat.has(this, CombatStatus.HITSTUN) && tickCount % 20 == 0) Combat.state(this).remove(CombatStatus.HITSTUN);
     }
 
-    /** Bound to an incident whose arena isn't here (or isn't open any more). */
+    /**
+     * Bound to an incident whose arena isn't open any more, or not one of the curses its fight raised (one left over
+     * from an earlier attempt). One of the fight's own curses that has strayed out past the arena's edge is not an
+     * orphan: the encounter brings it back ({@code EncounterWatch}).
+     */
     private boolean orphaned() {
-        var arena = dev.rick.jjk.progression.investigation.CursedRealms.arenaHere(this);
-        if (arena == null || !arena.incident.equals(incident) || level().getServer() == null) return true;
-        // Its incident's arena, but not one of the curses this fight raised (one left over from an earlier attempt).
-        var in = dev.rick.jjk.progression.investigation.InvestigationState.get(level().getServer()).incidents().get(incident);
+        var server = level().getServer();
+        if (server == null || !dev.rick.jjk.progression.investigation.CursedRealms.inRealm(this)) return true;
+        var st = dev.rick.jjk.progression.investigation.InvestigationState.get(server);
+        if (dev.rick.jjk.progression.investigation.CursedRealms.arenaOf(st, incident) == null) return true;
+        var in = st.incidents().get(incident);
         return in == null || !in.curses().contains(getUUID());
     }
 
@@ -663,6 +832,7 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         if (home != null) out.store("JjkHome", BlockPos.CODEC, home);
         out.putInt("JjkHomeRadius", homeRadius);
         out.putBoolean("JjkDormant", dormant);
+        out.putDouble("JjkPlayerScale", playerScale);
     }
 
     @Override
@@ -678,5 +848,6 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         home = in.read("JjkHome", BlockPos.CODEC).orElse(null);
         homeRadius = in.getIntOr("JjkHomeRadius", 16);
         setDormant(in.getBooleanOr("JjkDormant", false));
+        playerScale = in.getDoubleOr("JjkPlayerScale", 1.0);
     }
 }

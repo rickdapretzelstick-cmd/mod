@@ -111,6 +111,7 @@ public final class Investigations {
             }
             return net.minecraft.world.InteractionResult.PASS;
         });
+        EncounterWatch.init();
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> rejoin(handler.player));
         // Logging out mid-pull: set down somewhere safe, not left hanging where the pull caught them.
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> CursedRealms.cancelPull(handler.player));
@@ -441,9 +442,11 @@ public final class Investigations {
             c.setYRot(r.nextFloat() * 360f);
             c.bind(in.id, origin, radius);
             if (n >= firstWave) c.setDormant(true);
-            level.addFreshEntity(c);
-            in.curses.add(c.getUUID());
+            // Only a curse that is really there counts toward the fight (a refused spawn would leave it unwinnable).
+            if (level.addFreshEntity(c)) in.curses.add(c.getUUID());
+            else JJK.LOGGER.warn("[encounters] incident {}: a {} could not be spawned; it is not counted", in.id, c.curseKind());
         }
+        if (in.curses.isEmpty() && !all.isEmpty()) JJK.LOGGER.warn("[encounters] incident {}: none of its curses could be spawned", in.id);
         in.objectiveTarget = null;
         in.objectiveBy = null;
         if (t.objective() == IncidentTemplate.Objective.DESIGNATED && !all.isEmpty()) {
@@ -553,6 +556,40 @@ public final class Investigations {
         else if (c.level() instanceof ServerLevel level) reinforce(level, in);
     }
 
+    /**
+     * A contract's curse records changed without a kill (the encounter watch dropped a stale or departed record):
+     * whether it is now done depends on its objective. A designated curse or guardian that is gone counts as its objective
+     * met; an anchor contract is done only when its anchor is; an infestation when no record is left.
+     */
+    static void recordsChanged(MinecraftServer server, Incident in, InvestigationState st, @Nullable UUID lost) {
+        if (in.state != Incident.State.ACTIVE) return;
+        IncidentTemplate t = in.def();
+        IncidentTemplate.Objective obj = t == null ? IncidentTemplate.Objective.INFESTATION : t.objective();
+        switch (obj) {
+            case DESIGNATED, GUARDIAN -> {
+                if (in.objectiveTarget != null && (in.objectiveTarget.equals(lost) || !in.curses.contains(in.objectiveTarget))) {
+                    objectiveMet(server, in, st, null);
+                    return;
+                }
+            }
+            case ANCHOR -> {
+                Entity anchor = in.objectiveTarget == null ? null : curseEntity(server, in.objectiveTarget);
+                if (in.objectiveTarget == null || in.objectiveTarget.equals(lost)) {
+                    objectiveMet(server, in, st, null);
+                    return;
+                }
+                if (anchor == null || !anchor.isAlive()) return;
+            }
+            default -> {
+                if (in.curses.isEmpty()) {
+                    complete(server, in, st);
+                    return;
+                }
+            }
+        }
+        reinforce(CursedRealms.level(server), in);
+    }
+
     /** With at most one of the first wave left standing, the waiting curses come in. */
     static void reinforce(ServerLevel level, Incident in) {
         List<CommonCurseEntity> waiting = new java.util.ArrayList<>();
@@ -569,7 +606,12 @@ public final class Investigations {
 
     /** Everyone who took part gets the investigation bonus; the village hears it's over. */
     static void complete(MinecraftServer server, Incident in, InvestigationState st) {
+        // Once: a duplicate (two curses' last records dropped together, a death and a stale check at once) pays nothing.
+        if (in.state == Incident.State.COMPLETE) return;
         in.state = Incident.State.COMPLETE;
+        // Anyone who left by Emergency Return abandoned the fight: no completion rewards for them.
+        InvestigationState.Arena arena = CursedRealms.arenaOf(st, in.id);
+        if (arena != null) in.participants.removeAll(arena.forfeited);
         in.changedAt = server.overworld().getGameTime();
         st.markDirty();
         CurseGrade g = in.grade;

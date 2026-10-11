@@ -23,6 +23,12 @@ public abstract class MinecraftMixin {
         }
     }
 
+    /** A realm fight's revealed curses are outlined through walls, for the players in that fight only. */
+    @Inject(method = "shouldEntityAppearGlowing", at = @At("HEAD"), cancellable = true)
+    private void jjk$revealed(net.minecraft.world.entity.Entity e, CallbackInfoReturnable<Boolean> cir) {
+        if (dev.rick.jjk.client.hud.EncounterHud.revealed(e)) cir.setReturnValue(true);
+    }
+
     /** Holding left click charges a heavy; it must never mine blocks. */
     @Inject(method = "continueAttack", at = @At("HEAD"), cancellable = true)
     private void jjk$continueAttack(boolean down, CallbackInfo ci) {

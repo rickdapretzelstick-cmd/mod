@@ -49,6 +49,8 @@ public final class ProgressionItems {
             new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
 
     public static final Item CURSED_RIFLE = tool(dev.rick.jjk.progression.tool.CursedTools.CURSED_RIFLE, Rarity.EPIC);
+    /** A netherite sword steeped in a full cauldron of cursed energy. */
+    public static final Item CURSED_BLADE = tool(dev.rick.jjk.progression.tool.CursedTools.CURSED_BLADE, Rarity.EPIC);
 
     // --- Character storylines (see progression.story): Essence -> object -> infused relic (one per world) ---
 
@@ -150,6 +152,7 @@ public final class ProgressionItems {
             e.accept(SLAUGHTER_DEMON);
             e.accept(CURSED_CLEAVER);
             e.accept(CURSED_RIFLE);
+            e.accept(CURSED_BLADE);
         });
     }
 }

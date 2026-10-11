@@ -96,8 +96,9 @@ public class SchoolCrawlerEntity extends CommonCurseEntity {
                 sound(level, SoundEvents.SPIDER_AMBIENT, 1f, 1.3f);
                 return;
             }
-            if (d >= 3.5 && d <= 9 && hasLineOfSight(target)) {
+            if (d >= 3.5 && d <= 9 && hasLineOfSight(target) && gapReady()) {
                 chained = false;
+                gapUsed();
                 startWindup(level, target, POUNCE_WINDUP_TICKS, getRandom().nextFloat() < feintChance());
                 return;
             }
