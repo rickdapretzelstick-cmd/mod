@@ -66,7 +66,7 @@ public final class TrainingScenes {
         @Override
         protected void build() {
             for (int x = -2; x <= 2; x++) for (int z = -2; z <= 3; z++) if (x != 0 || z != 0) block(x, 0, z, Blocks.CARPET.gray().defaultBlockState());
-            block(0, 0, 0, Blocks.DARK_OAK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.SOUTH));
+            block(0, 0, 0, Blocks.DARK_OAK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.NORTH));
             block(0, 0, -1, Blocks.DARK_OAK_PLANKS.defaultBlockState());
             block(0, 1, -1, Blocks.DARK_OAK_TRAPDOOR.defaultBlockState());
             // The television: a black frame on a low cabinet, its screen facing the chair.
@@ -75,9 +75,10 @@ public final class TrainingScenes {
                 for (int y = 1; y <= 4; y++) block(x, y, 5, Blocks.CONCRETE.black().defaultBlockState());
                 block(x, 1, 6, Blocks.CONCRETE.black().defaultBlockState());
             }
-            light(0, 2, 4, 9);
-            light(-3, 2, -2, 2);
-            light(3, 2, -2, 2);
+            light(0, 2, 4, 14);
+            light(-3, 2, -2, 6);
+            light(3, 2, -2, 6);
+            light(-2, 2, 2, 6);
             seat = display(Blocks.AIR.defaultBlockState(), rel(0, 0.32, 0.05), 1f, false);
             ArmorStand d = new ArmorStand(net.minecraft.world.entity.EntityTypes.ARMOR_STAND, realm);
             d.getEntityData().set(ArmorStand.DATA_CLIENT_FLAGS,
@@ -108,12 +109,12 @@ public final class TrainingScenes {
 
         @Override
         Vec3 camera() {
-            return new Vec3(-4.6, 1.75, 2.1);
+            return new Vec3(-5.2, 1.55, 2.2);
         }
 
         @Override
         Vec3 look() {
-            return new Vec3(0.2, 0.75, 2.4);
+            return new Vec3(0.2, 1.15, 2.3);
         }
 
         @Override
@@ -186,7 +187,7 @@ public final class TrainingScenes {
         @Override
         void active(ServerPlayer p, int tick, double clock, int misses) {
             int ph = phase(clock);
-            if (tick % 20 == 1) lighting(ph == 1 ? 2 : ph == 2 ? 3 : 5);
+            if (tick % 20 == 1) lighting(ph == 1 ? 6 : ph == 2 ? 7 : 9);
             if (tick % 40 == 1) sound(p, SoundEvents.BEACON_AMBIENT, 0.25f, 0.55f);
             // The disturbance is over once its check is decided: the screen calms.
             if (disturbedCheck >= 0 && session.eval.result(disturbedCheck) >= 0 && session.eval.result(disturbedCheck) != TrainingCheck.HOLDING) {
@@ -317,12 +318,12 @@ public final class TrainingScenes {
 
         @Override
         Vec3 camera() {
-            return new Vec3(3.0, 2.0, 4.8);
+            return new Vec3(2.6, 1.7, 4.4);
         }
 
         @Override
         Vec3 look() {
-            return new Vec3(-0.25, 1.3, 1.2);
+            return new Vec3(-0.3, 1.35, 1.0);
         }
 
         @Override
@@ -371,7 +372,7 @@ public final class TrainingScenes {
         void active(ServerPlayer p, int tick, double clock, int misses) {
             clockTick++;
             int ph = phase(clock);
-            if (tick % 20 == 1) lighting(ph == 1 ? 10 : ph == 2 ? 12 : 14);
+            if (tick % 20 == 1) lighting(ph == 1 ? 13 : ph == 2 ? 14 : 15);
             for (int i = 0; i < 3; i++) {
                 wobble[i] *= 0.9;
                 shown[i] += (progress[i] - shown[i]) * 0.15;
@@ -476,19 +477,19 @@ public final class TrainingScenes {
             block(3, 0, -3, Blocks.AMETHYST_CLUSTER.defaultBlockState());
             block(-3, 0, 3, Blocks.AMETHYST_CLUSTER.defaultBlockState());
             block(3, 0, 3, Blocks.AMETHYST_CLUSTER.defaultBlockState());
-            light(-2, 2, 2, 6);
-            light(2, 2, 2, 6);
-            light(0, 2, -3, 5);
+            light(-2, 2, 2, 9);
+            light(2, 2, 2, 9);
+            light(0, 2, -3, 8);
         }
 
         @Override
         Vec3 camera() {
-            return new Vec3(2.7, 1.9, 3.9);
+            return new Vec3(2.4, 1.6, 4.2);
         }
 
         @Override
         Vec3 look() {
-            return new Vec3(0.2, 1.25, -0.7);
+            return new Vec3(0.1, 1.45, -0.6);
         }
 
         @Override
@@ -529,7 +530,7 @@ public final class TrainingScenes {
         @Override
         void active(ServerPlayer p, int tick, double clock, int misses) {
             int ph = phase(clock);
-            if (tick % 20 == 1) lighting(ph == 1 ? 4 : ph == 2 ? 7 : 10);
+            if (tick % 20 == 1) lighting(ph == 1 ? 8 : ph == 2 ? 10 : 12);
             Vec3[] b = blade();
             if (flicker > 0) {
                 flicker--;
@@ -634,9 +635,9 @@ public final class TrainingScenes {
                 block(-2, 0, z, Blocks.POLISHED_ANDESITE_SLAB.defaultBlockState());
                 block(2, 0, z, Blocks.POLISHED_ANDESITE_SLAB.defaultBlockState());
             }
-            light(-2, 2, 0, 6);
-            light(2, 2, 6, 6);
-            light(0, 3, 10, 6);
+            light(-2, 2, 0, 9);
+            light(2, 2, 6, 9);
+            light(0, 3, 10, 9);
             target(true);
         }
 
@@ -653,12 +654,12 @@ public final class TrainingScenes {
 
         @Override
         Vec3 camera() {
-            return new Vec3(-3.1, 2.3, -2.7);
+            return new Vec3(-2.4, 1.9, -3.4);
         }
 
         @Override
         Vec3 look() {
-            return new Vec3(0.3, 1.3, 4.6);
+            return new Vec3(0.5, 1.25, 4.0);
         }
 
         @Override
@@ -687,7 +688,7 @@ public final class TrainingScenes {
         @Override
         void active(ServerPlayer p, int tick, double clock, int misses) {
             int ph = phase(clock);
-            if (tick % 20 == 1) lighting(ph == 1 ? 5 : ph == 2 ? 8 : 12);
+            if (tick % 20 == 1) lighting(ph == 1 ? 8 : ph == 2 ? 10 : 13);
             if (tick == 1) Fx.play(realm, "granite_charge", head(p), p.getLookAngle(), 0f, p.getId());
             double done = session.eval.checks().isEmpty() ? 0 : session.eval.successes() / (double) session.eval.checks().size();
             target = 0.15 + 0.3 * clock / session.cfg.durationMs + 0.55 * done;
@@ -775,7 +776,7 @@ public final class TrainingScenes {
                 Blocks.DIAMOND_BLOCK.defaultBlockState(), Blocks.REDSTONE_BLOCK.defaultBlockState(), Blocks.LAPIS_BLOCK.defaultBlockState(),
                 Blocks.AMETHYST_BLOCK.defaultBlockState()};
         private static final int SEVEN = 0;
-        private static final int[] RX = {-3, 0, 3}, RZ = {4, 5, 4};
+        private static final int[] RX = {-4, 0, 4}, RZ = {5, 6, 5};
         private static final float[] SCALE = {0.5f, 0.56f, 0.63f, 0.67f, 0.75f, 0.84f, 0.94f, 1f};
         private final int[][] reel = new int[3][3];
         private final boolean[] spinning = new boolean[3];
@@ -797,25 +798,24 @@ public final class TrainingScenes {
                 }
                 block(x, 0, z, Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
                 block(x, 4, z, Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState());
-                for (int y = 1; y <= 3; y += 2) {
-                    block(x - 1, y, z - 1, Blocks.REDSTONE_LAMP.defaultBlockState());
-                    block(x + 1, y, z - 1, Blocks.REDSTONE_LAMP.defaultBlockState());
-                }
+                block(x - 1, 5, z, Blocks.REDSTONE_LAMP.defaultBlockState());
+                block(x, 5, z, Blocks.REDSTONE_LAMP.defaultBlockState());
+                block(x + 1, 5, z, Blocks.REDSTONE_LAMP.defaultBlockState());
             }
             for (int z = 0; z <= 3; z++) block(0, 0, z, Blocks.CARPET.red().defaultBlockState());
-            light(-2, 3, 2, 6);
-            light(2, 3, 2, 6);
-            light(0, 3, 3, 6);
+            light(-2, 3, 2, 9);
+            light(2, 3, 2, 9);
+            light(0, 3, 3, 9);
         }
 
         @Override
         Vec3 camera() {
-            return new Vec3(1.5, 3.1, -4.4);
+            return new Vec3(-2.3, 1.9, -6.2);
         }
 
         @Override
         Vec3 look() {
-            return new Vec3(0, 1.9, 3.2);
+            return new Vec3(0.3, 1.9, 3.6);
         }
 
         @Override
@@ -840,12 +840,10 @@ public final class TrainingScenes {
         private void lamps(int pattern) {
             int n = 0;
             for (int i = 0; i < 3; i++) {
-                for (int y = 1; y <= 3; y += 2) {
-                    for (int dx = -1; dx <= 1; dx += 2) {
-                        boolean on = pattern == 2 || pattern == 1 && (n + beat) % 2 == 0 || pattern == 3 && (n + beat) % 3 == 0;
-                        block(RX[i] + dx, y, RZ[i] - 1, Blocks.REDSTONE_LAMP.defaultBlockState().setValue(RedstoneLampBlock.LIT, on));
-                        n++;
-                    }
+                for (int dx = -1; dx <= 1; dx++) {
+                    boolean on = pattern == 2 || pattern == 1 && (n + beat) % 2 == 0 || pattern == 3 && (n + beat) % 3 == 0;
+                    block(RX[i] + dx, 5, RZ[i], Blocks.REDSTONE_LAMP.defaultBlockState().setValue(RedstoneLampBlock.LIT, on));
+                    n++;
                 }
             }
         }
@@ -886,7 +884,7 @@ public final class TrainingScenes {
         @Override
         void active(ServerPlayer p, int tick, double clock, int misses) {
             int ph = phase(clock);
-            if (tick % 20 == 1) lighting(ph == 1 ? 6 : ph == 2 ? 10 : 14);
+            if (tick % 20 == 1) lighting(ph == 1 ? 9 : ph == 2 ? 12 : 15);
             if (tick % 2 == 0) {
                 for (int i = 0; i < 3; i++) {
                     if (slip[i] > 0 && --slip[i] == 0) spinning[i] = true;

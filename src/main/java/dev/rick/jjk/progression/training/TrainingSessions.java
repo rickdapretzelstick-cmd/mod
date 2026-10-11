@@ -208,6 +208,9 @@ public final class TrainingSessions {
         InvestigationState st = InvestigationState.get(server);
         s.arena = CursedRealms.enterTrial(p, s.key, TrainingRoom.ID, st);
         s.arrived = true;
+        // The training's own intro replaces the realm's slow fade in.
+        p.removeEffect(net.minecraft.world.effect.MobEffects.DARKNESS);
+        p.removeEffect(net.minecraft.world.effect.MobEffects.BLINDNESS);
         ServerLevel realm = CursedRealms.level(server);
         s.scene = TrainingScenes.create(s);
         s.scene.setup(realm, s.arena.origin);

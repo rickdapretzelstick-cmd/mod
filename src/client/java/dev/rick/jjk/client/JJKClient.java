@@ -98,7 +98,7 @@ public class JJKClient implements ClientModInitializer {
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.ARMOR_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.AIR_BAR,
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.INFO_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.EXPERIENCE_LEVEL,
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HELD_ITEM_TOOLTIP, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MOUNT_HEALTH,
-                net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MOB_EFFECTS)) {
+                net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MOB_EFFECTS, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.OVERLAY_MESSAGE)) {
             HudElementRegistry.replaceElement(id, vanilla -> (g, delta) -> {
                 if (!dev.rick.jjk.client.training.TrainingClient.active()) vanilla.extractRenderState(g, delta);
             });

@@ -33,7 +33,7 @@ public final class TrainingHud {
         double t = a.clock;
         // About 120 px per circle on a 1080p screen at its usual GUI scale, scaling with the GUI scale.
         int r = 15, gap = 30;
-        int cy = h - 40 - r;
+        int cy = h - 34 - r;
         int[] cx = {w / 2 - 2 * r - gap, w / 2, w / 2 + 2 * r + gap};
         boolean live = a.state == TrainingNet.ACTIVE;
         boolean shown = a.state == TrainingNet.INTRO || live || a.state == TrainingNet.FAILURE && a.stateSeconds() < 2.2;
@@ -43,12 +43,12 @@ public final class TrainingHud {
         if (a.state == TrainingNet.FAILURE) title(g, font, w, h, "✘ FAILED", a.start.maxMisses() + " mistakes", MISS);
         if (!shown) return;
 
-        // Phase, time left, mistakes.
-        int top = cy - r - 30;
+        // Phase, time left, mistakes: one line under the row.
+        int top = cy + r + 18;
         int phase = TrainingSchedule.phase(cfgPhase(a), Math.max(0, t));
         double left = Mth.clamp((a.start.durationMs() - Math.max(0, t)) / 1000.0, 0, a.start.durationMs() / 1000.0);
         String head = a.state == TrainingNet.INTRO ? "GET READY" : "PHASE " + phase + " / 3";
-        g.centeredText(font, head, w / 2, top - 11, 0xFFE0E6F0);
+        g.text(font, head, w / 2 - 75 - font.width(head) - 10 - a.start.maxMisses() * 9 - 6, top - 3, 0xFFE0E6F0, true);
         int bw = 150, bx = w / 2 - bw / 2;
         g.fill(bx - 1, top - 1, bx + bw + 1, top + 4, 0xC0000000);
         g.fill(bx, top, bx + (int) Math.round(bw * left / (a.start.durationMs() / 1000.0)), top + 3, 0xFFB8C8E0);

@@ -42,6 +42,8 @@ public final class TrainingClient {
         public final double[] lastAt = new double[3];
         /** Per gauge: down (as far as this client reported). */
         public final boolean[] down = new boolean[3];
+        /** The Retry/Leave screen has been shown for this failure (it isn't forced open again). */
+        boolean offeredRetry;
 
         Attempt(TrainingNet.Start start) {
             this.start = start;
@@ -132,7 +134,9 @@ public final class TrainingClient {
         if (a.state != s.state()) {
             a.state = s.state();
             a.stateSince = System.nanoTime();
+            a.offeredRetry = false;
             if (s.state() != TrainingNet.ACTIVE) releaseAll(a);
+            if (s.state() != TrainingNet.FAILURE && s.state() != TrainingNet.SYNC_LOST && mc.gui.screen() instanceof TrainingScreens.ResultScreen) mc.gui.setScreen(null);
             if (s.state() == TrainingNet.SYNC_LOST) mc.gui.setScreen(new TrainingScreens.ResultScreen(true));
         }
         a.misses = s.misses();
@@ -276,7 +280,8 @@ public final class TrainingClient {
         if (a.state == TrainingNet.ACTIVE) {
             for (TrainingEvaluator.Outcome o : a.eval.expire(a.clock - 60)) predict(a, o, a.clock);
         }
-        if (a.state == TrainingNet.FAILURE && a.stateSeconds() > 2.0 && !(mc.gui.screen() instanceof TrainingScreens.ResultScreen) && mc.gui.screen() == null) {
+        if (a.state == TrainingNet.FAILURE && a.stateSeconds() > 2.0 && !a.offeredRetry && mc.gui.screen() == null) {
+            a.offeredRetry = true;
             mc.gui.setScreen(new TrainingScreens.ResultScreen(false));
         }
         // Nothing heard for a long while (the server lost the session): let go here too.
