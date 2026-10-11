@@ -141,11 +141,14 @@ public class VeiledBrideEntity extends CommonCurseEntity {
         Vec3 back = new Vec3(-look.x, 0, -look.z);
         if (back.lengthSqr() < 1e-4) back = flatDir(target.position());
         back = back.normalize();
-        for (double k : new double[] {BEHIND, BEHIND - 0.8, BEHIND + 0.8}) {
-            Vec3 at = target.position().add(back.scale(k));
-            BlockPos p = BlockPos.containing(at);
-            if (level.noCollision(this, getBoundingBox().move(at.subtract(position())))
-                    && !level.getBlockState(p.below()).getCollisionShape(level, p.below()).isEmpty()) return at;
+        // Behind where they face, or else on the far side of them from where it stood.
+        for (Vec3 dir : new Vec3[] {back, flatDir(target.position())}) {
+            for (double k : new double[] {BEHIND, BEHIND - 0.8, BEHIND + 0.8}) {
+                Vec3 at = target.position().add(dir.scale(k));
+                BlockPos p = BlockPos.containing(at);
+                if (level.noCollision(this, getBoundingBox().move(at.subtract(position())))
+                        && !level.getBlockState(p.below()).getCollisionShape(level, p.below()).isEmpty()) return at;
+            }
         }
         return null;
     }

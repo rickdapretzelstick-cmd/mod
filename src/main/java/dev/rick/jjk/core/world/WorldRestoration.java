@@ -176,6 +176,21 @@ public final class WorldRestoration {
         return JJKConfig.get().restoration;
     }
 
+    /**
+     * Forgets every pending restoration inside {@code box} (blocks, hanging entities): a cursed realm's arena is cleared
+     * and rebuilt whole, so nothing broken in it should come back, or spill as items, later.
+     */
+    public static void forget(ServerLevel level, net.minecraft.world.phys.AABB box) {
+        Store st = STORES.get(level);
+        if (st == null) return;
+        st.records.long2ObjectEntrySet().removeIf(e -> box.contains(BlockPos.getX(e.getLongKey()) + 0.5, BlockPos.getY(e.getLongKey()) + 0.5,
+                BlockPos.getZ(e.getLongKey()) + 0.5));
+        st.watches.long2ObjectEntrySet().removeIf(e -> box.contains(BlockPos.getX(e.getLongKey()) + 0.5, BlockPos.getY(e.getLongKey()) + 0.5,
+                BlockPos.getZ(e.getLongKey()) + 0.5));
+        st.hanging.removeIf(h -> box.intersects(h.support));
+        st.dirty = true;
+    }
+
     static Store store(ServerLevel level) {
         return STORES.computeIfAbsent(level, Store::new);
     }

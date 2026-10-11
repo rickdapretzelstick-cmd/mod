@@ -110,28 +110,31 @@ public class NewCurseTests {
         });
     }
 
-    @GameTest(maxTicks = 80, environment = "jjk-test:curse_s")
-    public void aHowlHurriesTheCursesAroundUnlessItsBroken(GameTestHelper h) {
+    @GameTest(maxTicks = 120, environment = "jjk-test:curse_s")
+    public void aHowlHurriesTheCursesAround(GameTestHelper h) {
         floor(h);
         GraveHoundEntity d = curse(h, ModEntities.GRAVE_HOUND, 2, 2);
         SchoolCrawlerEntity c = curse(h, ModEntities.SCHOOL_CRAWLER, 6, 6);
         c.setRestForTest(500);
         d.forceHowlForTest();
         h.assertTrue(d.howling() && d.isWindingUp(), "it throws its head back (glowing)");
-        h.runAfterDelay(GraveHoundEntity.HOWL_AT + 4, () -> {
-            h.assertTrue(c.restTicksForTest() == 0, "the curses around it attack again at once: " + c.restTicksForTest());
-            // A second hound, staggered out of its howl, hurries nobody.
-            GraveHoundEntity d2 = curse(h, ModEntities.GRAVE_HOUND, 2, 6);
-            ServerPlayer p = survivor(h, 4, 4);
-            c.setRestForTest(500);
-            d2.forceHowlForTest();
-            d2.setInvulnerableTime(0);
-            d2.hurtServer(h.getLevel(), h.getLevel().damageSources().playerAttack(p), d2.poise() + 1);
-            h.assertTrue(d2.isStaggered() && !d2.howling(), "staggered out of the howl");
-            h.runAfterDelay(GraveHoundEntity.HOWL_AT + 4, () -> {
-                h.assertTrue(c.restTicksForTest() > 0, "so nobody was hurried");
-                h.succeed();
-            });
+        h.succeedWhen(() -> h.assertTrue(c.restTicksForTest() == 0, "the curses around it attack again at once: " + c.restTicksForTest()));
+    }
+
+    @GameTest(maxTicks = 120, environment = "jjk-test:curse_y")
+    public void aHoundStaggeredOutOfItsHowlHurriesNobody(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = survivor(h, 4, 4);
+        GraveHoundEntity d = curse(h, ModEntities.GRAVE_HOUND, 2, 2);
+        SchoolCrawlerEntity c = curse(h, ModEntities.SCHOOL_CRAWLER, 6, 6);
+        c.setRestForTest(2000);
+        d.forceHowlForTest();
+        d.setInvulnerableTime(0);
+        d.hurtServer(h.getLevel(), h.getLevel().damageSources().playerAttack(p), d.poise() + 1);
+        h.assertTrue(d.isStaggered() && !d.howling(), "staggered out of the howl");
+        h.succeedWhen(() -> {
+            h.assertTrue(!d.isStaggered(), "it reels, then recovers");
+            h.assertTrue(c.restTicksForTest() > 1000, "and nobody was hurried: " + c.restTicksForTest());
         });
     }
 

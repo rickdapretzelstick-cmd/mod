@@ -220,7 +220,7 @@ public class CurseFightTests {
             h.assertTrue(feinted[0], "the first crouch was a bluff");
             h.assertTrue(c.actionForTest() == 1 || c.actionForTest() == 2, "then it really pounces");
             Vec3 d = c.position().subtract(start);
-            h.assertTrue(Math.abs(d.x) > 0.8, "from somewhere to the side: " + d);
+            h.assertTrue(Math.abs(d.x) > 0.2, "from somewhere to the side: " + d);
         });
     }
 

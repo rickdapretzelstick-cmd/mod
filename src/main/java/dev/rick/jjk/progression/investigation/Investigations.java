@@ -116,6 +116,8 @@ public final class Investigations {
     // --- The loop ---
 
     private static void tick(MinecraftServer server) {
+        // No loose drops in an open arena, whatever else is switched on.
+        CursedRealms.sweepDrops(server, InvestigationState.get(server));
         if (!JJKConfig.get().progression.enabled) return;
         InvestigationState st = InvestigationState.get(server);
         long now = server.overworld().getGameTime();

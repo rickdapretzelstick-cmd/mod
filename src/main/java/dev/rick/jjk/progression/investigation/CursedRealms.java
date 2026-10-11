@@ -19,6 +19,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -494,6 +495,31 @@ public final class CursedRealms {
         }
     }
 
+    /** Whether {@code pos} in {@code level} lies in an open realm arena (in the realm dimension, or wherever arenas are built). */
+    public static boolean inArena(ServerLevel level, BlockPos pos) {
+        MinecraftServer server = level.getServer();
+        if (server == null || level != level(server)) return false;
+        Vec3 c = Vec3.atCenterOf(pos);
+        InvestigationState.Arena a = arenaAt(InvestigationState.get(server), c);
+        return a != null && c.y >= a.origin.getY() - 20 && c.y < a.origin.getY() + HEIGHT;
+    }
+
+    /**
+     * No loose block drops in a realm arena: anything that breaks there (a technique, an explosion, a container) leaves
+     * no items to pick up. Items a player throws or drops on death have a thrower and are left alone.
+     */
+    public static void sweepDrops(MinecraftServer server, InvestigationState st) {
+        if (st.arenas.isEmpty()) return;
+        ServerLevel realm = level(server);
+        for (InvestigationState.Arena a : st.arenas.values()) {
+            BlockPos o = a.origin;
+            AABB box = new AABB(o.getX() - RADIUS - 8, o.getY() - 20, o.getZ() - RADIUS - 8, o.getX() + RADIUS + 9, o.getY() + HEIGHT, o.getZ() + RADIUS + 9);
+            for (Entity e : realm.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box, i -> i.getOwner() == null && i.tickCount < 5)) {
+                e.discard();
+            }
+        }
+    }
+
     /** Ends an arena: everyone inside goes home, its curses vanish (if any are left), its blocks are cleared. */
     public static void close(MinecraftServer server, InvestigationState st, InvestigationState.Arena a, boolean won) {
         ServerLevel realm = level(server);
@@ -553,6 +579,7 @@ public final class CursedRealms {
             for (int cz = (origin.getZ() - RADIUS) >> 4; cz <= (origin.getZ() + RADIUS) >> 4; cz++) realm.getChunk(cx, cz);
         }
         for (Entity e : realm.getEntities((Entity) null, box, e -> !(e instanceof ServerPlayer))) e.discard();
+        dev.rick.jjk.core.world.WorldRestoration.forget(realm, box);
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();
         for (int y = origin.getY() - 20; y < origin.getY() + HEIGHT; y++) {
