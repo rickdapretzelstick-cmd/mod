@@ -33,10 +33,12 @@
       "dev.rick.jjk.test.CursedKitTests",
       "dev.rick.jjk.test.RealmTests",
       "dev.rick.jjk.test.StoryTests",
+      "dev.rick.jjk.test.TrainingTests",
       "dev.rick.jjk.test.NewsHouseTests",
       "dev.rick.jjk.test.SiteTests"
     ],
     "fabric-client-gametest": [
+      "dev.rick.jjk.test.TrainingClientTest",
       "dev.rick.jjk.test.AnimFrameworkClientTest",
       "dev.rick.jjk.test.GojoClientGameTest",
       "dev.rick.jjk.test.HakariClientGameTest",

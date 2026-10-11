@@ -9,7 +9,7 @@ import java.util.Map;
 
 /**
  * The five character storylines. Adding a character's storyline is one entry here, four incident templates
- * ({@code data/jjk/incidents/<kit>_chain_<n>.json}), its three items and one {@link PersonalTrials.Trial}.
+ * ({@code data/jjk/incidents/<kit>_chain_<n>.json}), its three items and its training ({@link PersonalTrials}).
  */
 public final class CharacterStories {
     public static final CharacterStory YUJI = new CharacterStory("yuji", "Yuji Itadori", chain("yuji"),

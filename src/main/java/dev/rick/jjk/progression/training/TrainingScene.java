@@ -127,7 +127,7 @@ public abstract class TrainingScene {
 
     /** A block shown as a free-floating prop (scaled about its centre), owned by the session. */
     protected Display.BlockDisplay display(BlockState state, Vec3 pos, float scale, boolean bright) {
-        Display.BlockDisplay d = new Display.BlockDisplay(EntityType.BLOCK_DISPLAY, realm);
+        Display.BlockDisplay d = new Display.BlockDisplay(net.minecraft.world.entity.EntityTypes.BLOCK_DISPLAY, realm);
         d.setBlockState(state);
         d.setPos(pos.x, pos.y, pos.z);
         d.setPosRotInterpolationDuration(2);

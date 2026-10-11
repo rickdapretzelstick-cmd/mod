@@ -56,6 +56,7 @@ public final class Network {
         s2c.register(PrisonPayload.TYPE, PrisonPayload.CODEC);
         s2c.register(MasterySyncPayload.TYPE, MasterySyncPayload.CODEC);
         s2c.register(StoryPayload.TYPE, StoryPayload.CODEC);
+        dev.rick.jjk.progression.training.TrainingNet.register();
 
         ServerPlayNetworking.registerGlobalReceiver(MasteryPurchasePayload.TYPE, (p, ctx) -> {
             var r = dev.rick.jjk.progression.mastery.Mastery.purchase(ctx.player(), p.tree(), p.node());

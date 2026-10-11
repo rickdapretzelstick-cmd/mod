@@ -413,7 +413,7 @@ The path so far:
 **Exploration is the character selection.** There is no menu: a player who wants Gojo goes looking for a Gojo village.
 
 ```
-village storyline (4 events) → Essence → character object → full cauldron → the world's one relic → personal trial → base kit
+village storyline (4 events) → Essence → character object → full cauldron → the world's one relic → training → base kit
 ```
 
 **1. The village storyline.** Six villages in ten hold one character's storyline: Yuji, Gojo, Yuta, Ryu or Hakari.
@@ -461,34 +461,53 @@ ground. If it is **destroyed** before its storyline is complete (lava, a cactus,
 (from a new Essence); if its **keeper** (the last player to use it) loses it, they can infuse the object again and the
 lost one goes cold. Recovery never makes two. In Creative the cauldron makes a *test relic* that claims nothing.
 
-**5. The personal trial.** The relic still grants nothing. It is the key to that character's own story, and the player
-has to work out how to use it:
+**5. The personal trial: character training.** The relic still grants nothing. Used the way that character would
+(the VHS played on a jukebox, the Blindfold worn for five seconds, the Ring, the Comb or the Scratch-Off used), it offers
+**Begin Training**. The server checks you may (the world's live relic, the kit unclaimed or already yours, nobody else
+in a claiming session of it), takes you to a private training room in the cursed realm and saves where you stood.
 
-- **Yuji: the VHS, played on a jukebox.** An ordinary film... until the man on the screen turns and looks at you. In
-  the theater, weapons do nothing to what rises out of the seats: **the body is the weapon** (bare fists strike with
-  cursed energy, hard; now and then a black spark). Three waves, the last at the final reel.
-- **Gojo: the Blindfold, worn.** Everything goes dark, and then you begin to see: curses glow, a flare warns of what is
-  about to strike. On a road that folds back on itself you fight by perception. Take it off too soon and it's over.
-  Then **the blindfold comes off**: a white-out, an iris of blue light, "I can see everything", and a last wave with
-  everything in view.
-- **Yuta: the Ring.** A presence fills the chapel garden and closes in whenever you look away. It only ever strikes what
-  comes for you: let it protect you (running from it frays the bond), then fight beside it while it holds what comes
-  near it. At the end it waits beside you: **use the ring** to accept the bond. It cannot be killed; that is not the
-  answer.
-- **Ryu: the Comb.** *"Are you satisfied?"* Wave after harder wave in the crater; after each, two pillars rise: walk to
-  the **gold** one for MORE, the **grey** one if you are satisfied (that ends it in failure). The fifth wave is *Every
-  Last Drop*: every blow you land is an enormous blast.
-- **Hakari: the Scratch-Off.** Scratch it: no win. Scratch again: no win, and the numbers moved. The third time, the
-  fight club. Every round the reels draw a wager against you (your health, cursed energy, healing, your grip, your
-  legs) for the round; win it and it comes back with interest. Round four: **7 · 7 · 7, JACKPOT**, and a fever.
+Every character trains with the same shared skill check, dressed differently:
 
-Completing the trial **claims the base kit**: the world records you as its Yuji (or Gojo...), through the same atomic
-one-owner registry as every path (`kit_ownership.dat`). Offline owners keep it; death, dimensions and restarts change
-nothing. **The base kit only**: every move and R variant, never the Awakening, which belongs to that character's own
-later storyline. Dying or leaving a trial (or a restart) fails it; the relic waits to be used again.
+- **The controls**: three circular gauges in a row in the lower middle of the screen, one per key, left to right, the
+  same for every character. Defaults **V / B / N** (J, K and L were taken: the mastery and character keys, and
+  Minecraft's advancements); rebind them in Controls → JJK. Each circle shows its key, its name, a needle, and when a
+  check is cued its arcs: a wide **GOOD** arc with a narrow **PERFECT** core (both count; PERFECT isn't required). Press
+  as the needle crosses. A hold check shows **HOLD** (press in its arc) and then **RELEASE** (let go in a second arc):
+  one success or one miss for the pair. Above the row: the phase, the time left and five mistake marks.
+- **The rules**: ~2 s intro (the camera pushes in to a fixed shot), then **45 seconds** in three phases: 0-15 s
+  (~300 ms GOOD window, mostly one gauge at a time), 15-30 s (~230 ms, two overlapping), 30-45 s (~180 ms, all three).
+  Every check is telegraphed at least 600 ms before its window. Early, late or no press is a **miss**; five misses fail.
+  A press while the needle is only travelling between checks does nothing; spamming, holding a key or repeating
+  packets can't pass a check, and each check costs at most one mistake. Timing is elapsed time, never frames.
+- **The scenes**: **Yuji** sits facing a television (calm, suspense, action and sadness patterns announce faster or
+  slower checks) with a cursed corpse doll on his lap: successes pulse energy into it, misses wake it (a twitch, its
+  head, an arm), the fifth miss is a harmless punch, victory quiets it. **Gojo** holds three stones in orbit round a
+  small Blue (one stone per gauge; misses make them wobble outward); failure drops them, victory spaces them evenly and
+  collapses Blue. This is his *base* training: the Prison Realm stays a separate, later requirement for his ultimate.
+  **Yuta** holds a practice katana (shown in the hand only; nothing touches the inventory) with Rika behind him: holds
+  and releases steady the blade, misses make it flicker and fracture harmlessly and Rika restless. **Ryu** gathers a
+  charge round his head facing a stone target down a short lane; victory fires one scripted beam that destroys only the
+  session's target. **Hakari** stands among three huge slot reels; successes lock 7s, misses slip, the music builds by
+  phase, the finale is an announced triple input, and victory plays the jackpot dance (no real jackpot, buffs or domain).
+
+The first success **claims the base kit**: the world records you as its Yuji (or Gojo...), through the same atomic
+one-owner registry as every path (`kit_ownership.dat`). **The base kit only**: every move and R variant, never the
+Awakening. Fingers and Sukuna are untouched. Afterwards the relic offers **Practice Again**, which grants nothing.
+Failing shows **Retry / Leave**: the relic, its ownership and its place in the world are never touched. **Leave
+Training** on the pause menu cancels at any time (no reward). Disconnecting, dying or a restart ends the session the
+same way and the realm's return record brings you back where you stood (also after a crash, on your next login).
+Meanwhile you can't be hurt, move, attack, use items or spend cursed energy; everything comes back when it ends.
+
+The server owns the session: it generates each attempt's schedule from a fresh seed (sent to the client so both judge
+the same checks), scores your key timings against its own clock with bounded latency allowance
+(`training.maxLatencyMs`), ignores duplicate and stale input, and grants the kit once. A client that never acknowledges
+its schedule gets "connection unstable" and Retry/Leave. Difficulty lives in `config/jjk.json` → `training` (window
+widths per phase, PERFECT fraction, telegraph, same-key gap, stagger, misses, latency); the per-character shapes are in
+`progression/training/TrainingSchedule.java`.
 
 **Admin** (op): `/jjk story villages | set <kit|none> [stage] | essence <kit> [player] | trial <kit> [claim] | complete |
-trials | awaken <kit> <player> on|off` · `/jjk relic list | reset <kit> | issue <kit> [player]`. Assets come from
+trials | awaken <kit> <player> on|off` · `/jjk training start <kit> [claim] | succeed | fail | leave | list` (any preset;
+a test run claims nothing) · `/jjk relic list | reset <kit> | issue <kit> [player]`. Assets come from
 `tools/gen_story_assets.py`.
 
 ### The Finger Bearer

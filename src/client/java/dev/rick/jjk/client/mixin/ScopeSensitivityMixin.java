@@ -12,6 +12,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public abstract class ScopeSensitivityMixin {
     @Redirect(method = "turnPlayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;turn(DD)V"))
     private void jjk$scoped(LocalPlayer player, double xo, double yo) {
+        // In training the view is the scene's; the mouse doesn't turn the participant.
+        if (dev.rick.jjk.client.training.TrainingClient.capturing()) return;
         double k = RifleScope.sensitivity();
         player.turn(xo * k, yo * k);
     }

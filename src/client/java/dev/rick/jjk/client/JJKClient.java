@@ -67,6 +67,7 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.CURSED_ENERGY_SHOT, dev.rick.jjk.client.render.FingerBearerRenderer.Shot::new);
 
         InputHandler.init();
+        dev.rick.jjk.client.training.TrainingClient.init();
         dev.rick.jjk.client.prison.PrisonClient.init();
         dev.rick.jjk.client.anim.AnimLibrary.init();
         dev.rick.jjk.client.model.BbModels.init();
@@ -86,12 +87,24 @@ public class JJKClient implements ClientModInitializer {
         HudElementRegistry.addLast(JJK.id("rifle_hud"), (g, delta) -> dev.rick.jjk.client.rifle.RifleHud.render(g));
         // Under the rifle's scope its own reticle is the aim: the vanilla crosshair stands down.
         HudElementRegistry.replaceElement(net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CROSSHAIR, vanilla -> (g, delta) -> {
-            if (!dev.rick.jjk.client.rifle.RifleHud.hidesCrosshair()) vanilla.extractRenderState(g, delta);
+            if (!dev.rick.jjk.client.rifle.RifleHud.hidesCrosshair() && !dev.rick.jjk.client.training.TrainingClient.active()) vanilla.extractRenderState(g, delta);
         });
         HudElementRegistry.addLast(JJK.id("prison_view"), (g, delta) -> dev.rick.jjk.client.prison.PrisonClient.renderHud(g));
         // Every custom HUD layer is skipped in Vanilla Minecraft mode.
+        // Character training: its own gauges in the lower middle; the HUD it doesn't need stands down meanwhile.
+        HudElementRegistry.addLast(JJK.id("training_hud"), (g, delta) -> dev.rick.jjk.client.training.TrainingHud.render(g));
+        for (var id : java.util.List.of(net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HOTBAR,
+                net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HEALTH_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.FOOD_BAR,
+                net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.ARMOR_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.AIR_BAR,
+                net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.INFO_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.EXPERIENCE_LEVEL,
+                net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HELD_ITEM_TOOLTIP, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MOUNT_HEALTH,
+                net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MOB_EFFECTS)) {
+            HudElementRegistry.replaceElement(id, vanilla -> (g, delta) -> {
+                if (!dev.rick.jjk.client.training.TrainingClient.active()) vanilla.extractRenderState(g, delta);
+            });
+        }
         HudElementRegistry.addLast(JJK.id("combat_hud"), (g, delta) -> {
-            if (dev.rick.jjk.client.CombatMode.enabled()) CombatHud.render(g, delta);
+            if (dev.rick.jjk.client.CombatMode.enabled() && !dev.rick.jjk.client.training.TrainingClient.active()) CombatHud.render(g, delta);
         });
         HudElementRegistry.addLast(JJK.id("gamble_hud"), (g, delta) -> {
             if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.hud.GambleHud.render(g);
@@ -117,6 +130,14 @@ public class JJKClient implements ClientModInitializer {
         });
         // "JJK Settings" on the pause menu (Combat Mode ON / VANILLA and HUD options).
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, sw, sh) -> {
+            if (screen instanceof net.minecraft.client.gui.screens.PauseScreen && dev.rick.jjk.client.training.TrainingClient.active()) {
+                // A clear way out of training (no reward; the relic waits).
+                net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(screen).add(net.minecraft.client.gui.components.Button.builder(
+                        net.minecraft.network.chat.Component.literal("Leave Training"), b -> {
+                            dev.rick.jjk.client.training.TrainingClient.cancel();
+                            client.gui.setScreen(null);
+                        }).bounds(sw - 116, 6, 110, 20).build());
+            }
             if (screen instanceof net.minecraft.client.gui.screens.PauseScreen) {
                 net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(screen).add(net.minecraft.client.gui.components.Button.builder(
                         net.minecraft.network.chat.Component.literal("JJK Settings"),
@@ -145,6 +166,7 @@ public class JJKClient implements ClientModInitializer {
             dev.rick.jjk.client.clash.ClashCamera.reset();
             dev.rick.jjk.client.clash.BeamClashClient.reset();
             dev.rick.jjk.client.clash.BeamClashCamera.reset();
+            dev.rick.jjk.client.training.TrainingClient.reset();
             dev.rick.jjk.client.prison.PrisonClient.reset();
             dev.rick.jjk.client.rifle.RifleClient.clear();
             dev.rick.jjk.client.hud.RyuHud.reset();
@@ -159,6 +181,10 @@ public class JJKClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ProgressionPayload.TYPE, (p, ctx) -> ClientProgression.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.MasterySyncPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.mastery.ClientMastery.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.CompassPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.investigation.CursedCompassClient.apply(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.Offer.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.offer(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.Start.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.start(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.State.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.state(p));
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.Judge.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.judge(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.StoryPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.StoryOverlay.apply(p));
         dev.rick.jjk.client.investigation.CursedCompassClient.init();
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.NewsBoardPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.investigation.NewsBoardScreen.show(p));
@@ -301,6 +327,8 @@ public class JJKClient implements ClientModInitializer {
         dev.rick.jjk.client.clash.ClashCamera.tick(mc);
         dev.rick.jjk.client.clash.BeamClashClient.tick(mc);
         dev.rick.jjk.client.clash.BeamClashCamera.tick(mc);
+        dev.rick.jjk.client.training.TrainingClient.tick(mc);
+        dev.rick.jjk.client.training.TrainingCamera.tick(mc);
         dev.rick.jjk.client.prison.PrisonClient.tick(mc);
         InputHandler.tick(mc);
         ambientTicks++;

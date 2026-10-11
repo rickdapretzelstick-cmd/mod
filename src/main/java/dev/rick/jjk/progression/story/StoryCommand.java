@@ -30,7 +30,9 @@ import java.util.UUID;
  * /jjk story villages                  the storylines of the nearest villages, and how far along each is
  * /jjk story set &lt;kit|none&gt; [stage]    the nearest village's storyline (its next report follows)
  * /jjk story essence &lt;kit&gt; [player]    hand over an Essence, as a finale does
- * /jjk story trial &lt;kit&gt; [claim]       start a personal trial now (a test run unless "claim": then it claims the kit)
+ * /jjk story trial &lt;kit&gt; [claim]       start a character's training now (a test run unless "claim": then it claims the kit)
+ * /jjk training start &lt;kit&gt; [claim] | succeed | fail | leave | list   developer controls for the training (any preset;
+ *                                      a test run claims nothing; succeed/fail exercise both endings and the cleanup)
  * /jjk story complete                  complete your running trial now
  * /jjk story trials                    the trials and preludes running
  * /jjk story awaken &lt;kit&gt; &lt;player&gt; &lt;on|off&gt;   open or close a kit's Awakening (normally a later storyline's job)
@@ -65,6 +67,18 @@ public final class StoryCommand {
                         .then(Commands.literal("awaken").then(kitArg().then(Commands.argument("player", EntityArgument.player())
                                 .then(Commands.literal("on").executes(c -> awaken(c, true)))
                                 .then(Commands.literal("off").executes(c -> awaken(c, false)))))))
+                .then(Commands.literal("training")
+                        .then(Commands.literal("start").then(kitArg().executes(c -> trial(c, false))
+                                .then(Commands.literal("claim").executes(c -> trial(c, true)))))
+                        .then(Commands.literal("succeed").executes(c -> training(c, dev.rick.jjk.progression.training.TrainingSessions.completeNow(c.getSource().getPlayerOrException()), "Attempt passed.")))
+                        .then(Commands.literal("fail").executes(c -> training(c, dev.rick.jjk.progression.training.TrainingSessions.failNow(c.getSource().getPlayerOrException()), "Attempt failed.")))
+                        .then(Commands.literal("leave").executes(c -> training(c, dev.rick.jjk.progression.training.TrainingSessions.leaveNow(c.getSource().getPlayerOrException()), "Left the training.")))
+                        .then(Commands.literal("list").executes(c -> {
+                            List<String> lines = PersonalTrials.describe();
+                            if (lines.isEmpty()) c.getSource().sendSuccess(() -> Component.literal("No training running."), false);
+                            for (String l : lines) c.getSource().sendSuccess(() -> Component.literal(l), false);
+                            return lines.size();
+                        })))
                 .then(Commands.literal("relic")
                         .then(Commands.literal("list").executes(StoryCommand::relics))
                         .then(Commands.literal("reset").then(kitArg().executes(StoryCommand::reset)))
@@ -154,8 +168,13 @@ public final class StoryCommand {
             return 0;
         }
         PersonalTrials.startNow(p, s, !claim);
-        c.getSource().sendSuccess(() -> Component.literal("Starting the " + s.kit() + " trial" + (claim ? " (it will claim the kit)" : " (test: claims nothing)")), true);
+        c.getSource().sendSuccess(() -> Component.literal("Starting the " + s.kit() + " training" + (claim ? " (it will claim the kit)" : " (test: claims nothing)")), true);
         return 1;
+    }
+
+    private static int training(CommandContext<CommandSourceStack> c, boolean ok, String done) {
+        c.getSource().sendSuccess(() -> Component.literal(ok ? done : "No training attempt to do that to."), false);
+        return ok ? 1 : 0;
     }
 
     private static int awaken(CommandContext<CommandSourceStack> c, boolean on) throws CommandSyntaxException {

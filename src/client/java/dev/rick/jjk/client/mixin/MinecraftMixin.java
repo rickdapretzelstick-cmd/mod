@@ -13,6 +13,10 @@ public abstract class MinecraftMixin {
     /** In combat mode, left click is this mod's melee instead of a vanilla attack (never mining). */
     @Inject(method = "startAttack", at = @At("HEAD"), cancellable = true)
     private void jjk$startAttack(CallbackInfoReturnable<Boolean> cir) {
+        if (dev.rick.jjk.client.training.TrainingClient.capturing()) {
+            cir.setReturnValue(false);
+            return;
+        }
         if (InputHandler.inStance()) {
             InputHandler.onAttackPressed();
             cir.setReturnValue(false);
@@ -22,6 +26,16 @@ public abstract class MinecraftMixin {
     /** Holding left click charges a heavy; it must never mine blocks. */
     @Inject(method = "continueAttack", at = @At("HEAD"), cancellable = true)
     private void jjk$continueAttack(boolean down, CallbackInfo ci) {
+        if (dev.rick.jjk.client.training.TrainingClient.capturing()) {
+            ci.cancel();
+            return;
+        }
         if (InputHandler.inStance()) ci.cancel();
+    }
+
+    /** No using items in training (the hands are the scene's). */
+    @Inject(method = "startUseItem", at = @At("HEAD"), cancellable = true)
+    private void jjk$startUseItem(CallbackInfo ci) {
+        if (dev.rick.jjk.client.training.TrainingClient.capturing()) ci.cancel();
     }
 }

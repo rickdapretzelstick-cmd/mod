@@ -65,26 +65,26 @@ public final class TrainingScenes {
 
         @Override
         protected void build() {
-            for (int x = -2; x <= 2; x++) for (int z = -2; z <= 3; z++) if (x != 0 || z != 0) block(x, 0, z, Blocks.GRAY_CARPET.defaultBlockState());
+            for (int x = -2; x <= 2; x++) for (int z = -2; z <= 3; z++) if (x != 0 || z != 0) block(x, 0, z, Blocks.CARPET.gray().defaultBlockState());
             block(0, 0, 0, Blocks.DARK_OAK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.SOUTH));
             block(0, 0, -1, Blocks.DARK_OAK_PLANKS.defaultBlockState());
             block(0, 1, -1, Blocks.DARK_OAK_TRAPDOOR.defaultBlockState());
             // The television: a black frame on a low cabinet, its screen facing the chair.
             for (int x = -2; x <= 2; x++) {
                 block(x, 0, 5, Blocks.SPRUCE_PLANKS.defaultBlockState());
-                for (int y = 1; y <= 4; y++) block(x, y, 5, Blocks.BLACK_CONCRETE.defaultBlockState());
-                block(x, 1, 6, Blocks.BLACK_CONCRETE.defaultBlockState());
+                for (int y = 1; y <= 4; y++) block(x, y, 5, Blocks.CONCRETE.black().defaultBlockState());
+                block(x, 1, 6, Blocks.CONCRETE.black().defaultBlockState());
             }
             light(0, 2, 4, 9);
             light(-3, 2, -2, 2);
             light(3, 2, -2, 2);
             seat = display(Blocks.AIR.defaultBlockState(), rel(0, 0.32, 0.05), 1f, false);
-            ArmorStand d = new ArmorStand(EntityType.ARMOR_STAND, realm);
+            ArmorStand d = new ArmorStand(net.minecraft.world.entity.EntityTypes.ARMOR_STAND, realm);
             d.getEntityData().set(ArmorStand.DATA_CLIENT_FLAGS,
                     (byte) (ArmorStand.CLIENT_FLAG_SMALL | ArmorStand.CLIENT_FLAG_SHOW_ARMS | ArmorStand.CLIENT_FLAG_NO_BASEPLATE | ArmorStand.CLIENT_FLAG_MARKER));
             d.refreshDimensions();
             d.setNoGravity(true);
-            d.setInvulnerable(true);
+            d.setPermanentlyInvulnerable(true);
             var scale = d.getAttribute(Attributes.SCALE);
             if (scale != null) scale.setBaseValue(0.8);
             d.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.ZOMBIE_HEAD));
@@ -132,14 +132,14 @@ public final class TrainingScenes {
             if (m == mood) return;
             mood = m;
             BlockState[][] screen = switch (m) {
-                case SUSPENSE -> new BlockState[][] {{c(Blocks.BLACK_CONCRETE), c(Blocks.RED_CONCRETE), c(Blocks.BLACK_CONCRETE)},
-                        {c(Blocks.RED_CONCRETE), c(Blocks.BLACK_CONCRETE), c(Blocks.RED_CONCRETE)}};
-                case ACTION -> new BlockState[][] {{c(Blocks.YELLOW_CONCRETE), c(Blocks.ORANGE_CONCRETE), c(Blocks.YELLOW_CONCRETE)},
-                        {c(Blocks.ORANGE_CONCRETE), c(Blocks.WHITE_CONCRETE), c(Blocks.ORANGE_CONCRETE)}};
-                case SAD -> new BlockState[][] {{c(Blocks.BLUE_CONCRETE), c(Blocks.GRAY_CONCRETE), c(Blocks.BLUE_CONCRETE)},
-                        {c(Blocks.GRAY_CONCRETE), c(Blocks.BLUE_CONCRETE), c(Blocks.GRAY_CONCRETE)}};
-                default -> new BlockState[][] {{c(Blocks.LIGHT_BLUE_CONCRETE), c(Blocks.WHITE_CONCRETE), c(Blocks.LIGHT_BLUE_CONCRETE)},
-                        {c(Blocks.CYAN_CONCRETE), c(Blocks.CYAN_CONCRETE), c(Blocks.CYAN_CONCRETE)}};
+                case SUSPENSE -> new BlockState[][] {{c(Blocks.CONCRETE.black()), c(Blocks.CONCRETE.red()), c(Blocks.CONCRETE.black())},
+                        {c(Blocks.CONCRETE.red()), c(Blocks.CONCRETE.black()), c(Blocks.CONCRETE.red())}};
+                case ACTION -> new BlockState[][] {{c(Blocks.CONCRETE.yellow()), c(Blocks.CONCRETE.orange()), c(Blocks.CONCRETE.yellow())},
+                        {c(Blocks.CONCRETE.orange()), c(Blocks.CONCRETE.white()), c(Blocks.CONCRETE.orange())}};
+                case SAD -> new BlockState[][] {{c(Blocks.CONCRETE.blue()), c(Blocks.CONCRETE.gray()), c(Blocks.CONCRETE.blue())},
+                        {c(Blocks.CONCRETE.gray()), c(Blocks.CONCRETE.blue()), c(Blocks.CONCRETE.gray())}};
+                default -> new BlockState[][] {{c(Blocks.CONCRETE.lightBlue()), c(Blocks.CONCRETE.white()), c(Blocks.CONCRETE.lightBlue())},
+                        {c(Blocks.CONCRETE.cyan()), c(Blocks.CONCRETE.cyan()), c(Blocks.CONCRETE.cyan())}};
             };
             for (int x = -1; x <= 1; x++) {
                 block(x, 3, 5, screen[0][x + 1]);
@@ -300,13 +300,13 @@ public final class TrainingScenes {
 
         @Override
         protected void build() {
-            for (int x = -4; x <= 4; x++) for (int z = -3; z <= 6; z++) block(x, -1, z, Blocks.WHITE_CONCRETE.defaultBlockState());
+            for (int x = -4; x <= 4; x++) for (int z = -3; z <= 6; z++) block(x, -1, z, Blocks.CONCRETE.white().defaultBlockState());
             for (int x = -4; x <= 4; x += 8) for (int z = -3; z <= 6; z += 9) block(x, 0, z, Blocks.QUARTZ_PILLAR.defaultBlockState());
             light(-3, 3, 1, 12);
             light(3, 3, 1, 12);
             light(0, 3, 4, 12);
-            orb = display(Blocks.LIGHT_BLUE_STAINED_GLASS.defaultBlockState(), orbAt(), 0.55f, true);
-            core = display(Blocks.BLUE_CONCRETE.defaultBlockState(), orbAt(), 0.22f, true);
+            orb = display(Blocks.STAINED_GLASS.lightBlue().defaultBlockState(), orbAt(), 0.55f, true);
+            core = display(Blocks.CONCRETE.blue().defaultBlockState(), orbAt(), 0.22f, true);
             TrainingPreset preset = TrainingPreset.of("gojo");
             for (int i = 0; i < 3; i++) {
                 stones[i] = display(STONES[i].defaultBlockState(), stonePos(i, 0), 0.5f, false);
@@ -471,7 +471,7 @@ public final class TrainingScenes {
 
         @Override
         protected void build() {
-            for (int x = -2; x <= 2; x++) for (int z = -2; z <= 2; z++) if (Math.abs(x) == 2 || Math.abs(z) == 2) block(x, 0, z, Blocks.PURPLE_CARPET.defaultBlockState());
+            for (int x = -2; x <= 2; x++) for (int z = -2; z <= 2; z++) if (Math.abs(x) == 2 || Math.abs(z) == 2) block(x, 0, z, Blocks.CARPET.purple().defaultBlockState());
             block(-3, 0, -3, Blocks.AMETHYST_CLUSTER.defaultBlockState());
             block(3, 0, -3, Blocks.AMETHYST_CLUSTER.defaultBlockState());
             block(-3, 0, 3, Blocks.AMETHYST_CLUSTER.defaultBlockState());
@@ -802,7 +802,7 @@ public final class TrainingScenes {
                     block(x + 1, y, z - 1, Blocks.REDSTONE_LAMP.defaultBlockState());
                 }
             }
-            for (int z = 0; z <= 3; z++) block(0, 0, z, Blocks.RED_CARPET.defaultBlockState());
+            for (int z = 0; z <= 3; z++) block(0, 0, z, Blocks.CARPET.red().defaultBlockState());
             light(-2, 3, 2, 6);
             light(2, 3, 2, 6);
             light(0, 3, 3, 6);

@@ -31,6 +31,8 @@ public abstract class EntityRendererMixin {
             if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.CURSED_PARTNERS)) visual |= PoseKeys.CURSED_PARTNERS;
             if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.KATANA)) visual |= PoseKeys.KATANA;
             if (dev.rick.jjk.core.combat.Combat.has(le, dev.rick.jjk.core.combat.CombatStatus.STEEL_ARM)) visual |= PoseKeys.STEEL_ARM;
+            // Yuta's training: the session's practice katana, drawn in the participant's hand (nothing in the inventory).
+            if (le == net.minecraft.client.Minecraft.getInstance().player && dev.rick.jjk.client.training.TrainingClient.katana()) visual |= PoseKeys.CURSED_PARTNERS | PoseKeys.KATANA;
             state.setData(PoseKeys.VISUAL, visual);
             float t = ClientAnimations.elapsed(le.getId(), "awaken", now);
             state.setData(PoseKeys.BLINDFOLD_OFF, t < 0 ? 0f : net.minecraft.util.Mth.clamp((t - 6f) / 8f, 0f, 1f));

@@ -202,9 +202,12 @@ public class StoryTests {
         String why = PersonalTrials.whyBlocked(p, fake);
         h.assertTrue(why != null && !why.isEmpty(), "a copy with a stale token is cold: " + why);
         UUID live = UniqueRelics.get(server(h)).forge(RelicItem.key("yuta"), p.getUUID(), "p");
-        h.assertTrue(PersonalTrials.whyBlocked(p, RelicItem.create(ProgressionItems.INFUSED_CURSED_RING, live)) == null, "the live one opens its trial");
+        h.assertTrue(PersonalTrials.whyBlocked(p, RelicItem.create(ProgressionItems.INFUSED_CURSED_RING, live)) == null, "the live one offers its training");
         TechniqueProgression.tryClaimKit(p, "yuta", "test");
-        h.assertTrue(PersonalTrials.whyBlocked(p, RelicItem.create(ProgressionItems.INFUSED_CURSED_RING, live)) != null, "its owner has nothing more to find in it");
+        h.assertTrue(PersonalTrials.whyBlocked(p, RelicItem.create(ProgressionItems.INFUSED_CURSED_RING, live)) == null, "its owner may still practise with it");
+        ServerPlayer other = survivor(h, 4, 4);
+        h.assertTrue(PersonalTrials.whyBlocked(other, RelicItem.create(ProgressionItems.INFUSED_CURSED_RING, live)) != null, "but nobody else may");
+        other.discard();
         freeKit(h, "yuta");
         p.discard();
         h.succeed();
@@ -216,14 +219,13 @@ public class StoryTests {
         ServerPlayer p = survivor(h, 2, 2);
         PersonalTrials.startNow(p, CharacterStories.YUJI, false);
         CursedRealms.finishPullForTest(p);
-        h.assertTrue(PersonalTrials.inTrial(p) && CursedRealms.inRealm(p), "in the theater");
-        h.assertTrue(PersonalTrials.cursedFists(p), "the body is the weapon");
+        h.assertTrue(PersonalTrials.inTrial(p) && CursedRealms.inRealm(p), "in the training room");
         h.assertTrue(PersonalTrials.completeNow(p), "completed");
         h.assertTrue(KitOwnership.get(server(h)).isOwner("yuji", p.getUUID()), "the world's Yuji");
         h.assertTrue(Mastery.unlocked(p, "divergent_fist.black_flash"), "the base kit is whole");
         h.assertTrue(!Mastery.unlocked(p, "yuji.awakening"), "but not the Awakening");
         InvestigationState st = InvestigationState.get(server(h));
-        var arena = CursedRealms.arenaOf(st, CursedRealms.TRIAL + "yuji:" + p.getUUID());
+        var arena = CursedRealms.arenaOf(st, CursedRealms.TRIAL + "training:yuji:" + p.getUUID());
         h.assertTrue(arena != null, "its arena");
         CursedRealms.close(server(h), st, arena, true);
         h.assertTrue(!PersonalTrials.inTrial(p) && !CursedRealms.inRealm(p), "home again");
@@ -241,7 +243,7 @@ public class StoryTests {
         h.assertTrue(PersonalTrials.completeNow(p), "completed");
         h.assertTrue(!KitOwnership.get(server(h)).isClaimed("ryu"), "a test relic in Survival is only an echo");
         InvestigationState st = InvestigationState.get(server(h));
-        var arena = CursedRealms.arenaOf(st, CursedRealms.TRIAL + "ryu:" + p.getUUID());
+        var arena = CursedRealms.arenaOf(st, CursedRealms.TRIAL + "training:ryu:" + p.getUUID());
         if (arena != null) CursedRealms.close(server(h), st, arena, false);
         // Creative: the real thing, but it claims nothing either (the kit is only tried out).
         p.setGameMode(GameType.CREATIVE);
@@ -249,7 +251,7 @@ public class StoryTests {
         CursedRealms.finishPullForTest(p);
         h.assertTrue(PersonalTrials.completeNow(p), "completed in Creative");
         h.assertTrue(!KitOwnership.get(server(h)).isClaimed("ryu"), "Creative never claims");
-        arena = CursedRealms.arenaOf(st, CursedRealms.TRIAL + "ryu:" + p.getUUID());
+        arena = CursedRealms.arenaOf(st, CursedRealms.TRIAL + "training:ryu:" + p.getUUID());
         if (arena != null) CursedRealms.close(server(h), st, arena, false);
         freeKit(h, "ryu");
         p.discard();
@@ -257,20 +259,20 @@ public class StoryTests {
     }
 
     @GameTest(maxTicks = 100, environment = ENV)
-    public void takingTheBlindfoldOffTooSoonFailsGojosTrial(GameTestHelper h) {
+    public void gojosBlindfoldTrainingGrantsTheBaseKitButNeverTheUltimate(GameTestHelper h) {
         freeKit(h, "gojo");
         ServerPlayer p = survivor(h, 2, 2);
-        UUID live = UniqueRelics.get(server(h)).forge(RelicItem.key("gojo"), p.getUUID(), "p");
-        p.setItemSlot(EquipmentSlot.HEAD, RelicItem.create(ProgressionItems.INFUSED_BLINDFOLD, live));
         PersonalTrials.startNow(p, CharacterStories.GOJO, false);
         CursedRealms.finishPullForTest(p);
-        h.assertTrue(PersonalTrials.inTrial(p), "in the trial, blindfolded");
-        p.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
-        h.succeedWhen(() -> {
-            h.assertTrue(!PersonalTrials.inTrial(p), "taking it off ends the trial");
-            h.assertTrue(!KitOwnership.get(server(h)).isClaimed("gojo"), "and claims nothing");
-            freeKit(h, "gojo");
-            p.discard();
-        });
+        h.assertTrue(PersonalTrials.inTrial(p), "in Gojo's training (the shared room, not the Prison Realm)");
+        h.assertTrue(PersonalTrials.completeNow(p), "completed");
+        h.assertTrue(KitOwnership.get(server(h)).isOwner("gojo", p.getUUID()), "the world's Gojo");
+        h.assertTrue(!TechniqueProgression.awakened(p, "gojo"), "his ultimate stays closed (the Prison Realm is a separate, later step)");
+        InvestigationState st = InvestigationState.get(server(h));
+        var arena = CursedRealms.arenaOf(st, CursedRealms.TRIAL + "training:gojo:" + p.getUUID());
+        if (arena != null) CursedRealms.close(server(h), st, arena, true);
+        freeKit(h, "gojo");
+        p.discard();
+        h.succeed();
     }
 }
