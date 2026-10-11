@@ -73,7 +73,7 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     private static final EntityDataAccessor<Byte> ACTION = SynchedEntityData.defineId(CommonCurseEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> GRADE = SynchedEntityData.defineId(CommonCurseEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> FLAGS = SynchedEntityData.defineId(CommonCurseEntity.class, EntityDataSerializers.BYTE);
-    public static final int FLAG_EXPOSED = 1, FLAG_WINDUP = 2, FLAG_FROZEN = 4, FLAG_ENRAGED = 8, FLAG_STAGGERED = 16;
+    public static final int FLAG_EXPOSED = 1, FLAG_WINDUP = 2, FLAG_FROZEN = 4, FLAG_ENRAGED = 8, FLAG_STAGGERED = 16, FLAG_DORMANT = 32;
     /** The shared stagger action (no kind uses this id for its own). */
     public static final int STAGGERED = 100;
     public static final int STAGGER_TICKS = 34, POISE_REGEN_DELAY = 50;
@@ -105,6 +105,8 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     private int freezeTicks;
     private int lastFreeze = -100;
     private int calm;
+    /** Held back for a later wave: not there yet (unseen, untouchable, still). */
+    private boolean dormant;
 
     protected CommonCurseEntity(EntityType<? extends CommonCurseEntity> type, Level level, CurseGrade grade) {
         super(type, level);
@@ -218,6 +220,7 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         if (freezeTicks > 0) f |= FLAG_FROZEN;
         if (enraged()) f |= FLAG_ENRAGED;
         if (action == STAGGERED) f |= FLAG_STAGGERED;
+        if (dormant) f |= FLAG_DORMANT;
         return f;
     }
 
@@ -239,6 +242,26 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
 
     public boolean isStaggered() {
         return (flags() & FLAG_STAGGERED) != 0;
+    }
+
+    public boolean dormant() {
+        return (flags() & FLAG_DORMANT) != 0;
+    }
+
+    /** Holds it back for a later wave of its incident. */
+    public void setDormant(boolean d) {
+        dormant = d;
+        setInvisible(d);
+        if (!level().isClientSide()) syncFlags();
+    }
+
+    /** Brings a held-back curse in: it manifests where it waited. */
+    public void manifest(ServerLevel level) {
+        if (!dormant) return;
+        setDormant(false);
+        restTicks = Math.max(restTicks, 20);
+        fx(level, "fb_manifest", position().add(0, getBbHeight() * 0.5, 0), Vec3.ZERO, 0.6f);
+        sound(level, net.minecraft.sounds.SoundEvents.WARDEN_EMERGE, 0.5f, 1.6f);
     }
 
     public boolean committing() {
@@ -326,6 +349,11 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     protected void customServerAiStep(ServerLevel level) {
         super.customServerAiStep(level);
         if (!graded) setGrade(grade);
+        if (dormant) {
+            setDeltaMovement(Vec3.ZERO);
+            syncFlags();
+            return;
+        }
         if (exposedTicks > 0) exposedTicks--;
         if (++sinceHit > POISE_REGEN_DELAY && poise >= 0 && poise < maxPoise()) poise = Math.min(maxPoise(), poise + maxPoise() / 40f);
         if (freezeTicks > 0) {
@@ -498,6 +526,7 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
 
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+        if (dormant && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) return false;
         boolean open = exposedTicks > 0;
         float dealt = open ? damage * exposedTaken() : damage;
         float before = getHealth();
@@ -593,6 +622,26 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     }
 
     @Override
+    public void playAmbientSound() {
+        if (!dormant()) super.playAmbientSound();
+    }
+
+    @Override
+    public boolean isPickable() {
+        return !dormant() && super.isPickable();
+    }
+
+    @Override
+    public boolean isPushable() {
+        return !dormant() && super.isPushable();
+    }
+
+    @Override
+    public boolean isNoGravity() {
+        return dormant() || super.isNoGravity();
+    }
+
+    @Override
     public boolean removeWhenFarAway(double distSqr) {
         return incident.isEmpty() && super.removeWhenFarAway(distSqr);
     }
@@ -604,6 +653,7 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         out.putString("JjkIncident", incident);
         if (home != null) out.store("JjkHome", BlockPos.CODEC, home);
         out.putInt("JjkHomeRadius", homeRadius);
+        out.putBoolean("JjkDormant", dormant);
     }
 
     @Override
@@ -618,5 +668,6 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         incident = in.getStringOr("JjkIncident", "");
         home = in.read("JjkHome", BlockPos.CODEC).orElse(null);
         homeRadius = in.getIntOr("JjkHomeRadius", 16);
+        setDormant(in.getBooleanOr("JjkDormant", false));
     }
 }

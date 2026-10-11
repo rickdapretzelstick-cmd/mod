@@ -217,8 +217,9 @@ final class FingerBearerFx {
             }
             case "curse_spit" -> {
                 // A gob of cursed bile in flight (dir = its velocity).
-                add(level, pos, dir.scale(0.3), Sprite.GLOW, SICK, 0.9f, 0.22f, 0.12f, 4);
-                add(level, pos, randomUnit().scale(0.02), Sprite.SMOKE, CORE, 0.5f, 0.12f, 0.2f, 8);
+                add(level, pos, dir.scale(0.5), Sprite.CORE, SICK, 0.95f, 0.38f, 0.3f, 3);
+                add(level, pos, dir.scale(0.3), Sprite.GLOW, SICK, 0.9f, 0.3f, 0.12f, 6);
+                add(level, pos, randomUnit().scale(0.02), Sprite.SMOKE, CORE, 0.5f, 0.16f, 0.25f, 10);
             }
             case "curse_spit_burst" -> {
                 Flashes.flash(pos, 0.2f, 1f, SICK, 0.7f, 5, now);

@@ -327,13 +327,17 @@ public final class Investigations {
         });
     }
 
-    /** Spawns an incident's curses around {@code origin}, bound to it. */
+    /**
+     * Spawns an incident's curses around {@code origin}, bound to it. Three or more come in waves: the kinds are mixed,
+     * about three in five manifest at once, and the rest wait unseen ({@link CommonCurseEntity#setDormant}) to come in
+     * as reinforcements once the first wave is nearly gone ({@link #curseFell}).
+     */
     static void spawnCurses(ServerLevel level, Incident in, BlockPos origin, List<Vec3> spots, int radius) {
         IncidentTemplate t = in.def();
         if (t == null) return;
         RandomSource r = RandomSource.create(in.id.hashCode() * 7L + level.getGameTime());
         in.curses.clear();
-        int n = 0;
+        List<CommonCurseEntity> all = new java.util.ArrayList<>();
         for (IncidentTemplate.CurseSpawn cs : t.curses()) {
             EntityType<? extends CommonCurseEntity> type = CurseKinds.type(cs.kind());
             if (type == null) continue;
@@ -341,16 +345,29 @@ public final class Investigations {
             for (int i = 0; i < count; i++) {
                 CommonCurseEntity c = type.create(level, EntitySpawnReason.EVENT);
                 if (c == null) continue;
-                Vec3 at = Vec3.atBottomCenterOf(origin).add(spots.get(n++ % spots.size())).add(r.nextDouble() - 0.5, 0, r.nextDouble() - 0.5);
-                c.setPos(at.x, at.y, at.z);
-                c.setYRot(r.nextFloat() * 360f);
                 c.setGrade(cs.grade() != null ? cs.grade() : in.grade);
-                c.bind(in.id, origin, radius);
-                level.addFreshEntity(c);
-                in.curses.add(c.getUUID());
+                all.add(c);
             }
         }
+        // Mixed: a wave is never all one kind when the incident has more than one.
+        for (int i = all.size() - 1; i > 0; i--) java.util.Collections.swap(all, i, r.nextInt(i + 1));
+        int firstWave = firstWave(all.size());
+        for (int n = 0; n < all.size(); n++) {
+            CommonCurseEntity c = all.get(n);
+            Vec3 at = Vec3.atBottomCenterOf(origin).add(spots.get(n % spots.size())).add(r.nextDouble() - 0.5, 0, r.nextDouble() - 0.5);
+            c.setPos(at.x, at.y, at.z);
+            c.setYRot(r.nextFloat() * 360f);
+            c.bind(in.id, origin, radius);
+            if (n >= firstWave) c.setDormant(true);
+            level.addFreshEntity(c);
+            in.curses.add(c.getUUID());
+        }
         dev.rick.jjk.core.fx.Fx.play(level, "fb_manifest", Vec3.atBottomCenterOf(origin).add(0, 1, 0), Vec3.ZERO, 1f);
+    }
+
+    /** How many of {@code total} curses manifest at the start (the rest are reinforcements). */
+    public static int firstWave(int total) {
+        return total < 3 ? total : Math.max(2, Math.round(total * 0.6f));
     }
 
     /** One of an incident's curses has been exorcised; the last one completes it. */
@@ -362,6 +379,21 @@ public final class Investigations {
         if (c.getKillCredit() instanceof ServerPlayer p) in.participants.add(p.getUUID());
         st.markDirty();
         if (in.curses.isEmpty() && in.state == Incident.State.ACTIVE) complete(server, in, st);
+        else if (c.level() instanceof ServerLevel level) reinforce(level, in);
+    }
+
+    /** With at most one of the first wave left standing, the waiting curses come in. */
+    static void reinforce(ServerLevel level, Incident in) {
+        List<CommonCurseEntity> waiting = new java.util.ArrayList<>();
+        int awake = 0;
+        for (UUID id : in.curses) {
+            if (!(level.getEntity(id) instanceof CommonCurseEntity e) || !e.isAlive()) continue;
+            if (e.dormant()) waiting.add(e);
+            else awake++;
+        }
+        if (waiting.isEmpty() || awake > (waiting.size() >= 2 ? 1 : 0)) return;
+        for (CommonCurseEntity e : waiting) e.manifest(level);
+        dev.rick.jjk.core.fx.Fx.sound(level, waiting.get(0).position(), net.minecraft.sounds.SoundEvents.WARDEN_ROAR, 0.6f, 1.5f);
     }
 
     /** Everyone who took part gets the investigation bonus; the village hears it's over. */

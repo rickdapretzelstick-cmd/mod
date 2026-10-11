@@ -212,4 +212,41 @@ public class InvestigationTests {
             h.assertTrue(live != null && live.state() == Incident.State.OPEN && live.curses().isEmpty(), "and the incident is open to try again");
         });
     }
+
+    @GameTest(maxTicks = 400, environment = "jjk-test:inv_f")
+    public void aBigIncidentComesInWavesWithReinforcements(GameTestHelper h) {
+        floor(h);
+        ServerLevel level = h.getLevel();
+        Incident in = incident(h, "gojo_chain_4", new BlockPos(5, 1, 5), 1, 0);
+        ServerPlayer p = survivor(h, 6.5, 1, 5.5);
+        InvestigationState st = InvestigationState.get(level.getServer());
+        CursedRealms.enter(p, in, st);
+        int total = in.curses().size();
+        h.assertTrue(total >= 6, "a big incident: " + total);
+        boolean[] sawWaiting = new boolean[1], reinforced = new boolean[1];
+        h.succeedWhen(() -> {
+            p.setHealth(p.getMaxHealth());
+            Incident now = InvestigationState.get(level.getServer()).incident(in.id);
+            h.assertTrue(now != null, "still there");
+            List<dev.rick.jjk.progression.curse.CommonCurseEntity> awake = new java.util.ArrayList<>(), waiting = new java.util.ArrayList<>();
+            for (UUID id : now.curses()) {
+                if (Investigations.curseEntity(level.getServer(), id) instanceof dev.rick.jjk.progression.curse.CommonCurseEntity c && c.isAlive()) {
+                    (c.dormant() ? waiting : awake).add(c);
+                }
+            }
+            if (awake.size() + waiting.size() < now.curses().size()) h.fail("loading");
+            if (!sawWaiting[0]) {
+                h.assertTrue(waiting.size() == total - Investigations.firstWave(total), "the rest wait for a later wave: " + waiting.size() + " of " + total);
+                sawWaiting[0] = true;
+            }
+            if (waiting.isEmpty()) reinforced[0] = true;
+            if (!reinforced[0]) {
+                h.assertTrue(awake.size() >= 1, "the first wave is never all gone before the reinforcements come");
+                // Exorcise the first wave one by one, down to the last one standing.
+                if (awake.size() > 1) awake.get(0).hurtServer((ServerLevel) awake.get(0).level(), awake.get(0).damageSources().genericKill(), 10_000f);
+                h.fail("first wave");
+            }
+            h.assertTrue(awake.size() >= 2, "reinforcements came in with one of the first wave still standing: " + awake.size());
+        });
+    }
 }

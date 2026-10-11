@@ -70,7 +70,7 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
 
     @Override
     public boolean shouldRender(T e, Frustum culler, double x, double y, double z, float partial) {
-        return ClientProgression.canSee(e) && super.shouldRender(e, culler, x, y, z, partial);
+        return !e.dormant() && ClientProgression.canSee(e) && super.shouldRender(e, culler, x, y, z, partial);
     }
 
     @Override
@@ -122,31 +122,95 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
         Look look = look(s, baseTint);
         int light = look.lit ? 0xF000F0 : s.lightCoords;
         c.submitCustomGeometry(ps, solid, (p, buf) -> model.render(p, buf, pose, light, look.tint, look.overlay));
+        if (look.glow != 0) {
+            // The glow: the model again, added on top (bright in any light).
+            // A thin shell just outside its surface (drawn on the surface itself, the body would cover it).
+            int g = look.glow;
+            ps.pushPose();
+            ps.scale(1.07f, 1.05f, 1.07f);
+            c.submitCustomGeometry(ps, Glow.ADDITIVE, (p, buf) -> model.render(p, new Flat(buf), pose, 0xF000F0, g));
+            ps.popPose();
+        }
         ps.popPose();
         super.submit(s, ps, c, cam);
     }
 
     /** How it's drawn this frame: the colour it's multiplied by, the overlay flash, and whether it's lit regardless. */
-    public record Look(int tint, int overlay, boolean lit) {}
+    public record Look(int tint, int overlay, boolean lit, int glow) {}
+
+    /** An additive glow of colour {@code rgb} at strength {@code k} (alpha is brightness). */
+    private static int glow(int rgb, float k) {
+        return Math.round(Mth.clamp(k, 0, 1) * 255) << 24 | rgb & 0xFFFFFF;
+    }
+
+    /** Hands the model's corners and colour to the additive glow (it takes no texture, light or normals). */
+    private record Flat(com.mojang.blaze3d.vertex.VertexConsumer out) implements com.mojang.blaze3d.vertex.VertexConsumer {
+        @Override
+        public com.mojang.blaze3d.vertex.VertexConsumer addVertex(float x, float y, float z) {
+            out.addVertex(x, y, z);
+            return this;
+        }
+
+        @Override
+        public com.mojang.blaze3d.vertex.VertexConsumer setColor(int r, int g, int b, int a) {
+            out.setColor(r, g, b, a);
+            return this;
+        }
+
+        @Override
+        public com.mojang.blaze3d.vertex.VertexConsumer setColor(int argb) {
+            return setColor(argb >> 16 & 255, argb >> 8 & 255, argb & 255, argb >>> 24);
+        }
+
+        @Override
+        public com.mojang.blaze3d.vertex.VertexConsumer setUv(float u, float v) {
+            return this;
+        }
+
+        @Override
+        public com.mojang.blaze3d.vertex.VertexConsumer setUv1(int u, int v) {
+            return this;
+        }
+
+        @Override
+        public com.mojang.blaze3d.vertex.VertexConsumer setUv2(int u, int v) {
+            return this;
+        }
+
+        @Override
+        public com.mojang.blaze3d.vertex.VertexConsumer setUv3(float u, float v) {
+            return this;
+        }
+
+        @Override
+        public com.mojang.blaze3d.vertex.VertexConsumer setNormal(float x, float y, float z) {
+            return this;
+        }
+
+        @Override
+        public com.mojang.blaze3d.vertex.VertexConsumer setLineWidth(float width) {
+            return this;
+        }
+    }
 
     public static Look look(State s, int baseTint) {
         if (s.hurt > 0 && !s.exposed) {
             int gb = Math.round(255 - 110 * s.hurt);
-            return new Look(0xFF000000 | 0xFF << 16 | gb << 8 | gb, OverlayTexture.NO_OVERLAY, false);
+            return new Look(0xFF000000 | 0xFF << 16 | gb << 8 | gb, OverlayTexture.NO_OVERLAY, false, 0);
         }
         if (s.exposed) {
             // Open: flashing white and gold, four ticks each.
             boolean white = ((int) s.now / 3) % 2 == 0;
-            return new Look(white ? 0xFFFFFFFF : 0xFFFFE08A, OverlayTexture.pack(OverlayTexture.u(white ? 0.55f : 0.25f), OverlayTexture.v(false)), true);
+            return new Look(white ? 0xFFFFFFFF : 0xFFFFE08A, OverlayTexture.NO_OVERLAY, true, white ? glow(0xFFFFFF, 0.55f) : glow(0xFFC040, 0.45f));
         }
         if (s.windup) {
             // About to commit: a hot pulse.
             float p = 0.5f + 0.5f * Mth.sin(s.now * 1.3f);
             int g = Math.round(110 + 50 * p), b = Math.round(60 + 30 * p);
-            return new Look(0xFF000000 | 0xFF << 16 | g << 8 | b, OverlayTexture.pack(OverlayTexture.u(0.2f + 0.35f * p), OverlayTexture.v(false)), true);
+            return new Look(0xFF000000 | 0xFF << 16 | g << 8 | b, OverlayTexture.NO_OVERLAY, true, glow(0xFF5A1E, 0.18f + 0.3f * p));
         }
-        if (s.enraged) return new Look(0xFFFF9C9C, OverlayTexture.NO_OVERLAY, false);
-        return new Look(baseTint, OverlayTexture.NO_OVERLAY, false);
+        if (s.enraged) return new Look(0xFFFF9C9C, OverlayTexture.NO_OVERLAY, false, glow(0xFF2010, 0.1f));
+        return new Look(baseTint, OverlayTexture.NO_OVERLAY, false, 0);
     }
 
     /** For tests and previews: the texture this renderer draws with. */

@@ -563,9 +563,23 @@ Finger Bearer, and each fights differently:
 
 | Curse | Grade | How it fights | How to beat it |
 |---|---|---|---|
-| **Fly Head** | 4 | comes in swarms that circle you just out of reach on wobbling orbits, one diving at a time to bite | sidestep the dive (it overshoots); a swatted one scatters for a moment |
-| **School Crawler** | 4 (strong) | scuttles round you at mid range, presses flat (the tell) and pounces; up close, a raking swipe, then backs off | sidestep the pounce: it skids past and lies sprawled for 1.5 s |
-| **School Maw** | 3 | slow, all mouth: its tongue lashes out along a line and reels you in front of its jaw, and the bite follows at once; otherwise a long gaping bite | get out of the tongue's line; a missed bite leaves it hunched over 1.4 s |
+| **Fly Head** | 4 | comes in swarms that circle you just out of reach on wobbling orbits, one at a time diving to bite or puffing up to spit a slow gob of bile (three in a fan at Grade 3) | sidestep the dive or the spit; hit it mid-dive (or let it dive into the floor) and it's swatted down, open, for 2 s; a swatted one scatters |
+| **School Crawler** | 4 (strong) | scuttles round you toward your blind side, presses flat (the tell, with its lane on the floor) and pounces; sometimes the crouch is a feint and it darts sideways first, then springs after a short crouch; up close, a raking swipe, then backs off; Grade 3 springs twice | dodge the real spring: it skids past and lies sprawled (exposed) for 1.5 s; a pounce into a wall stuns it for almost 3 s |
+| **School Maw** | 3 | slow, all mouth: its tongue lashes out along a marked line and reels you in front of its jaw, and the bite follows at once; otherwise a long gaping bite (its reach marked on the floor); crowd it or get round its side and it slams the ground in a marked ring; below half health it's enraged (runs red, rests less, bites twice); Grade 3 lashes again after a miss | get out of the line; jump the slam or leave the ring; a missed bite leaves it hunched over (exposed) 1.4 s |
+
+**What every curse shares** (`CommonCurseEntity`):
+
+- **Readable wind-ups.** Winding up, a curse glows a pulsing orange outline and runs red; lunges, lashes, bites and
+  slams mark their lane, reach or ring on the floor for exactly as long as the wind-up lasts.
+- **Hits that land.** A hit holds it in a short hitstop (it shudders in place; your view kicks a touch). Enough damage
+  in a short time breaks its **poise** and **staggers** it out of whatever it was doing, except an armoured move (the
+  Maw's bite and slam), after which it reels anyway.
+- **Punish windows.** A whiffed attack, a crash or a stagger leaves it **exposed**: it flashes white and gold, takes
+  1.5x damage (the Hunter's Shade 1.6x), and the first hit into the opening rings out and pays you Awakening meter.
+- **Taking turns.** At most two curses commit to attacking you at once; the others hold back and circle.
+- **No cheap healing.** It only mends after 10 s with nothing to fight and no hits.
+- **Waves.** An incident with three or more curses mixes the kinds and sends about three in five at once; the rest
+  manifest as reinforcements when one of the first wave is left standing.
 
 ### Cursed tools
 
