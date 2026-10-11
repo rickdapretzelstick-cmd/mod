@@ -1,15 +1,13 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "equipment",
+  "category": "misc",
   "pattern": [
-    " D ",
-    "IEI",
-    " I "
+    " N ",
+    "N N",
+    " N "
   ],
   "key": {
-    "D": "minecraft:diamond",
-    "I": "minecraft:iron_ingot",
-    "E": "jjk:yuta_essence"
+    "N": "minecraft:iron_nugget"
   },
   "result": {
     "id": "jjk:cursed_ring",

@@ -1347,6 +1347,8 @@ public final class JJKConfig {
         public int victoryTicks = 80, failureTicks = 40;
         /** Ticks an offer to begin stays answerable. */
         public int offerTicks = 600;
+        /** Containing a Grade 1 essence with a seal: its intro, its length (6-8 s), and the misses that fail it (one allowed). */
+        public int captureIntroMs = 1_500, captureDurationMs = 7_000, captureMaxMisses = 2;
     }
 
     /**

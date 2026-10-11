@@ -3,14 +3,14 @@
   "category": "misc",
   "pattern": [
     "NBN",
-    "RER",
+    "RPR",
     "NBN"
   ],
   "key": {
     "N": "minecraft:iron_nugget",
     "B": "minecraft:black_dye",
     "R": "minecraft:redstone",
-    "E": "jjk:yuji_essence"
+    "P": "minecraft:paper"
   },
   "result": {
     "id": "jjk:human_earthworm_vhs",

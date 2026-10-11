@@ -115,5 +115,8 @@
   "entity.jjk.cursed_breach": "Cursed Breach",
   "key.jjk.training_left": "Training: left gauge",
   "key.jjk.training_center": "Training: centre gauge",
-  "key.jjk.training_right": "Training: right gauge"
+  "key.jjk.training_right": "Training: right gauge",
+  "item.jjk.exorcism_seal": "Exorcism Seal",
+  "item.jjk.sealed_grade1_essence": "Sealed Grade 1 Essence",
+  "entity.jjk.guardian_remnant": "Guardian Remnant"
 }

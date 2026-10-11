@@ -3,11 +3,11 @@
   "category": "misc",
   "pattern": [
     "BBB",
-    "BEB"
+    "SSS"
   ],
   "key": {
-    "B": "minecraft:bone",
-    "E": "jjk:ryu_essence"
+    "B": "minecraft:bone_meal",
+    "S": "minecraft:stick"
   },
   "result": {
     "id": "jjk:comb",

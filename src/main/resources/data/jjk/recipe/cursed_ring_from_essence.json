@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " D ",
+    "IEI",
+    " I "
+  ],
+  "key": {
+    "D": "minecraft:diamond",
+    "I": "minecraft:iron_ingot",
+    "E": "jjk:yuta_essence"
+  },
+  "result": {
+    "id": "jjk:cursed_ring",
+    "count": 1,
+    "components": {
+      "minecraft:custom_data": {
+        "JjkEssence": true,
+        "JjkEssenceFrom": "storyline"
+      },
+      "minecraft:enchantment_glint_override": true
+    }
+  }
+}

@@ -39,8 +39,13 @@ public final class TrainingHud {
         boolean shown = a.state == TrainingNet.INTRO || live || a.state == TrainingNet.FAILURE && a.stateSeconds() < 2.2;
 
         if (a.state == TrainingNet.INTRO) title(g, font, w, h, a.start.title(), "Press each key as its needle crosses the arc", 0xFFFFFFFF);
-        if (a.state == TrainingNet.SUCCESS) title(g, font, w, h, a.start.practice() ? "PRACTICE COMPLETE" : "TRAINING COMPLETE", "Steady.", PERFECT);
-        if (a.state == TrainingNet.FAILURE) title(g, font, w, h, "✘ FAILED", a.start.maxMisses() + " mistakes", MISS);
+        boolean seal = TrainingClient.containment();
+        if (a.state == TrainingNet.SUCCESS) {
+            if (seal) title(g, font, w, h, "ESSENCE SEALED", "A Sealed Grade 1 Essence is yours.", PERFECT);
+            else title(g, font, w, h, a.start.practice() ? "PRACTICE COMPLETE" : "TRAINING COMPLETE", "Steady.", PERFECT);
+        }
+        if (a.state == TrainingNet.FAILURE) title(g, font, w, h, seal ? "✘ IT SLIPPED LOOSE" : "✘ FAILED",
+                seal ? "Your seal is unspent. Use it on the remnant again." : a.start.maxMisses() + " mistakes", MISS);
         if (!shown) return;
 
         // Phase, time left, mistakes: one line under the row.

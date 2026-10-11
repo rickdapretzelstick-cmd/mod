@@ -72,6 +72,17 @@ public final class ProgressionItems {
     public static final Item INFUSED_COMB = relic("infused_comb", "ryu", "Are you satisfied?", false);
     public static final Item INFUSED_SCRATCH_OFF_TICKET = relic("infused_scratch_off_ticket", "hakari", "Feeling lucky?", false);
 
+    // --- Grade 1 essences (see progression.guardian): captured with a seal, bound into an ordinary vessel at a cauldron ---
+
+    /** Paper, ink and gold: an exorcist's seal. Used on a defeated guardian's remnant to contain its essence. */
+    public static final Item EXORCISM_SEAL = item("exorcism_seal", Item::new, new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON)
+            .component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(java.util.List.of(
+                    net.minecraft.network.chat.Component.literal("Use it on a defeated Grade 1 curse's remnant to contain its essence."),
+                    net.minecraft.network.chat.Component.literal("Used up only if the containment holds.")))));
+    /** A Grade 1 guardian's essence, sealed: bound into a character's ordinary vessel at a cauldron. */
+    public static final Item SEALED_GRADE1_ESSENCE = item("sealed_grade1_essence", Item::new, new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)
+            .fireResistant().component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true));
+
     public static final Item CURSED_SOUL_SAND = item("cursed_soul_sand", p -> new BlockItem(ProgressionBlocks.CURSED_SOUL_SAND, p),
             new Item.Properties().useBlockDescriptionPrefix());
 
@@ -90,11 +101,11 @@ public final class ProgressionItems {
                         net.minecraft.network.chat.Component.literal(lore)))));
     }
 
-    /** A dormant character object: crafted from an Essence, nothing yet. */
+    /** An ordinary character vessel: crafted from everyday materials, nothing in it (see story.Vessels). */
     private static Item.Properties object(String lore) {
         return new Item.Properties().stacksTo(1).rarity(Rarity.RARE).fireResistant()
                 .component(net.minecraft.core.component.DataComponents.LORE, new net.minecraft.world.item.component.ItemLore(java.util.List.of(
-                        net.minecraft.network.chat.Component.literal(lore), net.minecraft.network.chat.Component.literal("Dormant."))));
+                        net.minecraft.network.chat.Component.literal(lore), net.minecraft.network.chat.Component.literal("Ordinary: no essence in it."))));
     }
 
     /** An infused relic: one live per world ({@link dev.rick.jjk.progression.story.UniqueRelics}). */
@@ -141,6 +152,8 @@ public final class ProgressionItems {
             e.accept(DORMANT_PRISON_REALM);
         });
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.INGREDIENTS).register(e -> {
+            e.accept(EXORCISM_SEAL);
+            e.accept(SEALED_GRADE1_ESSENCE);
             for (Item i : new Item[] {YUJI_ESSENCE, GOJO_ESSENCE, YUTA_ESSENCE, RYU_ESSENCE, HAKARI_ESSENCE,
                     HUMAN_EARTHWORM_VHS, BLINDFOLD, CURSED_RING, COMB, SCRATCH_OFF_TICKET}) e.accept(i);
             // The infused relics are only ever made by a cauldron (a Creative copy carries no token: a test relic).

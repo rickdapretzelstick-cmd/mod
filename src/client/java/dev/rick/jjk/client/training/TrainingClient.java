@@ -93,6 +93,11 @@ public final class TrainingClient {
         return attempt != null && mc.player != null;
     }
 
+    /** A seal's containment (the same skill check, no scene: the world stays in view). */
+    public static boolean containment() {
+        return attempt != null && "capture".equals(attempt.start.kit());
+    }
+
     /** Yuta's training: the practice katana is drawn (shown on the participant only, owned by the session). */
     public static boolean katana() {
         return attempt != null && "yuta".equals(attempt.start.kit());
@@ -119,7 +124,7 @@ public final class TrainingClient {
         lastHeard = System.nanoTime();
         send(TrainingNet.READY, -1, -1, 0);
         if (mc.gui.screen() instanceof TrainingScreens.ResultScreen) mc.gui.setScreen(null);
-        TrainingCamera.begin();
+        if (!"capture".equals(s.kit())) TrainingCamera.begin();
     }
 
     public static void state(TrainingNet.State s) {
@@ -280,7 +285,8 @@ public final class TrainingClient {
         if (a.state == TrainingNet.ACTIVE) {
             for (TrainingEvaluator.Outcome o : a.eval.expire(a.clock - 60)) predict(a, o, a.clock);
         }
-        if (a.state == TrainingNet.FAILURE && a.stateSeconds() > 2.0 && !a.offeredRetry && mc.gui.screen() == null) {
+        // A containment has no Retry/Leave: the remnant waits, and another seal use starts again.
+        if (a.state == TrainingNet.FAILURE && a.stateSeconds() > 2.0 && !a.offeredRetry && mc.gui.screen() == null && !containment()) {
             a.offeredRetry = true;
             mc.gui.setScreen(new TrainingScreens.ResultScreen(false));
         }

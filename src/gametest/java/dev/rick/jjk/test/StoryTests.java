@@ -16,6 +16,7 @@ import dev.rick.jjk.progression.mastery.Mastery;
 import dev.rick.jjk.progression.story.CharacterStories;
 import dev.rick.jjk.progression.story.CharacterStory;
 import dev.rick.jjk.progression.story.PersonalTrials;
+import dev.rick.jjk.progression.story.Vessels;
 import dev.rick.jjk.progression.story.RelicForging;
 import dev.rick.jjk.progression.story.RelicItem;
 import dev.rick.jjk.progression.story.UniqueRelics;
@@ -85,7 +86,8 @@ public class StoryTests {
                 h.assertTrue(CharacterStories.ofTemplate(id) == s && s.stageOf(id) == s.chain().indexOf(id) + 1, id + ": belongs to its storyline");
             }
             h.assertTrue(s.essence().get() != s.object().get() && s.relic().get() instanceof RelicItem r && r.kit().equals(s.kit()), s.kit() + ": its items");
-            h.assertTrue(CauldronInfusions.indexOf(new ItemStack(s.object().get())) >= 5, s.kit() + ": its object is infused in the cauldron");
+            h.assertTrue(CauldronInfusions.indexOf(new ItemStack(s.object().get())) < 0 && CauldronInfusions.indexOf(Vessels.essenceBearing(s, null)) >= 5,
+                    s.kit() + ": only its essence-bearing vessel is infused in the cauldron");
             h.assertTrue(CauldronInfusions.indexOf(new ItemStack(s.relic().get())) < 0, s.kit() + ": its relic is not infused again");
         }
         // The finales are the hardest events, and the first reports are recognisable without naming anyone.
@@ -186,7 +188,7 @@ public class StoryTests {
         ItemStack lost = RelicForging.make(level, c2, CharacterStories.GOJO);
         h.assertTrue(won.is(ProgressionItems.INFUSED_BLINDFOLD) && UniqueRelics.get(server(h)).isLive(RelicItem.key("gojo"), RelicItem.token(won)),
                 "exactly one Infused Blindfold");
-        h.assertTrue(lost.is(ProgressionItems.BLINDFOLD), "the other cauldron gives its Blindfold back");
+        h.assertTrue(lost.is(ProgressionItems.BLINDFOLD) && Vessels.essenceBearing(lost), "the other cauldron gives its Blindfold back, its essence still in it");
         h.assertTrue(RelicForging.refuse(level, CharacterStories.GOJO, b) != null, "and refuses another while the relic exists");
         freeKit(h, "gojo");
         a.discard();

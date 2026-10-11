@@ -35,6 +35,7 @@
       "dev.rick.jjk.test.StoryTests",
       "dev.rick.jjk.test.TrainingTests",
       "dev.rick.jjk.test.ClearanceTests",
+      "dev.rick.jjk.test.EssenceTests",
       "dev.rick.jjk.test.NewsHouseTests",
       "dev.rick.jjk.test.SiteTests",
       "dev.rick.jjk.test.BladeTests",
@@ -59,7 +60,8 @@
       "dev.rick.jjk.test.NewsHouseClientTest",
       "dev.rick.jjk.test.BreachClientTest",
       "dev.rick.jjk.test.BladeClientTest",
-      "dev.rick.jjk.test.EncounterClientTest"
+      "dev.rick.jjk.test.EncounterClientTest",
+      "dev.rick.jjk.test.CaptureClientTest"
     ]
   },
   "depends": {

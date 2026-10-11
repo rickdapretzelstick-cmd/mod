@@ -4,6 +4,7 @@ import dev.rick.jjk.progression.ProgressionItems;
 import dev.rick.jjk.progression.story.CharacterStories;
 import dev.rick.jjk.progression.story.CharacterStory;
 import dev.rick.jjk.progression.story.RelicForging;
+import dev.rick.jjk.progression.story.Vessels;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -20,7 +21,7 @@ import java.util.function.Supplier;
 /**
  * What a full cauldron of cursed energy can be dipped into, and what rises out: plain Glasses become Cursed Glasses, a
  * Dormant Prison Realm becomes the world's Prison Realm, ordinary steel takes on cursed energy as the first cursed tools,
- * and a character object (crafted from its Essence) becomes that character's one infused relic. The cauldron's
+ * and an essence-bearing character vessel ({@link Vessels}) becomes that character's one infused relic. The cauldron's
  * {@code held} state is the index here (so it is saved with the block and given back if broken): new entries only ever
  * go on the end.
  */
@@ -43,7 +44,17 @@ public final class CauldronInfusions {
      * @param result  what rises out
      * @param allowed whether the energy takes it right now (null: always)
      */
-    public record Infusion(Supplier<Item> input, Result result, @Nullable Check allowed) {}
+    public record Infusion(Supplier<Item> input, Result result, @Nullable Check allowed,
+                           @Nullable java.util.function.Predicate<ItemStack> accepts, @Nullable Supplier<ItemStack> giveBack) {
+        public Infusion(Supplier<Item> input, Result result, @Nullable Check allowed) {
+            this(input, result, allowed, null, null);
+        }
+
+        /** What comes back if the ritual is broken off (the cauldron broken): what went in. */
+        public ItemStack returned() {
+            return giveBack != null ? giveBack.get() : new ItemStack(input.get());
+        }
+    }
 
     public static final List<Infusion> ALL;
 
@@ -58,9 +69,11 @@ public final class CauldronInfusions {
         all.add(new Infusion(() -> Items.IRON_SWORD, (l, pos) -> new ItemStack(ProgressionItems.SLAUGHTER_DEMON), null));
         all.add(new Infusion(() -> Items.IRON_AXE, (l, pos) -> new ItemStack(ProgressionItems.CURSED_CLEAVER), null));
         all.add(new Infusion(() -> Items.COMPASS, (l, pos) -> new ItemStack(ProgressionItems.CURSED_COMPASS), null));
-        // The character objects (indices 5-9): each becomes its character's one relic, if the world has none yet.
+        // The character vessels (indices 5-9): only an essence-bearing one becomes its character's one relic, if the world
+        // has none yet (an ordinary vessel is just an object to the energy).
         for (CharacterStory s : CharacterStories.all()) {
-            all.add(new Infusion(s.object(), (l, pos) -> RelicForging.make(l, pos, s), (l, p) -> RelicForging.refuse(l, s, p)));
+            all.add(new Infusion(s.object(), (l, pos) -> RelicForging.make(l, pos, s), (l, p) -> RelicForging.refuse(l, s, p),
+                    Vessels::essenceBearing, () -> Vessels.essenceBearing(s, null)));
         }
         // Index 10: netherite steel takes the energy as the Cursed Blade.
         all.add(new Infusion(() -> Items.NETHERITE_SWORD, (l, pos) -> new ItemStack(ProgressionItems.CURSED_BLADE), null));
@@ -71,7 +84,10 @@ public final class CauldronInfusions {
 
     /** The infusion for what is being dipped, as its index, or -1. */
     public static int indexOf(ItemStack stack) {
-        for (int i = 0; i < ALL.size(); i++) if (stack.is(ALL.get(i).input().get())) return i;
+        for (int i = 0; i < ALL.size(); i++) {
+            Infusion f = ALL.get(i);
+            if (stack.is(f.input().get()) && (f.accepts() == null || f.accepts().test(stack))) return i;
+        }
         return -1;
     }
 

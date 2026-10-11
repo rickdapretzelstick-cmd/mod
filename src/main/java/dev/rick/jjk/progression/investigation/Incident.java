@@ -72,6 +72,17 @@ public final class Incident {
     /** Its Grade 1 guardian: the body and the visual variant, chosen once and kept for every retry. */
     String guardian = "";
     int variant;
+    /**
+     * A Grade 1 guardian's essence: {@link #CAPTURE_NONE} until the guardian falls, then {@link #CAPTURE_PENDING} (its
+     * remnant waits in the arena for its challenger's seal, kept across retries, leaving and restarts) and finally
+     * {@link #CAPTURE_DONE} (sealed, exactly once).
+     */
+    int capture;
+    public static final int CAPTURE_NONE = 0, CAPTURE_PENDING = 1, CAPTURE_DONE = 2;
+    /** Where the remnant lies, from the arena's origin. */
+    double remnantX, remnantY, remnantZ = 6;
+    /** The sealed essence didn't fit: it waits for its challenger (owner-bound, delivered when there's room). */
+    boolean claimOwed;
 
     public Incident(String id, String template, CurseGrade grade, String dimension, BlockPos village, BlockPos site, int dirX, int dirZ,
                     long createdAt, String headline, String body) {
@@ -195,6 +206,11 @@ public final class Incident {
         if (objectiveTarget != null) t.putString("ObjectiveTarget", objectiveTarget.toString());
         t.putString("Guardian", guardian);
         t.putInt("Variant", variant);
+        t.putInt("Capture", capture);
+        t.putDouble("RemnantX", remnantX);
+        t.putDouble("RemnantY", remnantY);
+        t.putDouble("RemnantZ", remnantZ);
+        t.putBoolean("ClaimOwed", claimOwed);
         return t;
     }
 
@@ -231,6 +247,11 @@ public final class Incident {
             i.objectiveTarget = uuidOrNull(t.getStringOr("ObjectiveTarget", ""));
             i.guardian = t.getStringOr("Guardian", "");
             i.variant = t.getIntOr("Variant", 0);
+            i.capture = t.getIntOr("Capture", CAPTURE_NONE);
+            i.remnantX = t.getDoubleOr("RemnantX", 0);
+            i.remnantY = t.getDoubleOr("RemnantY", 0);
+            i.remnantZ = t.getDoubleOr("RemnantZ", 6);
+            i.claimOwed = t.getBooleanOr("ClaimOwed", false);
             CompoundTag mk = t.getCompoundOrEmpty("Marks");
             for (String k : mk.keySet()) i.marks.put(k, BlockPos.of(mk.getLongOr(k, 0L)));
             CompoundTag cl = t.getCompoundOrEmpty("Clues");
@@ -263,6 +284,14 @@ public final class Incident {
 
     public String guardian() {
         return guardian;
+    }
+
+    public int capture() {
+        return capture;
+    }
+
+    public boolean claimOwed() {
+        return claimOwed;
     }
 
     public int variant() {

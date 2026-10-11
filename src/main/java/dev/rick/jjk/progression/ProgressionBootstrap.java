@@ -30,6 +30,8 @@ public final class ProgressionBootstrap {
         dev.rick.jjk.progression.investigation.Investigations.init();
         dev.rick.jjk.progression.investigation.CursedCompass.init();
         dev.rick.jjk.progression.story.PersonalTrials.init();
+        dev.rick.jjk.progression.guardian.EssenceCapture.init();
+        dev.rick.jjk.progression.story.Vessels.register();
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> ProgressionCommand.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> dev.rick.jjk.progression.story.StoryCommand.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> dev.rick.jjk.progression.investigation.ContractCommand.register(dispatcher));

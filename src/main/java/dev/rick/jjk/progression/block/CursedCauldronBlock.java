@@ -1,5 +1,8 @@
 package dev.rick.jjk.progression.block;
 
+import dev.rick.jjk.progression.story.Vessels;
+import net.minecraft.network.chat.Component;
+
 import dev.rick.jjk.config.JJKConfig;
 import dev.rick.jjk.core.fx.Fx;
 import dev.rick.jjk.progression.ProgressionBlocks;
@@ -103,6 +106,15 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
                 server.scheduleTick(pos, this, stageTicks());
             }
             return InteractionResult.SUCCESS;
+        }
+        if (Vessels.ordinary(stack) && state.getValue(LEVEL) >= MAX_LEVEL && state.getValue(INFUSION) == 0) {
+            // An ordinary vessel: nothing in it for the energy to wake.
+            if (level instanceof ServerLevel server) {
+                player.sendOverlayMessage(Component.literal("It's only an ordinary object. Bind a Sealed Grade 1 Essence into it first (hold both and use a cauldron).")
+                        .withStyle(net.minecraft.ChatFormatting.GRAY));
+                Fx.sound(server, Vec3.atCenterOf(pos), SoundEvents.SHULKER_HURT_CLOSED, 0.8f, 0.6f);
+            }
+            return InteractionResult.FAIL;
         }
         return super.useItemOn(stack, state, level, pos, player, hand, hit);
     }
@@ -227,7 +239,7 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
     protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean moved) {
         super.affectNeighborsAfterRemoval(state, level, pos, moved);
         if (state.getValue(INFUSION) > 0 && !level.getBlockState(pos).is(this)) {
-            Block.popResource(level, pos, new ItemStack(CauldronInfusions.get(state.getValue(HELD)).input().get()));
+            Block.popResource(level, pos, CauldronInfusions.get(state.getValue(HELD)).returned());
         }
     }
 

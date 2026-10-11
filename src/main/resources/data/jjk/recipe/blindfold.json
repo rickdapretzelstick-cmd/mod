@@ -1,14 +1,12 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "equipment",
+  "category": "misc",
   "pattern": [
-    "WWW",
-    "SES"
+    "WSW"
   ],
   "key": {
     "W": "minecraft:black_wool",
-    "S": "minecraft:string",
-    "E": "jjk:gojo_essence"
+    "S": "minecraft:string"
   },
   "result": {
     "id": "jjk:blindfold",

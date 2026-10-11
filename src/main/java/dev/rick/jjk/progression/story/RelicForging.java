@@ -87,7 +87,7 @@ public final class RelicForging {
                     p.sendOverlayMessage(Component.literal("The energy gutters out. Something like it already exists.").withStyle(ChatFormatting.GRAY));
                 }
             }
-            return new ItemStack(story.object().get());
+            return Vessels.essenceBearing(story, null);
         }
         erupt(level, at, story, o == null ? null : level.getServer().getPlayerList().getPlayer(o.player));
         return RelicItem.create(story.relic().get(), token);

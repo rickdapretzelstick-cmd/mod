@@ -87,6 +87,50 @@ public final class TrainingSchedule {
         }
     }
 
+    /**
+     * The settings a containment is built and judged with: the training's rules squeezed into its few seconds (the
+     * same telegraph, gaps and stagger; its three phases a third of it each).
+     */
+    public static JJKConfig.Training containmentRules(JJKConfig.Training cfg) {
+        JJKConfig.Training c = new JJKConfig.Training();
+        c.durationMs = cfg.captureDurationMs;
+        c.introMs = cfg.captureIntroMs;
+        c.phase2AtMs = cfg.captureDurationMs / 3;
+        c.phase3AtMs = cfg.captureDurationMs * 2 / 3;
+        c.phase1GoodMs = cfg.phase1GoodMs;
+        c.phase2GoodMs = cfg.phase2GoodMs;
+        c.phase3GoodMs = cfg.phase2GoodMs;
+        c.perfectFraction = cfg.perfectFraction;
+        c.telegraphMs = cfg.telegraphMs;
+        c.disturbanceTelegraphMs = cfg.disturbanceTelegraphMs;
+        c.sameKeyGapMs = cfg.sameKeyGapMs;
+        c.staggerMs = cfg.staggerMs;
+        c.maxMisses = cfg.captureMaxMisses;
+        c.maxLatencyMs = cfg.maxLatencyMs;
+        c.clockSlackMs = cfg.clockSlackMs;
+        c.syncTimeoutMs = cfg.syncTimeoutMs;
+        return c;
+    }
+
+    /**
+     * Containing a Grade 1 essence: a few seconds with all three circles going at once, their windows overlapping
+     * (one key's check is coming while another's is live), staggered by the same rules as training.
+     */
+    public static List<TrainingCheck> containment(long seed, JJKConfig.Training cfg) {
+        Plan p = new Plan(containmentRules(cfg), new SplittableRandom(seed));
+        int[] speed = {1500, 1700, 1900};
+        int t = 900;
+        int[] o = p.order();
+        for (int n = 0; t < p.cfg.durationMs - 400; n++) {
+            int g = o[n % 3];
+            if (n % 3 == 2) o = p.order();
+            TrainingCheck k = p.place(g, t, 0, speed[g], TrainingCheck.PLAIN, 650);
+            if (k == null) break;
+            t = k.atMs() + 330 + p.r.nextInt(160);
+        }
+        return p.finish();
+    }
+
     private static int disturbed(int period, int mod) {
         return switch (mod) {
             case TrainingCheck.FAST -> Math.round(period * 0.72f);

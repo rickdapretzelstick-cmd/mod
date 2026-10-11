@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BBB",
+    "BEB"
+  ],
+  "key": {
+    "B": "minecraft:bone",
+    "E": "jjk:ryu_essence"
+  },
+  "result": {
+    "id": "jjk:comb",
+    "count": 1,
+    "components": {
+      "minecraft:custom_data": {
+        "JjkEssence": true,
+        "JjkEssenceFrom": "storyline"
+      },
+      "minecraft:enchantment_glint_override": true
+    }
+  }
+}

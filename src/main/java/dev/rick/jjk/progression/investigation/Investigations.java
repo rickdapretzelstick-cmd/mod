@@ -162,6 +162,7 @@ public final class Investigations {
         }
         if (now % 200 == 0) expire(st, now);
         if (now % 4 == 0) takeDownSites(server, st);
+        if (now % 40 == 7) deliverClaims(server, st);
         if (now % 100 == 0) st.flush();
     }
 
@@ -378,7 +379,7 @@ public final class Investigations {
         }
         // Every open (or under-way) incident whose site is built has its breach: the one way in.
         for (Incident in : List.copyOf(st.incidents.values())) {
-            if ((in.state != Incident.State.OPEN && in.state != Incident.State.ACTIVE) || !in.featureBuilt || !in.dimension.equals(dim)) continue;
+            if ((in.state != Incident.State.OPEN && in.state != Incident.State.ACTIVE && !capturePending(in)) || !in.featureBuilt || !in.dimension.equals(dim)) continue;
             if (p.position().distanceToSqr(Vec3.atBottomCenterOf(in.site)) > 64 * 64) continue;
             CursedBreaches.ensure(level, in.id, CursedBreaches.anchor(in));
         }
@@ -400,7 +401,7 @@ public final class Investigations {
         CursedRealms.pull(p, CursedRealms.safeReturn(level, p, in), () -> {
             InvestigationState s2 = InvestigationState.get(level.getServer());
             Incident live = s2.incidents.get(in.id);
-            if (live != null && (live.state == Incident.State.OPEN || live.state == Incident.State.ACTIVE)) CursedRealms.enter(p, live, s2);
+            if (live != null && (live.state == Incident.State.OPEN || live.state == Incident.State.ACTIVE || capturePending(live))) CursedRealms.enter(p, live, s2);
         });
     }
 
@@ -506,6 +507,108 @@ public final class Investigations {
         dev.rick.jjk.core.fx.Fx.play(level, "fb_manifest", at.add(0, 1, 0), Vec3.ZERO, 1.6f);
     }
 
+    // --- A Grade 1 guardian's essence (see progression.guardian.EssenceCapture) ---
+
+    /** Whether a contract's guardian has fallen and its remnant still waits for a seal. */
+    public static boolean capturePending(Incident in) {
+        return in.capture == Incident.CAPTURE_PENDING;
+    }
+
+    @Nullable
+    public static Incident incident(MinecraftServer server, String id) {
+        return InvestigationState.get(server).incidents.get(id);
+    }
+
+    /** The guardian is down: what's left of it stays where it fell, waiting for its challenger's seal. */
+    static void guardianFell(MinecraftServer server, Incident in, InvestigationState st, @Nullable Vec3 at) {
+        if (in.capture != Incident.CAPTURE_NONE) return;
+        in.capture = Incident.CAPTURE_PENDING;
+        InvestigationState.Arena a = CursedRealms.arenaOf(st, in.id);
+        if (a != null && at != null) {
+            Vec3 o = Vec3.atBottomCenterOf(a.origin);
+            // Kept inside the arena (a guardian knocked into a wall leaves its remnant a step in).
+            double r = Math.max(2, CursedRealms.arenaRadius(a) - 2);
+            Vec3 d = at.subtract(o);
+            double flat = Math.sqrt(d.x * d.x + d.z * d.z);
+            double k = flat > r ? r / flat : 1;
+            in.remnantX = d.x * k;
+            in.remnantY = Math.max(0, Math.min(3, d.y));
+            in.remnantZ = d.z * k;
+        } else {
+            in.remnantX = 0;
+            in.remnantY = 0;
+            in.remnantZ = 6;
+        }
+        st.markDirty();
+        st.save();
+        ServerPlayer c = in.challenger == null ? null : server.getPlayerList().getPlayer(in.challenger);
+        if (c != null) {
+            boolean seal = c.getInventory().contains(x -> x.is(dev.rick.jjk.progression.ProgressionItems.EXORCISM_SEAL));
+            c.sendSystemMessage(Component.literal(seal
+                    ? "It is down. What is left of it still writhes where it fell: use an Exorcism Seal on it to contain its essence."
+                    : "It is down. What is left of it will wait where it fell. You have no Exorcism Seal: leave by the breach, make one, and come back the same way.")
+                    .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE));
+        }
+        JJK.LOGGER.info("[guardians] contract {}: guardian down, its remnant waits for a seal", in.id);
+    }
+
+    /** Where a contract's remnant lies in its arena. */
+    public static Vec3 remnantAt(InvestigationState.Arena a, Incident in) {
+        return Vec3.atBottomCenterOf(a.origin).add(in.remnantX, in.remnantY, in.remnantZ);
+    }
+
+    /** Why this player can't contain this contract's essence now, or null. */
+    @Nullable
+    public static String captureRefusal(@Nullable Incident in, ServerPlayer p) {
+        if (in == null || in.capture == Incident.CAPTURE_DONE) return "Its essence is already sealed.";
+        if (in.capture != Incident.CAPTURE_PENDING) return "There is nothing here to contain yet.";
+        if (in.challenger != null && !in.challenger.equals(p.getUUID())) return "This remnant answers only to the one who defeated it.";
+        return null;
+    }
+
+    /** How a contract's guardian is named on its essence. */
+    public static String guardianName(@Nullable Incident in) {
+        var body = in == null ? null : dev.rick.jjk.progression.guardian.Guardians.body(in.guardian);
+        return body == null ? "a Grade 1 curse" : body.name();
+    }
+
+    /**
+     * The essence is sealed: once, ever. It goes into its challenger's inventory, or, if that is full, waits for them as an
+     * owner-bound claim. Saved at once.
+     */
+    public static void markCaptured(MinecraftServer server, Incident in, net.minecraft.world.item.ItemStack essence, ServerPlayer p) {
+        if (in.capture != Incident.CAPTURE_PENDING) return;
+        in.capture = Incident.CAPTURE_DONE;
+        if (!p.getInventory().add(essence) || !essence.isEmpty()) {
+            in.claimOwed = true;
+            p.sendSystemMessage(Component.literal("Your inventory is full. The Sealed Grade 1 Essence is held for you: make room and it will come to you.")
+                    .withStyle(net.minecraft.ChatFormatting.GOLD));
+        } else {
+            p.sendSystemMessage(Component.literal("Sealed. A Grade 1 essence is yours: bind it into a character's ordinary vessel at a cauldron.")
+                    .withStyle(net.minecraft.ChatFormatting.GOLD));
+        }
+        InvestigationState st = InvestigationState.get(server);
+        st.markDirty();
+        st.save();
+    }
+
+    /** Owed essences reach their challengers as soon as they have room (checked now and then; nobody else can take them). */
+    static void deliverClaims(MinecraftServer server, InvestigationState st) {
+        for (Incident in : st.incidents.values()) {
+            if (!in.claimOwed || in.challenger == null) continue;
+            ServerPlayer p = server.getPlayerList().getPlayer(in.challenger);
+            if (p == null || !p.isAlive()) continue;
+            net.minecraft.world.item.ItemStack e = dev.rick.jjk.progression.story.Vessels.sealed(in.id, guardianName(in));
+            if (p.getInventory().getFreeSlot() < 0) continue;
+            if (p.getInventory().add(e) && e.isEmpty()) {
+                in.claimOwed = false;
+                st.markDirty();
+                st.save();
+                p.sendSystemMessage(Component.literal("The Sealed Grade 1 Essence held for you is in your inventory.").withStyle(net.minecraft.ChatFormatting.GOLD));
+            }
+        }
+    }
+
     /** The objective is met: what's left of the contract's curses scatters, and it completes. */
     static void objectiveMet(MinecraftServer server, Incident in, InvestigationState st, @Nullable ServerPlayer by) {
         if (by != null) {
@@ -541,6 +644,7 @@ public final class Investigations {
         IncidentTemplate.Objective obj = t == null ? IncidentTemplate.Objective.INFESTATION : t.objective();
         if (in.state != Incident.State.ACTIVE) return;
         if ((obj == IncidentTemplate.Objective.DESIGNATED || obj == IncidentTemplate.Objective.GUARDIAN) && c.getUUID().equals(in.objectiveTarget)) {
+            if (obj == IncidentTemplate.Objective.GUARDIAN) guardianFell(server, in, st, c.position());
             objectiveMet(server, in, st, killer);
             return;
         }
@@ -568,6 +672,7 @@ public final class Investigations {
         switch (obj) {
             case DESIGNATED, GUARDIAN -> {
                 if (in.objectiveTarget != null && (in.objectiveTarget.equals(lost) || !in.curses.contains(in.objectiveTarget))) {
+                    if (obj == IncidentTemplate.Objective.GUARDIAN) guardianFell(server, in, st, null);
                     objectiveMet(server, in, st, null);
                     return;
                 }
@@ -888,6 +993,16 @@ public final class Investigations {
     }
 
     /** Test/admin hook: completes an incident now, exactly as its last curse falling would. */
+    /** Test hook: a contract's guardian has fallen (its remnant waits at its default spot). */
+    public static void guardianFellForTest(MinecraftServer server, Incident in) {
+        guardianFell(server, in, InvestigationState.get(server), null);
+    }
+
+    /** Test hook: deliver owed essences now. */
+    public static void deliverClaimsForTest(MinecraftServer server) {
+        deliverClaims(server, InvestigationState.get(server));
+    }
+
     public static void completeForTest(MinecraftServer server, Incident in) {
         InvestigationState st = InvestigationState.get(server);
         in.state = Incident.State.ACTIVE;
@@ -953,6 +1068,8 @@ public final class Investigations {
         for (Incident in : st.incidents.values()) {
             if (in.state != Incident.State.COMPLETE || in.siteCleared || !in.featureBuilt) continue;
             if (LodgeRewards.givesRifle(in) && !in.rewardsPending.isEmpty()) continue;
+            // A guardian's remnant still waiting for its seal: its breach (and the way back to it) stays.
+            if (capturePending(in)) continue;
             ServerLevel level = server.getLevel(ResourceKey.create(Registries.DIMENSION, Identifier.parse(in.dimension)));
             if (level == null) continue;
             if (in.footprint == null) {

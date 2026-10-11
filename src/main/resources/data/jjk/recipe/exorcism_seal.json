@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " G ",
+    "PIP",
+    " G "
+  ],
+  "key": {
+    "G": "minecraft:gold_nugget",
+    "P": "minecraft:paper",
+    "I": "minecraft:ink_sac"
+  },
+  "result": {
+    "id": "jjk:exorcism_seal",
+    "count": 2
+  }
+}

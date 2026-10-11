@@ -314,8 +314,13 @@ public final class CursedRealms {
             forceLoad(realm, a.origin, true);
             clear(realm, a.origin);
             layout.build(realm, a.origin, RandomSource.create(in.id.hashCode()));
-            Investigations.spawnCurses(realm, in, a.origin, layout.curseSpots(), layout.radius());
-            in.state = Incident.State.ACTIVE;
+            if (Investigations.capturePending(in)) {
+                // Back for a remnant: no guardian, nothing hostile, only what it left (raised by the arena's tick).
+                JJK.LOGGER.info("[guardians] realm {} reopened for the remnant of contract {}", slot, in.id);
+            } else {
+                Investigations.spawnCurses(realm, in, a.origin, layout.curseSpots(), layout.radius());
+                in.state = Incident.State.ACTIVE;
+            }
             in.changedAt = server.overworld().getGameTime();
             JJK.LOGGER.info("[investigations] realm {} opened for incident {} ({})", slot, in.id, t.realm());
         }
@@ -482,6 +487,16 @@ public final class CursedRealms {
                     close(server, st, a, false);
                     continue;
                 }
+            } else if (in.state == Incident.State.COMPLETE && Investigations.capturePending(in)) {
+                // A guardian's remnant waits for its seal: the arena stays while its challenger is in it (and goes
+                // quietly once they leave: it is raised again when they come back through the breach).
+                tickRemnant(server, st, a, realm, in);
+                if (a.inside.isEmpty()) {
+                    if (++a.emptyTicks >= 100) close(server, st, a, true);
+                } else {
+                    a.emptyTicks = 0;
+                }
+                continue;
             } else if (in.state == Incident.State.COMPLETE) {
                 if (a.wonTicks < 0) a.wonTicks = 0;
                 if (++a.wonTicks >= WIN_DELAY) close(server, st, a, true);
@@ -497,6 +512,27 @@ public final class CursedRealms {
                 a.emptyTicks = 0;
             }
         }
+    }
+
+    /** The way out of a won guardian arena (any time after the victory): {@code leave:<slot>}. */
+    public static final String LEAVE = "leave:";
+
+    /** A pending remnant's arena: the remnant is there (raised again if it isn't), and so is the way out. */
+    static void tickRemnant(MinecraftServer server, InvestigationState st, InvestigationState.Arena a, ServerLevel realm, Incident in) {
+        if (realm.getGameTime() % 10 != 0 || !entitiesLoaded(realm, a.origin)) return;
+        Vec3 at = Investigations.remnantAt(a, in);
+        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(a.origin).inflate(RADIUS + 4, 24, RADIUS + 4);
+        var found = realm.getEntitiesOfClass(dev.rick.jjk.progression.guardian.GuardianRemnantEntity.class, box, e -> in.id.equals(e.contract()));
+        if (found.isEmpty()) {
+            var r = dev.rick.jjk.registry.ModEntities.GUARDIAN_REMNANT.create(realm, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+            if (r != null) {
+                r.setContract(in.id);
+                r.snapTo(at.x, at.y, at.z, 0, 0);
+                realm.addFreshEntity(r);
+            }
+        }
+        BlockPos exit = BlockPos.containing(arrivalOf(a)).offset(2, 0, 0);
+        CursedBreaches.ensure(realm, LEAVE + a.slot, exit);
     }
 
     /** Fell off the edge of the realm: back onto its ground, a little hurt, never killed by it. */

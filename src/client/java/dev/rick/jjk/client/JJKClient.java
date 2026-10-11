@@ -64,6 +64,8 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.PRISON_REALM, dev.rick.jjk.client.render.PrisonRealmRenderer::new);
         EntityRendererRegistry.register(ModEntities.CURSED_BREACH, dev.rick.jjk.client.render.CursedBreachRenderer::new);
         EntityRendererRegistry.register(ModEntities.CURSED_ANCHOR, dev.rick.jjk.client.render.CursedAnchorRenderer::new);
+        // Drawn by its particles alone (the server sends them).
+        EntityRendererRegistry.register(ModEntities.GUARDIAN_REMNANT, net.minecraft.client.renderer.entity.NoopRenderer::new);
         dev.rick.jjk.progression.investigation.CursedBreachEntity.clientTick = dev.rick.jjk.client.render.CursedBreachRenderer::clientTick;
         EntityRendererRegistry.register(ModEntities.CURSED_ENERGY_SHOT, dev.rick.jjk.client.render.FingerBearerRenderer.Shot::new);
 
@@ -100,7 +102,9 @@ public class JJKClient implements ClientModInitializer {
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.ARMOR_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.AIR_BAR,
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.INFO_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.EXPERIENCE_LEVEL,
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HELD_ITEM_TOOLTIP, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MOUNT_HEALTH,
-                net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MOB_EFFECTS, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.OVERLAY_MESSAGE)) {
+                net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MOB_EFFECTS, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.OVERLAY_MESSAGE,
+                // The chat would sit over the gauges (it comes back, unread lines and all, when the check is over).
+                net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CHAT)) {
             HudElementRegistry.replaceElement(id, vanilla -> (g, delta) -> {
                 if (!dev.rick.jjk.client.training.TrainingClient.active()) vanilla.extractRenderState(g, delta);
             });

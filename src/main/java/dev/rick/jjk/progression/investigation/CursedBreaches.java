@@ -63,6 +63,13 @@ public final class CursedBreaches {
     static int status(ServerLevel level, CursedBreachEntity e) {
         var server = level.getServer();
         if (e.target.startsWith(EncounterWatch.EXIT)) return EncounterWatch.exitStatus(level, e);
+        if (e.target.startsWith(CursedRealms.LEAVE)) {
+            // Open while its won arena stands (the remnant still waiting).
+            for (InvestigationState.Arena a : InvestigationState.get(server).arenas().values()) {
+                if (e.target.equals(CursedRealms.LEAVE + a.slot)) return 1;
+            }
+            return -1;
+        }
         if (e.target.startsWith(CursedRealms.ROOM)) {
             CursedEncounters.Room room = CursedEncounters.byKey(server, e.target.substring(CursedRealms.ROOM.length()));
             if (room == null || room.state == CursedEncounters.State.CLEARED) return -1;
@@ -72,6 +79,8 @@ public final class CursedBreaches {
         Incident in = st.incidents().get(e.target);
         if (in == null || !in.dimension.equals(level.dimension().identifier().toString())) return -1;
         if (in.state() == Incident.State.OPEN) return 0;
+        // A guardian's remnant waiting for its seal: the way back to it stays open.
+        if (Investigations.capturePending(in)) return CursedRealms.arenaOf(st, in.id) != null ? 1 : 0;
         return in.state() == Incident.State.ACTIVE ? 1 : -1;
     }
 
@@ -99,6 +108,14 @@ public final class CursedBreaches {
             if (!p.isSpectator()) EncounterWatch.startChannel(p, e);
             return;
         }
+        // The way out of a won guardian arena: home at once (the remnant waits).
+        if (e.target.startsWith(CursedRealms.LEAVE)) {
+            if (!p.isSpectator() && CursedRealms.inRealm(p) && p.position().distanceToSqr(e.position()) <= 6 * 6) {
+                p.sendOverlayMessage(Component.literal("You step back out. What it left will wait for you.").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+                CursedRealms.sendHome(p, InvestigationState.get(p.level().getServer()));
+            }
+            return;
+        }
         if (!(p.level() instanceof ServerLevel level) || p.isSpectator() || CursedRealms.pulling(p) || CursedRealms.inRealm(p)) return;
         if (p.position().distanceToSqr(e.position()) > 6 * 6) return;
         int s = status(level, e);
@@ -116,7 +133,7 @@ public final class CursedBreaches {
         Incident in = st.incidents().get(e.target);
         if (in == null || in.def() == null) return;
         // Clearance is checked again at the breach: nobody is carried past their own grade, and a solo contract is solo.
-        String refusal = Clearance.refusal(p, in);
+        String refusal = Investigations.capturePending(in) ? Investigations.captureRefusal(in, p) : Clearance.refusal(p, in);
         if (refusal != null) {
             p.sendOverlayMessage(Component.literal(refusal).withStyle(ChatFormatting.GRAY));
             return;

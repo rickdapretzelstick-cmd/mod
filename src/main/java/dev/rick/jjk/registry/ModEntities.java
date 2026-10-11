@@ -93,6 +93,11 @@ public final class ModEntities {
             EntityType.Builder.<dev.rick.jjk.progression.investigation.CursedAnchorEntity>of(dev.rick.jjk.progression.investigation.CursedAnchorEntity::new,
                     MobCategory.MISC).sized(1.1f, 2.6f).clientTrackingRange(10).fireImmune());
 
+    /** What a defeated Grade 1 guardian leaves: contained with an Exorcism Seal. */
+    public static final EntityType<dev.rick.jjk.progression.guardian.GuardianRemnantEntity> GUARDIAN_REMNANT = register("guardian_remnant",
+            EntityType.Builder.<dev.rick.jjk.progression.guardian.GuardianRemnantEntity>of(dev.rick.jjk.progression.guardian.GuardianRemnantEntity::new,
+                    MobCategory.MISC).sized(1.2f, 1.6f).clientTrackingRange(10).fireImmune());
+
     private ModEntities() {}
 
     private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {
