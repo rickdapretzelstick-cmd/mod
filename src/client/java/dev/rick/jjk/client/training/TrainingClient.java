@@ -104,6 +104,34 @@ public final class TrainingClient {
     /** The curse's entity id here (-1 if unknown) and its kind (for the grapple's shots). */
     public static int foeId = -1;
     public static String kind = "";
+    /**
+     * A contest's keys: the order (from the seed, as the server has it), the place of the one shown, the contest time
+     * until which the keys are locked (after a wrong one) and of the last key sent, the run of right keys, and when the
+     * last right and wrong ones were pressed (ns, for the prompt's pop and shake).
+     */
+    public static int[] contestOrder = new int[0];
+    public static int contestNext, contestStreak;
+    public static double contestLockedUntil, contestLastKey;
+    public static long contestRightAt, contestWrongAt;
+
+    /** The key a contest shows now (a direction), or -1. */
+    public static int contestShown() {
+        return contestOrder.length == 0 ? -1 : contestOrder[Math.floorMod(contestNext, contestOrder.length)];
+    }
+
+    /** A contest direction's key (the player's own movement key), as a short label. */
+    public static String moveLabel(int dir) {
+        Minecraft mc = Minecraft.getInstance();
+        KeyMapping k = switch (dir) {
+            case dev.rick.jjk.progression.contest.StrengthContests.UP -> mc.options.keyUp;
+            case dev.rick.jjk.progression.contest.StrengthContests.LEFT -> mc.options.keyLeft;
+            case dev.rick.jjk.progression.contest.StrengthContests.DOWN -> mc.options.keyDown;
+            default -> mc.options.keyRight;
+        };
+        if (k.isUnbound()) return "-";
+        String s = k.getTranslatedKeyMessage().getString();
+        return s.length() > 3 ? s.substring(0, 3) : s;
+    }
 
     public static void meter(TrainingNet.Meter m) {
         Attempt a = attempt;
@@ -150,6 +178,13 @@ public final class TrainingClient {
             meter = 50;
             foeId = -1;
             kind = "";
+            contestOrder = dev.rick.jjk.progression.contest.StrengthContests.order(s.seed());
+            contestNext = 0;
+            contestStreak = 0;
+            contestLockedUntil = Double.NEGATIVE_INFINITY;
+            contestLastKey = Double.NEGATIVE_INFINITY;
+            contestRightAt = 0;
+            contestWrongAt = 0;
             ContestCamera.begin();
         } else if (!"capture".equals(s.kit())) TrainingCamera.begin();
     }
@@ -179,6 +214,14 @@ public final class TrainingClient {
     public static void judge(TrainingNet.Judge j) {
         Attempt a = attempt;
         if (a == null || a.start.session() != j.session() || a.start.attempt() != j.attempt()) return;
+        if (contest()) {
+            // The server's word on the keys: a right one moves on, a wrong one stays (and locks), and a key it didn't
+            // take tells where it stands (the prompt follows it).
+            if (j.result() == TrainingCheck.GOOD) contestNext = Math.max(contestNext, j.check() + 1);
+            else contestNext = j.check();
+            ContestCamera.verdict(j.check(), j.result());
+            return;
+        }
         if (j.check() < 0 || j.check() >= a.checks().size()) return;
         a.eval.force(j.check(), j.result(), j.misses());
         a.misses = j.misses();
@@ -188,7 +231,6 @@ public final class TrainingClient {
             a.lastVerdict[g] = j.result();
             a.lastAt[g] = a.clock;
         }
-        if (contest()) ContestCamera.verdict(j.check(), j.result());
     }
 
     // --- Clock and input ---
@@ -218,6 +260,15 @@ public final class TrainingClient {
                 || mc.options.keyPlayerList.matches(event) || mc.options.keyScreenshot.matches(event)) {
             return false;
         }
+        if (contest()) {
+            // A contest's keys are the movement keys (one shown at a time); everything else stays held back.
+            int dir = mc.options.keyUp.matches(event) ? dev.rick.jjk.progression.contest.StrengthContests.UP
+                    : mc.options.keyLeft.matches(event) ? dev.rick.jjk.progression.contest.StrengthContests.LEFT
+                    : mc.options.keyDown.matches(event) ? dev.rick.jjk.progression.contest.StrengthContests.DOWN
+                    : mc.options.keyRight.matches(event) ? dev.rick.jjk.progression.contest.StrengthContests.RIGHT : -1;
+            if (dir >= 0 && action == 1) contestKey(a, dir);
+            return true;
+        }
         for (int g = 0; g < 3; g++) {
             if (KEYS[g] != null && !KEYS[g].isUnbound() && KEYS[g].matches(event)) {
                 if (action == 1) press(a, g);
@@ -226,6 +277,28 @@ public final class TrainingClient {
             }
         }
         return true;
+    }
+
+    /** A contest key: sent with the place of the key shown, and answered here at once (the server's word follows). */
+    private static void contestKey(Attempt a, int dir) {
+        advance();
+        var cfg = dev.rick.jjk.config.JJKConfig.get().training;
+        double t = a.clock;
+        if (a.state != TrainingNet.ACTIVE || t < contestLockedUntil || t - contestLastKey < cfg.contestMinPressGapMs) return;
+        contestLastKey = t;
+        int at = contestNext;
+        send(TrainingNet.PRESS, dir, at, (int) Math.round(t), ++a.seq);
+        boolean right = dir == contestShown();
+        if (right) {
+            contestNext++;
+            contestStreak++;
+            contestRightAt = System.nanoTime();
+        } else {
+            contestLockedUntil = t + cfg.contestLockoutMs;
+            contestStreak = 0;
+            contestWrongAt = System.nanoTime();
+        }
+        ContestCamera.verdict(at, right ? TrainingCheck.GOOD : TrainingCheck.MISS);
     }
 
     private static void press(Attempt a, int g) {

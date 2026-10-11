@@ -158,6 +158,8 @@ public abstract class Moment {
             return;
         }
         if (state != TrainingNet.ACTIVE) return;
+        // A moment with keys of its own (a strength contest's prompts) takes them before the skill check does.
+        if ((in.action() == TrainingNet.PRESS || in.action() == TrainingNet.RELEASE) && key(p, in)) return;
         // Releases always go through: they let the key go (a tap check ignores them, a hold check is decided by them),
         // and a key never let go would refuse every later press on it.
         if (in.action() == TrainingNet.PRESS || in.action() == TrainingNet.RELEASE) {
@@ -166,7 +168,12 @@ public abstract class Moment {
         }
     }
 
-    final void judge(ServerPlayer p, TrainingEvaluator.Outcome o) {
+    /** A key from the client, before the skill check sees it: true if this moment took it (its own input). */
+    protected boolean key(ServerPlayer p, TrainingNet.Input in) {
+        return false;
+    }
+
+    protected final void judge(ServerPlayer p, TrainingEvaluator.Outcome o) {
         ServerPlayNetworking.send(p, new TrainingNet.Judge(id, attempt(), o.check(), o.result(), eval.misses()));
         onJudged(p, o);
     }

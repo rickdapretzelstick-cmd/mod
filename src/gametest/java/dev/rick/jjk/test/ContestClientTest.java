@@ -15,10 +15,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.level.block.Blocks;
 
+import java.util.List;
+
 /**
  * A strength contest as its contestant sees it: the cinematic side-on shot (orbiting, pushing in, FOV 65 to 58), the
- * tug-of-war meter over the tap checks, the result, the view given back; then the same with Reduced Camera Motion (one
- * still shot at a fixed FOV), and a contest against a wall (the shot never goes through it). Screenshots contest_*.png.
+ * tug-of-war meter and the one key shown (nothing pressed here, so it overpowers them in the end: there is no clock,
+ * it goes on until one side wins), the result, the view given back; then the same with Reduced Camera Motion (one still
+ * shot at a fixed FOV), and a contest against a wall (the shot never goes through it). Screenshots contest_*.png.
  */
 public class ContestClientTest implements FabricClientGameTest {
     @Override
@@ -42,9 +45,17 @@ public class ContestClientTest implements FabricClientGameTest {
             if (!(early > late && early <= 65f && late >= 58f)) throw new AssertionError("the FOV eases in from 65 towards 58: " + early + " -> " + late);
             boolean third = ctx.computeOnClient(mc -> mc.options.getCameraType() == CameraType.THIRD_PERSON_BACK);
             if (!third) throw new AssertionError("the contest uses its own shot");
-            ctx.waitTicks(70);
+            String key = ctx.computeOnClient(mc -> dev.rick.jjk.client.training.TrainingClient.moveLabel(dev.rick.jjk.client.training.TrainingClient.contestShown()));
+            if (!List.of("W", "A", "S", "D").contains(key)) throw new AssertionError("one movement key is shown: " + key);
+            // Nothing pressed: it wins in the end (no clock runs out first).
+            for (int i = 0; i < 80 && ctx.computeOnClient(mc -> {
+                var a = dev.rick.jjk.client.training.TrainingClient.attempt();
+                return a != null && a.state != dev.rick.jjk.progression.training.TrainingNet.FAILURE;
+            }); i++) ctx.waitTicks(5);
+            ctx.waitTicks(4);
             ctx.takeScreenshot("contest_result");
-            ctx.waitTicks(40);
+            for (int i = 0; i < 40 && ctx.computeOnClient(mc -> dev.rick.jjk.client.training.TrainingClient.active()); i++) ctx.waitTicks(5);
+            ctx.waitTicks(10);
             boolean back = ctx.computeOnClient(mc -> mc.options.getCameraType() == CameraType.FIRST_PERSON && !dev.rick.jjk.client.training.TrainingClient.active());
             if (!back) throw new AssertionError("the player's own view comes back afterwards");
             ctx.takeScreenshot("contest_after");
@@ -62,7 +73,7 @@ public class ContestClientTest implements FabricClientGameTest {
             });
             if (!clear) throw new AssertionError("the shot never sits inside a wall");
             ctx.takeScreenshot("contest_reduced_wall");
-            ctx.waitTicks(150);
+            for (int i = 0; i < 80 && ctx.computeOnClient(mc -> dev.rick.jjk.client.training.TrainingClient.active()); i++) ctx.waitTicks(5);
             ctx.runOnClient(mc -> JJKConfig.get().client.reducedCameraMotion = false);
         }
     }

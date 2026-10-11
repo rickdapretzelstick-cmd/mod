@@ -17,6 +17,10 @@ import java.util.List;
  * its needle and, when a check is cued, its arcs (a wide GOOD arc with a narrow PERFECT core; a hold shows a HOLD arc
  * and a separate RELEASE arc). Above the row: the phase, the time left and the five mistake marks. Every state reads
  * by a symbol and a word as well as its colour.
+ *
+ * <p>A strength contest draws its own: the tug-of-war meter across the top and, low in the middle, the one key to press
+ * now (W, A, S or D: the player's movement keys), popping as each right key lands, shaking red and greyed while a wrong
+ * one locks the keys, with the run of right keys beside it.
  */
 public final class TrainingHud {
     private static final int GOOD = 0xFFFFFFFF, PERFECT = 0xFFFFD84A, MISS = 0xFFFF5A5A;
@@ -30,6 +34,10 @@ public final class TrainingHud {
         TrainingClient.advance();
         Font font = mc.font;
         int w = g.guiWidth(), h = g.guiHeight();
+        if (TrainingClient.contest()) {
+            contest(g, font, a, w, h);
+            return;
+        }
         double t = a.clock;
         // About 120 px per circle on a 1080p screen at its usual GUI scale, scaling with the GUI scale.
         int r = 15, gap = 30;
@@ -38,21 +46,13 @@ public final class TrainingHud {
         boolean live = a.state == TrainingNet.ACTIVE;
         boolean shown = a.state == TrainingNet.INTRO || live || a.state == TrainingNet.FAILURE && a.stateSeconds() < 2.2;
 
-        if (a.state == TrainingNet.INTRO) title(g, font, w, h, a.start.title(), TrainingClient.contest() ? "Tap each key as its needle crosses the arc: push the meter to the right"
-                : "Press each key as its needle crosses the arc", 0xFFFFFFFF);
+        if (a.state == TrainingNet.INTRO) title(g, font, w, h, a.start.title(), "Press each key as its needle crosses the arc", 0xFFFFFFFF);
         boolean seal = TrainingClient.containment();
-        if (TrainingClient.contest()) {
-            if (a.state == TrainingNet.SUCCESS) title(g, font, w, h, "BROKE FREE", "It's wide open: strike now.", PERFECT);
-            if (a.state == TrainingNet.FAILURE) title(g, font, w, h, "✘ OVERPOWERED", "It throws you off.", MISS);
-            if (a.state == TrainingNet.INTRO || a.state == TrainingNet.ACTIVE || a.state == TrainingNet.SUCCESS || a.state == TrainingNet.FAILURE) {
-                tug(g, font, w, cy - r - 30);
-            }
-        }
-        if (a.state == TrainingNet.SUCCESS && !TrainingClient.contest()) {
+        if (a.state == TrainingNet.SUCCESS) {
             if (seal) title(g, font, w, h, "ESSENCE SEALED", "A Sealed Grade 1 Essence is yours.", PERFECT);
             else title(g, font, w, h, a.start.practice() ? "PRACTICE COMPLETE" : "TRAINING COMPLETE", "Steady.", PERFECT);
         }
-        if (a.state == TrainingNet.FAILURE && !TrainingClient.contest()) title(g, font, w, h, seal ? "✘ IT SLIPPED LOOSE" : "✘ FAILED",
+        if (a.state == TrainingNet.FAILURE) title(g, font, w, h, seal ? "✘ IT SLIPPED LOOSE" : "✘ FAILED",
                 seal ? "Your seal is unspent. Use it on the remnant again." : a.start.maxMisses() + " mistakes", MISS);
         if (!shown) return;
 
@@ -61,14 +61,12 @@ public final class TrainingHud {
         int phase = TrainingSchedule.phase(cfgPhase(a), Math.max(0, t));
         double left = Mth.clamp((a.start.durationMs() - Math.max(0, t)) / 1000.0, 0, a.start.durationMs() / 1000.0);
         String head = a.state == TrainingNet.INTRO ? "GET READY" : "PHASE " + phase + " / 3";
-        // A contest has no mistake limit (its meter decides): no pips, no phase label.
-        boolean tug = TrainingClient.contest();
-        if (!tug) g.text(font, head, w / 2 - 75 - font.width(head) - 10 - a.start.maxMisses() * 9 - 6, top - 3, 0xFFE0E6F0, true);
+        g.text(font, head, w / 2 - 75 - font.width(head) - 10 - a.start.maxMisses() * 9 - 6, top - 3, 0xFFE0E6F0, true);
         int bw = 150, bx = w / 2 - bw / 2;
         g.fill(bx - 1, top - 1, bx + bw + 1, top + 4, 0xC0000000);
         g.fill(bx, top, bx + (int) Math.round(bw * left / (a.start.durationMs() / 1000.0)), top + 3, 0xFFB8C8E0);
         g.text(font, String.format(java.util.Locale.ROOT, "%.1fs", left), bx + bw + 6, top - 3, 0xFFFFFFFF, true);
-        int max = tug ? 0 : a.start.maxMisses();
+        int max = a.start.maxMisses();
         int pipsX = bx - 8 - max * 9;
         for (int i = 0; i < max; i++) {
             boolean used = i < a.misses;
@@ -85,17 +83,53 @@ public final class TrainingHud {
         return c;
     }
 
-    /** A strength contest's tug-of-war meter: 0 (overpowered) on the left, 100 (free) on the right, the line it must end above. */
+    /** A strength contest's screen: its meter, the one key to press now, and how it ended. */
+    private static void contest(GuiGraphicsExtractor g, Font font, TrainingClient.Attempt a, int w, int h) {
+        if (a.state == TrainingNet.INTRO) title(g, font, w, h, a.start.title(), "Press each key as it appears. Keep going until it lets go.", 0xFFFFFFFF);
+        if (a.state == TrainingNet.SUCCESS) title(g, font, w, h, "BROKE FREE", "It's wide open: strike now.", PERFECT);
+        if (a.state == TrainingNet.FAILURE) title(g, font, w, h, "✘ OVERPOWERED", "It throws you off.", MISS);
+        tug(g, font, w, 12);
+        if (a.state != TrainingNet.INTRO && a.state != TrainingNet.ACTIVE) return;
+        int dir = TrainingClient.contestShown();
+        if (dir < 0) return;
+        long now = System.nanoTime();
+        double sinceRight = (now - TrainingClient.contestRightAt) / 1e6, sinceWrong = (now - TrainingClient.contestWrongAt) / 1e6;
+        boolean live = a.state == TrainingNet.ACTIVE, locked = live && a.clock < TrainingClient.contestLockedUntil;
+        boolean wrong = TrainingClient.contestWrongAt != 0 && sinceWrong < 320;
+        // The key: a pop as each new one appears, a shake while a wrong one has the keys locked.
+        float pop = TrainingClient.contestRightAt != 0 && sinceRight < 140 ? 1.35f - (float) (sinceRight / 140) * 0.35f : 1f;
+        float shake = wrong ? (float) Math.sin(sinceWrong / 18.0) * 4f * (float) (1 - sinceWrong / 320) : 0f;
+        int cx = w / 2, cy = h - 62, half = 17;
+        Matrix3x2fStack pose = g.pose();
+        pose.pushMatrix();
+        pose.translate(cx + shake, cy);
+        pose.scale(pop);
+        int edge = !live ? 0xFF606878 : wrong ? MISS : TrainingClient.contestStreak > 0 && TrainingClient.contestStreak % 8 == 0 ? PERFECT : 0xFFFFFFFF;
+        g.fill(-half - 2, -half - 2, half + 2, half + 2, 0xE0000000);
+        g.fill(-half - 1, -half - 1, half + 1, -half + 1, edge);
+        g.fill(-half - 1, half - 1, half + 1, half + 1, edge);
+        g.fill(-half - 1, -half - 1, -half + 1, half + 1, edge);
+        g.fill(half - 1, -half - 1, half + 1, half + 1, edge);
+        g.fill(-half + 1, -half + 1, half - 1, half - 1, locked ? 0xD0402028 : live ? 0xD0181C28 : 0xD0101218);
+        pose.scale(2.4f);
+        g.centeredText(font, TrainingClient.moveLabel(dir), 0, -4, locked ? 0xFF8A8F9A : live ? 0xFFFFFFFF : 0xFF9098A8);
+        pose.popMatrix();
+        String under = !live ? "GET READY" : locked ? "✘ WRONG KEY" : "PRESS";
+        g.centeredText(font, under, cx, cy + half + 8, locked ? MISS : 0xFFD8DEE8);
+        if (TrainingClient.contestStreak >= 3) g.text(font, "×" + TrainingClient.contestStreak, cx + half + 10, cy - 4,
+                TrainingClient.contestStreak % 8 == 0 ? PERFECT : 0xFFFFC36A, true);
+    }
+
+    /** A strength contest's tug-of-war meter: 0 (overpowered) on the left, 100 (free) on the right. */
     private static void tug(GuiGraphicsExtractor g, Font font, int w, int y) {
         int bw = 180, bx = w / 2 - bw / 2, bh = 7;
         float m = Mth.clamp(TrainingClient.meter, 0, 100);
         g.fill(bx - 2, y - 2, bx + bw + 2, y + bh + 2, 0xD0000000);
         g.fill(bx, y, bx + bw, y + bh, 0xFF3A1820);
         int fill = Math.round(bw * m / 100f);
-        boolean above = m >= TrainingClient.threshold;
-        g.fill(bx, y, bx + fill, y + bh, above ? 0xFFFFC36A : 0xFFE0506A);
-        int tx = bx + Math.round(bw * TrainingClient.threshold / 100f);
-        g.fill(tx, y - 3, tx + 1, y + bh + 3, 0xFFFFFFFF);
+        g.fill(bx, y, bx + fill, y + bh, m >= 50 ? 0xFFFFC36A : 0xFFE0506A);
+        // The middle, where it started.
+        g.fill(bx + bw / 2, y - 3, bx + bw / 2 + 1, y + bh + 3, 0x90FFFFFF);
         g.text(font, TrainingClient.foe.isEmpty() ? "CURSE" : TrainingClient.foe.toUpperCase(java.util.Locale.ROOT), bx - 6 - font.width(TrainingClient.foe.isEmpty() ? "CURSE" : TrainingClient.foe.toUpperCase(java.util.Locale.ROOT)),
                 y - 1, 0xFFE0506A, true);
         g.text(font, "YOU", bx + bw + 6, y - 1, 0xFFFFC36A, true);

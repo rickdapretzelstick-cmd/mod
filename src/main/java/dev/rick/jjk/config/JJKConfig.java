@@ -1352,7 +1352,8 @@ public final class JJKConfig {
         /** Ticks an offer to begin stays answerable. */
         public int offerTicks = 600;
         /**
-         * Strength contests (progression.contest): a grab, telegraphed, then a 0-100 tug-of-war meter pushed by tap checks.
+         * Strength contests (progression.contest): a grab, telegraphed, then a 0-100 tug-of-war meter pushed by pressing
+         * the keys shown (W, A, S, D, one at a time) against the curse's pressure.
          * {@code contestKinds} lists exactly which curses may grab (a fly head never can, whatever is listed).
          */
         public boolean contests = true;
@@ -1362,8 +1363,15 @@ public final class JJKConfig {
         public double contestGrabRange = 2.6, contestEscapeRange = 3.4;
         public int contestTelegraphTicks = 16;
         public float contestChancePerSecond = 0.15f;
-        /** Contest length and intro; after any contest you can't be grabbed again for a while (by any curse); a curse waits too. */
-        public int contestDurationMs = 6_000, contestIntroMs = 900, contestProtectSeconds = 12, contestCurseCooldownSeconds = 20;
+        /** Its intro; after any contest you can't be grabbed again for a while (by any curse); a curse waits too. */
+        public int contestIntroMs = 900, contestProtectSeconds = 12, contestCurseCooldownSeconds = 20;
+        /**
+         * No time limit: after {@code contestTightenAfterMs} the curse's grip tightens (its pressure grows by this share of
+         * itself every second), so it always ends. A wrong key locks the keys for {@code contestLockoutMs}; presses
+         * closer together than {@code contestMinPressGapMs} are ignored.
+         */
+        public int contestTightenAfterMs = 8_000, contestLockoutMs = 350, contestMinPressGapMs = 70;
+        public double contestTightenPerSecond = 0.08;
         /** At most this many contests per Grade 1 guardian attempt. */
         public int contestsPerGuardianAttempt = 2;
         /** Containing a Grade 1 essence with a seal: its intro, its length (6-8 s), and the misses that fail it (one allowed). */

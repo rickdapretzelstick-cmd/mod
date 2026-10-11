@@ -33,8 +33,9 @@ import java.util.List;
 /**
  * Strength contests: who may grab (explicit, never a fly head), the telegraph and its server check (step out of reach and
  * it grabs nothing), the atomic reservation and the shared protection timer, a won contest (the curse staggered and
- * open), a lost one (the hit), no interference while locked, an attempt's guardian limited to two, and every preset's
- * balance simulated over many schedules.
+ * open), a lost one (the hit), no interference while locked, an attempt's guardian limited to two; the keys (one shown at
+ * a time from W/A/S/D, never twice running: the right one pushes, a wrong one slips and locks, too fast or stale is
+ * ignored) and every preset's balance simulated (quick hands win, idle or mashing loses, and every contest ends).
  */
 public class ContestTests {
     private static ServerPlayer survivor(GameTestHelper h) {
@@ -59,50 +60,104 @@ public class ContestTests {
         return c;
     }
 
-    /** Runs a started contest on the manual clock, every check answered with {@code verdict}. */
-    private static void play(ServerPlayer p, int verdict) {
+    private static int seq = 10;
+
+    /** Past the intro on the manual clock (its READY sent): the contest's keys are live. */
+    private static StrengthContests.Session start(ServerPlayer p) {
         StrengthContests.Session s = StrengthContests.of(p);
-        int seq = 0;
         StrengthContests.input(p, new TrainingNet.Input(s.id, 1, ++seq, TrainingNet.READY, -1, -1, 0));
         StrengthContests.advanceForTest(p, JJKConfig.get().training.contestIntroMs + 1);
-        for (TrainingCheck c : s.checks()) {
-            if (s.state() != TrainingNet.ACTIVE) break;
-            double to = c.atMs() - s.clock();
-            if (to > 0) StrengthContests.advanceForTest(p, to);
-            if (s.state() != TrainingNet.ACTIVE) break;
-            int ms = verdict == TrainingCheck.PERFECT ? c.atMs() : verdict == TrainingCheck.GOOD ? c.atMs() + c.goodMs() / 2 - 8 : -1;
-            if (ms >= 0) {
-                // A tap, as a real client sends it: down, then up (a key never let go refuses its next press).
-                StrengthContests.input(p, new TrainingNet.Input(s.id, 1, ++seq, TrainingNet.PRESS, c.gauge(), c.id(), ms));
-                StrengthContests.input(p, new TrainingNet.Input(s.id, 1, ++seq, TrainingNet.RELEASE, c.gauge(), c.id(), ms + 1));
-            }
+        return s;
+    }
+
+    /** One key pressed now, stamped with the contest's clock: the one shown, or a wrong one. */
+    private static void key(ServerPlayer p, boolean right) {
+        StrengthContests.Session s = StrengthContests.of(p);
+        int dir = right ? s.shown() : (s.shown() + 1) % StrengthContests.KEYS;
+        StrengthContests.input(p, new TrainingNet.Input(s.id, 1, ++seq, TrainingNet.PRESS, dir, s.nextIndex(), (int) Math.round(s.clock())));
+    }
+
+    /** Runs a started contest to its end: the right key {@code perSecond} times a second (0: nothing pressed at all). */
+    private static void play(ServerPlayer p, double perSecond) {
+        StrengthContests.Session s = start(p);
+        double step = perSecond > 0 ? 1000 / perSecond : 100;
+        for (int i = 0; i < 3000 && s.state() == TrainingNet.ACTIVE; i++) {
+            StrengthContests.advanceForTest(p, step);
+            if (perSecond > 0 && s.state() == TrainingNet.ACTIVE) key(p, true);
         }
-        for (int i = 0; i < 200 && s.state() == TrainingNet.ACTIVE; i++) StrengthContests.advanceForTest(p, 50);
     }
 
     @GameTest(environment = "jjk-test:contest_a")
-    public void everyPresetIsBalancedOverManySchedules(GameTestHelper h) {
+    public void everyPresetIsBalancedAndEveryContestEnds(GameTestHelper h) {
         JJKConfig.Training cfg = JJKConfig.get().training;
-        JJKConfig.Training rules = TrainingSchedule.contestRules(cfg);
         ContestPreset g = ContestPreset.GUARDIAN;
-        h.assertTrue(g.pressure() == 5 && g.good() == 12 && g.perfect() == 18 && g.miss() == 12 && g.threshold() == 60, "the guardian preset as specified");
+        h.assertTrue(g.pressure() == 11 && g.push() == 5 && g.slip() == 10, "the guardian preset as specified");
         for (ContestPreset p : List.of(ContestPreset.GRADE_4, ContestPreset.GRADE_3, ContestPreset.GRADE_2, ContestPreset.GRADE_1, ContestPreset.GUARDIAN, ContestPreset.SPECIAL)) {
-            int halfWins = 0, mostlyWins = 0;
-            for (long seed = 1; seed <= 200; seed++) {
-                List<TrainingCheck> c = TrainingSchedule.contest(seed * 0x9E3779B97F4A7C15L, cfg);
-                List<String> problems = TrainingSchedule.problems(c, rules);
-                h.assertTrue(problems.isEmpty(), p.name() + " seed " + seed + ": " + problems);
-                for (TrainingCheck k : c) h.assertTrue(!k.hold(), "taps only");
-                for (int i = 1; i < c.size(); i++) h.assertTrue(c.get(i).cueMs() >= c.get(i - 1).windowEnd() - 1 || c.get(i).windowStart() > c.get(i - 1).windowEnd(), "one window at a time");
-                h.assertTrue(StrengthContests.simulate(c, p, cfg.contestDurationMs, i -> TrainingCheck.GOOD).won(), p.name() + ": all GOOD breaks free");
-                h.assertTrue(StrengthContests.simulate(c, p, cfg.contestDurationMs, i -> TrainingCheck.PERFECT).won(), p.name() + ": all PERFECT breaks free");
-                h.assertTrue(!StrengthContests.simulate(c, p, cfg.contestDurationMs, i -> TrainingCheck.MISS).won(), p.name() + ": all MISS is overpowered");
-                if (StrengthContests.simulate(c, p, cfg.contestDurationMs, i -> i % 2 == 0 ? TrainingCheck.GOOD : TrainingCheck.MISS).won()) halfWins++;
-                if (StrengthContests.simulate(c, p, cfg.contestDurationMs, i -> i % 5 == 4 ? TrainingCheck.MISS : TrainingCheck.GOOD).won()) mostlyWins++;
+            var quick = StrengthContests.simulate(p, 4.5, n -> false, cfg, 60_000);
+            h.assertTrue(quick.won() && quick.atMs() < 12_000, p.name() + ": quick hands (4.5 right keys a second) break free: " + quick);
+            var idle = StrengthContests.simulate(p, 0, n -> false, cfg, 60_000);
+            h.assertTrue(!idle.won() && idle.meter() == 0 && idle.atMs() < 15_000, p.name() + ": doing nothing is overpowered: " + idle);
+            // Mashing every key: three wrong for every right one, each wrong one locking the keys.
+            var mash = StrengthContests.simulate(p, 14, n -> n % 4 != 0, cfg, 60_000);
+            h.assertTrue(!mash.won() && mash.meter() == 0, p.name() + ": mashing loses: " + mash);
+            // However fast or slow, it always ends (the grip tightens): someone wins.
+            for (double rate = 0; rate <= 7; rate += 0.5) {
+                var r = StrengthContests.simulate(p, rate, n -> n % 9 == 0, cfg, 120_000);
+                h.assertTrue(r.won() ? r.meter() >= ContestPreset.MAX : r.meter() == 0, p.name() + " at " + rate + "/s: it ends (" + r + ")");
             }
-            h.assertTrue(mostlyWins == 200, p.name() + ": four in five GOOD always breaks free (" + mostlyWins + ")");
-            if (p == ContestPreset.GUARDIAN || p == ContestPreset.SPECIAL) h.assertTrue(halfWins == 0, p.name() + ": half missed never beats a guardian (" + halfWins + ")");
         }
+        for (ContestPreset p : List.of(ContestPreset.GUARDIAN, ContestPreset.SPECIAL)) {
+            h.assertTrue(!StrengthContests.simulate(p, 3, n -> false, cfg, 120_000).won(), p.name() + ": three a second never beats it");
+        }
+        for (ContestPreset p : List.of(ContestPreset.GRADE_4, ContestPreset.GRADE_3)) {
+            h.assertTrue(StrengthContests.simulate(p, 2, n -> false, cfg, 60_000).won(), p.name() + ": two a second is enough for a weak curse");
+        }
+        h.succeed();
+    }
+
+    @GameTest(environment = "jjk-test:contest_h")
+    public void oneKeyAtATimeRightPushesWrongSlipsAndLocks(GameTestHelper h) {
+        MinecraftServer server = h.getLevel().getServer();
+        ServerPlayer p = survivor(h);
+        CommonCurseEntity hound = curse(h, ModEntities.GRAVE_HOUND, p, 1.5);
+        JJKConfig.Training cfg = JJKConfig.get().training;
+        StrengthContests.setManualClockForTest(true);
+        try {
+            h.assertTrue(StrengthContests.begin(server, hound, p), "grabbed (" + StrengthContests.unavailable(p) + ")");
+            StrengthContests.Session s = start(p);
+            h.assertTrue(s.state() == TrainingNet.ACTIVE && s.nextIndex() == 0, "live, the first key shown");
+            int[] order = StrengthContests.order(1234L);
+            h.assertTrue(java.util.Arrays.equals(order, StrengthContests.order(1234L)), "the same seed gives the same order (both sides build it)");
+            for (int i = 1; i < order.length; i++) h.assertTrue(order[i] != order[i - 1] && order[i] >= 0 && order[i] < 4, "never the same key twice running");
+            double m = s.meter();
+            key(p, true);
+            h.assertTrue(s.nextIndex() == 1 && Math.abs(s.meter() - (m + s.preset.push())) < 1e-6, "the right key pushes and shows the next: " + s.meter());
+            key(p, true);
+            h.assertTrue(s.nextIndex() == 1, "a second key at once is too fast: ignored");
+            StrengthContests.advanceForTest(p, 100);
+            m = s.meter();
+            key(p, false);
+            h.assertTrue(s.nextIndex() == 1 && Math.abs(s.meter() - (m - s.preset.slip())) < 1e-6, "the wrong key slips it back, the same key still shown: " + s.meter());
+            StrengthContests.advanceForTest(p, cfg.contestLockoutMs / 2.0);
+            key(p, true);
+            h.assertTrue(s.nextIndex() == 1, "while the keys are locked, even the right one is ignored");
+            StrengthContests.advanceForTest(p, cfg.contestLockoutMs);
+            key(p, true);
+            h.assertTrue(s.nextIndex() == 2, "the lock over, the right key counts again");
+            StrengthContests.advanceForTest(p, 100);
+            StrengthContests.input(p, new TrainingNet.Input(s.id, 1, ++seq, TrainingNet.PRESS, order[0], 0, (int) Math.round(s.clock())));
+            h.assertTrue(s.nextIndex() == 2, "a key for a place already passed is ignored");
+            // No time limit: it runs on until one side wins.
+            StrengthContests.advanceForTest(p, 2_000);
+            h.assertTrue(s.state() == TrainingNet.ACTIVE, "no clock runs out on it");
+            play(p, 6);
+            h.assertTrue(Boolean.TRUE.equals(s.won()), "quick right keys break free");
+            for (int i = 0; i < 40 && StrengthContests.active(p); i++) StrengthContests.advanceForTest(p, 50);
+        } finally {
+            StrengthContests.setManualClockForTest(false);
+        }
+        hound.discard();
+        p.discard();
         h.succeed();
     }
 
@@ -165,11 +220,9 @@ public class ContestTests {
             float php = p.getHealth();
             p.hurtServer(h.getLevel(), h.getLevel().damageSources().mobAttack(second), 6);
             h.assertTrue(p.getHealth() == php, "another curse can't hit the locked player");
-            play(p, TrainingCheck.GOOD);
+            play(p, 5);
             StrengthContests.Session s = StrengthContests.of(p);
-            h.assertTrue(s != null && Boolean.TRUE.equals(s.won()), "every check GOOD breaks free (meter " + (s == null ? -1 : s.meter()) + ", verdicts "
-                    + (s == null ? "" : java.util.Arrays.toString(s.evaluator().results())) + ", checks " + (s == null ? "" : s.checks().stream()
-                    .map(k -> k.gauge() + "@" + k.atMs() + "/" + k.goodMs()).toList()) + ")");
+            h.assertTrue(s != null && Boolean.TRUE.equals(s.won()), "quick right keys break free (meter " + (s == null ? -1 : s.meter()) + ")");
             h.assertTrue(hound.isStaggered() && hound.isExposed(), "it reels, wide open");
             for (int i = 0; i < 40 && StrengthContests.active(p); i++) StrengthContests.advanceForTest(p, 50);
             h.assertTrue(!StrengthContests.active(p), "the contest is over");
@@ -187,7 +240,7 @@ public class ContestTests {
     }
 
     @GameTest(environment = "jjk-test:contest_g")
-    public void aGrabIsAGrappleWithABeatOnEveryVerdict(GameTestHelper h) {
+    public void aGrabIsAGrappleWithABeatOnEveryKey(GameTestHelper h) {
         MinecraftServer server = h.getLevel().getServer();
         ServerPlayer p = survivor(h);
         CommonCurseEntity hound = curse(h, ModEntities.GRAVE_HOUND, p, 2.4);
@@ -199,9 +252,9 @@ public class ContestTests {
             double d = Math.sqrt(Math.pow(hound.getX() - p.getX(), 2) + Math.pow(hound.getZ() - p.getZ(), 2));
             h.assertTrue(Math.abs(d - 1.45) < 0.1, "staged at its reach, face to face: " + d);
             h.assertTrue(dev.rick.jjk.core.anim.Anim.isHolding(p), "the player is in the grip (a held pose)");
-            play(p, TrainingCheck.GOOD);
-            h.assertTrue(Boolean.TRUE.equals(s.won()), "every check GOOD breaks free");
-            h.assertTrue(s.beats() >= 3, "a beat for every verdict on the way: " + s.beats());
+            play(p, 5);
+            h.assertTrue(Boolean.TRUE.equals(s.won()), "quick right keys break free");
+            h.assertTrue(s.beats() >= 3, "a beat for every key on the way: " + s.beats());
             h.assertTrue(!dev.rick.jjk.core.anim.Anim.isHolding(p), "broken free, the grip is let go (the throw)");
             for (int i = 0; i < 40 && StrengthContests.active(p); i++) StrengthContests.advanceForTest(p, 50);
             // Overpowered by another: thrown off it, no grip left held either.
@@ -210,13 +263,16 @@ public class ContestTests {
             h.assertTrue(StrengthContests.begin(server, maw, p), "grabbed again (" + StrengthContests.unavailable(p) + ")");
             StrengthContests.Session t = StrengthContests.of(p);
             // Losing ground (nothing pressed for a while): it bears in on them, a little at a time.
-            StrengthContests.input(p, new TrainingNet.Input(t.id, 1, 1, TrainingNet.READY, -1, -1, 0));
-            StrengthContests.advanceForTest(p, JJKConfig.get().training.contestIntroMs + 1);
+            start(p);
             for (int i = 0; i < 24 && t.state() == TrainingNet.ACTIVE; i++) StrengthContests.advanceForTest(p, 50);
             double close = Math.sqrt(Math.pow(maw.getX() - p.getX(), 2) + Math.pow(maw.getZ() - p.getZ(), 2));
             h.assertTrue(t.meter() < ContestPreset.START && close < 1.6 - 0.015, "it bears in as they lose ground: " + close + " (meter " + t.meter() + ")");
-            play(p, TrainingCheck.MISS);
-            h.assertTrue(Boolean.FALSE.equals(t.won()) && t.beats() >= 1, "every check missed is overpowered, with a beat each: " + t.beats());
+            // Wrong keys, one after another as the locks allow: each a beat, until it overpowers them.
+            for (int i = 0; i < 400 && t.state() == TrainingNet.ACTIVE; i++) {
+                StrengthContests.advanceForTest(p, JJKConfig.get().training.contestLockoutMs + 10);
+                if (t.state() == TrainingNet.ACTIVE) key(p, false);
+            }
+            h.assertTrue(Boolean.FALSE.equals(t.won()) && t.beats() >= 1, "wrong keys are overpowered, with a beat each: " + t.beats());
             h.assertTrue(!dev.rick.jjk.core.anim.Anim.isHolding(p), "and thrown off it");
             for (int i = 0; i < 40 && StrengthContests.active(p); i++) StrengthContests.advanceForTest(p, 50);
             maw.discard();
@@ -237,9 +293,9 @@ public class ContestTests {
         try {
             float before = p.getHealth();
             h.assertTrue(StrengthContests.begin(server, hound, p), "grabbed (" + StrengthContests.unavailable(p) + ")");
-            play(p, TrainingCheck.MISS);
+            play(p, 0);
             StrengthContests.Session s = StrengthContests.of(p);
-            h.assertTrue(s != null && Boolean.FALSE.equals(s.won()), "nothing answered: overpowered");
+            h.assertTrue(s != null && Boolean.FALSE.equals(s.won()), "nothing pressed: overpowered");
             h.assertTrue(p.getHealth() < before, "and it hurts (" + before + " -> " + p.getHealth() + ")");
             for (int i = 0; i < 40 && StrengthContests.active(p); i++) StrengthContests.advanceForTest(p, 50);
             // The curse dying mid-contest ends it with no result.
@@ -281,7 +337,7 @@ public class ContestTests {
                     StrengthContests.forgetForTest(p, g);
                     h.assertTrue(StrengthContests.cannotGrab(g) == null, "grab " + (round + 1) + " allowed");
                     h.assertTrue(StrengthContests.begin(server, g, p), "grab " + (round + 1));
-                    play(p, TrainingCheck.PERFECT);
+                    play(p, 6);
                     for (int i = 0; i < 40 && StrengthContests.active(p); i++) StrengthContests.advanceForTest(p, 50);
                 }
                 StrengthContests.forgetForTest(p, g);

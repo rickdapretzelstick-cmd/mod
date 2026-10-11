@@ -41,10 +41,12 @@ import java.util.UUID;
 /**
  * Strength contests: some curses can grab. A grab is always telegraphed (the curse stops, a warning ring closes on you
  * for {@link JJKConfig.Training#contestTelegraphTicks}) and checked again by the server when it closes: still in reach,
- * in its line of sight, free to be grabbed. Then both are locked for a few seconds of tap checks on the shared skill
- * check, pushing a 0-100 tug-of-war meter against the curse's pressure ({@link ContestPreset}). 100 breaks free (the
- * curse is staggered and wide open); 0, or ending under the preset's line, is overpowered (you take the hit and are
- * thrown).
+ * in its line of sight, free to be grabbed. Then both are locked in a struggle: one key at a time pops up (W, A, S or
+ * D, your movement keys; only the next one is ever shown, never the same twice running) and every right key pushes a
+ * 0-100 tug-of-war meter your way against the curse's steady pressure ({@link ContestPreset}). A wrong key slips it back
+ * and locks the keys for a moment (mashing loses). It goes on until one of you wins: 100 breaks free (the curse is
+ * staggered and wide open), 0 is overpowered (you take the hit and are thrown). After a while its grip tightens, so it
+ * always ends. The order of keys comes from a seed both sides know; the server judges every key.
  *
  * <p>Who can grab is explicit ({@code contestKinds}; a fly head never). A player can be in one contest at a time,
  * reserved atomically with its curse, and after any contest is protected from every grab for a while (one timer per
@@ -78,12 +80,16 @@ public final class StrengthContests {
      */
     static final Map<String, Double> GRAPPLE_REACH = Map.of("school_maw", 1.6, "school_crawler", 1.5, "forest_stalker", 1.25,
             "grave_hound", 1.45, "veiled_bride", 1.2, "bloat_toad", 1.9, "brood_mother", 1.7);
-    /** The player's beat for a good tap on each key (the HUD's PUSH, BRACE, HEAVE; tools/gen_contest_anims.py). */
-    static final String[] BEATS = {"grapple_push", "grapple_brace", "grapple_heave"};
+    /** The keys, as directions: the player's forward, left, back and right movement keys (W, A, S, D by default). */
+    public static final int UP = 0, LEFT = 1, DOWN = 2, RIGHT = 3, KEYS = 4;
+    /** How many keys a contest's order runs to before it repeats (far more than any contest lasts). */
+    public static final int ORDER_LENGTH = 512;
+    /** The player's beat for each right key: W drives forward, S digs in, A and D wrench it aside (tools/gen_contest_anims.py). */
+    static final String[] BEATS = {"grapple_push", "grapple_heave", "grapple_brace", "grapple_heave"};
     /** How far the meter moves the pair: winning drives it back by up to this, losing lets it bear in as far. */
     static final double DRIFT = 0.5;
-    /** Ink frames on perfect taps are kept rare: at most one per this many ticks (the win always gets its own). */
-    static final int FRAME_GAP_TICKS = 30;
+    /** Every this many right keys in a row is a surge (a bigger shove, an ink frame; at most one frame per {@link #FRAME_GAP_TICKS}). */
+    static final int STREAK = 8, FRAME_GAP_TICKS = 30;
 
     /** One contest: the player, the curse that grabbed them, its preset, and the meter between them. */
     public static final class Session extends Moment {
@@ -98,9 +104,15 @@ public final class StrengthContests {
         @Nullable Boolean won;
         int lastFrame = -FRAME_GAP_TICKS;
         int beats;
+        /** The order of keys, the one shown now, and the run of right keys since the last wrong one. */
+        final int[] order;
+        int next, streak;
+        /** Contest time (ms) until which keys are locked (after a wrong one), and of the last key taken. */
+        double lockedUntil = Double.NEGATIVE_INFINITY, lastKey = Double.NEGATIVE_INFINITY;
 
-        Session(UUID player, UUID curse, ContestPreset preset, String foe, String kind, double width) {
+        Session(UUID player, UUID curse, ContestPreset preset, String foe, String kind, double width, long seed) {
             super(player, curse);
+            this.order = order(seed);
             this.curse = curse;
             this.preset = preset;
             this.foe = foe;
@@ -109,9 +121,18 @@ public final class StrengthContests {
             this.reach = GRAPPLE_REACH.getOrDefault(kind, width * 0.5 + 0.9);
         }
 
-        /** Beats played so far (one per verdict), for tests. */
+        /** Beats played so far (one per key judged), for tests. */
         public int beats() {
             return beats;
+        }
+
+        /** The key shown now (a direction), and its place in the order. */
+        public int shown() {
+            return order[next % order.length];
+        }
+
+        public int nextIndex() {
+            return next;
         }
 
         /** The flat direction from the player to the curse. */
@@ -150,24 +171,24 @@ public final class StrengthContests {
             c.setPos(c.position().add(step));
         }
 
-        /** One verdict as a beat of the grapple: who gives ground, the shove of air where they push, the bodies' clips. */
-        private void beat(ServerPlayer p, ServerLevel l, CommonCurseEntity c, int result, int gauge) {
+        /** One key as a beat of the grapple: who gives ground, the shove of air where they push, the bodies' clips. */
+        private void beat(ServerPlayer p, ServerLevel l, CommonCurseEntity c, int result, int dir) {
             beats++;
-            Vec3 at = contact(p, c), dir = toward(p, c);
+            Vec3 at = contact(p, c), along = toward(p, c);
             if (result == TrainingCheck.MISS) {
                 Anim.play(p, "grapple_strain");
                 if (rig) Anim.playOn(c, kind + "_grapple_press");
-                Impact.shove(l, at, dir.scale(-1), 0.8f);
+                Impact.shove(l, at, along.scale(-1), 0.8f);
                 Fx.shake(l, p.position(), 6, 0.35f, 6);
                 return;
             }
-            boolean perfect = result == TrainingCheck.PERFECT;
-            Anim.play(p, BEATS[Math.floorMod(gauge, BEATS.length)]);
+            boolean surge = streak > 0 && streak % STREAK == 0;
+            Anim.play(p, BEATS[Math.floorMod(dir, BEATS.length)]);
             if (rig) Anim.playOn(c, kind + "_grapple_shove");
-            Impact.shove(l, at, dir, perfect ? 1.2f : 0.7f);
-            // A brace digs the feet in: the dust kicks up round them.
-            if (gauge == 1) Impact.dust(l, p.position(), perfect ? 1.0f : 0.7f);
-            if (perfect) {
+            Impact.shove(l, at, along, surge ? 1.2f : 0.7f);
+            // Digging in (S) kicks the dust up round the feet.
+            if (dir == DOWN) Impact.dust(l, p.position(), surge ? 1.0f : 0.7f);
+            if (surge) {
                 Fx.shake(l, p.position(), 6, 0.45f, 5);
                 if (stateTicks - lastFrame >= FRAME_GAP_TICKS) {
                     lastFrame = stateTicks;
@@ -232,30 +253,62 @@ public final class StrengthContests {
 
         @Override
         protected void onJudged(ServerPlayer p, TrainingEvaluator.Outcome o) {
+            // (Only this contest's own keys are judged: it has no skill-check schedule.)
             if (o.result() == TrainingCheck.HOLDING) return;
-            meter = preset.judged(meter, o.result());
             sendMeter(p);
             if (p.level() instanceof ServerLevel l) {
                 if (o.result() == TrainingCheck.MISS) Fx.sound(l, p.position(), SoundEvents.PLAYER_HURT_SWEET_BERRY_BUSH, 0.6f, 0.7f);
-                else Fx.sound(l, p.position(), SoundEvents.ANVIL_LAND, 0.25f, o.result() == TrainingCheck.PERFECT ? 1.9f : 1.5f);
+                else Fx.sound(l, p.position(), SoundEvents.ANVIL_LAND, 0.25f, streak % STREAK == 0 ? 1.9f : 1.3f + 0.05f * (streak % STREAK));
                 CommonCurseEntity c = curse(p);
-                int gauge = o.check() >= 0 && o.check() < checks().size() ? checks().get(o.check()).gauge() : 0;
-                if (c != null && state == TrainingNet.ACTIVE) beat(p, l, c, o.result(), gauge);
+                if (c != null && state == TrainingNet.ACTIVE) beat(p, l, c, o.result(), order[o.check() % order.length]);
             }
-            decide(p, false);
+            decide(p);
+        }
+
+        /**
+         * A key from the contestant: the right one (the one shown, at its place in the order) pushes the meter and shows
+         * the next; any other slips it back and locks the keys for a moment. Keys while locked, too close together, or
+         * for a place already passed are ignored. Releases mean nothing here.
+         */
+        @Override
+        protected boolean key(ServerPlayer p, TrainingNet.Input in) {
+            if (in.action() != TrainingNet.PRESS || state != TrainingNet.ACTIVE) return true;
+            JJKConfig.Training cfg = JJKConfig.get().training, rules = rules();
+            // The key's time is the client's own stamp, kept within what the connection allows (so it can't be faked
+            // to press faster than allowed), and never before the last one.
+            double t = Math.max(Math.max(clock - rules.maxLatencyMs, Math.min(clock + rules.clockSlackMs, in.clientMs())), lastKey);
+            if (in.check() != next || in.gauge() < 0 || in.gauge() >= KEYS || t < lockedUntil || t - lastKey < cfg.contestMinPressGapMs) {
+                // Not taken: the client is told where the contest stands, so the key it shows is the right one.
+                ServerPlayNetworking.send(p, new TrainingNet.Judge(id, attempt(), next, TrainingCheck.HOLDING, 0));
+                return true;
+            }
+            lastKey = t;
+            int at = next;
+            if (in.gauge() == shown()) {
+                meter = preset.pushed(meter);
+                streak++;
+                next++;
+                judge(p, new TrainingEvaluator.Outcome(at, TrainingCheck.GOOD));
+            } else {
+                meter = preset.slipped(meter);
+                streak = 0;
+                lockedUntil = t + cfg.contestLockoutMs;
+                judge(p, new TrainingEvaluator.Outcome(at, TrainingCheck.MISS));
+            }
+            return true;
         }
 
         @Override
         protected void beforeChecks(ServerPlayer p, double dtMs) {
             double before = meter;
-            meter = preset.pressed(meter, dtMs);
+            JJKConfig.Training cfg = JJKConfig.get().training;
+            meter = preset.pressed(meter, dtMs, clock, cfg.contestTightenAfterMs, cfg.contestTightenPerSecond);
             if ((int) before / 5 != (int) meter / 5 || stateTicks % 5 == 0) sendMeter(p);
         }
 
         @Override
         protected void afterChecks(ServerPlayer p) {
-            decide(p, false);
-            if (state == TrainingNet.ACTIVE && clock >= JJKConfig.get().training.contestDurationMs && eval.allDecided()) decide(p, true);
+            decide(p);
         }
 
         @Override
@@ -270,15 +323,15 @@ public final class StrengthContests {
 
         void sendMeter(ServerPlayer p) {
             Entity c = ((ServerLevel) p.level()).getEntity(curse);
-            ServerPlayNetworking.send(p, new TrainingNet.Meter(id, (float) meter, (float) preset.threshold(), foe, c == null ? -1 : c.getId(), kind));
+            // (No line to end above: it goes on until one side wins.)
+            ServerPlayNetworking.send(p, new TrainingNet.Meter(id, (float) meter, -1f, foe, c == null ? -1 : c.getId(), kind));
         }
 
-        /** Over at either end of the meter, or (at {@code timeout}) by which side of the line it ends on. */
-        private void decide(ServerPlayer p, boolean timeout) {
+        /** Over when the meter reaches either end. */
+        private void decide(ServerPlayer p) {
             if (state != TrainingNet.ACTIVE) return;
             if (meter >= ContestPreset.MAX) finish(p, true);
             else if (meter <= 0) finish(p, false);
-            else if (timeout) finish(p, meter >= preset.threshold());
         }
 
         /** The result: broken free (it reels, wide open) or overpowered (the hit, and thrown). */
@@ -471,15 +524,11 @@ public final class StrengthContests {
     public static boolean begin(MinecraftServer server, CommonCurseEntity c, ServerPlayer p) {
         if (unavailable(p) != null) return false;
         JJKConfig.Training cfg = JJKConfig.get().training;
-        Session s = new Session(p.getUUID(), c.getUUID(), presetFor(c), c.getName().getString(), c.curseKind(), c.getBbWidth());
-        JJKConfig.Training rules = s.rules();
         long seed = p.getRandom().nextLong();
-        List<TrainingCheck> checks = TrainingSchedule.contest(seed, cfg);
-        for (int tries = 0; tries < 8 && !TrainingSchedule.problems(checks, rules).isEmpty(); tries++) {
-            seed = p.getRandom().nextLong();
-            checks = TrainingSchedule.contest(seed, cfg);
-        }
-        s.prepare(checks, rules.maxMisses, cfg.contestIntroMs);
+        Session s = new Session(p.getUUID(), c.getUUID(), presetFor(c), c.getName().getString(), c.curseKind(), c.getBbWidth(), seed);
+        JJKConfig.Training rules = s.rules();
+        // No skill-check schedule: its keys are its own (the client builds the same order from the seed).
+        s.prepare(List.of(), rules.maxMisses, cfg.contestIntroMs);
         final long chosen = seed;
         // Atomic: both free, or neither is taken.
         return Moments.begin(p, s, () -> {
@@ -492,9 +541,8 @@ public final class StrengthContests {
             // Face to face, at its reach, locked into the grip.
             s.stage(p, c);
             Vec3 mid = c.position().add(0, c.getBbHeight() * 0.6, 0);
-            ServerPlayNetworking.send(p, new TrainingNet.Start(s.id, 1, KIT, "BREAK ITS HOLD", false, chosen, cfg.contestIntroMs, cfg.contestDurationMs,
-                    rules.phase2AtMs, rules.phase3AtMs, rules.maxMisses, p.getEyePosition(), mid, List.of("PUSH", "BRACE", "HEAVE"),
-                    List.of(0xFFFF9A6A, 0xFFFFE27A, 0xFFFF6A8A), s.checks()));
+            ServerPlayNetworking.send(p, new TrainingNet.Start(s.id, 1, KIT, "BREAK ITS HOLD", false, chosen, cfg.contestIntroMs, 0,
+                    0, 0, rules.maxMisses, p.getEyePosition(), mid, List.of(), List.of(), List.of()));
             s.setState(p, TrainingNet.INTRO);
             s.sendMeter(p);
             if (p.level() instanceof ServerLevel l) {
@@ -505,7 +553,7 @@ public final class StrengthContests {
         });
     }
 
-    /** A key timing from the contestant's client (routed by {@link Moments}). */
+    /** A key from the contestant's client (routed by {@link Moments}). */
     public static boolean input(ServerPlayer p, TrainingNet.Input in) {
         return active(p) && Moments.input(p, in);
     }
@@ -536,29 +584,48 @@ public final class StrengthContests {
         }
     }
 
+    /** A contest's order of keys from its seed: random directions, never the same twice running (the same on both sides). */
+    public static int[] order(long seed) {
+        java.util.SplittableRandom r = new java.util.SplittableRandom(seed);
+        int[] out = new int[ORDER_LENGTH];
+        out[0] = r.nextInt(KEYS);
+        for (int i = 1; i < out.length; i++) out[i] = (out[i - 1] + 1 + r.nextInt(KEYS - 1)) % KEYS;
+        return out;
+    }
+
     // --- Simulation (tuning and tests) ---
 
-    /** How a simulated contest ended: who won, where the meter was, and when (ms of the contest). */
+    /** How a simulated contest ended: who won, where the meter was, and when (ms after the intro). */
     public record Simulated(boolean won, double meter, double atMs) {}
 
     /**
-     * Plays a contest's schedule against a preset with every verdict given by {@code verdict} (check index ->
-     * PERFECT / GOOD / MISS), exactly as the server scores it: pressure between checks, each verdict at its check's
-     * centre, over at 0 or 100, else decided at the end by the preset's line.
+     * Plays a contest against a preset as the server scores it, on a 10 ms clock: a key every {@code 1000 / perSecond}
+     * ms (none at 0), the n-th of them (from 1) the wrong key when {@code wrong} says so (it slips the meter and locks
+     * the keys; a key while locked is lost); the curse's pressure (tightening past its point) all the while. Gives up at
+     * {@code limitMs}.
      */
-    public static Simulated simulate(List<TrainingCheck> checks, ContestPreset preset, int durationMs, java.util.function.IntUnaryOperator verdict) {
-        double meter = ContestPreset.START, t = 0;
-        for (TrainingCheck c : checks) {
-            meter = preset.pressed(meter, c.atMs() - t);
-            t = c.atMs();
+    public static Simulated simulate(ContestPreset preset, double perSecond, java.util.function.IntPredicate wrong, JJKConfig.Training cfg, double limitMs) {
+        double meter = ContestPreset.START, t = 0, nextKey = perSecond > 0 ? 1000 / perSecond : Double.POSITIVE_INFINITY, locked = -1;
+        int n = 0;
+        while (t < limitMs) {
+            t += 10;
+            meter = preset.pressed(meter, 10, t, cfg.contestTightenAfterMs, cfg.contestTightenPerSecond);
             if (meter <= 0) return new Simulated(false, 0, t);
-            meter = preset.judged(meter, verdict.applyAsInt(c.id()));
-            if (meter >= ContestPreset.MAX) return new Simulated(true, meter, t);
-            if (meter <= 0) return new Simulated(false, 0, t);
+            if (t >= nextKey) {
+                nextKey += Math.max(cfg.contestMinPressGapMs, 1000 / perSecond);
+                if (t < locked) continue;
+                n++;
+                if (wrong.test(n)) {
+                    meter = preset.slipped(meter);
+                    locked = t + cfg.contestLockoutMs;
+                    if (meter <= 0) return new Simulated(false, 0, t);
+                } else {
+                    meter = preset.pushed(meter);
+                    if (meter >= ContestPreset.MAX) return new Simulated(true, meter, t);
+                }
+            }
         }
-        meter = preset.pressed(meter, Math.max(0, durationMs - t));
-        if (meter <= 0) return new Simulated(false, 0, durationMs);
-        return new Simulated(meter >= preset.threshold(), meter, durationMs);
+        return new Simulated(meter >= ContestPreset.START, meter, t);
     }
 
     // --- Tests ---

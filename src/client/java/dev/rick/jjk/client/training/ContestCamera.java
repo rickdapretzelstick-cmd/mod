@@ -116,8 +116,10 @@ public final class ContestCamera {
 
     /** A verdict, as this client first learns it (its own prediction or the server's): it may cut. */
     static void verdict(int check, int result) {
-        if (!active() || result == TrainingCheck.HOLDING || check == lastCheck || pinned != null) return;
-        lastCheck = check;
+        // Each place in the order cuts once for its right key and once for a wrong one.
+        int key = check * 4 + result;
+        if (!active() || result == TrainingCheck.HOLDING || key == lastCheck || pinned != null) return;
+        lastCheck = key;
         if (CameraDirector.reducedMotion()) return;
         long now = System.nanoTime();
         punchAt = now;
@@ -135,9 +137,12 @@ public final class ContestCamera {
         cutAt = now;
     }
 
-    /** 0 at the start of the contest to 1 at its end. */
+    /** A contest has no set length: the slow drift and push-in run over this long (then hold). */
+    static final double NOMINAL_MS = 8000;
+
+    /** 0 at the start of the contest to 1 a while in. */
     private static double progress(TrainingClient.Attempt a) {
-        double total = a.start.introMs() + a.start.durationMs();
+        double total = a.start.introMs() + NOMINAL_MS;
         return Mth.clamp((a.clock + a.start.introMs()) / Math.max(1, total), 0, 1);
     }
 
@@ -169,7 +174,7 @@ public final class ContestCamera {
         Vec3 n = Shots.flatDir(me, foe);
         Vec3 mid = me.lerp(foe, 0.5);
         double span = Math.max(2, me.distanceTo(foe));
-        double reach = span * 1.1 + 3.2;
+        double reach = span + 2.4;
         if (side == 0) {
             side = Shots.clearance(mid, mid.add(Shots.perpendicular(n, 1).scale(reach)).add(0, 1.1, 0))
                     >= Shots.clearance(mid, mid.add(Shots.perpendicular(n, -1).scale(reach)).add(0, 1.1, 0)) ? 1 : -1;
@@ -184,10 +189,19 @@ public final class ContestCamera {
         }
         Shot s = still ? Shot.WIDE : shot;
         double held = (now - cutAt) / 1e6;
-        Frame f = frame(s, a, me, feet, foe, foeFeet, foeHeight, foeWidth, n, mid, span, reach, held, still);
+        Frame f = headroom(frame(s, a, me, feet, foe, foeFeet, foeHeight, foeWidth, n, mid, span, reach, held, still));
         // Into the first shot from the player's own view over the first moments.
         double in = still ? 1 : Shots.ease((now - since) / 3e8);
         return f.blendFrom(vanillaPos, vanillaYaw, vanillaPitch, in);
+    }
+
+    /**
+     * Aims every level shot a little under its subjects, so they sit in the upper part of the frame: the meter and the
+     * gauges have the lower (a shot from straight above is already composed for it).
+     */
+    static Frame headroom(Frame f) {
+        if (Math.abs(f.pitch()) > 60) return f;
+        return new Frame(f.pos(), f.look().subtract(0, 0.16 * f.pos().distanceTo(f.look()), 0));
     }
 
     static Frame frame(Shot s, TrainingClient.Attempt a, Vec3 me, Vec3 feet, Vec3 foe, Vec3 foeFeet, double foeHeight, double foeWidth, Vec3 n, Vec3 mid,
@@ -202,17 +216,22 @@ public final class ContestCamera {
                 double orbit = Math.toRadians(-20 * side) + Math.toRadians(ORBIT_DEGREES) * eased * side;
                 Vec3 out = Shots.rotate(sideDir, orbit);
                 double dist = reach * (1 - 0.18 * eased);
-                yield Shots.place(mid, mid.add(out.scale(dist)).add(0, 1.1 + span * 0.15, 0));
+                // Aimed a little under them, so the pair sits above the meter and the gauges.
+                yield Shots.place(mid, mid.add(out.scale(dist)).add(0, 0.9 + span * 0.12, 0));
             }
             // Low and close on you, looking up past your arms at it: you drive it back.
             case LOW_ON_YOU -> {
-                Vec3 at = feet.subtract(n.scale(0.4)).add(sideDir.scale(1.5 - 0.3 * k)).add(0, 0.35, 0);
+                Vec3 at = feet.subtract(n.scale(0.8)).add(sideDir.scale(2.5 - 0.3 * k)).add(0, 0.35, 0);
                 Frame f = Shots.place(me, at);
-                yield new Frame(f.pos(), me.lerp(foe, 0.35 + 0.1 * k).add(0, 0.2, 0));
+                yield new Frame(f.pos(), me.lerp(foe, 0.4 + 0.1 * k).subtract(0, 0.15, 0));
             }
-            // Over its shoulder at your face, straining (back far enough to clear its bulk).
-            case OVER_ITS_SHOULDER -> Shots.overShoulder(foe.add(0, Math.max(0, foeHeight - 2) * 0.3, 0), me.add(0, 0.35, 0), side,
-                    foeWidth * 0.5 + 0.9 - 0.2 * k);
+            // Over its shoulder (above it, and off to the side, clear of its bulk) down at your face, straining.
+            case OVER_ITS_SHOULDER -> {
+                Vec3 face = me.add(0, 0.45, 0);
+                Vec3 at = foeFeet.add(n.scale(foeWidth * 0.5 + 0.9 - 0.2 * k)).add(sideDir.scale(foeWidth * 0.5 + 0.7))
+                        .add(0, Math.max(1.9, foeHeight * 0.85 + 0.35), 0);
+                yield new Frame(Shots.place(face, at).pos(), face);
+            }
             // Close on the hands where they meet, from the side, pushing in.
             case HANDS -> {
                 Vec3 hands = me.lerp(foe, 0.45).add(0, -0.1, 0);
@@ -220,17 +239,25 @@ public final class ContestCamera {
             }
             // Low beside you, under it, looking up as it bears down: it towers over you.
             case LOW_UNDER_IT -> {
-                Vec3 at = feet.add(sideDir.scale(1.15 - 0.15 * k)).subtract(n.scale(0.6)).add(0, 0.25, 0);
-                Vec3 look = foeFeet.add(0, foeHeight * 0.8, 0);
+                Vec3 at = feet.add(sideDir.scale(2.0 - 0.2 * k)).subtract(n.scale(1.2)).add(0, 0.25, 0);
+                Vec3 look = foeFeet.add(0, foeHeight * 0.7, 0);
                 yield new Frame(Shots.place(look, at).pos(), look);
             }
             // Over your shoulder into it.
             case OVER_YOUR_SHOULDER -> Shots.overShoulder(me.add(0, 0.25, 0), foe, side, 1.2 - 0.2 * k);
             // From above: pinned under its bulk.
-            case ABOVE -> Shots.topDown(mid, 4.2 + Math.max(0, foeHeight - 2) - 0.6 * k, n);
+            case ABOVE -> {
+                // Straight down, turned so the pair lies across the screen, and set a little off them so they sit
+                // in the upper half (the HUD has the lower).
+                Vec3 base = mid.subtract(sideDir.scale(0.9)).subtract(0, 0.6, 0);
+                Vec3 at = Shots.clip(base, base.add(0, 4.6 + Math.max(0, foeHeight - 2) - 0.6 * k, 0));
+                yield new Frame(at, base.add(sideDir.scale(0.02)));
+            }
             // The reversal: low behind you as it reels, then pulled out to the wide.
             case REVERSAL -> {
-                Frame low = Shots.lowHero(foeFeet, feet.subtract(n.scale(1.2)).add(sideDir.scale(0.8)), 2.6, Math.max(1.6, foeHeight));
+                Vec3 lowAt = feet.subtract(n.scale(1.4)).add(sideDir.scale(2.2)).add(0, 0.3, 0);
+                Vec3 reeling = foeFeet.add(0, foeHeight * 0.6, 0);
+                Frame low = new Frame(Shots.place(reeling, lowAt).pos(), reeling);
                 Frame wide = Shots.place(mid, mid.add(sideDir.scale(reach * 1.15)).add(0, 1.6 + span * 0.2, 0));
                 yield heldMs < 650 ? low : low.lerp(wide, Shots.ease((heldMs - 650) / 900));
             }

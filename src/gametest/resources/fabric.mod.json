@@ -65,7 +65,8 @@
       "dev.rick.jjk.test.CaptureClientTest",
       "dev.rick.jjk.test.ContestClientTest",
       "dev.rick.jjk.test.CameraShotsClientTest",
-      "dev.rick.jjk.test.ImpactKitClientTest"
+      "dev.rick.jjk.test.ImpactKitClientTest",
+      "dev.rick.jjk.test.GrappleClientTest"
     ]
   },
   "depends": {

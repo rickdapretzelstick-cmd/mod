@@ -218,4 +218,19 @@ public class SiteTests {
         p.discard();
         h.succeed();
     }
+
+    @GameTest(maxTicks = 40, environment = ENV)
+    public void anyCurseUserSeesCursesInnately(GameTestHelper h) {
+        ServerPlayer p = survivor(h, 3, 3);
+        dev.rick.jjk.core.character.CharacterService.assign(p, null);
+        h.assertTrue(!CursePerception.canPerceive(p), "a plain player, no glasses: nothing");
+        for (String id : java.util.List.of("gojo", "hakari", "yuji", "yuta", "ryu")) {
+            dev.rick.jjk.core.character.CharacterService.assign(p, dev.rick.jjk.core.character.Characters.get(id));
+            h.assertTrue(CursePerception.canPerceive(p), "as " + id + " (no glasses, not the kit's owner) they see curses with their own eyes");
+        }
+        dev.rick.jjk.core.character.CharacterService.assign(p, null);
+        h.assertTrue(!CursePerception.canPerceive(p), "no character any more: the glasses are needed again");
+        p.discard();
+        h.succeed();
+    }
 }

@@ -396,7 +396,8 @@ The path so far:
 5. **The cauldron**: pour four Cursed Energy bottles into a cauldron (1/4 … 4/4; the surface rises and glows). Throw
    the Glasses into the full cauldron: the energy reacts, spirals into them and collapses with a flash, all four
    units are spent, and **Cursed Glasses** rise out.
-6. **Cursed Glasses** let their wearer perceive curses.
+6. **Cursed Glasses** let their wearer perceive curses (a curse user, anyone who is one of the characters, sees them
+   without).
 7. **Battle rooms**: Woodland Mansions and Igloos hide a cursed chamber far below them, reached by a trapdoor set
    into the building's lowest floor under a carpet and a ladder shaft. Over the seal at its heart hangs a **Cursed
    Breach** (the same as every incident's): use it and you are taken to the room's realm, a round hall of black stone,
@@ -478,26 +479,39 @@ Creative the cauldron makes a *test relic* that claims nothing.
 **6. Strength contests.** Some curses grab. Which ones is explicit (`training.contestKinds`: maw, grave hound, veiled
 bride, brood mother, bloat toad, crawler, stalker, and every Grade 1 guardian; a **fly head never**). A grab is always
 **telegraphed**: the curse stops and rears, a warning ring closes on you for 0.8 s; step out of reach (dash) and it
-grabs nothing. If it lands, the two of you are locked in a **6-second contest**: tap checks on the same three circles
-(no holds), each one pushing a **0-100 tug-of-war meter** against the curse's pressure. Reach 100 and you **break
-free** (it reels, staggered and wide open); hit 0, or end under the preset's line, and you are **overpowered** (you take
-its hit and are thrown). Presets by grade:
+grabs nothing. If it lands, the two of you are locked in a **struggle**: one key pops up at a time, **W, A, S or D**
+(your own movement keys, whatever they're bound to; only the next one is ever shown, never the same twice running).
+Press it and the **0-100 tug-of-war meter** at the top of the screen moves your way; the curse pushes back all the
+while. The **wrong key** slips it back and locks your keys for a moment (0.35 s), so mashing loses. There is no clock:
+it goes on **until one of you wins**. Reach 100 and you **break free** (it reels, staggered and wide open); hit 0 and you
+are **overpowered** (you take its hit and are thrown). After 8 s its grip starts to tighten (its pressure grows by 8% a
+second), so a stalemate always ends. Presets by grade:
 
-| Preset | Pressure /s | GOOD | PERFECT | MISS | End line | Loss damage |
-|---|---|---|---|---|---|---|
-| Grade 4 | 2 | +16 | +22 | -8 | 40 | 4 |
-| Grade 3 | 3 | +15 | +21 | -9 | 45 | 6 |
-| Grade 2 | 4 | +13 | +19 | -10 | 50 | 8 |
-| Grade 1 | 4.5 | +12 | +18 | -11 | 55 | 10 |
-| **Guardian** | **5** | **+12** | **+18** | **-12** | **60** | 12 |
-| Special Grade | 6 | +11 | +17 | -13 | 65 | 14 |
+| Preset | Pressure /s | Right key | Wrong key | Loss damage | Right keys a second to win before it tightens |
+|---|---|---|---|---|---|
+| Grade 4 | 6 | +7 | -6 | 4 | ~1.8 |
+| Grade 3 | 7.5 | +6.5 | -7 | 6 | ~2.1 |
+| Grade 2 | 9 | +6 | -8 | 8 | ~2.5 |
+| Grade 1 | 10 | +5.5 | -9 | 10 | ~3.0 |
+| **Guardian** | **11** | **+5** | **-10** | 12 | **~3.5** |
+| Special Grade | 12 | +4.5 | -11 | 14 | ~4.1 |
+
+The bodies play it out: each curse kind has its own grip (a maw's claws clamped on and jaws at your shoulder, a bride's
+hands at your throat, a toad's whole bulk bearing down...), each right key is a beat (W drives forward, S digs in, A and D
+wrench it aside; every 8 in a row is a surge with an ink frame), a wrong one has it bear down on you, and the pair gives
+and takes ground with the meter. Breaking free slows time, inks the frame and slams it down hard enough to crack the
+ground; being overpowered goes negative and throws you off it.
 
 While locked, nobody else can hurt either of you (no cheap shots, no rescues that skip the contest). After any contest
 you can't be grabbed again for 12 s by **any** curse (one protection timer per player), the curse that grabbed waits
 20 s, and a guardian grabs at most **twice per attempt**. Leaving, dying, or the curse vanishing ends it with no
-result. The server owns it all (schedule, clock, meter, result). The camera cuts to a cinematic side-on shot of both
-of you that orbits about 25°, pushes in and eases the FOV from 65 to 58; it stays out of walls, the HUD stays fixed,
-and **Reduced Camera Motion** (pause menu → JJK Settings, or `client.reducedCameraMotion`) holds one still shot at FOV 62.
+result. The server owns it all (the order of keys from a seed both sides know, every key judged, the meter, the
+result). The camera opens on a side-on shot of both of you that drifts round about 25° and pushes in, then cuts with
+the struggle, each kind with its own shots: low on you as you drive it back, over its shoulder at your face, close on
+the hands, under it as it bears down, over your shoulder into it, or from above for the big ones; each cut held a
+moment, back to the wide after a lull. Breaking free gets a low reversal shot, being thrown a shot that follows you. It
+stays out of walls, the HUD stays fixed, and **Reduced Camera Motion** (pause menu → JJK Settings, or
+`client.reducedCameraMotion`) holds one still wide shot at FOV 62 (no cuts).
 Tuning: `training.contest*` in the config.
 
 **Impact frames.** Big moments can cut to an anime impact frame for a few hard frames: every body near the camera inked
@@ -591,8 +605,9 @@ the server: the same entity, seen by one player and not another. It can't start 
 it. Once it has turned on someone, though, it remembers: taking the glasses off hides it again, but it keeps
 attacking. Perception comes from sources registered in `CursePerception`: anything worn from the
 `jjk:grants_curse_perception` item tag (Cursed Glasses, the Infused Blindfold), a personal trial in progress, and
-**owning a kit**: once a player legitimately owns a character (the world's kit record), they see curses with their own
-eyes in every dimension, glasses or not, for as long as they own it. Hostility lives in `CurseAggro`, kept apart from it.
+**being a curse user**: anyone who is one of the characters (Gojo, Hakari, Yuji, Yuta, Ryu), however they became it
+(their storyline, owning the kit, an admin's pick, a Creative test kit), sees curses with their own eyes in every
+dimension, glasses or not, for as long as they are that character. Only a plain player needs the glasses. Hostility lives in `CurseAggro`, kept apart from it.
 
 **For kit acquisition paths.** Every path calls `TechniqueProgression.acquire(player, KitAcquisition)`. That claims the
 kit atomically in `KitOwnership` (the world's `kit → owner` record, `<world>/jjk_progression/kit_ownership.dat`), records

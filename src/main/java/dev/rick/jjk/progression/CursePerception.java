@@ -18,8 +18,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * doesn't ({@link CurseAggro}).
  *
  * <p>Perception comes from {@link Source}s: equipment (anything worn that is in the {@code jjk:grants_curse_perception}
- * item tag: Cursed Glasses, the Infused Blindfold), owning a technique ({@link #ownsATechnique}), and a personal trial
- * in progress. Nothing checks for a particular item.
+ * item tag: Cursed Glasses, the Infused Blindfold), being a curse user ({@link #isACharacter}: any of the characters,
+ * however you became it), owning a technique ({@link #ownsATechnique}), and a personal trial in progress. Nothing checks
+ * for a particular item.
  */
 public final class CursePerception {
     /** Items that let their wearer perceive curses. */
@@ -39,6 +40,7 @@ public final class CursePerception {
 
     static {
         register(CursePerception::wearsPerceptionGear);
+        register(CursePerception::isACharacter);
         register(CursePerception::ownsATechnique);
     }
 
@@ -63,6 +65,16 @@ public final class CursePerception {
     public static boolean ownsATechnique(Player player) {
         return player instanceof net.minecraft.server.level.ServerPlayer sp && sp.level().getServer() != null
                 && KitOwnership.get(sp.level().getServer()).ownsAny(sp.getUUID());
+    }
+
+    /**
+     * A curse user sees curses innately: whoever is one of the characters right now (Gojo, Hakari, Yuji, Yuta, Ryu...),
+     * however they became it (their storyline, an admin's pick, a Creative test kit), perceives them without glasses.
+     * Someone with no character (a plain player) needs the glasses.
+     */
+    public static boolean isACharacter(Player player) {
+        dev.rick.jjk.core.ability.AbilityCaster c = dev.rick.jjk.core.ability.Casters.getOrNull(player);
+        return c != null && c.character() != null;
     }
 
     public static boolean wearsPerceptionGear(Player player) {
