@@ -54,6 +54,8 @@ public final class TrainingScenes {
         private static final int CE = 0x5FA8FF;
         @Nullable private Display.BlockDisplay seat;
         @Nullable private ArmorStand doll;
+        private static final int TV_Z = 7;
+        private final Display.BlockDisplay[][] screen = new Display.BlockDisplay[2][3];
         private int mood = -1, disturbedCheck = -1, disturbances;
         private float agitation;
         private float headX, headY, armX, armTargetX, headTargetX;
@@ -69,17 +71,25 @@ public final class TrainingScenes {
             block(0, 0, 0, Blocks.DARK_OAK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.NORTH));
             block(0, 0, -1, Blocks.DARK_OAK_PLANKS.defaultBlockState());
             block(0, 1, -1, Blocks.DARK_OAK_TRAPDOOR.defaultBlockState());
-            // The television: a black frame on a low cabinet, its screen facing the chair.
+            // The television: a black frame on a low cabinet, its glowing screen facing the chair.
             for (int x = -2; x <= 2; x++) {
-                block(x, 0, 5, Blocks.SPRUCE_PLANKS.defaultBlockState());
-                for (int y = 1; y <= 4; y++) block(x, y, 5, Blocks.CONCRETE.black().defaultBlockState());
-                block(x, 1, 6, Blocks.CONCRETE.black().defaultBlockState());
+                block(x, 0, TV_Z, Blocks.SPRUCE_PLANKS.defaultBlockState());
+                block(x, 0, TV_Z + 1, Blocks.SPRUCE_PLANKS.defaultBlockState());
+                for (int y = 1; y <= 4; y++) {
+                    block(x, y, TV_Z + 1, Blocks.CONCRETE.black().defaultBlockState());
+                    if (Math.abs(x) == 2 || y == 1 || y == 4) block(x, y, TV_Z, Blocks.CONCRETE.black().defaultBlockState());
+                }
             }
-            light(0, 2, 4, 14);
-            light(-3, 2, -2, 6);
-            light(3, 2, -2, 6);
-            light(-2, 2, 2, 6);
-            seat = display(Blocks.AIR.defaultBlockState(), rel(0, 0.32, 0.05), 1f, false);
+            for (int row = 0; row < 2; row++) {
+                for (int x = -1; x <= 1; x++) {
+                    screen[row][x + 1] = display(Blocks.CONCRETE.cyan().defaultBlockState(), rel(x, 3 - row + 0.5, TV_Z), 1.0f, true);
+                }
+            }
+            light(0, 2, TV_Z - 1, 13);
+            light(-2, 2, -1, 9);
+            light(2, 2, 1, 9);
+            light(-2, 2, 3, 8);
+            seat = display(Blocks.AIR.defaultBlockState(), rel(0, 0.62, 0.05), 1f, false);
             ArmorStand d = new ArmorStand(net.minecraft.world.entity.EntityTypes.ARMOR_STAND, realm);
             d.getEntityData().set(ArmorStand.DATA_CLIENT_FLAGS,
                     (byte) (ArmorStand.CLIENT_FLAG_SMALL | ArmorStand.CLIENT_FLAG_SHOW_ARMS | ArmorStand.CLIENT_FLAG_NO_BASEPLATE | ArmorStand.CLIENT_FLAG_MARKER));
@@ -90,7 +100,7 @@ public final class TrainingScenes {
             if (scale != null) scale.setBaseValue(0.8);
             d.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.ZOMBIE_HEAD));
             d.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.LEATHER_CHESTPLATE));
-            Vec3 lap = rel(0, 0.62, 0.42);
+            Vec3 lap = rel(0, 0.92, 0.42);
             d.setPos(lap.x, lap.y, lap.z);
             d.setYRot(0f);
             d.setYBodyRot(0f);
@@ -109,12 +119,12 @@ public final class TrainingScenes {
 
         @Override
         Vec3 camera() {
-            return new Vec3(-5.2, 1.55, 2.2);
+            return new Vec3(-6.4, 1.7, 3.3);
         }
 
         @Override
         Vec3 look() {
-            return new Vec3(0.2, 1.15, 2.3);
+            return new Vec3(0, 1.35, 3.3);
         }
 
         @Override
@@ -132,7 +142,7 @@ public final class TrainingScenes {
         private void setMood(int m) {
             if (m == mood) return;
             mood = m;
-            BlockState[][] screen = switch (m) {
+            BlockState[][] pattern = switch (m) {
                 case SUSPENSE -> new BlockState[][] {{c(Blocks.CONCRETE.black()), c(Blocks.CONCRETE.red()), c(Blocks.CONCRETE.black())},
                         {c(Blocks.CONCRETE.red()), c(Blocks.CONCRETE.black()), c(Blocks.CONCRETE.red())}};
                 case ACTION -> new BlockState[][] {{c(Blocks.CONCRETE.yellow()), c(Blocks.CONCRETE.orange()), c(Blocks.CONCRETE.yellow())},
@@ -142,9 +152,8 @@ public final class TrainingScenes {
                 default -> new BlockState[][] {{c(Blocks.CONCRETE.lightBlue()), c(Blocks.CONCRETE.white()), c(Blocks.CONCRETE.lightBlue())},
                         {c(Blocks.CONCRETE.cyan()), c(Blocks.CONCRETE.cyan()), c(Blocks.CONCRETE.cyan())}};
             };
-            for (int x = -1; x <= 1; x++) {
-                block(x, 3, 5, screen[0][x + 1]);
-                block(x, 2, 5, screen[1][x + 1]);
+            for (int row = 0; row < 2; row++) {
+                for (int x = 0; x < 3; x++) if (screen[row][x] != null) screen[row][x].setBlockState(pattern[row][x]);
             }
         }
 
@@ -187,7 +196,7 @@ public final class TrainingScenes {
         @Override
         void active(ServerPlayer p, int tick, double clock, int misses) {
             int ph = phase(clock);
-            if (tick % 20 == 1) lighting(ph == 1 ? 6 : ph == 2 ? 7 : 9);
+            if (tick % 20 == 1) lighting(ph == 1 ? 8 : ph == 2 ? 9 : 11);
             if (tick % 40 == 1) sound(p, SoundEvents.BEACON_AMBIENT, 0.25f, 0.55f);
             // The disturbance is over once its check is decided: the screen calms.
             if (disturbedCheck >= 0 && session.eval.result(disturbedCheck) >= 0 && session.eval.result(disturbedCheck) != TrainingCheck.HOLDING) {
@@ -200,7 +209,7 @@ public final class TrainingScenes {
             } else {
                 headY *= 0.8f;
             }
-            if (tick % 6 == 0) particles(p, dust(CE, 0.5f), rel(0, 0.95, 0.2), 1, 0.15, 0);
+            if (tick % 6 == 0) particles(p, dust(CE, 0.5f), rel(0, 1.25, 0.2), 1, 0.15, 0);
             ease();
         }
 
@@ -213,7 +222,7 @@ public final class TrainingScenes {
 
         @Override
         void judged(ServerPlayer p, TrainingCheck c, int result, int misses) {
-            Vec3 chest = rel(0, 0.95, 0.18), lap = rel(0, 0.82, 0.45);
+            Vec3 chest = rel(0, 1.25, 0.18), lap = rel(0, 1.12, 0.45);
             if (result == TrainingCheck.MISS) {
                 agitation = Math.min(1.5f, 0.3f + misses * 0.3f);
                 // A twitch; then it lifts its head; then it raises an arm.
@@ -250,7 +259,7 @@ public final class TrainingScenes {
                 armX = -60;
                 headTargetX = -35;
                 sound(p, SoundEvents.PLAYER_ATTACK_STRONG, 0.6f, 1.4f);
-                particles(p, ParticleTypes.CRIT, rel(0, 1.3, 0.25), 8, 0.12, 0.2);
+                particles(p, ParticleTypes.CRIT, rel(0, 1.6, 0.25), 8, 0.12, 0.2);
             }
             if (tick == 8) armTargetX = -10;
             ease();
