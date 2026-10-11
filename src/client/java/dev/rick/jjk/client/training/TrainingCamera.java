@@ -1,7 +1,6 @@
 package dev.rick.jjk.client.training;
 
 import dev.rick.jjk.progression.training.TrainingNet;
-import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
@@ -13,7 +12,6 @@ import org.jetbrains.annotations.Nullable;
  * The participant's own view (and first/third person) comes back the moment the session ends.
  */
 public final class TrainingCamera {
-    @Nullable private static CameraType restore;
     private static long since;
 
     private TrainingCamera() {}
@@ -26,19 +24,12 @@ public final class TrainingCamera {
         return TrainingClient.attempt() != null && since != 0;
     }
 
+    /** The director gives the player's own view back once the session is over (see CameraDirector). */
     public static void tick(Minecraft mc) {
-        boolean on = active() && mc.player != null && mc.player.isAlive();
-        if (on && mc.options.getCameraType() != CameraType.THIRD_PERSON_BACK) {
-            if (restore == null) restore = mc.options.getCameraType();
-            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
-        }
-        if (!on) reset();
+        if (TrainingClient.attempt() == null || mc.player == null || !mc.player.isAlive()) since = 0;
     }
 
     public static void reset() {
-        Minecraft mc = Minecraft.getInstance();
-        if (restore != null && mc.options != null && mc.options.getCameraType() == CameraType.THIRD_PERSON_BACK) mc.options.setCameraType(restore);
-        restore = null;
         since = 0;
     }
 

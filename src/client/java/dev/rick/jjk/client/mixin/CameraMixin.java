@@ -1,6 +1,5 @@
 package dev.rick.jjk.client.mixin;
 
-import dev.rick.jjk.client.fx.ScreenEffects;
 import net.minecraft.client.Camera;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -23,59 +22,20 @@ public abstract class CameraMixin {
     @Shadow
     public abstract net.minecraft.world.phys.Vec3 position();
 
-    /** Screen shake: offset the view after vanilla positions the camera. */
+    /** Every cinematic camera, then the screen shake: decided by the camera director after vanilla places the view. */
     @Inject(method = "alignWithEntity", at = @At("TAIL"))
     private void jjk$shake(float partialTicks, CallbackInfo ci) {
-        // Domain clash: frame the two domains and where they collide.
-        double[] clash = dev.rick.jjk.client.clash.ClashCamera.apply(position(), yRot, xRot);
-        if (clash != null) {
-            setPosition(new net.minecraft.world.phys.Vec3(clash[0], clash[1], clash[2]));
-            setRotation((float) clash[3], (float) clash[4]);
-        }
-        // The lodge's mounted scope: the view is from its front lens (past the scope's own body).
-        net.minecraft.world.phys.Vec3 scope = dev.rick.jjk.client.rifle.RifleClient.scopeEye();
-        if (scope != null) setPosition(scope);
-        // Beam clash: a brief side-on shot of the two beams meeting.
-        double[] beams = dev.rick.jjk.client.clash.BeamClashCamera.apply(position(), yRot, xRot);
-        if (beams != null) {
-            setPosition(new net.minecraft.world.phys.Vec3(beams[0], beams[1], beams[2]));
-            setRotation((float) beams[3], (float) beams[4]);
-        }
-        // A strength contest: its cinematic shot (no shake: the HUD and the view stay readable).
-        double[] contest = dev.rick.jjk.client.training.ContestCamera.apply(position(), yRot, xRot);
-        if (contest != null) {
-            setPosition(new net.minecraft.world.phys.Vec3(contest[0], contest[1], contest[2]));
-            setRotation((float) contest[3], (float) contest[4]);
-            return;
-        }
-        // Character training: the scene's fixed shot.
-        double[] training = dev.rick.jjk.client.training.TrainingCamera.apply(position(), yRot, xRot);
-        if (training != null) {
-            setPosition(new net.minecraft.world.phys.Vec3(training[0], training[1], training[2]));
-            setRotation((float) training[3], (float) training[4]);
-            return;
-        }
-        // The Prison Realm's outside view: around the grounded realm, watching only (last: it is a different place).
-        double[] prison = dev.rick.jjk.client.prison.PrisonClient.apply(yRot, xRot);
-        if (prison != null) {
-            setPosition(new net.minecraft.world.phys.Vec3(prison[0], prison[1], prison[2]));
-            setRotation((float) prison[3], (float) prison[4]);
-            return;
-        }
         // Never shake the view under the rifle's scope: what's centred is what's hit.
-        if (dev.rick.jjk.client.rifle.RifleScope.steady()) return;
-        float dy = ScreenEffects.yawOffset(partialTicks), dx = ScreenEffects.pitchOffset(partialTicks);
-        if (dy != 0 || dx != 0) setRotation(yRot + dy, xRot + dx);
+        double[] r = dev.rick.jjk.client.camera.CameraDirector.apply(position(), yRot, xRot, partialTicks, dev.rick.jjk.client.rifle.RifleScope.steady());
+        if (r == null) return;
+        if (r[5] != 0) setPosition(new net.minecraft.world.phys.Vec3(r[0], r[1], r[2]));
+        setRotation((float) r[3], (float) r[4]);
     }
 
     @Inject(method = "calculateFov", at = @At("RETURN"), cancellable = true)
     private void jjk$fov(float partialTicks, CallbackInfoReturnable<Float> cir) {
-        float contest = dev.rick.jjk.client.training.ContestCamera.fov();
-        if (!Float.isNaN(contest)) {
-            cir.setReturnValue(contest);
-            return;
-        }
-        float m = ScreenEffects.fovMultiplier(partialTicks) * dev.rick.jjk.client.rifle.RifleClient.zoom();
-        if (m != 1f) cir.setReturnValue(cir.getReturnValue() * m);
+        float vanilla = cir.getReturnValue();
+        float f = dev.rick.jjk.client.camera.CameraDirector.fov(vanilla, partialTicks, dev.rick.jjk.client.rifle.RifleClient.zoom());
+        if (f != vanilla) cir.setReturnValue(f);
     }
 }

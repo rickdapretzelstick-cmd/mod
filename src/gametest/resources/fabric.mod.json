@@ -63,7 +63,8 @@
       "dev.rick.jjk.test.BladeClientTest",
       "dev.rick.jjk.test.EncounterClientTest",
       "dev.rick.jjk.test.CaptureClientTest",
-      "dev.rick.jjk.test.ContestClientTest"
+      "dev.rick.jjk.test.ContestClientTest",
+      "dev.rick.jjk.test.CameraShotsClientTest"
     ]
   },
   "depends": {

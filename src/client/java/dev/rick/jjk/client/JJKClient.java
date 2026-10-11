@@ -97,6 +97,7 @@ public class JJKClient implements ClientModInitializer {
         // Every custom HUD layer is skipped in Vanilla Minecraft mode.
         // Character training: its own gauges in the lower middle; the HUD it doesn't need stands down meanwhile.
         HudElementRegistry.addLast(JJK.id("training_hud"), (g, delta) -> dev.rick.jjk.client.training.TrainingHud.render(g));
+        registerCameras();
         for (var id : java.util.List.of(net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HOTBAR,
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HEALTH_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.FOOD_BAR,
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.ARMOR_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.AIR_BAR,
@@ -338,6 +339,7 @@ public class JJKClient implements ClientModInitializer {
         dev.rick.jjk.client.training.TrainingClient.tick(mc);
         dev.rick.jjk.client.training.TrainingCamera.tick(mc);
         dev.rick.jjk.client.training.ContestCamera.tick(mc);
+        dev.rick.jjk.client.camera.CameraDirector.tick(mc);
         dev.rick.jjk.client.prison.PrisonClient.tick(mc);
         InputHandler.tick(mc);
         ambientTicks++;
@@ -401,5 +403,54 @@ public class JJKClient implements ClientModInitializer {
         if (Combat.has(mc.player, CombatStatus.OVERLOAD) && ambientTicks % 25 == 0) {
             ClientFx.sound("domain_surehit", mc.player.position(), 0.35f, 0.8f + mc.level.getRandom().nextFloat() * 0.4f);
         }
+    }
+
+    /**
+     * The cinematic cameras, in the order they apply (see {@link dev.rick.jjk.client.camera.CameraDirector}): a domain
+     * clash frames the battle; the lodge scope's lens; a beam clash's side-on shot; then the shots that own the view
+     * outright: a strength contest, character training, the Prison Realm's outside view.
+     */
+    private static void registerCameras() {
+        dev.rick.jjk.client.camera.CameraDirector.register("domain_clash", 100, dev.rick.jjk.client.clash.ClashCamera::apply);
+        dev.rick.jjk.client.camera.CameraDirector.register("rifle_scope", 200, (pos, yaw, pitch) -> {
+            net.minecraft.world.phys.Vec3 eye = dev.rick.jjk.client.rifle.RifleClient.scopeEye();
+            return eye == null ? null : new double[] {eye.x, eye.y, eye.z, yaw, pitch};
+        });
+        dev.rick.jjk.client.camera.CameraDirector.register("beam_clash", 300, dev.rick.jjk.client.clash.BeamClashCamera::apply);
+        dev.rick.jjk.client.camera.CameraDirector.register("contest", 400, new dev.rick.jjk.client.camera.CameraDirector.Stage() {
+            @Override
+            public double[] apply(net.minecraft.world.phys.Vec3 pos, float yaw, float pitch) {
+                return dev.rick.jjk.client.training.ContestCamera.apply(pos, yaw, pitch);
+            }
+
+            @Override
+            public boolean last() {
+                return true;
+            }
+
+            @Override
+            public float fov() {
+                return dev.rick.jjk.client.training.ContestCamera.fov();
+            }
+        });
+        dev.rick.jjk.client.camera.CameraDirector.register("training", 500, last(dev.rick.jjk.client.training.TrainingCamera::apply));
+        dev.rick.jjk.client.camera.CameraDirector.register("prison_view", 600, last((pos, yaw, pitch) -> dev.rick.jjk.client.prison.PrisonClient.apply(yaw, pitch)));
+        dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.training.ContestCamera::active);
+        dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.training.TrainingCamera::active);
+    }
+
+    /** A stage that owns the view outright while it is in use. */
+    private static dev.rick.jjk.client.camera.CameraDirector.Stage last(dev.rick.jjk.client.camera.CameraDirector.Stage s) {
+        return new dev.rick.jjk.client.camera.CameraDirector.Stage() {
+            @Override
+            public double[] apply(net.minecraft.world.phys.Vec3 pos, float yaw, float pitch) {
+                return s.apply(pos, yaw, pitch);
+            }
+
+            @Override
+            public boolean last() {
+                return true;
+            }
+        };
     }
 }
