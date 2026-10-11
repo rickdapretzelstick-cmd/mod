@@ -450,6 +450,8 @@ public final class JJKConfig {
         public boolean showCeNumbers = true;
         /** Reduced Camera Motion: cinematic cameras (strength contests) hold a still shot, without orbit, push-in or FOV change. */
         public boolean reducedCameraMotion = false;
+        /** Anime impact frames (inked silhouettes, inverted frames) and the slowed-time look on big moments. */
+        public boolean impactFrames = true;
     }
 
     /**

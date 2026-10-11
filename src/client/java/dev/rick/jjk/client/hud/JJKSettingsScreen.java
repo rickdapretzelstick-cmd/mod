@@ -40,7 +40,17 @@ public class JJKSettingsScreen extends Screen {
             JJKConfig.save();
             b.setMessage(toggleText("Combo counter", JJKConfig.get().client.showComboCounter));
         }).bounds(x, y + 76, bw, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose()).bounds(x, y + 110, bw, 20).build());
+        addRenderableWidget(Button.builder(toggleText("Reduced camera motion", JJKConfig.get().client.reducedCameraMotion), b -> {
+            JJKConfig.get().client.reducedCameraMotion = !JJKConfig.get().client.reducedCameraMotion;
+            JJKConfig.save();
+            b.setMessage(toggleText("Reduced camera motion", JJKConfig.get().client.reducedCameraMotion));
+        }).bounds(x, y + 100, bw, 20).build());
+        addRenderableWidget(Button.builder(toggleText("Impact frames", JJKConfig.get().client.impactFrames), b -> {
+            JJKConfig.get().client.impactFrames = !JJKConfig.get().client.impactFrames;
+            JJKConfig.save();
+            b.setMessage(toggleText("Impact frames", JJKConfig.get().client.impactFrames));
+        }).bounds(x, y + 124, bw, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose()).bounds(x, y + 158, bw, 20).build());
     }
 
     private static Component modeText() {
@@ -61,7 +71,7 @@ public class JJKSettingsScreen extends Screen {
         String hint = CombatMode.enabled()
                 ? "The JJK HUD and ability keys are active."
                 : "Vanilla mode: JJK HUD hidden and ability keys disabled.";
-        g.centeredText(font, hint, width / 2, height / 4 + 98 + 40, 0xFFA0A8B8);
+        g.centeredText(font, hint, width / 2, height / 4 + 146 + 40, 0xFFA0A8B8);
     }
 
     @Override

@@ -1,0 +1,121 @@
+{
+  "targets": {
+    "swap": {}
+  },
+  "passes": [
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "jjk:post/ink_mask",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "minecraft:main"
+        },
+        {
+          "sampler_name": "Depth",
+          "target": "minecraft:main",
+          "use_depth_buffer": true
+        },
+        {
+          "sampler_name": "Mask",
+          "target": "minecraft:entity_outline"
+        }
+      ],
+      "output": "swap",
+      "uniforms": {
+        "InkConfig": [
+          {
+            "name": "InkColor",
+            "type": "vec4",
+            "value": [
+              0.02,
+              0.02,
+              0.03,
+              1.0
+            ]
+          },
+          {
+            "name": "PaperColor",
+            "type": "vec4",
+            "value": [
+              0.97,
+              0.96,
+              0.93,
+              1.0
+            ]
+          },
+          {
+            "name": "LineColor",
+            "type": "vec4",
+            "value": [
+              0.08,
+              0.08,
+              0.1,
+              1.0
+            ]
+          },
+          {
+            "name": "Params",
+            "type": "vec4",
+            "value": [
+              0.0,
+              2.0,
+              150,
+              0.45
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "minecraft:post/blit",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "swap"
+        }
+      ],
+      "uniforms": {
+        "BlitConfig": [
+          {
+            "name": "ColorModulate",
+            "type": "vec4",
+            "value": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        ]
+      },
+      "output": "minecraft:main"
+    },
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "minecraft:post/blit",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "swap"
+        }
+      ],
+      "uniforms": {
+        "BlitConfig": [
+          {
+            "name": "ColorModulate",
+            "type": "vec4",
+            "value": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ]
+      },
+      "output": "minecraft:entity_outline"
+    }
+  ]
+}

@@ -103,6 +103,11 @@ public final class ClientFx {
             BladeFx.play(p, mc, level, pos, dir, s, mine, now);
             return;
         }
+        // The impact kit: impact frames, slowed time, ground cracks, dust rings and shoves.
+        if (p.id().startsWith("impact_")) {
+            ImpactFx.play(p, mc, level, pos, dir, s, mine, now);
+            return;
+        }
         // The Finger Bearer, the battle-room curse.
         if (p.id().startsWith("fb_") || p.id().startsWith("curse_") || p.id().startsWith("breach_")) {
             FingerBearerFx.play(p, level, pos, dir, s, now);

@@ -497,8 +497,13 @@ you can't be grabbed again for 12 s by **any** curse (one protection timer per p
 20 s, and a guardian grabs at most **twice per attempt**. Leaving, dying, or the curse vanishing ends it with no
 result. The server owns it all (schedule, clock, meter, result). The camera cuts to a cinematic side-on shot of both
 of you that orbits about 25°, pushes in and eases the FOV from 65 to 58; it stays out of walls, the HUD stays fixed,
-and **Reduced Camera Motion** (`client.reducedCameraMotion` in `config/jjk.json`) holds one still shot at FOV 62.
+and **Reduced Camera Motion** (pause menu → JJK Settings, or `client.reducedCameraMotion`) holds one still shot at FOV 62.
 Tuning: `training.contest*` in the config.
+
+**Impact frames.** Big moments can cut to an anime impact frame for a few hard frames: every body near the camera inked
+as a solid silhouette against flat paper with focus lines rushing in, an inverted beat, a crimson Black Flash variant,
+or a hard negative; and a slowed-time look (colour drained, edges darkened and smeared). They are full-screen shaders
+over the world (the HUD stays on top) and are off with **Impact frames** in JJK Settings (or Screen Flashes).
 
 **7. The personal trial: character training.** The relic still grants nothing. Used the way that character would
 (the VHS played on a jukebox, the Blindfold worn for five seconds, the Ring, the Comb or the Scratch-Off used), it offers

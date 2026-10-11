@@ -135,7 +135,8 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
         Look look = look(s, baseTint);
         int light = look.lit ? 0xF000F0 : s.lightCoords;
         c.submitCustomGeometry(ps, solid, (p, buf) -> model.render(p, buf, pose, light, look.tint, look.overlay));
-        if (s.revealed && s.outlineColor != EntityRenderState.NO_OUTLINE) {
+        // Revealed by its realm fight, or a figure in an impact frame (inked from the silhouette pass).
+        if ((s.revealed || s.visible && dev.rick.jjk.client.fx.ImpactFrames.inking()) && s.outlineColor != EntityRenderState.NO_OUTLINE) {
             int oc = 0xFF000000 | s.outlineColor;
             c.submitCustomGeometry(ps, outline, (p, buf) -> model.render(p, buf, pose, 0xF000F0, oc, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY));
         }
