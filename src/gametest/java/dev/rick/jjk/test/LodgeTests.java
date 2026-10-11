@@ -105,6 +105,7 @@ public class LodgeTests {
         Direction out = Direction.getApproximateNearest(in.dirX, 0, in.dirZ);
         Vec3 stand = Vec3.atBottomCenterOf(scope.relative(out.getOpposite()));
         ServerPlayer p = player(h, stand, false);
+        dev.rick.jjk.progression.investigation.Clearance.set(p, 1);
         Vec3 anomaly = Vec3.atCenterOf(in.mark("anomaly")).add(0, 1, 0);
         face(p, anomaly);
         LodgeScope.useForTest(p, scope);

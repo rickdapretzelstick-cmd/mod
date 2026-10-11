@@ -167,6 +167,7 @@ public class RealmTests {
         h.assertTrue(bed != null && door != null, "the house has its door and its bed");
         h.assertTrue(level.getBlockState(bed).getBlock() instanceof net.minecraft.world.level.block.BedBlock, "a bed stands there");
         ServerPlayer p = survivor(h, 5.5, 1, 5.5);
+        dev.rick.jjk.progression.investigation.Clearance.set(p, 1);
         h.assertTrue(!CursedRealms.pulling(p), "lying in the bed (the old trigger) does nothing by itself");
         BlockPos anchor = dev.rick.jjk.progression.investigation.CursedBreaches.anchor(in);
         h.assertTrue(anchor.distSqr(bed) <= 4 * 4, "the breach hangs inside the house");
@@ -190,6 +191,7 @@ public class RealmTests {
         ServerLevel level = h.getLevel();
         Incident in = incident(h, "old_mine", new BlockPos(5, 1, 5), 1, 0);
         ServerPlayer p = survivor(h, 2.5, 1, 2.5);
+        dev.rick.jjk.progression.investigation.Clearance.set(p, 1);
         p.removeAttached(ModAttachments.INVESTIGATING);
         h.assertTrue(CursedCompass.reading(p).state() == CompassPayload.DORMANT, "no investigation: dormant");
         CursedCompass.investigate(p, in.id);
