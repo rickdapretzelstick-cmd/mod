@@ -96,7 +96,9 @@ public final class CursedRealms {
             // The character storylines' realms (StoryRealms): their village events and their personal trials.
             Map.entry("distance_realm", new StoryRealms.Distance()), Map.entry("theater_realm", new StoryRealms.Theater()),
             Map.entry("crater_realm", new StoryRealms.Crater()), Map.entry("fight_club_realm", new StoryRealms.FightClub()),
-            Map.entry("chapel_realm", new StoryRealms.Chapel()));
+            Map.entry("chapel_realm", new StoryRealms.Chapel()),
+            // The one reusable room every character's training is held in (each scene dresses it).
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.ID, new dev.rick.jjk.progression.training.TrainingRoom()));
     /** Arenas that belong to a cursed battle room (the Finger Bearer's), not an incident: their key starts with this. */
     public static final String ROOM = "room:";
     /** Arenas that belong to a personal character trial ({@link dev.rick.jjk.progression.story.PersonalTrials}). */

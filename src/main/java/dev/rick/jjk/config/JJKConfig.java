@@ -57,6 +57,7 @@ public final class JJKConfig {
     public Rifle rifle = new Rifle();
     public CursedToolKits cursedTools = new CursedToolKits();
     public Realms realms = new Realms();
+    public Training training = new Training();
 
     public static JJKConfig get() {
         return instance;
@@ -1278,6 +1279,38 @@ public final class JJKConfig {
         public double compassNear = 40, compassHere = 6;
     }
 
+    /**
+     * Character training (the relic's personal trial): the shared three-gauge skill check. Every timing here is in
+     * milliseconds of elapsed time (never frames). Phase windows are the full width of the GOOD arc; PERFECT is a
+     * fraction of it, centred. Per-character schedules are built from these by {@code TrainingSchedule}.
+     */
+    public static final class Training {
+        /** Length of the timed challenge (after the intro) and of the intro itself. */
+        public int durationMs = 45_000, introMs = 2_000;
+        /** Where phase 2 and phase 3 begin. */
+        public int phase2AtMs = 15_000, phase3AtMs = 30_000;
+        /** GOOD window width per phase. */
+        public int phase1GoodMs = 300, phase2GoodMs = 230, phase3GoodMs = 180;
+        /** PERFECT window as a fraction of GOOD. */
+        public float perfectFraction = 0.35f;
+        /** Least warning before a check's window opens (its cue), and before an announced disturbance. */
+        public int telegraphMs = 600, disturbanceTelegraphMs = 900;
+        /** Least gap between one check's window closing and the next window on the same key. */
+        public int sameKeyGapMs = 350;
+        /** Least gap between two windows on different keys that aren't deliberately aligned. */
+        public int staggerMs = 160;
+        /** Misses that fail an attempt (passing means finishing with fewer). */
+        public int maxMisses = 5;
+        /** Bounded latency compensation: how far back a client's press stamp may be honoured, and how far ahead. */
+        public int maxLatencyMs = 300, clockSlackMs = 120;
+        /** No word from the client (its schedule never acknowledged) this long after the intro: the attempt is void. */
+        public int syncTimeoutMs = 3_000;
+        /** Ticks the result shows (victory payoff; failure before Retry/Leave). */
+        public int victoryTicks = 80, failureTicks = 40;
+        /** Ticks an offer to begin stays answerable. */
+        public int offerTicks = 600;
+    }
+
     /** Beam clashes (True Love Beam against Every Last Drop): the duel's tuning lives in the session; these are reach. */
     public static final class BeamClash {
         public boolean enabled = true;
@@ -1353,5 +1386,6 @@ public final class JJKConfig {
         if (rifle == null) rifle = new Rifle();
         if (cursedTools == null) cursedTools = new CursedToolKits();
         if (realms == null) realms = new Realms();
+        if (training == null) training = new Training();
     }
 }
