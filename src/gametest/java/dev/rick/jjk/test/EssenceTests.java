@@ -265,9 +265,8 @@ public class EssenceTests {
         // Back through the breach: the arena again, only the remnant in it (no guardian, nothing hostile).
         h.assertTrue(CursedRealms.enter(p, in, st), "the challenger can go back for it");
         h.assertTrue(in.state() == Incident.State.COMPLETE, "the contract stays complete");
-        h.runAfterDelay(25, () -> {
-            GuardianRemnantEntity r = remnant(server, in);
-            h.assertTrue(r != null, "its remnant is raised again where it fell");
+        // Raised by the arena's own tick once its ground is ready (sooner or later on a busy server: waited for).
+        h.startSequence().thenWaitUntil(() -> h.assertTrue(remnant(server, in) != null, "its remnant is raised again where it fell")).thenExecute(() -> {
             h.assertTrue(Investigations.curseEntity(server, Investigations.objectiveTargetForTest(in)) == null || !Investigations.curseEntity(server, Investigations.objectiveTargetForTest(in)).isAlive(),
                     "the guardian doesn't come back");
             InvestigationState.Arena a = CursedRealms.arenaOf(st, in.id);
@@ -278,12 +277,10 @@ public class EssenceTests {
             dev.rick.jjk.progression.investigation.CursedBreaches.useForTest(p, leave);
             h.assertTrue(!CursedRealms.inRealm(p), "the way out takes them home");
             h.assertTrue(Investigations.capturePending(in), "the remnant still waits");
-            h.runAfterDelay(110, () -> {
-                h.assertTrue(CursedRealms.arenaOf(st, in.id) == null, "an empty remnant arena goes (no realm left loaded for it)");
-                h.assertTrue(Investigations.capturePending(in), "and the capture is still kept");
-                p.discard();
-                h.succeed();
-            });
-        });
+        }).thenIdle(110).thenExecute(() -> {
+            h.assertTrue(CursedRealms.arenaOf(st, in.id) == null, "an empty remnant arena goes (no realm left loaded for it)");
+            h.assertTrue(Investigations.capturePending(in), "and the capture is still kept");
+            p.discard();
+        }).thenSucceed();
     }
 }

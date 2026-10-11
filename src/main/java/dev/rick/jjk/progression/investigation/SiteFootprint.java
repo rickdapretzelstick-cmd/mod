@@ -105,6 +105,53 @@ public final class SiteFootprint {
         return left.isEmpty();
     }
 
+    /**
+     * Everyone who would be shut in the ground once what is left comes down: standing in a space the site carved out of
+     * it (a mine's tunnel), or (after a pass) sealed in a pocket of it. Spectators never are.
+     */
+    static List<net.minecraft.server.level.ServerPlayer> trapped(ServerLevel level, List<Change> left, boolean pocketsToo) {
+        if (left.isEmpty()) return List.of();
+        int x0 = Integer.MAX_VALUE, y0 = Integer.MAX_VALUE, z0 = Integer.MAX_VALUE, x1 = Integer.MIN_VALUE, y1 = Integer.MIN_VALUE, z1 = Integer.MIN_VALUE;
+        for (Change c : left) {
+            int x = BlockPos.getX(c.pos()), y = BlockPos.getY(c.pos()), z = BlockPos.getZ(c.pos());
+            x0 = Math.min(x0, x); y0 = Math.min(y0, y); z0 = Math.min(z0, z);
+            x1 = Math.max(x1, x); y1 = Math.max(y1, y); z1 = Math.max(z1, z);
+        }
+        AABB box = new AABB(x0, y0, z0, x1 + 1, y1 + 1, z1 + 1).inflate(2);
+        List<net.minecraft.server.level.ServerPlayer> near = level.getEntitiesOfClass(net.minecraft.server.level.ServerPlayer.class, box, p -> p.isAlive() && !p.isSpectator());
+        if (near.isEmpty()) return List.of();
+        java.util.Set<Long> carved = new java.util.HashSet<>();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
+        for (Change c : left) {
+            m.set(c.pos());
+            if (!c.original().getCollisionShape(level, m).isEmpty()) carved.add(c.pos());
+        }
+        List<net.minecraft.server.level.ServerPlayer> out = new ArrayList<>();
+        for (var p : near) {
+            AABB b = p.getBoundingBox();
+            boolean in = false;
+            for (BlockPos q : BlockPos.betweenClosed(BlockPos.containing(b.minX, b.minY, b.minZ), BlockPos.containing(b.maxX - 1e-4, b.maxY - 1e-4, b.maxZ - 1e-4))) {
+                if (carved.contains(q.asLong())) {
+                    in = true;
+                    break;
+                }
+            }
+            if (in || pocketsToo && dev.rick.jjk.core.world.SafeGround.entombed(p)) out.add(p);
+        }
+        return out;
+    }
+
+    /** Whether {@code pos} is in a space the site carved out of the ground (it fills in again when the site comes down). */
+    static boolean carved(ServerLevel level, List<Change> left, BlockPos pos) {
+        long feet = pos.asLong(), head = pos.above().asLong();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
+        for (Change c : left) {
+            if (c.pos() != feet && c.pos() != head) continue;
+            if (!c.original().getCollisionShape(level, m.set(c.pos())).isEmpty()) return true;
+        }
+        return false;
+    }
+
     static ListTag save(List<Change> changes) {
         ListTag list = new ListTag();
         for (Change c : changes) {

@@ -307,14 +307,7 @@ public final class DomainStructure {
     }
 
     static void liftToFreeSpace(Entity e) {
-        for (int up = 1; up <= 64; up++) {
-            AABB moved = e.getBoundingBox().move(0, up, 0);
-            if (e.level().noCollision(e, moved)) {
-                e.teleportTo(e.getX(), e.getY() + up, e.getZ());
-                e.resetFallDistance();
-                return;
-            }
-        }
+        dev.rick.jjk.core.world.BlockSnapshots.liftToFreeSpace(e);
     }
 
     public boolean isActive() {

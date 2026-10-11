@@ -99,6 +99,57 @@ public class SiteTests {
                 .thenSucceed();
     }
 
+    @GameTest(maxTicks = 600, padding = 40, environment = ENV)
+    public void nobodyIsLeftInTheGroundWhenAMineComesDown(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        // A hill for the mine to go into, and the village square with its bell off to one side.
+        for (int x = 0; x < 16; x++) for (int z = 0; z < 13; z++) for (int y = 0; y < 8; y++) h.setBlock(x, y, z, Blocks.STONE);
+        for (int x = -26; x <= -10; x++) for (int z = -2; z <= 14; z++) h.setBlock(x, 0, z, Blocks.STONE);
+        BlockPos bell = h.absolutePos(new BlockPos(-18, 1, 6));
+        level.setBlock(bell, Blocks.BELL.defaultBlockState(), 3);
+        InvestigationState st = InvestigationState.get(level.getServer());
+        InvestigationState.Village v = Investigations.village(level, bell);
+        BlockPos mouth = h.absolutePos(new BlockPos(2, 6, 6));
+        Incident mine = Investigations.create(level, v, st, IncidentTemplate.get("old_mine"), new Sites.Site(mouth, 1, 0), level.getGameTime(), RandomSource.create(3));
+        Investigations.buildForTest(level, mine);
+        // Six steps down the tunnel (three blocks below the mouth): dug out of the hill.
+        BlockPos down = mouth.offset(6, -3, 0);
+        h.assertTrue(level.getBlockState(down).getCollisionShape(level, down).isEmpty() && level.getBlockState(down.above()).isAir(), "the tunnel is dug");
+        ServerPlayer a = survivor(h, 0, 0);
+        a.teleportTo(down.getX() + 0.5, down.getY(), down.getZ() + 0.5);
+        // Another went into its realm from further down: their way back leads into the tunnel.
+        ServerPlayer b = survivor(h, 0, 0);
+        BlockPos deeper = mouth.offset(7, -3, 0);
+        b.teleportTo(deeper.getX() + 0.5, deeper.getY(), deeper.getZ() + 0.5);
+        CursedRealms.enter(b, mine, st);
+        h.assertTrue(CursedRealms.inRealm(b) && st.returnOf(b.getUUID()) != null, "the second is in the realm, their way back saved");
+        Vec3 square = Vec3.atBottomCenterOf(bell);
+        h.startSequence()
+                .thenExecute(() -> Investigations.completeForTest(level.getServer(), mine))
+                .thenWaitUntil(() -> h.assertTrue(mine.siteCleared(), "taken down (" + mine.siteBlocksLeft() + " left)"))
+                .thenExecute(() -> {
+                    h.assertTrue(level.getBlockState(down).is(Blocks.STONE) && level.getBlockState(down.above()).is(Blocks.STONE), "the tunnel is ground again");
+                    h.assertTrue(a.level() == level && a.position().distanceTo(square) < 16, "the one down the tunnel is back at the village: " + a.position());
+                    h.assertTrue(level.noCollision(a) && !dev.rick.jjk.core.world.SafeGround.entombed(a), "standing in the open there");
+                    // The other is still away, their way back now leading to the village; the realm closing brings them there.
+                    if (CursedRealms.inRealm(b)) {
+                        var r = st.returnOf(b.getUUID());
+                        h.assertTrue(r != null && r.pos().distanceTo(square) < 16, "their way back leads to the village: " + (r == null ? null : r.pos()));
+                        var arena = CursedRealms.arenaOf(st, mine.id);
+                        if (arena != null) CursedRealms.close(level.getServer(), st, arena, false);
+                    }
+                    h.assertTrue(!CursedRealms.inRealm(b) && b.level() == level && b.position().distanceTo(square) < 16
+                            && !dev.rick.jjk.core.world.SafeGround.entombed(b), "home at the village: " + b.position());
+                    // Leave nothing behind for other tests: no arena, nobody left standing about, no hill.
+                    h.assertTrue(CursedRealms.arenaOf(st, mine.id) == null, "its realm is closed");
+                    a.discard();
+                    b.discard();
+                    for (int x = 0; x < 16; x++) for (int z = 0; z < 13; z++) for (int y = 1; y < 8; y++) h.setBlock(x, y, z, Blocks.AIR);
+                    level.setBlock(bell, Blocks.AIR.defaultBlockState(), 3);
+                })
+                .thenSucceed();
+    }
+
     @GameTest(environment = ENV)
     public void newSitesKeepClearOfStandingOnes(GameTestHelper h) {
         ServerLevel level = h.getLevel();

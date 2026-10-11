@@ -1084,13 +1084,48 @@ public final class Investigations {
             }
             if (!level.isLoaded(in.site)) continue;
             int before = in.footprint.size();
+            // Nobody is shut in the ground as it comes back: whoever is down in it (or whose way back from its realm
+            // leads into it) goes back to the village that reported it.
+            for (ServerPlayer p : SiteFootprint.trapped(level, in.footprint, false)) backToVillage(p, level, in);
+            repointReturns(st, level, in);
             boolean done = SiteFootprint.demolish(level, in.footprint);
+            for (ServerPlayer p : SiteFootprint.trapped(level, in.footprint, true)) backToVillage(p, level, in);
             if (done) {
                 in.siteCleared = true;
                 in.footprint = null;
                 JJK.LOGGER.info("[investigations] the site of incident {} ({}) has been taken down", in.id, in.template);
             }
             if (done || in.footprint == null || in.footprint.size() != before) st.markDirty();
+        }
+    }
+
+    /** Where someone sent back to an incident's village stands: on open ground near its bell. */
+    static Vec3 villageSpot(ServerLevel level, Incident in) {
+        level.getChunk(in.village);
+        Vec3 at = dev.rick.jjk.core.world.SafeGround.standNear(level, in.village, 2, 12);
+        return at != null ? at : Vec3.atBottomCenterOf(Sites.surface(level, in.village));
+    }
+
+    /** Sends a player who would be shut in an incident's site, as it comes down, back to the village that reported it. */
+    static void backToVillage(ServerPlayer p, ServerLevel level, Incident in) {
+        Vec3 at = villageSpot(level, in);
+        dev.rick.jjk.core.world.SafeGround.put(p, at);
+        p.sendOverlayMessage(Component.literal("The ground closes over the site. You make your way back to the village.").withStyle(net.minecraft.ChatFormatting.GRAY));
+        JJK.LOGGER.info("[investigations] {} was down in incident {}'s site as it came down: sent back to its village at {}", p.getName().getString(), in.id, BlockPos.containing(at).toShortString());
+    }
+
+    /** A way back from a realm that leads into ground the site is about to fill in leads to the village instead. */
+    private static void repointReturns(InvestigationState st, ServerLevel level, Incident in) {
+        if (st.returns.isEmpty() || in.footprint == null) return;
+        String dim = level.dimension().identifier().toString();
+        Vec3 village = null;
+        for (var e : st.returns.entrySet()) {
+            InvestigationState.Return r = e.getValue();
+            if (!dim.equals(r.dimension()) || r.pos().distanceToSqr(Vec3.atCenterOf(in.site)) > 64 * 64) continue;
+            if (!SiteFootprint.carved(level, in.footprint, BlockPos.containing(r.pos()))) continue;
+            if (village == null) village = villageSpot(level, in);
+            e.setValue(new InvestigationState.Return(r.dimension(), village, r.yaw()));
+            st.markDirty();
         }
     }
 

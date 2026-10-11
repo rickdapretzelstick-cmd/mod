@@ -70,16 +70,21 @@ public final class BlockSnapshots {
         return state.isAir() || state.is(net.minecraft.tags.BlockTags.FIRE) || state.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock;
     }
 
-    /** Anyone standing where a block came back is lifted to the nearest free space above. */
+    /**
+     * Anyone standing where a block came back is lifted to the nearest free space above, or, if that would leave them
+     * sealed in a pocket of the ground (or there is no free space), out to the surface ({@link SafeGround}).
+     */
     public static void liftToFreeSpace(Entity e) {
         for (int up = 1; up <= 64; up++) {
             AABB moved = e.getBoundingBox().move(0, up, 0);
             if (e.level().noCollision(e, moved)) {
                 e.teleportTo(e.getX(), e.getY() + up, e.getZ());
                 e.resetFallDistance();
+                if (e instanceof net.minecraft.world.entity.player.Player && SafeGround.entombed(e)) SafeGround.toSurface(e);
                 return;
             }
         }
+        SafeGround.toSurface(e);
     }
 
     public static final Direction[] DIRECTIONS = Direction.values();
