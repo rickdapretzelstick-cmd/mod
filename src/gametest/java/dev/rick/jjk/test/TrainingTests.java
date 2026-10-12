@@ -394,6 +394,16 @@ public class TrainingTests {
             if (!kit.equals("yuji")) h.assertTrue(blocks.containsKey(ground), kit + ": the participant stands on the room's floor");
             for (int dy = 1; dy <= 2; dy++) h.assertTrue(!blocks.containsKey(ground.above(dy)), kit + ": headroom at the participant's spot");
             h.assertTrue(!plan.props().isEmpty(), kit + ": the room has its props");
+            // Closed: a ceiling over the participant and a wall on every side (no void anywhere in view).
+            boolean roofed = false;
+            for (int y = feet.getY() + 2; y < b[4]; y++) roofed |= blocks.containsKey(new BlockPos(feet.getX(), y, feet.getZ()));
+            h.assertTrue(roofed, kit + ": a ceiling over the participant");
+            int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+            for (int[] d : dirs) {
+                boolean wall = false;
+                for (int k = 1; k < 45 && !wall; k++) wall = blocks.containsKey(new BlockPos(feet.getX() + d[0] * k, feet.getY() + 2, feet.getZ() + d[1] * k));
+                h.assertTrue(wall, kit + ": walled in toward " + d[0] + "," + d[1]);
+            }
             for (TrialRooms.Prop pr : plan.props()) {
                 h.assertTrue(TrainingTests.class.getClassLoader().getResource("assets/jjk/models/bb/" + pr.model() + ".bbmodel") != null,
                         kit + ": prop model " + pr.model() + " is shipped");

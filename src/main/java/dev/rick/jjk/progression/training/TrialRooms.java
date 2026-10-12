@@ -42,7 +42,7 @@ public final class TrialRooms {
     /** A prop model and how it is drawn ({@link TrialPropEntity}'s kinds). */
     public record Prop(String model, int kind) {}
 
-    public record Plan(String kit, String title, int[] bounds, Map<String, Vec3> markers, List<BlockState> palette, int[][] runs,
+    public record Plan(String kit, String title, String biome, int[] bounds, Map<String, Vec3> markers, List<BlockState> palette, int[][] runs,
                        int[][] lights, List<Prop> props) {
         /** A marker (room-local), or null if the room has no such place. */
         @Nullable
@@ -95,7 +95,7 @@ public final class TrialRooms {
                 JsonObject po = e.getAsJsonObject();
                 props.add(new Prop(po.get("model").getAsString(), TrialPropEntity.kind(po.get("kind").getAsString())));
             }
-            Plan p = new Plan(kit, o.get("title").getAsString(), ints(o.getAsJsonArray("bounds")), markers, palette,
+            Plan p = new Plan(kit, o.get("title").getAsString(), o.has("biome") ? o.get("biome").getAsString() : "", ints(o.getAsJsonArray("bounds")), markers, palette,
                     table(o.getAsJsonArray("runs")), table(o.getAsJsonArray("lights")), props);
             if (p.marker("player") == null) throw new IllegalStateException("no player marker");
             for (int[] r : p.runs) if (r.length != 5 || r[4] < 0 || r[4] >= palette.size()) throw new IllegalStateException("bad run");
@@ -140,8 +140,30 @@ public final class TrialRooms {
         return st.setValue(prop, prop.getValue(value).orElseThrow(() -> new IllegalArgumentException("bad value " + value + " for " + prop.getName())));
     }
 
+    /** Biomes the rooms paint (each sets its own light colour and tint over the realm's crimson: see worldgen/biome). */
+    public static boolean isTrialBiome(net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> b) {
+        return b.unwrapKey().map(k -> k.identifier().getNamespace().equals(JJK.MOD_ID) && k.identifier().getPath().startsWith("trial_")).orElse(false);
+    }
+
+    /**
+     * Gives the room's box its own biome, so the realm's crimson ambient light gives way to the room's own (warm, cool,
+     * purple...). Only in the realm dimension (never the overworld fallback's sky), and undone when the arena is cleared.
+     */
+    static void paintBiome(ServerLevel level, BlockPos origin, Plan p) {
+        if (p.biome().isEmpty() || level.dimension() != dev.rick.jjk.progression.investigation.CursedRealms.DIMENSION) return;
+        var key = net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.BIOME, Identifier.parse(p.biome()));
+        var biome = level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).get(key);
+        if (biome.isEmpty()) {
+            JJK.LOGGER.warn("[training] no biome {}", p.biome());
+            return;
+        }
+        int[] b = p.bounds();
+        net.minecraft.server.commands.FillBiomeCommand.fill(level, origin.offset(b[0], b[1], b[2]), origin.offset(b[3], b[4], b[5]), biome.get());
+    }
+
     /** Places a room's blocks and lights at {@code origin} (its arena origin). */
     public static void build(ServerLevel level, BlockPos origin, Plan p) {
+        paintBiome(level, origin, p);
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int[] r : p.runs) {
             BlockState s = p.palette.get(r[4]);

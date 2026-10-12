@@ -68,6 +68,22 @@ TOL = 0.5
 # Entablatures sit on the capitals 0.7 thick: a block row may stand 0.52 proud of them (nothing sits on them).
 TOL_FOR = {'side entablature': 0.55, 'blackstone entablature': 0.55}
 
+# The enclosure each room is closed in (walls at its full bounds, props included, and a ceiling), so the realm's void
+# never shows: wall, pilaster (every 4 blocks), base course, ceiling, and the visible light fixture set in the ceiling
+# every 5 blocks (a lantern hangs one below it where 'hang' is set).
+SHELLS = {
+    'yuji': dict(wall='minecraft:spruce_planks', pilaster='minecraft:dark_oak_log', base='minecraft:dark_oak_planks',
+                 ceiling='minecraft:dark_oak_planks', fixture='minecraft:lantern[hanging=true]', hang=True),
+    'gojo': dict(wall='minecraft:quartz_bricks', pilaster='minecraft:quartz_pillar', base='minecraft:smooth_quartz',
+                 ceiling='minecraft:smooth_quartz', fixture='minecraft:sea_lantern'),
+    'yuta': dict(wall='minecraft:polished_blackstone_bricks', pilaster='minecraft:polished_deepslate', base='minecraft:amethyst_block',
+                 ceiling='minecraft:deepslate_tiles', fixture='minecraft:pearlescent_froglight'),
+    'ryu': dict(wall='minecraft:stone_bricks', pilaster='minecraft:polished_andesite', base='minecraft:deepslate_bricks',
+                ceiling='minecraft:deepslate_bricks', fixture='minecraft:ochre_froglight'),
+    'hakari': dict(wall='minecraft:red_terracotta', pilaster='minecraft:yellow_terracotta', base='minecraft:yellow_terracotta',
+                   ceiling='minecraft:dark_oak_planks', fixture='minecraft:glowstone'),
+}
+
 ROOMS = {
     'yuji': dict(title='The Cursed Screening Room', shift=(0.0, 0.0), rim='minecraft:polished_blackstone',
                  # The studs sat on the panels' face; the block wall's face is 0.45 further in.
@@ -75,18 +91,18 @@ ROOMS = {
                  # The emotional-control trial is watched from the centre sofa, the doll on the lap.
                  markers={'player': (0, 1.23, 7.95), 'player_floor': (0, 0, 6.0), 'television': (0, 3.67, -9.5),
                           'doll': (0, 1.35, 7.45)},
-                 lights=7),
+                 lights=12),
     'gojo': dict(title='Hall of Impossible Precision', shift=(0.5, 0.5), rim='minecraft:polished_andesite',
-                 markers={'player': (0, 0.12, 9.0), 'blue_core': (0, 5.0, 0)}, lights=8),
+                 markers={'player': (0, 0.12, 9.0), 'blue_core': (0, 5.0, 0)}, lights=13),
     'yuta': dict(title='Shrine of the Bound Promise', shift=(0.5, 0.5), rim='minecraft:polished_blackstone',
-                 markers={'player': (0, 0.12, 7.0), 'sword': (0, 2.0, -0.5), 'rika': (0, 1.32, -8.6)}, lights=7),
+                 markers={'player': (0, 0.12, 7.0), 'sword': (0, 2.0, -0.5), 'rika': (0, 1.32, -8.6)}, lights=12),
     'ryu': dict(title='Granite Output Crucible', shift=(0.5, 0.0), rim='minecraft:polished_blackstone',
                 blocks={'stone': 'minecraft:stone_bricks'},
                 slabs={'firing dais': 'minecraft:polished_deepslate_slab[type=bottom]'},
                 nudge={'firing plate': (0, 0.07, 0), 'firing plate inset': (0, 0.07, 0)},
-                markers={'player': (0, 0.62, 14.0), 'target': (0, 6.0, -18.6)}, lights=6),
+                markers={'player': (0, 0.62, 14.0), 'target': (0, 6.0, -18.6)}, lights=12),
     'hakari': dict(title='The Restless Jackpot Palace', shift=(0.5, 0.5), rim='minecraft:polished_blackstone',
-                   markers={'player': (0, 0.12, 8.0), 'reels': (0, 6.0, -10.0)}, lights=8),
+                   markers={'player': (0, 0.12, 8.0), 'reels': (0, 6.0, -10.0)}, lights=13),
 }
 
 
@@ -250,17 +266,48 @@ def install(kit, cfg):
             for z in range(8, 10):
                 blocks[(x, 0, z)] = 'minecraft:chiseled_polished_blackstone'
 
-    # Lights: one at each lantern (only where nothing solid is), plus a few soft fills over the floor.
+    # The enclosure: walls just outside everything the room places or draws, a floor out to them, and a ceiling over it.
+    pts = [k for k in blocks] + [(c[0], c[1], c[2]) for t in model.values() for cs in t.values() for (_, a, b) in cs
+                                 for c in (room.box(a, b)[0], room.box(a, b)[1])]
+    x0 = math.floor(min(q[0] for q in pts)) - 1
+    x1 = math.ceil(max(q[0] for q in pts))
+    z0 = math.floor(min(q[2] for q in pts)) - 1
+    z1 = math.ceil(max(q[2] for q in pts))
+    top = math.ceil(max(q[1] for q in pts)) + 1
+    sh = SHELLS[kit]
+    for x in range(x0, x1 + 1):
+        for z in range(z0, z1 + 1):
+            edge = x in (x0, x1) or z in (z0, z1)
+            if (x, -1, z) not in blocks:
+                blocks[(x, -1, z)] = cfg['rim']
+            blocks[(x, top, z)] = sh['ceiling']
+            if edge:
+                corner = x in (x0, x1) and z in (z0, z1)
+                pil = corner or (x - x0) % 4 == 0 and z in (z0, z1) or (z - z0) % 4 == 0 and x in (x0, x1)
+                for y in range(0, top):
+                    blocks[(x, y, z)] = sh['base'] if y == 0 else sh['pilaster'] if pil else sh['wall']
+    for x in range(x0 + 3, x1 - 1, 5):
+        for z in range(z0 + 3, z1 - 1, 5):
+            if sh.get('hang'):
+                if (x, top - 1, z) not in blocks:
+                    blocks[(x, top - 1, z)] = sh['fixture']
+            else:
+                blocks[(x, top, z)] = sh['fixture']
+
+    # Lights: each lantern of the pack, and an even fill at two heights so no corner of the room is dark.
     out_lights = []
     for p in lights:
         if tuple(p) not in blocks:
-            out_lights.append(p + [12 if kit != 'ryu' else 10])
+            out_lights.append(p + [14])
+    taken = {tuple(l[:3]) for l in out_lights}
+    for x in range(x0 + 2, x1 - 1, 4):
+        for z in range(z0 + 2, z1 - 1, 4):
+            for y, lv in ((3, cfg['lights']), (top - 3, cfg['lights'] - 1)):
+                if (x, y, z) not in blocks and (x, y, z) not in taken:
+                    out_lights.append([x, y, z, lv])
+                    taken.add((x, y, z))
     xs = [k[0] for k in blocks]
     zs = [k[2] for k in blocks]
-    for x in range(min(xs) + 4, max(xs) - 2, 7):
-        for z in range(min(zs) + 4, max(zs) - 2, 7):
-            if (x, 6, z) not in blocks:
-                out_lights.append([x, 6, z, cfg['lights']])
 
     # Markers, in the room frame.
     markers = {k: [round(c, 4) for c in room.pt(*v)] for k, v in cfg['markers'].items()}
@@ -284,7 +331,7 @@ def install(kit, cfg):
         if kit == 'hakari' and name == f'trial_{kit}':
             kind = 'reels'
         props.append({'model': name, 'kind': kind})
-    plan = {'kit': kit, 'title': cfg['title'], 'shift': [room.sx, room.sz], 'bounds': bounds, 'markers': markers,
+    plan = {'kit': kit, 'title': cfg['title'], 'biome': f'jjk:trial_{kit}', 'shift': [room.sx, room.sz], 'bounds': bounds, 'markers': markers,
             'palette': pal, 'runs': runs, 'lights': out_lights, 'props': props}
     os.makedirs(DATA, exist_ok=True)
     with open(os.path.join(DATA, f'{kit}.json'), 'w') as f:

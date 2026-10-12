@@ -45,8 +45,9 @@ public class TrainingClientTest implements FabricClientGameTest {
                     int[] b = plan.bounds();
                     double cx = (b[0] + b[3]) / 2.0, cz = (b[2] + b[5]) / 2.0;
                     var eye = o.add(plan.marker("player")).add(0, 1.62, 0);
-                    return new net.minecraft.world.phys.Vec3[] {o.add(cx + (b[3] - b[0]) * 0.45, b[4] + 7, b[2] - 5), o.add(cx, 1.5, cz + 2),
-                            o.add(cx - (b[3] - b[0]) * 0.45, b[4] + 4, b[5] + 4), o.add(cx, 1.5, cz - 2), eye, eye.add(0, 0.4, 10)};
+                    // Inside the closed room: high in the entrance corner, high in the far corner, and just ahead of the eyes.
+                    return new net.minecraft.world.phys.Vec3[] {o.add(b[3] - 2.5, b[4] - 3, b[2] + 2.5), o.add(cx, 1.5, cz + 3),
+                            o.add(b[0] + 2.5, b[4] - 3, b[5] - 2.5), o.add(cx, 1.5, cz - 3), eye.add(0, 0.2, 0.7), eye.add(0, 0.4, 10)};
                 });
                 if (views != null) {
                     for (int v = 0; v < 3; v++) {

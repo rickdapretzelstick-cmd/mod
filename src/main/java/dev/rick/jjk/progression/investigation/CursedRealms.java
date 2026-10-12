@@ -690,6 +690,12 @@ public final class CursedRealms {
         }
         for (Entity e : realm.getEntities((Entity) null, box, e -> !(e instanceof ServerPlayer))) e.discard();
         dev.rick.jjk.core.world.WorldRestoration.forget(realm, box);
+        // A training room's own biome (its light colours) goes back to the realm's void.
+        if (realm.dimension() == DIMENSION) {
+            realm.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).get(net.minecraft.world.level.biome.Biomes.THE_VOID)
+                    .ifPresent(v -> net.minecraft.server.commands.FillBiomeCommand.fill(realm, origin.offset(-RADIUS, -20, -RADIUS),
+                            origin.offset(RADIUS, HEIGHT - 1, RADIUS), v, dev.rick.jjk.progression.training.TrialRooms::isTrialBiome, msg -> {}));
+        }
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();
         for (int y = origin.getY() - 20; y < origin.getY() + HEIGHT; y++) {
