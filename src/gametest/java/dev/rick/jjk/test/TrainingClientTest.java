@@ -39,6 +39,20 @@ public class TrainingClientTest implements FabricClientGameTest {
                 ctx.takeScreenshot("training_" + kit + "_active");
                 ctx.waitTicks(50);
                 ctx.takeScreenshot("training_" + kit + "_active2");
+                // The montage's later shots (its phases come later than this test waits): cut to each and look.
+                for (int shot = 2; shot <= 3; shot++) {
+                    final int s = shot;
+                    ctx.runOnClient(mc -> dev.rick.jjk.client.training.TrainingCamera.cutForTest(s));
+                    ctx.waitTicks(4);
+                    ctx.takeScreenshot("training_" + kit + "_phase" + s);
+                    boolean clear = ctx.computeOnClient(mc -> {
+                        var cam = mc.gameRenderer.mainCamera().position();
+                        var b = net.minecraft.core.BlockPos.containing(cam);
+                        return mc.level.getBlockState(b).getCollisionShape(mc.level, b).isEmpty();
+                    });
+                    if (!clear) throw new AssertionError(kit + " phase " + s + ": the shot sits in a block");
+                }
+                ctx.runOnClient(mc -> dev.rick.jjk.client.training.TrainingCamera.cutForTest(1));
                 server.runOnServer(srv -> TrainingSessions.failNow(srv.getPlayerList().getPlayers().get(0)));
                 ctx.waitTicks(14);
                 ctx.takeScreenshot("training_" + kit + "_failure");

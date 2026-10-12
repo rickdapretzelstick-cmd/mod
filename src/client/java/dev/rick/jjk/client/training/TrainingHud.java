@@ -48,6 +48,9 @@ public final class TrainingHud {
 
         if (a.state == TrainingNet.INTRO) title(g, font, w, h, a.start.title(), "Press each key as its needle crosses the arc", 0xFFFFFFFF);
         boolean seal = TrainingClient.containment();
+        // The montage's title beat as it cuts to the next phase.
+        int beat = TrainingCamera.titleBeat();
+        if (live && beat > 0) title(g, font, w, h, "PHASE " + beat, beat == 2 ? "Faster now. Two at once." : "Everything at once.", 0xFFFFD84A);
         if (a.state == TrainingNet.SUCCESS) {
             if (seal) title(g, font, w, h, "ESSENCE SEALED", "A Sealed Grade 1 Essence is yours.", PERFECT);
             else title(g, font, w, h, a.start.practice() ? "PRACTICE COMPLETE" : "TRAINING COMPLETE", "Steady.", PERFECT);

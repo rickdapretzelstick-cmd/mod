@@ -532,7 +532,12 @@ Every character trains with the same shared skill check, dressed differently:
   check is cued its arcs: a wide **GOOD** arc with a narrow **PERFECT** core (both count; PERFECT isn't required). Press
   as the needle crosses. A hold check shows **HOLD** (press in its arc) and then **RELEASE** (let go in a second arc):
   one success or one miss for the pair. Above the row: the phase, the time left and five mistake marks.
-- **The rules**: ~2 s intro (the camera pushes in to a fixed shot), then **45 seconds** in three phases: 0-15 s
+- **The camera**: cut like an anime training montage, one shot per phase: the scene's established shot (pushed into
+  through the intro), a closer side angle for phase 2, a low hero angle on you for phase 3 (where the room allows), and
+  on success a slow orbit pulling out. Each cut waits for a quiet moment (no check cued or open nearby, at most 1.5 s
+  late) so it never lands on a press, and gets a title beat ("PHASE 2 · Faster now"). With **Reduced Camera Motion** it
+  is the one still established shot throughout.
+- **The rules**: ~2 s intro, then **45 seconds** in three phases: 0-15 s
   (~300 ms GOOD window, mostly one gauge at a time), 15-30 s (~230 ms, two overlapping), 30-45 s (~180 ms, all three).
   Every check is telegraphed at least 600 ms before its window. Early, late or no press is a **miss**; five misses fail.
   A press while the needle is only travelling between checks does nothing; spamming, holding a key or repeating
