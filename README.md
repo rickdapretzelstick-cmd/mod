@@ -587,16 +587,38 @@ Every character trains with the same shared skill check, dressed differently:
   Every check is telegraphed at least 600 ms before its window. Early, late or no press is a **miss**; five misses fail.
   A press while the needle is only travelling between checks does nothing; spamming, holding a key or repeating
   packets can't pass a check, and each check costs at most one mistake. Timing is elapsed time, never frames.
-- **The scenes**: **Yuji** sits facing a television (calm, suspense, action and sadness patterns announce faster or
-  slower checks) with a cursed corpse doll on his lap: successes pulse energy into it, misses wake it (a twitch, its
-  head, an arm), the fifth miss is a harmless punch, victory quiets it. **Gojo** holds three stones in orbit round a
-  small Blue (one stone per gauge; misses make them wobble outward); failure drops them, victory spaces them evenly and
-  collapses Blue. This is his *base* training: the Prison Realm stays a separate, later requirement for his ultimate.
-  **Yuta** holds a practice katana (shown in the hand only; nothing touches the inventory) with Rika behind him: holds
-  and releases steady the blade, misses make it flicker and fracture harmlessly and Rika restless. **Ryu** gathers a
-  charge round his head facing a stone target down a short lane; victory fires one scripted beam that destroys only the
-  session's target. **Hakari** stands among three huge slot reels; successes lock 7s, misses slip, the music builds by
-  phase, the finale is an announced triple input, and victory plays the jackpot dance (no real jackpot, buffs or domain).
+- **The rooms**: each character trains in a room of its own (the "Relic Trial Rooms V2" Blockbench pack, installed by
+  `tools/install_trial_rooms.py`), built in the trial's private realm arena and cleared with it:
+  - **Yuji, the Cursed Screening Room** (26x26): a timber room with broken rafters, warm hanging lanterns, ivy, VHS
+    shelves, sofas on a patterned rug and a low table. He sits on the centre sofa with a cursed corpse doll on his lap,
+    facing the CRT across the room. Its screen is animated static and scanlines, coloured by the mood: calm, suspense,
+    action and sadness announce faster or slower checks. Successes pulse energy into the doll; misses wake it (a twitch,
+    its head, an arm) and the static gets restless. The fifth miss is a harmless punch; victory quiets it.
+  - **Gojo, the Hall of Impossible Precision** (28x28): a quartz colonnade with cyan inlays, the stepped calibration
+    dais, floor channels, four precision stations, and fragments and rings turning round the Blue over the dais. He
+    draws three stones (one per gauge) into orbit round that Blue: misses make them wobble outward, failure drops them,
+    victory spaces them evenly and collapses the Blue. This is his *base* training: the Prison Realm stays a separate,
+    later requirement for his ultimate.
+  - **Yuta, the Shrine of the Bound Promise** (28x28): dark columns and arch, the purple oath circle, the sword altar,
+    amethyst, hanging wisteria and candles. He holds a practice katana (shown in the hand only; nothing touches the
+    inventory). The mod's own Rika, fully manifested, waits on a dais at the shrine's rear, facing him; the pack's Rika
+    sculpture is not used. Holds and releases steady the blade, and the altar's blade glows with his control. Misses
+    make both flicker and Rika restless.
+  - **Ryu, the Granite Output Crucible** (24x40): a long reinforced firing gallery with columns, lanterns, range
+    markings, blast baffles, scorch marks and a concentric target wall. He stands on the firing platform and gathers a
+    charge round his head; victory fires one scripted beam down the gallery that shatters the target's face (the wall
+    behind it stays, and nothing else is touched). A retry restores it.
+  - **Hakari, the Restless Jackpot Palace** (28x28): a red-and-gold pavilion, a carpet up to a stepped stage, three
+    giant reel towers, slot cabinets with stools, and floating luck symbols. The reels are one per gauge, left to
+    right. Each spins while its check is live, locks on a 7 for a hit with a green or gold flash, and slips onto the
+    bust bar with a red flash for a miss. The symbols are the server's; clients only animate the spin and the settle.
+    The music builds by phase, the finale is an announced triple input, and victory plays the jackpot dance (no real
+    jackpot, buffs or domain).
+
+  Architecture that lines up with the block grid is placed as blocks: floors, walls, column shafts, beams, piers,
+  parapets and the target wall. Everything finer is drawn from the pack's geometry as a few prop entities per room.
+  Lanterns, neon and energy glow, the rooms are lit by real light blocks, and rings, symbols and flames move. Plans:
+  `data/jjk/trial_rooms/<kit>.json`; props: `models/bb/trial_<kit>*.bbmodel`.
 
 The first success **claims the base kit**: the world records you as its Yuji (or Gojo...), through the same atomic
 one-owner registry as every path (`kit_ownership.dat`). **The base kit only**: every move and R variant, never the

@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * The training controller: one private session per participant, in its own copy of the {@link TrainingRoom} (a realm
+ * The training controller: one private session per participant, in its own copy of its character's {@link TrainingRoom} (a realm
  * arena, so the participant is isolated and returned home afterwards by the realm's own return records).
  *
  * <pre>
@@ -206,7 +206,7 @@ public final class TrainingSessions {
         if (SESSIONS.get(p.getUUID()) != s) return;
         MinecraftServer server = p.level().getServer();
         InvestigationState st = InvestigationState.get(server);
-        s.arena = CursedRealms.enterTrial(p, s.key, TrainingRoom.ID, st);
+        s.arena = CursedRealms.enterTrial(p, s.key, TrainingRoom.idFor(s.story.kit()), st);
         s.arrived = true;
         // The training's own intro replaces the realm's slow fade in.
         p.removeEffect(net.minecraft.world.effect.MobEffects.DARKNESS);

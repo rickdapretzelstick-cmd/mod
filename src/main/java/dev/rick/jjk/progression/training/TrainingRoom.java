@@ -5,46 +5,55 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
 /**
- * The one training room every character's training is held in: a square of dark stone floating in the realm, four
- * pillars at its corners, the participant at its centre facing south. Each character's scene dresses it
- * ({@link TrainingScene#build}); the realm clears it all when the session ends.
+ * A character's training room, as a realm layout: its {@link TrialRooms} plan (the screening room, the hall of
+ * precision, the shrine, the crucible, the jackpot palace) built in the trial's own arena. The scene adds its props and
+ * working parts ({@link TrainingScene#build}); the realm clears it all when the session ends.
+ *
+ * <p>{@link #ID} is the old shared room's id, still registered so an arena saved under it before this version (a session
+ * that was running at a restart) resolves and is closed and cleared like any other: new sessions use {@link #idFor}.
  */
 public final class TrainingRoom implements CursedRealms.Layout {
     public static final String ID = "training_room";
-    public static final int HALF = 7;
+    private final String kit;
+
+    public TrainingRoom(String kit) {
+        this.kit = kit;
+    }
+
+    public static String idFor(String kit) {
+        return ID + "_" + (TrialRooms.KITS.contains(kit) ? kit : "yuji");
+    }
+
+    @Nullable
+    private TrialRooms.Plan plan() {
+        return TrialRooms.plan(kit);
+    }
 
     @Override
     public void build(ServerLevel l, BlockPos o, RandomSource r) {
-        BlockState floor = Blocks.POLISHED_DEEPSLATE.defaultBlockState(), edge = Blocks.DEEPSLATE_TILES.defaultBlockState();
-        for (int x = -HALF - 5; x <= HALF + 5; x++) {
-            for (int z = -HALF - 1; z <= HALF + 7; z++) {
-                boolean rim = Math.abs(x) == HALF + 5 || z == -HALF - 1 || z == HALF + 7;
-                set(l, o.offset(x, -1, z), rim ? edge : floor);
-                set(l, o.offset(x, -2, z), Blocks.DEEPSLATE.defaultBlockState());
-            }
-        }
-        for (int sx : new int[] {-HALF - 5, HALF + 5}) {
-            for (int sz : new int[] {-HALF - 1, HALF + 7}) {
-                for (int y = 0; y < 5; y++) set(l, o.offset(sx, y, sz), Blocks.POLISHED_BLACKSTONE.defaultBlockState());
-                set(l, o.offset(sx, 5, sz), Blocks.SOUL_LANTERN.defaultBlockState());
-            }
-        }
+        TrialRooms.Plan p = plan();
+        if (p != null) TrialRooms.build(l, o, p);
+        else TrialRooms.buildFallback(l, o);
     }
 
     static void set(ServerLevel l, BlockPos p, BlockState s) {
         l.setBlock(p, s, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
     }
 
+    /** On the floor where the participant first stands (the scene seats or places them from there). */
     @Override
     public Vec3 arrival() {
-        return Vec3.ZERO;
+        TrialRooms.Plan p = plan();
+        if (p == null) return Vec3.ZERO;
+        Vec3 m = p.marker("player_floor") != null ? p.marker("player_floor") : p.marker("player");
+        return new Vec3(m.x - 0.5, Math.max(0, m.y), m.z - 0.5);
     }
 
     @Override
@@ -59,11 +68,15 @@ public final class TrainingRoom implements CursedRealms.Layout {
 
     @Override
     public int radius() {
-        return 12;
+        TrialRooms.Plan p = plan();
+        if (p == null) return 12;
+        int[] b = p.bounds();
+        return Math.max(Math.max(-b[0], b[3]), Math.max(-b[2], b[5]));
     }
 
     @Override
     public String entryLine() {
-        return "A quiet room, made for you alone.";
+        TrialRooms.Plan p = plan();
+        return p != null ? p.title() + ". A room made for you alone." : "A quiet room, made for you alone.";
     }
 }

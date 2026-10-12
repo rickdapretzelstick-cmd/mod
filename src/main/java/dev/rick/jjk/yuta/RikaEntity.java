@@ -37,6 +37,8 @@ public class RikaEntity extends TechniqueEntity {
     private double destinationSpeed;
     @Nullable private LivingEntity target;
     @Nullable private Vec3 station;
+    /** A point she turns to face when she has no target (a presentation, e.g. a trial's shrine); null: the way Yuta faces. */
+    @Nullable private Vec3 faceToward;
     private int moveTicks;
     /** The follow spot's anchor: Yuta's facing and height, eased (so a quick turn or a jump doesn't whip her about). */
     private float anchorYaw = Float.NaN;
@@ -107,6 +109,11 @@ public class RikaEntity extends TechniqueEntity {
     public void station() {
         station = position();
         set(STATIONED, true);
+    }
+
+    /** Faces {@code point} whenever she has no target (null: back to facing the way Yuta faces). Only looks; nothing else. */
+    public void faceToward(@Nullable Vec3 point) {
+        faceToward = point;
     }
 
     public void recall() {
@@ -187,6 +194,9 @@ public class RikaEntity extends TechniqueEntity {
         float yaw;
         if (t != null) {
             Vec3 d = t.position().subtract(position());
+            yaw = (float) (Mth.atan2(d.z, d.x) * Mth.RAD_TO_DEG) - 90f;
+        } else if (faceToward != null) {
+            Vec3 d = faceToward.subtract(position());
             yaw = (float) (Mth.atan2(d.z, d.x) * Mth.RAD_TO_DEG) - 90f;
         } else if (has(PILOTED) && step.horizontalDistanceSqr() > 0.01) {
             yaw = (float) (Mth.atan2(step.z, step.x) * Mth.RAD_TO_DEG) - 90f;

@@ -43,6 +43,7 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.RED, TechniqueRenderer.red());
         EntityRendererRegistry.register(ModEntities.HOLLOW_PURPLE, TechniqueRenderer.purple());
         EntityRendererRegistry.register(ModEntities.TRAINING_DUMMY, DummyRenderer::new);
+        EntityRendererRegistry.register(ModEntities.TRIAL_PROP, dev.rick.jjk.client.render.TrialPropRenderer::new);
         EntityRendererRegistry.register(ModEntities.RIKA, dev.rick.jjk.client.render.RikaRenderer::new);
         EntityRendererRegistry.register(ModEntities.DOMAIN_BLADE, dev.rick.jjk.client.render.DomainBladeRenderer::new);
         EntityRendererRegistry.register(ModEntities.PACHINKO_BALL, dev.rick.jjk.client.render.HakariRenderers.ball());

@@ -59,7 +59,7 @@ public final class CursedRealms {
     static final int SPACING = 512;
     static final int BASE_Y = 80;
     /** Half-width and height of the box an arena may use (and that is cleared). */
-    static final int RADIUS = 26, HEIGHT = 40;
+    public static final int RADIUS = 26, HEIGHT = 40;
     static final int WIN_DELAY = 60, ABANDON_AFTER = 1200;
     /**
      * Half-width of the ground kept loaded round an open arena: wider than the arena itself, so a curse knocked or
@@ -102,8 +102,13 @@ public final class CursedRealms {
             Map.entry("distance_realm", new StoryRealms.Distance()), Map.entry("theater_realm", new StoryRealms.Theater()),
             Map.entry("crater_realm", new StoryRealms.Crater()), Map.entry("fight_club_realm", new StoryRealms.FightClub()),
             Map.entry("chapel_realm", new StoryRealms.Chapel()),
-            // The one reusable room every character's training is held in (each scene dresses it).
-            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.ID, new dev.rick.jjk.progression.training.TrainingRoom()),
+            // Each character's training room (the relic trials), and the old shared room's id (an arena saved under it closes cleanly).
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.ID, new dev.rick.jjk.progression.training.TrainingRoom("yuji")),
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.idFor("yuji"), new dev.rick.jjk.progression.training.TrainingRoom("yuji")),
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.idFor("gojo"), new dev.rick.jjk.progression.training.TrainingRoom("gojo")),
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.idFor("yuta"), new dev.rick.jjk.progression.training.TrainingRoom("yuta")),
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.idFor("ryu"), new dev.rick.jjk.progression.training.TrainingRoom("ryu")),
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.idFor("hakari"), new dev.rick.jjk.progression.training.TrainingRoom("hakari")),
             // The compact arena every Grade 1 guardian contract uses.
             Map.entry(GuardianArena.ID, new GuardianArena()));
     /** Arenas that belong to a cursed battle room (the Finger Bearer's), not an incident: their key starts with this. */

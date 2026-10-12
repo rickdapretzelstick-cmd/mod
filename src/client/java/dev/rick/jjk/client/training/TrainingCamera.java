@@ -60,6 +60,13 @@ public final class TrainingCamera {
         return shot;
     }
 
+    /** Tests: a fixed view (from, toward) instead of the montage, or null for the montage again. */
+    @Nullable private static Vec3[] testView;
+
+    public static void viewForTest(@Nullable Vec3 from, @Nullable Vec3 toward) {
+        testView = from == null || toward == null ? null : new Vec3[] {from, toward};
+    }
+
     /** Tests: cuts to a shot now (1-4), as the montage would. */
     public static void cutForTest(int s) {
         shot = s;
@@ -88,6 +95,11 @@ public final class TrainingCamera {
         TrainingClient.Attempt a = TrainingClient.attempt();
         if (a == null || since == 0) return null;
         TrainingClient.advance();
+        if (testView != null) {
+            Vec3 d = testView[1].subtract(testView[0]);
+            return new double[] {testView[0].x, testView[0].y, testView[0].z, Math.toDegrees(Math.atan2(-d.x, d.z)),
+                    -Math.toDegrees(Math.atan2(d.y, Math.sqrt(d.x * d.x + d.z * d.z)))};
+        }
         Vec3 cam = a.start.camera(), look = a.start.look();
         boolean still = CameraDirector.reducedMotion();
         long now = System.nanoTime();
