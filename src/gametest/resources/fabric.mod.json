@@ -44,6 +44,7 @@
       "dev.rick.jjk.test.EncounterTests"
     ],
     "fabric-client-gametest": [
+      "dev.rick.jjk.test.SiteGalleryClientTest",
       "dev.rick.jjk.test.TrainingClientTest",
       "dev.rick.jjk.test.AnimFrameworkClientTest",
       "dev.rick.jjk.test.GojoClientGameTest",

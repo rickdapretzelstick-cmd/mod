@@ -7,9 +7,6 @@ import net.minecraft.tags.BiomeTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.Heightmap;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,11 +46,11 @@ public final class Sites {
     private static final int[][] DIRS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
 
     private static final Map<String, Kind> KINDS = Map.of(
-            "cliff", new Kind(Sites::findCliff, Sites::buildCliff, "the cliffs"),
-            "pasture", new Kind(Sites::findPasture, Sites::buildPasture, "the grazing land"),
-            "hillside", new Kind(Sites::findHillside, Sites::buildMine, "the hillside"),
+            "cliff", new Kind(Sites::findCliff, CountrySites::buildCliff, "the cliffs"),
+            "pasture", new Kind(Sites::findPasture, CountrySites::buildPasture, "the grazing land"),
+            "hillside", new Kind(Sites::findHillside, CountrySites::buildMine, "the hillside"),
             "lodge", new Kind(LodgeSite::find, LodgeSite::build, "out in the woods"),
-            "house", new Kind(Sites::findPasture, Sites::buildHouse, "the old house"),
+            "house", new Kind(Sites::findPasture, CountrySites::buildHouse, "the old house"),
             // The character storylines' places (StorySites).
             "tower", new Kind(Sites::findPasture, StorySites::buildTower, "the old watchtower"),
             "theater", new Kind(Sites::findPasture, StorySites::buildTheater, "the old theater"),
@@ -133,16 +130,6 @@ public final class Sites {
         return null;
     }
 
-    static void buildCliff(ServerLevel level, Incident in) {
-        // Somebody left flowers and a candle where it happened. Nothing else.
-        BlockPos back = in.site.offset(-in.dirX, 0, -in.dirZ);
-        place(level, surface(level, back), Blocks.POPPY.defaultBlockState());
-        place(level, surface(level, back.offset(in.dirZ, 0, -in.dirX)), Blocks.CANDLE.defaultBlockState());
-        place(level, surface(level, back.offset(-in.dirZ, 0, in.dirX)), Blocks.OXEYE_DAISY.defaultBlockState());
-        // The breach hangs right at the lip, where it happened (the site is the ground level there).
-        in.marks.put("breach", in.site.immutable());
-    }
-
     // --- Pasture: flat dry grassland ---
 
     @Nullable
@@ -155,22 +142,13 @@ public final class Sites {
             if (b.is(BiomeTags.IS_MOUNTAIN) || b.is(BiomeTags.IS_BADLANDS)) continue;
             boolean flat = true;
             for (int[] d : DIRS) if (Math.abs(height(level, p[0] + d[0] * 4, p[1] + d[1] * 4) - h) > 1) flat = false;
-            if (flat) return new Site(new BlockPos(p[0], h, p[1]), 1, 0);
+            if (!flat) continue;
+            // It faces the village: the way in is the way people come from.
+            int dx = village.getX() - p[0], dz = village.getZ() - p[1];
+            return Math.abs(dx) >= Math.abs(dz) ? new Site(new BlockPos(p[0], h, p[1]), dx >= 0 ? 1 : -1, 0)
+                    : new Site(new BlockPos(p[0], h, p[1]), 0, dz >= 0 ? 1 : -1);
         }
         return null;
-    }
-
-    static void buildPasture(ServerLevel level, Incident in) {
-        // What's left: bones in the grass, a fence post knocked flat, churned earth.
-        RandomSource r = RandomSource.create(in.id.hashCode());
-        for (int i = 0; i < 4; i++) {
-            BlockPos at = surface(level, in.site.offset(r.nextInt(7) - 3, 0, r.nextInt(7) - 3));
-            BlockState below = level.getBlockState(at.below());
-            if (below.is(Blocks.GRASS_BLOCK) || below.is(Blocks.DIRT)) level.setBlock(at.below(), Blocks.COARSE_DIRT.defaultBlockState(), 2);
-            if (i < 2) place(level, at, Blocks.BONE_BLOCK.defaultBlockState().setValue(BlockStateProperties.AXIS, i == 0 ? net.minecraft.core.Direction.Axis.X : net.minecraft.core.Direction.Axis.Z));
-        }
-        place(level, surface(level, in.site.offset(3, 0, -2)), Blocks.OAK_FENCE.defaultBlockState());
-        in.marks.put("breach", in.site.immutable());
     }
 
     // --- Hillside: ground rising into a slope (a mine entrance faces downhill) ---
@@ -191,99 +169,6 @@ public final class Sites {
         return null;
     }
 
-    /** The mine: a timbered mouth at the foot of the slope and a tunnel sloping down into the hill. */
-    static void buildMine(ServerLevel level, Incident in) {
-        int dx = in.dirX, dz = in.dirZ, sx = dz, sz = -dx;
-        BlockPos mouth = in.site;
-        for (int s = 0; s < 9; s++) {
-            int drop = s / 2;
-            BlockPos c = mouth.offset(dx * s, -drop, dz * s);
-            for (int w = -1; w <= 1; w++) {
-                for (int y = 0; y < 3; y++) level.setBlock(c.offset(sx * w, y, sz * w), Blocks.AIR.defaultBlockState(), 2);
-                level.setBlock(c.offset(sx * w, -1, sz * w), (s + w) % 3 == 0 ? Blocks.GRAVEL.defaultBlockState() : Blocks.STONE.defaultBlockState(), 2);
-            }
-            if (s % 3 == 0) {
-                // Timber frame.
-                for (int y = 0; y < 3; y++) {
-                    level.setBlock(c.offset(sx * 2, y, sz * 2), Blocks.STRIPPED_OAK_LOG.defaultBlockState(), 2);
-                    level.setBlock(c.offset(-sx * 2, y, -sz * 2), Blocks.STRIPPED_OAK_LOG.defaultBlockState(), 2);
-                }
-                for (int w = -2; w <= 2; w++) level.setBlock(c.offset(sx * w, 3, sz * w), Blocks.OAK_PLANKS.defaultBlockState(), 2);
-            } else {
-                for (int w = -2; w <= 2; w += 4) for (int y = 0; y < 3; y++) {
-                    BlockPos side = c.offset(sx * w, y, sz * w);
-                    if (level.getBlockState(side).isAir()) level.setBlock(side, Blocks.STONE.defaultBlockState(), 2);
-                }
-                for (int w = -1; w <= 1; w++) {
-                    BlockPos roof = c.offset(sx * w, 3, sz * w);
-                    if (level.getBlockState(roof).isAir()) level.setBlock(roof, Blocks.STONE.defaultBlockState(), 2);
-                }
-            }
-            if (s == 4 || s == 7) level.setBlock(c.offset(sx, 2, sz), Blocks.COBWEB.defaultBlockState(), 2);
-            if (s >= 2 && s <= 7) level.setBlock(c, Blocks.RAIL.defaultBlockState(), 2);
-        }
-        // The far end is dark rock: the tunnel "goes on" only for whoever is meant to follow it.
-        BlockPos end = mouth.offset(dx * 9, -4, dz * 9);
-        for (int w = -1; w <= 1; w++) for (int y = 0; y < 3; y++) level.setBlock(end.offset(sx * w, y, sz * w), Blocks.DEEPSLATE.defaultBlockState(), 2);
-        level.setBlock(mouth.offset(sx, 0, sz).offset(-dx, 0, -dz), Blocks.LANTERN.defaultBlockState(), 2);
-    }
-
-    // --- House: an abandoned cottage on flat ground, its bed still made ---
-
-    /**
-     * The empty house: a small cottage of old planks and mossy stone, a sagging roof with holes in it, its door hanging
-     * open, cobwebs in the corners, and the bed nobody has slept in since. Marks its {@code door} (the threshold) and its
-     * {@code bed} (where the incident is set off).
-     */
-    static void buildHouse(ServerLevel level, Incident in) {
-        RandomSource r = RandomSource.create(in.id.hashCode());
-        BlockPos base = surface(level, in.site);
-        int hx = 3, hz = 3, h = 4;
-        for (int x = -hx; x <= hx; x++) {
-            for (int z = -hz; z <= hz; z++) {
-                boolean wall = Math.abs(x) == hx || Math.abs(z) == hz;
-                level.setBlock(base.offset(x, -1, z), Blocks.COBBLESTONE.defaultBlockState(), 2);
-                for (int y = 0; y < h; y++) {
-                    BlockState st = !wall ? Blocks.AIR.defaultBlockState()
-                            : (Math.abs(x) == hx && Math.abs(z) == hz) ? Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()
-                            : y == 0 ? Blocks.MOSSY_COBBLESTONE.defaultBlockState()
-                            : y == 1 && (x == 0 || z == 0) ? Blocks.AIR.defaultBlockState()
-                            : r.nextInt(9) == 0 ? Blocks.AIR.defaultBlockState() : Blocks.SPRUCE_PLANKS.defaultBlockState();
-                    level.setBlock(base.offset(x, y, z), st, 2);
-                }
-                // The roof, with holes.
-                if (r.nextInt(6) != 0) level.setBlock(base.offset(x, h, z), Blocks.DARK_OAK_SLAB.defaultBlockState(), 2);
-            }
-        }
-        // The door, on the side facing out, hanging open; glass gone from the windows.
-        BlockPos door = base.offset(in.dirX * hx, 0, in.dirZ * hx);
-        level.setBlock(door, Blocks.AIR.defaultBlockState(), 2);
-        level.setBlock(door.above(), Blocks.AIR.defaultBlockState(), 2);
-        net.minecraft.core.Direction out = net.minecraft.core.Direction.getApproximateNearest(in.dirX, 0, in.dirZ);
-        level.setBlock(door, Blocks.SPRUCE_DOOR.defaultBlockState().setValue(net.minecraft.world.level.block.DoorBlock.FACING, out)
-                .setValue(net.minecraft.world.level.block.DoorBlock.OPEN, true), 2);
-        level.setBlock(door.above(), Blocks.SPRUCE_DOOR.defaultBlockState().setValue(net.minecraft.world.level.block.DoorBlock.FACING, out)
-                .setValue(net.minecraft.world.level.block.DoorBlock.OPEN, true)
-                .setValue(net.minecraft.world.level.block.DoorBlock.HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER), 2);
-        // The bed against the far wall, made; a table, a cold lantern, webs.
-        BlockPos foot = base.offset(-in.dirX * (hx - 2), 0, -in.dirZ * (hx - 2));
-        BlockPos head = foot.offset(-in.dirX, 0, -in.dirZ);
-        net.minecraft.core.Direction facing = out.getOpposite();
-        level.setBlock(head, Blocks.BED.white().defaultBlockState().setValue(net.minecraft.world.level.block.BedBlock.FACING, facing)
-                .setValue(net.minecraft.world.level.block.BedBlock.PART, net.minecraft.world.level.block.state.properties.BedPart.HEAD), 2);
-        level.setBlock(foot, Blocks.BED.white().defaultBlockState().setValue(net.minecraft.world.level.block.BedBlock.FACING, facing)
-                .setValue(net.minecraft.world.level.block.BedBlock.PART, net.minecraft.world.level.block.state.properties.BedPart.FOOT), 2);
-        BlockPos side = base.offset(in.dirZ * 2, 0, -in.dirX * 2);
-        level.setBlock(side, Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
-        level.setBlock(side.above(), Blocks.SPRUCE_PRESSURE_PLATE.defaultBlockState(), 2);
-        level.setBlock(base.offset(-in.dirZ * 2, 0, in.dirX * 2), Blocks.LANTERN.defaultBlockState(), 2);
-        for (int i = 0; i < 4; i++) level.setBlock(base.offset(r.nextBoolean() ? 2 : -2, h - 1, r.nextBoolean() ? 2 : -2), Blocks.COBWEB.defaultBlockState(), 2);
-        in.marks.put("door", door.immutable());
-        in.marks.put("bed", foot.immutable());
-        // Inside, in the middle of the room, between the door and the bed.
-        in.marks.put("breach", base.immutable());
-    }
-
     /** The deepest point of the mine tunnel (where its trigger waits). */
     static BlockPos mineEnd(Incident in) {
         return in.site.offset(in.dirX * 8, -4, in.dirZ * 8);
@@ -298,9 +183,5 @@ public final class Sites {
 
     static BlockPos surface(ServerLevel level, BlockPos p) {
         return new BlockPos(p.getX(), level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, p.getX(), p.getZ()), p.getZ());
-    }
-
-    private static void place(ServerLevel level, BlockPos at, BlockState state) {
-        if (level.getBlockState(at).canBeReplaced() && state.canSurvive(level, at)) level.setBlock(at, state, 2);
     }
 }

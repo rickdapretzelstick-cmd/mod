@@ -67,10 +67,10 @@ public class SiteTests {
         h.assertTrue(bed != null && level.getBlockState(bed).getBlock() instanceof BedBlock, "the house stands, its bed made");
         h.assertTrue(built.siteBlocksLeft() > 50, "what it changed is recorded: " + built.siteBlocksLeft());
         // A player's own block, put in place of one of the house's walls.
-        // The house's floor level, from its door (facing +x, three blocks out from its centre).
-        BlockPos base = built.mark("door").offset(-3, 0, 0);
-        BlockPos wall = base.offset(-3, 0, 1);
-        BlockPos otherWall = base.offset(-3, 0, -1);
+        // The house's floor level, from its door (facing +x, four blocks out from its centre); its back wall four behind.
+        BlockPos base = built.mark("door").offset(-4, 0, 0);
+        BlockPos wall = base.offset(-4, 0, 1);
+        BlockPos otherWall = base.offset(-4, 0, -1);
         h.assertTrue(!level.getBlockState(wall).isAir() && !level.getBlockState(otherWall).isAir(), "its walls stand");
         level.setBlock(wall, Blocks.DIAMOND_BLOCK.defaultBlockState(), 3);
         Incident[] in = {built};

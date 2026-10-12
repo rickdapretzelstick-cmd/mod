@@ -210,6 +210,39 @@ final class LodgeSite {
             last = p;
         }
         in.marks.put("tracks", last.immutable());
+        lived(level, in, base.atY(floorY), out);
+    }
+
+    /**
+     * What makes it a place someone lived: a stone chimney up the side wall, a little porch at the back door with its
+     * lantern, the woodpile and the chopping block. Nothing of it stands in the front window's view.
+     */
+    private static void lived(ServerLevel level, Incident in, BlockPos floor, Direction out) {
+        SiteKit k = new SiteKit(level, floor, out, in.id.hashCode() ^ 0x10D6E);
+        // The chimney up the right wall.
+        k.foundation(-1, 4, -1, 4, -1, () -> k.wornCobble(), 6);
+        for (int y = 0; y <= 8; y++) k.set(-1, 4, y, y < 7 ? k.wornCobble() : Blocks.COBBLESTONE.defaultBlockState());
+        k.set(-1, 4, 9, Blocks.COBBLESTONE_WALL.defaultBlockState());
+        // The back porch, at the door.
+        for (int a = -6; a <= -5; a++) for (int b = -2; b <= 2; b++) k.set(a, b, -1, Blocks.SPRUCE_PLANKS.defaultBlockState());
+        for (int b : new int[] {-2, 2}) k.column(-6, b, 0, 2, Blocks.SPRUCE_FENCE.defaultBlockState());
+        for (int b = -3; b <= 3; b++) {
+            k.set(-5, b, 3, SiteKit.slab(Blocks.SPRUCE_SLAB, false));
+            k.set(-6, b, 3, SiteKit.slab(Blocks.SPRUCE_SLAB, false));
+            k.set(-7, b, 3, k.stairs(Blocks.SPRUCE_STAIRS, SiteKit.FRONT, false));
+        }
+        k.set(-6, 0, 2, SiteKit.hanging(Blocks.LANTERN));
+        k.set(-5, 2, 0, k.stairs(Blocks.SPRUCE_STAIRS, SiteKit.FRONT, false));
+        // The woodpile against the back corner, the chopping block out in the yard.
+        for (int a = -6; a <= -5; a++)
+            for (int y = 0; y <= 1; y++) {
+                k.set(a, -4, y, k.log(Blocks.STRIPPED_SPRUCE_LOG, SiteKit.RIGHT));
+                if (y == 0 || k.chance(0.6f)) k.set(a, -5, y, k.log(Blocks.SPRUCE_LOG, SiteKit.RIGHT));
+            }
+        k.foundation(-6, -5, -5, -4, -1, () -> Blocks.COARSE_DIRT.defaultBlockState(), 4);
+        k.onGround(-8, 3, Blocks.OAK_LOG.defaultBlockState());
+        k.onGround(-8, 4, k.log(Blocks.SPRUCE_LOG, SiteKit.FRONT));
+        k.settle();
     }
 
     /** A small wooden hunting stand: four posts, a platform four up, a ladder, a rail. */

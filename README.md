@@ -889,9 +889,27 @@ a fall from the cliffs. Nothing says *curse*, nothing has a marker or a waypoint
 
 Each incident is a template (`data/jjk/incidents/*.json`: its curses and grade, the kind of place, its trigger, its
 realm, its report texts) placed at a real spot that fits it near the village (a ten-block drop for a cliff, flat
-grassland, a hillside for a mine). At the place there are physical traces (flowers and a candle at the edge, bones in
-the grass, a boarded mine entrance), and through Cursed Glasses a faint **trail of cursed residue** leads the last
-stretch. No checklist, no HUD.
+grassland, a hillside for a mine). At the place stands what happened there, built to fit the land and facing the way
+people come from the village:
+
+- **the cliff**: a wooden lookout out over the drop on stilts, its far railing broken through, candles and flowers left
+  at the gap, stone lanterns and a bench where the path comes out;
+- **the pasture**: a paddock smashed open on one side, its field shelter and hay, the trough, a scarecrow, and in the
+  middle churned ground, bones and wool, dragged out through the gap;
+- **the mine**: a timber portal set into the hillside under an earth bank, boards torn off it, rails out to an end
+  stop, a spoil heap and the old tool shed, the tunnel sloping down into the dark;
+- **the old house**: a timber cottage on a stone footing, shuttered windows, porch and chimney, its roof fallen in at
+  one corner, the bed still made, the garden and the dry well gone to weeds;
+- **the hunting lodge**: the cabin with its chimney, back porch and woodpile, the stands out in the trees;
+- the storylines' places: **the watchtower** (a round stone tower, a ladder up through its floors to the lookout and
+  the old lamp under its roof), **the theater** (a brick picture house with a marquee of dead bulbs, the projection
+  booth over the lobby, red seats raked toward the torn curtains), **the storehouse** (an old kura of dark tile and
+  white plaster, the bell over the trapdoor and what's under it), **the crater** (a glassed bowl, an earth rim, scorch
+  marks and flattened trees, the black shard at its heart) and **the chapel** (a white chapel with its bell tower and
+  spire, stained glass, pews, the altar, and the graveyard beside it).
+
+Nothing is labelled. Through Cursed Glasses a faint **trail of cursed residue** leads the last
+stretch. No checklist, no HUD. Once the incident is over, the place comes down again and the land is as it was.
 
 **Every incident is entered the same way: through its Cursed Breach.** Report → travel to the area → the Cursed
 Compass → the place itself → a **Cursed Breach** hanging there → **use it (right-click)** → a short pull → its cursed
