@@ -65,11 +65,17 @@ public final class GuardDefense implements DefenseLayer {
         Vec3 fxPos = defender.getEyePosition().add(defender.getLookAngle().scale(0.6)).subtract(0, 0.4, 0);
         switch (result.kind()) {
             case BLOCK -> {
+                if (defender instanceof net.minecraft.server.level.ServerPlayer sp && dev.rick.jjk.progression.tool.rifle.RifleServer.wielding(sp)) {
+                    dev.rick.jjk.progression.tool.rifle.RifleServer.guardImpact(sp, false);
+                }
                 state.addGuardHit();
                 if (attack.hit != null && attack.hit.guardDamage > 1) for (int i = 1; i < attack.hit.guardDamage; i++) state.addGuardHit();
                 Fx.play(level, "block", fxPos, defender.getLookAngle(), 1f, defender.getId());
             }
             case PARRY -> {
+                if (defender instanceof net.minecraft.server.level.ServerPlayer sp && dev.rick.jjk.progression.tool.rifle.RifleServer.wielding(sp)) {
+                    dev.rick.jjk.progression.tool.rifle.RifleServer.guardImpact(sp, true);
+                }
                 Fx.play(level, "parry", fxPos, defender.getLookAngle(), 1f, defender.getId());
                 if (attack.attacker instanceof LivingEntity a) {
                     Statuses.apply(a, CombatStatus.GUARD_BROKEN, cfg.parryStun);

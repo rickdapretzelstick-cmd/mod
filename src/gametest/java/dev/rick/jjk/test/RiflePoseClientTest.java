@@ -61,6 +61,20 @@ public class RiflePoseClientTest implements FabricClientGameTest {
 
             int[] sides = {180, 120, 90, 30, 0, -90};
             shoot(ctx, "ready", sides);
+            // Braced to guard; a blow caught on it; a parry; the guard down again.
+            ctx.runOnClient(mc -> dev.rick.jjk.core.combat.Combat.state(dummy).startGuard(mc.level.getGameTime()));
+            ctx.waitTicks(8);
+            shoot(ctx, "guard", sides);
+            ctx.runOnClient(mc -> RifleClient.guardHit(dummy.getId(), mc.level.getGameTime(), false));
+            ctx.waitTicks(1);
+            shoot(ctx, "guard_hit", new int[] {180, 90});
+            ctx.waitTicks(10);
+            ctx.runOnClient(mc -> RifleClient.guardHit(dummy.getId(), mc.level.getGameTime(), true));
+            ctx.waitTicks(1);
+            shoot(ctx, "guard_parry", new int[] {90});
+            ctx.runOnClient(mc -> dev.rick.jjk.core.combat.Combat.state(dummy).stopGuard());
+            ctx.waitTicks(12);
+            shoot(ctx, "guard_down", new int[] {180});
             phase(ctx, RifleServer.Phase.AIM, 0);
             ctx.waitTicks(8);
             shoot(ctx, "ads", sides);

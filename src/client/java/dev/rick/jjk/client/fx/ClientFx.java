@@ -182,6 +182,7 @@ public final class ClientFx {
                 }
             }
             case "block" -> {
+                dev.rick.jjk.client.rifle.RifleClient.guardHit(p.entityId(), now, false);
                 sound("block", pos, 0.9f, 1f + RNG.nextFloat() * 0.1f);
                 if (drawn) {
                     Flashes.ripple(pos, dir, 0.2f, 1.1f, BLUE_LIGHT, 0.7f, 6, now);
@@ -189,6 +190,7 @@ public final class ClientFx {
                 }
             }
             case "parry" -> {
+                dev.rick.jjk.client.rifle.RifleClient.guardHit(p.entityId(), now, true);
                 sound("parry", pos, 1f, 1f);
                 Flashes.flash(pos, 2.2f, 0.4f, GOLD, 1f, 6, now);
                 impactStar(pos, dir, 8, 2.2f, 0.07f, GOLD, now);

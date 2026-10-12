@@ -188,6 +188,33 @@ public final class RifleServer {
         release(level, p, weapon(p), 0);
     }
 
+    /**
+     * Lowers a raised scope without firing (the guard coming up takes the rifle down from the eye). True if it was
+     * raised. Nothing else is touched: the array's phases are never cut short by this.
+     */
+    public static boolean lowerScope(ServerPlayer p) {
+        State s = STATES.get(p.getUUID());
+        if (s == null || s.phase != Phase.AIM) return false;
+        s.kitHold = false;
+        set(p, s, Phase.IDLE, 0);
+        return true;
+    }
+
+    /** Whether the rifle can be brought up to guard: at rest, scoped (it comes down) or cooling off; never mid-array. */
+    public static boolean canGuard(ServerPlayer p) {
+        Phase ph = phase(p);
+        return ph == Phase.IDLE || ph == Phase.AIM || ph == Phase.COOLDOWN;
+    }
+
+    /**
+     * A blow caught on the braced rifle: a hard clank of steel. (The jolt in the hands is drawn by every client from the
+     * guard's own block or parry effect, which carries who caught it.)
+     */
+    public static void guardImpact(ServerPlayer p, boolean parry) {
+        if (!(p.level() instanceof ServerLevel level)) return;
+        Fx.sound(level, p.getEyePosition(), SoundEvents.ANVIL_LAND, parry ? 0.55f : 0.35f, parry ? 1.7f : 1.35f);
+    }
+
     /** Whether the rifle is busy with a phase a kit move would interrupt. */
     public static boolean busy(ServerPlayer p) {
         return phase(p) != Phase.IDLE;

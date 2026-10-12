@@ -86,6 +86,15 @@ public final class RifleFirstPerson {
         float bob = (float) Math.sin(v.walkPos * 0.6662f) * v.walkSpeed * (1 - brace);
         butt.add(0.008f * bob, Math.abs(bob) * 0.01f, 0);
 
+        // Braced to guard: level across the lower view, the muzzle out to the support side, both hands on it; a blow
+        // caught on it jolts it in toward the eye and twists it, a parry snaps it out.
+        if (v.guard > 0.001f) {
+            float g = v.guard, jolt = RifleStance.guardJolt(v);
+            butt.lerp(new Vector3f(0.44f * side, -0.34f + (v.parried ? 0.02f : -0.03f) * jolt, -0.62f + (v.parried ? -0.05f : 0.07f) * jolt), g);
+            down = Mth.lerp(g, down, -4 + (v.parried ? -8 : 5) * jolt);
+            in = Mth.lerp(g, in, 80);
+            roll = Mth.lerp(g, roll, -6 + (v.parried ? 0 : 9) * jolt);
+        }
         // Drawn, it comes up from below the view as the stance takes over; stowed, it drops away the same way.
         float out = 1 - v.weight;
         if (out > 0.001f) {

@@ -54,6 +54,44 @@ public final class RifleKit extends CursedToolKit {
         bind(AbilitySlot.SKILL_4, new Flare());
         bind(AbilitySlot.SKILL_5, new Bash());
         bind(AbilitySlot.ULTIMATE, new Array());
+        bind(AbilitySlot.GUARD, new Guard());
+    }
+
+    /**
+     * Block (F, hold) with the rifle braced across the body: the same guard as anyone's ({@code GuardDefense}: frontal,
+     * worn down hit by hit, broken by guard breaks, never against the unblockable; parried in its first moments), the
+     * rifle taking the blows. Raising it lowers a raised scope without firing; it can't come up while the array is out.
+     * While it is up the rifle's moves wait, and the attack key never fires (it is the counter's).
+     */
+    static final class Guard extends dev.rick.jjk.core.ability.common.GuardAbility {
+        @Override
+        public @Nullable String checkActivation(AbilityContext ctx) {
+            if (!(ctx.user() instanceof ServerPlayer p) || !RifleServer.wielding(p)) return "no_tool";
+            if (!RifleServer.canGuard(p)) return "busy";
+            return super.checkActivation(ctx);
+        }
+
+        @Override
+        protected String anim(LivingEntity user) {
+            return "rf_guard";
+        }
+
+        @Override
+        protected void onGuard(LivingEntity user) {
+            if (user instanceof ServerPlayer p) RifleServer.lowerScope(p);
+        }
+    }
+
+    /** The guard key while the scope is up: the Aimed Shot's hold ends without a shot, and the guard comes up. */
+    @Override
+    public boolean interceptInput(dev.rick.jjk.core.ability.AbilityCaster caster, AbilitySlot slot, Ability ability, @Nullable net.minecraft.world.entity.Entity targetHint) {
+        if (slot == AbilitySlot.GUARD && caster.owner instanceof ServerPlayer p && caster.cast() instanceof Held held && !held.isFinished()
+                && RifleServer.phase(p) == RifleServer.Phase.AIM) {
+            RifleServer.lowerScope(p);
+            held.finish();
+            return false;
+        }
+        return super.interceptInput(caster, slot, ability, targetHint);
     }
 
     /**
@@ -62,6 +100,8 @@ public final class RifleKit extends CursedToolKit {
      */
     static @Nullable String ready(AbilityContext ctx) {
         if (!(ctx.user() instanceof ServerPlayer p) || !RifleServer.wielding(p)) return "no_tool";
+        // Braced to guard: nothing fires, nothing deploys.
+        if (dev.rick.jjk.core.combat.Combat.isGuarding(p)) return "guarding";
         return RifleServer.busy(p) ? "busy" : null;
     }
 

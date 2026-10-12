@@ -1,0 +1,19 @@
+{
+  "name": "rf_guard",
+  "duration": 150,
+  "hold": true,
+  "note": "Block with the Cursed Rifle: a marker clip; the rifle's stance (RifleStance) braces the body and brings the rifle across it.",
+  "blendIn": 0,
+  "blendOut": 0,
+  "priority": "COMBAT",
+  "keys": [
+    {
+      "t": 0,
+      "bones": {}
+    },
+    {
+      "t": 150,
+      "bones": {}
+    }
+  ]
+}

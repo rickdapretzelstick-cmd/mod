@@ -41,6 +41,9 @@ public final class RifleClient {
         public long since;
         /** Game time of the last normal shot (the recoil kick). */
         public long shotAt = -1000;
+        /** Game time a blow was last caught on the braced rifle, and whether that was a parry (the guard's jolt). */
+        public long guardHitAt = -1000;
+        public boolean parried;
         String playing = "";
 
         public float progress(float time) {
@@ -55,6 +58,13 @@ public final class RifleClient {
     private static float zoom = 1f;
 
     private RifleClient() {}
+
+    /** A block or parry by {@code entityId} (from the guard's effect): if it holds the rifle, the rifle takes the jolt. */
+    public static void guardHit(int entityId, long now, boolean parry) {
+        State s = STATES.computeIfAbsent(entityId, k -> new State());
+        s.guardHitAt = now;
+        s.parried = parry;
+    }
 
     /** The key the rifle's clips play under: apart from the holder's own (entity ids are never negative). */
     public static int animKey(int entityId) {
