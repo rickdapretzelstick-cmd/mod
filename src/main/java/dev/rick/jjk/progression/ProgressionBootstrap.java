@@ -24,6 +24,7 @@ public final class ProgressionBootstrap {
         dev.rick.jjk.progression.curse.FingerBearerEncounter.init();
         dev.rick.jjk.progression.prison.PrisonRealm.init();
         dev.rick.jjk.progression.grade.CursedDamage.init();
+        dev.rick.jjk.progression.finish.Finishers.init();
         dev.rick.jjk.progression.tool.CursedTools.init();
         dev.rick.jjk.progression.mastery.Mastery.init();
         dev.rick.jjk.progression.mastery.CurseRewards.init();

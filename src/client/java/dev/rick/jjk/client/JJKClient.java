@@ -339,6 +339,7 @@ public class JJKClient implements ClientModInitializer {
         dev.rick.jjk.client.training.TrainingClient.tick(mc);
         dev.rick.jjk.client.training.TrainingCamera.tick(mc);
         dev.rick.jjk.client.training.ContestCamera.tick(mc);
+        dev.rick.jjk.client.finish.FinisherCamera.tick(mc);
         dev.rick.jjk.client.camera.CameraDirector.tick(mc);
         dev.rick.jjk.client.prison.PrisonClient.tick(mc);
         InputHandler.tick(mc);
@@ -433,10 +434,12 @@ public class JJKClient implements ClientModInitializer {
                 return dev.rick.jjk.client.training.ContestCamera.fov();
             }
         });
+        dev.rick.jjk.client.camera.CameraDirector.register("finisher", 450, last(dev.rick.jjk.client.finish.FinisherCamera::apply));
         dev.rick.jjk.client.camera.CameraDirector.register("training", 500, last(dev.rick.jjk.client.training.TrainingCamera::apply));
         dev.rick.jjk.client.camera.CameraDirector.register("prison_view", 600, last((pos, yaw, pitch) -> dev.rick.jjk.client.prison.PrisonClient.apply(yaw, pitch)));
         dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.training.ContestCamera::active);
         dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.training.TrainingCamera::active);
+        dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.finish.FinisherCamera::active);
     }
 
     /** A stage that owns the view outright while it is in use. */

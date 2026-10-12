@@ -34,6 +34,10 @@ final class ImpactFx {
                 ImpactFrames.Style[] styles = ImpactFrames.Style.values();
                 ImpactFrames.play(styles[Math.floorMod((int) Math.round(dir.x), styles.length)], s);
             }
+            case "impact_finisher_cam" -> {
+                // A finisher's cinematic: dir.x the curse, dir.y its length (ms).
+                if (mine) dev.rick.jjk.client.finish.FinisherCamera.start((int) Math.round(dir.x), dir.y);
+            }
             case "impact_slowmo" -> {
                 if (mine) ImpactFrames.slowMotion(Math.round(s * 100));
             }

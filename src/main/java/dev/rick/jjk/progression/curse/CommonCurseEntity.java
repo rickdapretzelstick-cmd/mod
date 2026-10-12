@@ -417,6 +417,11 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         onStaggered(level);
     }
 
+    /** Staggered from outside (a counter after a perfect dodge: progression.finish.Finishers). */
+    public void staggerBy(ServerLevel level, @Nullable Entity by) {
+        if (isAlive()) stagger(level, by);
+    }
+
     // --- Strength contests (progression.contest.StrengthContests) ---
 
     /** Ticks it is held in place by a strength contest (its telegraph, then the contest itself). */

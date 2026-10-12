@@ -514,6 +514,16 @@ stays out of walls, the HUD stays fixed, and **Reduced Camera Motion** (pause me
 `client.reducedCameraMotion`) holds one still wide shot at FOV 62 (no cuts).
 Tuning: `training.contest*` in the config.
 
+**Perfect dodge, counter, finishers.** Fighting curses has two payoffs of its own. Dash through a curse's blow at the
+last moment (it lands inside the dash's invulnerable frames) and it's a **perfect dodge**: time slows for a beat and,
+for 1.2 s, your next melee hit is a **counter** that hits 50% harder and staggers it wide open (one perfect dodge per
+1.5 s). And a curse that is **exposed** (staggered, reeling) and down to a quarter of its health can be **finished**:
+land a melee hit and both of you are held for 1.5 s while the camera cuts over your shoulder, low on you, then side-on
+as your character's own blow lands and sends it flying: Gojo's Red, Yuji's Black Flash, Hakari's doors, Yuta's Rika,
+Ryu's Granite Blast, or a wound-up haymaker with no technique. It kills with your hit's own damage (a curse's immunities
+still decide). Neither happens in a strength contest, training or a containment; with Reduced Camera Motion the
+finisher keeps your own view.
+
 **Impact frames.** Big moments can cut to an anime impact frame for a few hard frames: every body near the camera inked
 as a solid silhouette against flat paper with focus lines rushing in, an inverted beat, a crimson Black Flash variant,
 or a hard negative; and a slowed-time look (colour drained, edges darkened and smeared). They are full-screen shaders
