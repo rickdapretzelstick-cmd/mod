@@ -59,6 +59,11 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.SCHOOL_MAW, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_maw", 0.6f));
         EntityRendererRegistry.register(ModEntities.GRAVE_HOUND, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "grave_hound", 0.5f));
         EntityRendererRegistry.register(ModEntities.VEILED_BRIDE, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "veiled_bride", 0.5f));
+        // The Grade 1 guardians: three looks each (their model pack's head variants), drawn a touch larger than their models.
+        EntityRendererRegistry.register(ModEntities.GUARDIAN_CLAW_HUNTER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "guardian_claw_hunter", 0.8f, 1.1f, 0xFFFFFFFF, 3));
+        EntityRendererRegistry.register(ModEntities.GUARDIAN_PALE_STALKER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "guardian_pale_stalker", 0.8f, 1.1f, 0xFFFFFFFF, 3));
+        EntityRendererRegistry.register(ModEntities.GUARDIAN_CYCLOPS_BRUISER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "guardian_cyclops_bruiser", 1.0f, 1.1f, 0xFFFFFFFF, 3));
+        EntityRendererRegistry.register(ModEntities.GUARDIAN_VEILED_REACHER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "guardian_veiled_reacher", 0.8f, 1.1f, 0xFFFFFFFF, 3));
         EntityRendererRegistry.register(ModEntities.BLOAT_TOAD, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "bloat_toad", 0.9f));
         EntityRendererRegistry.register(ModEntities.BROOD_MOTHER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "brood_mother", 0.7f));
         EntityRendererRegistry.register(ModEntities.PRISON_REALM, dev.rick.jjk.client.render.PrisonRealmRenderer::new);

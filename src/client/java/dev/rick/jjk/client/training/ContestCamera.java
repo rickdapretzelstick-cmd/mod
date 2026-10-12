@@ -59,6 +59,9 @@ public final class ContestCamera {
             "bloat_toad", new Cuts(List.of(Shot.LOW_ON_YOU, Shot.WIDE), List.of(Shot.ABOVE, Shot.LOW_UNDER_IT)),
             "brood_mother", new Cuts(List.of(Shot.OVER_ITS_SHOULDER, Shot.LOW_ON_YOU), List.of(Shot.LOW_UNDER_IT, Shot.ABOVE)));
 
+    /** A Grade 1 guardian's grip: it towers over you. */
+    static final Cuts GUARDIAN = new Cuts(List.of(Shot.LOW_ON_YOU, Shot.OVER_ITS_SHOULDER, Shot.HANDS), List.of(Shot.LOW_UNDER_IT, Shot.OVER_YOUR_SHOULDER));
+
     private static Shot shot = Shot.WIDE;
     /** When the current shot was cut to (ns), the last verdict's check (each check cuts once), and turns through the lists. */
     private static long cutAt;
@@ -111,6 +114,7 @@ public final class ContestCamera {
     }
 
     static Cuts cuts(String kind) {
+        if (kind.startsWith("guardian_")) return GUARDIAN;
         return CUTS.getOrDefault(kind, DEFAULT);
     }
 

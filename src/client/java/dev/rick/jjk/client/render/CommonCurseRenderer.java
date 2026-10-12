@@ -35,9 +35,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRenderer<T, CommonCurseRenderer.State> {
     private final String kind;
-    private final RenderType solid;
+    /** Its looks: one model and texture each ({@code <kind>_<n>}) when it has variants (a guardian's), else its kind's own. */
+    private final int variants;
+    private final RenderType[] solids;
     /** Its silhouette, into the glow-outline pass (drawn through walls): a realm fight's revealed curses. */
-    private final RenderType outline;
+    private final RenderType[] outlines;
     private final float scale;
     private final int baseTint;
 
@@ -48,6 +50,7 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
         public boolean windup, exposed, frozen, staggered, enraged;
         public float now;
         public int id;
+        public int variant;
         @Nullable public PoseFrame pose;
         /** Revealed to this player by their realm fight: outlined through walls, its distance shown over it. */
         public boolean revealed;
@@ -60,13 +63,30 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
 
     /** A curse drawn with another's model (a placeholder): scaled, and tinted so it reads as something else. */
     public CommonCurseRenderer(EntityRendererProvider.Context ctx, String kind, float shadow, float scale, int baseTint) {
+        this(ctx, kind, shadow, scale, baseTint, 0);
+    }
+
+    /** A curse with {@code variants} looks ({@code models/bb/<kind>_<n>.bbmodel}, {@code textures/entity/<kind>_<n>.png}). */
+    public CommonCurseRenderer(EntityRendererProvider.Context ctx, String kind, float shadow, float scale, int baseTint, int variants) {
         super(ctx);
         this.kind = kind;
         this.scale = scale;
         this.baseTint = baseTint;
-        this.solid = RenderTypes.entityCutout(JJK.id("textures/entity/" + kind + ".png"));
-        this.outline = RenderTypes.outline(JJK.id("textures/entity/" + kind + ".png"));
+        this.variants = variants;
+        int n = Math.max(1, variants);
+        this.solids = new RenderType[n];
+        this.outlines = new RenderType[n];
+        for (int i = 0; i < n; i++) {
+            Identifier tex = JJK.id("textures/entity/" + look(i) + ".png");
+            solids[i] = RenderTypes.entityCutout(tex);
+            outlines[i] = RenderTypes.outline(tex);
+        }
         this.shadowRadius = shadow;
+    }
+
+    /** The model and texture name of look {@code v}. */
+    private String look(int v) {
+        return variants > 0 ? kind + "_" + Math.floorMod(v, variants) : kind;
     }
 
     @Override
@@ -88,6 +108,7 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
         float now = e.level().getGameTime() + partial;
         s.now = now;
         s.id = e.getId();
+        s.variant = variants > 0 && e instanceof dev.rick.jjk.progression.guardian.GuardianBody g ? Math.floorMod(g.guardianVariant(), variants) : 0;
         s.windup = e.isWindingUp();
         s.exposed = e.isExposed();
         s.frozen = e.isFrozen();
@@ -120,8 +141,9 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
 
     @Override
     public void submit(State s, PoseStack ps, SubmitNodeCollector c, CameraRenderState cam) {
-        BbModel model = BbModels.get(kind);
+        BbModel model = BbModels.get(look(s.variant));
         if (model == null || !s.visible) return;
+        RenderType solid = solids[s.variant], outline = outlines[s.variant];
         ps.pushPose();
         if (s.frozen) {
             // Hitstop: a shudder in place.
@@ -238,6 +260,6 @@ public class CommonCurseRenderer<T extends CommonCurseEntity> extends EntityRend
 
     /** For tests and previews: the texture this renderer draws with. */
     public Identifier texture() {
-        return JJK.id("textures/entity/" + kind + ".png");
+        return JJK.id("textures/entity/" + look(0) + ".png");
     }
 }

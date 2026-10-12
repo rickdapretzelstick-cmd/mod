@@ -249,7 +249,7 @@ class Model:
 
 # ----------------------------------------------------------------------------------------------------------- clips
 
-def write_clips(kind, clips):
+def write_clips(kind, clips, reference='tools/gen_curse_models.py'):
     out = os.path.join(ASSETS, 'animations', kind)
     os.makedirs(out, exist_ok=True)
     for f in os.listdir(out):
@@ -268,7 +268,7 @@ def write_clips(kind, clips):
                     e['ease'] = ch['ease']
                 kb[b] = e
             keys.append({'t': round(t, 1), 'bones': kb})
-        d = {'name': kind + '_' + name, 'rig': kind, 'reference': 'tools/gen_curse_models.py', 'duration': c['duration'],
+        d = {'name': kind + '_' + name, 'rig': kind, 'reference': reference, 'duration': c['duration'],
              'priority': c.get('priority', 'ATTACK'), 'blendIn': c.get('blendIn', 80), 'blendOut': c.get('blendOut', 120), 'keys': keys}
         if c.get('loop'):
             d['loop'] = True

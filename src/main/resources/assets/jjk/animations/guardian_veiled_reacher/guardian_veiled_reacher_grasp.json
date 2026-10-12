@@ -1,0 +1,3281 @@
+{
+ "name": "guardian_veiled_reacher_grasp",
+ "rig": "guardian_veiled_reacher",
+ "reference": "tools/gen_guardian_anims.py",
+ "duration": 700,
+ "priority": "ATTACK",
+ "blendIn": 40,
+ "blendOut": 120,
+ "keys": [
+  {
+   "t": 0,
+   "bones": {
+    "hips": {
+     "rot": [
+      -2.0,
+      0.0,
+      0.0
+     ],
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "torso": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      0.0,
+      0.0,
+      8.0
+     ]
+    },
+    "right_upper_arm": {
+     "rot": [
+      0.0,
+      0.0,
+      -3.0
+     ]
+    },
+    "right_forearm": {
+     "rot": [
+      -4.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_thigh": {
+     "rot": [
+      2.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_shin": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_foot": {
+     "rot": [
+      -0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_thumb": {
+     "rot": [
+      2.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_arm": {
+     "rot": [
+      0.0,
+      0.0,
+      3.0
+     ]
+    },
+    "left_forearm": {
+     "rot": [
+      -4.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_thigh": {
+     "rot": [
+      2.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_shin": {
+     "rot": [
+      -0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_foot": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_thumb": {
+     "rot": [
+      2.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_10": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_11": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_12": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_13": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_3": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_4": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_5": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_6": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_7": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_8": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_9": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_10": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_3": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_4": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_5": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_6": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_7": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_8": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_9": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_10": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_3": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_4": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_5": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_6": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_7": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_8": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_9": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_3": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_3": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 330,
+   "bones": {
+    "hips": {
+     "rot": [
+      14.0,
+      0.0,
+      0.0
+     ],
+     "pos": [
+      0.0,
+      -0.4,
+      0.0
+     ]
+    },
+    "torso": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      -10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_arm": {
+     "rot": [
+      -112.0,
+      0.0,
+      -28.0
+     ]
+    },
+    "right_forearm": {
+     "rot": [
+      -8.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_thigh": {
+     "rot": [
+      -18.172,
+      0.0,
+      0.0
+     ]
+    },
+    "right_shin": {
+     "rot": [
+      8.998,
+      0.0,
+      0.0
+     ]
+    },
+    "right_foot": {
+     "rot": [
+      -4.826,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_thumb": {
+     "rot": [
+      -12.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1": {
+     "rot": [
+      -22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1_tip": {
+     "rot": [
+      -27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2": {
+     "rot": [
+      -22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2_tip": {
+     "rot": [
+      -27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3": {
+     "rot": [
+      -22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3_tip": {
+     "rot": [
+      -27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4": {
+     "rot": [
+      -22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4_tip": {
+     "rot": [
+      -27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_arm": {
+     "rot": [
+      -112.0,
+      0.0,
+      28.0
+     ]
+    },
+    "left_forearm": {
+     "rot": [
+      -8.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_thigh": {
+     "rot": [
+      -17.681,
+      0.0,
+      0.0
+     ]
+    },
+    "left_shin": {
+     "rot": [
+      7.925,
+      0.0,
+      0.0
+     ]
+    },
+    "left_foot": {
+     "rot": [
+      -4.244,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_thumb": {
+     "rot": [
+      -12.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1": {
+     "rot": [
+      -22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1_tip": {
+     "rot": [
+      -27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2": {
+     "rot": [
+      -22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2_tip": {
+     "rot": [
+      -27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3": {
+     "rot": [
+      -22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3_tip": {
+     "rot": [
+      -27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4": {
+     "rot": [
+      -22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4_tip": {
+     "rot": [
+      -27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_0": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_1": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_10": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_11": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_12": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_13": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_2": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_3": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_4": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_5": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_6": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_7": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_8": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_9": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_0": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_1": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_2": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_0": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_1": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_2": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_0": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_1": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_2": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_0": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_1": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_10": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_2": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_3": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_4": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_5": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_6": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_7": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_8": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_9": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_0": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_1": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_2": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_0": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_1": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_10": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_2": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_3": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_4": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_5": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_6": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_7": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_8": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_9": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_0": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_1": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_2": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_0": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_1": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_2": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_3": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_0": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_1": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_2": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_3": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 400,
+   "bones": {
+    "hips": {
+     "rot": [
+      22.0,
+      0.0,
+      0.0
+     ],
+     "pos": [
+      0.0,
+      -1.0,
+      0.0
+     ]
+    },
+    "torso": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      -14.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_arm": {
+     "rot": [
+      -84.0,
+      16.0,
+      14.0
+     ]
+    },
+    "right_forearm": {
+     "rot": [
+      -20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_thigh": {
+     "rot": [
+      -31.182,
+      0.0,
+      0.0
+     ]
+    },
+    "right_shin": {
+     "rot": [
+      19.906,
+      0.0,
+      0.0
+     ]
+    },
+    "right_foot": {
+     "rot": [
+      -10.724,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_thumb": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_arm": {
+     "rot": [
+      -84.0,
+      -16.0,
+      -14.0
+     ]
+    },
+    "left_forearm": {
+     "rot": [
+      -20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_thigh": {
+     "rot": [
+      -37.611,
+      0.0,
+      0.0
+     ]
+    },
+    "left_shin": {
+     "rot": [
+      15.376,
+      0.0,
+      0.0
+     ]
+    },
+    "left_foot": {
+     "rot": [
+      0.235,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_thumb": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_10": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_11": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_12": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_13": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_3": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_4": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_5": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_6": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_7": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_8": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_9": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_10": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_3": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_4": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_5": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_6": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_7": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_8": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_9": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_10": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_3": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_4": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_5": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_6": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_7": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_8": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_9": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_3": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_3": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 520,
+   "bones": {
+    "hips": {
+     "rot": [
+      22.0,
+      0.0,
+      0.0
+     ],
+     "pos": [
+      0.0,
+      -1.0,
+      0.0
+     ]
+    },
+    "torso": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      -14.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_arm": {
+     "rot": [
+      -84.0,
+      16.0,
+      14.0
+     ]
+    },
+    "right_forearm": {
+     "rot": [
+      -20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_thigh": {
+     "rot": [
+      -31.182,
+      0.0,
+      0.0
+     ]
+    },
+    "right_shin": {
+     "rot": [
+      19.906,
+      0.0,
+      0.0
+     ]
+    },
+    "right_foot": {
+     "rot": [
+      -10.724,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_thumb": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_arm": {
+     "rot": [
+      -84.0,
+      -16.0,
+      -14.0
+     ]
+    },
+    "left_forearm": {
+     "rot": [
+      -20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_thigh": {
+     "rot": [
+      -37.611,
+      0.0,
+      0.0
+     ]
+    },
+    "left_shin": {
+     "rot": [
+      15.376,
+      0.0,
+      0.0
+     ]
+    },
+    "left_foot": {
+     "rot": [
+      0.235,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_thumb": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_10": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_11": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_12": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_13": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_3": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_4": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_5": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_6": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_7": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_8": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_9": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_10": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_3": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_4": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_5": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_6": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_7": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_8": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_9": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_10": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_3": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_4": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_5": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_6": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_7": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_8": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_9": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_3": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_0": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_1": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_2": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_3": {
+     "rot": [
+      -6.0,
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 700,
+   "bones": {
+    "hips": {
+     "rot": [
+      -2.0,
+      0.0,
+      0.0
+     ],
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "torso": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      0.0,
+      0.0,
+      8.0
+     ]
+    },
+    "right_upper_arm": {
+     "rot": [
+      0.0,
+      0.0,
+      -3.0
+     ]
+    },
+    "right_forearm": {
+     "rot": [
+      -4.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_thigh": {
+     "rot": [
+      2.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_shin": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_foot": {
+     "rot": [
+      -0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_thumb": {
+     "rot": [
+      2.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_arm": {
+     "rot": [
+      0.0,
+      0.0,
+      3.0
+     ]
+    },
+    "left_forearm": {
+     "rot": [
+      -4.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_thigh": {
+     "rot": [
+      2.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_shin": {
+     "rot": [
+      -0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_foot": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_thumb": {
+     "rot": [
+      2.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4": {
+     "rot": [
+      3.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4_tip": {
+     "rot": [
+      4.6,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_10": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_11": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_12": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_13": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_3": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_4": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_5": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_6": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_7": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_8": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "back_hair_9": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "chest_tendril_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_-1_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "front_curtain_1_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_10": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_3": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_4": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_5": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_6": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_7": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_8": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_arm_veil_9": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_veil_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_10": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_3": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_4": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_5": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_6": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_7": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_8": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_arm_veil_9": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_veil_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_-1_3": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_0": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_1": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_2": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "side_curtain_1_3": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    }
+   }
+  }
+ ]
+}

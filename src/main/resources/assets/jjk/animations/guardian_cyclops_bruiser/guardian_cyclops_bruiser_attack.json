@@ -1,0 +1,1499 @@
+{
+ "name": "guardian_cyclops_bruiser_attack",
+ "rig": "guardian_cyclops_bruiser",
+ "reference": "tools/gen_guardian_anims.py",
+ "duration": 1000,
+ "priority": "ATTACK",
+ "blendIn": 60,
+ "blendOut": 120,
+ "keys": [
+  {
+   "t": 0,
+   "bones": {
+    "hips": {
+     "rot": [
+      4.0,
+      0.0,
+      0.0
+     ],
+     "pos": [
+      0.0,
+      -0.8,
+      0.0
+     ]
+    },
+    "torso": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      -4.0,
+      0.0,
+      0.0
+     ]
+    },
+    "jaw": {
+     "rot": [
+      4.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_arm": {
+     "rot": [
+      -4.0,
+      0.0,
+      -9.0
+     ]
+    },
+    "right_forearm": {
+     "rot": [
+      -14.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_thigh": {
+     "rot": [
+      -11.695,
+      0.0,
+      0.0
+     ]
+    },
+    "right_shin": {
+     "rot": [
+      14.521,
+      0.0,
+      0.0
+     ]
+    },
+    "right_foot": {
+     "rot": [
+      -6.826,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_thumb": {
+     "rot": [
+      12.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_arm": {
+     "rot": [
+      -4.0,
+      0.0,
+      9.0
+     ]
+    },
+    "left_forearm": {
+     "rot": [
+      -14.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_thigh": {
+     "rot": [
+      -10.901,
+      0.0,
+      0.0
+     ]
+    },
+    "left_shin": {
+     "rot": [
+      12.985,
+      0.0,
+      0.0
+     ]
+    },
+    "left_foot": {
+     "rot": [
+      -6.085,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_thumb": {
+     "rot": [
+      12.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 450,
+   "bones": {
+    "hips": {
+     "rot": [
+      -12.0,
+      0.0,
+      0.0
+     ],
+     "pos": [
+      0.0,
+      0.6,
+      0.0
+     ]
+    },
+    "torso": {
+     "rot": [
+      -8.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      -18.0,
+      0.0,
+      0.0
+     ]
+    },
+    "jaw": {
+     "rot": [
+      30.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_arm": {
+     "rot": [
+      -172.0,
+      0.0,
+      10.0
+     ]
+    },
+    "right_forearm": {
+     "rot": [
+      -30.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_thigh": {
+     "rot": [
+      19.97,
+      0.0,
+      0.0
+     ]
+    },
+    "right_shin": {
+     "rot": [
+      -15.059,
+      0.0,
+      0.0
+     ]
+    },
+    "right_foot": {
+     "rot": [
+      7.089,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_thumb": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_arm": {
+     "rot": [
+      -172.0,
+      0.0,
+      -10.0
+     ]
+    },
+    "left_forearm": {
+     "rot": [
+      -30.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_thigh": {
+     "rot": [
+      18.525,
+      0.0,
+      0.0
+     ]
+    },
+    "left_shin": {
+     "rot": [
+      -12.359,
+      0.0,
+      0.0
+     ]
+    },
+    "left_foot": {
+     "rot": [
+      5.834,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_thumb": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 620,
+   "bones": {
+    "hips": {
+     "rot": [
+      -12.0,
+      0.0,
+      0.0
+     ],
+     "pos": [
+      0.0,
+      0.6,
+      0.0
+     ]
+    },
+    "torso": {
+     "rot": [
+      -8.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      -18.0,
+      0.0,
+      0.0
+     ]
+    },
+    "jaw": {
+     "rot": [
+      30.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_arm": {
+     "rot": [
+      -178.0,
+      0.0,
+      10.0
+     ]
+    },
+    "right_forearm": {
+     "rot": [
+      -36.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_thigh": {
+     "rot": [
+      19.97,
+      0.0,
+      0.0
+     ]
+    },
+    "right_shin": {
+     "rot": [
+      -15.059,
+      0.0,
+      0.0
+     ]
+    },
+    "right_foot": {
+     "rot": [
+      7.089,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_thumb": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_arm": {
+     "rot": [
+      -178.0,
+      0.0,
+      -10.0
+     ]
+    },
+    "left_forearm": {
+     "rot": [
+      -36.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_thigh": {
+     "rot": [
+      18.525,
+      0.0,
+      0.0
+     ]
+    },
+    "left_shin": {
+     "rot": [
+      -12.359,
+      0.0,
+      0.0
+     ]
+    },
+    "left_foot": {
+     "rot": [
+      5.834,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_thumb": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 700,
+   "bones": {
+    "hips": {
+     "rot": [
+      30.0,
+      0.0,
+      0.0
+     ],
+     "pos": [
+      0.0,
+      -2.6,
+      0.0
+     ]
+    },
+    "torso": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      -26.0,
+      0.0,
+      0.0
+     ]
+    },
+    "jaw": {
+     "rot": [
+      40.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_arm": {
+     "rot": [
+      -58.0,
+      0.0,
+      8.0
+     ]
+    },
+    "right_forearm": {
+     "rot": [
+      -10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_thigh": {
+     "rot": [
+      -50.726,
+      0.0,
+      0.0
+     ]
+    },
+    "right_shin": {
+     "rot": [
+      38.969,
+      0.0,
+      0.0
+     ]
+    },
+    "right_foot": {
+     "rot": [
+      -18.243,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_thumb": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_arm": {
+     "rot": [
+      -58.0,
+      0.0,
+      -8.0
+     ]
+    },
+    "left_forearm": {
+     "rot": [
+      -10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_thigh": {
+     "rot": [
+      -62.392,
+      0.0,
+      0.0
+     ]
+    },
+    "left_shin": {
+     "rot": [
+      30.265,
+      0.0,
+      0.0
+     ]
+    },
+    "left_foot": {
+     "rot": [
+      2.127,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_thumb": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 800,
+   "bones": {
+    "hips": {
+     "rot": [
+      32.0,
+      0.0,
+      0.0
+     ],
+     "pos": [
+      0.0,
+      -2.9,
+      0.0
+     ]
+    },
+    "torso": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      -26.0,
+      0.0,
+      0.0
+     ]
+    },
+    "jaw": {
+     "rot": [
+      40.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_arm": {
+     "rot": [
+      -58.0,
+      0.0,
+      8.0
+     ]
+    },
+    "right_forearm": {
+     "rot": [
+      -10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_thigh": {
+     "rot": [
+      -50.726,
+      0.0,
+      0.0
+     ]
+    },
+    "right_shin": {
+     "rot": [
+      38.969,
+      0.0,
+      0.0
+     ]
+    },
+    "right_foot": {
+     "rot": [
+      -18.243,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_thumb": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_arm": {
+     "rot": [
+      -58.0,
+      0.0,
+      -8.0
+     ]
+    },
+    "left_forearm": {
+     "rot": [
+      -10.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_thigh": {
+     "rot": [
+      -62.392,
+      0.0,
+      0.0
+     ]
+    },
+    "left_shin": {
+     "rot": [
+      30.265,
+      0.0,
+      0.0
+     ]
+    },
+    "left_foot": {
+     "rot": [
+      2.127,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_thumb": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4": {
+     "rot": [
+      38.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4_tip": {
+     "rot": [
+      46.0,
+      0.0,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 1000,
+   "bones": {
+    "hips": {
+     "rot": [
+      16.0,
+      0.0,
+      0.0
+     ],
+     "pos": [
+      0.0,
+      -1.6,
+      0.0
+     ]
+    },
+    "torso": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      -14.0,
+      0.0,
+      0.0
+     ]
+    },
+    "jaw": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_upper_arm": {
+     "rot": [
+      -4.0,
+      0.0,
+      -9.0
+     ]
+    },
+    "right_forearm": {
+     "rot": [
+      -14.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_thigh": {
+     "rot": [
+      -29.959,
+      0.0,
+      0.0
+     ]
+    },
+    "right_shin": {
+     "rot": [
+      26.305,
+      0.0,
+      0.0
+     ]
+    },
+    "right_foot": {
+     "rot": [
+      -12.346,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_thumb": {
+     "rot": [
+      12.0,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_1_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_2_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_3_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "right_hand_finger_4_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_upper_arm": {
+     "rot": [
+      -4.0,
+      0.0,
+      9.0
+     ]
+    },
+    "left_forearm": {
+     "rot": [
+      -14.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_thigh": {
+     "rot": [
+      -28.755,
+      0.0,
+      0.0
+     ]
+    },
+    "left_shin": {
+     "rot": [
+      23.907,
+      0.0,
+      0.0
+     ]
+    },
+    "left_foot": {
+     "rot": [
+      -11.152,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_thumb": {
+     "rot": [
+      12.0,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_1_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_2_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_3_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4": {
+     "rot": [
+      22.8,
+      0.0,
+      0.0
+     ]
+    },
+    "left_hand_finger_4_tip": {
+     "rot": [
+      27.6,
+      0.0,
+      0.0
+     ]
+    }
+   }
+  }
+ ]
+}

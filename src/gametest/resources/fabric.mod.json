@@ -42,7 +42,8 @@
       "dev.rick.jjk.test.SiteTests",
       "dev.rick.jjk.test.BladeTests",
       "dev.rick.jjk.test.EncounterTests",
-      "dev.rick.jjk.test.Phase4Tests"
+      "dev.rick.jjk.test.Phase4Tests",
+      "dev.rick.jjk.test.GuardianBodyTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.Phase4ClientTest",

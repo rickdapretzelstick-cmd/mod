@@ -78,8 +78,10 @@ public final class StrengthContests {
      * The kinds with a grapple of their own ({@code <kind>_grapple*} clips from tools/gen_curse_models.py), and how far
      * apart the two stand locked together (its reach: a toad's bulk keeps you further off than a bride's hands).
      */
-    static final Map<String, Double> GRAPPLE_REACH = Map.of("school_maw", 1.6, "school_crawler", 1.5, "forest_stalker", 1.25,
-            "grave_hound", 1.45, "veiled_bride", 1.2, "bloat_toad", 1.9, "brood_mother", 1.7);
+    static final Map<String, Double> GRAPPLE_REACH = Map.ofEntries(Map.entry("school_maw", 1.6), Map.entry("school_crawler", 1.5),
+            Map.entry("forest_stalker", 1.25), Map.entry("grave_hound", 1.45), Map.entry("veiled_bride", 1.2), Map.entry("bloat_toad", 1.9),
+            Map.entry("brood_mother", 1.7), Map.entry("guardian_claw_hunter", 1.5), Map.entry("guardian_pale_stalker", 1.45),
+            Map.entry("guardian_cyclops_bruiser", 1.7), Map.entry("guardian_veiled_reacher", 1.4));
     /** The keys, as directions: the player's forward, left, back and right movement keys (W, A, S, D by default). */
     public static final int UP = 0, LEFT = 1, DOWN = 2, RIGHT = 3, KEYS = 4;
     /** How many keys a contest's order runs to before it repeats (far more than any contest lasts). */

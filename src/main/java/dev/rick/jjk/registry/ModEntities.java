@@ -85,6 +85,19 @@ public final class ModEntities {
     public static final EntityType<dev.rick.jjk.progression.curse.BroodMotherEntity> BROOD_MOTHER = register("brood_mother",
             EntityType.Builder.<dev.rick.jjk.progression.curse.BroodMotherEntity>of(dev.rick.jjk.progression.curse.BroodMotherEntity::new, MobCategory.MONSTER)
                     .sized(1.2f, 1.7f).eyeHeight(1.4f).clientTrackingRange(10).noLootTable());
+    /** The Grade 1 contract guardians' own bodies (progression.guardian.Guardians): each fights as the curse it replaced. */
+    public static final EntityType<dev.rick.jjk.progression.guardian.ClawHunterGuardian> GUARDIAN_CLAW_HUNTER = register("guardian_claw_hunter",
+            EntityType.Builder.<dev.rick.jjk.progression.guardian.ClawHunterGuardian>of(dev.rick.jjk.progression.guardian.ClawHunterGuardian::new, MobCategory.MONSTER)
+                    .sized(1.1f, 2.6f).eyeHeight(2.2f).clientTrackingRange(10).noLootTable());
+    public static final EntityType<dev.rick.jjk.progression.guardian.PaleStalkerGuardian> GUARDIAN_PALE_STALKER = register("guardian_pale_stalker",
+            EntityType.Builder.<dev.rick.jjk.progression.guardian.PaleStalkerGuardian>of(dev.rick.jjk.progression.guardian.PaleStalkerGuardian::new, MobCategory.MONSTER)
+                    .sized(1.1f, 2.65f).eyeHeight(2.3f).clientTrackingRange(10).noLootTable());
+    public static final EntityType<dev.rick.jjk.progression.guardian.CyclopsBruiserGuardian> GUARDIAN_CYCLOPS_BRUISER = register("guardian_cyclops_bruiser",
+            EntityType.Builder.<dev.rick.jjk.progression.guardian.CyclopsBruiserGuardian>of(dev.rick.jjk.progression.guardian.CyclopsBruiserGuardian::new, MobCategory.MONSTER)
+                    .sized(1.4f, 2.6f).eyeHeight(2.1f).clientTrackingRange(10).noLootTable());
+    public static final EntityType<dev.rick.jjk.progression.guardian.VeiledReacherGuardian> GUARDIAN_VEILED_REACHER = register("guardian_veiled_reacher",
+            EntityType.Builder.<dev.rick.jjk.progression.guardian.VeiledReacherGuardian>of(dev.rick.jjk.progression.guardian.VeiledReacherGuardian::new, MobCategory.MONSTER)
+                    .sized(1.1f, 2.7f).eyeHeight(2.4f).clientTrackingRange(10).noLootTable());
     public static final EntityType<TrainingDummy> TRAINING_DUMMY = register("training_dummy",
             EntityType.Builder.<TrainingDummy>of(TrainingDummy::new, MobCategory.MISC).sized(0.6f, 1.95f).clientTrackingRange(10));
 
@@ -117,5 +130,9 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(VEILED_BRIDE, dev.rick.jjk.progression.curse.VeiledBrideEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(BLOAT_TOAD, dev.rick.jjk.progression.curse.BloatToadEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(BROOD_MOTHER, dev.rick.jjk.progression.curse.BroodMotherEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(GUARDIAN_CLAW_HUNTER, dev.rick.jjk.progression.curse.GraveHoundEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(GUARDIAN_PALE_STALKER, dev.rick.jjk.progression.curse.ForestStalkerEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(GUARDIAN_CYCLOPS_BRUISER, dev.rick.jjk.progression.curse.SchoolMawEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(GUARDIAN_VEILED_REACHER, dev.rick.jjk.progression.curse.VeiledBrideEntity.createAttributes());
     }
 }

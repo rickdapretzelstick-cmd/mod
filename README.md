@@ -439,6 +439,21 @@ fight in a compact walled arena with one Grade 1 guardian (its body and look are
 kept for every retry). Nobody else can enter once you have taken it. Lose and you are offered an immediate **rematch**
 (`/contract rematch`): same contract, same guardian, no new materials.
 
+The four guardians are their own curses (models from the Grades 1–4 Blockbench pack), each with three looks, and each
+fights with the moves of the curse it grew out of, on the same timings:
+
+| Guardian | Looks | Fights like | Its moves |
+|---|---|---|---|
+| **Skeletal claw hunter** (`jjk:guardian_claw_hunter`) | uneven fringe / raised jaw / pale eyes | Grave Hound | a claw slash; a crouch and a pounce, sprawled on all fours when it misses; a howl that sets every curse round it on you |
+| **Pale-haired stalker** (`jjk:guardian_pale_stalker`) | red split face / hollow face / fanged hood | Forest Stalker | rises, tilts its head and sinks low to mark you, then a two-claw dive (crashed on its knees if dodged); an overhead rake; skulks off to come again |
+| **Heavy cyclops bruiser** (`jjk:guardian_cyclops_bruiser`) | pale cyclops / dark socket / twin black horns | School Maw | both fists brought down, or a quick hook once it has you; a tongue thrown from its gaping mouth that reels you in; a two-fist ground slam; bent over panting when it misses |
+| **Veiled long-armed curse** (`jjk:guardian_veiled_reacher`) | layered veil / offset fringe / split fringe | Veiled Bride | flickers behind you; both long hands close on you; a wail, then it has to stop and breathe |
+
+At each of its acts a guardian *unleashes*: the claw hunter goes limp and rears up screaming, the stalker's head drops
+and snaps up sideways with its arms flung high, the bruiser flexes and pounds its chest, the veiled curse rises with its
+veils flaring. `tools/install_guardians.py` installs the models and textures from the pack; `tools/gen_guardian_anims.py`
+builds every clip (one set per body, shared by its looks, the legs solved so the feet stay planted).
+
 **3. The Exorcism Seal and the remnant.** Crafted from ordinary materials: **gold nugget above and below, paper · ink sac ·
 paper across the middle → 2 seals**. A defeated guardian leaves a **remnant**: a slowly turning knot of dark energy where
 it fell, harmless, unhurtable. Use a seal on it (right-click) to **contain** it: about **7 seconds** of the shared skill
@@ -542,7 +557,7 @@ finisher keeps your own view.
   beat: it is held and can't be hurt, the camera cuts low on it and then close on its face under an anime title card
   (*UNLEASHED*, *LAST STAND*, with its name), and the arena changes: at the first, four pillars grind up out of the floor
   (cover, and something to fight round, a soul fire on each); at the second, the floor's outer ring breaks and sinks.
-  A guardian's own body can add its part (a roar, a transformation) and name its own acts.
+  Each guardian's body plays its own part in the beat (it *unleashes*: see the guardian table above).
 
 **Impact frames.** Big moments can cut to an anime impact frame for a few hard frames: every body near the camera inked
 as a solid silhouette against flat paper with focus lines rushing in, an inverted beat, a crimson Black Flash variant,
