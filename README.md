@@ -527,7 +527,24 @@ the hands, under it as it bears down, over your shoulder into it, or from above 
 moment, back to the wide after a lull. Breaking free gets a low reversal shot, being thrown a shot that follows you. It
 stays out of walls, the HUD stays fixed, and **Reduced Camera Motion** (pause menu → JJK Settings, or
 `client.reducedCameraMotion`) holds one still wide shot at FOV 62 (no cuts).
-Tuning: `training.contest*` in the config.
+
+**Two more ways in, through the same contest.** A grab isn't the only way to lock up with a curse:
+- **Defensive: block its blow.** When a grabbing curse's own direct melee strike, at arm's length, lands on your guard
+  as a real block (the server's call, not a parry), the struggle starts, every time the rules allow it (not by chance):
+  it's pressing in on your guard. Never from a projectile, an area or explosion, a technique, an unblockable or
+  sure-hit attack, or a fly head. If it can't start (you're protected, either side is busy, the curse is cooling down),
+  the block simply stands.
+- **Offensive: counter.** While guarding, press attack: a short **counter window** opens (0.35 s, 7 ticks; a crimson
+  glint marks it). Attack presses from a guard never swing, fire or spend anything. A grapple-able blow that lands in
+  the window is **caught** (no damage, consumed exactly once, ahead of the guard) and you start the struggle with the
+  initiative (the meter at 58 instead of 50). The counter wins over the defensive trigger for that blow. The attempt has
+  a 1.25 s cooldown from when it opens; a window that catches nothing is a miss, with a short 0.25 s recovery in which a
+  block stays a block. A counter never grabs a curse that isn't attacking you, and winning gives the usual stagger (no
+  automatic Black Flash).
+
+Every contest, whichever way it began, leaves at least 3 s of grace (`training.contestGraceSeconds`; the 12 s protection
+above is the longer of the two and still applies), uses the same presets by grade, and cleans up the same way.
+Tuning: `training.contest*` and `training.counter*` in the config.
 
 **Perfect dodge, counter, finishers.** Fighting curses has two payoffs of its own. Dash through a curse's blow at the
 last moment (it lands inside the dash's invulnerable frames) and it's a **perfect dodge**: time slows for a beat and,

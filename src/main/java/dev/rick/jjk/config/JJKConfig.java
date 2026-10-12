@@ -1370,6 +1370,22 @@ public final class JJKConfig {
         public float contestChancePerSecond = 0.15f;
         /** Its intro; after any contest you can't be grabbed again for a while (by any curse); a curse waits too. */
         public int contestIntroMs = 900, contestProtectSeconds = 12, contestCurseCooldownSeconds = 20;
+        /** The least grace after any contest, from every curse (the longer {@code contestProtectSeconds} wins). */
+        public int contestGraceSeconds = 3;
+        /**
+         * A blow from a curse that can grab, caught on your guard (a real block, at arm's length: never a parry, a ranged
+         * or unblockable attack), turns into a defensive contest: it presses in on your guard.
+         */
+        public boolean contestOnBlock = true;
+        /**
+         * The counter: pressing attack while guarding opens a window ({@code counterWindowTicks}, 7 = 0.35 s) in which a
+         * blow from a curse that can grab is intercepted and you take the struggle, starting at {@code counterStartMeter}
+         * (50 is even). One try per {@code counterCooldownTicks} (from the press); a miss leaves you
+         * {@code counterMissRecoveryTicks} of recovery, in which a block doesn't turn into a contest either.
+         */
+        public boolean counters = true;
+        public int counterWindowTicks = 7, counterCooldownTicks = 25, counterMissRecoveryTicks = 5;
+        public double counterStartMeter = 58;
         /**
          * No time limit: after {@code contestTightenAfterMs} the curse's grip tightens (its pressure grows by this share of
          * itself every second), so it always ends. A wrong key locks the keys for {@code contestLockoutMs}; presses

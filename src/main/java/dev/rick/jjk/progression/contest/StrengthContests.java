@@ -71,6 +71,13 @@ public final class StrengthContests {
 
     private StrengthContests() {}
 
+    /**
+     * How a contest began, through the one entry ({@link #begin(MinecraftServer, CommonCurseEntity, ServerPlayer, Trigger)}):
+     * a curse's telegraphed grab; a blow caught on the guard (defensive: it presses in on the guard); or a counter (the
+     * blow intercepted: the player takes the struggle, with a head start).
+     */
+    public enum Trigger { GRAB, DEFENSIVE, COUNTER }
+
     /** A grab being telegraphed: who, at whom, and when it closes. */
     record Telegraph(UUID curse, UUID player, long closesAt) {}
 
@@ -97,6 +104,7 @@ public final class StrengthContests {
     public static final class Session extends Moment {
         public final UUID curse;
         public final ContestPreset preset;
+        public final Trigger trigger;
         public final String foe;
         /** The curse's kind, whether it has a grapple of its own, and how far apart the two are held. */
         public final String kind;
@@ -112,11 +120,14 @@ public final class StrengthContests {
         /** Contest time (ms) until which keys are locked (after a wrong one), and of the last key taken. */
         double lockedUntil = Double.NEGATIVE_INFINITY, lastKey = Double.NEGATIVE_INFINITY;
 
-        Session(UUID player, UUID curse, ContestPreset preset, String foe, String kind, double width, long seed) {
+        Session(UUID player, UUID curse, ContestPreset preset, String foe, String kind, double width, long seed, Trigger trigger) {
             super(player, curse);
             this.order = order(seed);
             this.curse = curse;
             this.preset = preset;
+            this.trigger = trigger;
+            // A counter takes the initiative: a modest head start (it still has to be won).
+            if (trigger == Trigger.COUNTER) meter = Math.max(ContestPreset.START, Math.min(ContestPreset.MAX - 10, JJKConfig.get().training.counterStartMeter));
             this.foe = foe;
             this.kind = kind;
             this.rig = GRAPPLE_REACH.containsKey(kind);
@@ -154,8 +165,22 @@ public final class StrengthContests {
             Vec3 to = new Vec3(want.x, c.getY(), want.z);
             if (c.level().noCollision(c, c.getBoundingBox().move(to.subtract(c.position())))) c.teleportTo(to.x, to.y, to.z);
             face(p, c);
-            Anim.play(p, "grapple_hold");
-            if (rig) Anim.playOn(c, kind + "_grapple");
+            // How it opens: grabbed into the grip; braced, the curse bearing in on the guard it just hit; or the counter,
+            // the player driving into it first.
+            switch (trigger) {
+                case DEFENSIVE -> {
+                    Anim.play(p, "grapple_brace");
+                    if (rig) Anim.playOn(c, kind + "_grapple_press");
+                }
+                case COUNTER -> {
+                    Anim.play(p, "grapple_push");
+                    if (rig) Anim.playOn(c, kind + "_grapple");
+                }
+                default -> {
+                    Anim.play(p, "grapple_hold");
+                    if (rig) Anim.playOn(c, kind + "_grapple");
+                }
+            }
         }
 
         private static void face(ServerPlayer p, CommonCurseEntity c) {
@@ -380,8 +405,8 @@ public final class StrengthContests {
         protected void onEnd(MinecraftServer server, @Nullable ServerPlayer p) {
             JJKConfig.Training cfg = JJKConfig.get().training;
             long now = server.overworld().getGameTime();
-            // One timer per player, shared by every curse; the curse waits its own.
-            PROTECTED.put(player, now + cfg.contestProtectSeconds * 20L);
+            // One timer per player, shared by every curse (and every way in); the curse waits its own.
+            PROTECTED.put(player, now + Math.max(cfg.contestProtectSeconds, cfg.contestGraceSeconds) * 20L);
             CURSE_READY.put(curse, now + cfg.contestCurseCooldownSeconds * 20L);
             if (p != null && won == null) {
                 // Broken off (no result): both let go of the grip.
@@ -398,6 +423,7 @@ public final class StrengthContests {
     public static void init() {
         dev.rick.jjk.core.combat.CombatEvents.HIT_RESOLVED.add(StrengthContests::onHit);
         ServerTickEvents.END_SERVER_TICK.register(StrengthContests::tick);
+        ContestCounters.init();
         ServerLifecycleEvents.SERVER_STOPPED.register(s -> clear());
         ServerPlayConnectionEvents.DISCONNECT.register((h, server) -> TELEGRAPHS.values().removeIf(t -> t.player.equals(h.player.getUUID())));
     }
@@ -514,6 +540,7 @@ public final class StrengthContests {
      * closes. The curse reels (a stagger) and has to wait its full cooldown to reach again; both players see the cut.
      */
     static void onHit(dev.rick.jjk.core.combat.HitResult r) {
+        if (r.outcome() == dev.rick.jjk.core.combat.HitResult.Outcome.BLOCKED) blocked(r);
         if (r.outcome() != dev.rick.jjk.core.combat.HitResult.Outcome.HIT || !(r.hit().attacker instanceof ServerPlayer rescuer)
                 || !(r.target() instanceof CommonCurseEntity c) || !(c.level() instanceof ServerLevel level)) return;
         Telegraph t = TELEGRAPHS.get(c.getUUID());
@@ -521,6 +548,37 @@ public final class StrengthContests {
         TELEGRAPHS.remove(c.getUUID());
         ServerPlayer victim = level.getServer().getPlayerList().getPlayer(t.player);
         rescue(level, c, rescuer, victim);
+    }
+
+    /**
+     * A direct blow a curse can turn into a struggle: its own melee strike at arm's length, blockable. Never a projectile,
+     * an area or explosion, a technique, the environment, an unblockable or sure hit, or anything from further off.
+     */
+    public static boolean grapplingBlow(dev.rick.jjk.core.combat.Hit hit, CommonCurseEntity c, ServerPlayer p) {
+        if (!hit.has(dev.rick.jjk.core.combat.AttackTag.MELEE)) return false;
+        for (var t : new dev.rick.jjk.core.combat.AttackTag[] {dev.rick.jjk.core.combat.AttackTag.PROJECTILE, dev.rick.jjk.core.combat.AttackTag.AREA,
+                dev.rick.jjk.core.combat.AttackTag.EXPLOSION, dev.rick.jjk.core.combat.AttackTag.ENVIRONMENTAL, dev.rick.jjk.core.combat.AttackTag.UNBLOCKABLE,
+                dev.rick.jjk.core.combat.AttackTag.SURE_HIT, dev.rick.jjk.core.combat.AttackTag.TECHNIQUE}) {
+            if (hit.has(t)) return false;
+        }
+        return c.isAlive() && c.level() == p.level() && c.distanceTo(p) <= JJKConfig.get().training.contestEscapeRange;
+    }
+
+    /**
+     * A blow caught on a guard (a real block, resolved by the server): from a curse that can grab, at arm's length, it
+     * turns into a defensive contest, every time the rules allow it (not by chance). Started at the end of the tick, after
+     * the blow is settled: if it can't start then (the player protected, either side busy, the curse cooling down, a
+     * missed counter's recovery), the block simply stands.
+     */
+    static void blocked(dev.rick.jjk.core.combat.HitResult r) {
+        if (!JJKConfig.get().training.contests || !JJKConfig.get().training.contestOnBlock) return;
+        if (!(r.target() instanceof ServerPlayer p) || !(r.hit().attacker instanceof CommonCurseEntity c) || !(p.level() instanceof ServerLevel level)) return;
+        if (!eligible(c) || !grapplingBlow(r.hit(), c, p) || ContestCounters.recovering(p)) return;
+        ContestCounters.later(() -> {
+            if (!p.isAlive() || !c.isAlive() || c.level() != p.level() || c.distanceTo(p) > JJKConfig.get().training.contestEscapeRange) return;
+            if (cannotGrab(c) != null || unavailable(p) != null || ContestCounters.recovering(p)) return;
+            begin(level.getServer(), c, p, Trigger.DEFENSIVE);
+        });
     }
 
     static void rescue(ServerLevel level, CommonCurseEntity c, ServerPlayer rescuer, @Nullable ServerPlayer victim) {
@@ -561,12 +619,21 @@ public final class StrengthContests {
         begin(server, c, p);
     }
 
-    /** Reserves both and starts the contest now (also the test hook, past the telegraph). False if either is taken. */
+    /** Reserves both and starts a grab's contest now (also the test hook, past the telegraph). False if either is taken. */
     public static boolean begin(MinecraftServer server, CommonCurseEntity c, ServerPlayer p) {
+        return begin(server, c, p, Trigger.GRAB);
+    }
+
+    /**
+     * The one way into a contest, whatever began it: both reserved atomically (or neither), the same presets by grade,
+     * the same camera, keys, outcomes and clean-up. False if either side is taken (or the player is protected).
+     */
+    public static boolean begin(MinecraftServer server, CommonCurseEntity c, ServerPlayer p, Trigger trigger) {
         if (unavailable(p) != null) return false;
+        if (trigger != Trigger.GRAB && cannotGrab(c) != null) return false;
         JJKConfig.Training cfg = JJKConfig.get().training;
         long seed = p.getRandom().nextLong();
-        Session s = new Session(p.getUUID(), c.getUUID(), presetFor(c), c.getName().getString(), c.curseKind(), c.getBbWidth(), seed);
+        Session s = new Session(p.getUUID(), c.getUUID(), presetFor(c), c.getName().getString(), c.curseKind(), c.getBbWidth(), seed, trigger);
         JJKConfig.Training rules = s.rules();
         // No skill-check schedule: its keys are its own (the client builds the same order from the seed).
         s.prepare(List.of(), rules.maxMisses, cfg.contestIntroMs);
@@ -579,10 +646,24 @@ public final class StrengthContests {
             }
             c.holdForContest(10);
             ClashCommon.hold(p);
+            // The guard (if it was up) gives way to the struggle; it comes back with the key afterwards.
+            dev.rick.jjk.core.combat.Combat.state(p).stopGuard();
+            ContestCounters.consumed(p);
             // Face to face, at its reach, locked into the grip.
             s.stage(p, c);
             Vec3 mid = c.position().add(0, c.getBbHeight() * 0.6, 0);
-            ServerPlayNetworking.send(p, new TrainingNet.Start(s.id, 1, KIT, "BREAK ITS HOLD", false, chosen, cfg.contestIntroMs, 0,
+            String title = switch (trigger) {
+                case DEFENSIVE -> "HOLD IT OFF";
+                case COUNTER -> "COUNTER! TAKE IT";
+                default -> "BREAK ITS HOLD";
+            };
+            if (p.level() instanceof ServerLevel l && trigger != Trigger.GRAB) {
+                // Out of the blow itself: the contact flashes where it landed (on the guard, or on the counter's catch).
+                Vec3 at = p.getEyePosition().add(p.getLookAngle().scale(0.7)).subtract(0, 0.4, 0);
+                Fx.play(l, trigger == Trigger.COUNTER ? "parry" : "block", at, p.getLookAngle(), 1f, p.getId());
+                if (trigger == Trigger.COUNTER) Impact.frame(p, Impact.INK, 0.7f);
+            }
+            ServerPlayNetworking.send(p, new TrainingNet.Start(s.id, 1, KIT, title, false, chosen, cfg.contestIntroMs, 0,
                     0, 0, rules.maxMisses, p.getEyePosition(), mid, List.of(), List.of(), List.of()));
             s.setState(p, TrainingNet.INTRO);
             s.sendMeter(p);
@@ -590,7 +671,8 @@ public final class StrengthContests {
                 Fx.sound(l, p.position(), SoundEvents.IRON_GOLEM_ATTACK, 1f, 0.6f);
                 Fx.shake(l, p.position(), 8, 0.4f, 8);
             }
-            JJK.LOGGER.info("[contests] {} grabbed by {} ({})", p.getName().getString(), s.foe, s.preset.name());
+            JJK.LOGGER.info("[contests] {} {} {} ({})", p.getName().getString(), trigger == Trigger.COUNTER ? "countered" : trigger == Trigger.DEFENSIVE ? "held off" : "grabbed by",
+                    s.foe, s.preset.name());
         });
     }
 
@@ -698,6 +780,12 @@ public final class StrengthContests {
     public static boolean protectedForTest(ServerPlayer p) {
         Long t = PROTECTED.get(p.getUUID());
         return t != null && p.level().getGameTime() < t;
+    }
+
+    /** Ticks of protection left (0 if none). */
+    public static long protectedTicksForTest(ServerPlayer p) {
+        Long t = PROTECTED.get(p.getUUID());
+        return t == null ? 0 : Math.max(0, t - p.level().getGameTime());
     }
 
     public static void forgetForTest(ServerPlayer p, @Nullable Entity c) {

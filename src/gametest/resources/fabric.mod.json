@@ -37,6 +37,7 @@
       "dev.rick.jjk.test.ClearanceTests",
       "dev.rick.jjk.test.EssenceTests",
       "dev.rick.jjk.test.ContestTests",
+      "dev.rick.jjk.test.ContestTriggerTests",
       "dev.rick.jjk.test.FinisherTests",
       "dev.rick.jjk.test.NewsHouseTests",
       "dev.rick.jjk.test.SiteTests",
