@@ -91,11 +91,11 @@ ROOMS = {
                  # The emotional-control trial is watched from the centre sofa, the doll on the lap.
                  markers={'player': (0, 1.23, 7.95), 'player_floor': (0, 0, 6.0), 'television': (0, 3.67, -9.5),
                           'doll': (0, 1.35, 7.45)},
-                 lights=12),
+                 lights=14),
     'gojo': dict(title='Hall of Impossible Precision', shift=(0.5, 0.5), rim='minecraft:polished_andesite',
                  markers={'player': (0, 0.12, 9.0), 'blue_core': (0, 5.0, 0)}, lights=13),
     'yuta': dict(title='Shrine of the Bound Promise', shift=(0.5, 0.5), rim='minecraft:polished_blackstone',
-                 markers={'player': (0, 0.12, 7.0), 'sword': (0, 2.0, -0.5), 'rika': (0, 1.32, -8.6)}, lights=12),
+                 markers={'player': (0, 0.12, 7.0), 'sword': (0, 2.0, -0.5), 'rika': (0, 1.32, -8.6)}, lights=13),
     'ryu': dict(title='Granite Output Crucible', shift=(0.5, 0.0), rim='minecraft:polished_blackstone',
                 blocks={'stone': 'minecraft:stone_bricks'},
                 slabs={'firing dais': 'minecraft:polished_deepslate_slab[type=bottom]'},

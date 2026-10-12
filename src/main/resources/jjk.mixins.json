@@ -13,7 +13,10 @@
     "ServerLevelSpawnMixin",
     "AbstractContainerMenuAccessor",
     "InventoryMenuMixin",
-    "CreativeCursedSlotSyncMixin"
+    "CreativeCursedSlotSyncMixin",
+    "ExplosionProtectMixin",
+    "PistonProtectMixin",
+    "PlayerBreakProtectMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -90,6 +90,11 @@ public final class JJKConfig {
         public int wakeupInvulnerability = 10;
         /** Allow techniques to break blocks at all (also requires the mobGriefing gamerule). */
         public boolean allowBlockDestruction = true;
+        /**
+         * The places the mod builds (cursed realm arenas and training rooms, incident sites while they stand, news houses,
+         * battle rooms) can't be broken by techniques, players (outside creative), explosions or pistons. Cleanup still works.
+         */
+        public boolean protectModStructures = true;
         /** Blocks with hardness above this are never destroyed by techniques (obsidian is 50). */
         public float maxDestructibleHardness = 20f;
         /** Hard cap on blocks destroyed per server tick across all techniques, to protect TPS. */

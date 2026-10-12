@@ -32,6 +32,7 @@ public final class ProgressionBootstrap {
         dev.rick.jjk.progression.mastery.Mastery.init();
         dev.rick.jjk.progression.mastery.CurseRewards.init();
         dev.rick.jjk.progression.investigation.Investigations.init();
+        dev.rick.jjk.progression.investigation.ProtectedPlaces.init();
         dev.rick.jjk.progression.investigation.CursedCompass.init();
         dev.rick.jjk.progression.story.PersonalTrials.init();
         dev.rick.jjk.progression.moment.Moments.init();

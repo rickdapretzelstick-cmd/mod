@@ -764,6 +764,15 @@ editing the outputs. Seen only through Cursed Glasses, like the Finger Bearer, a
   and flickers are never back to back (a cooldown between gap closers, shortened only a little by aggression). In a
   realm fight its health scales with the players in it: +30% for each one after the first, at most x1.9.
 
+### The places the mod builds don't break
+
+Every cursed realm arena (incident realms, guardian arenas, battle-room realms and the training rooms), an incident's
+overworld site while it stands, a village's news house and a cursed battle room's shell can't be broken down for their
+blocks. Techniques can't break them. Survival and adventure players can't either (creative still can, for admins). Nor
+can explosions or pistons. Only the site's own blocks are protected: anything a player has built there since stays
+theirs. The game's own cleanup still clears everything: an arena when it closes, a site when its incident is over.
+Switch: `general.protectModStructures` in the config.
+
 ### Realm fights can't trap anyone
 
 Each realm fight is its own encounter (`EncounterWatch`): its own id, its members, its patch of the void, and only the

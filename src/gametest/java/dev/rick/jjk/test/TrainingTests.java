@@ -454,6 +454,20 @@ public class TrainingTests {
                 Vec3 spot = new Vec3(o.getX(), o.getY(), o.getZ()).add(plan.marker("player"));
                 h.assertTrue(p.position().distanceTo(spot) < 1.2, kit + ": at its spot (" + p.position() + " vs " + spot + ")");
                 h.assertTrue(realm.noCollision(p, p.getBoundingBox()), kit + ": not inside anything");
+                // The room can't be broken down: not by a technique, a player breaking it, or an explosion.
+                BlockPos wall = null;
+                for (var e : blocks.entrySet()) {
+                    if (e.getKey().getY() == 2 && (wall == null || e.getKey().getZ() > wall.getZ())) wall = e.getKey();
+                }
+                BlockPos w = o.offset(wall);
+                var before = realm.getBlockState(w);
+                h.assertTrue(dev.rick.jjk.progression.investigation.ProtectedPlaces.isProtected(realm, w), kit + ": its walls are protected");
+                h.assertTrue(!dev.rick.jjk.util.Destruction.destroy(realm, w, 100f, p), kit + ": a technique can't break its wall");
+                boolean broke = p.gameMode.destroyBlock(w);
+                h.assertTrue(!broke && realm.getBlockState(w) == before, kit + ": a player can't break its wall (mode " + p.gameMode.getGameModeForPlayer()
+                        + ", broke " + broke + ", now " + realm.getBlockState(w) + ")");
+                realm.explode(null, w.getX() + 0.5, w.getY() + 0.5, w.getZ() - 1.5, 4f, net.minecraft.world.level.Level.ExplosionInteraction.TNT);
+                h.assertTrue(realm.getBlockState(w) == before, kit + ": its wall still stands");
                 // A retry rebuilds nothing twice: the same props, one Rika at most.
                 send(p, TrainingNet.READY, -1, -1, 0);
                 for (int i = 0; i < 30; i++) TrainingSessions.advanceForTest(p, 100);

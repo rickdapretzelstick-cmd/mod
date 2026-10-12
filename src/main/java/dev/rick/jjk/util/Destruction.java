@@ -16,7 +16,8 @@ import java.util.function.Predicate;
 
 /**
  * Controlled terrain destruction. Every technique that breaks blocks goes through here so the rules are uniform:
- * config switch + mobGriefing gamerule, hardness cap, never unbreakable or domain blocks, only loaded chunks, a global
+ * config switch + mobGriefing gamerule, hardness cap, never unbreakable or domain blocks or the places the mod builds
+ * ({@link dev.rick.jjk.progression.investigation.ProtectedPlaces}), only loaded chunks, a global
  * per-tick budget so a Hollow Purple can't stall the server, and (by default) temporary: {@link WorldRestoration} puts
  * every destroyed block back exactly a few minutes later.
  */
@@ -37,6 +38,8 @@ public final class Destruction {
         if (state.hasBlockEntity() && !(WorldRestoration.enabled() && JJKConfig.get().restoration.destroyBlockEntities)) return false;
         if (dev.rick.jjk.registry.ModBlocks.isDomainBlock(state)) return false;
         if (state.is(BlockTags.WITHER_IMMUNE) || state.is(Blocks.BEDROCK)) return false;
+        // The places the mod builds (realm arenas, incident sites, news houses, battle rooms) never break down.
+        if (dev.rick.jjk.progression.investigation.ProtectedPlaces.isProtected(level, pos, state)) return false;
         float hardness = state.getDestroySpeed(level, pos);
         return hardness >= 0 && hardness <= Math.min(maxHardness, JJKConfig.get().general.maxDestructibleHardness);
     }
@@ -57,7 +60,7 @@ public final class Destruction {
             refund();
             return false;
         }
-        // A cursed realm's arena is rebuilt whole each time: what breaks there is just gone (no drops, nothing to restore).
+        // A cursed realm's arena with protection switched off: what breaks there is just gone (no drops, nothing to restore).
         if (dev.rick.jjk.progression.investigation.CursedRealms.inArena(level, pos)) return level.destroyBlock(pos, false, breaker, 512);
         if (WorldRestoration.enabled()) return WorldRestoration.destroy(level, pos, state, breaker, source);
         return level.destroyBlock(pos, JJKConfig.get().general.destroyedBlocksDropItems, breaker, 512);

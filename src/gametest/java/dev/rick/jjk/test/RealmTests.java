@@ -213,7 +213,7 @@ public class RealmTests {
     }
 
     @GameTest(maxTicks = 80, environment = "jjk-test:realm_drops")
-    public void nothingBreakingInARealmArenaLeavesDropsButThrownItemsStay(GameTestHelper h) {
+    public void realmArenaBlocksHoldAndLooseDropsNeverComeButThrownItemsStay(GameTestHelper h) {
         JJKConfig.get().general.autoAssignGojo = false;
         JJKConfig.get().progression.enabled = true;
         for (int x = 0; x < 9; x++) for (int z = 0; z < 9; z++) h.setBlock(x, 0, z, Blocks.STONE);
@@ -233,7 +233,9 @@ public class RealmTests {
         realm.setBlock(at.below(), Blocks.STONE.defaultBlockState(), 3);
         realm.setBlock(at, Blocks.OAK_PLANKS.defaultBlockState(), 3);
         h.assertTrue(CursedRealms.inArena(realm, at), "that spot is in the arena");
-        h.assertTrue(dev.rick.jjk.util.Destruction.destroy(realm, at, 100f, null), "a technique breaks a block there");
+        // Realm arenas are protected: a technique can't break the block (and so nothing can drop from it).
+        h.assertTrue(!dev.rick.jjk.util.Destruction.destroy(realm, at, 100f, null), "a technique can't break a block there");
+        h.assertTrue(realm.getBlockState(at).is(Blocks.OAK_PLANKS), "the block still stands");
         var loose = new net.minecraft.world.entity.item.ItemEntity(realm, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5, new ItemStack(Blocks.COBBLESTONE));
         h.assertTrue(!realm.addFreshEntity(loose), "a loose drop never comes into the arena");
         var thrown = new net.minecraft.world.entity.item.ItemEntity(realm, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 1.5, new ItemStack(ProgressionItems.CURSED_GLASSES));

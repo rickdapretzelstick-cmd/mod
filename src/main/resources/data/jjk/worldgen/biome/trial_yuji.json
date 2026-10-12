@@ -16,7 +16,7 @@
       },
       "modifier": "overlay"
     },
-    "minecraft:visual/ambient_light_color": "#4a3a2a",
+    "minecraft:visual/ambient_light_color": "#5c4834",
     "minecraft:visual/block_light_tint": "#ffc890",
     "minecraft:visual/fog_color": "#1c140e",
     "minecraft:visual/sky_color": "#1c140e"
