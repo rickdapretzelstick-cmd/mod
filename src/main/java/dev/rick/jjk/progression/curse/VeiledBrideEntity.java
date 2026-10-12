@@ -243,4 +243,10 @@ public class VeiledBrideEntity extends CommonCurseEntity {
     protected SoundEvent getDeathSound() {
         return SoundEvents.WITCH_DEATH;
     }
+
+    /** A parry-chain string's blows (progression.finish.ParryChains) use its own attack clips. */
+    @Override
+    protected String chainClip(int i) {
+        return i % 2 == 0 ? "grasp" : "flicker";
+    }
 }

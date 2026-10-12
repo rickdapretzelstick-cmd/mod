@@ -19,6 +19,8 @@ import java.util.List;
 public final class GuardianArena implements CursedRealms.Layout {
     public static final String ID = "guardian_arena";
     static final int R = 11, WALL = 7;
+    /** The floor's radius (what the guardian's phase beats change: progression.finish.GuardianPhases). */
+    public static final int RADIUS = R;
 
     @Override
     public void build(ServerLevel l, BlockPos o, RandomSource r) {

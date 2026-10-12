@@ -283,4 +283,10 @@ public class ForestStalkerEntity extends CommonCurseEntity {
     protected SoundEvent getDeathSound() {
         return SoundEvents.SPIDER_DEATH;
     }
+
+    /** A parry-chain string's blows (progression.finish.ParryChains) use its own attack clips. */
+    @Override
+    protected String chainClip(int i) {
+        return "rake";
+    }
 }

@@ -524,6 +524,26 @@ Ryu's Granite Blast, or a wound-up haymaker with no technique. It kills with you
 still decide). Neither happens in a strength contest, training or a containment; with Reduced Camera Motion the
 finisher keeps your own view.
 
+**Binds, parry chains, rescues, a guardian's acts.** Four more moments, all earned and all server-decided:
+
+- **Bind.** Land your heavy on a curse while it is winding up its own and the two blows meet: you're both locked for up
+  to 2 s, grinding against each other in a tight two-shot, sparks at the contact point. **Mash attack**: every tap
+  drives the bind your way, while the curse bears down on it the whole time (harder by grade, hardest for a guardian).
+  Drive it home or have the better of it when it runs out and the curse reels wide open; lose and you're thrown back,
+  hurt and reeling. One bind per player per 12 s.
+- **Parry chain.** A Grade 1 guardian strings three to five blows, each one flagged a beat early with a glint and a
+  ping that climbs through the string. Start your guard just as each lands (a perfect block) to parry it; a parry
+  inside a string doesn't stun it, the next blow comes. Parry the whole string and its **posture breaks**: it shatters
+  out reeling, wide open for 3 s, and can be finished from half its health instead of a quarter. Miss one and the
+  string just runs out. Nothing locks you during a chain.
+- **Rescue.** In multiplayer, hit a curse while it is reaching for someone else (its grab's telegraph) and the grab is
+  broken off before it closes: a slash straight through it, and it reels.
+- **A guardian's acts.** As a guardian falls past two thirds of its health, then a third, the fight stops for a 2.5 s
+  beat: it is held and can't be hurt, the camera cuts low on it and then close on its face under an anime title card
+  (*UNLEASHED*, *LAST STAND*, with its name), and the arena changes: at the first, four pillars grind up out of the floor
+  (cover, and something to fight round, a soul fire on each); at the second, the floor's outer ring breaks and sinks.
+  A guardian's own body can add its part (a roar, a transformation) and name its own acts.
+
 **Impact frames.** Big moments can cut to an anime impact frame for a few hard frames: every body near the camera inked
 as a solid silhouette against flat paper with focus lines rushing in, an inverted beat, a crimson Black Flash variant,
 or a hard negative; and a slowed-time look (colour drained, edges darkened and smeared). They are full-screen shaders

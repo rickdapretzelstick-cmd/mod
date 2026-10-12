@@ -239,4 +239,10 @@ public class GraveHoundEntity extends CommonCurseEntity {
     protected SoundEvent getDeathSound() {
         return SoundEvents.HOGLIN_DEATH;
     }
+
+    /** A parry-chain string's blows (progression.finish.ParryChains) use its own attack clips. */
+    @Override
+    protected String chainClip(int i) {
+        return "bite";
+    }
 }

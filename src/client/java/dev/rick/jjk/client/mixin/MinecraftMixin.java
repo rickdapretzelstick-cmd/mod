@@ -17,7 +17,7 @@ public abstract class MinecraftMixin {
             cir.setReturnValue(false);
             return;
         }
-        if (InputHandler.inStance()) {
+        if (InputHandler.inStance() || dev.rick.jjk.client.finish.BindClient.active()) {
             InputHandler.onAttackPressed();
             cir.setReturnValue(false);
         }

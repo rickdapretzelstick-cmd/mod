@@ -54,6 +54,8 @@ import java.util.UUID;
 public final class Finishers {
     public static final int COUNTER_TICKS = 24, DODGE_GAP_TICKS = 30, FINISH_TICKS = 30, FINISH_BLOW_TICK = 18;
     public static final float COUNTER_BONUS = 0.5f, FINISH_BELOW = 0.25f;
+    /** While its posture is broken (a whole parry chain parried: {@link ParryChains}) a curse can be finished from here. */
+    public static final float OPEN_BELOW = 0.5f;
 
     record Counter(long until) {}
 
@@ -89,6 +91,8 @@ public final class Finishers {
     private static final Map<UUID, Finish> FINISHES = new HashMap<>();
     /** Per curse: when its players were last told it can be finished (so the hint isn't repeated every tick). */
     private static final Map<UUID, Long> HINTED = new HashMap<>();
+    /** Per curse: until when its posture is broken open (a finisher from {@link #OPEN_BELOW}). */
+    private static final Map<UUID, Long> OPENINGS = new HashMap<>();
 
     private Finishers() {}
 
@@ -100,6 +104,7 @@ public final class Finishers {
             COUNTERS.clear();
             FINISHES.clear();
             HINTED.clear();
+            OPENINGS.clear();
         });
     }
 
@@ -119,9 +124,24 @@ public final class Finishers {
         return false;
     }
 
-    /** Whether a hit on this curse now would finish it: exposed, low, free (not in a moment or already being finished). */
+    /**
+     * Whether a hit on this curse now would finish it: exposed, low (or its posture broken and under half), free (not in
+     * a moment, a bind or a beat, not already being finished).
+     */
     public static boolean finishable(CommonCurseEntity c) {
-        return c.isAlive() && c.isExposed() && c.getHealth() <= c.getMaxHealth() * FINISH_BELOW && !StrengthContests.locked(c) && !beingFinished(c);
+        float below = opened(c) ? OPEN_BELOW : FINISH_BELOW;
+        return c.isAlive() && c.isExposed() && c.getHealth() <= c.getMaxHealth() * below && !StrengthContests.locked(c) && !beingFinished(c)
+                && !Binds.bound(c) && !c.inBeat();
+    }
+
+    /** Breaks a curse's posture open for {@code ticks}: it can be finished from {@link #OPEN_BELOW} of its health. */
+    public static void open(CommonCurseEntity c, int ticks) {
+        OPENINGS.put(c.getUUID(), c.level().getGameTime() + ticks);
+    }
+
+    public static boolean opened(CommonCurseEntity c) {
+        Long until = OPENINGS.get(c.getUUID());
+        return until != null && c.level().getGameTime() <= until;
     }
 
     // --- How hits resolve ---
@@ -135,7 +155,7 @@ public final class Finishers {
             return;
         }
         if (r.outcome() != HitResult.Outcome.HIT || !(r.hit().attacker instanceof ServerPlayer p) || !(r.target() instanceof CommonCurseEntity c)
-                || !r.hit().has(AttackTag.MELEE) || finishing(p) || Moments.busy(p)) return;
+                || !r.hit().has(AttackTag.MELEE) || finishing(p) || Moments.busy(p) || Binds.binding(p)) return;
         if (counterReady(p)) {
             COUNTERS.remove(p.getUUID());
             counter(level, p, c, r);
@@ -249,7 +269,10 @@ public final class Finishers {
                 break;
             }
         }
-        if (now % 600 == 0) HINTED.values().removeIf(t -> now - t > 600);
+        if (now % 600 == 0) {
+            HINTED.values().removeIf(t -> now - t > 600);
+            OPENINGS.values().removeIf(t -> t < now);
+        }
     }
 
     // --- Tests ---

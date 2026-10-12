@@ -394,6 +394,7 @@ public final class StrengthContests {
     }
 
     public static void init() {
+        dev.rick.jjk.core.combat.CombatEvents.HIT_RESOLVED.add(StrengthContests::onHit);
         ServerTickEvents.END_SERVER_TICK.register(StrengthContests::tick);
         ServerLifecycleEvents.SERVER_STOPPED.register(s -> clear());
         ServerPlayConnectionEvents.DISCONNECT.register((h, server) -> TELEGRAPHS.values().removeIf(t -> t.player.equals(h.player.getUUID())));
@@ -460,6 +461,7 @@ public final class StrengthContests {
         Long until = PROTECTED.get(p.getUUID());
         if (until != null && p.level().getGameTime() < until) return "protected";
         if (Moments.busy(p)) return "busy";
+        if (dev.rick.jjk.progression.finish.Binds.binding(p) || dev.rick.jjk.progression.finish.Finishers.finishing(p)) return "busy";
         return null;
     }
 
@@ -469,6 +471,7 @@ public final class StrengthContests {
         if (!JJKConfig.get().training.contests) return "contests off";
         if (!c.isAlive() || !eligible(c)) return "not a grabber";
         if (Moments.ofFoe(c) != null || TELEGRAPHS.containsKey(c.getUUID())) return "already grabbing";
+        if (dev.rick.jjk.progression.finish.Binds.bound(c) || c.chaining() || c.inBeat()) return "busy";
         Long ready = CURSE_READY.get(c.getUUID());
         if (ready != null && c.level().getGameTime() < ready) return "cooling down";
         if (isGuardian(c)) {
@@ -500,6 +503,42 @@ public final class StrengthContests {
         Fx.sound(level, c.position(), SoundEvents.RAVAGER_ROAR, 0.6f, 1.4f);
         p.sendOverlayMessage(Component.literal("It's reaching for you. Get out of reach!").withStyle(ChatFormatting.RED));
         return true;
+    }
+
+    // --- Rescue ---
+
+    /**
+     * Someone else lands a hit on a curse while it reaches for a player (its telegraph): the grab is broken off before it
+     * closes. The curse reels (a stagger) and has to wait its full cooldown to reach again; both players see the cut.
+     */
+    static void onHit(dev.rick.jjk.core.combat.HitResult r) {
+        if (r.outcome() != dev.rick.jjk.core.combat.HitResult.Outcome.HIT || !(r.hit().attacker instanceof ServerPlayer rescuer)
+                || !(r.target() instanceof CommonCurseEntity c) || !(c.level() instanceof ServerLevel level)) return;
+        Telegraph t = TELEGRAPHS.get(c.getUUID());
+        if (t == null || t.player.equals(rescuer.getUUID())) return;
+        TELEGRAPHS.remove(c.getUUID());
+        ServerPlayer victim = level.getServer().getPlayerList().getPlayer(t.player);
+        rescue(level, c, rescuer, victim);
+    }
+
+    static void rescue(ServerLevel level, CommonCurseEntity c, ServerPlayer rescuer, @Nullable ServerPlayer victim) {
+        JJKConfig.Training cfg = JJKConfig.get().training;
+        CURSE_READY.put(c.getUUID(), level.getGameTime() + cfg.contestCurseCooldownSeconds * 20L);
+        c.releaseFromContest();
+        c.staggerBy(level, rescuer);
+        Vec3 at = c.position().add(0, c.getBbHeight() * 0.6, 0);
+        Vec3 dir = at.subtract(rescuer.getEyePosition());
+        dir = dir.lengthSqr() < 1e-4 ? rescuer.getLookAngle() : dir.normalize();
+        Fx.play(level, "impact_rescue", at, dir, 1.2f);
+        dev.rick.jjk.core.fx.Impact.frame(rescuer, dev.rick.jjk.core.fx.Impact.INK, 0.8f);
+        Fx.sound(level, at, SoundEvents.PLAYER_ATTACK_SWEEP, 1f, 0.8f);
+        Fx.sound(level, at, SoundEvents.PLAYER_ATTACK_CRIT, 1f, 1.1f);
+        rescuer.sendOverlayMessage(Component.literal("RESCUE! You broke its grab.").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
+        if (victim != null) {
+            dev.rick.jjk.core.fx.Impact.frame(victim, dev.rick.jjk.core.fx.Impact.INK, 0.6f);
+            victim.sendOverlayMessage(Component.literal(rescuer.getName().getString() + " broke its grab!").withStyle(ChatFormatting.AQUA));
+        }
+        JJK.LOGGER.info("[contests] {} rescued {} from {}", rescuer.getName().getString(), victim == null ? "?" : victim.getName().getString(), c.getName().getString());
     }
 
     /** The telegraph closes: checked again, then reserved (both at once) and begun, or it grabs at nothing. */

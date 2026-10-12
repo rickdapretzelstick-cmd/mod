@@ -12,7 +12,8 @@ public record MeleeInputPayload(int kind, int flags, int targetHint) implements 
     public static final StreamCodec<RegistryFriendlyByteBuf, MeleeInputPayload> CODEC = StreamCodec.of((buf, p) -> {
         buf.writeByte(p.kind); buf.writeByte(p.flags); buf.writeVarInt(p.targetHint + 1);
     }, buf -> new MeleeInputPayload(buf.readByte(), buf.readByte(), buf.readVarInt() - 1));
-    public static final int LIGHT = 0, HEAVY_START = 1, HEAVY_RELEASE = 2;
+    /** {@code TAP}: a press of the attack button inside a bind (progression.finish.Binds), counted there, never a swing. */
+    public static final int LIGHT = 0, HEAVY_START = 1, HEAVY_RELEASE = 2, TAP = 3;
     public static final int FLAG_JUMP = 1, FLAG_SPRINT = 2, FLAG_AIRBORNE = 4, FLAG_LOOK_DOWN = 8;
     @Override
     public Type<? extends CustomPacketPayload> type() {

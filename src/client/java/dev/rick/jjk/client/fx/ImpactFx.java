@@ -67,8 +67,85 @@ final class ImpactFx {
                     ClientFx.add(level, pos.add(side.scale(t * 0.3)), v.scale(s), Sprite.SMOKE, DUST, 0.5f, 0.25f * s, 0.6f * s, 12 + RNG.nextInt(6));
                 }
             }
+            case "impact_bind" -> {
+                // Two heavies meet: a flash where they lock, a spray of sparks, and the bind on the player's screen.
+                if (mine) dev.rick.jjk.client.finish.BindClient.start((int) Math.round(dir.x), dir.y);
+                Flashes.flash(pos, 0.2f, 1.4f, SPARK_HOT, 0.9f, 5, now);
+                Flashes.ring(pos, 0.3f, 2.2f, AIR, 0.5f, 7, now);
+                sparks(level, pos, 20, 0.35, drawn);
+            }
+            case "impact_bind_spark" -> {
+                // The blows grinding: sparks thrown off the contact (a tap's are brighter), the meter for the bind's HUD.
+                if (mine) dev.rick.jjk.client.finish.BindClient.meter((float) dir.x);
+                Flashes.flash(pos, 0.1f, 0.5f * s + 0.2f, SPARK_HOT, 0.8f, 3, now);
+                sparks(level, pos, Math.round(10 * s), 0.25 * s + 0.1, drawn);
+            }
+            case "impact_bind_end" -> {
+                if (mine) dev.rick.jjk.client.finish.BindClient.end(dir.x > 0.5);
+                Flashes.flash(pos, 0.3f, 1.8f, SPARK_HOT, 0.8f, 6, now);
+                sparks(level, pos, 26, 0.45, drawn);
+            }
+            case "impact_glint" -> glint(mc, pos, s, now);
+            case "impact_shatter" -> shatter(level, pos, dir, s, now, drawn);
+            case "impact_eyecatch" -> {
+                // A guardian's phase beat: dir.x the guardian, dir.y the beat's length (ms), dir.z the act.
+                if (mine) dev.rick.jjk.client.finish.EyecatchCamera.start((int) Math.round(dir.x), dir.y, (int) Math.round(dir.z));
+            }
+            case "impact_rescue" -> {
+                // A slash straight through the curse that was reaching for someone.
+                Vec3 d = dir.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : dir.normalize();
+                Vec3 side = new Vec3(-d.z, 0.35, d.x).normalize();
+                Vec3 a = pos.subtract(side.scale(1.8 * s)).subtract(d.scale(0.4)), b = pos.add(side.scale(1.8 * s)).add(d.scale(0.4));
+                Flashes.beam(a, b, 0.16f * s, AIR, 0.95f, 5, now);
+                Flashes.beam(a, b, 0.06f * s, SPARK_HOT, 1f, 7, now);
+                Flashes.darkBeam(a.add(0, -0.08, 0), b.add(0, -0.08, 0), 0.05f * s, CRACK, 0.8f, 9, now);
+                Flashes.flash(pos, 0.2f, 1.2f * s, AIR, 0.6f, 4, now);
+                sparks(level, pos, 14, 0.3, drawn);
+            }
             default -> {}
         }
+    }
+
+    private static final float[] SPARK_HOT = {1f, 0.78f, 0.35f}, GLINT = {1f, 0.96f, 0.82f}, SHARD = {0.82f, 0.9f, 1f};
+
+    /** Sparks flung out in every direction from {@code pos}, falling as they cool. */
+    private static void sparks(ClientLevel level, Vec3 pos, int n, double speed, boolean drawn) {
+        if (!drawn) return;
+        n = ClientFx.q(Math.max(1, n));
+        for (int i = 0; i < n; i++) {
+            Vec3 v = new Vec3(RNG.nextGaussian(), RNG.nextGaussian() * 0.6 + 0.4, RNG.nextGaussian()).normalize().scale(speed * (0.5 + RNG.nextDouble()));
+            ClientFx.add(level, pos, v, Sprite.SPARK, i % 4 == 0 ? AIR : SPARK_HOT, 0.95f, 0.08f, 0.02f, 6 + RNG.nextInt(8));
+        }
+    }
+
+    /** A blow's glint: a four-pointed star across the view where it will land, there and gone. */
+    private static void glint(Minecraft mc, Vec3 pos, float s, long now) {
+        var cam = mc.gameRenderer.mainCamera();
+        Vec3 left = new Vec3(cam.leftVector().x(), cam.leftVector().y(), cam.leftVector().z());
+        Vec3 up = new Vec3(cam.upVector().x(), cam.upVector().y(), cam.upVector().z());
+        float r = 1.5f * s;
+        Flashes.beam(pos.add(left.scale(r)), pos.subtract(left.scale(r)), 0.11f * s, GLINT, 1f, 6, now);
+        Flashes.beam(pos.add(up.scale(r * 0.8)), pos.subtract(up.scale(r * 0.8)), 0.11f * s, GLINT, 1f, 6, now);
+        Flashes.ring(pos, 0.2f, 1.1f * s, GLINT, 0.7f, 6, now);
+        Vec3 d1 = left.add(up).normalize().scale(r * 0.35), d2 = left.subtract(up).normalize().scale(r * 0.35);
+        Flashes.beam(pos.add(d1), pos.subtract(d1), 0.04f * s, GLINT, 0.8f, 4, now);
+        Flashes.beam(pos.add(d2), pos.subtract(d2), 0.04f * s, GLINT, 0.8f, 4, now);
+        Flashes.flash(pos, 0.15f, 0.8f * s, GLINT, 1f, 5, now);
+    }
+
+    /** A posture shattering: shards of light flung out, a ring, a white flash. */
+    private static void shatter(ClientLevel level, Vec3 pos, Vec3 dir, float s, long now, boolean drawn) {
+        Flashes.flash(pos, 0.3f, 2.4f * s, AIR, 0.9f, 6, now);
+        Flashes.ring(pos, 0.5f, 3.4f * s, SHARD, 0.7f, 9, now);
+        Vec3 d = dir.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : dir.normalize();
+        Flashes.ripple(pos, d, 0.4f, 2.6f * s, AIR, 0.5f, 8, now);
+        if (!drawn) return;
+        int n = ClientFx.q(Math.round(34 * s));
+        for (int i = 0; i < n; i++) {
+            Vec3 v = new Vec3(RNG.nextGaussian(), RNG.nextGaussian() * 0.7 + 0.3, RNG.nextGaussian()).normalize().scale(0.18 + RNG.nextDouble() * 0.32).add(d.scale(0.12));
+            ClientFx.add(level, pos, v.scale(s), Sprite.SHARD, i % 3 == 0 ? AIR : SHARD, 0.95f, 0.22f * s, 0.06f, 14 + RNG.nextInt(10));
+        }
+        sparks(level, pos, Math.round(16 * s), 0.4 * s, true);
     }
 
     /** Fissures: a few main cracks out from the point, each a jagged chain that forks once or twice. */

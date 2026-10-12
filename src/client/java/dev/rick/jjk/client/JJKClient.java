@@ -97,6 +97,7 @@ public class JJKClient implements ClientModInitializer {
         // Every custom HUD layer is skipped in Vanilla Minecraft mode.
         // Character training: its own gauges in the lower middle; the HUD it doesn't need stands down meanwhile.
         HudElementRegistry.addLast(JJK.id("training_hud"), (g, delta) -> dev.rick.jjk.client.training.TrainingHud.render(g));
+        HudElementRegistry.addLast(JJK.id("bind_hud"), (g, delta) -> dev.rick.jjk.client.finish.BindClient.render(g));
         registerCameras();
         for (var id : java.util.List.of(net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HOTBAR,
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HEALTH_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.FOOD_BAR,
@@ -340,6 +341,8 @@ public class JJKClient implements ClientModInitializer {
         dev.rick.jjk.client.training.TrainingCamera.tick(mc);
         dev.rick.jjk.client.training.ContestCamera.tick(mc);
         dev.rick.jjk.client.finish.FinisherCamera.tick(mc);
+        dev.rick.jjk.client.finish.BindClient.tick(mc);
+        dev.rick.jjk.client.finish.EyecatchCamera.tick(mc);
         dev.rick.jjk.client.camera.CameraDirector.tick(mc);
         dev.rick.jjk.client.prison.PrisonClient.tick(mc);
         InputHandler.tick(mc);
@@ -434,12 +437,16 @@ public class JJKClient implements ClientModInitializer {
                 return dev.rick.jjk.client.training.ContestCamera.fov();
             }
         });
+        dev.rick.jjk.client.camera.CameraDirector.register("bind", 440, last(dev.rick.jjk.client.finish.BindClient::apply));
         dev.rick.jjk.client.camera.CameraDirector.register("finisher", 450, last(dev.rick.jjk.client.finish.FinisherCamera::apply));
+        dev.rick.jjk.client.camera.CameraDirector.register("eyecatch", 455, last(dev.rick.jjk.client.finish.EyecatchCamera::apply));
         dev.rick.jjk.client.camera.CameraDirector.register("training", 500, last(dev.rick.jjk.client.training.TrainingCamera::apply));
         dev.rick.jjk.client.camera.CameraDirector.register("prison_view", 600, last((pos, yaw, pitch) -> dev.rick.jjk.client.prison.PrisonClient.apply(yaw, pitch)));
         dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.training.ContestCamera::active);
         dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.training.TrainingCamera::active);
         dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.finish.FinisherCamera::active);
+        dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.finish.BindClient::camera);
+        dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.finish.EyecatchCamera::active);
     }
 
     /** A stage that owns the view outright while it is in use. */

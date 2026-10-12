@@ -17,7 +17,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  * </ul>
  */
 public record StoryPayload(int kind, String title, String subtitle, int color, int ticks) implements CustomPacketPayload {
-    public static final int CARD = 0, BLIND = 1, SIX_EYES = 2, FILM = 3, METER = 4;
+    /** {@code CARD_LOW}: a title card in the lower third, leaving the middle of the frame clear (a phase beat's eyecatch). */
+    public static final int CARD = 0, BLIND = 1, SIX_EYES = 2, FILM = 3, METER = 4, CARD_LOW = 5;
 
     public static final Type<StoryPayload> TYPE = new Type<>(JJK.id("story"));
     public static final StreamCodec<RegistryFriendlyByteBuf, StoryPayload> CODEC = StreamCodec.of((buf, p) -> {

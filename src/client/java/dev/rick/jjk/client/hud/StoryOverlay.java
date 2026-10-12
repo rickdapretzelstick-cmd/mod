@@ -23,6 +23,8 @@ public final class StoryOverlay {
     private static int cardTicks;
     private static String cardTitle = "", cardSub = "";
     private static int cardColor = 0xFFFFFFFF;
+    /** The card sits in the lower third (a phase beat's: the guardian stays in view above it). */
+    private static boolean cardLow;
 
     private static boolean blind;
     private static long blindStart = -1;
@@ -44,7 +46,8 @@ public final class StoryOverlay {
         if (mc.level == null) return;
         long now = mc.level.getGameTime();
         switch (p.kind()) {
-            case StoryPayload.CARD -> {
+            case StoryPayload.CARD, StoryPayload.CARD_LOW -> {
+                cardLow = p.kind() == StoryPayload.CARD_LOW;
                 cardStart = now;
                 cardTicks = Math.max(10, p.ticks());
                 cardTitle = p.title();
@@ -106,21 +109,22 @@ public final class StoryOverlay {
         }
         float in = Mth.clamp(t / 4f, 0, 1), out = Mth.clamp((cardTicks - t) / 10f, 0, 1);
         float a = Math.min(in, out);
+        int cy = cardLow ? Math.round(h * 0.78f) : h / 2;
         int alpha = Mth.clamp(Math.round(a * 255), 0, 255);
         if (alpha < 8) return;
         // A dark band behind it, like a cut-in.
         int band = Math.round(28 + 10 * in);
-        g.fill(0, h / 2 - band, w, h / 2 + band, Math.round(alpha * 0.55f) << 24);
-        g.fill(0, h / 2 - band, w, h / 2 - band + 1, (alpha << 24) | (cardColor & 0xFFFFFF));
-        g.fill(0, h / 2 + band - 1, w, h / 2 + band, (alpha << 24) | (cardColor & 0xFFFFFF));
+        g.fill(0, cy - band, w, cy + band, Math.round(alpha * 0.55f) << 24);
+        g.fill(0, cy - band, w, cy - band + 1, (alpha << 24) | (cardColor & 0xFFFFFF));
+        g.fill(0, cy + band - 1, w, cy + band, (alpha << 24) | (cardColor & 0xFFFFFF));
         var pose = g.pose();
         pose.pushMatrix();
-        pose.translate(w / 2f, h / 2f - 12);
+        pose.translate(w / 2f, cy - 12f);
         float scale = 3.2f + 1.4f * (1 - in) + 0.05f * Mth.sin(t * 0.4f);
         pose.scale(scale, scale);
         g.centeredText(font, cardTitle, 0, -4, (alpha << 24) | (cardColor & 0xFFFFFF));
         pose.popMatrix();
-        if (!cardSub.isEmpty()) g.centeredText(font, cardSub, w / 2, h / 2 + 12, (alpha << 24) | 0xE8E8F0);
+        if (!cardSub.isEmpty()) g.centeredText(font, cardSub, w / 2, cy + 12, (alpha << 24) | 0xE8E8F0);
     }
 
     // --- The Infused Blindfold: darkness with a violet breath at the edges ---

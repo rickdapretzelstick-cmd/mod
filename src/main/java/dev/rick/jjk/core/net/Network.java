@@ -83,6 +83,10 @@ public final class Network {
                 dev.rick.jjk.progression.tool.kit.CursedKits.setCombatMode(ctx.player(), p.on()));
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
+            if (p.kind() == MeleeInputPayload.TAP) {
+                dev.rick.jjk.progression.finish.Binds.tap(player);
+                return;
+            }
             AbilityCaster caster = Casters.armed(player);
             if (caster == null) return;
             MeleeSystem.handleInput(player, caster, p.kind(), p.flags(), p.targetHint());

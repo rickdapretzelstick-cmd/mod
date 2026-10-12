@@ -76,7 +76,11 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     public static final int FLAG_EXPOSED = 1, FLAG_WINDUP = 2, FLAG_FROZEN = 4, FLAG_ENRAGED = 8, FLAG_STAGGERED = 16, FLAG_DORMANT = 32;
     /** The shared stagger action (no kind uses this id for its own). */
     public static final int STAGGERED = 100;
+    /** The shared parry-chain string (progression.finish.ParryChains): a run of blows, each flagged with a glint first. */
+    public static final int CHAIN = 101;
     public static final int STAGGER_TICKS = 34, POISE_REGEN_DELAY = 50;
+    /** A string's first blow lands this long after it starts; each blow's glint shows this long before it lands. */
+    public static final int CHAIN_LEAD = 16, CHAIN_GLINT = 9;
     /** How many curses may commit to attacking one target at the same moment. */
     public static final int MAX_ATTACKERS = 2;
     public static final float EXPOSED_TAKEN = 1.5f;
@@ -123,6 +127,15 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     private int chaseStuck;
     /** Ticks until it may attack, after being brought back into the fight. */
     private int returnDelay;
+    /** How long the stagger under way lasts (a broken posture reels longer than a plain stagger). */
+    private int staggerFor = STAGGER_TICKS;
+    /** When it was last winding up (a heavy meeting that wind-up is a bind: progression.finish.Binds). */
+    private int lastWindupAt = -1000;
+    /** The parry-chain string under way: its blows, the gap between them, how many were parried, and at whom. */
+    private int chainBlows, chainGap, chainParried;
+    @Nullable private UUID chainTarget;
+    /** Ticks it is held, untouchable, for a phase beat (progression.finish.GuardianPhases). */
+    private int beatTicks;
 
     protected CommonCurseEntity(EntityType<? extends CommonCurseEntity> type, Level level, CurseGrade grade) {
         super(type, level);
@@ -266,7 +279,7 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         if (level().isClientSide()) return entityData.get(FLAGS);
         int f = 0;
         if (exposedTicks > 0) f |= FLAG_EXPOSED;
-        if (action != 0 && windingUp(action)) f |= FLAG_WINDUP;
+        if (action != 0 && (windingUp(action) || action == CHAIN)) f |= FLAG_WINDUP;
         if (freezeTicks > 0) f |= FLAG_FROZEN;
         if (enraged()) f |= FLAG_ENRAGED;
         if (action == STAGGERED) f |= FLAG_STAGGERED;
@@ -401,6 +414,7 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
 
     /** Breaks off whatever it was doing and reels for {@link #STAGGER_TICKS}, wide open. */
     protected void stagger(ServerLevel level, @Nullable Entity by) {
+        staggerFor = STAGGER_TICKS;
         action = STAGGERED;
         actionTicks = 0;
         struck.clear();
@@ -420,6 +434,120 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
     /** Staggered from outside (a counter after a perfect dodge: progression.finish.Finishers). */
     public void staggerBy(ServerLevel level, @Nullable Entity by) {
         if (isAlive()) stagger(level, by);
+    }
+
+    /** Its posture broken (a whole parry chain parried): it reels, wide open, for {@code ticks}. */
+    public void postureBreak(ServerLevel level, @Nullable Entity by, int ticks) {
+        if (!isAlive()) return;
+        stagger(level, by);
+        staggerFor = Math.max(STAGGER_TICKS, ticks);
+        expose(level, staggerFor);
+    }
+
+    /** Tests: as if it were winding up its own heavy right now. */
+    public void markWoundUpForTest() {
+        lastWindupAt = tickCount;
+    }
+
+    /** Tests: ticks into the action under way. */
+    public int actionTicksForTest() {
+        return actionTicks;
+    }
+
+    /** Whether it was winding up within the last {@code ticks} (the moment a heavy can meet its own). */
+    public boolean woundUpWithin(int ticks) {
+        return tickCount - lastWindupAt <= ticks;
+    }
+
+    // --- Parry chains (progression.finish.ParryChains) ---
+
+    /**
+     * Starts a string of {@code blows} blows at {@code target}, one every {@code gap} ticks from {@link #CHAIN_LEAD}, each
+     * one flagged with a glint {@link #CHAIN_GLINT} before it lands. False if it is busy.
+     */
+    public boolean beginChain(LivingEntity target, int blows, int gap) {
+        if (!readyToGrab() || !isAlive()) return false;
+        begin(CHAIN, null);
+        chainBlows = Math.max(1, blows);
+        chainGap = Math.max(CHAIN_GLINT + 2, gap);
+        chainParried = 0;
+        chainTarget = target.getUUID();
+        return true;
+    }
+
+    public boolean chaining() {
+        return action == CHAIN;
+    }
+
+    public int chainBlows() {
+        return chainBlows;
+    }
+
+    public int chainParried() {
+        return chainParried;
+    }
+
+    /** When the {@code i}-th blow (from 0) of the string under way lands, in its ticks. */
+    public int chainBlowAt(int i) {
+        return CHAIN_LEAD + i * chainGap;
+    }
+
+    /** The string's {@code i}-th blow's clip (without the kind's prefix), or null for none: kinds give their own. */
+    @Nullable
+    protected String chainClip(int i) {
+        return null;
+    }
+
+    private void tickChain(ServerLevel level) {
+        Entity e = chainTarget == null ? null : level.getEntity(chainTarget);
+        if (!(e instanceof LivingEntity t) || !t.isAlive() || t.level() != level) {
+            finishAction(20);
+            return;
+        }
+        turnToward(t.position(), 30f);
+        getNavigation().stop();
+        double reach = 1.4 + getBbWidth() * 0.5 + t.getBbWidth() * 0.5;
+        Vec3 to = flatDir(t.position());
+        if (distanceTo(t) > reach) setDeltaMovement(to.x * 0.28, getDeltaMovement().y, to.z * 0.28);
+        else setDeltaMovement(getDeltaMovement().multiply(0.4, 1, 0.4));
+        for (int i = 0; i < chainBlows; i++) {
+            int at = chainBlowAt(i);
+            if (actionTicks == at - CHAIN_GLINT) dev.rick.jjk.progression.finish.ParryChains.glint(level, this, t, i);
+            if (actionTicks == at) {
+                String clip = chainClip(i);
+                if (clip != null) Anim.playOn(this, clipPrefix() + "_" + clip);
+                struck.clear();
+                Vec3 from = position().add(0, getBbHeight() * 0.6, 0).add(to.scale(getBbWidth() * 0.5));
+                HitResult r = strike(t, Hit.builder(this, "chain_blow").damage(dmg(0.55f)).tag(dev.rick.jjk.core.combat.AttackTag.MELEE)
+                        .knockback(dev.rick.jjk.core.combat.Knockback.directional(to, 0.25, 0.1)).hitstun(8).origin(from));
+                boolean parried = r != null && r.outcome() == HitResult.Outcome.PARRIED;
+                if (parried) {
+                    chainParried++;
+                    // A parry inside a string doesn't stun it: the string goes on, and the next blow comes.
+                    dev.rick.jjk.core.combat.Statuses.remove(this, CombatStatus.GUARD_BROKEN);
+                    setDeltaMovement(Vec3.ZERO);
+                }
+                dev.rick.jjk.progression.finish.ParryChains.blow(level, this, t, i, parried);
+            }
+        }
+        if (actionTicks >= chainBlowAt(chainBlows - 1) + 10) {
+            boolean all = chainParried >= chainBlows;
+            finishAction(all ? 0 : 30);
+            dev.rick.jjk.progression.finish.ParryChains.ended(level, this, t, all);
+        }
+    }
+
+    // --- Phase beats (progression.finish.GuardianPhases) ---
+
+    /** Holds it, untouchable and still, for a phase beat of {@code ticks} (whatever it was doing is dropped). */
+    public void holdForBeat(int ticks) {
+        returnedToFight(ticks + 10);
+        beatTicks = Math.max(beatTicks, ticks);
+        holdForContest(ticks);
+    }
+
+    public boolean inBeat() {
+        return beatTicks > 0;
     }
 
     // --- Strength contests (progression.contest.StrengthContests) ---
@@ -484,6 +612,8 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
             return;
         }
         if (exposedTicks > 0) exposedTicks--;
+        if (beatTicks > 0) beatTicks--;
+        if (action != 0 && windingUp(action)) lastWindupAt = tickCount;
         if (++sinceHit > POISE_REGEN_DELAY && poise >= 0 && poise < maxPoise()) poise = Math.min(maxPoise(), poise + maxPoise() / 40f);
         if (contestHold > 0) {
             // Locked in a strength contest (or its telegraph): nothing else happens.
@@ -507,10 +637,14 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
         if (action == STAGGERED) {
             actionTicks++;
             setDeltaMovement(getDeltaMovement().multiply(0.7, 1, 0.7));
-            if (actionTicks >= STAGGER_TICKS) {
+            if (actionTicks >= staggerFor) {
+                staggerFor = STAGGER_TICKS;
                 finishAction(12);
                 staggerImmune = tuning().staggerImmunityTicks;
             }
+        } else if (action == CHAIN) {
+            actionTicks++;
+            tickChain(level);
         } else if (action != 0) {
             actionTicks++;
             tickAction(level, target);
@@ -727,7 +861,7 @@ public abstract class CommonCurseEntity extends Monster implements GradedCurse {
 
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
-        if (dormant && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) return false;
+        if ((dormant || beatTicks > 0) && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) return false;
         boolean open = exposedTicks > 0;
         float dealt = open ? damage * exposedTaken() : damage;
         float before = getHealth();

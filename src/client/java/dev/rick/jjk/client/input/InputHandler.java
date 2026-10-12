@@ -201,6 +201,12 @@ public final class InputHandler {
     public static void onAttackPressed() {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
+        if (p != null && dev.rick.jjk.client.finish.BindClient.active()) {
+            // In a bind every press is a tap, counted by the server (never a swing).
+            ClientPlayNetworking.send(new MeleeInputPayload(MeleeInputPayload.TAP, 0, -1));
+            dev.rick.jjk.client.finish.BindClient.tapped();
+            return;
+        }
         if (p == null || Combat.actionsLocked(p)) return;
         ClientPlayNetworking.send(new MeleeInputPayload(MeleeInputPayload.LIGHT, flags(mc, p), targetHint(p, 5)));
         attackHeld = true;

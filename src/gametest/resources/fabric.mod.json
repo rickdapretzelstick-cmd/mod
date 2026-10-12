@@ -41,9 +41,11 @@
       "dev.rick.jjk.test.NewsHouseTests",
       "dev.rick.jjk.test.SiteTests",
       "dev.rick.jjk.test.BladeTests",
-      "dev.rick.jjk.test.EncounterTests"
+      "dev.rick.jjk.test.EncounterTests",
+      "dev.rick.jjk.test.Phase4Tests"
     ],
     "fabric-client-gametest": [
+      "dev.rick.jjk.test.Phase4ClientTest",
       "dev.rick.jjk.test.SiteGalleryClientTest",
       "dev.rick.jjk.test.TrainingClientTest",
       "dev.rick.jjk.test.AnimFrameworkClientTest",
