@@ -72,6 +72,9 @@ public class NewCurseTests {
 
     private static <T extends CommonCurseEntity> T curse(GameTestHelper h, EntityType<T> type, double x, double z) {
         T c = type.create(h.getLevel(), EntitySpawnReason.MOB_SUMMONED);
+        // An unbound curse despawns like any monster when the nearest player is over 128 blocks off: another test's
+        // player, wherever it is, would take a player-less test's curses away on their first tick.
+        c.setPersistenceRequired();
         Vec3 at = h.absoluteVec(new Vec3(x, 1, z));
         c.snapTo(at.x, at.y, at.z, 0f, 0f);
         h.getLevel().addFreshEntity(c);

@@ -67,6 +67,11 @@ public class WorldRestorationTests {
         return h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(h.absolutePos(BlockPos.ZERO)).inflate(12), e -> true);
     }
 
+    /** What lies about, and where (relative to the test), for a failure message. */
+    private static String dropped(GameTestHelper h) {
+        return items(h).stream().map(e -> e.getItem() + " at " + h.relativeVec(e.position())).toList().toString();
+    }
+
     /** Records every block in the test area so the whole scene can be compared after restoration. */
     private static Map<BlockPos, BlockState> snapshot(GameTestHelper h) {
         Map<BlockPos, BlockState> m = new HashMap<>();
@@ -105,7 +110,7 @@ public class WorldRestorationTests {
                 .thenIdle(15)
                 .thenExecute(() -> {
                     h.assertTrue(h.getBlockState(new BlockPos(5, 1, 5)).is(Blocks.MOSSY_COBBLESTONE), "B back on its own timer");
-                    h.assertTrue(items(h).isEmpty(), "no drops");
+                    h.assertTrue(items(h).isEmpty(), "no drops: " + dropped(h));
                 })
                 .thenSucceed();
     }
