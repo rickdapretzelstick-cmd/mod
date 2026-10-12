@@ -58,11 +58,9 @@ public abstract class TrainingScene {
         Vec3 spot = plan != null ? plan.marker("player") : null;
         this.at = spot != null ? room(spot) : Vec3.atBottomCenterOf(origin);
         if (plan != null) {
-            for (TrialRooms.Prop pr : plan.props()) {
-                TrialPropEntity e = TrialPropEntity.create(realm, pr.model(), pr.kind(), room(Vec3.ZERO));
-                realm.addFreshEntity(e);
+            for (TrialPropEntity e : TrialRooms.spawnProps(realm, origin, plan)) {
                 owned.add(e);
-                props.put(pr.model(), e);
+                props.put(e.model(), e);
             }
         }
         build();

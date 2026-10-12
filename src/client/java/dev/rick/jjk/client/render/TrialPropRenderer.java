@@ -49,7 +49,11 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
     public static final Identifier ATLAS = JJK.id("textures/entity/trial_atlas.png");
     public static final Identifier STATIC = JJK.id("textures/entity/trial_crt_static.png");
     public static final Identifier SYMBOLS = JJK.id("textures/entity/trial_reel_symbols.png");
+    /** The cursed realm rooms' atlas (the trial atlas plus earth, soil and ash). */
+    public static final Identifier REALM_ATLAS = JJK.id("textures/entity/realm_atlas.png");
     private static final RenderType SOLID = RenderTypes.entityCutoutCull(ATLAS);
+    private static final RenderType REALM_SOLID = RenderTypes.entityCutoutCull(REALM_ATLAS);
+    private static final RenderType RIKA = RenderTypes.entityCutout(RikaRenderer.TEXTURE);
     private static final RenderType SCREEN = RenderTypes.entityCutout(STATIC);
     private static final RenderType REEL = RenderTypes.entityCutout(SYMBOLS);
     private static final int FULL_BRIGHT = 0xF000F0;
@@ -63,6 +67,9 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
         float param, time;
         int[] lights = new int[0];
         int id;
+        float yaw;
+        boolean realm;
+        @Nullable dev.rick.jjk.client.anim.PoseFrame pose;
         /** Per reel: ticks since it locked (for the settle), and since its result changed (for the flash). */
         float[] settle = new float[3], flash = new float[3];
     }
@@ -84,6 +91,10 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
 
     @Override
     protected AABB getBoundingBoxForCulling(TrialPropEntity e, float partial) {
+        if (e.kind() == TrialPropEntity.RIKA) {
+            float k = Math.max(1, e.param());
+            return new AABB(-1.6 * k, -0.2, -1.6 * k, 1.6 * k, 4 * k, 1.6 * k).move(e.getX(), e.getY(), e.getZ());
+        }
         Mesh m = Mesh.of(e.model());
         if (m == null) return super.getBoundingBoxForCulling(e, partial);
         return new AABB(m.min[0], m.min[1], m.min[2], m.max[0], m.max[1], m.max[2]).move(e.getX(), e.getY(), e.getZ());
@@ -92,8 +103,19 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
     @Override
     public void extractRenderState(TrialPropEntity e, State s, float partial) {
         super.extractRenderState(e, s, partial);
-        s.mesh = Mesh.of(e.model());
         s.kind = e.kind();
+        s.yaw = e.getYRot();
+        s.realm = e.model().startsWith("realm_");
+        if (s.kind == TrialPropEntity.RIKA) {
+            // Rika's own idle clip on this display, as her renderer runs it on her.
+            float now = e.level().getGameTime() + partial;
+            RikaRenderer.ensureIdle(e.getId(), now);
+            s.pose = dev.rick.jjk.client.anim.ClientAnimations.computeModel(e, now);
+            s.param = e.param();
+            s.mesh = null;
+            return;
+        }
+        s.mesh = Mesh.of(e.model());
         s.state = e.state();
         s.flags = e.has(TrialPropEntity.HIDDEN) ? TrialPropEntity.HIDDEN : 0;
         s.param = e.param();
@@ -134,6 +156,11 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
 
     @Override
     public void submit(State s, PoseStack ps, SubmitNodeCollector c, CameraRenderState cam) {
+        if (s.kind == TrialPropEntity.RIKA) {
+            rika(s, ps, c);
+            super.submit(s, ps, c, cam);
+            return;
+        }
         Mesh m = s.mesh;
         if (m == null || (s.flags & TrialPropEntity.HIDDEN) != 0) return;
         if (s.kind == TrialPropEntity.BLUE && s.param < 0.02f) return;
@@ -163,13 +190,32 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
             final int color = argb;
             final int[] lit = lights;
             final int fixed = glow ? FULL_BRIGHT : -1;
-            c.submitCustomGeometry(ps, SOLID, (pose, buf) -> part.emit(pose, buf, lit, fixed, color));
+            c.submitCustomGeometry(ps, s.realm ? REALM_SOLID : SOLID, (pose, buf) -> part.emit(pose, buf, lit, fixed, color));
             ps.popPose();
         }
         if (s.kind == TrialPropEntity.CRT) for (float[] r : m.rects) screen(s, ps, c, r);
         if (s.kind == TrialPropEntity.REELS) reelWindows(s, ps, c, m.rects);
         ps.popPose();
         super.submit(s, ps, c, cam);
+    }
+
+    // ---------------------------------------------------------------- Rika
+
+    /**
+     * The mod's own Rika (her model, texture and idle clip, as {@link RikaRenderer} draws her fully manifested), at the
+     * room's presentation scale and facing: a presence on a terrace, not an entity of hers.
+     */
+    private static void rika(State s, PoseStack ps, SubmitNodeCollector c) {
+        BbModel model = BbModels.get("rika");
+        if (model == null) return;
+        ps.pushPose();
+        ps.rotate(Axis.YP.rotationDegrees(180f - s.yaw));
+        float k = RikaRenderer.SCALE * Math.max(0.1f, s.param);
+        ps.scale(k, k, k);
+        BbModel.Posing pose = RikaRenderer.posing(s.pose);
+        int light = s.lightCoords;
+        c.submitCustomGeometry(ps, RIKA, (p, buf) -> model.render(p, buf, pose, light, 0xFFFFFFFF));
+        ps.popPose();
     }
 
     // ---------------------------------------------------------------- the CRT

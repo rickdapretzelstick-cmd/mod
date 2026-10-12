@@ -11,13 +11,24 @@ import net.minecraft.world.phys.Vec3;
 import java.util.List;
 
 /**
- * The one arena every Grade 1 guardian is fought in: a round, flat floor about twenty-three blocks across (readable
+ * The original Grade 1 guardian arena (now the fallback, and the shape every body's arena keeps at its centre: see
+ * {@link RealmRooms}): a round, flat floor about twenty-three blocks across (readable
  * footing, nothing to trip on or hide behind), ringed by a sheer wall too tall to climb, with no ledge anywhere to stand
  * on out of reach. Dim cracked stone, faint soul light set into the wall. The challenger arrives at one end facing the
  * guardian at the other. Blocks can't be placed inside it ({@link Investigations}): the fight is the fight.
  */
 public final class GuardianArena implements CursedRealms.Layout {
     public static final String ID = "guardian_arena";
+
+    /** The arena of one guardian body (the Cursed Realm pack's: {@link RealmRooms}). */
+    public static String idFor(String body) {
+        return ID + "_" + body;
+    }
+
+    /** Whether a layout is a guardian's arena (this round one, or a body's own). */
+    public static boolean is(String layout) {
+        return layout.equals(ID) || layout.startsWith(ID + "_");
+    }
     static final int R = 11, WALL = 7;
     /** The floor's radius (what the guardian's phase beats change: progression.finish.GuardianPhases). */
     public static final int RADIUS = R;

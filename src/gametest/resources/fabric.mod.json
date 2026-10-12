@@ -43,7 +43,8 @@
       "dev.rick.jjk.test.BladeTests",
       "dev.rick.jjk.test.EncounterTests",
       "dev.rick.jjk.test.Phase4Tests",
-      "dev.rick.jjk.test.GuardianBodyTests"
+      "dev.rick.jjk.test.GuardianBodyTests",
+      "dev.rick.jjk.test.RealmRoomTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.Phase4ClientTest",
@@ -72,7 +73,8 @@
       "dev.rick.jjk.test.CameraShotsClientTest",
       "dev.rick.jjk.test.ImpactKitClientTest",
       "dev.rick.jjk.test.GrappleClientTest",
-      "dev.rick.jjk.test.FinisherClientTest"
+      "dev.rick.jjk.test.FinisherClientTest",
+      "dev.rick.jjk.test.RealmRoomClientTest"
     ]
   },
   "depends": {

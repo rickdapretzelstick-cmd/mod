@@ -105,7 +105,7 @@ public final class Investigations {
             if (!(player instanceof ServerPlayer sp) || !(player.getItemInHand(hand).getItem() instanceof net.minecraft.world.item.BlockItem)) return net.minecraft.world.InteractionResult.PASS;
             if (!CursedRealms.inRealm(sp)) return net.minecraft.world.InteractionResult.PASS;
             InvestigationState.Arena a = CursedRealms.arenaAtPos(sp.level().getServer(), sp.position());
-            if (a != null && GuardianArena.ID.equals(a.layout)) {
+            if (a != null && GuardianArena.is(a.layout)) {
                 sp.sendOverlayMessage(Component.literal("Nothing you build here would hold.").withStyle(net.minecraft.ChatFormatting.GRAY));
                 return net.minecraft.world.InteractionResult.FAIL;
             }

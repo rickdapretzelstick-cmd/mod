@@ -29,6 +29,8 @@ import net.minecraft.world.phys.Vec3;
  */
 public class TrialPropEntity extends Entity {
     public static final int STATIC = 0, CRT = 1, BLUE = 2, REELS = 3, GLOW = 4, TARGET = 5;
+    /** The mod's own Rika, shown as a presence (her model and idle clip; no entity of hers, no owner, no AI); param: scale. */
+    public static final int RIKA = 6;
     /** Flags: hidden (the target's face, shattered). */
     public static final int HIDDEN = 1;
 
@@ -53,6 +55,7 @@ public class TrialPropEntity extends Entity {
             case "reels" -> REELS;
             case "glow" -> GLOW;
             case "target" -> TARGET;
+            case "rika" -> RIKA;
             default -> STATIC;
         };
     }

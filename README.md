@@ -764,6 +764,36 @@ editing the outputs. Seen only through Cursed Glasses, like the Finger Bearer, a
   and flickers are never back to back (a cooldown between gap closers, shortened only a little by aggression). In a
   realm fight its health scales with the players in it: +30% for each one after the first, at most x1.9.
 
+### The cursed realm environments
+
+Breaches lead into environments from the Cursed Realm Blockbench pack (`tools/install_realm_rooms.py`, plans in
+`data/jjk/realm_rooms/`). Each is matched to the realm destination it was made for:
+
+| Environment | Destination | Reached by |
+|---|---|---|
+| Fractured Infinity (Gojo) | `distance_realm` | Gojo's storyline events (only with `progression.villageStorylines` on) |
+| The Last Screening (Yuji) | `theater_realm` | Yuji's storyline events (storylines on) |
+| Courtyard of the Unbroken Promise (Yuta) | `chapel_realm` | the chapel incidents (Drowned Chapel, Jilted Bride) and Yuta's storyline events |
+| The Shattered Impact Basin (Ryu) | `crater_realm` | Stalker Crater and Ryu's storyline events |
+| The House Always Fights (Hakari) | `fight_club_realm` | Hakari's storyline events (storylines on) |
+| The Watching Woods (cursed rifle) | `forest_realm` | the Hunting Lodge incident (the rifle's own entry and reward, unchanged) |
+| The Ribbed Hollow | a claw hunter contract's arena | Grade 1 contracts: the contract's one guardian picks its arena |
+| The Silent Courtyard | a pale stalker contract's arena | 〃 |
+| The Sunken Quarry | a cyclops bruiser contract's arena | 〃 |
+| The Hanging Sanctuary | a veiled reacher contract's arena | 〃 |
+
+No storyline is switched on by this; the character environments are used wherever their destination is reached. Active
+destinations the pack has no environment for keep their own: the cliff, mine, house and pasture realms, the plain
+hollow realm, and the Finger Bearer's battle-room realm.
+
+Each environment is closed in and lit evenly, with its own light colour over the realm's crimson. Walkable terraces,
+tiers, stairs and platforms are real ground for curses and players. Curses wait on open ground round the encounter's
+centre. A guardian stands at its arena's spawn, and its phase beats raise their pillars on open floor round the fight's
+centre. In the courtyard, the mod's own Rika stands on the rear terrace the pack left empty for her. She is drawn from
+her own model and idle clip at 1.8 times her size, which fits the space the pack reserved; she is not a Rika of anyone's
+and has no AI. Room props are never saved: an arena that outlives a restart gets them back, and closing it clears
+everything.
+
 ### The places the mod builds don't break
 
 Every cursed realm arena (incident realms, guardian arenas, battle-room realms and the training rooms), an incident's
