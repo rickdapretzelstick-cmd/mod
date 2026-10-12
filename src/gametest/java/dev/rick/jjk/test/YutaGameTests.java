@@ -85,6 +85,7 @@ public class YutaGameTests {
     private static void floor(GameTestHelper h, int size) {
         applyConfig();
         for (int x = -2; x < size; x++) for (int z = -2; z < size; z++) h.setBlock(x, 0, z, Blocks.STONE);
+        TestArea.keepTicking(h, -2 - 4, -2 - 4, size + 4, size + 4);
     }
 
     private static TrainingDummy dummy(GameTestHelper h, double x, double z) {

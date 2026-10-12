@@ -55,6 +55,7 @@ public class NewCurseTests {
         JJKConfig.get().general.autoAssignGojo = false;
         JJKConfig.get().progression.enabled = true;
         for (int x = 0; x < 9; x++) for (int z = 0; z < 9; z++) h.setBlock(x, 0, z, Blocks.STONE);
+        TestArea.keepTicking(h, -4, -4, 13, 13);
     }
 
     private static ServerPlayer survivor(GameTestHelper h, double x, double z) {
