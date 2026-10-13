@@ -454,6 +454,9 @@ def agreement(fit, v, i, J, cam):
         return torch.cat(out)
 
 
+# Corner indices (x, y, z picks as in CORNERS: index = 4 xi + 2 yi + zi) of a box's two end caps along its long axis.
+CAP_FAR = {2, 3, 6, 7}   # local y max: a limb's hand / foot end, the torso's hip end
+CAP_NEAR = {0, 1, 4, 5}  # local y min: the joint end, the torso's shoulder end
 SEEK_OVERLAP = 0.5  # a box over another part's colour (one part in front of another): half credit, not a fault
 
 
@@ -462,8 +465,9 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
     - colour: every box seeks its own colour: full credit on it, half where it covers another part's colour (parts
       overlap), none on floor; shading is not judged (any shade of the right colour counts); and every body-coloured
       pixel should be under some box of that colour;
-    - edges (the steadfast rule, weighted 5:1 over colour): every straight edge of the footage with a body colour
-      along it must be covered by the outline of a box of that colour.
+    - edges (the steadfast rule): every straight edge of the footage with a body colour along it must be covered by
+      the outline of a box of that colour, and every box's end must meet such an edge;
+    weighted side edges 5, ends 1, colour 1.
     Batched over J (B, joints), cam (B, 5)."""
     view = fit.views[v]
     pix, obs_t, _, scale = view.windows[i]
@@ -486,6 +490,7 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
         seek_num = seek_den = 0.0
         covered = np.zeros_like(body)
         outlines = []  # (class, a, b) of every box outline edge, window px
+        ends = []  # (class, a, b, centre) of every outline edge belonging to a box's end cap
         for j, cls in parts:
             pts = (uv[b, j] - (x0, y0)) / scale
             hull = cv2.convexHull(pts.astype(np.float32)).reshape(-1, 2)
@@ -503,6 +508,12 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
             for a_, b_ in zip(hull, np.roll(hull, -1, 0)):
                 if np.hypot(*(b_ - a_)) >= 2:
                     outlines.append((cls, a_, b_, centre))
+            # End caps, both ends of every box (hand/foot end and shoulder/hip end).
+            hidx = cv2.convexHull(pts.astype(np.float32), returnPoints=False).reshape(-1)
+            for ci, cap in enumerate((CAP_FAR, CAP_NEAR)):
+                for ia, ib in zip(hidx, np.roll(hidx, -1)):
+                    if ia in cap and ib in cap and np.hypot(*(pts[ib] - pts[ia])) >= 2:
+                        ends.append((j, ci, cls, pts[ia], pts[ib], centre))
         # The steadfast rule: every straight edge with a body colour along it must be covered by the outline of a box
         # of that colour (either side's colour, where two parts meet): lying along it (within 1.5 px, within 12
         # degrees of its direction). Scored as the covered share of all such edges' length.
@@ -536,8 +547,56 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
         cover = (covered & known).sum() / max(1, (body & known).sum())
         colour = 0.5 * (seek + cover)
         edge = e_cov / e_len if e_len else 1.0
-        total = (5 * edge + colour) / 6  # the edge rule first: more coloured edge covered always outranks colour
-        out.append((total, colour, edge) if detail else total)
+        # The end rule: every box end cap's outline edge must meet a straight edge of its colour, flush (within 1.5 px
+        # and 8 degrees), the box on the colour's side -- this pins each box's turn about its own axis. Ends lying
+        # where something hides the body are not judged.
+        per_cap = {}  # (box, cap) -> [covered length, length]
+        segs_c = view.coloured_edges[i]
+        for j, ci, cls, a_, b_, centre in ends:
+            L = float(np.hypot(*(b_ - a_)))
+            n = max(2, int(L))
+            t = (np.arange(n) + 0.5) / n
+            P = a_ + (b_ - a_) * t[:, None]
+            xi = np.clip(P[:, 0].astype(int), 0, side - 1)
+            yi = np.clip(P[:, 1].astype(int), 0, side - 1)
+            if hidden[yi, xi].mean() > 0.5:
+                continue
+            th = math.atan2(*(b_ - a_)[::-1])
+            hit = np.zeros(n, bool)
+            for seg, cls_sides, nrm in segs_c:
+                if cls not in cls_sides:
+                    continue
+                x1, y1, x2, y2 = seg
+                e = np.array([x2 - x1, y2 - y1])
+                d_ang = abs((math.atan2(e[1], e[0]) - th + math.pi / 2) % math.pi - math.pi / 2)
+                if d_ang > math.radians(8):
+                    continue
+                mid = np.array([(x1 + x2) / 2, (y1 + y2) / 2])
+                if np.sign((centre - mid) @ nrm) != cls_sides[cls]:
+                    continue
+                el2 = float(e @ e)
+                u = np.clip(((P - (x1, y1)) @ e) / el2, 0, 1)
+                d = np.hypot(*(P - (np.array([x1, y1]) + u[:, None] * e)).T)
+                hit |= d <= 1.5
+            acc = per_cap.setdefault((j, ci), [0.0, 0.0])
+            acc[0] += L * hit.mean()
+            acc[1] += L
+        # A limb is judged by whichever of its ends meets its edges best (one end is often hidden or blurred); the
+        # torso by both (shoulder line and hip line).
+        n_cov = n_len = 0.0
+        for j in {jj for jj, _ in per_cap}:
+            capsj = [per_cap[(j, c)] for c in (0, 1) if (j, c) in per_cap]
+            if F.PARTS[j][3] == 'torso':
+                n_cov += sum(c[0] for c in capsj)
+                n_len += sum(c[1] for c in capsj)
+            else:
+                best_c = max(capsj, key=lambda c: c[0] / max(1e-6, c[1]))
+                n_cov += best_c[0]
+                n_len += best_c[1]
+        endr = n_cov / n_len if n_len else 1.0
+        # Side edges first (5), then the ends (1, they mostly settle each box's turn) and colour (1).
+        total = (5 * edge + endr + colour) / 7
+        out.append((total, colour, edge, endr) if detail else total)
     return out if detail else torch.tensor(out)
 
 
@@ -701,6 +760,40 @@ def _euler_zyx(M):
     return math.degrees(x), math.degrees(y), math.degrees(z)
 
 
+TWISTS = (-45, -27, -9, 9, 27, 45, 0)  # a box's square end looks the same every 90 degrees: this covers every turn
+
+
+def twisted(J, bone, xd, zd, twists=TWISTS):
+    """Copies of J with the limb pointing along (x, z) (no twist) and turned about its own long axis by each twist:
+    R(x, 0, z) Ry(t) re-expressed in the rig's Euler order, so the limb's direction stays put while its faces turn."""
+    out = []
+    base = rotm(torch.tensor([xd, 0.0, zd], dtype=DT))
+    for t in twists:
+        M = base @ rotm(torch.tensor([0.0, float(t), 0.0], dtype=DT))
+        x, y, z = _euler_zyx(M)
+        q = J.clone()
+        q[F.JI[(bone, 0)] - NC], q[F.JI[(bone, 1)] - NC], q[F.JI[(bone, 2)] - NC] = x, y, z
+        out.append(q)
+    return out
+
+
+def twist_sweep(fit, v, k, cam, J, score):
+    """Every limb (and the torso) turned about its own long axis in steps, keeping the turn the judge likes best."""
+    for bone in ('rightArm', 'leftArm', 'rightThigh', 'leftThigh', 'hips'):
+        x0_, y0_, z0_ = (float(J[F.JI[(bone, a)] - NC]) for a in range(3))
+        base = rotm(torch.tensor([x0_, y0_, z0_], dtype=DT))
+        opts = [J.clone()]
+        for t in range(-45, 46, 9):
+            if t == 0:
+                continue
+            x, y, z = _euler_zyx(base @ rotm(torch.tensor([0.0, float(t), 0.0], dtype=DT)))
+            q = J.clone()
+            q[F.JI[(bone, 0)] - NC], q[F.JI[(bone, 1)] - NC], q[F.JI[(bone, 2)] - NC] = x, y, z
+            opts.append(q)
+        J = opts[int(torch.argmax(score(torch.stack(opts), cam)))]
+    return J
+
+
 def lift_all(fit, v, k, turns=8, rounds=2, steps=150):
     """The whole body from the rectangles, every candidate held to judge(): the torso from its rectangle (either end
     up, tilted toward or away, any turn about its long axis, the body slid so the torso box sits on the rectangle), and
@@ -782,11 +875,9 @@ def lift_all(fit, v, k, turns=8, rounds=2, steps=150):
                             continue
                         for sgn in (1, -1):
                             a = wr[par].T @ _dir_model(view_r, en - st, 12.0, sgn, cam)
-                            q = J.clone()
-                            q[ix] = math.degrees(math.asin(float(torch.clamp(a[2], -1, 1))))
-                            q[iz] = math.degrees(math.atan2(-float(a[0]), float(a[1])))
-                            q[F.JI[(bone, 1)] - NC] = 0.0  # the angles above assume no twist (polish may add it back)
-                            opts.append(q)
+                            xd = math.degrees(math.asin(float(torch.clamp(a[2], -1, 1))))
+                            zd = math.degrees(math.atan2(-float(a[0]), float(a[1])))
+                            opts += twisted(J, bone, xd, zd)
                 # Generic directions too: a limb with no rectangle of its own (hidden) settles where it disagrees least.
                 sgn_ = 1 if bone.startswith('right') else -1
                 for gx in (-150, -90, -45, 0, 30):
@@ -798,6 +889,9 @@ def lift_all(fit, v, k, turns=8, rounds=2, steps=150):
                 J = opts[int(torch.argmax(score(torch.stack(opts), cam)))]
         results.append((float(score(J[None], cam)[0]), J, cam))
     results.sort(key=lambda e: -e[0])
+    # The winner's boxes each turned about their own axis until their ends meet their edges.
+    best_J = twist_sweep(fit, v, k, results[0][2], results[0][1], score)
+    results[0] = (float(score(best_J[None], results[0][2])[0]), best_J, results[0][2])
     if os.environ.get('R6_DEBUG'):
         print('torso candidates', len(torsos), 'top torso-only', [round(torso_score(t), 3) for t in ranked[:4]],
               'whole poses', [round(r[0], 3) for r in results[:5]])
