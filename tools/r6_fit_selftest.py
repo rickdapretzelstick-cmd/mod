@@ -15,7 +15,6 @@ import sys
 import tempfile
 
 import numpy as np
-from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import r6_fit as F  # noqa: E402
@@ -30,19 +29,16 @@ def main():
     t = np.linspace(0, 1, 40)
     s = np.sin(np.pi * t)
     truth = np.zeros((len(t), F.NP))
-    truth[:, :5] = yaw, pitch, 5, 200, 200
+    truth[:, :6] = yaw, pitch, 5, 200, 200, 0.008
     n = len(F.CAM)
-    for k, v in {0: 25 * s, 1: 60 * t, 3: 10 * s, 5: -40 - 50 * s, 6: 30 * s, 7: 30 * s, 8: -45 * s, 9: -110 * s * s,
-                 10: 20 * s, 11: 20 * s}.items():
-        truth[:, n + k] = v
+    for j, v in {('hips', 0): 25 * s, ('hips', 1): 60 * t, ('head', 0): 10 * s, ('rightArm', 0): -40 - 50 * s,
+                 ('rightArm', 2): 30 * s, ('leftArm', 0): 30 * s, ('leftArm', 2): -45 * s, ('rightThigh', 0): -110 * s * s,
+                 ('rightThigh', 2): 20 * s, ('leftThigh', 0): 20 * s, ('rightArm', 1): 50 * s, ('leftThigh', 1): -30 * s,
+                 ('head', 2): 15 * s}.items():
+        truth[:, F.JI[j]] = v
     tmp = tempfile.mkdtemp()
-    frames = []
-    for p in truth:
-        img = Image.new('RGB', (400, 400), (45, 45, 48))
-        d = ImageDraw.Draw(img)
-        for _, poly, cls in F.boxes(p):
-            d.polygon(poly, fill=F.SHOW[cls])
-        frames.append(img)
+    light = (np.array([0.5, 0.75, 0.43]) / np.linalg.norm([0.5, 0.75, 0.43]), 0.45)
+    frames = [F.draw_frame(p, light) for p in truth]
     gif = os.path.join(tmp, 'synth.gif')
     frames[0].save(gif, save_all=True, append_images=frames[1:], duration=20, loop=0)
     cmd = [sys.executable, os.path.abspath(F.__file__), gif, '--out', tmp] + (['--palette', palfile] if palname == 'six' else [])

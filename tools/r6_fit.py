@@ -93,14 +93,33 @@ PARTS = [('hips', (-6, -12, -3), (6, 0, 3), 'torso'), ('head', (-3.6, -7, -3.6),
          ('head', (-2.4, -5.4, -3.9), (2.4, -1.6, -3.5), 'face'),
          ('rightArm', (-6, -3, -3), (0, 9, 3), 'rightArm'), ('leftArm', (0, -3, -3), (6, 9, 3), 'leftArm'),
          ('rightThigh', (0, 0, -3), (6, 12, 3), 'rightLeg'), ('leftThigh', (-6, 0, -3), (0, 12, 3), 'leftLeg')]
-# Parameters: camera (yaw, pitch, scale, x, y) then joint angles in degrees as (bone, axis).
-CAM = ['cyaw', 'cpitch', 'scale', 'tx', 'ty']
+# Parameters: camera (yaw, pitch, scale, x, y, perspective = 1 / its distance in rig px; 0 is orthographic) then joint
+# angles in degrees as (bone, axis): every bone turns on all three axes (the limbs' twist shows in their shading).
+CAM = ['cyaw', 'cpitch', 'scale', 'tx', 'ty', 'persp']
 JOINTS = [('hips', 0), ('hips', 1), ('hips', 2), ('head', 0), ('head', 1), ('rightArm', 0), ('rightArm', 2),
-          ('leftArm', 0), ('leftArm', 2), ('rightThigh', 0), ('rightThigh', 2), ('leftThigh', 0), ('leftThigh', 2)]
+          ('leftArm', 0), ('leftArm', 2), ('rightThigh', 0), ('rightThigh', 2), ('leftThigh', 0), ('leftThigh', 2),
+          ('head', 2), ('rightArm', 1), ('leftArm', 1), ('rightThigh', 1), ('leftThigh', 1)]
+JI = {j: len(CAM) + i for i, j in enumerate(JOINTS)}
 NP = len(CAM) + len(JOINTS)
 LIMITS = {('hips', 0): (-150, 150), ('hips', 1): (-180, 180), ('hips', 2): (-120, 120), ('head', 0): (-50, 50), ('head', 1): (-70, 70),
           ('rightArm', 0): (-200, 60), ('leftArm', 0): (-200, 60), ('rightArm', 2): (-30, 160), ('leftArm', 2): (-160, 30),
-          ('rightThigh', 0): (-150, 70), ('leftThigh', 0): (-150, 70), ('rightThigh', 2): (-20, 110), ('leftThigh', 2): (-110, 20)}
+          ('rightThigh', 0): (-150, 70), ('leftThigh', 0): (-150, 70), ('rightThigh', 2): (-20, 110), ('leftThigh', 2): (-110, 20),
+          ('head', 2): (-40, 40), ('rightArm', 1): (-100, 100), ('leftArm', 1): (-100, 100), ('rightThigh', 1): (-80, 80),
+          ('leftThigh', 1): (-80, 80)}
+MODEL_TO_WORLD = np.diag([-1.0, -1.0, 1.0])  # model (y down, as the game's renderer flips it) -> world (y up)
+# Each box face: (axis, side) with its corners in order around it, as (lo/hi per axis) picks.
+FACES = []
+for _ax in range(3):
+    _b, _c = [k for k in range(3) if k != _ax]
+    for _side in (0, 1):
+        corners = []
+        for u, v in ((0, 0), (1, 0), (1, 1), (0, 1)):
+            pick = [0, 0, 0]
+            pick[_ax], pick[_b], pick[_c] = _side, u, v
+            corners.append(pick[0] * 4 + pick[1] * 2 + pick[2])
+        normal = [0.0, 0.0, 0.0]
+        normal[_ax] = 1.0 if _side else -1.0
+        FACES.append((corners, np.array(normal)))
 use_palette(PALETTE)
 
 
@@ -120,8 +139,7 @@ def angles(p):
     return a
 
 
-def boxes(p):
-    """Projected parts: [(depth, polygon, class)] in footage pixels."""
+def pose_world(p):
     a = angles(p)
     world = {}
     for b in REST:
@@ -130,17 +148,72 @@ def boxes(p):
         m[:3, :3] = rot(*a[b])
         m[:3, 3] = r - (np.array(REST[par], float) if par else 0)
         world[b] = world[par] @ m if par else m
-    cyaw, cpitch, s, tx, ty = p[:5]
-    view = rot(cpitch, 0, 0) @ rot(0, cyaw, 0) @ np.diag([-1.0, -1.0, 1.0])  # model (y down) -> world (y up) -> camera
+    return world
+
+
+def camera_of(p):
+    """World -> camera rotation and the projection of camera points to footage pixels."""
+    cyaw, cpitch, s, tx, ty, persp = p[:6]
+    view = rot(cpitch, 0, 0) @ rot(0, cyaw, 0)
+
+    def project(v):
+        f = s / np.maximum(0.2, 1 - v[2] * persp)  # nearer (+z) is bigger
+        return np.stack([tx + f * v[0], ty - f * v[1]], 1)
+    return view, project
+
+
+def corners_of(world, bone, lo, hi):
+    c = np.array([[x, y, z, 1] for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])]).T
+    return MODEL_TO_WORLD @ (world[bone] @ c)[:3]
+
+
+def boxes(p):
+    """Projected parts as outlines: [(depth, polygon, class)] in footage pixels (overlays)."""
+    world = pose_world(p)
+    view, project = camera_of(p)
     out = []
     for bone, lo, hi, part in PARTS:
-        cls = CLASS_OF[part]
-        c = np.array([[x, y, z, 1] for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])]).T
-        v = view @ (world[bone] @ c)[:3]
-        uv = np.stack([tx + s * v[0], ty - s * v[1]], 1)
-        out.append((v[2].mean() + (0.01 if part == 'face' else 0), hull(uv), cls))
+        v = view @ corners_of(world, bone, lo, hi)
+        out.append((v[2].mean() + (0.01 if part == 'face' else 0), hull(project(v)), CLASS_OF[part]))
     out.sort(key=lambda e: e[0])
     return out
+
+
+def faces(p, light):
+    """The visible box faces, far to near: [(polygon, class, shade 0-1)]; shade is ambient + diffuse from the light."""
+    world = pose_world(p)
+    view, project = camera_of(p)
+    ldir, amb = light
+    persp = p[5]
+    out = []
+    for bone, lo, hi, part in PARTS:
+        wc = corners_of(world, bone, lo, hi)
+        v = view @ wc
+        uv = project(v)
+        rotw = MODEL_TO_WORLD @ world[bone][:3, :3]
+        for idx, normal in FACES:
+            nw = rotw @ normal
+            nc = view @ nw
+            centre = v[:, idx].mean(1)
+            toward = -centre + np.array([0, 0, 1 / persp]) if persp > 1e-6 else np.array([0, 0, 1.0])
+            if nc @ toward <= 0:
+                continue
+            shade = amb + (1 - amb) * max(0.0, float(nw @ ldir))
+            out.append((centre[2] + (0.01 if part == 'face' else 0), [tuple(uv[k]) for k in idx], CLASS_OF[part], shade))
+    out.sort(key=lambda e: e[0])
+    return [(poly, cls, sh) for _, poly, cls, sh in out]
+
+
+def draw_frame(p, light, size=400, bg=(45, 45, 48)):
+    """Footage-like picture of a pose in the palette's colours, shaded (the self-test's input)."""
+    img = Image.new('RGB', (size, size), bg)
+    d = ImageDraw.Draw(img)
+    for poly, cls, sh in faces(p, light):
+        d.polygon(poly, fill=tuple(int(c * sh) for c in SHOW[cls]))
+    return img
+
+
+DEFAULT_LIGHT = (np.array([0.35, 0.8, 0.48]) / np.linalg.norm([0.35, 0.8, 0.48]), 0.5)
 
 
 def hull(pts):
@@ -156,12 +229,13 @@ def hull(pts):
     return lower[:-1] + upper[:-1]
 
 
-def render(p, roi):
+def render(p, roi, light=DEFAULT_LIGHT):
+    """Class * 1000 + shade (0-255) per pixel of the ROI."""
     x0, y0, k, w, h = roi
-    img = Image.new('L', (w, h), 0)
+    img = Image.new('I', (w, h), 0)
     d = ImageDraw.Draw(img)
-    for _, poly, cls in boxes(p):
-        d.polygon([((u - x0) * k, (v - y0) * k) for u, v in poly], fill=cls)
+    for poly, cls, sh in faces(p, light):
+        d.polygon([((u - x0) * k, (v - y0) * k) for u, v in poly], fill=int(cls * 1000 + 255 * sh))
     return np.asarray(img)
 
 
@@ -181,7 +255,8 @@ def classify(rgb, pal):
         # The face: dark marks enclosed by the head's colour.
         head = ndimage.binary_closing(out == HEAD, iterations=3)
         out[(out == BG) & head & in_range(v, pal['classes'][FACE - 1]['v'])] = FACE
-    return out
+    # Each pixel: class * 1000 + brightness, the brightness carrying the faces' shading (how the boxes are turned).
+    return out.astype(np.int32) * 1000 + v
 
 
 def frames_of(path, fps):
@@ -202,10 +277,12 @@ def frames_of(path, fps):
 class Fitter:
     def __init__(self, res=96):
         self.res = res
-        self.w = np.array([4, 4, 0, 0, 0] + [0.15] * len(JOINTS))  # temporal stiffness: the camera moves slowly
-        self.step0 = np.array([8, 6, 0.04, 3, 3] + [16] * len(JOINTS), float)
-        self.init_sigma = [20, 15, 0.4, 4, 4] + [40] * len(JOINTS)
-        self.track_sigma = [3, 3, 0.15, 3, 3] + [18] * len(JOINTS)
+        self.w = np.array([4, 4, 0, 0, 0, 0] + [0.15] * len(JOINTS))  # temporal stiffness: the camera moves slowly
+        self.step0 = np.array([8, 6, 0.04, 3, 3, 0.003] + [16] * len(JOINTS), float)
+        self.init_sigma = [20, 15, 0.4, 4, 4, 0.006] + [40 if ax != 1 or b in ('hips',) else 30 for b, ax in JOINTS]
+        self.track_sigma = [3, 3, 0.15, 3, 3, 0] + [18] * len(JOINTS)
+        self.light = DEFAULT_LIGHT
+        self.shade_w = 2.0
 
     def roi(self, p, obs_full):
         s, tx, ty = p[2], p[3], p[4]
@@ -224,16 +301,24 @@ class Fitter:
         o[:, ((np.arange(w) + 0.5) / k + x0 < 0) | ((np.arange(w) + 0.5) / k + x0 >= W)] = BG
         return o
 
-    def prepare(self, obs):
-        """The frame's class map plus, per part colour, each pixel's distance to the nearest pixel of that colour."""
+    def prepare(self, enc):
+        """The frame's class map, per part colour each pixel's distance to the nearest pixel of that colour, and the
+        shading: each pixel's brightness relative to the brightest of its colour."""
+        obs, val = enc // 1000, (enc % 1000).astype(np.float32)
         dist = {c: np.minimum(ndimage.distance_transform_edt(obs != c), 16).astype(np.float32) if (obs == c).any() else None
                 for c in BODY_CLASSES}
         area = {c: int((obs == c).sum()) for c in BODY_CLASSES}
-        return obs, dist, area
+        shade = np.zeros(obs.shape, np.float32)
+        for c in BODY_CLASSES:
+            m = obs == c
+            if m.sum() > 8:
+                shade[m] = np.minimum(1.2, val[m] / max(1.0, float(np.percentile(val[m], 95))))
+        return obs, dist, area, shade
 
     def cost(self, p, frame, roi, prev):
-        obs, dist, area = frame
-        ren = render(p, roi)
+        obs, dist, area, shade = frame
+        enc = render(p, roi, self.light)
+        ren, rsh = enc // 1000, (enc % 1000).astype(np.float32)
         n = self.res * self.res
         c = float(COST[obs, ren].sum()) / n * 100
         for k in BODY_CLASSES:
@@ -243,6 +328,11 @@ class Fitter:
             if dist[k] is not None and a:
                 c += float(dist[k][m].sum()) / n * 6
             c += abs(a - area[k]) / n * 40
+            # Where the colours agree, the faces' shading should too: it is what shows how each box is turned.
+            both = m & (obs == k)
+            if both.any():
+                rs = rsh[both] / max(1.0, float(rsh[m].max()))
+                c += float(np.abs(rs - shade[both]).sum()) / n * 100 * self.shade_w
         n0 = len(CAM)
         c += (p[n0] ** 2 + p[n0 + 2] ** 2) * 0.0005
         if prev is not None:
@@ -256,6 +346,7 @@ class Fitter:
             lo, hi = LIMITS.get(j, (-180, 180))
             p[len(CAM) + i] = min(hi, max(lo, p[len(CAM) + i]))
         p[1] = min(85, max(-30, p[1]))
+        p[5] = min(0.03, max(0.0, p[5]))
         return p
 
     def descend(self, p, obs_full, prev, levels=4):
@@ -327,11 +418,11 @@ class Fitter:
                     c = self.cost(q, obs, roi, prev)
                     if c < best:
                         p, best = q, c
-        for a in ((5, 7), (9, 11)):
+        for r, l in (('rightArm', 'leftArm'), ('rightThigh', 'leftThigh')):
             q = p.copy()
-            i, j = n + a[0], n + a[1]
-            q[i], q[j] = p[j], p[i]
-            q[i + 1], q[j + 1] = -p[j + 1], -p[i + 1]
+            q[JI[(r, 0)]], q[JI[(l, 0)]] = p[JI[(l, 0)]], p[JI[(r, 0)]]
+            for ax in (1, 2):
+                q[JI[(r, ax)]], q[JI[(l, ax)]] = -p[JI[(l, ax)]], -p[JI[(r, ax)]]
             c = self.cost(q, obs, roi, prev)
             if c < best:
                 p, best = q, c
@@ -347,24 +438,25 @@ class Fitter:
 
     def init(self, obs_full, at, flip):
         if at is None:
-            lab, n = ndimage.label(ndimage.binary_dilation(obs_full > 0, iterations=4))
-            sizes = ndimage.sum(obs_full > 0, lab, range(1, n + 1))
+            fg = obs_full >= 1000
+            lab, n = ndimage.label(ndimage.binary_dilation(fg, iterations=4))
+            sizes = ndimage.sum(fg, lab, range(1, n + 1))
             at = ndimage.center_of_mass(lab == (1 + int(np.argmax(sizes))))[::-1]
-        ys, xs = np.nonzero(obs_full > 0)
+        ys, xs = np.nonzero(obs_full >= 1000)
         near = (abs(xs - at[0]) < 80) & (abs(ys - at[1]) < 80)
         hgt = max(10, np.ptp(ys[near]) if near.any() else 40)
         cands = []
         for cyaw in range(0, 360, 20):
             for cpitch in range(0, 90, 10):
                 p = np.zeros(NP)
-                p[:5] = cyaw + (180 if flip else 0), cpitch, hgt / 31, at[0], at[1]
+                p[:6] = cyaw + (180 if flip else 0), cpitch, hgt / 31, at[0], at[1], 0.005
                 roi = self.roi(p, obs_full)
                 cands.append((self.cost(p, self.prepare(self.view(obs_full, roi)), roi, None), p))
         cands.sort(key=lambda e: e[0])
         best = None
         nc = len(CAM)
         cam_only = self.init_sigma[:nc] + [0] * len(JOINTS)
-        joints_only = [0, 0, 0.05, 2, 2] + self.init_sigma[nc:]
+        joints_only = [0, 0, 0.05, 2, 2, 0] + self.init_sigma[nc:]
         for k, (_, p) in enumerate(cands[:6]):
             # In stages: the camera with the body at rest, then the joints under that camera, then all of it gently.
             p = self.cem(p, cam_only, obs_full, None, iters=20, pop=48, seed=k)
@@ -373,7 +465,24 @@ class Fitter:
             p, c = self.descend(p, obs_full, None)
             if best is None or c < best[1]:
                 best = (p, c)
-        return best
+        # The light, from the shading of the pose found; then the pose again under it.
+        self.fit_light(best[0], obs_full)
+        p = self.cem(best[0], [s / 4 for s in self.init_sigma], obs_full, None, iters=20, pop=48, seed=300)
+        return self.descend(p, obs_full, None)
+
+    def fit_light(self, p, obs_full):
+        roi = self.roi(p, obs_full)
+        frame = self.prepare(self.view(obs_full, roi))
+        best = (self.cost(p, frame, roi, None), self.light)
+        for az in range(0, 360, 30):
+            for el in (10, 35, 60, 85):
+                for amb in (0.3, 0.45, 0.6, 0.75):
+                    a, e = math.radians(az), math.radians(el)
+                    self.light = (np.array([math.cos(e) * math.sin(a), math.sin(e), math.cos(e) * math.cos(a)]), amb)
+                    c = self.cost(p, frame, roi, None)
+                    if c < best[0]:
+                        best = (c, self.light)
+        self.light = best[1]
 
 
 def track(fit, frames, obs, first, hi, at, flip, start=None):
@@ -405,12 +514,14 @@ def refine_camera(fit, obs, params, span):
     sig = list(fit.track_sigma)
     sig[0] = sig[1] = 0
 
-    def score(dy, dp):
+    def score(dy, dp, pe=None):
         total = 0.0
         for i in sample:
             q = params[i].copy()
             q[0] += dy
             q[1] += dp
+            if pe is not None:
+                q[5] = pe
             q = fit.cem(q, sig, obs[i], None, iters=12, seed=i)
             roi = fit.roi(q, None)
             total += fit.cost(q, fit.prepare(fit.view(obs[i], roi)), roi, None)
@@ -427,7 +538,12 @@ def refine_camera(fit, obs, params, span):
         sc = score(dy, best[1])
         if sc < bs:
             best, bs = (dy, best[1]), sc
-    return best
+    pe = None
+    for cand in (0.0, 0.004, 0.008, 0.012, 0.018, 0.025):
+        sc = score(best[0], best[1], cand)
+        if sc < bs:
+            pe, bs = cand, sc
+    return best[0], best[1], pe
 
 
 def unwrap(a):
@@ -463,7 +579,7 @@ def sheet(frames, params, costs, idx, roi_of, path):
         crop = Image.fromarray(frames[i]).crop((int(x0), int(y0), int(x0 + w / k), int(y0 + h / k))).resize((big, big))
         d = ImageDraw.Draw(crop)
         if p is not None:
-            for _, poly, cls in boxes(p):
+            for poly, cls, _ in faces(p, DEFAULT_LIGHT):
                 d.polygon([((u - x0) * k * sc, (v - y0) * k * sc) for u, v in poly], outline=SHOW[cls])
         d.text((3, 2), f'{i}  {costs[i]:.1f}', fill=(255, 255, 255), font=font)
         tiles.append(crop)
@@ -542,11 +658,13 @@ def main():
     start = {}
     for k, s0 in enumerate(shots):
         span = [i for i in range(s0, (shots[k + 1] if k + 1 < len(shots) else hi + 1))]
-        dy, dp = refine_camera(fit, obs, params, span)
-        print(f'shot from frame {s0}: camera yaw {dy:+.0f}, pitch {dp:+.0f}', flush=True)
+        dy, dp, pe = refine_camera(fit, obs, params, span)
+        print(f'shot from frame {s0}: camera yaw {dy:+.0f}, pitch {dp:+.0f}, perspective {pe}', flush=True)
         q = params[s0].copy()
         q[0] += dy
         q[1] += dp
+        if pe is not None:
+            q[5] = pe
         start[s0] = q
     params, costs, _ = track(fit, frames, obs, first, hi, at, a.flip, start)
     idx = list(range(lo, hi + 1))
@@ -590,8 +708,9 @@ def write_conversion(frames, params, idx, times, clip, fit, out, source, size=24
         crop.save(buf, 'JPEG', quality=72)
         pics.append('data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode())
         sc = size / (w / k)
+        # Every visible face's edges: the boxes' turn shows, not only their outline.
         polys.append([['#%02x%02x%02x' % SHOW[cls], [[round((u - int(x0)) * sc, 1), round((v - int(y0)) * sc, 1)] for u, v in poly]]
-                      for _, poly, cls in boxes(p)])
+                      for poly, cls, _ in faces(p, fit.light)])
         cams.append(viewer_cam(params, i, hy0))
     frame_ms = (times[1] - times[0]) if len(times) > 1 else 20
     json.dump({'name': os.path.basename(clip), 'clip': clip, 'source': source, 'frameMs': round(float(frame_ms), 3), 'size': size,
