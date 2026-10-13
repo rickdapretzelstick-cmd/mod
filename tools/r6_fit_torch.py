@@ -729,6 +729,7 @@ def polish(fit, v, k, steps, sigma0=1.5, sigma1=0.4, every=10):
     if v == 0:
         groups.append({'params': [fit.J], 'lr': 0.8})
     opt = torch.optim.Adam(groups)
+    keep_J, keep_C = fit.J.detach().clone(), fit.cams[v].detach().clone()
     cam_now = lambda: (fit.cams[v][[k]] * CAM_UNIT).detach()
     best = (float(judge(fit, v, i, fit.joints_at(v, k).detach()[None], cam_now())[0]),
             fit.J[k].detach().clone(), fit.cams[v][k].detach().clone())
@@ -743,6 +744,10 @@ def polish(fit, v, k, steps, sigma0=1.5, sigma1=0.4, every=10):
             if a > best[0]:
                 best = (a, fit.J[k].detach().clone(), fit.cams[v][k].detach().clone())
     with torch.no_grad():
+        # Only frame k was being fitted: every other frame goes back exactly as it was (the smoothness term and Adam's
+        # momentum would otherwise drag frames already fitted).
+        fit.J.copy_(keep_J)
+        fit.cams[v].copy_(keep_C)
         if v == 0:
             fit.J[k] = best[1]
         fit.cams[v][k] = best[2]
@@ -1202,6 +1207,13 @@ def run_keyframes(frames, idx, fps, args, log=print):
         obs = view.windows[i][1].numpy()
         hidden[k] = (obs == F.UNKNOWN).sum() / max(1, (obs > 0).sum())
         log(f'frame {i}: colour agreement {agree[k]:.2f}, hidden {hidden[k]:.2f}')
+    # Check: every frame's final pose still scores what it scored when fitted (nothing drifted afterwards).
+    for k, i in enumerate(idx):
+        view.window(i, fit.params_of(0, k), f0)
+        now = float(agreement(fit, 0, i, fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
+        if abs(now - agree[k]) > 0.02:
+            log(f'frame {i}: score changed after fitting ({agree[k]:.2f} -> {now:.2f})')
+        agree[k] = now
     J = fit.J.detach().numpy().copy()
     # Clear: fits at least as well as the median frame, little hidden; and no jump from both neighbours.
     keep = (agree >= np.median(agree) - 0.05) & (hidden <= 0.35)
