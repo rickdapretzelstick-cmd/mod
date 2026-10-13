@@ -1,5 +1,6 @@
 package dev.rick.jjk.progression.investigation;
 
+import dev.rick.jjk.JJK;
 import dev.rick.jjk.progression.training.TrialPropEntity;
 import dev.rick.jjk.progression.training.TrialRooms;
 import net.minecraft.core.BlockPos;
@@ -25,6 +26,11 @@ import java.util.List;
  * closing the arena clears them with everything else in its box.
  */
 public final class RealmRooms {
+    /** The fallback realm (unknown realm ids, and any room whose plan can't be read). */
+    public static final String HOLLOW = "hollow_realm";
+    /** Rooms already reported as falling back (one warning each). */
+    private static final java.util.Set<String> FELL_BACK = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
     private RealmRooms() {}
 
     @Nullable
@@ -42,9 +48,18 @@ public final class RealmRooms {
             this.fallback = fallback;
         }
 
+        /**
+         * The room this layout builds, by a bounded fallback: its own plan; if that is missing or broken, the model-backed
+         * hollow; if that fails too, null (the procedural fallback layout stands in). Never asks for the same failed plan
+         * twice: plans are loaded once, and a failure is logged once ({@link TrialRooms#cached}).
+         */
         @Nullable
         TrialRooms.Plan plan() {
-            return RealmRooms.plan(id);
+            TrialRooms.Plan own = RealmRooms.plan(id);
+            if (own != null || HOLLOW.equals(id)) return own;
+            TrialRooms.Plan hollow = RealmRooms.plan(HOLLOW);
+            if (hollow != null && FELL_BACK.add(id)) JJK.LOGGER.warn("[realms] {} has no usable room plan: the hollow stands in", id);
+            return hollow;
         }
 
         /** Room-local (from the origin's corner) to the layouts' frame (from the origin block's bottom centre). */
@@ -81,7 +96,19 @@ public final class RealmRooms {
         /** Arrivals face into the room (its entrance is toward +Z). */
         @Override
         public float arrivalYaw() {
-            return plan() == null ? fallback.arrivalYaw() : 180f;
+            TrialRooms.Plan p = plan();
+            if (p == null) return fallback.arrivalYaw();
+            Vec3 face = p.marker("facing"), at = p.marker("arrival");
+            if (face == null || at == null) return 180f;
+            // Facing the room's own point of interest (the bed at the hall's far end, the seal, the field's middle).
+            return (float) Math.toDegrees(Math.atan2(-(face.x - at.x), face.z - at.z));
+        }
+
+        /** The cliff's: they fall in from high over its landing (its plan marks the landing). */
+        @Override
+        public boolean fromAbove() {
+            TrialRooms.Plan p = plan();
+            return p == null ? fallback.fromAbove() : p.marker("landing") != null;
         }
 
         @Override

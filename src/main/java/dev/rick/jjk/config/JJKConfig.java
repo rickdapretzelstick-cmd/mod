@@ -467,6 +467,8 @@ public final class JJKConfig {
         public boolean reducedFlashes = false;
         /** Reduced Shake: camera shake and FOV kicks cut to a gentle fraction (on top of {@code screenShakeScale}). */
         public boolean reducedShake = false;
+        /** Each character's JJS track during their relic trial. */
+        public boolean trialMusic = true;
     }
 
     /**

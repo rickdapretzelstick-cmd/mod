@@ -113,7 +113,8 @@ public final class FingerBearerEncounter {
         if (room.spirit != null && ++room.missing < MISSING_CHECKS) return 0;
         FingerBearerEntity fb = ModEntities.FINGER_BEARER.create(realm, EntitySpawnReason.EVENT);
         if (fb == null) return 0;
-        Vec3 at = Vec3.atBottomCenterOf(a.origin).add(0, 1, 0);
+        // At its hall's seal (whichever layout built the hall).
+        Vec3 at = dev.rick.jjk.progression.investigation.CursedRealms.firstSpotOf(a);
         fb.snapTo(at.x, at.y, at.z, realm.getRandom().nextFloat() * 360f, 0f);
         fb.setHome(a.origin, dev.rick.jjk.progression.investigation.CursedRealms.arenaRadius(a));
         double health = Math.max(20, JJKConfig.get().progression.fingerBearerHealth);

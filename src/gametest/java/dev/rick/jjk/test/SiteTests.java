@@ -181,7 +181,8 @@ public class SiteTests {
         var rb = CursedRealms.arenaOf(st, mine.id);
         h.assertTrue(ra != null && rb != null && ra.slot != rb.slot && !ra.origin.equals(rb.origin), "two arenas, two slots");
         ServerLevel realm = CursedRealms.level(level.getServer());
-        h.assertTrue(!realm.getBlockState(ra.origin).isAir() && !realm.getBlockState(rb.origin.below()).isAir(), "both built");
+        // (Both rooms walk at the origin: their floors are just under it.)
+        h.assertTrue(!realm.getBlockState(ra.origin.below()).isAir() && !realm.getBlockState(rb.origin.below()).isAir(), "both built");
         h.assertTrue(ra.inside().contains(a.getUUID()) && rb.inside().contains(b.getUUID()) && !ra.inside().contains(b.getUUID()),
                 "each player is in their own");
         CursedRealms.close(level.getServer(), st, ra, true);

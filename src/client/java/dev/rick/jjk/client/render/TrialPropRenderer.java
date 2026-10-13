@@ -51,8 +51,13 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
     public static final Identifier SYMBOLS = JJK.id("textures/entity/trial_reel_symbols.png");
     /** The cursed realm rooms' atlas (the trial atlas plus earth, soil and ash). */
     public static final Identifier REALM_ATLAS = JJK.id("textures/entity/realm_atlas.png");
-    private static final RenderType SOLID = RenderTypes.entityCutoutCull(ATLAS);
-    private static final RenderType REALM_SOLID = RenderTypes.entityCutoutCull(REALM_ATLAS);
+    // Not back-face culled: the baked faces wind the other way to what the culling type keeps, so it drew every prop
+    // inside out (the near sides missing, the far sides' insides showing). Depth sorts what's seen.
+    private static final RenderType SOLID = RenderTypes.entityCutout(ATLAS);
+    private static final RenderType REALM_SOLID = RenderTypes.entityCutout(REALM_ATLAS);
+    /** The last six realms' atlas (the second Cursed Realms pack: its own 128x64 material sheet). */
+    public static final Identifier REALM_B_ATLAS = JJK.id("textures/entity/realm_atlas_b.png");
+    private static final RenderType REALM_B_SOLID = RenderTypes.entityCutout(REALM_B_ATLAS);
     private static final RenderType RIKA = RenderTypes.entityCutout(RikaRenderer.TEXTURE);
     private static final RenderType SCREEN = RenderTypes.entityCutout(STATIC);
     private static final RenderType REEL = RenderTypes.entityCutout(SYMBOLS);
@@ -68,7 +73,7 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
         int[] lights = new int[0];
         int id;
         float yaw;
-        boolean realm;
+        boolean realm, realmB;
         @Nullable dev.rick.jjk.client.anim.PoseFrame pose;
         /** Per reel: ticks since it locked (for the settle), and since its result changed (for the flash). */
         float[] settle = new float[3], flash = new float[3];
@@ -106,6 +111,7 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
         s.kind = e.kind();
         s.yaw = e.getYRot();
         s.realm = e.model().startsWith("realm_");
+        s.realmB = e.model().startsWith("realmb_");
         if (s.kind == TrialPropEntity.RIKA) {
             // Rika's own idle clip on this display, as her renderer runs it on her.
             float now = e.level().getGameTime() + partial;
@@ -190,7 +196,7 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
             final int color = argb;
             final int[] lit = lights;
             final int fixed = glow ? FULL_BRIGHT : -1;
-            c.submitCustomGeometry(ps, s.realm ? REALM_SOLID : SOLID, (pose, buf) -> part.emit(pose, buf, lit, fixed, color));
+            c.submitCustomGeometry(ps, s.realmB ? REALM_B_SOLID : s.realm ? REALM_SOLID : SOLID, (pose, buf) -> part.emit(pose, buf, lit, fixed, color));
             ps.popPose();
         }
         if (s.kind == TrialPropEntity.CRT) for (float[] r : m.rects) screen(s, ps, c, r);
@@ -485,9 +491,13 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
                     Vector3f n = nm.transform(new Vector3f(base[f])).normalize();
                     verts.add(quad);
                     normals.add(new float[] {n.x, n.y, n.z});
-                    cubes.add(ci);
+                    // Each face is lit from the space it faces (just out from its middle), not from the cube's centre: a
+                    // big cube's far side, or one whose centre sits in a wall, would otherwise read black, like a hole.
+                    float cx = (quad[0] + quad[5] + quad[10] + quad[15]) / 4f, cy = (quad[1] + quad[6] + quad[11] + quad[16]) / 4f,
+                            cz = (quad[2] + quad[7] + quad[12] + quad[17]) / 4f;
+                    p.centres.add(new float[] {cx + n.x * 0.45f, cy + n.y * 0.45f, cz + n.z * 0.45f, cx - n.x * 0.05f, cy - n.y * 0.05f, cz - n.z * 0.05f});
+                    cubes.add(p.centres.size() - 1);
                 }
-                p.centres.add(new float[] {(x1 + x2) / 32f, (y1 + y2) / 32f, (z1 + z2) / 32f});
             }
             if (p.moves()) {
                 // Whatever turns or floats can reach anywhere round its pivot: the culling box covers that.
@@ -515,8 +525,8 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
         }
 
         /**
-         * The light at every cube: the brightest of its own block and the six round it (a cube against a wall or the
-         * floor would otherwise read the inside of the solid block).
+         * The light at every face: the brighter of the block it faces and the block it sits in (a moving part's single
+         * sample, its pivot, takes the brightest of its block and the six round it).
          */
         int[] sampleLights(Level level, double ox, double oy, double oz) {
             int[] out = new int[samples];
@@ -526,7 +536,13 @@ public class TrialPropRenderer extends EntityRenderer<TrialPropEntity, TrialProp
                 for (float[] c : p.centres) {
                     int bx = Mth.floor(ox + c[0]), by = Mth.floor(oy + c[1]), bz = Mth.floor(oz + c[2]);
                     int block = 0, sky = 0;
-                    for (int d = 0; d < 7; d++) {
+                    if (c.length == 6) {
+                        for (int k = 0; k < 2; k++) {
+                            m.set(Mth.floor(ox + c[k * 3]), Mth.floor(oy + c[k * 3 + 1]), Mth.floor(oz + c[k * 3 + 2]));
+                            block = Math.max(block, level.getBrightness(LightLayer.BLOCK, m));
+                            sky = Math.max(sky, level.getBrightness(LightLayer.SKY, m));
+                        }
+                    } else for (int d = 0; d < 7; d++) {
                         m.set(bx + (d == 1 ? 1 : d == 2 ? -1 : 0), by + (d == 3 ? 1 : d == 4 ? -1 : 0), bz + (d == 5 ? 1 : d == 6 ? -1 : 0));
                         block = Math.max(block, level.getBrightness(LightLayer.BLOCK, m));
                         sky = Math.max(sky, level.getBrightness(LightLayer.SKY, m));

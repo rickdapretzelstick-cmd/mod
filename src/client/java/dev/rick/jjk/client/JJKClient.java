@@ -162,6 +162,7 @@ public class JJKClient implements ClientModInitializer {
         registerReceivers();
 
         ClientTickEvents.END_CLIENT_TICK.register(JJKClient::tick);
+        ClientTickEvents.END_CLIENT_TICK.register(mc -> dev.rick.jjk.client.training.TrialMusic.tick());
         ClientTickEvents.START_CLIENT_TICK.register(InputHandler::beforeVanillaKeys);
         ClientTickEvents.START_CLIENT_TICK.register(dev.rick.jjk.client.prison.PrisonClient::beforeInput);
         // The server holsters a drawn cursed tool while Combat Mode is off: tell it where this client stands.

@@ -100,9 +100,15 @@ public final class CursedRealms {
         String entryLine();
     }
 
-    private static final Map<String, Layout> LAYOUTS = Map.ofEntries(Map.entry("cliff_realm", new CliffRealm()), Map.entry("mine_realm", new MineRealm()),
-            Map.entry("pasture_realm", new PastureRealm()), Map.entry("house_realm", new HouseRealm()),
-            Map.entry("hollow_realm", new HollowRealm()), Map.entry("finger_bearer_realm", new BattleRealm()),
+    private static final Map<String, Layout> LAYOUTS = Map.ofEntries(
+            // The Cursed Realms pack's last six (tools/install_realm_rooms_b.py), each over its own procedural layout as the
+            // last resort (if its plan and the hollow's both fail to load).
+            Map.entry("cliff_realm", new RealmRooms.Layout("cliff_realm", new CliffRealm())),
+            Map.entry("mine_realm", new RealmRooms.Layout("mine_realm", new MineRealm())),
+            Map.entry("pasture_realm", new RealmRooms.Layout("pasture_realm", new PastureRealm())),
+            Map.entry("house_realm", new RealmRooms.Layout("house_realm", new HouseRealm())),
+            Map.entry("hollow_realm", new RealmRooms.Layout("hollow_realm", new HollowRealm())),
+            Map.entry("finger_bearer_realm", new RealmRooms.Layout("finger_bearer_realm", new BattleRealm())),
             // The Cursed Realm pack's environments (RealmRooms): the rifle's watching woods, the ordinary chapel and crater
             // incidents, and the realms the character storylines' events use (only while those are switched on).
             Map.entry("forest_realm", new RealmRooms.Layout("forest_realm", new HollowRealm())),
@@ -131,7 +137,7 @@ public final class CursedRealms {
     public static final String TRIAL = "trial:";
 
     /** The layout for an id, or the plain hollow realm (an incident always has somewhere to fight). */
-    static Layout layout(String id) {
+    public static Layout layout(String id) {
         Layout l = LAYOUTS.get(id);
         return l != null ? l : LAYOUTS.get("hollow_realm");
     }
@@ -475,6 +481,12 @@ public final class CursedRealms {
         MinecraftServer s = e.level().getServer();
         if (s == null || !inRealm(e)) return null;
         return arenaAt(InvestigationState.get(s), e.position());
+    }
+
+    /** Where an arena's first curse appears (the Finger Bearer: at its hall's seal), in the world. */
+    public static Vec3 firstSpotOf(InvestigationState.Arena a) {
+        List<Vec3> spots = layout(a.layout).curseSpots();
+        return Vec3.atBottomCenterOf(a.origin).add(spots.isEmpty() ? new Vec3(0, 1, 0) : spots.getFirst());
     }
 
     /** The arena's origin (its centre on the ground), for leashing what lives in it. */

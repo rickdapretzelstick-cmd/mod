@@ -395,7 +395,8 @@ The path so far:
    head. They show nothing that isn't there.
 5. **The cauldron**: pour four Cursed Energy bottles into a cauldron (1/4 … 4/4; the surface rises and glows). Throw
    the Glasses into the full cauldron: the energy reacts, spirals into them and collapses with a flash, all four
-   units are spent, and **Cursed Glasses** rise out.
+   units are spent, and **Cursed Glasses** rise out. Only the result rises out; what went in is given back only if the
+   cauldron is broken before the ritual finishes. The same holds for every infusion, relics included.
 6. **Cursed Glasses** let their wearer perceive curses (a curse user, anyone who is one of the characters, sees them
    without).
 7. **Battle rooms**: Woodland Mansions and Igloos hide a cursed chamber far below them, reached by a trapdoor set
@@ -585,6 +586,9 @@ over the world (the HUD stays on top) and are off with **Impact frames** in JJK 
 (the VHS played on a jukebox, the Blindfold worn for five seconds, the Ring, the Comb or the Scratch-Off used), it offers
 **Begin Training**. The server checks you may (the world's live relic, the kit unclaimed or already yours, nobody else
 in a claiming session of it), takes you to a private training room in the cursed realm and saves where you stood.
+Each trial has its character's JJS track playing from the attempt's start until the trial ends (Gojo: Unlimited Void,
+Yuji: "Entrusted", Yuta: Authentic Mutual Love, Ryu: Decadence, Hakari: Idle Death Gamble), coming round again if the
+trial outlasts it; the background music steps aside. Off with `client.trialMusic`.
 
 Every character trains with the same shared skill check, dressed differently:
 
@@ -799,9 +803,35 @@ Breaches lead into environments from the Cursed Realm Blockbench pack (`tools/in
 | The Sunken Quarry | a cyclops bruiser contract's arena | 〃 |
 | The Hanging Sanctuary | a veiled reacher contract's arena | 〃 |
 
-No storyline is switched on by this; the character environments are used wherever their destination is reached. Active
-destinations the pack has no environment for keep their own: the cliff, mine, house and pasture realms, the plain
-hollow realm, and the Finger Bearer's battle-room realm.
+No storyline is switched on by this; the character environments are used wherever their destination is reached.
+
+The last six come from the second pack, the Cursed Realms Blockbench Pack (`tools/install_realm_rooms_b.py`,
+sources in `tools/blockbench/cursed_realms_b/`):
+
+| Environment | Destination | Reached by |
+|---|---|---|
+| The Mine | `mine_realm` | Old Mine, Deep Mine Maw, Crawler Culvert, Yuji chain 3, Ryu chain 3, Hakari chain 3 |
+| The Empty House | `house_realm` | Empty House, Brood Nest, Brood Anchor, Gojo chain 3, Yuji chain 2, Yuta chain 1 |
+| The Dead Pasture | `pasture_realm` | Livestock, Hound Kennel, Kennel Master, Shrine Anchor |
+| The Fallen Cliff | `cliff_realm` | Cliff Fall, Millpond Toad, Yuta chain 2 (you still fall in from above, onto a clear landing) |
+| The Sealed Hall | `finger_bearer_realm` | the Finger Bearer's battle room (it takes shape at the hall's central seal) |
+| The Hollow | `hollow_realm` | any unknown realm id, and the fallback for every other room |
+
+In these six, the pack's building cuboids (floors, foundations, cavern walls, ceilings, ring walls, the cliff face) are
+real blocks, so the arena is physical: footing, walls, mob navigation, protection. Everything else is drawn exactly as the
+pack made it (rails, chains, webs, lanterns, timber supports, thin walls and partitions, furniture, fences, the tree, the
+seal). Under the parts that look solid there's invisible collision: supports, partitions and doorframes' walls, the
+house's ceiling, pillars, fences, hay and furniture. Chains, webs, rails and brush stay walk-through. Every one is closed
+in, like the earlier rooms. The mine and the house close themselves: where the pack's ragged mine walls stopped short of
+the ceiling, or the floor short of a wall, the stone was carried across. The pasture, the cliff, the hall and the hollow
+get walls all round at their bounds, the floor carried out to them, and a ceiling hung with soul lanterns (the cliff's
+high enough that you still fall in from above onto its landing). The house's staggered doorways all walk through to the
+red bed at the far end. Every soul lantern in the pack gives real light, with an even fill so a fight reads, under the
+realm's red atmosphere.
+
+**Fallback.** A room loads its own plan; if that's missing or broken, the model-backed hollow stands in; if that fails
+too, the room's original procedural layout is built (so no one is ever dropped into an empty void, and an encounter can
+always finish). Each failure is logged once.
 
 Each environment is closed in and lit evenly, with its own light colour over the realm's crimson. Walkable terraces,
 tiers, stairs and platforms are real ground for curses and players. Curses wait on open ground round the encounter's

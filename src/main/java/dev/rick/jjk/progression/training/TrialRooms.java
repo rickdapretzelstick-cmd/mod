@@ -84,6 +84,13 @@ public final class TrialRooms {
         return p;
     }
 
+    /** Tests: treat the plan at {@code path} as missing (true), or load it normally again (false). */
+    public static void simulateMissingForTest(String path, boolean missing) {
+        PLANS.remove(path);
+        if (missing) MISSING.put(path, true);
+        else MISSING.remove(path);
+    }
+
     @Nullable
     private static Plan load(String path, String key) {
         try (InputStream in = TrialRooms.class.getClassLoader().getResourceAsStream(path)) {

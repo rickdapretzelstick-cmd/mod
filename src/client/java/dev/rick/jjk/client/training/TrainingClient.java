@@ -186,7 +186,10 @@ public final class TrainingClient {
             contestRightAt = 0;
             contestWrongAt = 0;
             ContestCamera.begin();
-        } else if (!"capture".equals(s.kit())) TrainingCamera.begin();
+        } else if (!"capture".equals(s.kit())) {
+            TrainingCamera.begin();
+            TrialMusic.start(s.kit());
+        }
     }
 
     public static void state(TrainingNet.State s) {
@@ -402,9 +405,11 @@ public final class TrainingClient {
         attempt = null;
         TrainingCamera.reset();
         ContestCamera.reset();
+        TrialMusic.stop();
     }
 
     public static void reset() {
+        TrialMusic.stop();
         attempt = null;
         TrainingCamera.reset();
         ContestCamera.reset();

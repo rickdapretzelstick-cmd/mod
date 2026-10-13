@@ -106,6 +106,8 @@ public final class TestCommand {
                 new Entry("Relics", "/jjk relic list", "Where each relic is.")));
         List<Entry> realms = new java.util.ArrayList<>();
         for (var e : REALMS.entrySet()) realms.add(new Entry(e.getKey(), "/jjk test realm " + e.getValue(), "Into this cursed realm now (incident " + e.getValue() + ")."));
+        realms.add(new Entry("Finger Bearer's hall", "/jjk test room finger_bearer_realm", "The Sealed Hall (empty: the Finger Bearer comes through its battle room)."));
+        realms.add(new Entry("Hollow (fallback)", "/jjk test room hollow_realm", "The fallback hollow island."));
         realms.add(new Entry("Leave realm", "/jjk test leave", "Closes the realm you're in and sends everyone home."));
         realms.add(new Entry("Realms in use", "/jjk incident realms", "Every realm arena that's open."));
         PAGES.put("realms", realms);
@@ -174,6 +176,10 @@ public final class TestCommand {
                         .then(Commands.literal("guardian").then(Commands.argument("body", StringArgumentType.word())
                                 .suggests((c, b) -> SharedSuggestionProvider.suggest(List.of(CURSES).stream().filter(s -> s.startsWith("guardian_")), b))
                                 .executes(c -> realm(c, "guardian_cliff", StringArgumentType.getString(c, "body")))))
+                        .then(Commands.literal("room").then(Commands.argument("layout", StringArgumentType.word())
+                                .suggests((c, b) -> SharedSuggestionProvider.suggest(List.of("finger_bearer_realm", "hollow_realm", "mine_realm", "house_realm",
+                                        "pasture_realm", "cliff_realm"), b))
+                                .executes(c -> room(c, StringArgumentType.getString(c, "layout")))))
                         .then(Commands.literal("leave").executes(TestCommand::leave))
                         .then(Commands.literal("spawn").then(curseArg().executes(c -> spawn(c, StringArgumentType.getString(c, "curse"), false))))
                         .then(Commands.literal("weak").then(curseArg().executes(c -> spawn(c, StringArgumentType.getString(c, "curse"), true))))
@@ -275,6 +281,19 @@ public final class TestCommand {
         }
         String id = in.id;
         c.getSource().sendSuccess(() -> Component.literal("Into the realm (incident " + id + "). Leave with ").withStyle(ChatFormatting.GRAY)
+                .append(button("Leave realm", "/jjk test leave", "Closes the realm", ChatFormatting.GREEN)), true);
+        return 1;
+    }
+
+    /** A realm room by itself (no incident, no curses): to walk round it. */
+    private static int room(CommandContext<CommandSourceStack> c, String layout) throws CommandSyntaxException {
+        ServerPlayer p = c.getSource().getPlayerOrException();
+        if (CursedRealms.inRealm(p)) {
+            c.getSource().sendFailure(Component.literal("Leave the realm you're in first: /jjk test leave"));
+            return 0;
+        }
+        CursedRealms.enterTrial(p, dev.rick.jjk.progression.story.PersonalTrials.VIEW + layout + "_" + p.getUUID().toString().substring(0, 8), layout, InvestigationState.get(p.level().getServer()));
+        c.getSource().sendSuccess(() -> Component.literal("In the " + layout + " room. Leave with ").withStyle(ChatFormatting.GRAY)
                 .append(button("Leave realm", "/jjk test leave", "Closes the realm", ChatFormatting.GREEN)), true);
         return 1;
     }
