@@ -1726,25 +1726,15 @@ def rotations_from_three(dirs_img):
     return out
 
 
-def shape_candidates(fit, v, k, J, cam, part, mask, unit):
-    """Joint vectors turning one part's box to the three directions its outline runs in (or two, seen face-on): every
-    assignment of the box's real sides to those directions, both mirror readings; each assignment's implied scale must
-    agree with the camera's within 35%."""
-    # Coarse tracing of the raw pixels (steadier long sides): the two main directions, and a third when it shows one; fine tracing adds
-    # further third-direction options from short end edges (the end face seen at a slant).
+def direction_triples(mask, unit):
+    """The direction readings of one part's outline to try as its box's axes: [[(unit dir, total len, longest edge)]
+    x 3 (or 2, seen face-on)]. Coarse tracing of the raw pixels (steadier long sides) gives the first reading, its
+    three strongest directions; fine tracing adds further third-direction options from short end edges (the end face
+    seen at a slant), each read with the two long sides."""
     groups = outline_directions(mask, unit, tol=10.0, min_len=0.2, eps=0.12, up=1)
-    fine = outline_directions(mask, unit)
     if len(groups) < 2:
         return []
-    bone = 'hips' if part == 'torso' else LIMB_JOINTS[part]
-    dims = BOX_DIMS.get(part, (6, 12, 6))
-    wr, wt, view_r = _body_frames(J, cam)
-    b = BONES.index(bone)
-    par = PARENT_IDX[b]
-    parent_rot = wr[par].numpy() if par >= 0 else np.eye(3)
-    vr = view_r.numpy()
-    # The two strongest directions are the long sides; the third (a short end edge, the end face at a slant) is tried
-    # from each of the next few distinct directions, the colour check choosing among the turns they give.
+    fine = outline_directions(mask, unit)
     ang = lambda g, h: abs((math.degrees(math.atan2(g[0][1], g[0][0])) - math.degrees(math.atan2(h[0][1], h[0][0])) + 90) % 180 - 90)
     first = groups[0]
     second = next((g for g in groups[1:] if ang(g, first) >= 15), None)
@@ -1753,10 +1743,156 @@ def shape_candidates(fit, v, k, J, cam, part, mask, unit):
     thirds = [g for g in groups if g is not first and g is not second and ang(g, first) >= 10 and ang(g, second) >= 10][:2]
     thirds += [g for g in fine if ang(g, first) >= 5 and ang(g, second) >= 5
                and all(ang(g, t) >= 4 for t in thirds)][:3]
-    # The plain coarse reading (its three strongest directions) always goes first; the end-edge readings are extra
-    # options, so the colour check can only gain from them.
-    triples = [groups[:3]] + [[first, second, g3] for g3 in thirds
-                              if not (len(groups) >= 3 and g3 is groups[2] and second is groups[1])]
+    return [groups[:3]] + [[first, second, g3] for g3 in thirds
+                           if not (len(groups) >= 3 and g3 is groups[2] and second is groups[1])]
+
+
+def _axis_turn(rx, ry, rz):
+    """Small turn (degrees) about the camera's x, y, z axes."""
+    a, b, c = (math.radians(t) for t in (rx, ry, rz))
+    X = np.array([[1, 0, 0], [0, math.cos(a), -math.sin(a)], [0, math.sin(a), math.cos(a)]])
+    Y = np.array([[math.cos(b), 0, math.sin(b)], [0, 1, 0], [-math.sin(b), 0, math.cos(b)]])
+    Z = np.array([[math.cos(c), -math.sin(c), 0], [math.sin(c), math.cos(c), 0], [0, 0, 1]])
+    return Z @ Y @ X
+
+
+_BITS = [np.array(b) for b in __import__('itertools').product((0, 1), repeat=3)]
+
+
+def _box_points(Rm, L, centre, unit):
+    """The 8 window-px corners (indexed by bits (x, y, z)) of a box turned Rm (camera space, y up) with sides L (rig
+    px), centred at centre."""
+    ax = [np.array([Rm[0, n], -Rm[1, n]]) * L[n] * unit / 6 for n in range(3)]
+    return np.array([centre + sum((b[n] - 0.5) * ax[n] for n in range(3)) for b in _BITS])
+
+
+def box_from_outline(mask, unit, dims=(6, 12, 6), free=None):
+    """Draws a part's box from its outline: every direction reading (direction_triples) solved into box turns
+    (rotations_from_three, and the face-on reading of its two long sides), every way of laying the box's real sides
+    along them, at 0.85 / 1 / 1.15 x the camera's size around the part's centre; the best few are then fine-tuned
+    (position, size within 20% of the camera's, a few degrees of turn). Score: overlap with the part's pixels (intersection over union), where
+    box area over `free` pixels (other body parts that may hide it) costs nothing. Returns (iou, 8 window-px corners
+    indexed by bits (x, y, z), [(corner a, corner b, visible)] for its 12 edges, rotation, sides) or None."""
+    import itertools
+    m = mask.astype(np.uint8)
+    area = float(m.sum())
+    if area < 4:
+        return None
+    cost = (1 - m) if free is None else ((1 - m) & (1 - free.astype(np.uint8)))
+    ys, xs = np.nonzero(m)
+    c0 = np.array([xs.mean(), ys.mean()])
+    canvas = np.zeros_like(m)
+
+    def score(Rm, L, centre):
+        pts = _box_points(Rm, L, centre, unit)
+        canvas[:] = 0
+        cv2.fillConvexPoly(canvas, np.round(cv2.convexHull(pts.astype(np.float32)).reshape(-1, 2)).astype(np.int32), 1)
+        inter = float((canvas & m).sum())
+        return inter / max(1.0, area + float((canvas & cost).sum())), pts
+
+    turns = []
+    for trip in direction_triples(mask, unit):
+        dirs = [g[0] for g in trip]
+        if len(dirs) >= 3:
+            turns += rotations_from_three(dirs)
+        u0 = np.array([dirs[0][0], -dirs[0][1]])
+        u1 = np.array([dirs[1][0], -dirs[1][1]])
+        u1 = u1 - (u1 @ u0) * u0
+        if np.linalg.norm(u1) > 1e-6:
+            u1 /= np.linalg.norm(u1)
+            Rm = np.stack([np.r_[u0, 0], np.r_[u1, 0], np.array([0, 0, 1.0])], 1)
+            if np.linalg.det(Rm) < 0:
+                Rm[:, 2] *= -1
+            turns.append(Rm)
+    seeds = []
+    for Rm in turns:
+        for perm in set(itertools.permutations(range(3))):
+            L = np.array([dims[perm[n]] for n in range(3)], float)
+            for sc in (0.85, 1.0, 1.15):
+                for dx, dy in itertools.product((-0.15, 0, 0.15), repeat=2):
+                    c = c0 + np.array([dx, dy]) * unit
+                    seeds.append((score(Rm, L * sc, c)[0], Rm, L, sc, c))
+    if not seeds:
+        return None
+    seeds.sort(key=lambda t: -t[0])
+    best = None
+    for s0, Rm0, L, sc0, cc in seeds[:8]:
+        # Fine-tune: position, size, small turns about the camera axes; steps halve when nothing improves.
+        x = np.array([cc[0], cc[1], math.log(sc0), 0.0, 0.0, 0.0])
+        step = np.array([0.1 * unit, 0.1 * unit, 0.05, 3.0, 3.0, 3.0])
+        f = lambda x: score(_axis_turn(*x[3:]) @ Rm0, L * math.exp(x[2]), x[:2])[0]
+        fx = f(x)
+        for _ in range(4):
+            moved = True
+            while moved:
+                moved = False
+                for d in range(6):
+                    for sgn in (1, -1):
+                        y = x.copy()
+                        y[d] += sgn * step[d]
+                        if abs(y[2]) > math.log(1.2):  # real sides: size within 20% of the camera's
+                            continue
+                        fy = f(y)
+                        if fy > fx + 1e-9:
+                            x, fx, moved = y, fy, True
+                            break
+            step = step / 2
+        if best is None or fx > best[0]:
+            Rm = _axis_turn(*x[3:]) @ Rm0
+            best = (fx, score(Rm, L * math.exp(x[2]), x[:2])[1], Rm, L * math.exp(x[2]))
+    iou, pts, Rm, L = best
+    edges = []
+    for a in range(8):
+        for n in range(3):
+            if _BITS[a][n] == 0:
+                b = a | (1 << (2 - n))
+                # An edge shows when either face it borders faces the camera (outward normal toward +z).
+                vis = any((2 * _BITS[a][j] - 1) * Rm[2, j] > 1e-6 for j in range(3) if j != n)
+                edges.append((a, b, vis))
+    return iou, pts, edges, Rm, L
+
+
+def boxes_from_outline(mask, unit, dims=(6, 12, 6), free=None, most=2):
+    """box_from_outline, then -- when a sizeable piece of the part's colour is left outside the box (two limbs of one
+    colour touching) -- another box drawn for that leftover piece (the first box's area free for it), up to `most`."""
+    from scipy import ndimage
+    out = []
+    left = mask.astype(bool).copy()
+    free_now = np.zeros_like(left) if free is None else free.astype(bool).copy()
+    for _ in range(most):
+        r = box_from_outline(left, unit, dims, free_now)
+        if r is None:
+            break
+        out.append(r)
+        drawn = np.zeros(left.shape, np.uint8)
+        cv2.fillConvexPoly(drawn, np.round(cv2.convexHull(r[1].astype(np.float32)).reshape(-1, 2)).astype(np.int32), 1)
+        rest = left & ~cv2.dilate(drawn, np.ones((3, 3), np.uint8)).astype(bool)
+        lab, n = ndimage.label(rest)
+        if n == 0:
+            break
+        sizes = ndimage.sum(rest, lab, range(1, n + 1))
+        k = int(np.argmax(sizes)) + 1
+        if sizes[k - 1] < 0.5 * unit * unit:
+            break
+        free_now = free_now | drawn.astype(bool) | (rest & (lab != k))
+        left = lab == k
+    return out
+
+
+def shape_candidates(fit, v, k, J, cam, part, mask, unit):
+    """Joint vectors turning one part's box to the three directions its outline runs in (or two, seen face-on): every
+    assignment of the box's real sides to those directions, both mirror readings; each assignment's implied scale must
+    agree with the camera's within 35%."""
+    triples = direction_triples(mask, unit)
+    if not triples:
+        return []
+    bone = 'hips' if part == 'torso' else LIMB_JOINTS[part]
+    dims = BOX_DIMS.get(part, (6, 12, 6))
+    wr, wt, view_r = _body_frames(J, cam)
+    b = BONES.index(bone)
+    par = PARENT_IDX[b]
+    parent_rot = wr[par].numpy() if par >= 0 else np.eye(3)
+    vr = view_r.numpy()
     out = []
     import itertools
     for trip in triples:
