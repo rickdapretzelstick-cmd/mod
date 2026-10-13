@@ -1514,7 +1514,7 @@ TORSO_CORNERS = os.environ.get('R6_TORSO_CORNERS', '0') == '1'
 BOX_DIMS = {'torso': (12, 12, 6), 'head': (7.2, 7, 7.2)}  # rig px along the box's own x, y, z; limbs are (6, 12, 6)
 
 
-def rotations_from_L(a2, b2, s, dims, slack=0.15):
+def rotations_from_L(a2, b2, s, dims, slack=0.15, axes=False):
     """Every turn of a box that shows two of its edges, meeting at a corner, as the screen vectors a2 and b2 (footage
     px): each is one of the box's three axes (any sign) at its real length (dims, rig px). On screen an edge keeps its
     sideways extent and loses depth, so its tilt out of the picture follows from its real length; the two edges being
@@ -1548,8 +1548,66 @@ def rotations_from_L(a2, b2, s, dims, slack=0.15):
                             cols[i], cols[j] = sga * au, sgb * bu
                             k = 3 - i - j
                             cols[k] = np.cross(cols[(k + 1) % 3], cols[(k + 2) % 3])
-                            out.append(np.stack(cols, 1))
+                            out.append((np.stack(cols, 1), i, j, k) if axes else np.stack(cols, 1))
     return out
+
+
+def sketch_boxes(view, i, cam_scale, classes=None):
+    """Reference boxes sketched from the corners (no pose involved): each corner's two edges, at their measured
+    lengths, read as two sides of a box of its part's real size (red: torso; yellow: arm or head; lime: leg); every
+    turn that fits (rotations_from_L) is completed into the whole box (8 corners, the third side running either way)
+    anchored on the corner, and scored by how much of its outline area is its colour (any shade) less the floor it
+    covers. The best box per corner is kept, then among boxes overlapping by more than half only the best.
+    Returns [(score, colour, part kind, 8 window-px points, corner point)]."""
+    obs = view.shadowed[i]
+    pix, _, _, scale = view.windows[i]
+    sc = float(scale)
+    side = obs.shape[0]
+    s_win = cam_scale / sc  # window px per rig px
+    unit = 6 * s_win
+    kinds = {F.CLASS_OF['torso']: [('torso', (12, 12, 6))]}
+    for part in ('rightArm', 'rightLeg'):
+        kinds.setdefault(F.CLASS_OF[part], []).append(('limb', (6, 12, 6)))
+    kinds.setdefault(F.CLASS_OF['head'], []).append(('head', (7.2, 7, 7.2)))
+    floor = obs == 0
+    best_per_corner = []
+    for cpt, d1, d2, cls, ang in view.corners.get(i, []):
+        if classes is not None and cls not in classes:
+            continue
+        l1 = edge_reach(obs, cpt, d1, cls, unit)
+        l2 = edge_reach(obs, cpt, d2, cls, unit)
+        if min(l1, l2) < 0.3 * unit:
+            continue
+        colour = obs == cls
+        best = None
+        for kind, dims in kinds.get(cls, []):
+            for R, ai, bj, ck in rotations_from_L(d1 * l1, d2 * l2, s_win, dims, axes=True):
+                for third in (1, -1):
+                    # The corner's two edges run along axes ai and bj away from it; the third side either way.
+                    pts = []
+                    for ta in (0, 1):
+                        for tb in (0, 1):
+                            for tc in (0, 1):
+                                vec = ta * dims[ai] * R[:, ai] + tb * dims[bj] * R[:, bj] + tc * third * dims[ck] * R[:, ck]
+                                pts.append(cpt + np.array([vec[0], -vec[1]]) * s_win)
+                    pts = np.array(pts)
+                    m_ = np.zeros((side, side), np.uint8)
+                    cv2.fillConvexPoly(m_, np.round(cv2.convexHull(pts.astype(np.float32)).reshape(-1, 2)).astype(np.int32), 1)
+                    mb = m_.astype(bool)
+                    area = mb.sum()
+                    if area < 0.5 * unit * unit:
+                        continue
+                    score = ((mb & colour).sum() - (mb & floor).sum()) / area
+                    if best is None or score > best[0]:
+                        best = (score, cls, kind, pts, cpt, mb)
+        if best is not None:
+            best_per_corner.append(best)
+    best_per_corner.sort(key=lambda e: -e[0])
+    kept = []
+    for cand in best_per_corner:
+        if all((cand[5] & k[5]).sum() < 0.5 * min(cand[5].sum(), k[5].sum()) for k in kept):
+            kept.append(cand)
+    return [k[:5] for k in kept]
 
 
 def edge_reach(obs, pt, d, cls, unit, max_studs=3.0):
