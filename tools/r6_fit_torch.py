@@ -812,6 +812,9 @@ class Fit:
             # the camera's tilt takes it (a Roblox camera tilts; a standing character does not lean).
             bx, bz = F.JI[('hips', 0)] - NC, F.JI[('hips', 2)] - NC
             r = r + (J[:, bx] ** 2 + J[:, bz] ** 2).sum() * (BODY_LEAN_W if self.lean_w is None else self.lean_w)
+            if self.lean_w is not None:
+                # Body sense: the torso stays over the hips (lean and roll past 45 deg cost steeply).
+                r = r + ((torch.relu(J[:, bx].abs() - 45) ** 2) + (torch.relu(J[:, bz].abs() - 45) ** 2)).sum() * 0.05
         r = r + (J[:, 0] ** 2 + J[:, 2] ** 2).sum() * 2e-5
         if len(J) > 2:
             acc = J[2:] - 2 * J[1:-1] + J[:-2]
@@ -2753,7 +2756,8 @@ def character_mask(obs):
     return m & (obs != F.UNKNOWN)
 
 
-def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 60), rolls=(-45, 0, 45)):
+def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 60), rolls=(-45, 0, 45), prev=None,
+               cont_w=0.0, lean_max=45.0):
     """A still camera already known (cam_lock: its yaw and tilt): the body tried turned every way instead -- lean x
     turn (every 15 deg) x roll, the limbs as they are and straight -- each placed onto the character (centre and size)
     and scored by hard colour agreement (quick ranking on every other pixel, the shortlist on every pixel); the best few
@@ -2767,20 +2771,36 @@ def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 6
     hx, hy, hz = (F.JI[('hips', a)] - NC for a in range(3))
     straight = torch.zeros_like(J0)
     poses = []
-    for limbs in (J0, straight):
-        for lean in leans:
-            for turn in range(0, 360, 15):
-                for roll in rolls:
+    if prev is not None:
+        # Tracking: the body near the last frame's turn (+-60 deg), its lean and roll within lean_max (body sense: a
+        # standing fighter's torso stays over its hips).
+        p_lean, p_turn, p_roll = float(prev[hx]), float(prev[hy]), float(prev[hz])
+        lean_set = sorted({max(-lean_max, min(lean_max, p_lean + d)) for d in (-30, -15, 0, 15, 30)})
+        roll_set = sorted({max(-lean_max, min(lean_max, p_roll + d)) for d in (-30, -15, 0, 15, 30)})
+        turn_set = [p_turn + d for d in range(-60, 61, 15)]
+        limb_sets = (prev.clone(), J0)
+    else:
+        lean_set, roll_set, turn_set, limb_sets = leans, rolls, range(0, 360, 15), (J0, straight)
+    for limbs in limb_sets:
+        for lean in lean_set:
+            for turn in turn_set:
+                for roll in roll_set:
                     q = limbs.clone()
                     q[hx], q[hy], q[hz] = float(lean), float(turn), float(roll)
                     poses.append(q)
     Js = torch.stack(poses)
     C = c0[None].repeat(len(Js), 1)
     place(view, i, fit, Js, C, size=False)
-    # Ranked by the body without its arms (their pose comes next, limb_sweep).
-    sc = drawn_match(fit, i, Js, C, stride=2)
+    # Ranked by the body without its arms (their pose comes next, limb_sweep); while tracking, a turn far from the last
+    # frame's pays for it (drawn_match counts pixels: the penalty in the same units, per 90 deg).
+    def moved(Q):
+        if prev is None or not cont_w:
+            return torch.zeros(len(Q), dtype=DT)
+        d = (Q[:, [hx, hy, hz]] - prev[[hx, hy, hz]] + 180) % 360 - 180
+        return cont_w * 400.0 * d.abs().sum(1) / 90.0
+    sc = drawn_match(fit, i, Js, C, stride=2) * 4 - moved(Js)
     short = torch.argsort(sc, descending=True)[:4 * top]
-    full = drawn_match(fit, i, Js[short], C[short])
+    full = drawn_match(fit, i, Js[short], C[short]) - moved(Js[short])
     order = short[torch.argsort(full, descending=True)[:top]]
     now = float(agreement(fit, 0, i, J0[None], c0[None])[0])
     best = (now, J0, (fit.cams[0][k]).detach().clone())
@@ -2790,7 +2810,7 @@ def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 6
             fit.J[k] = Js[o]
             fit.cams[0][k] = C[o] / CAM_UNIT
         view.window(i, fit.params_of(0, k), f0)
-        limb_sweep(fit, k)
+        limb_sweep(fit, k, prev=prev, cont_w=cont_w)
         view.window(i, fit.params_of(0, k), f0)
         track_step(fit, k, steps, sigma0=1.2, cam_lock=cam_lock)
         view.window(i, fit.params_of(0, k), f0)
@@ -2866,16 +2886,24 @@ def place(view, i, fit, Js, C, size=True):
             C[:, 3:5] = C[:, 3:5] + (o_c - 0.5 * (uv.max(1).values + uv.min(1).values))
 
 
-def limb_sweep(fit, k, step=30, rounds=2):
+def limb_sweep(fit, k, step=30, rounds=2, prev=None, cont_w=0.0):
     """Side-coloured clothing: each limb (arms, then legs) tried pointing every way within its range -- its two swing
     angles on a step-degree grid and its turn about its own length (an arm raised forward swings across the chest by
     that turn), every candidate ranked at once by hard colour agreement (every other pixel; the shortlist again on every
     pixel), the best kept; twice round (a limb found helps the next). A fast swing between frames is found here, where
-    gradient steps from the last frame would stall."""
+    gradient steps from the last frame would stall. prev (the last frame's joints) and cont_w: each candidate pays cont_w
+    per 90 deg its limb moved from there (between frames a limb moves little; a far jump must be clearly better)."""
     view = fit.views[0]
     i = view.idx[k]
     cam = (fit.cams[0][[k]] * CAM_UNIT).detach()
     J = fit.J.detach()[k].clone()
+
+    def moved(Js, cols):
+        if prev is None or not cont_w:
+            return torch.zeros(len(Js), dtype=DT)
+        d = (Js[:, cols] - prev[cols] + 180) % 360 - 180
+        return cont_w * d.abs().sum(1) / 90.0
+
     best = float(agreement(fit, 0, i, J[None], cam)[0])
     for _ in range(rounds):
         for bone in ('rightArm', 'leftArm', 'rightThigh', 'leftThigh'):
@@ -2890,12 +2918,38 @@ def limb_sweep(fit, k, step=30, rounds=2):
                         q[jx], q[jy], q[jz] = float(ax), float(ay), float(az)
                         cands.append(q)
             Js = torch.stack(cands)
-            sc = agreement(fit, 0, i, Js, cam.expand(len(Js), 5), stride=2)
+            cols = [jx, jy, jz]
+            # Arms move fast (a punch crosses half a circle between frames); legs mostly hold.
+            wf = 0.25 if 'Arm' in bone else 1.0
+            sc = agreement(fit, 0, i, Js, cam.expand(len(Js), 5), stride=2) - wf * moved(Js, cols)
             short = torch.argsort(sc, descending=True)[:8]
-            full = agreement(fit, 0, i, Js[short], cam.expand(len(short), 5))
+            full = agreement(fit, 0, i, Js[short], cam.expand(len(short), 5)) - wf * moved(Js[short], cols)
+            now = float(agreement(fit, 0, i, J[None], cam)[0]) - wf * float(moved(J[None], cols)[0])
             o = int(short[int(torch.argmax(full))])
-            if float(full.max()) > best:
-                best, J = float(full.max()), Js[o].clone()
+            if float(full.max()) > now:
+                J = Js[o].clone()
+                best = float(agreement(fit, 0, i, J[None], cam)[0])
+    # Fine pass: each limb within +-20 deg (10 deg steps) of what the coarse grid found, its turn within +-30 deg.
+    for bone in ('rightArm', 'leftArm', 'rightThigh', 'leftThigh'):
+        jx, jy, jz = (F.JI[(bone, a)] - NC for a in range(3))
+        cands = []
+        for dx in (-20, -10, 0, 10, 20):
+            for dz in (-20, -10, 0, 10, 20):
+                for dy in (-30, -15, 0, 15, 30):
+                    q = J.clone()
+                    q[jx], q[jy], q[jz] = J[jx] + dx, J[jy] + dy, J[jz] + dz
+                    for j_ in (jx, jy, jz):
+                        q[j_] = float(np.clip(float(q[j_]), *F.LIMITS[F.JOINTS[j_]]))
+                    cands.append(q)
+        Js = torch.stack(cands)
+        cols = [jx, jy, jz]
+        wf = 0.25 if 'Arm' in bone else 1.0
+        full = agreement(fit, 0, i, Js, cam.expand(len(Js), 5)) - wf * moved(Js, cols)
+        now = float(agreement(fit, 0, i, J[None], cam)[0]) - wf * float(moved(J[None], cols)[0])
+        o = int(torch.argmax(full))
+        if float(full[o]) > now:
+            J = Js[o].clone()
+            best = float(agreement(fit, 0, i, J[None], cam)[0])
     with torch.no_grad():
         fit.J[k] = J
     return best
