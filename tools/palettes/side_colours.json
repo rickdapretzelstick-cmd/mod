@@ -1,20 +1,290 @@
-{"comment": "Roblox default template shirt and pants: a colour per side (measured from the user's calibration recording). sides: per part, the class of each box side in the order right, left, top, bottom, front, back (the character's own right/left).",
+{
+ "comment": "Roblox default template shirt and pants: a colour per side (measured from the user's calibration recording). sides: per part, the class of each box side in the order right, left, top, bottom, front, back (the character's own right/left).",
  "classes": [
-  {"name": "red", "parts": ["head", "torso", "rightArm", "leftArm"], "h": [240, 12], "s": [150, 255], "v": [70, 255], "show": [225, 25, 35]},
-  {"name": "cyan", "parts": ["rightLeg", "leftLeg"], "h": [112, 131], "s": [110, 255], "v": [90, 255], "show": [40, 245, 236]},
-  {"name": "skyblue", "parts": [], "h": [132, 146], "s": [110, 255], "v": [90, 255], "show": [40, 190, 221]},
-  {"name": "yellow", "parts": [], "h": [38, 56], "s": [165, 255], "v": [90, 255], "show": [246, 249, 37]},
-  {"name": "orange", "parts": [], "h": [18, 37], "s": [70, 200], "v": [110, 255], "show": [246, 218, 112]},
-  {"name": "green", "parts": [], "h": [85, 112], "s": [110, 255], "v": [90, 255], "show": [32, 245, 114]},
-  {"name": "magenta", "parts": [], "h": [198, 236], "s": [110, 255], "v": [90, 255], "show": [223, 42, 179]},
-  {"name": "blue", "parts": [], "h": [147, 176], "s": [110, 255], "v": [80, 255], "show": [32, 97, 234]},
-  {"name": "unseen", "parts": [], "h": [0, 0], "s": [256, 256], "v": [256, 256], "show": [90, 90, 90]},
-  {"name": "face", "parts": ["face"], "v": [0, 70], "show": [40, 40, 255]}],
+  {
+   "name": "red",
+   "parts": [
+    "head",
+    "torso",
+    "rightArm",
+    "leftArm"
+   ],
+   "h": [
+    240,
+    12
+   ],
+   "s": [
+    150,
+    255
+   ],
+   "v": [
+    70,
+    255
+   ],
+   "show": [
+    225,
+    25,
+    35
+   ]
+  },
+  {
+   "name": "cyan",
+   "parts": [
+    "rightLeg",
+    "leftLeg"
+   ],
+   "h": [
+    112,
+    131
+   ],
+   "s": [
+    110,
+    255
+   ],
+   "v": [
+    90,
+    255
+   ],
+   "show": [
+    40,
+    245,
+    236
+   ]
+  },
+  {
+   "name": "skyblue",
+   "parts": [],
+   "h": [
+    132,
+    146
+   ],
+   "s": [
+    110,
+    255
+   ],
+   "v": [
+    90,
+    255
+   ],
+   "show": [
+    40,
+    190,
+    221
+   ]
+  },
+  {
+   "name": "yellow",
+   "parts": [],
+   "h": [
+    38,
+    56
+   ],
+   "s": [
+    165,
+    255
+   ],
+   "v": [
+    90,
+    255
+   ],
+   "show": [
+    246,
+    249,
+    37
+   ]
+  },
+  {
+   "name": "orange",
+   "parts": [],
+   "h": [
+    18,
+    37
+   ],
+   "s": [
+    70,
+    200
+   ],
+   "v": [
+    110,
+    255
+   ],
+   "show": [
+    246,
+    218,
+    112
+   ]
+  },
+  {
+   "name": "green",
+   "parts": [],
+   "h": [
+    85,
+    112
+   ],
+   "s": [
+    110,
+    255
+   ],
+   "v": [
+    90,
+    255
+   ],
+   "show": [
+    32,
+    245,
+    114
+   ]
+  },
+  {
+   "name": "magenta",
+   "parts": [],
+   "h": [
+    198,
+    236
+   ],
+   "s": [
+    110,
+    255
+   ],
+   "v": [
+    90,
+    255
+   ],
+   "show": [
+    223,
+    42,
+    179
+   ]
+  },
+  {
+   "name": "blue",
+   "parts": [],
+   "h": [
+    147,
+    176
+   ],
+   "s": [
+    110,
+    255
+   ],
+   "v": [
+    80,
+    255
+   ],
+   "show": [
+    32,
+    97,
+    234
+   ]
+  },
+  {
+   "name": "unseen",
+   "parts": [],
+   "h": [
+    0,
+    0
+   ],
+   "s": [
+    256,
+    256
+   ],
+   "v": [
+    256,
+    256
+   ],
+   "show": [
+    90,
+    90,
+    90
+   ]
+  },
+  {
+   "name": "face",
+   "parts": [
+    "face"
+   ],
+   "v": [
+    0,
+    70
+   ],
+   "show": [
+    40,
+    40,
+    255
+   ]
+  }
+ ],
  "sides": {
-  "head": ["red", "red", "red", "red", "red", "red"],
-  "torso": ["green", "yellow", "cyan", "unseen", "red", "skyblue"],
-  "rightArm": ["green", "yellow", "cyan", "unseen", "red", "skyblue"],
-  "leftArm": ["green", "yellow", "cyan", "unseen", "red", "skyblue"],
-  "rightLeg": ["magenta", "blue", "unseen", "unseen", "cyan", "orange"],
-  "leftLeg": ["magenta", "blue", "unseen", "unseen", "cyan", "orange"]},
- "marks": true}
+  "head": [
+   "red",
+   "red",
+   "red",
+   "red",
+   "red",
+   "red"
+  ],
+  "torso": [
+   "green",
+   "yellow",
+   "cyan",
+   "unseen",
+   "red",
+   "skyblue"
+  ],
+  "rightArm": [
+   "green",
+   "yellow",
+   "cyan",
+   "unseen",
+   "red",
+   "skyblue"
+  ],
+  "leftArm": [
+   "green",
+   "yellow",
+   "cyan",
+   "unseen",
+   "red",
+   "skyblue"
+  ],
+  "rightLeg": [
+   "magenta",
+   "blue",
+   "unseen",
+   "unseen",
+   "cyan",
+   "orange"
+  ],
+  "leftLeg": [
+   "magenta",
+   "blue",
+   "unseen",
+   "unseen",
+   "cyan",
+   "orange"
+  ]
+ },
+ "marks": true,
+ "proportions": {
+  "torso": [
+   1.055,
+   1.131,
+   0.995
+  ],
+  "head": [
+   0.994,
+   1.126,
+   0.979
+  ],
+  "arms": [
+   1.101,
+   1.101,
+   1.029
+  ],
+  "legs": [
+   1.015,
+   0.986,
+   0.968
+  ]
+ }
+}

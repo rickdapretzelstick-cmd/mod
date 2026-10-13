@@ -51,6 +51,18 @@ PART_BONE = [BONES.index(b) for b, _, _, _ in F.PARTS]
 PART_OF_FACE = torch.arange(len(F.PARTS)).repeat_interleave(6)  # which box each face belongs to
 CORNERS = torch.tensor([[[x, y, z] for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])]
                         for _, lo, hi, _ in F.PARTS], dtype=DT)  # (parts, 8, 3)
+# The avatar's proportions per box (F.PROPORTION, about each joint); SCALE_OVERRIDE (parts, 3) replaces them while
+# they are being measured (tools/calibrate_body.py).
+SCALE_OVERRIDE = None
+
+
+def box_scale():
+    if SCALE_OVERRIDE is not None:
+        return SCALE_OVERRIDE
+    return torch.tensor([F.PROPORTION.get(F.GROUP_OF.get(part, part), (1.0, 1.0, 1.0)) for _, _, _, part in F.PARTS],
+                        dtype=DT)
+
+
 FACE_IDX = torch.tensor([f[0] for f in F.FACES])  # (6, 4)
 FACE_N = torch.tensor(np.stack([f[1] for f in F.FACES]), dtype=DT)  # (6, 3)
 M2W = torch.tensor([-1.0, -1.0, 1.0], dtype=DT)
@@ -114,7 +126,8 @@ def geometry(J, cam, persp, light, corners=False):
             wt[b] = wt[par] + (wr[par] @ OFFSET[b].unsqueeze(-1)).squeeze(-1)
     WR = torch.stack([wr[i] for i in PART_BONE], 1)  # (B, P, 3, 3)
     WT = torch.stack([wt[i] for i in PART_BONE], 1)  # (B, P, 3)
-    X = (WR.unsqueeze(2) @ CORNERS.unsqueeze(0).unsqueeze(-1)).squeeze(-1) + WT.unsqueeze(2)  # (B, P, 8, 3) model
+    box = CORNERS * box_scale()[:, None, :]
+    X = (WR.unsqueeze(2) @ box.unsqueeze(0).unsqueeze(-1)).squeeze(-1) + WT.unsqueeze(2)  # (B, P, 8, 3) model
     X = X * M2W
     zeros = torch.zeros_like(cam[:, 0])
     view = rotm(torch.stack([cam[:, 1], zeros, zeros], -1)) @ rotm(torch.stack([zeros, cam[:, 0], zeros], -1))  # (B, 3, 3)

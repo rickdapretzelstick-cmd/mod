@@ -61,6 +61,12 @@ CLASS_OF, FACE, HEAD, BODY_CLASSES, COST, SHOW, UNKNOWN = {}, -1, 0, [], None, {
 # Each part's six box sides' classes (right, left, top, bottom, front, back: the order of FACES); a palette with
 # 'sides' gives every side its own colour (clothing painted per side), otherwise all six are the part's colour.
 SIDE_CLASS = {}
+# The avatar's proportions: per body group, its boxes' size along x, y, z against the standard R6 sizes (1 = standard),
+# measured once from a calibration recording (tools/calibrate_body.py) and kept in the palette as 'proportions'.
+# Boxes scale about their own joint (an arm grows away from its shoulder, a leg down from its hip).
+PROPORTION = {}
+GROUP_OF = {'torso': 'torso', 'head': 'head', 'face': 'head', 'rightArm': 'arms', 'leftArm': 'arms',
+            'rightLeg': 'legs', 'leftLeg': 'legs'}
 
 
 def use_palette(pal):
@@ -77,6 +83,8 @@ def use_palette(pal):
             FACE = i
     CLASS_OF.setdefault('face', CLASS_OF['head'])
     HEAD = CLASS_OF['head']
+    PROPORTION.clear()
+    PROPORTION.update({g: list(v) for g, v in pal.get('proportions', {}).items()})
     SIDE_CLASS.clear()
     names = {c['name']: i for i, c in enumerate(pal['classes'], 1)}
     for part, cls in CLASS_OF.items():
@@ -176,6 +184,12 @@ def camera_of(p):
     return view, project
 
 
+def scaled_box(part, lo, hi):
+    """A part's box at the avatar's proportions (PROPORTION), scaled about its joint."""
+    s = PROPORTION.get(GROUP_OF.get(part, part), (1.0, 1.0, 1.0))
+    return tuple(a * f for a, f in zip(lo, s)), tuple(a * f for a, f in zip(hi, s))
+
+
 def corners_of(world, bone, lo, hi):
     c = np.array([[x, y, z, 1] for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])]).T
     return MODEL_TO_WORLD @ (world[bone] @ c)[:3]
@@ -187,6 +201,7 @@ def boxes(p):
     view, project = camera_of(p)
     out = []
     for bone, lo, hi, part in PARTS:
+        lo, hi = scaled_box(part, lo, hi)
         v = view @ corners_of(world, bone, lo, hi)
         out.append((v[2].mean() + (0.01 if part == 'face' else 0), hull(project(v)), CLASS_OF[part]))
     out.sort(key=lambda e: e[0])
@@ -201,6 +216,7 @@ def faces(p, light):
     persp = p[5]
     out = []
     for bone, lo, hi, part in PARTS:
+        lo, hi = scaled_box(part, lo, hi)
         wc = corners_of(world, bone, lo, hi)
         v = view @ wc
         uv = project(v)
