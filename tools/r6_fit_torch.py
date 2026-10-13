@@ -162,7 +162,8 @@ class View:
         self.judge_cache = {}
         self.gray = {}
         self.corners = {}
-        self.shadowed = {}  # frame -> class map with each part colour grown into its shadow (for corners)  # frame -> [(point, dir1, dir2, colour, angle)]: where two straight edges of a colour meet
+        self.shadowed = {}
+        self.ref_boxes = {}  # frame -> {part: sketch_part_box result}  # frame -> class map with each part colour grown into its shadow (for corners)  # frame -> [(point, dir1, dir2, colour, angle)]: where two straight edges of a colour meet
         self.folds = {}  # frame -> [(segment, colour)]: straight lines inside one colour (where two faces meet)
         self.predicted_folds = {}  # frame -> [(segment, colour)]: folds implied by obtuse corners (predict_folds)
         self.targets = {}  # frame -> (boxes' target masks (boxes, N), which boxes have one (boxes,))
@@ -1610,6 +1611,53 @@ def sketch_boxes(view, i, cam_scale, classes=None):
     return [k[:5] for k in kept]
 
 
+def sketch_part_box(view, i, cam_scale, part, target, corners):
+    """The reference box of one part, from that part's own corners only (corners of its colour lying on its own pixels):
+    each corner read as two sides of the part's box (real size), completed into the whole box anchored on the corner,
+    scored on the part's own pixels -- its pixels covered, less floor covered, less half of any other part's colour it
+    covers -- plus 0.3 x the share of the part's corners its outline lands on (several corners agreeing beat one).
+    Returns (score, 8 window-px points, the corner it grew from, rotation, axes) or None."""
+    obs = view.shadowed[i]
+    pix, _, _, scale = view.windows[i]
+    sc = float(scale)
+    side = obs.shape[0]
+    s_win = cam_scale / sc
+    unit = 6 * s_win
+    cls = F.CLASS_OF[part]
+    dims = BOX_DIMS.get(part, (6, 12, 6))
+    floor = obs == 0
+    others = (obs > 0) & (obs != F.UNKNOWN) & ~target & (obs != cls) | ((obs == cls) & ~target)
+    best = None
+    for cpt, d1, d2, c_, ang in corners:
+        l1 = edge_reach(obs, cpt, d1, cls, unit)
+        l2 = edge_reach(obs, cpt, d2, cls, unit)
+        if min(l1, l2) < 0.3 * unit:
+            continue
+        for R, ai, bj, ck in rotations_from_L(d1 * l1, d2 * l2, s_win, dims, axes=True):
+            for third in (1, -1):
+                pts = []
+                for ta in (0, 1):
+                    for tb in (0, 1):
+                        for tc in (0, 1):
+                            vec = ta * dims[ai] * R[:, ai] + tb * dims[bj] * R[:, bj] + tc * third * dims[ck] * R[:, ck]
+                            pts.append(cpt + np.array([vec[0], -vec[1]]) * s_win)
+                pts = np.array(pts)
+                hull = cv2.convexHull(pts.astype(np.float32)).reshape(-1, 2)
+                m_ = np.zeros((side, side), np.uint8)
+                cv2.fillConvexPoly(m_, np.round(hull).astype(np.int32), 1)
+                mb = m_.astype(bool)
+                area = mb.sum()
+                if area < 0.5 * unit * unit:
+                    continue
+                score = ((mb & target).sum() - (mb & floor).sum() - 0.5 * (mb & others).sum()) / area
+                score += 0.3 * corner_hits(hull, corners, unit) / max(3, len(corners))
+                if best is None or score > best[0]:
+                    # Which way the third side runs only picks which box corner sits on the footage corner: the box's
+                    # turn is R either way.
+                    best = (score, pts, cpt, R, (ai, bj, ck, third))
+    return best
+
+
 def edge_reach(obs, pt, d, cls, unit, max_studs=3.0):
     """How far a corner's edge runs (window px): step along it through the part's colour (gaps up to 0.2 stud
     stepped over) until the colour ends."""
@@ -1819,6 +1867,14 @@ def measure_limbs(fit, v, k, prev=None, log=None):
             xd = math.degrees(math.asin(float(torch.clamp(a[2], -1, 1))))
             zd = math.degrees(math.atan2(-float(a[0]), float(a[1])))
             cands += twisted(J, bone, xd, zd, tuple(range(-45, 46, 9)))
+        # The limb's reference box, sketched from its own corners only; its turn starts the candidates.
+        ref = sketch_part_box(view, i, float(cam[2]), part, target, mine_c)
+        view.ref_boxes.setdefault(i, {})[part] = ref
+        if ref is not None:
+            xd_, yd_, zd_ = joints_for_rotation(ref[3], view_r.numpy(), wr[par].numpy())
+            q = J.clone()
+            q[F.JI[(bone, 0)] - NC], q[F.JI[(bone, 1)] - NC], q[F.JI[(bone, 2)] - NC] = xd_, yd_, zd_
+            cands.insert(0, q)
         # Corner-built turns: each of the limb's own corners read as two of its box's edges (exact box geometry).
         cands += [q for q, _ in corner_candidates(fit, v, k, J, cam, part, mine_c, view.shadowed[i], stud, sc, x0, y0)]
         # 5. Decide toward/away and twist by coverage of the limb's own pixels (drawn with the others in place).
