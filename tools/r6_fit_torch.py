@@ -1507,6 +1507,137 @@ def init_camera_for(fitter, enc, joints, flip=False):
     return p
 
 
+M2W_MAT = np.diag([-1.0, -1.0, 1.0])
+# The torso turned to fit its own corners (tried beside the body as placed, the better kept). On the wiki GIFs it never
+# won -- the torso's real corners are mostly hidden by the dummy and the arms -- so it is off: R6_TORSO_CORNERS=1 on.
+TORSO_CORNERS = os.environ.get('R6_TORSO_CORNERS', '0') == '1'
+BOX_DIMS = {'torso': (12, 12, 6), 'head': (7.2, 7, 7.2)}  # rig px along the box's own x, y, z; limbs are (6, 12, 6)
+
+
+def rotations_from_L(a2, b2, s, dims, slack=0.15):
+    """Every turn of a box that shows two of its edges, meeting at a corner, as the screen vectors a2 and b2 (footage
+    px): each is one of the box's three axes (any sign) at its real length (dims, rig px). On screen an edge keeps its
+    sideways extent and loses depth, so its tilt out of the picture follows from its real length; the two edges being
+    at right angles fixes how the tilts pair up. Returns camera-space rotations (columns = the box's x, y, z axes)."""
+    A = np.array([a2[0], -a2[1]]) / s  # camera plane (y up), rig px
+    B = np.array([b2[0], -b2[1]]) / s
+    na, nb = np.linalg.norm(A), np.linalg.norm(B)
+    out = []
+    for i in range(3):
+        for j in range(3):
+            if i == j:
+                continue
+            La, Lb = dims[i], dims[j]
+            if na > La * (1 + slack) or nb > Lb * (1 + slack) or na < 0.25 * La or nb < 0.25 * Lb:
+                continue
+            za0 = math.sqrt(max(0.0, La * La - na * na))
+            zb0 = math.sqrt(max(0.0, Lb * Lb - nb * nb))
+            for sa in (1, -1):
+                for sb in (1, -1):
+                    za, zb = sa * za0, sb * zb0
+                    if abs(A @ B + za * zb) > 0.25 * La * Lb:
+                        continue  # not at right angles
+                    a3 = np.array([A[0], A[1], za])
+                    b3 = np.array([B[0], B[1], zb])
+                    au = a3 / max(1e-9, np.linalg.norm(a3))
+                    bu = b3 - (b3 @ au) * au
+                    bu = bu / max(1e-9, np.linalg.norm(bu))
+                    for sga in (1, -1):
+                        for sgb in (1, -1):
+                            cols = [None] * 3
+                            cols[i], cols[j] = sga * au, sgb * bu
+                            k = 3 - i - j
+                            cols[k] = np.cross(cols[(k + 1) % 3], cols[(k + 2) % 3])
+                            out.append(np.stack(cols, 1))
+    return out
+
+
+def edge_reach(obs, pt, d, cls, unit, max_studs=3.0):
+    """How far a corner's edge runs (window px): step along it through the part's colour (gaps up to 0.2 stud
+    stepped over) until the colour ends."""
+    H, W = obs.shape
+    step, gap, last, t = 0.5, 0.0, 0.0, 0.0
+    while t < max_studs * unit:
+        t += step
+        q = np.round(pt + d * t - np.array([-d[1], d[0]]) * 0.6).astype(int)  # just inside the edge
+        inside = 0 <= q[0] < W and 0 <= q[1] < H and obs[q[1], q[0]] == cls
+        if inside:
+            last, gap = t, 0.0
+        else:
+            gap += step
+            if gap > 0.2 * unit:
+                break
+    return last
+
+
+def joints_for_rotation(R_cam, view_r, parent_rot):
+    """The bone's own (x, y, z) degrees that turn its box to R_cam (camera space) under a parent turned parent_rot."""
+    R_model = M2W_MAT @ view_r.T @ R_cam
+    return _euler_zyx(torch.tensor(parent_rot.T @ R_model, dtype=DT))
+
+
+def corner_candidates(fit, v, k, J, cam, part, corners, obs_sh, unit, sc, x0, y0):
+    """Joint vectors turning one part's box to fit each of its corners (every reading of each corner's two edges)."""
+    bone = 'hips' if part == 'torso' else LIMB_JOINTS[part]
+    dims = BOX_DIMS.get(part, (6, 12, 6))
+    wr, wt, view_r = _body_frames(J, cam)
+    b = BONES.index(bone)
+    par = PARENT_IDX[b]
+    parent_rot = wr[par].numpy() if par >= 0 else np.eye(3)
+    vr = view_r.numpy()
+    out = []
+    for cpt, d1, d2, cls, ang in corners:
+        l1 = edge_reach(obs_sh, cpt, d1, cls, unit)
+        l2 = edge_reach(obs_sh, cpt, d2, cls, unit)
+        if min(l1, l2) < 0.3 * unit:
+            continue
+        for R_cam in rotations_from_L(d1 * l1 * sc, d2 * l2 * sc, float(cam[2]), dims):
+            xd, yd, zd = joints_for_rotation(R_cam, vr, parent_rot)
+            q = J.clone()
+            q[F.JI[(bone, 0)] - NC], q[F.JI[(bone, 1)] - NC], q[F.JI[(bone, 2)] - NC] = xd, yd, zd
+            out.append((q, cpt))
+    return out
+
+
+def torso_from_corners(fit, v, k, only=None):
+    """The torso turned to fit each of its corners, the body slid so the matching box corner lands on the footage
+    corner; kept if the judge prefers it. Returns (judged after, before, candidates tried)."""
+    view = fit.views[v]
+    i = view.idx[k]
+    pix, _, _, scale = view.windows[i]
+    sc = float(scale)
+    x0, y0 = float(pix[0, 0]) - 0.5 * sc, float(pix[0, 1]) - 0.5 * sc
+    J = fit.joints_at(v, k).detach().clone()
+    cam = (fit.cams[v][k] * CAM_UNIT).detach().clone()
+    unit = 6 * float(cam[2]) / sc
+    corners = [cn for cn in view.corners.get(i, []) if cn[3] == F.CLASS_OF['torso']]
+    before = float(judge(fit, v, i, J[None], cam[None], only=only)[0])
+    cands = corner_candidates(fit, v, k, J, cam, 'torso', corners, view.shadowed[i], unit, sc, x0, y0)
+    if not cands:
+        return before, before, 0
+    jt = next(jj for jj, pp in enumerate(F.PARTS) if pp[3] == 'torso')
+    Js, cams = [], []
+    with torch.no_grad():
+        uv = geometry(torch.stack([q for q, _ in cands]), cam.expand(len(cands), 5), fit.persp[v], fit.lights[v], corners=True).numpy()
+    for n, (q, cpt) in enumerate(cands):
+        foot = np.array([x0, y0]) + cpt * sc
+        vi = int(np.argmin(np.hypot(*(uv[n, jt] - foot).T)))
+        c2 = cam.clone()
+        c2[3] += float(foot[0] - uv[n, jt, vi, 0])
+        c2[4] += float(foot[1] - uv[n, jt, vi, 1])
+        Js.append(q)
+        cams.append(c2)
+    scores = judge(fit, v, i, torch.stack(Js), torch.stack(cams), only=only)
+    best = int(torch.argmax(scores))
+    if float(scores[best]) > before:
+        with torch.no_grad():
+            if v == 0:
+                fit.J[k] = Js[best]
+            fit.cams[v][k] = cams[best] / CAM_UNIT
+        return float(scores[best]), before, len(cands)
+    return before, before, len(cands)
+
+
 LIMB_JOINTS = {'rightArm': 'rightArm', 'leftArm': 'leftArm', 'rightLeg': 'rightThigh', 'leftLeg': 'leftThigh'}
 
 
@@ -1630,6 +1761,8 @@ def measure_limbs(fit, v, k, prev=None, log=None):
             xd = math.degrees(math.asin(float(torch.clamp(a[2], -1, 1))))
             zd = math.degrees(math.atan2(-float(a[0]), float(a[1])))
             cands += twisted(J, bone, xd, zd, tuple(range(-45, 46, 9)))
+        # Corner-built turns: each of the limb's own corners read as two of its box's edges (exact box geometry).
+        cands += [q for q, _ in corner_candidates(fit, v, k, J, cam, part, mine_c, view.shadowed[i], stud, sc, x0, y0)]
         # 5. Decide toward/away and twist by coverage of the limb's own pixels (drawn with the others in place).
         def coverage(Js):
             """How fully the box covers the limb's pixels (overlap), plus 0.3 x the share of the limb's own corners its
@@ -1730,9 +1863,34 @@ def run_keyframes(frames, idx, fps, args, log=print):
         fit.assign(0, k)
         lift_all(fit, 0, k, steps=60)
         view.window(i, fit.params_of(0, k), f0)
-        measure_limbs(fit, 0, k, prev=fit.J.detach()[k - 1].clone() if k else None, log=log)
-        polish(fit, 0, k, 30, sigma0=0.8, sigma1=0.4)
+        # Two ways, the better kept: the body as placed, and the torso turned to fit its own corners (judged on the
+        # torso alone: its limbs would only drag it), each with its limbs measured and polished.
+        prevJ = fit.J.detach()[k - 1].clone() if k else None
+        snapJ, snapC = fit.J.detach()[k].clone(), fit.cams[0][k].detach().clone()
+        results_k = []
+        ways = ('as placed', 'torso from corners') if TORSO_CORNERS else ('as placed',)
+        for way in ways:
+            with torch.no_grad():
+                fit.J[k] = snapJ
+                fit.cams[0][k] = snapC
+            view.window(i, fit.params_of(0, k), f0)
+            if way == 'torso from corners':
+                after_t, before_t, n_t = torso_from_corners(fit, 0, k, only=('torso',))
+                if after_t <= before_t:
+                    continue
+                view.window(i, fit.params_of(0, k), f0)
+            measure_limbs(fit, 0, k, prev=prevJ, log=None)
+            polish(fit, 0, k, 30, sigma0=0.8, sigma1=0.4)
+            view.window(i, fit.params_of(0, k), f0)
+            a_k = float(agreement(fit, 0, i, fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
+            results_k.append((a_k, way, fit.J.detach()[k].clone(), fit.cams[0][k].detach().clone()))
+        best_k = max(results_k, key=lambda e: e[0])
+        with torch.no_grad():
+            fit.J[k] = best_k[2]
+            fit.cams[0][k] = best_k[3]
         view.window(i, fit.params_of(0, k), f0)
+        if len(results_k) > 1:
+            log(f'frame {i}: ' + ', '.join(f'{w} {a:.3f}' for a, w, _, _ in results_k) + f' -> {best_k[1]}')
         cam = (fit.cams[0][[k]] * CAM_UNIT).detach()
         agree[k] = float(agreement(fit, 0, i, fit.J.detach()[[k]], cam)[0])
         obs = view.windows[i][1].numpy()
