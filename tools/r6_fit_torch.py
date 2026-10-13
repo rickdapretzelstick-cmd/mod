@@ -155,6 +155,8 @@ class View:
         self.border = {}
         self.edges = {}
         self.coloured_edges = {}
+        self.edge_samples = {}
+        self.judge_cache = {}
         self.folds = {}  # frame -> [(segment, colour)]: straight lines inside one colour (where two faces meet)
         self.predicted_folds = {}  # frame -> [(segment, colour)]: folds implied by obtuse corners (predict_folds)
         self.targets = {}  # frame -> (boxes' target masks (boxes, N), which boxes have one (boxes,))
@@ -232,6 +234,8 @@ class View:
             elif cls_sides:
                 coloured.append((np.array([x1, y1, x2, y2], float), cls_sides, nrm))
         self.coloured_edges[i] = coloured
+        self.edge_samples.pop(i, None)
+        self.judge_cache.pop(i, None)
         # Folds from every straight line in the picture, short ones too (a face of a limb is only a stud wide).
         lsd = cv2.createLineSegmentDetector()
         raw = lsd.detect(gray.astype(np.uint8))[0] if EXPERIMENTAL else None
@@ -415,18 +419,25 @@ class Fit:
                 out[F.PARTS[j][3]] = float((mine & t).sum()) / max(1.0, float((mine | t).sum()))
         return out
 
-    def loss_frames(self, v, ks, sigma_px):
+    def loss_frames(self, v, ks, sigma_px, stride=1):
+        """Soft loss of frames ks; stride 2 uses every other pixel row and column (a quarter of the work)."""
         view = self.views[v]
+        side = view.res
+        sel = torch.arange(side * side).reshape(side, side)[::stride, ::stride].reshape(-1) if stride > 1 else None
+        if sel is not None:
+            side = len(range(0, view.res, stride))
         J = torch.stack([self.joints_at(v, k) for k in ks])
         cam = self.cams[v][ks] * CAM_UNIT
         quads, depth, vis, shade = geometry(J, cam, self.persp[v], self.lights[v])
         pix = torch.stack([view.windows[view.idx[k]][0] for k in ks])
         obs = torch.stack([view.windows[view.idx[k]][1] for k in ks])
         tsh = torch.stack([view.windows[view.idx[k]][2] for k in ks])
-        scale = torch.tensor([view.windows[view.idx[k]][3] for k in ks], dtype=DT)
+        scale = torch.tensor([view.windows[view.idx[k]][3] for k in ks], dtype=DT) * stride
+        if sel is not None:
+            pix, obs, tsh = pix[:, sel], obs[:, sel], tsh[:, sel]
         prob, sh, pprob = rasterise(quads, depth, vis, shade, pix, (sigma_px * scale)[:, None, None], self.classes,
                                     self.ncls, parts=True)
-        loss = frame_loss(prob, sh, obs, tsh, self.ncls, view.res)
+        loss = frame_loss(prob, sh, obs, tsh, self.ncls, side)
         # Every box onto its own rectangle: soft overlap of the box's share of each pixel with the rectangle's colour.
         for b, k in enumerate(ks):
             i = view.idx[k]
@@ -435,7 +446,7 @@ class Fit:
             tgt, has = view.targets[i]
             if has.any():
                 p = pprob[b][:, has].T  # (boxes with a rectangle, N)
-                t = tgt[has]
+                t = tgt[has] if sel is None else tgt[has][:, sel]
                 inter = (p * t).sum(-1)
                 union = p.sum(-1) + t.sum(-1) - inter
                 loss = loss + torch.cat([loss.new_zeros(b), (RECT_W * (1 - inter / (union + 1e-6))).sum()[None],
@@ -557,7 +568,139 @@ END_RULE = EXPERIMENTAL and os.environ.get('R6_END_RULE', '1') != '0'
 SIDE_TOL, END_TOL, END_ANGLE = 0.125, 0.3, 10
 
 
+def inside_boxes(quads, vis, pts):
+    """Hard point-in-box test, batched: quads (B, faces, 4, 2), vis (B, faces), pts (N, 2) or (B, N, 2), all footage
+    px -> (B, N, boxes) True where the point is inside one of the box's visible faces (= inside its silhouette)."""
+    B = quads.shape[0]
+    if pts.dim() == 2:
+        pts = pts.expand(B, -1, -1)
+    a = quads
+    e = torch.roll(quads, -1, 2) - a
+    area = (a[..., 0] * torch.roll(quads, -1, 2)[..., 1] - torch.roll(quads, -1, 2)[..., 0] * a[..., 1]).sum(-1)
+    orient = torch.where(area >= 0, 1.0, -1.0)
+    rel = pts[:, :, None, None, :] - a[:, None]  # (B, N, F, 4, 2)
+    cross = e[:, None, ..., 0] * rel[..., 1] - e[:, None, ..., 1] * rel[..., 0]
+    inside = ((cross * orient[:, None, :, None]) >= 0).all(-1)
+    inside &= (vis > 0)[:, None] & (area.abs() > 0.5)[:, None]
+    return inside.reshape(B, pts.shape[1], len(F.PARTS), 6).any(-1)
+
+
+def _edge_samples(fit, v, i):
+    """The coloured straight edges of frame i as point pairs for the batched edge rule: for each sample along an edge
+    and each body colour beside it, a point just on that colour's side and one just on the other side (footage px)."""
+    view = fit.views[v]
+    if i in view.edge_samples:
+        return view.edge_samples[i]
+    pix, _, _, scale = view.windows[i]
+    scale = float(scale)
+    x0, y0 = float(pix[0, 0]) - 0.5 * scale, float(pix[0, 1]) - 0.5 * scale
+    tol = max(1.0, SIDE_TOL * 6 * float(fit.cams[v][view.idx.index(i), 2].detach() * CAM_UNIT[2]) / scale)
+    p_in, p_out, cls, wgt, grp = [], [], [], [], []
+    g = 0
+    for seg, cls_sides, nrm in view.coloured_edges[i]:
+        x1, y1, x2, y2 = seg
+        L = float(np.hypot(x2 - x1, y2 - y1))
+        n = max(2, int(L / 2))
+        for t in (np.arange(n) + 0.5) / n:
+            pt = np.array([x1 + (x2 - x1) * t, y1 + (y2 - y1) * t])
+            for c, sd in cls_sides.items():
+                p_in.append(pt + nrm * sd * tol)
+                p_out.append(pt - nrm * sd * tol)
+                cls.append(c)
+                wgt.append(L / n)
+                grp.append(g)
+            g += 1
+    to_foot = lambda q: torch.tensor(np.array(q).reshape(-1, 2) * scale + (x0, y0), dtype=DT)
+    out = (to_foot(p_in), to_foot(p_out), torch.tensor(cls, dtype=torch.long), torch.tensor(wgt, dtype=DT),
+           torch.tensor(grp, dtype=torch.long), g)
+    view.edge_samples[i] = out
+    return out
+
+
+def _judge_cache(fit, v, i):
+    """Per-window arrays the default judge reuses for every candidate."""
+    view = fit.views[v]
+    if i in view.judge_cache:
+        return view.judge_cache[i]
+    pix, obs_t, _, scale = view.windows[i]
+    side = view.res
+    obs = obs_t.numpy().reshape(side, side)
+    if F.FACE > 0:
+        obs = np.where(obs == F.FACE, F.HEAD, obs)
+    hidden = obs == F.UNKNOWN
+    body = (obs > 0) & ~hidden
+    known = ~hidden & ~view.border[i].numpy().reshape(side, side)
+    e_in, e_out, e_cls, e_w, e_grp, n_grp = _edge_samples(fit, v, i)
+    x0, y0, sc = float(pix[0, 0]) - 0.5 * float(scale), float(pix[0, 1]) - 0.5 * float(scale), float(scale)
+    to_px = lambda q: np.clip(np.floor((q.numpy() - (x0, y0)) / sc).astype(int), 0, side - 1)
+    out = dict(obs=obs, hidden=hidden, body=body, known=known, x0=x0, y0=y0, sc=sc,
+               e_in=to_px(e_in), e_out=to_px(e_out), e_cls=e_cls.numpy(), e_w=e_w.numpy(), e_grp=e_grp.numpy(), n_grp=n_grp)
+    view.judge_cache[i] = out
+    return out
+
+
 def judge(fit, v, i, J, cam, detail=False, only=None):
+    """The default rule (see judge_slow for the full description): colour (each box seeks its own colour, half credit
+    over another part's, none on floor; every body pixel under a box of its colour) 4, coloured side edges covered by a
+    box of that colour on the colour's side 1 -- tested per edge sample as a point just on the colour's side inside such
+    a box and one just across outside it. Boxes drawn with OpenCV, geometry batched."""
+    if EXPERIMENTAL:
+        return judge_slow(fit, v, i, J, cam, detail, only)
+    view = fit.views[v]
+    side = view.res
+    C = _judge_cache(fit, v, i)
+    obs, hidden, body, known = C['obs'], C['hidden'], C['body'], C['known']
+    parts = [(j, F.CLASS_OF[part]) for j, (_, _, _, part) in enumerate(F.PARTS) if part != 'face' and (only is None or part in only)]
+    if only is not None:
+        body = body & np.isin(obs, [c for _, c in parts])
+    e_in, e_out, e_cls, e_w, e_grp, n_grp = C['e_in'], C['e_out'], C['e_cls'], C['e_w'], C['e_grp'], C['n_grp']
+    if only is not None and len(e_cls):
+        m_ = np.isin(e_cls, [c for _, c in parts])
+        e_in, e_out, e_cls, e_w, e_grp = e_in[m_], e_out[m_], e_cls[m_], e_w[m_], e_grp[m_]
+    w_g = np.zeros(n_grp)
+    if len(e_cls):
+        np.maximum.at(w_g, e_grp, e_w)
+    body_known = (body & known).sum()
+    with torch.no_grad():
+        uv = geometry(J, cam, fit.persp[v], fit.lights[v], corners=True).numpy()
+    uv = (uv - (C['x0'], C['y0'])) / C['sc']
+    out = []
+    m = np.zeros((side, side), np.uint8)
+    for b in range(uv.shape[0]):
+        seek_num = seek_den = 0.0
+        covered = np.zeros((side, side), bool)
+        ok = np.zeros(len(e_cls), bool)
+        for j, cls in parts:
+            m[:] = 0
+            cv2.fillConvexPoly(m, np.round(cv2.convexHull(uv[b, j].astype(np.float32)).reshape(-1, 2)).astype(np.int32), 1)
+            mb = m.astype(bool)
+            area = mb.sum()
+            if not area:
+                continue
+            mine = obs == cls
+            own = (mb & (mine | hidden)).sum()
+            other = (mb & body & ~mine).sum()
+            seek_num += own + SEEK_OVERLAP * other
+            seek_den += area
+            covered |= mb & mine
+            if len(e_cls):
+                same = e_cls == cls
+                ok |= same & mb[e_in[:, 1], e_in[:, 0]] & ~mb[e_out[:, 1], e_out[:, 0]]
+        seek = seek_num / max(1.0, seek_den)
+        cover = (covered & known).sum() / max(1, body_known)
+        colour = 0.5 * (seek + cover)
+        if len(e_cls):
+            hit = np.zeros(n_grp)
+            np.maximum.at(hit, e_grp, ok.astype(float))
+            edge = float((hit * w_g).sum() / max(1e-6, w_g.sum()))
+        else:
+            edge = 1.0
+        total = (4 * colour + edge) / 5
+        out.append((total, colour, edge, 1.0, 0) if detail else total)
+    return out if detail else torch.tensor(out)
+
+
+def judge_slow(fit, v, i, J, cam, detail=False, only=None):
     """The rule every candidate pose is held to (boxes at their exact R6 sizes), higher is better (0..1):
     - colour: every box seeks its own colour: full credit on it, half where it covers another part's colour (parts
       overlap), none on floor; shading is not judged (any shade of the right colour counts); and every body-coloured
@@ -736,7 +879,8 @@ def polish(fit, v, k, steps, sigma0=1.5, sigma1=0.4, every=10):
     for s in range(steps):
         sig = sigma0 * (sigma1 / sigma0) ** (s / max(1, steps - 1))
         opt.zero_grad()
-        loss = fit.loss_frames(v, [k], sig)[0] + fit.regular() * 0.1
+        coarse = s < steps - 20  # all but the last 20 steps on every other pixel
+        loss = fit.loss_frames(v, [k], sig, stride=2 if coarse else 1)[0] + fit.regular() * 0.1
         loss.backward()
         opt.step()
         if s % every == every - 1 or s == steps - 1:
@@ -981,8 +1125,10 @@ def lift_all(fit, v, k, turns=8, rounds=2, steps=150):
                         c2[4] += float(centre[1] - mid[1])
                         torsos.append((q, c2))
     # Rank the torsos by the torso box alone (its colour and its edges); carry the best few through the limbs.
+    t_scores = judge(fit, v, i, torch.stack([q for q, _ in torsos[1:]]), torch.stack([c for _, c in torsos[1:]]),
+                     only=('torso',)) if len(torsos) > 1 else torch.zeros(0)
+    ranked = [torsos[0]] + [torsos[1 + int(n)] for n in torch.argsort(-t_scores)[:8]]
     torso_score = lambda tc: float(judge(fit, v, i, tc[0][None], tc[1][None], only=('torso',))[0])
-    ranked = [torsos[0]] + sorted(torsos[1:], key=lambda tc: -torso_score(tc))[:8]
     results = []
     for Jt, cam in ranked:
         J = Jt.clone()
