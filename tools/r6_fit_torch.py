@@ -2392,7 +2392,8 @@ def run_keyframes(frames, idx, fps, args, log=print):
     encs = {i: F.classify(frames[i], pal) for i in idx}
     view = View(frames, encs, idx, fps, args.res)
     f0 = F.Fitter()
-    p0, _ = f0.init(encs[idx[0]], tuple(float(x) for x in args.at.split(',')) if args.at else None, args.flip)
+    p0, _ = f0.init(encs[idx[0]], tuple(float(x) for x in args.at.split(',')) if args.at else None, args.flip,
+                    quick=getattr(args, 'quick_start', False))
     fit = Fit([view], np.tile(p0[NC:], (len(idx), 1)), [np.tile(p0[:5], (len(idx), 1))], [float(p0[5])], [f0.light])
     agree, hidden = np.zeros(len(idx)), np.zeros(len(idx))
     for k, i in enumerate(idx):
@@ -2692,6 +2693,101 @@ def run_fast(frames, idx, fps, args, log=print):
     return fit, f0, agree
 
 
+def pose_features(enc):
+    """A frame's pose as seen, for picking key poses: each part's colour area's centre (relative to the torso's,
+    in torso heights) and its long axis's direction (as cos 2a, sin 2a, so either way along is the same), plus
+    how much of each part shows. Returns (features, visible fraction per part)."""
+    obs = enc // 1000
+    parts = [p_ for _, _, _, p_ in F.PARTS if p_ != 'face']
+    tm = obs == F.CLASS_OF['torso']
+    if tm.sum() < 20:
+        return None, np.zeros(len(parts))
+    ty, tx = np.nonzero(tm)
+    tc = np.array([tx.mean(), ty.mean()])
+    th = max(4.0, math.sqrt(tm.sum()))
+    feat, vis = [], []
+    for part in parts:
+        m = obs == F.CLASS_OF[part]
+        ys, xs = np.nonzero(m)
+        vis.append(len(xs) / (th * th) if part != 'torso' else 1.0)
+        if len(xs) < 10:
+            feat += [0.0, 0.0, 0.0, 0.0]
+            continue
+        c = np.array([xs.mean(), ys.mean()])
+        cov = np.cov(np.stack([xs, ys]))
+        w, V = np.linalg.eigh(cov)
+        a = math.atan2(V[1, 1], V[0, 1])
+        feat += list((c - tc) / th) + [math.cos(2 * a), math.sin(2 * a)]
+    return np.array(feat), np.array(vis)
+
+
+def pick_key_poses(encs, idx, most=10, tol=0.25, near=2):
+    """Key poses of a move: the first and last frames, then repeatedly the frame that straight in-betweening of the
+    keys so far would miss most (pose_features), until every frame is within tol or `most` keys are chosen; each key
+    then moved to the frame within `near` that shows most of the body (a side-on or hidden pose fits badly)."""
+    feats, vis = {}, {}
+    for i in idx:
+        f, v = pose_features(encs[i])
+        feats[i], vis[i] = f, v
+    ok = [i for i in idx if feats[i] is not None]
+    if len(ok) < 2:
+        return ok
+    X = np.stack([feats[i] for i in ok])
+    keys = [0, len(ok) - 1]
+    while len(keys) < most:
+        keys.sort()
+        worst, at = 0.0, None
+        for a, b in zip(keys, keys[1:]):
+            for j in range(a + 1, b):
+                f = (j - a) / (b - a)
+                e = float(np.abs(X[j] - (X[a] * (1 - f) + X[b] * f)).max())
+                if e > worst:
+                    worst, at = e, j
+        if at is None or worst < tol:
+            break
+        keys.append(at)
+    keys.sort()
+    out = []
+    for n, j in enumerate(keys):
+        lo_ = max(keys[n - 1] + 1 if n else 0, j - near)
+        hi_ = min(keys[n + 1] - 1 if n + 1 < len(keys) else len(ok) - 1, j + near)
+        if n in (0, len(keys) - 1):
+            lo_, hi_ = j, j
+        best = max(range(lo_, hi_ + 1), key=lambda q: (float(np.minimum(vis[ok[q]], 1.0).sum()), -abs(q - j)))
+        out.append(ok[best])
+    return sorted(set(out))
+
+
+def run_keyposes(frames, idx, fps, args, log=print):
+    """Key-pose mode: only a move's key poses (pick_key_poses) are fitted, by the full keyframes fit (run_keyframes,
+    its start search quick), and every frame between them takes its pose eased between the two keys around it
+    (smoothstep, as an animation eases). Returns (fit over every frame, fitter, keys, agreement per key)."""
+    pal = json.load(open(args.palette)) if args.palette else F.PALETTE
+    F.use_palette(pal)
+    t0 = time.time()
+    encs = {i: F.classify(frames[i], pal) for i in idx}
+    keys = pick_key_poses(encs, idx, most=args.keyposes)
+    log(f'{len(keys)} key poses of {len(idx)} frames: {keys} ({time.time() - t0:.0f} s)')
+    fit_k, f0, _, agree = run_keyframes(frames, keys, fps, args, log=log)
+    PK = np.stack([fit_k.params_of(0, n) for n in range(len(keys))])
+    P = np.zeros((len(idx), PK.shape[1]))
+    for n, i in enumerate(idx):
+        b = int(np.searchsorted(keys, i))
+        if b < len(keys) and keys[b] == i:
+            P[n] = PK[b]
+            continue
+        a_, b_ = max(0, b - 1), min(len(keys) - 1, b)
+        f = 0.0 if keys[b_] == keys[a_] else (i - keys[a_]) / (keys[b_] - keys[a_])
+        f = f * f * (3 - 2 * f)
+        d = PK[b_] - PK[a_]
+        d[NC:] = (d[NC:] + 180) % 360 - 180
+        P[n] = PK[a_] + f * d
+    log(f'key-pose fit in {time.time() - t0:.0f} s; key colour agreement ' + ' '.join(f'{x:.2f}' for x in agree))
+    view = View(frames, {i: encs[i] for i in idx}, idx, fps, args.res)
+    fit = Fit([view], P[:, NC:], [P[:, :5]], [float(P[0, 5])], [f0.light])
+    return fit, f0, keys, agree
+
+
 def run(views_in, args, log=print):
     """views_in: [(frames, idx, fps)]; returns (fit, fitter_per_view)."""
     pal = json.load(open(args.palette)) if args.palette else F.PALETTE
@@ -2777,6 +2873,8 @@ def main():
     ap.add_argument('--out', default=None)
     ap.add_argument('--selftest', action='store_true')
     ap.add_argument('--keyframes', action='store_true')
+    ap.add_argument('--keyposes', type=int, default=0, help='fit only up to this many key poses, ease the rest')
+    ap.add_argument('--quick-start', action='store_true', help='a quicker start search')
     ap.add_argument('--fast', action='store_true', help='footage with one colour per part: quick tracking, in parallel')
     ap.add_argument('--workers', type=int, default=4)
     ap.add_argument('--fast-steps', type=int, default=25)
@@ -2788,8 +2886,8 @@ def main():
         a.res = 64 if a.fast else 112
     if a.selftest:
         return selftest(a)
-    if a.fast:
-        # Fast mode loads only the frames it fits (every --fps-step-th), shrunk to --width.
+    if a.fast or a.keyposes:
+        # Fast and key-pose modes load only the frames it fits (every --fps-step-th), shrunk to --width.
         frames, fps = F.frames_of(a.video, a.fps, every=a.fps_step, width=a.width)
     else:
         frames, fps = F.frames_of(a.video, a.fps)
@@ -2800,7 +2898,14 @@ def main():
         f2, fps2 = F.frames_of(a.view2, a.fps)
         lo2, hi2 = (int(x) for x in a.range2.split(':')) if a.range2 else (0, len(f2) - 1)
         vin.append((f2, list(range(lo2, hi2 + 1)), fps2))
-    if a.fast:
+    if a.keyposes:
+        fit, f0, keys, agree = run_keyposes(frames, list(range(first, hi + 1)), fps, a)
+        fitters = [f0]
+        if a.out:
+            os.makedirs(a.out, exist_ok=True)
+            json.dump({'keys': [int(x) for x in keys], 'agreement': [round(float(x), 3) for x in agree]},
+                      open(os.path.join(a.out, 'keyposes.json'), 'w'))
+    elif a.fast:
         idx_f = list(range(first, hi + 1))
         fit, f0, agree = run_fast(frames, idx_f, fps, a)
         fitters = [f0]
