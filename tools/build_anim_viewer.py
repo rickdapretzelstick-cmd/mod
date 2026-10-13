@@ -13,7 +13,8 @@ Reads assets/jjk/animations/*/*.json (player-rig clips only: entity rigs are ski
 the game's loader resolves: named poses (and their mirrored "!name" form), frame keys ("f" with fps/refStart), bone
 aliases, bare-array bone values (rotation). Each clip becomes per-bone tracks of [ms, [x, y, z], ease], as AnimLibrary
 compiles them (a bone's value between its own keys, eased by the later key's ease, held before the first and after
-the last). The page template is tools/anim_viewer/template.html; the data replaces its /*CLIPS*/ marker.
+the last). The page template is tools/anim_viewer/template.html; the data replaces its /*CLIPS*/ marker, and the
+footage conversions written by tools/r6_fit.py --clip (build/fit/*/conversion.json) its /*CONVERSIONS*/ marker.
 """
 import glob
 import json
@@ -132,10 +133,25 @@ def main():
         clips.append({'name': d.get('name', os.path.basename(f)[:-5]), 'group': group, 'duration': d.get('duration', 500),
                       'hold': bool(d.get('hold')), 'priority': d.get('priority', ''), 'authored': bool(d.get('authored')),
                       'tracks': compile_clip(d, poses)})
+    # Footage conversions (tools/r6_fit.py --clip) whose clip still exists.
+    ids = {c['group'] + '/' + c['name'] for c in clips}
+    convs = []
+    for f in sorted(glob.glob(os.path.join(ROOT, 'build', 'fit', '*', 'conversion.json'))):
+        v = json.load(open(f))
+        own = os.path.join(os.path.dirname(f), 'clip.json')
+        if v.get('clip', '').startswith('preview/') and os.path.exists(own):
+            # A preview's clip lives beside it, not in the game's assets.
+            d = json.load(open(own))
+            clips.append({'name': v['clip'].split('/', 1)[1], 'group': 'preview', 'duration': d.get('duration', 500), 'hold': False,
+                          'priority': d.get('priority', ''), 'authored': False, 'tracks': compile_clip(d, poses)})
+            ids.add(v['clip'])
+        if v.get('clip') in ids:
+            convs.append(v)
     html = open(TEMPLATE).read().replace('/*CLIPS*/[]', json.dumps(clips, separators=(',', ':')))
+    html = html.replace('/*CONVERSIONS*/[]', json.dumps(convs, separators=(',', ':')))
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     open(OUT, 'w').write(html)
-    print(f'{OUT}: {len(clips)} player clips, {len(html) // 1024} KB')
+    print(f'{OUT}: {len(clips)} player clips, {len(convs)} conversions, {len(html) // 1024} KB')
 
 
 if __name__ == '__main__':

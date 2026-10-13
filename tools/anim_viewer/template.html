@@ -14,6 +14,7 @@
   --bg: #12141a; --panel: #1a1d25; --ink: #e8eaf0; --muted: #9aa2b1; --line: #2b303b;
   --accent: #ff4d63; --accent-ink: #12141a; --stage: #171a21; --grid: #343a47; --chip: #3a1f26; color-scheme: dark }
 html, body { height: 100%; }
+[hidden] { display: none !important; }
 body { background: var(--bg); color: var(--ink); font-family: var(--f-body); }
 .app { display: grid; grid-template-columns: 270px 1fr; gap: 12px; height: 100%; box-sizing: border-box; padding-block: 12px; padding-inline: 16px; }
 .shelf { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; min-height: 0; }
@@ -51,6 +52,19 @@ button.ctl:focus-visible, .clip:focus-visible, input:focus-visible { outline: 2p
 #scrub { width: 100%; accent-color: var(--accent); }
 .ticks { position: relative; height: 8px; margin: 0 8px; }
 .ticks i { position: absolute; top: 0; width: 2px; height: 8px; background: var(--accent); opacity: .7; transform: translateX(-1px); }
+.tabs { display: flex; gap: 4px; }
+.tabs button { flex: 1; border: 1px solid var(--line); background: var(--bg); color: var(--muted); border-radius: 7px; padding: 5px 8px; font: inherit; font-size: .82rem; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.rigpane { position: relative; min-width: 0; min-height: 0; height: 100%; }
+.stage.split { display: grid; grid-template-columns: 1fr 1fr; }
+.ref { position: relative; background: #0b0c0f; border-right: 1px solid var(--line); min-height: 0; }
+.ref img, .ref canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
+.pane-label { position: absolute; top: 8px; left: 10px; font-family: var(--f-mono); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase;
+  color: #fff; background: rgba(0, 0, 0, .55); padding: 2px 6px; border-radius: 4px; }
+.rigpane .pane-label { color: var(--ink); background: var(--panel); }
+.empty { padding: 12px 10px; font-size: .84rem; color: var(--muted); line-height: 1.45; }
+.empty code { font-family: var(--f-mono); font-size: .76rem; }
+@media (max-width: 760px) { .stage.split { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } .ref { border-right: 0; border-bottom: 1px solid var(--line); } }
 @media (max-width: 760px) { .app { grid-template-columns: 1fr; grid-template-rows: 220px minmax(320px, 1fr); height: auto; } .main { min-height: 520px; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
 </style>
@@ -59,20 +73,30 @@ button.ctl:focus-visible, .clip:focus-visible, input:focus-visible { outline: 2p
   <aside class="shelf">
     <header>
       <h1>JJK <span>Animation</span> Viewer</h1>
+      <div class="tabs" role="tablist" aria-label="Library">
+        <button role="tab" id="tabClips" aria-selected="true">Clips</button><button role="tab" id="tabConv" aria-selected="false">Conversions</button>
+      </div>
       <input id="search" type="search" placeholder="Find a clip (e.g. manji, light_)" aria-label="Find a clip">
-      <div class="filters"><label><input id="onlyNew" type="checkbox"> Reworked only</label></div>
+      <div class="filters" id="filters"><label><input id="onlyNew" type="checkbox"> Reworked only</label></div>
     </header>
     <nav class="list" id="list" aria-label="Clips"></nav>
   </aside>
   <section class="main">
     <div class="titlebar"><h2 id="name">—</h2><span class="meta" id="meta"></span></div>
-    <div class="stage">
-      <canvas id="view" aria-label="The animated rig"></canvas>
-      <div class="cams" role="group" aria-label="Camera">
-        <button class="ctl" data-cam="34">¾</button><button class="ctl" data-cam="front">Front</button>
-        <button class="ctl" data-cam="side">Side</button><button class="ctl" data-cam="back">Back</button><button class="ctl" data-cam="top">Top</button>
+    <div class="stage" id="stage">
+      <div class="ref" id="ref" hidden>
+        <img id="refImg" alt="Reference footage frame"><canvas id="refFit" aria-hidden="true"></canvas>
+        <span class="pane-label">Roblox footage</span>
       </div>
-      <div class="hint">Drag to orbit · scroll to zoom · Space play/pause · ←/→ one tick</div>
+      <div class="rigpane">
+        <canvas id="view" aria-label="The animated rig"></canvas>
+        <span class="pane-label" id="rigLabel" hidden>Converted · mod rig</span>
+        <div class="cams" role="group" aria-label="Camera">
+          <button class="ctl" data-cam="34">¾</button><button class="ctl" data-cam="front">Front</button>
+          <button class="ctl" data-cam="side">Side</button><button class="ctl" data-cam="back">Back</button><button class="ctl" data-cam="top">Top</button>
+        </div>
+        <div class="hint">Drag to orbit · scroll to zoom · Space play/pause · ←/→ one tick</div>
+      </div>
     </div>
     <div class="transport">
       <div class="row">
@@ -89,6 +113,11 @@ button.ctl:focus-visible, .clip:focus-visible, input:focus-visible { outline: 2p
         <span class="meta" style="margin-left:8px">Loop</span><button class="ctl" id="loop" aria-pressed="true">On</button>
         <span class="meta" style="margin-left:8px">Ghosts</span><button class="ctl" id="ghost" aria-pressed="false">Key poses</button>
       </div>
+      <div class="row" id="convRow" role="group" aria-label="Conversion" hidden>
+        <span class="meta">Footage</span><button class="ctl" id="fitBtn" aria-pressed="true">Fit overlay</button>
+        <button class="ctl" id="followBtn" aria-pressed="true">Match footage camera</button>
+        <span class="meta" id="convInfo"></span>
+      </div>
     </div>
   </section>
 </div>
@@ -96,6 +125,9 @@ button.ctl:focus-visible, .clip:focus-visible, input:focus-visible { outline: 2p
 <script>
 // The mod's clips (tools/build_anim_viewer.py) and its player rig (client.anim.rig.Rig): pixels, y down, model space.
 const CLIPS = /*CLIPS*/[];
+// Footage-to-clip conversions (tools/r6_fit.py --clip): per footage frame its picture, the fitted R6 boxes over it and
+// the fitted camera (viewer yaw/pitch, radians); the converted clip plays on the rig beside it.
+const CONVERSIONS = /*CONVERSIONS*/[];
 const REST = { root: [0, 24, 0], hips: [0, 12, 0], chest: [0, 8, 0], neck: [0, 0, 0], head: [0, 0, 0],
   rightArm: [-5, 2, 0], rightForearm: [-6, 6, 0], rightHand: [-6, 10, 0], leftArm: [5, 2, 0], leftForearm: [6, 6, 0], leftHand: [6, 10, 0],
   rightThigh: [-1.9, 12, 0], rightShin: [-1.9, 18, 0], rightFoot: [-1.9, 22, 0], leftThigh: [1.9, 12, 0], leftShin: [1.9, 18, 0], leftFoot: [1.9, 22, 0] };
@@ -204,29 +236,98 @@ function placeCamera() {
   camera.lookAt(cam.target);
 }
 let drag = null;
-canvas.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY]; canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; });
+canvas.addEventListener('pointerdown', e => {
+  if (state.conv && state.follow) document.getElementById('followBtn').click(); drag = [e.clientX, e.clientY]; canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; });
 canvas.addEventListener('pointermove', e => { if (!drag) return; cam.yaw -= (e.clientX - drag[0]) * 0.008; cam.pitch = Math.max(-0.3, Math.min(1.45, cam.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; });
 canvas.addEventListener('pointerup', () => { drag = null; canvas.style.cursor = 'grab'; });
 canvas.addEventListener('wheel', e => { e.preventDefault(); cam.dist = Math.max(1.6, Math.min(10, cam.dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: false });
 document.querySelectorAll('[data-cam]').forEach(b => b.addEventListener('click', () => { [cam.yaw, cam.pitch] = PRESETS[b.dataset.cam]; }));
 
 // --- Clips and transport ---
-const state = { clip: null, t: 0, playing: true, speed: 1, loop: true, ghosts: false };
+const state = { clip: null, t: 0, playing: true, speed: 1, loop: true, ghosts: false, tab: 'clips', conv: null, fit: true, follow: true };
 const list = document.getElementById('list'), search = document.getElementById('search'), onlyNew = document.getElementById('onlyNew');
 function renderList() {
   const q = search.value.trim().toLowerCase();
   list.textContent = '';
+  if (state.tab === 'conv') return renderConversions(q);
   let group = null;
   for (const c of CLIPS) {
     if (q && !(c.name.toLowerCase().includes(q) || c.group.includes(q))) continue;
     if (onlyNew.checked && !c.authored) continue;
     if (c.group !== group) { group = c.group; const g = document.createElement('div'); g.className = 'group'; g.textContent = group; list.append(g); }
     const b = document.createElement('button');
-    b.className = 'clip'; b.setAttribute('aria-current', String(c === state.clip));
+    b.className = 'clip'; b.setAttribute('aria-current', String(c === state.clip && !state.conv));
     b.innerHTML = `<span>${c.name}</span>${c.authored ? '<span class="new">reworked</span>' : ''}<small>${c.duration}</small>`;
-    b.addEventListener('click', () => select(c));
+    b.addEventListener('click', () => { state.conv = null; showSplit(false); select(c); });
     list.append(b);
   }
+}
+function renderConversions(q) {
+  const shown = CONVERSIONS.filter(v => !q || v.name.toLowerCase().includes(q) || v.clip.toLowerCase().includes(q));
+  if (!shown.length) {
+    list.innerHTML = '<div class="empty">No conversions yet. Fit footage with<br><code>python3 tools/r6_fit.py &lt;video&gt; --range a:b --clip group/name</code><br>then rebuild with <code>tools/build_anim_viewer.py</code>.</div>';
+    return;
+  }
+  const g = document.createElement('div'); g.className = 'group'; g.textContent = 'footage → clip'; list.append(g);
+  for (const v of shown) {
+    const b = document.createElement('button');
+    b.className = 'clip'; b.setAttribute('aria-current', String(v === state.conv));
+    b.innerHTML = `<span>${v.name}</span><small>${v.frames.length} fr</small>`;
+    b.addEventListener('click', () => selectConv(v));
+    list.append(b);
+  }
+}
+function setTab(tab) {
+  state.tab = tab;
+  document.getElementById('tabClips').setAttribute('aria-selected', String(tab === 'clips'));
+  document.getElementById('tabConv').setAttribute('aria-selected', String(tab === 'conv'));
+  search.placeholder = tab === 'conv' ? 'Find a conversion' : 'Find a clip (e.g. manji, light_)';
+  document.getElementById('filters').hidden = tab === 'conv';
+  renderList();
+  if (tab === 'conv' && !state.conv && CONVERSIONS.length) selectConv(CONVERSIONS[0]);
+}
+document.getElementById('tabClips').addEventListener('click', () => setTab('clips'));
+document.getElementById('tabConv').addEventListener('click', () => setTab('conv'));
+const refEl = document.getElementById('ref'), refImg = document.getElementById('refImg'), refFit = document.getElementById('refFit');
+function showSplit(on) {
+  if (!on && !refEl.hidden) cam.dist = 4.2;
+  refEl.hidden = !on;
+  document.getElementById('stage').classList.toggle('split', on);
+  document.getElementById('rigLabel').hidden = !on;
+  document.getElementById('convRow').hidden = !on;
+}
+function selectConv(v) {
+  const c = CLIPS.find(c => c.group + '/' + c.name === v.clip);
+  if (!c) return;
+  select(c);
+  state.conv = v; state.shownFrame = -1;
+  refFit.width = v.size; refFit.height = v.size;
+  showSplit(true);
+  cam.dist = 5.4;  // the rig shares the stage with the footage
+  document.getElementById('name').textContent = v.name;
+  document.getElementById('meta').textContent = `${v.source} → ${v.clip} · ${c.duration} ms`;
+  document.getElementById('convInfo').textContent = `${v.frames.length} frames · ${Math.round(1000 / v.frameMs)} fps`;
+  renderList();
+}
+function drawConv(v, t) {
+  const i = Math.max(0, Math.min(v.frames.length - 1, Math.round(t / v.frameMs)));
+  if (state.follow) { [cam.yaw, cam.pitch] = v.cams[i]; }
+  if (i === state.shownFrame && state.fitShown === state.fit) return;
+  state.shownFrame = i; state.fitShown = state.fit;
+  refImg.src = v.frames[i];
+  const g = refFit.getContext('2d');
+  g.clearRect(0, 0, refFit.width, refFit.height);
+  if (!state.fit) return;
+  g.lineWidth = 1.5;
+  for (const [color, pts] of v.boxes[i]) {
+    g.strokeStyle = color; g.beginPath();
+    pts.forEach(([x, y], k) => k ? g.lineTo(x, y) : g.moveTo(x, y));
+    g.closePath(); g.stroke();
+  }
+}
+for (const [id, key] of [['fitBtn', 'fit'], ['followBtn', 'follow']]) {
+  const b = document.getElementById(id);
+  b.addEventListener('click', () => { state[key] = !state[key]; b.setAttribute('aria-pressed', String(state[key])); });
 }
 function keyTimes(c) {
   const s = new Set();
@@ -287,6 +388,7 @@ function frame(now) {
     } else state.t = Math.min(c.duration, state.t + dt * state.speed);
   }
   if (c) {
+    if (state.conv) drawConv(state.conv, state.t);
     pose(rig, c, state.t);
     document.getElementById('scrub').value = state.t;
     document.getElementById('time').textContent = `${Math.round(state.t)} / ${c.duration} ms`;

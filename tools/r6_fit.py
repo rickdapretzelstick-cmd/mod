@@ -19,6 +19,9 @@ keep their identity). The angles are the clip's bone rotations directly: no reta
   --flip          start facing the other way (an R6 body is front/back symmetric; the face decides when visible)
   --palette f     part colours (JSON like PALETTE; tools/r6_palettes/) for other avatars
   --fps n         frame rate of the footage when it is not in the file (wiki GIFs: 50)
+  --clip also writes <out>/conversion.json: tools/build_anim_viewer.py puts every build/fit/*/conversion.json in the
+                  viewer's Conversions tab (the footage with the fit over it, beside the clip on the mod's rig)
+  --preview n     like --clip but the clip stays in <out>/clip.json (Conversions tab only, not the game's assets)
   --compare       with --clip: render the written clip in the animation viewer from each frame's fitted camera and
                   stack it under the footage (<out>/compare.png): the end-to-end check, footage -> clip -> game rig
 
@@ -471,13 +474,14 @@ def sheet(frames, params, costs, idx, roi_of, path):
     out.save(path)
 
 
-def write_clip(target, times_ms, P, tol, merge, src):
+def write_clip(target, times_ms, P, tol, merge, src, path=None):
     curves = np.stack([unwrap(P[:, len(CAM) + i]) for i in range(len(JOINTS))], 1)
     curves[:, 1] -= curves[0, 1]  # the body turns from facing forward at the move's first frame
     curves = ndimage.gaussian_filter1d(curves, 0.8, axis=0, mode='nearest')
     keep = reduce_keys(times_ms, curves, tol)
-    path = os.path.join(ANIMS, target + '.json')
-    clip = json.load(open(path)) if merge and os.path.exists(path) else {}
+    base = os.path.join(ANIMS, target + '.json')
+    path = path or base
+    clip = json.load(open(base)) if merge and os.path.exists(base) else {}
     fitted = {b for b, _ in JOINTS}
     keys = []
     for k in keep:
@@ -521,6 +525,7 @@ def main():
     ap.add_argument('--fps', type=float, default=None)
     ap.add_argument('--compare', action='store_true')
     ap.add_argument('--warmup', type=int, default=None)
+    ap.add_argument('--preview', default=None)
     a = ap.parse_args()
     pal = json.load(open(a.palette)) if a.palette else PALETTE
     use_palette(pal)
@@ -551,13 +556,47 @@ def main():
     step = max(1, len(idx) // 48)
     sheet(frames, params, costs, idx[::step], lambda p: fit.roi(p, None), os.path.join(out, 'sheet.png'))
     print(f'{out}/sheet.png, {out}/params.json')
+    if a.preview and not a.clip:
+        a.clip = 'preview/' + a.preview
     if a.clip:
         P = np.stack([params[i] for i in idx])
         times = np.array([(i - lo) * 1000.0 / fps / a.speed for i in idx])
-        path, n = write_clip(a.clip, times, P, a.tol, a.merge, os.path.basename(a.video) + f' frames {lo}-{hi}')
+        # A preview keeps its clip beside the conversion (build/fit), out of the game's assets.
+        keep = os.path.join(out, 'clip.json') if a.clip.startswith('preview/') else None
+        path, n = write_clip(a.clip, times, P, a.tol, a.merge, os.path.basename(a.video) + f' frames {lo}-{hi}', keep)
         print(f'{path}: {n} keys, {int(times[-1])} ms')
+        write_conversion(frames, params, idx, times, a.clip, fit, out, os.path.basename(a.video) + f' {lo}-{hi}')
         if a.compare:
             compare(frames, params, idx, times, a.clip, fit, out)
+
+
+def viewer_cam(params, i, hy0):
+    """The fit's camera as the viewer's orbit (yaw, pitch) in radians: yaw + 180 degrees, turned with the clip's start."""
+    return [round(math.radians(params[i][0] - hy0) + math.pi, 4), round(math.radians(params[i][1]), 4)]
+
+
+def write_conversion(frames, params, idx, times, clip, fit, out, source, size=240):
+    """<out>/conversion.json for the viewer's Conversions tab: each frame's footage (a crop following the character),
+    the fitted R6 boxes over it and the camera, beside the clip written from them."""
+    import base64
+    import io
+    hy0 = params[idx[0]][len(CAM) + 1]
+    pics, polys, cams = [], [], []
+    for i in idx:
+        p = params[i]
+        x0, y0, k, w, h = fit.roi(p, None)
+        crop = Image.fromarray(frames[i]).crop((int(x0), int(y0), int(x0 + w / k), int(y0 + h / k))).resize((size, size))
+        buf = io.BytesIO()
+        crop.save(buf, 'JPEG', quality=72)
+        pics.append('data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode())
+        sc = size / (w / k)
+        polys.append([['#%02x%02x%02x' % SHOW[cls], [[round((u - int(x0)) * sc, 1), round((v - int(y0)) * sc, 1)] for u, v in poly]]
+                      for _, poly, cls in boxes(p)])
+        cams.append(viewer_cam(params, i, hy0))
+    frame_ms = (times[1] - times[0]) if len(times) > 1 else 20
+    json.dump({'name': os.path.basename(clip), 'clip': clip, 'source': source, 'frameMs': round(float(frame_ms), 3), 'size': size,
+               'frames': pics, 'boxes': polys, 'cams': cams}, open(os.path.join(out, 'conversion.json'), 'w'), separators=(',', ':'))
+    print(f'{out}/conversion.json (rebuild the viewer: python3 tools/build_anim_viewer.py)')
 
 
 def compare(frames, params, idx, times, clip, fit, out):
@@ -567,7 +606,7 @@ def compare(frames, params, idx, times, clip, fit, out):
     # The fit's camera (world turned by yaw, then pitch) is the viewer's orbit camera at yaw + 180 degrees; the clip starts
     # the body facing forward, so the camera turns with it by the first frame's body yaw (mirrored by the model flip).
     hy0 = params[idx[0]][len(CAM) + 1]
-    shots = [f'{times[idx.index(i)]:.0f}:{math.radians(params[i][0] - hy0) + math.pi:.4f}:{math.radians(params[i][1]):.4f}' for i in pick]
+    shots = ['%.0f:%s:%s' % (times[idx.index(i)], *viewer_cam(params, i, hy0)) for i in pick]
     snaps = os.path.join(out, 'snaps')
     npm = subprocess.run(['npm', 'root', '-g'], capture_output=True, text=True).stdout.strip()
     subprocess.run(['node', os.path.join(ROOT, 'tools', 'anim_viewer', 'snap.js'), os.path.join(ROOT, 'build', 'anim_viewer.html'),
