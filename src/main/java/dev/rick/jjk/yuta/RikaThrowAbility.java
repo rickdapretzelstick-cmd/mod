@@ -144,7 +144,8 @@ public final class RikaThrowAbility extends Ability {
             // From 60 studs away and more: the sparking Black Flash.
             if (YutaCombat.finishable(v) && v.position().distanceTo(start) >= 16.7) {
                 Fx.play(level, "resolute_black_flash", v.getBoundingBox().getCenter(), d, 1.4f, user.getId());
-                YutaCombat.execute(user, v, ID, "rika_throw_finisher");
+                HitResult kill = YutaCombat.execute(user, v, ID, "rika_throw_finisher");
+                dev.rick.jjk.core.fx.BlackFlash.land(level, user, v, kill, v.getBoundingBox().getCenter(), d, 1.8f);
                 endAt = age + 12;
                 return;
             }

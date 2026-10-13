@@ -1265,6 +1265,52 @@ shot by shot, for comparing them.
 Effects fade when the camera is inside them, spawn fewer particles past 48 blocks, and small ones are sound-only past
 96 blocks. `particleQuality` (0–3) in the client config scales every particle count.
 
+### Black Flash
+
+Every Black Flash in the game looks the same way and is decided the same way: by what the blow **actually did**, as
+resolved by the server (never by what was hoped for). It is modelled on JJS's Cursed Partners → Finishers → Resolute
+Black Flash ("the user amps the power up, creating intense sparks before the target is launched away").
+
+- **Anticipation**: the timing caught (Yuji's press in Divergent Fist, Yuta reappearing for Resolute Black Flash):
+  crimson crackling gathers in the fist or round the blade, black and crimson motes drawn in.
+- **Contact**: a white-hot core at the point of impact inside a crimson bloom, the black pressure behind it.
+- **Impact frame**: the crimson inked frame (bodies as black silhouettes on crimson, focus lines rushing in, an
+  inverted beat), only for the striker and anyone close, plus a **local hit-stop**: both fighters hang in the contact
+  for 3 ticks (the target's launch is held, then given back).
+- **Lightning**: a branching tree of black bolts with crimson edges thrown along the blow, re-crackling on the contact.
+- **Shockwaves**: a ripple across the blow and rings rolling out along the ground, one a beat after the other.
+- **Streaks**: black, crimson and white-hot speed lines driven through along the blow.
+- **Follow-through**: smaller arcs snapping on for a few ticks after, then black and crimson embers falling and scorch
+  lines on the ground that fade. Drawn only: **no block is ever changed**.
+- **Audio and camera**: the layered Black Flash sounds; a restrained shake and FOV kick, near it only.
+
+**Lethal**: when the blow kills (the target is dead after the resolved hit), every layer escalates: a longer inked
+sequence (crimson, inverted, crimson, the hard negative, crimson), a brief slowed-time look, the world washed crimson,
+a bigger tree of bolts, three shockwaves, a 6-tick hit-stop. It is shown **once per body**; an execute that is refused
+(the target can't be hit, or the blow is negated) never shows a kill; a blow that's blocked or negated only **fizzles** (a spark,
+no frame). Damage, kills and rewards stay with the move and the combat pipeline, so the presentation can't execute
+anyone or hand anything out twice.
+
+**Accessibility** (pause menu → JJK Settings, or the client config): **Reduced flashes** (`client.reducedFlashes`)
+drops the impact frames, inverted and strobing frames and the screen wash, and dims every flash, while the shapes,
+sounds and particles still read; **Reduced shake** (`client.reducedShake`) cuts shake and FOV kicks to a gentle
+fraction. None of it needs shaders. Hit-stop length: `general.blackFlashHitStop` / `blackFlashLethalHitStop`.
+
+| Black Flash | Who | Trigger | Presented from |
+|---|---|---|---|
+| Divergent Fist Black Flash | Yuji | Press again in the timing window | its resolved hit (lone flash, chain link, or the fourth "KOKUSEN" with its own layer) |
+| Divergent Fist finisher | Yuji | Black Flash on a finishable target | the execute's result: lethal only if it kills |
+| Cursed Strikes air finisher | Yuji | Air dive onto a finishable target | the execute's result |
+| Finisher cinematic | Yuji | Finishing a reeling curse | the kill itself |
+| Resolute Black Flash | Yuta | Use again as he reappears | its resolved hit (or the execute on a finishable target) |
+| Rika Throw finisher | Yuta | A long throw into a finishable target | the execute's result |
+| Max Red rebound | Gojo | Max Red's return pulls a caught target in | its resolved hit |
+| Rapid Punches finisher | Gojo | The final punch on a finishable target | the execute's result |
+
+![Black Flash impact frame](docs/screenshots/black_flash_frame.png)
+
+![Black Flash lightning](docs/screenshots/black_flash_impact.png)
+
 ## Opening a domain
 
 A domain physically builds itself out of blocks, starting at the caster's feet: the ground spreads outward to the

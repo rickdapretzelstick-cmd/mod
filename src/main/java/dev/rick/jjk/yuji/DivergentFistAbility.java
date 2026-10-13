@@ -173,25 +173,25 @@ public final class DivergentFistAbility extends Ability {
             Motion.set(user, HakariCombat.flat(user).scale(0.5));
             endAt = age + (fourth ? 30 : 12);
             if (t == null) {
-                Fx.play(level, "black_flash", user.getEyePosition().add(user.getLookAngle().scale(1.6)), user.getLookAngle(), 0.8f, user.getId());
+                dev.rick.jjk.core.fx.BlackFlash.land(level, user, null, null, user.getEyePosition().add(user.getLookAngle().scale(1.6)), user.getLookAngle(), 0.8f);
                 YujiCharacter.endChain(caster);
                 return;
             }
             Vec3 at = t.getBoundingBox().getCenter();
             boolean interrupted = YujiCombat.acting(t) && !Combat.isGuarding(t);
             if (YujiCombat.finishable(t)) {
-                // A decisive Black Flash: the power amped, and the body sent extremely far.
-                Fx.play(level, fourth ? "black_flash_kokusen" : "black_flash", at, HakariCombat.flat(user), fourth ? 2f : 1.5f, user.getId());
-                if (fourth) Fx.play(level, "music:entrusted_music", at, Vec3.ZERO, 1f, user.getId());
-                YujiCombat.execute(user, t, ID, "black_flash_finisher");
+                // A decisive Black Flash: the power amped, and the body sent extremely far. How it looks is decided by
+                // what the blow actually did (a kill, or not: something may still have stopped it).
+                HitResult kill = YujiCombat.execute(user, t, ID, "black_flash_finisher");
                 Motion.set(t, HakariCombat.flat(user).scale(3.2).add(0, 1.1, 0));
+                var shown = dev.rick.jjk.core.fx.BlackFlash.land(level, user, t, kill, at, HakariCombat.flat(user), fourth ? 2.2f : 1.8f);
+                if (fourth && shown == dev.rick.jjk.core.fx.BlackFlash.Shown.LETHAL) Fx.play(level, "music:entrusted_music", at, Vec3.ZERO, 1f, user.getId());
                 YujiCharacter.endChain(caster);
                 return;
             }
             float damage = link == 0 ? cfg.blackFlashDamage : fourth ? cfg.blackFlashFourthDamage : cfg.blackFlashChainDamage;
             if (interrupted && !fourth) damage *= 2;
             var b = YujiCombat.strike(user, ID, damage, true).noComboScaling();
-            Fx.play(level, fourth ? "black_flash_kokusen" : "black_flash", at, HakariCombat.flat(user), fourth ? 2f : 1f, user.getId());
             if (link > 0 && !fourth) {
                 // On their back: stunned where they are, ready for the next one.
                 b.knockback(Knockback.directional(HakariCombat.flat(user), 0.2, 0.05)).hitstun(cfg.blackFlashChainStun).fx("hit_heavy", 1.2f);
@@ -208,7 +208,9 @@ public final class DivergentFistAbility extends Ability {
                         .status(CombatStatus.LAUNCHED, fourth ? 40 : 26).fx("hit_heavy", 1.6f);
             }
             HitResult r = HakariCombat.hit(b.build(), t);
-            Fx.shake(level, at, fourth ? 40 : 24, fourth ? 1.4f : 0.9f, fourth ? 18 : 10);
+            // The fourth keeps its own "KOKUSEN" layer on top of the shared Black Flash.
+            if (fourth && r.connected()) Fx.play(level, "black_flash_kokusen", at, HakariCombat.flat(user), 2f, user.getId());
+            dev.rick.jjk.core.fx.BlackFlash.land(level, user, t, r, at, HakariCombat.flat(user), fourth ? 2f : link > 0 ? 0.85f : 1.1f);
             if (!r.connected() || link == 0 || fourth) {
                 YujiCharacter.endChain(caster);
                 return;

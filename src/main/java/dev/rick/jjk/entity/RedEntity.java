@@ -149,8 +149,8 @@ public class RedEntity extends TechniqueEntity {
                     .tag(AttackTag.MELEE, AttackTag.UNBLOCKABLE, AttackTag.ULTIMATE).origin(owner.getEyePosition())
                     .knockback(Knockback.directional(dev.rick.jjk.hakari.HakariCombat.flat(owner), 2.0, 0.6)).hitstun(30)
                     .status(CombatStatus.LAUNCHED, 30).fx("finisher", 0.9f).build();
-            HitResolver.resolve(bf, caught);
-            Fx.shake(level, owner.position(), 30, 1.2f, 14);
+            var r = HitResolver.resolve(bf, caught);
+            dev.rick.jjk.core.fx.BlackFlash.land(level, owner, caught, r, caught.getBoundingBox().getCenter(), dev.rick.jjk.hakari.HakariCombat.flat(owner), 1.5f);
         } else {
             Fx.play(level, "red_explosion", owner.getBoundingBox().getCenter(), Vec3.ZERO, 1f, owner.getId());
             owner.hurtServer(level, ModDamageTypes.source(level, ModDamageTypes.RED, this, owner), cfg.reboundSelfDamage);

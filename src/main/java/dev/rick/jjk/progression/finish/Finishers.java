@@ -245,8 +245,12 @@ public final class Finishers {
         Vec3 dir = at.subtract(p.getEyePosition());
         dir = dir.lengthSqr() < 1e-4 ? p.getLookAngle() : dir.normalize();
         Anim.play(p, s.blow);
-        Fx.play(level, s.fx, at, dir, s.fxScale, c.getId());
-        Impact.frame(p, s.frame, 1.3f);
+        // Yuji's is a Black Flash: shown after the kill, from what it did (below); the others play their effect now.
+        boolean blackFlash = s.frame == Impact.BLACK_FLASH;
+        if (!blackFlash) {
+            Fx.play(level, s.fx, at, dir, s.fxScale, c.getId());
+            Impact.frame(p, s.frame, 1.3f);
+        }
         Impact.crack(level, c.position(), dir, 1.4f);
         Impact.dust(level, c.position(), 1.4f);
         Fx.shake(level, at, 24, 1.0f, 14);
@@ -254,6 +258,12 @@ public final class Finishers {
         c.releaseFromContest();
         c.hurtServer(level, ModDamageTypes.source(level, f.damageType, p, p), c.getHealth() + c.getMaxHealth());
         c.setDeltaMovement(dir.scale(1.8).add(0, 0.8, 0));
+        if (blackFlash) {
+            boolean killed = c.isDeadOrDying() || !c.isAlive();
+            var r = new dev.rick.jjk.core.combat.HitResult(dev.rick.jjk.core.combat.Hit.builder(p, "finisher").build(), c,
+                    killed ? dev.rick.jjk.core.combat.HitResult.Outcome.HIT : dev.rick.jjk.core.combat.HitResult.Outcome.NEGATED, 0, 0);
+            dev.rick.jjk.core.fx.BlackFlash.land(level, p, c, r, at, dir, 2f);
+        }
     }
 
     /** Players near a curse that can be finished are told so, once in a while (the hit that does it is theirs to land). */

@@ -38,6 +38,7 @@
       "dev.rick.jjk.test.EssenceTests",
       "dev.rick.jjk.test.ContestTests",
       "dev.rick.jjk.test.ContestTriggerTests",
+      "dev.rick.jjk.test.BlackFlashTests",
       "dev.rick.jjk.test.FinisherTests",
       "dev.rick.jjk.test.NewsHouseTests",
       "dev.rick.jjk.test.SiteTests",
@@ -75,7 +76,8 @@
       "dev.rick.jjk.test.ImpactKitClientTest",
       "dev.rick.jjk.test.GrappleClientTest",
       "dev.rick.jjk.test.FinisherClientTest",
-      "dev.rick.jjk.test.RealmRoomClientTest"
+      "dev.rick.jjk.test.RealmRoomClientTest",
+      "dev.rick.jjk.test.BlackFlashClientTest"
     ]
   },
   "depends": {

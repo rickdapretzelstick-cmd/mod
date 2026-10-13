@@ -73,6 +73,8 @@ public final class JJKConfig {
         public boolean playerVsPlayer = true;
         /** Whether techniques can hit tamed pets owned by the caster. */
         public boolean hitOwnPets = false;
+        /** A Black Flash's local hit-stop (ticks both fighters hang in the contact); longer when it kills. 0 turns it off. */
+        public int blackFlashHitStop = 3, blackFlashLethalHitStop = 6;
         /** Global damage multiplier for everything this mod deals. */
         public float damageMultiplier = 1.0f;
         /** Global multiplier on knockback dealt by this mod. */
@@ -457,6 +459,14 @@ public final class JJKConfig {
         public boolean reducedCameraMotion = false;
         /** Anime impact frames (inked silhouettes, inverted frames) and the slowed-time look on big moments. */
         public boolean impactFrames = true;
+        /**
+         * Reduced Flashes (photosensitivity): no full-screen impact frames, inverted or strobing frames, and screen
+         * flashes and colour washes kept faint and slow; in-world effects (a Black Flash's lightning) dimmed. Effects still
+         * read through shape, sound and particles.
+         */
+        public boolean reducedFlashes = false;
+        /** Reduced Shake: camera shake and FOV kicks cut to a gentle fraction (on top of {@code screenShakeScale}). */
+        public boolean reducedShake = false;
     }
 
     /**

@@ -246,18 +246,20 @@ final class YutaFx {
                 if (drawn) Flashes.flash(pos, 0.3f, 1.4f, YujiFx.BF_RED, 0.8f, 6, now);
             }
             case "resolute_black_flash" -> {
+                // Anticipation: he reappears with the blow wound up, cursed energy crackling round it (the hit itself is
+                // drawn from its result: bf_impact / bf_lethal).
                 sound("resolute_bf_land", pos, 1.5f, 1f);
-                if (drawn) YujiFx.blackFlash(level, pos, d, Math.max(1f, s), now, false);
-                if (mine || isAttackerClose(mc, pos)) ScreenEffects.flash(0x90000000, 3);
-                distanceShake(pos, 24, 0.7f);
+                Flashes.flash(pos, 0.3f, 1.2f * Math.max(1f, s), YujiFx.BF_RED, BlackFlashFx.reducedFlashes() ? 0.3f : 0.8f, 6, now);
+                for (int i = 0; i < 4; i++) Flashes.bolt(pos.add(randomUnit().scale(0.9)), pos.add(randomUnit().scale(0.3)), 0.05f, YujiFx.BF_RED, 0.9f, 7, now + i);
+                if (drawn) for (int i = 0; i < q(14); i++) {
+                    Vec3 from = pos.add(randomUnit().scale(1.6));
+                    add(level, from, Vec3.ZERO, Sprite.SMOKE, i % 2 == 0 ? YujiFx.INK : PINK, 0.7f, 0.3f, 0.1f, 10).attract(pos, 0.05);
+                }
+                distanceShake(pos, 16, 0.3f);
             }
             case "resolute_flash_finisher", "rika_throw_finisher" -> {
                 sound(p.id().equals("rika_throw_finisher") ? "rika_throw_finish" : "resolute_bf_finish", pos, 1.6f, 1f);
-                if (drawn) {
-                    YujiFx.blackFlash(level, pos, d, 1.6f, now, true);
-                    YujiFx.blood(level, pos, d, q(12));
-                }
-                if (mine) ScreenEffects.flash(0xA0000000, 5);
+                if (drawn) YujiFx.blood(level, pos, d, q(12));
             }
             // --- Outburst ---
             case "outburst_grip" -> {

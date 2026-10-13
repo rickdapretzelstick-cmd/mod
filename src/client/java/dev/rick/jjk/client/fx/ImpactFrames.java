@@ -25,7 +25,7 @@ import java.util.List;
  * Reduced Camera Motion too.
  */
 public final class ImpactFrames {
-    public enum Style { INK, BLACK_FLASH, NEGATIVE }
+    public enum Style { INK, BLACK_FLASH, NEGATIVE, BLACK_FLASH_LETHAL }
 
     /** An inked look: drawn with the figures-only mask, or (no bodies near enough to mask) from depth alone. */
     private record Ink(Identifier masked, Identifier depth) {}
@@ -58,7 +58,7 @@ public final class ImpactFrames {
 
     public static boolean enabled() {
         JJKConfig.Client c = JJKConfig.get().client;
-        return c.impactFrames && c.screenFlashes;
+        return c.impactFrames && c.screenFlashes && !c.reducedFlashes;
     }
 
     /** Plays an impact frame now ({@code strength} 0.5..2 stretches it: a bigger hit holds a little longer). */
@@ -77,6 +77,15 @@ public final class ImpactFrames {
                 beats.add(new Beat(BLACK_FLASH, 60 * k));
                 beats.add(new Beat(INK_REVERSE, 95 * k));
                 beats.add(new Beat(BLACK_FLASH, 150 * k));
+            }
+            case BLACK_FLASH_LETHAL -> {
+                // The lethal one (after the Resolute Black Flash finisher): crimson, inverted, crimson, the hard negative,
+                // crimson again, held longer than any other frame.
+                beats.add(new Beat(BLACK_FLASH, 90 * k));
+                beats.add(new Beat(INK_REVERSE, 140 * k));
+                beats.add(new Beat(BLACK_FLASH, 230 * k));
+                beats.add(new Beat(NEGATIVE, 280 * k));
+                beats.add(new Beat(BLACK_FLASH, 380 * k));
             }
             case NEGATIVE -> {
                 beats.add(new Beat(NEGATIVE, 70 * k));
