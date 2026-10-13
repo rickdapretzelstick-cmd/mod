@@ -2776,10 +2776,11 @@ def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 6
                     poses.append(q)
     Js = torch.stack(poses)
     C = c0[None].repeat(len(Js), 1)
-    place(view, i, fit, Js, C)
-    sc = agreement(fit, 0, i, Js, C, stride=2)
+    place(view, i, fit, Js, C, size=False)
+    # Ranked by the body without its arms (their pose comes next, limb_sweep).
+    sc = drawn_match(fit, i, Js, C, stride=2)
     short = torch.argsort(sc, descending=True)[:4 * top]
-    full = agreement(fit, 0, i, Js[short], C[short])
+    full = drawn_match(fit, i, Js[short], C[short])
     order = short[torch.argsort(full, descending=True)[:top]]
     now = float(agreement(fit, 0, i, J0[None], c0[None])[0])
     best = (now, J0, (fit.cams[0][k]).detach().clone())
@@ -2802,9 +2803,45 @@ def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 6
     return best[0]
 
 
-def place(view, i, fit, Js, C):
+ARM_PARTS = ('rightArm', 'leftArm')
+
+
+def drawn_match(fit, i, Js, C, leave_out=ARM_PARTS, stride=1):
+    """How well the body without some parts (default: the arms) matches where it is drawn: drawn pixels whose seen
+    colour agrees, less half of those whose seen colour differs (unknown pixels left out). The arms' pose is not yet
+    known while the body's turn is searched; a wrong arm would swamp the score, so they are left undrawn. (B,)"""
+    view = fit.views[0]
+    pix, obs, _, scale = view.windows[i]
+    if stride > 1:
+        side = view.res
+        sel = torch.arange(side * side).reshape(side, side)[::stride, ::stride].reshape(-1)
+        pix, obs = pix[sel], obs[sel]
+    keep = torch.tensor([part not in leave_out for _, _, _, part in F.PARTS]).repeat_interleave(6)
+    with torch.no_grad():
+        quads, depth, vis, shade = geometry(Js, C, fit.persp[0], fit.lights[0])
+        vis = vis * keep.to(vis.dtype)[None]
+        out = []
+        for c in range(0, Js.shape[0], 16):
+            sl = slice(c, c + 16)
+            n = quads[sl].shape[0]
+            prob, _ = rasterise(quads[sl], depth[sl], vis[sl], shade[sl], pix.expand(n, -1, -1), 0.05 * scale, fit.classes,
+                                fit.ncls)
+            drawn = prob.argmax(-1)
+            if F.FACE > 0:
+                drawn = torch.where(drawn == F.FACE, F.HEAD, drawn)
+            o = torch.where(obs == F.FACE, F.HEAD, obs) if F.FACE > 0 else obs
+            known = o != F.UNKNOWN
+            good = ((drawn == o) & (drawn > 0) & known).sum(-1).float()
+            bad = ((drawn != o) & (drawn > 0) & known).sum(-1).float()
+            out.append(good - 0.5 * bad)
+        return torch.cat(out)
+
+
+def place(view, i, fit, Js, C, size=True):
     """Candidates (poses Js, cameras C, changed in place) put onto the character: each one's drawn boxes sized to the
-    character's full extent (height and width; printed lettering and seams inside it included) and centred on it."""
+    character's full extent (height and width; printed lettering and seams inside it included) and centred on it.
+    size=False: centred only (the size already known -- a still camera -- and the pose not yet: a candidate with its
+    arms down must not be blown up to the width of outstretched ones)."""
     pix, obs, _, sc_w = view.windows[i]
     o2 = obs.numpy().reshape(view.res, view.res)
     body = character_mask(o2)
@@ -2821,18 +2858,20 @@ def place(view, i, fit, Js, C):
     with torch.no_grad():
         for _ in range(2):
             uv = geometry(Js, C, fit.persp[0], fit.lights[0], corners=True).reshape(len(C), -1, 2)
-            d_h = (uv[..., 1].max(1).values - uv[..., 1].min(1).values).clamp(min=1.0)
-            d_w = (uv[..., 0].max(1).values - uv[..., 0].min(1).values).clamp(min=1.0)
-            C[:, 2] = C[:, 2] * torch.sqrt((o_h / d_h) * (o_w / d_w)).clamp(0.7, 1.4)
-            uv = geometry(Js, C, fit.persp[0], fit.lights[0], corners=True).reshape(len(C), -1, 2)
+            if size:
+                d_h = (uv[..., 1].max(1).values - uv[..., 1].min(1).values).clamp(min=1.0)
+                d_w = (uv[..., 0].max(1).values - uv[..., 0].min(1).values).clamp(min=1.0)
+                C[:, 2] = C[:, 2] * torch.sqrt((o_h / d_h) * (o_w / d_w)).clamp(0.7, 1.4)
+                uv = geometry(Js, C, fit.persp[0], fit.lights[0], corners=True).reshape(len(C), -1, 2)
             C[:, 3:5] = C[:, 3:5] + (o_c - 0.5 * (uv.max(1).values + uv.min(1).values))
 
 
 def limb_sweep(fit, k, step=30, rounds=2):
-    """Side-coloured clothing: each limb (arms, then legs) tried pointing every way within its range (its two swing
-    angles on a step-degree grid, its twist kept), every candidate scored at once by hard colour agreement, the best
-    kept; twice round (a limb found helps the next). A fast swing between frames is found here, where gradient steps
-    from the last frame would stall."""
+    """Side-coloured clothing: each limb (arms, then legs) tried pointing every way within its range -- its two swing
+    angles on a step-degree grid and its turn about its own length (an arm raised forward swings across the chest by
+    that turn), every candidate ranked at once by hard colour agreement (every other pixel; the shortlist again on every
+    pixel), the best kept; twice round (a limb found helps the next). A fast swing between frames is found here, where
+    gradient steps from the last frame would stall."""
     view = fit.views[0]
     i = view.idx[k]
     cam = (fit.cams[0][[k]] * CAM_UNIT).detach()
@@ -2840,19 +2879,23 @@ def limb_sweep(fit, k, step=30, rounds=2):
     best = float(agreement(fit, 0, i, J[None], cam)[0])
     for _ in range(rounds):
         for bone in ('rightArm', 'leftArm', 'rightThigh', 'leftThigh'):
-            jx, jz = F.JI[(bone, 0)] - NC, F.JI[(bone, 2)] - NC
+            jx, jy, jz = (F.JI[(bone, a)] - NC for a in range(3))
             lx, lz = F.LIMITS[(bone, 0)], F.LIMITS[(bone, 2)]
+            turns = (-90, -45, 0, 45, 90) if 'Arm' in bone else (-45, 0, 45)
             cands = []
             for ax in np.arange(lx[0], lx[1] + 1, step):
                 for az in np.arange(lz[0], lz[1] + 1, step):
-                    q = J.clone()
-                    q[jx], q[jz] = float(ax), float(az)
-                    cands.append(q)
+                    for ay in turns:
+                        q = J.clone()
+                        q[jx], q[jy], q[jz] = float(ax), float(ay), float(az)
+                        cands.append(q)
             Js = torch.stack(cands)
-            sc = agreement(fit, 0, i, Js, cam.expand(len(Js), 5))
-            o = int(torch.argmax(sc))
-            if float(sc[o]) > best:
-                best, J = float(sc[o]), Js[o].clone()
+            sc = agreement(fit, 0, i, Js, cam.expand(len(Js), 5), stride=2)
+            short = torch.argsort(sc, descending=True)[:8]
+            full = agreement(fit, 0, i, Js[short], cam.expand(len(short), 5))
+            o = int(short[int(torch.argmax(full))])
+            if float(full.max()) > best:
+                best, J = float(full.max()), Js[o].clone()
     with torch.no_grad():
         fit.J[k] = J
     return best
