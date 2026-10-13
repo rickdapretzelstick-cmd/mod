@@ -461,6 +461,9 @@ SEEK_OVERLAP = 0.5  # a box over another part's colour (one part in front of ano
 # The hard end rule (every limb that shows has its hand or shoulder end flush on an edge of its colour). On footage
 # whose limb ends are blurred or hidden (the wiki GIFs) no pose can keep it, and it drags the fit: R6_END_RULE=0 off.
 END_RULE = os.environ.get('R6_END_RULE', '1') != '0'
+# How close counts as flush, in studs (scales with the footage): measured on the wiki kick, fitted limb ends land
+# 2-4 px (window) from their edges at ~12 px per stud, so 1.5 px (1/8 stud) was beyond what the blurred GIF resolves.
+SIDE_TOL, END_TOL, END_ANGLE = 0.2, 0.3, 10
 
 
 def judge(fit, v, i, J, cam, detail=False, only=None):
@@ -484,6 +487,7 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
     hidden = obs == F.UNKNOWN
     body = (obs > 0) & ~hidden
     dist, ang, _ = view.edges[i]
+    unit_px = 6 * float(cam[0, 2]) / float(scale)  # one stud in window px (tolerances scale with it)
     x0, y0 = float(pix[0, 0]) - 0.5 * scale, float(pix[0, 1]) - 0.5 * scale
     with torch.no_grad():
         uv = geometry(J, cam, fit.persp[v], fit.lights[v], corners=True).numpy()
@@ -545,7 +549,7 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
                     continue
                 u = np.clip(((P - a_) @ e) / (el * el), 0, 1)
                 d = np.hypot(*(P - (a_ + u[:, None] * e)).T)
-                hit |= d <= 1.5
+                hit |= d <= SIDE_TOL * unit_px
             e_cov += L * hit.mean()
             e_len += L
         seek = seek_num / max(1.0, seek_den)
@@ -574,7 +578,7 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
                 x1, y1, x2, y2 = seg
                 e = np.array([x2 - x1, y2 - y1])
                 d_ang = abs((math.atan2(e[1], e[0]) - th + math.pi / 2) % math.pi - math.pi / 2)
-                if d_ang > math.radians(8):
+                if d_ang > math.radians(END_ANGLE):
                     continue
                 mid = np.array([(x1 + x2) / 2, (y1 + y2) / 2])
                 if np.sign((centre - mid) @ nrm) != cls_sides[cls]:
@@ -582,7 +586,7 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
                 el2 = float(e @ e)
                 u = np.clip(((P - (x1, y1)) @ e) / el2, 0, 1)
                 d = np.hypot(*(P - (np.array([x1, y1]) + u[:, None] * e)).T)
-                hit |= d <= 1.5
+                hit |= d <= END_TOL * unit_px
             acc = per_cap.setdefault((j, ci), [0.0, 0.0])
             acc[0] += L * hit.mean()
             acc[1] += L
