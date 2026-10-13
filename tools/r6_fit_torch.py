@@ -308,12 +308,37 @@ def find_corners(coloured, unit, obs=None, classes=(), min_angle=50, max_angle=1
     - two straight edges of a colour whose ends meet (within 0.3 stud);
     - two straight edges of a colour that stop short of each other but whose lines cross within half a stud of both
       ends (the line finder stops a few pixels before a blurred corner).
-    Angles 50-160 degrees. [(corner point, unit direction along edge 1, along edge 2 (both away), colour, angle)]"""
+    Angles 50-175 degrees; every corner sits on a shade of its own colour (just inside it, between its edges), on the
+    character's own body (the largest connected area of body colours).
+    [(corner point, unit direction along edge 1, along edge 2 (both away), colour, angle)]"""
     found = []
+    # The character's own body: the largest connected area of body colours (shadows included). A patch of a body
+    # colour elsewhere (the dummy's red) is not part of it.
+    own_body = None
+    if obs is not None and len(classes):
+        bm = ndimage.binary_closing(np.isin(obs, list(classes)), iterations=1)
+        lab_b, n_b = ndimage.label(bm)
+        if n_b:
+            sizes_b = ndimage.sum(bm, lab_b, range(1, n_b + 1))
+            own_body = lab_b == 1 + int(np.argmax(sizes_b))
 
     def add(pt, d1, d2, c):
         d1 = d1 / max(1e-9, np.linalg.norm(d1))
         d2 = d2 / max(1e-9, np.linalg.norm(d2))
+        if obs is not None:
+            # The corner must sit on a shade of its own colour: stepping into the corner (between its two edges) by
+            # 0.3 or 0.6 stud lands on that colour (shadowed shades included).
+            inward = d1 + d2
+            inward = inward / max(1e-9, np.linalg.norm(inward))
+            H, W = obs.shape
+            on = False
+            for f in (0.3, 0.6):
+                q = np.round(np.asarray(pt, float) + inward * f * unit).astype(int)
+                if 0 <= q[0] < W and 0 <= q[1] < H and obs[q[1], q[0]] == c and (own_body is None or own_body[q[1], q[0]]):
+                    on = True
+                    break
+            if not on:
+                return
         ang = math.degrees(math.acos(float(np.clip(d1 @ d2, -1, 1))))
         if min_angle <= ang <= max_angle:
             found.append((np.asarray(pt, float), d1, d2, c, ang))
