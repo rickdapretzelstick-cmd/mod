@@ -3000,7 +3000,7 @@ def pose_features(enc):
     return np.array(feat), np.array(vis)
 
 
-def find_moves(frames, pal, fps, calm=0.15, active=0.2, min_calm_s=0.15, min_len_s=1.5, size=480):
+def find_moves(frames, pal, fps, calm=0.15, active=0.2, min_calm_s=0.15, min_len_s=1.0, size=480):
     """Where a move is performed, from the footage alone: each frame's body (its colours' area, centred and scaled to
     its own size, so the camera's panning and zoom drop out) against the body two frames before; standing idle it
     hardly changes, during a move it changes a lot. A move starts where the change rises above `active` after at
@@ -3054,6 +3054,10 @@ def pick_key_poses(encs, idx, most=10, tol=0.25, near=2):
     """Key poses of a move: the first and last frames, then repeatedly the frame that straight in-betweening of the
     keys so far would miss most (pose_features), until every frame is within tol or `most` keys are chosen; each key
     then moved to the frame within `near` that shows most of the body (a side-on or hidden pose fits badly)."""
+    if sides_mode():
+        # Side-coloured clothing: no colour per part to read the pose from; keys evenly spaced.
+        step = max(1, math.ceil((len(idx) - 1) / max(1, most - 1)))
+        return sorted(set(idx[::step] + [idx[-1]]))
     feats, vis = {}, {}
     for i in idx:
         f, v = pose_features(encs[i])
@@ -3335,8 +3339,10 @@ def main():
     if a.selftest:
         return selftest(a)
     if a.fast or a.keyposes or a.two_view:
-        # Fast and key-pose modes load only the frames it fits (every --fps-step-th), shrunk to --width.
-        frames, fps = F.frames_of(a.video, a.fps, every=a.fps_step, width=a.width)
+        # Fast and key-pose modes load only the frames they fit (every --fps-step-th; only the --range when given),
+        # shrunk to --width.
+        only = tuple(int(x) for x in a.range.split(':')) if (a.range and a.keyposes) else None
+        frames, fps = F.frames_of(a.video, a.fps, every=a.fps_step, width=a.width, only=only)
     else:
         frames, fps = F.frames_of(a.video, a.fps)
     lo, hi = (int(x) for x in a.range.split(':')) if a.range else (0, len(frames) - 1)

@@ -340,9 +340,10 @@ def classify(rgb, pal):
     return out.astype(np.int32) * 1000 + v
 
 
-def frames_of(path, fps, every=1, width=None):
+def frames_of(path, fps, every=1, width=None, only=None):
     """The frames as RGB arrays and the frame rate; every: keep every n-th frame (the rate divided to match); width:
-    shrink frames wider than this (a long 1080p video would not fit in memory otherwise)."""
+    shrink frames wider than this (a long 1080p video would not fit in memory otherwise); only: (first, last) kept
+    frame numbers, every other frame None (full size for one stretch of a long video)."""
     if path.lower().endswith('.gif'):
         im = Image.open(path)
         out = [np.array(f.convert('RGB')) for f in ImageSequence.Iterator(im)][::every]
@@ -353,7 +354,9 @@ def frames_of(path, fps, every=1, width=None):
         ok, f = cap.read()
         if not ok:
             break
-        if n % every == 0:
+        if n % every == 0 and only is not None and not (only[0] <= len(out) <= only[1]):
+            out.append(None)
+        elif n % every == 0:
             if width and f.shape[1] > width:
                 f = cv2.resize(f, (width, round(f.shape[0] * width / f.shape[1] / 2) * 2), interpolation=cv2.INTER_AREA)
             out.append(f[..., ::-1].copy())
