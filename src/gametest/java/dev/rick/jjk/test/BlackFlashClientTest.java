@@ -81,8 +81,21 @@ public class BlackFlashClientTest implements FabricClientGameTest {
         ctx.takeScreenshot("bf_" + name + "_contact");
         ctx.waitTicks(3);
         ctx.takeScreenshot("bf_" + name + "_lightning");
-        ctx.waitTicks(14);
-        ctx.takeScreenshot("bf_" + name + "_after");
-        ctx.waitTicks(40);
+        if (lethal) {
+            // The cinematic: the storm of torn frames, the build-up with the body held, the launch, the aftermath.
+            ctx.waitTicks(6);
+            ctx.takeScreenshot("bf_" + name + "_storm");
+            ctx.waitTicks(14);
+            ctx.takeScreenshot("bf_" + name + "_buildup");
+            ctx.waitTicks(8);
+            ctx.takeScreenshot("bf_" + name + "_launch");
+            ctx.waitTicks(10);
+            ctx.takeScreenshot("bf_" + name + "_flight");
+            ctx.waitTicks(30);
+        } else {
+            ctx.waitTicks(14);
+            ctx.takeScreenshot("bf_" + name + "_after");
+            ctx.waitTicks(40);
+        }
     }
 }

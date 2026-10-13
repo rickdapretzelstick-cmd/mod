@@ -25,7 +25,7 @@ import java.util.List;
  * Reduced Camera Motion too.
  */
 public final class ImpactFrames {
-    public enum Style { INK, BLACK_FLASH, NEGATIVE, BLACK_FLASH_LETHAL }
+    public enum Style { INK, BLACK_FLASH, NEGATIVE, BLACK_FLASH_LETHAL, BLACK_FLASH_STORM, BLACK_FLASH_LAUNCH }
 
     /** An inked look: drawn with the figures-only mask, or (no bodies near enough to mask) from depth alone. */
     private record Ink(Identifier masked, Identifier depth) {}
@@ -34,6 +34,8 @@ public final class ImpactFrames {
             INK_REVERSE = new Ink(JJK.id("ink_mask_reverse"), JJK.id("ink_reverse")),
             BLACK_FLASH = new Ink(JJK.id("ink_mask_black_flash"), JJK.id("black_flash_impact"));
     private static final Identifier NEGATIVE = JJK.id("negative_impact"), SLOWMO = JJK.id("slowmo");
+    /** The Black Flash's torn frames: crimson shards, white panes, the picture crushed to black and white. */
+    private static final Identifier SHARDS_RED = JJK.id("bf_shards_red"), SHARDS_WHITE = JJK.id("bf_shards_white"), THRESHOLD = JJK.id("bf_threshold");
     /** Bodies within this many blocks of the camera are inked as figures. */
     public static final double FIGURE_RANGE = 24;
 
@@ -74,7 +76,8 @@ public final class ImpactFrames {
                 beats.add(new Beat(INK_A, 160 * k));
             }
             case BLACK_FLASH -> {
-                beats.add(new Beat(BLACK_FLASH, 60 * k));
+                beats.add(new Beat(SHARDS_RED, 40 * k));
+                beats.add(new Beat(BLACK_FLASH, 85 * k));
                 beats.add(new Beat(INK_REVERSE, 95 * k));
                 beats.add(new Beat(BLACK_FLASH, 150 * k));
             }
@@ -86,6 +89,23 @@ public final class ImpactFrames {
                 beats.add(new Beat(BLACK_FLASH, 230 * k));
                 beats.add(new Beat(NEGATIVE, 280 * k));
                 beats.add(new Beat(BLACK_FLASH, 380 * k));
+            }
+            case BLACK_FLASH_STORM -> {
+                // The lethal finisher's storm (the JJS Resolute Black Flash finisher's second of torn frames): shards,
+                // the crimson silhouettes, white panes, an inversion, the scene crushed to black and white, again and again.
+                double[] at = {0, 120, 230, 340, 430, 490, 640, 760, 850, 930, 1060};
+                Object[] look = {SHARDS_RED, BLACK_FLASH, SHARDS_WHITE, BLACK_FLASH, INK_REVERSE, THRESHOLD, BLACK_FLASH, SHARDS_RED, NEGATIVE,
+                        SHARDS_WHITE};
+                for (int i = 0; i < look.length; i++) {
+                    double until = at[i + 1] * k;
+                    beats.add(look[i] instanceof Ink ink ? new Beat(ink, until) : new Beat((Identifier) look[i], until));
+                }
+            }
+            case BLACK_FLASH_LAUNCH -> {
+                // The launch (GIF 3.2 s): the frame burnt white with the bodies black on it, then crushed, then crimson.
+                beats.add(new Beat(INK_REVERSE, 90 * k));
+                beats.add(new Beat(THRESHOLD, 170 * k));
+                beats.add(new Beat(BLACK_FLASH, 240 * k));
             }
             case NEGATIVE -> {
                 beats.add(new Beat(NEGATIVE, 70 * k));

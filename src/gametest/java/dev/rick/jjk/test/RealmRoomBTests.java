@@ -172,7 +172,11 @@ public class RealmRoomBTests {
             AABB box = new AABB(o).inflate(CursedRealms.RADIUS, CursedRealms.HEIGHT, CursedRealms.RADIUS);
             h.assertTrue(realm.noCollision(p, p.getBoundingBox()), room + ": not inside anything");
             // Lit: the block light where you stand (the lanterns and the fill), not just the realm's dim ambience.
-            int lit = realm.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, p.blockPosition().above());
+            // (At the cliff's landing: they are still falling in from above.)
+            var planHere = RealmRooms.plan(room);
+            BlockPos stand = planHere.marker("landing") != null ? BlockPos.containing(new Vec3(o.getX(), o.getY(), o.getZ()).add(planHere.marker("landing"))).above()
+                    : p.blockPosition().above();
+            int lit = realm.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, stand);
             h.assertTrue(lit >= 8, room + ": lit where you stand (block light " + lit + ")");
             List<TrialPropEntity> props = realm.getEntitiesOfClass(TrialPropEntity.class, box, x -> true);
             h.assertTrue(props.size() == 1 && props.getFirst().model().equals("realmb_" + room), room + ": its environment model, once");

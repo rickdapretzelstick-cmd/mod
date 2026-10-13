@@ -348,6 +348,7 @@ public class JJKClient implements ClientModInitializer {
         dev.rick.jjk.client.training.TrainingCamera.tick(mc);
         dev.rick.jjk.client.training.ContestCamera.tick(mc);
         dev.rick.jjk.client.finish.FinisherCamera.tick(mc);
+        dev.rick.jjk.client.fx.BlackFlashCamera.tick(mc);
         dev.rick.jjk.client.finish.BindClient.tick(mc);
         dev.rick.jjk.client.finish.EyecatchCamera.tick(mc);
         dev.rick.jjk.client.camera.CameraDirector.tick(mc);
@@ -447,6 +448,8 @@ public class JJKClient implements ClientModInitializer {
         dev.rick.jjk.client.camera.CameraDirector.register("bind", 440, last(dev.rick.jjk.client.finish.BindClient::apply));
         dev.rick.jjk.client.camera.CameraDirector.register("finisher", 450, last(dev.rick.jjk.client.finish.FinisherCamera::apply));
         dev.rick.jjk.client.camera.CameraDirector.register("eyecatch", 455, last(dev.rick.jjk.client.finish.EyecatchCamera::apply));
+        dev.rick.jjk.client.camera.CameraDirector.register("black_flash", 452, last(dev.rick.jjk.client.fx.BlackFlashCamera::apply));
+        dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.fx.BlackFlashCamera::active);
         dev.rick.jjk.client.camera.CameraDirector.register("training", 500, last(dev.rick.jjk.client.training.TrainingCamera::apply));
         dev.rick.jjk.client.camera.CameraDirector.register("prison_view", 600, last((pos, yaw, pitch) -> dev.rick.jjk.client.prison.PrisonClient.apply(yaw, pitch)));
         dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.training.ContestCamera::active);

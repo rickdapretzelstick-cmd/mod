@@ -75,6 +75,8 @@ public final class JJKConfig {
         public boolean hitOwnPets = false;
         /** A Black Flash's local hit-stop (ticks both fighters hang in the contact); longer when it kills. 0 turns it off. */
         public int blackFlashHitStop = 3, blackFlashLethalHitStop = 6;
+        /** A lethal Black Flash's cinematic build-up (ticks the body is held, sparking, before it is launched). */
+        public int blackFlashFinisherTicks = 30;
         /** Global damage multiplier for everything this mod deals. */
         public float damageMultiplier = 1.0f;
         /** Global multiplier on knockback dealt by this mod. */

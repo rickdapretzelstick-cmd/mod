@@ -230,7 +230,11 @@ final class YujiFx {
                     add(level, from, Vec3.ZERO, Sprite.SPARK, i % 2 == 0 ? INK : BF_RED, 0.9f, 0.08f, 0.02f, 8).attract(fist, 0.06);
                 }
             }
-            case "bf_impact", "bf_lethal", "bf_fizzle" -> BlackFlashFx.play(p.id(), mc, level, pos, dir, s, mine, now);
+            case "bf_impact", "bf_lethal", "bf_fizzle", "bf_amp", "bf_launch" -> BlackFlashFx.play(p.id(), mc, level, pos, dir, s, mine, now);
+            case "bf_cam" -> {
+                // The lethal cinematic's camera: on the striker's screen (and the struck player's). dir: body, build-up ms, striker.
+                if (mine) BlackFlashCamera.start(pos, (int) Math.round(dir.x), (int) Math.round(dir.z), dir.y);
+            }
             case "black_flash_kokusen" -> {
                 // The fourth's own layer on top of the shared Black Flash: "KOKUSEN", rainbow rays and a blue shock.
                 sound("kokusen", pos, 2f, 1f);

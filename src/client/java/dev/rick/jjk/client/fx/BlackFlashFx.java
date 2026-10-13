@@ -54,6 +54,8 @@ final class BlackFlashFx {
                 }
             }
             case "bf_impact" -> impact(mc, level, pos, d, s, mine, now, dist, false, drawn);
+            case "bf_amp" -> amp(mc, level, pos, d, s, mine, now, dist, drawn);
+            case "bf_launch" -> launch(mc, level, pos, d, s, mine, now, dist, drawn);
             case "bf_lethal" -> impact(mc, level, pos, d, Math.max(1.4f, s), mine, now, dist, true, drawn);
             default -> {}
         }
@@ -73,10 +75,10 @@ final class BlackFlashFx {
 
         // 2. Impact frame and hit-stop look: close by only (never across the map).
         if (!reduced && (mine || dist < (lethal ? 22 : 9))) {
-            ImpactFrames.play(lethal ? ImpactFrames.Style.BLACK_FLASH_LETHAL : ImpactFrames.Style.BLACK_FLASH, lethal ? 1.6f : Math.min(1.4f, 0.8f + 0.3f * s));
+            ImpactFrames.play(lethal ? ImpactFrames.Style.BLACK_FLASH_STORM : ImpactFrames.Style.BLACK_FLASH, lethal ? 1.0f : Math.min(1.4f, 0.8f + 0.3f * s));
             if (lethal) {
-                ImpactFrames.slowMotion(550);
-                ScreenEffects.tint(0x66B00010, 18);
+                ImpactFrames.slowMotion(1500);
+                ScreenEffects.tint(0x70B00010, 34);
             }
         }
 
@@ -145,6 +147,114 @@ final class BlackFlashFx {
             if (mine) ScreenEffects.fovPunch(lethal ? 0.12f : 0.05f);
         }
         if (reduced && mine) ScreenEffects.flash(0x30400008, 8);
+    }
+
+    /**
+     * The lethal Black Flash's build-up, every other tick while the body is held in the contact: "the user amps the power
+     * up, creating intense sparks" (JJS). Crackling black and crimson arcs round the contact, spark showers thrown out,
+     * motes of cursed energy drawn in, a crimson pulse now and then, the world kept washed red; {@code s} grows with it.
+     */
+    private static void amp(Minecraft mc, ClientLevel level, Vec3 pos, Vec3 d, float s, boolean mine, long now, double dist, boolean drawn) {
+        float k = Math.min(2.6f, s);
+        if (RNG.nextInt(3) == 0) sound("black_flash_chain", pos, 0.5f + 0.2f * k, 0.8f + RNG.nextFloat() * 0.6f);
+        if (RNG.nextInt(5) == 0) sound("resolute_bf_windup", pos, 0.35f, 1.3f + RNG.nextFloat() * 0.3f);
+        // The arcs: short black bolts with crimson edges whipping round the contact, re-forking every tick.
+        for (int i = 0; i < 2 + Math.round(2 * k); i++) {
+            Vec3 a = pos.add(randomUnit().scale(0.2 + 0.4 * RNG.nextDouble()));
+            bolt(a, randomAround(randomUnit(), 0.4), (0.9 + RNG.nextDouble() * 1.2) * k, 0.045f * k, 1, now, 3 + RNG.nextInt(3));
+        }
+        Flashes.bolt(pos.add(randomUnit().scale(0.3)), pos.add(randomUnit().scale(1.6 * k)), 0.05f, RED, dim(0.9f), 3, now);
+        // The heart of it: a white-hot core flickering inside a crimson bloom, black pressure round it.
+        Flashes.flash(pos, 0.25f * k, 0.6f * k, WHITE_HOT, dim(0.8f + 0.2f * RNG.nextFloat()), 3, now);
+        Flashes.flash(pos, 1.2f * k, 0.4f, RED, dim(0.55f), 3, now);
+        if (RNG.nextInt(3) == 0) Flashes.ring(pos, 0.3f, (1.6f + RNG.nextFloat()) * k, RED, dim(0.7f), 5, now);
+        if (RNG.nextInt(4) == 0) Flashes.ripple(pos, randomUnit(), 0.2f, 1.8f * k, INK, 0.6f, 4, now);
+        if (drawn) {
+            // Spark showers: white-hot and crimson, thrown out and falling.
+            for (int i = 0; i < q(Math.round(10 * k)); i++) {
+                Vec3 v = randomUnit().scale(0.25 + RNG.nextDouble() * 0.35 * k);
+                add(level, pos, v, Sprite.SPARK, i % 3 == 0 ? WHITE_HOT : i % 3 == 1 ? RED : INK, 1f, 0.07f + RNG.nextFloat() * 0.06f, 0.01f, 8 + RNG.nextInt(8))
+                        .gravity(0.5f).friction(0.9f);
+            }
+            // Cursed energy drawn into the blow from all round.
+            for (int i = 0; i < q(Math.round(4 * k)); i++) {
+                Vec3 from = pos.add(randomUnit().scale(2.2 + RNG.nextDouble() * 1.5));
+                add(level, from, Vec3.ZERO, Sprite.GLOW, i % 2 == 0 ? RED : INK, 0.8f, 0.18f, 0.04f, 10).attract(pos, 0.07);
+            }
+        }
+        // The world held red, the view straining in toward it.
+        if (dist < 26) {
+            ScreenEffects.tint(0x58A00010, 6);
+            ScreenEffects.shake(0.12f + 0.12f * k, 4);
+            if (mine) ScreenEffects.fovPunch(-0.01f * k);
+        }
+    }
+
+    /**
+     * The lethal Black Flash's launch: the frame burnt white with the bodies black on it, then the shockwave rolling out
+     * along the ground, the body thrown far along the blow trailing crimson streaks, debris and black and crimson shards
+     * flung out, the bolts at their biggest, a held beat of slowed time, and embers and scorch fading after.
+     */
+    private static void launch(Minecraft mc, ClientLevel level, Vec3 pos, Vec3 d, float s, boolean mine, long now, double dist, boolean drawn) {
+        boolean reduced = reducedFlashes();
+        sound("black_flash_heavy", pos, 2.4f, 0.75f);
+        sound("kokusen", pos, 2f, 0.85f);
+        sound("resolute_bf_finish", pos, 1.6f, 1f);
+        if (!reduced && (mine || dist < 24)) {
+            ImpactFrames.play(ImpactFrames.Style.BLACK_FLASH_LAUNCH, 1.2f);
+            ImpactFrames.slowMotion(900);
+            ScreenEffects.tint(0x80B00010, 26);
+        }
+        if (reduced && mine) ScreenEffects.flash(0x30400008, 10);
+        // The blast at the contact.
+        Flashes.flash(pos, 0.5f, 4.5f, WHITE_HOT, dim(1f), 5, now);
+        Flashes.flash(pos, 5.5f, 0.6f, RED, dim(0.9f), 12, now);
+        Flashes.flash(pos, 3.2f, 0.4f, INK, 0.95f, 14, now + 1);
+        // Shockwaves: three rolling along the ground, one across the blow, one high.
+        Vec3 ground = groundBelow(level, pos).add(0, 0.06, 0);
+        for (int w = 0; w < 4; w++) Flashes.ground(ground, 0.6f, 4.5f + w * 2.6f, w % 2 == 0 ? RED : INK, dim(0.85f - w * 0.15f), 12 + w * 3, now + w * 2L);
+        Flashes.ripple(pos, d, 0.5f, 6f, RED, dim(0.8f), 9, now);
+        Flashes.ring(pos.add(0, 1.2, 0), 0.5f, 7f, RED, dim(0.7f), 10, now + 1);
+        // The biggest tree of bolts, thrown along the launch.
+        for (int i = 0; i < 12; i++) bolt(pos, randomAround(d, 1.2), 4.5 * Math.max(1f, s * 0.7f), 0.12f, 3, now + i % 3, 10);
+        // Crimson streaks along the line the body takes.
+        Vec3 side = d.cross(new Vec3(0, 1, 0));
+        if (side.lengthSqr() < 1e-4) side = new Vec3(1, 0, 0);
+        side = side.normalize();
+        for (int i = 0; i < 16; i++) {
+            Vec3 off = side.scale(gauss(0.9)).add(0, gauss(0.7), 0);
+            Vec3 a = pos.add(off), b = a.add(d.scale(6 + RNG.nextDouble() * 8)).add(0, 1.2 + RNG.nextDouble(), 0);
+            if (i % 3 == 0) Flashes.darkBeam(a, b, 0.07f, INK, 0.9f, 8 + RNG.nextInt(5), now + i % 4);
+            else Flashes.darkBeam(a, b, 0.05f, RED, dim(0.9f), 7 + RNG.nextInt(5), now + i % 4);
+        }
+        if (drawn) {
+            ClientFx.debris(level, pos, q(40), 0.7);
+            for (int i = 0; i < q(60); i++) {
+                Vec3 v = randomUnit().scale(0.35 + RNG.nextDouble() * 0.5).add(d.scale(0.4)).add(0, 0.3, 0);
+                add(level, pos, v, i % 2 == 0 ? Sprite.SHARD : Sprite.SPARK, i % 3 == 0 ? INK : i % 3 == 1 ? RED : WHITE_HOT, 1f,
+                        0.12f + RNG.nextFloat() * 0.1f, 0.02f, 30 + RNG.nextInt(30)).gravity(0.8f).physics();
+            }
+            // Red haze rolling out low.
+            for (int i = 0; i < q(24); i++) {
+                double a = RNG.nextDouble() * Math.PI * 2;
+                Vec3 out = new Vec3(Math.cos(a), 0, Math.sin(a));
+                add(level, ground.add(out.scale(0.6)).add(0, 0.2, 0), out.scale(0.22).add(0, 0.01, 0), Sprite.SMOKE, i % 3 == 0 ? INK : RED, 0.5f,
+                        0.6f, 1.6f, 26 + RNG.nextInt(12));
+            }
+        }
+        // Scorch: long dark lines burnt across the ground from the blast (drawn only; no block is changed).
+        for (int i = 0; i < 9; i++) {
+            double ang = Math.atan2(d.z, d.x) + gauss(1.4);
+            Vec3 a = ground.add(gauss(0.3), 0, gauss(0.3));
+            Vec3 b = a.add(Math.cos(ang) * (2 + RNG.nextDouble() * 3), 0, Math.sin(ang) * (2 + RNG.nextDouble() * 3));
+            Flashes.darkBeam(a, b, 0.06f, INK, 0.55f, 90, now);
+            Flashes.darkBeam(a.add(0, 0.01, 0), b.add(0, 0.01, 0), 0.03f, RED, dim(0.75f), 14, now);
+        }
+        if (dist < 40) {
+            float fall = (float) Math.max(0.3, 1 - dist / 40);
+            ScreenEffects.shake(1.1f * fall, 18);
+            if (mine) ScreenEffects.fovPunch(0.18f);
+        }
     }
 
     /** A branching bolt: a black jagged core with a crimson glow along it, forking {@code forks} times. */
