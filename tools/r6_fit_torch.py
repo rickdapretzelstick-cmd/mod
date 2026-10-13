@@ -27,6 +27,8 @@ import time
 
 import numpy as np
 import torch
+import cv2
+from scipy import ndimage
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import r6_fit as F  # noqa: E402
@@ -70,7 +72,7 @@ def part_classes():
     return torch.tensor([F.CLASS_OF[part] for _, _, _, part in F.PARTS])
 
 
-def geometry(J, cam, persp, light):
+def geometry(J, cam, persp, light, corners=False):
     """Faces of a batch of poses: 2D quads (B, faces, 4, 2) in footage px, depth (B, faces), visible (B, faces),
     shade (B, faces). J (B, joints) degrees, cam (B, 5) = yaw, pitch, scale, x, y."""
     B = J.shape[0]
@@ -92,6 +94,8 @@ def geometry(J, cam, persp, light):
     V = (view[:, None, None] @ X.unsqueeze(-1)).squeeze(-1)  # (B, P, 8, 3)
     f = cam[:, 2, None, None] / torch.clamp(1 - V[..., 2] * persp, min=0.2)
     uv = torch.stack([cam[:, 3, None, None] + f * V[..., 0], cam[:, 4, None, None] - f * V[..., 1]], -1)  # (B, P, 8, 2)
+    if corners:
+        return uv  # (B, boxes, 8, 2) footage px
     quads = uv[:, :, FACE_IDX]  # (B, P, 6, 4, 2)
     centre = V[:, :, FACE_IDX].mean(3)  # (B, P, 6, 3)
     nw = (WR.unsqueeze(2) @ FACE_N.view(1, 1, 6, 3, 1)).squeeze(-1) * M2W  # (B, P, 6, 3) world
@@ -147,6 +151,9 @@ class View:
         self.encs = encs
         self.windows = {}
         self.rects = {}
+        self.border = {}
+        self.edges = {}
+        self.coloured_edges = {}
         self.targets = {}  # frame -> (boxes' target masks (boxes, N), which boxes have one (boxes,))
 
     def window(self, i, p, fitter):
@@ -155,7 +162,18 @@ class View:
         roi = fitter.roi(p, self.encs[i])
         x0, y0, k, w, h = roi
         prep = fitter.prepare(fitter.view(self.encs[i], roi))
-        obs, shade = prep[0], prep[3]
+        obs, shade = prep[0].copy(), prep[3]
+        # Only the body's own cluster of colours is body (a lamp or an effect of the same colour further off is floor).
+        body_cls = sorted({F.CLASS_OF[part] for _, _, _, part in F.PARTS})
+        stray = np.isin(obs, body_cls) & ~RR.body_cluster(obs, {c: 1 for c in body_cls})
+        obs[stray] = 0
+        # The footage's colour borders are blended (blur, dithering): the 1-pixel band along them is left out of the score.
+        edge = np.zeros(obs.shape, bool)
+        edge[:, 1:] |= obs[:, 1:] != obs[:, :-1]
+        edge[:, :-1] |= obs[:, 1:] != obs[:, :-1]
+        edge[1:] |= obs[1:] != obs[:-1]
+        edge[:-1] |= obs[1:] != obs[:-1]
+        self.border[i] = torch.tensor(edge.reshape(-1))
         gx, gy = np.meshgrid((np.arange(w) + 0.5) / k + x0, (np.arange(h) + 0.5) / k + y0)
         self.windows[i] = (torch.tensor(np.stack([gx, gy], -1).reshape(-1, 2), dtype=DT),
                            torch.tensor(obs.reshape(-1).astype(np.int64)), torch.tensor(shade.reshape(-1), dtype=DT), 1 / k)
@@ -164,7 +182,47 @@ class View:
         for _, _, _, part in F.PARTS:
             if part != 'face':
                 counts[F.CLASS_OF[part]] = counts.get(F.CLASS_OF[part], 0) + 1
-        self.rects[i] = (RR.detect(obs, counts), obs)
+        # The picture in the same window (straight edges are found in it), and one stud in window pixels.
+        H, W = self.frames[i].shape[:2]
+        xs = np.clip(gx.astype(int), 0, W - 1)
+        ys = np.clip(gy.astype(int), 0, H - 1)
+        gray = self.frames[i][ys, xs].astype(float) @ np.array([0.299, 0.587, 0.114])
+        unit = 6 * p[2] * k
+        self.rects[i] = (RR.detect_edges(gray, obs, counts, unit), obs)
+        # The straight edges as a field: every pixel's distance to the nearest edge and that edge's direction.
+        segs = RR.segments(gray, np.isin(obs, list(counts)), max(4, unit * 0.8))
+        ids = np.zeros(obs.shape, np.int32)
+        for n_, (x1, y1, x2, y2) in enumerate(segs, 1):
+            cv2.line(ids, (int(round(x1)), int(round(y1))), (int(round(x2)), int(round(y2))), n_, 1)
+        angles = np.array([0.0] + [math.atan2(y2 - y1, x2 - x1) for x1, y1, x2, y2 in segs])
+        if len(segs):
+            dist, (iy, ix) = ndimage.distance_transform_edt(ids == 0, return_indices=True)
+            self.edges[i] = (dist, angles[ids[iy, ix]], segs)
+        else:
+            self.edges[i] = (np.full(obs.shape, 99.0), np.zeros(obs.shape), segs)
+        # Each straight edge's colours: the body colour (if any) along either side of it.
+        side_n = obs.shape[0]
+        coloured = []
+        for x1, y1, x2, y2 in segs:
+            d = np.array([x2 - x1, y2 - y1], float)
+            L = np.linalg.norm(d)
+            if L < 3:
+                continue
+            nrm = np.array([-d[1], d[0]]) / L
+            t = np.linspace(0.1, 0.9, 9)
+            pts = np.stack([x1 + d[0] * t, y1 + d[1] * t], 1)
+            cls_sides = {}  # colour -> which side of the edge it is on (+1 along nrm, -1 against)
+            for sgn in (1, -1):
+                q = np.clip(np.round(pts + sgn * 2.0 * nrm).astype(int), 0, side_n - 1)
+                vals = obs[q[:, 1], q[:, 0]]
+                vals = vals[np.isin(vals, list(counts))]
+                if len(vals) >= 5:
+                    c_, n_ = np.unique(vals, return_counts=True)
+                    if n_.max() >= 5:
+                        cls_sides.setdefault(int(c_[np.argmax(n_)]), sgn)
+            if cls_sides:
+                coloured.append((np.array([x1, y1, x2, y2], float), cls_sides, nrm))
+        self.coloured_edges[i] = coloured
         self.targets.pop(i, None)
 
 
@@ -235,7 +293,8 @@ class Fit:
             covered = pprob[0].sum(-1).reshape(side, side).numpy() > 0.5
         part_cls = [F.CLASS_OF[part] for _, _, _, part in F.PARTS]
         masks = [(hard == j) & covered for j in range(len(F.PARTS))]
-        pairs = RR.assign(masks, [c if F.PARTS[j][3] != 'face' else -1 for j, c in enumerate(part_cls)], rects)
+        names = ['torso' if part == 'torso' else 'head' if part == 'head' else part for _, _, _, part in F.PARTS]
+        pairs = RR.assign(masks, [c if F.PARTS[j][3] != 'face' else -1 for j, c in enumerate(part_cls)], rects, names)
         tgt = np.zeros((len(F.PARTS), side * side), np.float32)
         has = np.zeros(len(F.PARTS), bool)
         for j, r in pairs:
@@ -356,8 +415,398 @@ def window_loss(fit, v, i, J, cam, sigma, stride=1):
         pix, obs, tsh, side = pix[sel], obs[sel], tsh[sel], len(range(0, side, stride))
     quads, depth, vis, shade = geometry(J, cam, fit.persp[v], fit.lights[v])
     n = J.shape[0]
-    prob, sh = rasterise(quads, depth, vis, shade, pix.expand(n, -1, -1), sigma * scale * stride, fit.classes, fit.ncls)
-    return frame_loss(prob, sh, obs.expand(n, -1), tsh.expand(n, -1), fit.ncls, side)
+    prob, sh, pprob = rasterise(quads, depth, vis, shade, pix.expand(n, -1, -1), sigma * scale * stride, fit.classes,
+                                fit.ncls, parts=True)
+    loss = frame_loss(prob, sh, obs.expand(n, -1), tsh.expand(n, -1), fit.ncls, side)
+    if i in view.targets:
+        # Each box onto its own rectangle, as in Fit.loss_frames (rectangles assigned from the current pose).
+        tgt, has = view.targets[i]
+        if has.any():
+            t = tgt[has][:, sel] if stride > 1 else tgt[has]
+            p = pprob[:, :, has].transpose(1, 2)  # (B, boxes, N)
+            inter = (p * t).sum(-1)
+            union = p.sum(-1) + t.sum(-1) - inter
+            loss = loss + RECT_W * (1 - inter / (union + 1e-6)).sum(-1)
+    return loss
+
+
+def agreement(fit, v, i, J, cam):
+    """The fit's rule: drawn hard (the boxes at their exact R6 sizes), how many pixels have the footage's colour.
+    Agreeing body pixels over all body pixels of either (a box on floor, or body colour with no box on it, both count
+    against; pixels hidden behind something are left out). 1.0 is a perfect fit. Batched: (B,)."""
+    view = fit.views[v]
+    pix, obs, _, scale = view.windows[i]
+    with torch.no_grad():
+        quads, depth, vis, shade = geometry(J, cam, fit.persp[v], fit.lights[v])
+        out = []
+        for c in range(0, J.shape[0], 16):
+            sl = slice(c, c + 16)
+            n = quads[sl].shape[0]
+            prob, _ = rasterise(quads[sl], depth[sl], vis[sl], shade[sl], pix.expand(n, -1, -1), 0.05 * scale, fit.classes, fit.ncls)
+            drawn = prob.argmax(-1)
+            if F.FACE > 0:
+                drawn = torch.where(drawn == F.FACE, F.HEAD, drawn)
+            o = torch.where(obs == F.FACE, F.HEAD, obs) if F.FACE > 0 else obs
+            known = (o != F.UNKNOWN) & ~view.border[i]
+            body = ((o > 0) | (drawn > 0)) & known
+            agree = (drawn == o) & (o > 0) & known
+            out.append(agree.sum(-1).float() / body.sum(-1).clamp(min=1).float())
+        return torch.cat(out)
+
+
+SEEK_OVERLAP = 0.5  # a box over another part's colour (one part in front of another): half credit, not a fault
+
+
+def judge(fit, v, i, J, cam, detail=False, only=None):
+    """The rule every candidate pose is held to (boxes at their exact R6 sizes), higher is better (0..1):
+    - colour: every box seeks its own colour: full credit on it, half where it covers another part's colour (parts
+      overlap), none on floor; shading is not judged (any shade of the right colour counts); and every body-coloured
+      pixel should be under some box of that colour;
+    - edges (the steadfast rule, weighted 5:1 over colour): every straight edge of the footage with a body colour
+      along it must be covered by the outline of a box of that colour.
+    Batched over J (B, joints), cam (B, 5)."""
+    view = fit.views[v]
+    pix, obs_t, _, scale = view.windows[i]
+    side = view.res
+    obs = obs_t.numpy().reshape(side, side)
+    if F.FACE > 0:
+        obs = np.where(obs == F.FACE, F.HEAD, obs)
+    known = (obs != F.UNKNOWN) & ~view.border[i].numpy().reshape(side, side)
+    hidden = obs == F.UNKNOWN
+    body = (obs > 0) & ~hidden
+    dist, ang, _ = view.edges[i]
+    x0, y0 = float(pix[0, 0]) - 0.5 * scale, float(pix[0, 1]) - 0.5 * scale
+    with torch.no_grad():
+        uv = geometry(J, cam, fit.persp[v], fit.lights[v], corners=True).numpy()
+    parts = [(j, F.CLASS_OF[part]) for j, (_, _, _, part) in enumerate(F.PARTS) if part != 'face' and (only is None or part in only)]
+    if only is not None:
+        body = body & np.isin(obs, [c for _, c in parts])  # coverage of those parts' colours only
+    out = []
+    for b in range(uv.shape[0]):
+        seek_num = seek_den = 0.0
+        covered = np.zeros_like(body)
+        outlines = []  # (class, a, b) of every box outline edge, window px
+        for j, cls in parts:
+            pts = (uv[b, j] - (x0, y0)) / scale
+            hull = cv2.convexHull(pts.astype(np.float32)).reshape(-1, 2)
+            m = np.zeros((side, side), np.uint8)
+            cv2.fillPoly(m, [np.round(hull).astype(np.int32)], 1)
+            m = m.astype(bool)
+            area = m.sum()
+            if area:
+                own = (m & ((obs == cls) | hidden)).sum()
+                other = (m & body & (obs != cls)).sum()
+                seek_num += own + SEEK_OVERLAP * other
+                seek_den += area
+                covered |= m & (obs == cls)
+            centre = hull.mean(0)
+            for a_, b_ in zip(hull, np.roll(hull, -1, 0)):
+                if np.hypot(*(b_ - a_)) >= 2:
+                    outlines.append((cls, a_, b_, centre))
+        # The steadfast rule: every straight edge with a body colour along it must be covered by the outline of a box
+        # of that colour (either side's colour, where two parts meet): lying along it (within 1.5 px, within 12
+        # degrees of its direction). Scored as the covered share of all such edges' length.
+        e_cov = e_len = 0.0
+        for seg, cls_sides, nrm in view.coloured_edges[i]:
+            if only is not None and not (set(cls_sides) & {c for _, c in parts}):
+                continue
+            x1, y1, x2, y2 = seg
+            L = float(np.hypot(x2 - x1, y2 - y1))
+            n = max(2, int(L))
+            t = (np.arange(n) + 0.5) / n
+            P = np.stack([x1 + (x2 - x1) * t, y1 + (y2 - y1) * t], 1)
+            th = math.atan2(y2 - y1, x2 - x1)
+            hit = np.zeros(n, bool)
+            mid = P[len(P) // 2]
+            for cls, a_, b_, centre in outlines:
+                # A box of the edge's colour, whose body lies on that colour's side of the edge.
+                if cls not in cls_sides or np.sign((centre - mid) @ nrm) != cls_sides[cls]:
+                    continue
+                e = b_ - a_
+                el = float(np.hypot(*e))
+                d_ang = abs((math.atan2(e[1], e[0]) - th + math.pi / 2) % math.pi - math.pi / 2)
+                if d_ang > math.radians(12):
+                    continue
+                u = np.clip(((P - a_) @ e) / (el * el), 0, 1)
+                d = np.hypot(*(P - (a_ + u[:, None] * e)).T)
+                hit |= d <= 1.5
+            e_cov += L * hit.mean()
+            e_len += L
+        seek = seek_num / max(1.0, seek_den)
+        cover = (covered & known).sum() / max(1, (body & known).sum())
+        colour = 0.5 * (seek + cover)
+        edge = e_cov / e_len if e_len else 1.0
+        total = (5 * edge + colour) / 6  # the edge rule first: more coloured edge covered always outranks colour
+        out.append((total, colour, edge) if detail else total)
+    return out if detail else torch.tensor(out)
+
+
+def polish(fit, v, k, steps, sigma0=1.5, sigma1=0.4, every=10):
+    """Gradient steps (soft render) that keep the state whose hard colour agreement was best, not the last one."""
+    view = fit.views[v]
+    i = view.idx[k]
+    groups = [{'params': [fit.cams[v]], 'lr': 0.08}]
+    if v == 0:
+        groups.append({'params': [fit.J], 'lr': 0.8})
+    opt = torch.optim.Adam(groups)
+    cam_now = lambda: (fit.cams[v][[k]] * CAM_UNIT).detach()
+    best = (float(judge(fit, v, i, fit.joints_at(v, k).detach()[None], cam_now())[0]),
+            fit.J[k].detach().clone(), fit.cams[v][k].detach().clone())
+    for s in range(steps):
+        sig = sigma0 * (sigma1 / sigma0) ** (s / max(1, steps - 1))
+        opt.zero_grad()
+        loss = fit.loss_frames(v, [k], sig)[0] + fit.regular() * 0.1
+        loss.backward()
+        opt.step()
+        if s % every == every - 1 or s == steps - 1:
+            a = float(judge(fit, v, i, fit.joints_at(v, k).detach()[None], cam_now())[0])
+            if a > best[0]:
+                best = (a, fit.J[k].detach().clone(), fit.cams[v][k].detach().clone())
+    with torch.no_grad():
+        if v == 0:
+            fit.J[k] = best[1]
+        fit.cams[v][k] = best[2]
+    return best[0]
+
+
+LIMBS = {'rightArm': 'rightArm', 'leftArm': 'leftArm', 'rightLeg': 'rightThigh', 'leftLeg': 'leftThigh'}
+
+
+def lift_limbs(fit, v, k, steps=150):
+    """Each limb straight from its rectangle: the rectangle's long axis is the limb's direction on screen and its
+    length against the limb's true length (12 px) says how far the limb points toward or away from the camera; the
+    joint end is the one nearer the limb's shoulder/hip. Both depth signs of every limb are tried together and the
+    combination that matches the footage best is kept, then polished by gradient. Returns (loss after, before)."""
+    import itertools
+    view = fit.views[v]
+    i = view.idx[k]
+    if i not in view.targets:
+        fit.assign(v, k)
+    rects, obs = view.rects[i]
+    pix, _, _, scale = view.windows[i]
+    side = view.res
+    x0, y0 = float(pix[0, 0]) - 0.5 * scale, float(pix[0, 1]) - 0.5 * scale
+    with torch.no_grad():
+        J = fit.joints_at(v, k).clone()
+        cam = (fit.cams[v][k] * CAM_UNIT).clone()
+        # Where the limbs' joints are now (footage px) and the parents' rotations, from the current body.
+        ang = (J[None] @ JMAP).reshape(1, len(BONES), 3)
+        R = rotm(ang)[0]
+        wr, wt = [None] * len(BONES), [None] * len(BONES)
+        for b, par in enumerate(PARENT_IDX):
+            wr[b] = R[b] if par < 0 else wr[par] @ R[b]
+            wt[b] = OFFSET[b] if par < 0 else wt[par] + wr[par] @ OFFSET[b]
+        zeros = torch.zeros(())
+        view_r = rotm(torch.stack([cam[1], zeros, zeros])) @ rotm(torch.stack([zeros, cam[0], zeros]))
+    options = []
+    for part, bone in LIMBS.items():
+        j = next(jj for jj, pp in enumerate(F.PARTS) if pp[3] == part)
+        tgt, has = view.targets[i]
+        if not has[j]:
+            options.append([None])
+            continue
+        # The rectangle this limb was given (the one whose pixels its target is).
+        t = tgt[j].reshape(side, side).numpy() > 0.5
+        best_r = max((r for rs in rects.values() for r in rs), key=lambda r: (r.mask((side, side)) & t).sum())
+        c = best_r.corners
+        e = [np.linalg.norm(c[1] - c[0]), np.linalg.norm(c[2] - c[1])]
+        if e[0] >= e[1]:
+            ends = ((c[0] + c[3]) / 2, (c[1] + c[2]) / 2)
+        else:
+            ends = ((c[0] + c[1]) / 2, (c[2] + c[3]) / 2)
+        ends = [np.array([x0 + q[0] * scale, y0 + q[1] * scale]) for q in ends]  # footage px
+        b = BONES.index(bone)
+        jw = (wt[b] * M2W)
+        jc = view_r @ jw
+        joint2d = np.array([float(cam[3] + cam[2] * jc[0]), float(cam[4] - cam[2] * jc[1])])
+        start, end = sorted(ends, key=lambda q: np.linalg.norm(q - joint2d))
+        d2 = (end - start) / float(cam[2])  # rig px on the camera plane
+        length = 12.0
+        planar = min(np.linalg.norm(d2), length)
+        dz = math.sqrt(max(0.0, length ** 2 - planar ** 2))
+        par = PARENT_IDX[b]
+        outs = []
+        for sgn in (1, -1):
+            dc = torch.tensor([d2[0], -d2[1], sgn * dz], dtype=DT)
+            dc = dc / dc.norm()
+            dw = view_r.T @ dc  # world
+            dm = dw * M2W  # model (y down)
+            a = wr[par].T @ dm  # in the parent's frame
+            x = math.degrees(math.asin(float(torch.clamp(a[2], -1, 1))))
+            z = math.degrees(math.atan2(-float(a[0]), float(a[1])))
+            outs.append((F.JI[(bone, 0)] - NC, F.JI[(bone, 2)] - NC, x, z))
+        options.append(outs)
+    combos = []
+    for pick in itertools.product(*options):
+        q = J.clone()
+        for o in pick:
+            if o is not None:
+                q[o[0]], q[o[1]] = o[2], o[3]
+        combos.append(q)
+    combos.append(J.clone())
+    # The rule: of all the depth combinations (and the pose as it was), the one whose colours disagree least.
+    Jc = torch.stack(combos)
+    agree = agreement(fit, v, i, Jc, cam.expand(len(Jc), 5))
+    before = float(agree[-1])
+    with torch.no_grad():
+        if v == 0:
+            fit.J[k] = Jc[int(torch.argmax(agree))]
+    after = polish(fit, v, k, steps)
+    return after, before
+
+
+def _axis_ends(r, x0, y0, scale):
+    """A rectangle's long axis as its two end midpoints, in footage px."""
+    c = r.corners
+    if np.linalg.norm(c[1] - c[0]) >= np.linalg.norm(c[2] - c[1]):
+        ends = ((c[0] + c[3]) / 2, (c[1] + c[2]) / 2)
+    else:
+        ends = ((c[0] + c[1]) / 2, (c[2] + c[3]) / 2)
+    return [np.array([x0 + q[0] * scale, y0 + q[1] * scale]) for q in ends]
+
+
+def _body_frames(J, cam):
+    """World rotations/positions of every bone (model space) and the camera rotation, for one pose."""
+    ang = (J[None] @ JMAP).reshape(1, len(BONES), 3)
+    R = rotm(ang)[0]
+    wr, wt = [None] * len(BONES), [None] * len(BONES)
+    for b, par in enumerate(PARENT_IDX):
+        wr[b] = R[b] if par < 0 else wr[par] @ R[b]
+        wt[b] = OFFSET[b] if par < 0 else wt[par] + wr[par] @ OFFSET[b]
+    zeros = torch.zeros(())
+    view_r = rotm(torch.stack([cam[1], zeros, zeros])) @ rotm(torch.stack([zeros, cam[0], zeros]))
+    return wr, wt, view_r
+
+
+def _to_screen(cam, view_r, p_model):
+    c = view_r @ (p_model * M2W)
+    return np.array([float(cam[3] + cam[2] * c[0]), float(cam[4] - cam[2] * c[1])])
+
+
+def _dir_model(view_r, d2, length, sgn, cam):
+    """A screen direction (footage px) of a part `length` rig px long, toward (+1) or away from (-1) the camera, as
+    a unit direction in model space."""
+    d = d2 / float(cam[2])
+    planar = min(np.linalg.norm(d), length)
+    dz = math.sqrt(max(0.0, length ** 2 - planar ** 2))
+    dc = torch.tensor([d[0], -d[1], sgn * dz], dtype=DT)
+    return (view_r.T @ (dc / dc.norm())) * M2W
+
+
+def _euler_zyx(M):
+    """Degrees (x, y, z) with Rz Ry Rx = M."""
+    y = math.asin(max(-1.0, min(1.0, -float(M[2, 0]))))
+    x = math.atan2(float(M[2, 1]), float(M[2, 2]))
+    z = math.atan2(float(M[1, 0]), float(M[0, 0]))
+    return math.degrees(x), math.degrees(y), math.degrees(z)
+
+
+def lift_all(fit, v, k, turns=8, rounds=2, steps=150):
+    """The whole body from the rectangles, every candidate held to judge(): the torso from its rectangle (either end
+    up, tilted toward or away, any turn about its long axis, the body slid so the torso box sits on the rectangle), and
+    for each torso every limb from every rectangle of its colour (either end at the joint, toward or away), limbs chosen
+    in rounds; the best whole pose is then polished. Returns (judged after, before)."""
+    view = fit.views[v]
+    i = view.idx[k]
+    rects, _ = view.rects[i]
+    pix, _, _, scale = view.windows[i]
+    x0, y0 = float(pix[0, 0]) - 0.5 * scale, float(pix[0, 1]) - 0.5 * scale
+    J0 = fit.joints_at(v, k).detach().clone()
+    cam0 = (fit.cams[v][k] * CAM_UNIT).detach().clone()
+    score = lambda Js, c: judge(fit, v, i, Js, c.expand(len(Js), 5))
+    before = float(score(J0[None], cam0)[0])
+    hips = [F.JI[('hips', a)] - NC for a in range(3)]
+    hb = BONES.index('hips')
+    torsos = [(J0.clone(), cam0.clone())]
+    _, _, view_r = _body_frames(J0, cam0)
+    # The scale from the limbs' widths: a limb is one stud (6 rig px) wide whichever way it turns, so the short side
+    # of its rectangle measures the scale (the median over limbs; 5% either way also tried).
+    widths = [min(r.box[1]) * scale / 6 for cls, rs in rects.items() if cls != F.CLASS_OF['torso'] for r in rs]
+    scales = [float(cam0[2])]
+    if widths:
+        w_med = float(np.median(widths))
+        scales += [w_med * f for f in (0.95, 1.0, 1.05)]
+    for r in rects.get(F.CLASS_OF['torso'], [])[:1]:
+        ends = _axis_ends(r, x0, y0, scale)
+        centre = (ends[0] + ends[1]) / 2
+        # Up candidates: the rectangle's long axis either way (tilted toward or away), and -- since a torso is as wide
+        # as it is tall, so a 2:1 slab may be its shoulders seen from above -- directions all round the sphere.
+        ups = []
+        for a_, b_ in (ends, ends[::-1]):
+            for sgn in (1, -1):
+                ups.append(_dir_model(view_r, b_ - a_, 12.0, sgn, cam0))
+        golden = math.pi * (3 - math.sqrt(5))
+        for n_ in range(40):
+            yy = 1 - 2 * (n_ + 0.5) / 40
+            rr = math.sqrt(1 - yy * yy)
+            ups.append(torch.tensor([rr * math.cos(golden * n_), yy, rr * math.sin(golden * n_)], dtype=DT))
+        for up in ups:
+            if True:
+                ydir = -up / up.norm()  # the bone's +y (model down) points away from the head
+                helper = torch.tensor([0.0, 0.0, 1.0]) if abs(float(ydir[2])) < 0.9 else torch.tensor([1.0, 0.0, 0.0])
+                f0 = helper - ydir * (helper @ ydir)
+                f0 = f0 / f0.norm()
+                g0 = torch.linalg.cross(ydir, f0)
+                for t in range(turns):
+                    th = 2 * math.pi * t / turns
+                    zdir = f0 * math.cos(th) + g0 * math.sin(th)
+                    M = torch.stack([torch.linalg.cross(ydir, zdir), ydir, zdir], 1)
+                    q = J0.clone()
+                    q[hips[0]], q[hips[1]], q[hips[2]] = _euler_zyx(M)
+                    for sc_ in scales:
+                        c2 = cam0.clone()
+                        c2[2] = sc_
+                        wr, wt, vr = _body_frames(q, c2)
+                        mid = _to_screen(c2, vr, wt[hb] + wr[hb] @ torch.tensor([0.0, -6.0, 0.0]))
+                        c2[3] += float(centre[0] - mid[0])
+                        c2[4] += float(centre[1] - mid[1])
+                        torsos.append((q, c2))
+    # Rank the torsos by the torso box alone (its colour and its edges); carry the best few through the limbs.
+    torso_score = lambda tc: float(judge(fit, v, i, tc[0][None], tc[1][None], only=('torso',))[0])
+    ranked = [torsos[0]] + sorted(torsos[1:], key=lambda tc: -torso_score(tc))[:8]
+    results = []
+    for Jt, cam in ranked:
+        J = Jt.clone()
+        for _ in range(rounds):
+            for part, bone in LIMBS.items():
+                b = BONES.index(bone)
+                ix, iz = F.JI[(bone, 0)] - NC, F.JI[(bone, 2)] - NC
+                wr, wt, view_r = _body_frames(J, cam)
+                joint2d = _to_screen(cam, view_r, wt[b])
+                par = PARENT_IDX[b]
+                opts = [J.clone()]
+                for r in rects.get(F.CLASS_OF[part], []):
+                    ends = _axis_ends(r, x0, y0, scale)
+                    for st, en in (ends, ends[::-1]):
+                        if np.linalg.norm(st - joint2d) > 2.5 * np.linalg.norm(en - st) + 6 * float(cam[2]):
+                            continue
+                        for sgn in (1, -1):
+                            a = wr[par].T @ _dir_model(view_r, en - st, 12.0, sgn, cam)
+                            q = J.clone()
+                            q[ix] = math.degrees(math.asin(float(torch.clamp(a[2], -1, 1))))
+                            q[iz] = math.degrees(math.atan2(-float(a[0]), float(a[1])))
+                            q[F.JI[(bone, 1)] - NC] = 0.0  # the angles above assume no twist (polish may add it back)
+                            opts.append(q)
+                # Generic directions too: a limb with no rectangle of its own (hidden) settles where it disagrees least.
+                sgn_ = 1 if bone.startswith('right') else -1
+                for gx in (-150, -90, -45, 0, 30):
+                    for gz in (0, 50, 100):
+                        q = J.clone()
+                        q[ix], q[iz] = gx, sgn_ * gz
+                        q[F.JI[(bone, 1)] - NC] = 0.0
+                        opts.append(q)
+                J = opts[int(torch.argmax(score(torch.stack(opts), cam)))]
+        results.append((float(score(J[None], cam)[0]), J, cam))
+    results.sort(key=lambda e: -e[0])
+    if os.environ.get('R6_DEBUG'):
+        print('torso candidates', len(torsos), 'top torso-only', [round(torso_score(t), 3) for t in ranked[:4]],
+              'whole poses', [round(r[0], 3) for r in results[:5]])
+    with torch.no_grad():
+        if v == 0:
+            fit.J[k] = results[0][1]
+        fit.cams[v][k] = results[0][2] / CAM_UNIT
+    after = polish(fit, v, k, steps)
+    return max(after, results[0][0]), before
 
 
 def global_search(fit, v, k, n=1500, top=6, steps=120, seed=0):
@@ -366,6 +815,8 @@ def global_search(fit, v, k, n=1500, top=6, steps=120, seed=0):
     if it beats the current pose. For frames where parts must move together (a body turned side-on)."""
     view = fit.views[v]
     i = view.idx[k]
+    if i not in view.targets:
+        fit.assign(v, k)
     g = torch.Generator().manual_seed(seed)
     with torch.no_grad():
         J = LO + (HI - LO) * torch.rand(n, NJ, generator=g)
