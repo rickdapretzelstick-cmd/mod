@@ -1327,6 +1327,37 @@ def init_camera_for(fitter, enc, joints, flip=False):
     return p
 
 
+PART_BONES = [('torso', 'hips'), ('head', 'head'), ('rightArm', 'rightArm'), ('leftArm', 'leftArm'),
+              ('rightLeg', 'rightThigh'), ('leftLeg', 'leftThigh')]
+PART_SURE = 0.4  # a part is "seen" when this share of its front-most pixels is its own colour (and enough of them)
+
+
+def part_confidence(fit, v, k):
+    """How surely each part is seen in frame k: of the pixels where the part's box is the front-most box, the share that
+    shows the part's own colour (0 when the box is mostly hidden or covers fewer than 1/3 stud squared of pixels)."""
+    view = fit.views[v]
+    i = view.idx[k]
+    pix, obs_t, _, scale = view.windows[i]
+    side = view.res
+    with torch.no_grad():
+        quads, depth, vis, shade = geometry(fit.joints_at(v, k).detach()[None], (fit.cams[v][[k]] * CAM_UNIT).detach(),
+                                            fit.persp[v], fit.lights[v])
+        _, _, pprob = rasterise(quads, depth, vis, shade, pix[None], 0.05 * scale, fit.classes, fit.ncls, parts=True)
+    front = pprob[0].argmax(-1).numpy()
+    drawn = pprob[0].sum(-1).numpy() > 0.5
+    obs = obs_t.numpy()
+    if F.FACE > 0:
+        obs = np.where(obs == F.FACE, F.HEAD, obs)
+    stud_px = (6 * float(fit.cams[v][k, 2].detach() * CAM_UNIT[2]) / float(scale)) ** 2
+    out = []
+    for part, _ in PART_BONES:
+        j = next(jj for jj, pp in enumerate(F.PARTS) if pp[3] == part)
+        mine = (front == j) & drawn
+        n = mine.sum()
+        out.append(0.0 if n < stud_px / 3 else float((mine & (obs == F.CLASS_OF[part])).sum()) / n)
+    return np.array(out)
+
+
 def run_keyframes(frames, idx, fps, args, log=print):
     """Clear frames first: every frame is fitted from the last (rectangles, lifting, polish); the frames that fit well
     with little of the body hidden, and whose pose does not jump away from its neighbours (a flip, swapped limbs),
@@ -1383,6 +1414,39 @@ def run_keyframes(frames, idx, fps, args, log=print):
             fit.J[k] = torch.tensor(J[a] + f * dj, dtype=DT)
             fit.cams[0][k] = torch.tensor(C[a] + f * (C[b] - C[a]), dtype=DT)
     log(f'kept {int(keep.sum())} of {len(idx)} frames as clear; the rest eased between them')
+    # Per part: a part that cannot be seen in a frame (behind another part, in something in front of the body) takes
+    # its angles eased between the nearest frames where that same part was clearly seen.
+    conf = np.zeros((len(idx), len(PART_BONES)))
+    for k, i in enumerate(idx):
+        if not keep[k]:
+            continue  # already eased as a whole
+        conf[k] = part_confidence(fit, 0, k)
+    sure = conf >= PART_SURE
+    J = fit.J.detach().numpy().copy()
+    borrowed = 0
+    for pi, (part, bone) in enumerate(PART_BONES):
+        cols = [F.JI[(bone, a)] - NC for a in range(3)]
+        ok = np.nonzero(sure[:, pi])[0]
+        if len(ok) == 0:
+            continue
+        for k in range(len(idx)):
+            if sure[k, pi] or not keep[k]:
+                continue
+            a = ok[ok < k].max() if (ok < k).any() else ok.min()
+            b = ok[ok > k].min() if (ok > k).any() else ok.max()
+            f = 0.0 if a == b else (k - a) / (b - a)
+            trial = J[k].copy()
+            for c in cols:
+                trial[c] = J[a, c] + f * ((J[b, c] - J[a, c] + 180) % 360 - 180)
+            # Only where it costs (almost) nothing: borrowing fills what the footage cannot show, never overrules it.
+            cam = (fit.cams[0][[k]] * CAM_UNIT).detach()
+            both = agreement(fit, 0, idx[k], torch.tensor(np.stack([J[k], trial]), dtype=DT), cam.expand(2, 5))
+            if float(both[1]) >= float(both[0]) - 0.01:
+                J[k] = trial
+                borrowed += 1
+    with torch.no_grad():
+        fit.J.copy_(torch.tensor(J, dtype=DT))
+    log(f'{borrowed} hidden or overlapped part-frames took their angles from the frames around them')
     return fit, f0, keep, agree
 
 
