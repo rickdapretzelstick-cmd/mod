@@ -100,10 +100,13 @@ REST = {'root': (0, 24, 0), 'hips': (0, 12, 0), 'head': (0, 0, 0), 'rightArm': (
         'rightThigh': (-6, 12, 0), 'leftThigh': (6, 12, 0)}
 PARENT = {'root': None, 'hips': 'root', 'head': 'hips', 'rightArm': 'hips', 'leftArm': 'hips', 'rightThigh': 'hips',
           'leftThigh': 'hips'}
-PARTS = [('hips', (-6, -12, -3), (6, 0, 3), 'torso'), ('head', (-3.6, -7, -3.6), (3.6, 0, 3.6), 'head'),
+# The head is rounded, not a box: two crossed boxes (a plus seen from above) cut its corners, so a box's corners sticking
+# out past the real head never reward tilting it.
+PARTS = [('hips', (-6, -12, -3), (6, 0, 3), 'torso'), ('head', (-3.6, -7, -2.6), (3.6, 0, 2.6), 'head'),
          ('head', (-2.4, -5.4, -3.9), (2.4, -1.6, -3.5), 'face'),
          ('rightArm', (-6, -3, -3), (0, 9, 3), 'rightArm'), ('leftArm', (0, -3, -3), (6, 9, 3), 'leftArm'),
-         ('rightThigh', (0, 0, -3), (6, 12, 3), 'rightLeg'), ('leftThigh', (-6, 0, -3), (0, 12, 3), 'leftLeg')]
+         ('rightThigh', (0, 0, -3), (6, 12, 3), 'rightLeg'), ('leftThigh', (-6, 0, -3), (0, 12, 3), 'leftLeg'),
+         ('head', (-2.6, -7, -3.6), (2.6, 0, 3.6), 'head')]
 # Parameters: camera (yaw, pitch, scale, x, y, perspective = 1 / its distance in rig px; 0 is orthographic) then joint
 # angles in degrees as (bone, axis): every bone turns on all three axes (the limbs' twist shows in their shading).
 CAM = ['cyaw', 'cpitch', 'scale', 'tx', 'ty', 'persp']

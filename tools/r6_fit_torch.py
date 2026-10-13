@@ -70,6 +70,20 @@ def rotm(a):
     return rz @ ry @ rx
 
 
+HEAD_TILT_W, HEAD_TURN_W, HEAD_TURN_FACE_W, BODY_LEAN_W = 0.1, 0.1, 0.002, 0.02
+
+
+def set_head_lock(fit, k):
+    """Frame k's head-turn weight from what the footage shows: the face (its dark marks) in view lets the head turn,
+    no face holds it square."""
+    view = fit.views[0]
+    obs = view.windows[view.idx[k]][1]
+    face = int((obs == F.FACE).sum()) if F.FACE > 0 else 0
+    if fit.head_lock is None:
+        fit.head_lock = torch.full((fit.J.shape[0],), HEAD_TURN_W, dtype=DT)
+    fit.head_lock[k] = HEAD_TURN_FACE_W if face >= 4 else HEAD_TURN_W
+
+
 def part_classes():
     return torch.tensor([F.CLASS_OF[part] for _, _, _, part in F.PARTS])
 
@@ -670,6 +684,7 @@ class Fit:
         self.persp = persp
         self.lights = [(torch.tensor(l[0], dtype=DT), float(l[1])) for l in lights]
         self.classes = face_classes()
+        self.head_lock = None  # per-frame weight on the head's turn (None: the head is free)
         self.ncls = max(F.CLASS_OF.values()) + 1
 
     def joints_at(self, v, k):
@@ -770,6 +785,15 @@ class Fit:
     def regular(self):
         J = self.J
         r = (torch.relu(J - HI) ** 2 + torch.relu(LO - J) ** 2).sum() * 0.01
+        if self.head_lock is not None:
+            # The head stays square on the body (R6 moves rarely turn it): tilt held hard; turn held hard too unless
+            # the face shows in that frame (head_lock[k]: the turn's weight per frame).
+            hx, hy, hz = (F.JI[('head', a)] - NC for a in range(3))
+            r = r + ((J[:, hx] ** 2 + J[:, hz] ** 2).sum() * HEAD_TILT_W + (self.head_lock * J[:, hy] ** 2).sum())
+            # The whole body tipped and the camera tilted look the same from one view: the body is held upright and
+            # the camera's tilt takes it (a Roblox camera tilts; a standing character does not lean).
+            bx, bz = F.JI[('hips', 0)] - NC, F.JI[('hips', 2)] - NC
+            r = r + (J[:, bx] ** 2 + J[:, bz] ** 2).sum() * BODY_LEAN_W
         r = r + (J[:, 0] ** 2 + J[:, 2] ** 2).sum() * 2e-5
         if len(J) > 2:
             acc = J[2:] - 2 * J[1:-1] + J[:-2]
@@ -2420,6 +2444,12 @@ def run_keyframes(frames, idx, fps, args, log=print):
     p0, _ = f0.init(encs[idx[0]], tuple(float(x) for x in args.at.split(',')) if args.at else None, args.flip,
                     quick=getattr(args, 'quick_start', False))
     fit = Fit([view], np.tile(p0[NC:], (len(idx), 1)), [np.tile(p0[:5], (len(idx), 1))], [float(p0[5])], [f0.light])
+    if sides:
+        fit.head_lock = torch.full((len(idx),), HEAD_TURN_W, dtype=DT)
+        with torch.no_grad():
+            for a_ in (0, 1, 2):
+                fit.J[:, F.JI[('head', a_)] - NC] = 0.0
+
     agree, hidden = np.zeros(len(idx)), np.zeros(len(idx))
     for k, i in enumerate(idx):
         with torch.no_grad():
@@ -2433,7 +2463,7 @@ def run_keyframes(frames, idx, fps, args, log=print):
             track_step(fit, k, 60, sigma0=1.5)
             view.window(i, fit.params_of(0, k), f0)
             a_k = float(agreement(fit, 0, i, fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
-            if a_k < 0.85:
+            if a_k < 0.85 or k == 0:
                 a_k = turn_sweep(fit, k)
                 view.window(i, fit.params_of(0, k), f0)
             if a_k < 0.4 and k:
@@ -2492,6 +2522,8 @@ def run_keyframes(frames, idx, fps, args, log=print):
         obs = view.windows[i][1].numpy()
         hidden[k] = (obs == F.UNKNOWN).sum() / max(1, (obs > 0).sum())
         log(f'frame {i}: colour agreement {agree[k]:.2f}, hidden {hidden[k]:.2f}')
+    if sides:
+        hold_still(fit, log=log)
     # Check: every frame's final pose still scores what it scored when fitted (nothing drifted afterwards).
     for k, i in enumerate(idx):
         view.window(i, fit.params_of(0, k), f0)
@@ -2567,14 +2599,16 @@ def run_keyframes(frames, idx, fps, args, log=print):
     return fit, f0, keep, agree
 
 
-def track_step(fit, k, steps=25, sigma0=1.0, sigma1=0.4, lr=0.8, every=5):
+def track_step(fit, k, steps=25, sigma0=1.0, sigma1=0.4, lr=0.8, every=5, joints=True):
     """Fast mode's per-frame fit: gradient steps on frame k alone from where it starts (the last frame's pose), all
     but the last 5 on every other pixel; every `every` steps the hard colour agreement is checked and the best state
     seen (the start included) is kept. Every other frame is put back as it was."""
-    groups = [{'params': [fit.cams[0]], 'lr': 0.1 * lr}, {'params': [fit.J], 'lr': lr}]
+    groups = [{'params': [fit.cams[0]], 'lr': 0.1 * lr}] + ([{'params': [fit.J], 'lr': lr}] if joints else [])
     opt = torch.optim.Adam(groups)
     keep_J, keep_C = fit.J.detach().clone(), fit.cams[0].detach().clone()
     view = fit.views[0]
+    if fit.head_lock is not None:
+        set_head_lock(fit, k)
     i = view.idx[k]
     score = lambda: float(agreement(fit, 0, i, fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
     best = (score(), fit.J[k].detach().clone(), fit.cams[0][k].detach().clone()) if every else None
@@ -2654,11 +2688,17 @@ def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
     J = fit.J.detach()[k].clone()
     c0 = (fit.cams[0][k] * CAM_UNIT).detach().clone()
     # The body as it is, and upright (camera tilt and a backward lean look alike; a wrong pair must not stick).
+    if fit.head_lock is not None:
+        J = J.clone()
+        for a_ in (0, 2):  # the head square on the body (its tilt is never evidence)
+            J[F.JI[('head', a_)] - NC] = 0.0
     upright = J.clone()
     upright[F.JI[('hips', 0)] - NC] = 0.0
     upright[F.JI[('hips', 2)] - NC] = 0.0
+    # And the plain standing pose (every joint straight): a still character is this under some camera.
+    rest = torch.zeros_like(J)
     cams, poses = [], []
-    for body in (J, upright):
+    for body in (J, upright, rest):
         for y in range(yaws):
             for pt in pitches:
                 c = c0.clone()
@@ -2666,6 +2706,22 @@ def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
                 cams.append(c)
                 poses.append(body)
     C, Js = torch.stack(cams), torch.stack(poses)
+    # Each candidate placed onto the character: its drawn boxes' centre and height matched to the body's colours
+    # (turning the camera swings the body about its feet; unplaced, a right turn would score as wrong).
+    pix, obs, _, _ = view.windows[i]
+    body = (obs > 0) & (obs != F.UNKNOWN)
+    if int(body.sum()) > 20:
+        bp = pix[body]
+        o_c = bp.mean(0)
+        o_h = torch.quantile(bp[:, 1], 0.98) - torch.quantile(bp[:, 1], 0.02)
+        with torch.no_grad():
+            for _ in range(2):
+                uv = geometry(Js, C, fit.persp[0], fit.lights[0], corners=True).reshape(len(C), -1, 2)
+                d_c = uv.mean(1)
+                d_h = uv[..., 1].max(1).values - uv[..., 1].min(1).values
+                C[:, 2] = C[:, 2] * (o_h / d_h.clamp(min=1.0)).clamp(0.7, 1.4)
+                uv = geometry(Js, C, fit.persp[0], fit.lights[0], corners=True).reshape(len(C), -1, 2)
+                C[:, 3:5] = C[:, 3:5] + (o_c - uv.mean(1))
     sc = agreement(fit, 0, i, Js, C)
     now = float(agreement(fit, 0, i, J[None], c0[None])[0])
     best = (now, J, c0 / CAM_UNIT)
@@ -2682,6 +2738,53 @@ def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
     with torch.no_grad():
         fit.J[k], fit.cams[0][k] = best[1], best[2]
     return best[0]
+
+
+def hold_still(fit, keep_tol=0.02, still_deg=12.0, log=print):
+    """Still moments get one pose: runs of frames whose fitted joints all stay within still_deg of the frame before
+    (the body not moving, however the camera moves) share the run's median pose, each frame keeping its own camera
+    (re-fitted with the pose held); kept only when the run's colour agreement drops by at most keep_tol."""
+    view = fit.views[0]
+    J = fit.J.detach().numpy()
+    T_ = len(J)
+    runs, cur = [], [0]
+    for k in range(1, T_):
+        d = np.abs((J[k] - J[k - 1] + 180) % 360 - 180).max()
+        if d < still_deg:
+            cur.append(k)
+        else:
+            runs.append(cur)
+            cur = [k]
+    runs.append(cur)
+    held = 0
+    f0 = F.Fitter(view.res)
+    score = lambda k: float(agreement(fit, 0, view.idx[k], fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
+    for run in runs:
+        if len(run) < 2:
+            continue
+        before = [score(k) for k in run]
+        snapJ, snapC = fit.J.detach().clone(), fit.cams[0].detach().clone()
+        Js = J[run]
+        ref = Js[int(np.argmax(before))]
+        med = ref + np.median((Js - ref + 180) % 360 - 180, 0)
+        with torch.no_grad():
+            for k in run:
+                fit.J[k] = torch.tensor(med, dtype=DT)
+        for k in run:
+            view.window(view.idx[k], fit.params_of(0, k), f0)
+            track_step(fit, k, 20, sigma0=0.8, joints=False)
+            view.window(view.idx[k], fit.params_of(0, k), f0)
+        after = [score(k) for k in run]
+        if np.mean(after) >= np.mean(before) - keep_tol:
+            held += len(run)
+        else:
+            with torch.no_grad():
+                fit.J.copy_(snapJ)
+                fit.cams[0].copy_(snapC)
+            for k in run:
+                view.window(view.idx[k], fit.params_of(0, k), f0)
+    log(f'{held} still frames share one pose per still moment')
+    return held
 
 
 _FAST = {}  # the frames, shared with the worker processes (forked, so not copied)
