@@ -115,7 +115,10 @@ def rasterise(quads, depth, vis, shade, pix, sigma, classes, ncls):
     rel = pix[:, :, None, None, :] - a[:, None]  # (B, N, Fc, 4, 2)
     cross = (e[:, None, ..., 0] * rel[..., 1] - e[:, None, ..., 1] * rel[..., 0]) / elen[:, None]
     inside = (cross * orient[:, None, :, None]).min(-1).values  # (B, N, Fc) signed distance to the face's outline
-    alpha = torch.sigmoid(inside / sigma) * vis[:, None] * (area.abs() > 0.5).float()[:, None]
+    # A face seen nearly edge-on is a sliver whose short edges no longer bound it (it would smear into a line): fade
+    # faces out below ~10 px of area.
+    solid = torch.clamp(area.abs() / 20.0, 0, 1)
+    alpha = torch.sigmoid(inside / sigma) * (vis * solid)[:, None]
     order = torch.argsort(depth.detach(), dim=1, descending=True)  # nearest first
     alpha = torch.gather(alpha, 2, order[:, None].expand_as(alpha))
     trans = torch.cumprod(torch.cat([torch.ones_like(alpha[..., :1]), 1 - alpha[..., :-1]], -1), -1)
@@ -149,8 +152,10 @@ class View:
                            torch.tensor(obs.reshape(-1).astype(np.int64)), torch.tensor(shade.reshape(-1), dtype=DT), 1 / k)
 
 
-def frame_loss(prob, sh, obs, shade, ncls):
-    """Per-sample loss: cross-entropy of each pixel's class (floor counts less, UNKNOWN not at all), plus shading."""
+def frame_loss(prob, sh, obs, shade, ncls, side=None):
+    """Per-sample loss: cross-entropy of each pixel's class (floor counts less, UNKNOWN not at all), plus shading, plus
+    the same comparison blurred at 1/4 and 1/8 size: there a stretch of colour with no box near it (an arm thrown out)
+    still draws the nearest box of that colour, from far beyond the sharp edges' reach."""
     eps = 1e-4
     known = obs != F.UNKNOWN
     o = torch.where(known, obs, torch.zeros_like(obs))
@@ -161,7 +166,18 @@ def frame_loss(prob, sh, obs, shade, ncls):
     ce = -(torch.log(p + eps) * wgt).mean(-1)
     body = (o > 0) & known & (shade > 0)
     sl = ((sh - shade).abs() * body.float()).mean(-1)
-    return ce + 0.5 * sl
+    out = ce + 0.5 * sl
+    if side:
+        B = prob.shape[0]
+        target = torch.nn.functional.one_hot(o, ncls).to(DT)
+        target = torch.where(known.unsqueeze(-1), target, prob.detach())  # hidden pixels: whatever the render says
+        a = prob.transpose(1, 2).reshape(B, ncls, side, side)
+        b = target.transpose(1, 2).reshape(B, ncls, side, side)
+        for k, wgt in ((4, 2.0), (8, 3.0)):
+            pa = torch.nn.functional.avg_pool2d(a, k, ceil_mode=True)
+            pb = torch.nn.functional.avg_pool2d(b, k, ceil_mode=True)
+            out = out + wgt * (pa - pb).abs()[:, 1:].sum(1).mean((-1, -2))
+    return out
 
 
 class Fit:
@@ -196,7 +212,7 @@ class Fit:
         tsh = torch.stack([view.windows[view.idx[k]][2] for k in ks])
         scale = torch.tensor([view.windows[view.idx[k]][3] for k in ks], dtype=DT)
         prob, sh = rasterise(quads, depth, vis, shade, pix, (sigma_px * scale)[:, None, None], self.classes, self.ncls)
-        return frame_loss(prob, sh, obs, tsh, self.ncls)
+        return frame_loss(prob, sh, obs, tsh, self.ncls, view.res)
 
     def regular(self):
         J = self.J
@@ -220,21 +236,25 @@ class Fit:
 
 
 def limb_candidates(j):
-    """Joint vectors trying each limb's swing (and the body's lean), and the left/right swaps."""
+    """Joint vectors trying each limb's swing (forward/back, out to the side and across the body), the body's lean and
+    turn, and the left/right swaps."""
     out = [j.clone()]
     for limb in ('rightArm', 'leftArm', 'rightThigh', 'leftThigh'):
         ix, iz = F.JI[(limb, 0)] - NC, F.JI[(limb, 2)] - NC
         sgn = 1 if limb.startswith('right') else -1
-        for x in (-160, -120, -80, -40, 0, 40):
-            for z in (0, 45, 90):
+        arm = limb.endswith('Arm')
+        for x in (-180, -140, -100, -60, -20, 20, 60):
+            for z in ((-40, 0, 45, 90, 135) if arm else (-20, 0, 40, 80)):
                 q = j.clone()
                 q[ix], q[iz] = x, sgn * z
                 out.append(q)
-    for x in (-60, -30, 0, 30, 60):
-        for z in (-45, 0, 45):
-            q = j.clone()
-            q[F.JI[('hips', 0)] - NC], q[F.JI[('hips', 2)] - NC] = x, z
-            out.append(q)
+    for x in (-90, -45, 0, 45, 90):
+        for z in (-60, 0, 60):
+            for y in (-120, -60, 0, 60, 120, 180):
+                q = j.clone()
+                q[F.JI[('hips', 0)] - NC], q[F.JI[('hips', 2)] - NC] = x, z
+                q[F.JI[('hips', 1)] - NC] = j[F.JI[('hips', 1)] - NC] + y
+                out.append(q)
     for r, l in (('rightArm', 'leftArm'), ('rightThigh', 'leftThigh')):
         q = j.clone()
         q[F.JI[(r, 0)] - NC], q[F.JI[(l, 0)] - NC] = j[F.JI[(l, 0)] - NC], j[F.JI[(r, 0)] - NC]
@@ -242,6 +262,64 @@ def limb_candidates(j):
             q[F.JI[(r, ax)] - NC], q[F.JI[(l, ax)] - NC] = -j[F.JI[(l, ax)] - NC], -j[F.JI[(r, ax)] - NC]
         out.append(q)
     return torch.stack(out)
+
+
+def window_loss(fit, v, i, J, cam, sigma, stride=1):
+    """Loss of a batch of poses (J (B, joints), cam (B, 5) real units) in frame i's window, optionally on every
+    stride-th pixel row and column (a coarser window for ranking many poses)."""
+    view = fit.views[v]
+    pix, obs, tsh, scale = view.windows[i]
+    side = view.res
+    if stride > 1:
+        sel = torch.arange(side * side).reshape(side, side)[::stride, ::stride].reshape(-1)
+        pix, obs, tsh, side = pix[sel], obs[sel], tsh[sel], len(range(0, side, stride))
+    quads, depth, vis, shade = geometry(J, cam, fit.persp[v], fit.lights[v])
+    n = J.shape[0]
+    prob, sh = rasterise(quads, depth, vis, shade, pix.expand(n, -1, -1), sigma * scale * stride, fit.classes, fit.ncls)
+    return frame_loss(prob, sh, obs.expand(n, -1), tsh.expand(n, -1), fit.ncls, side)
+
+
+def global_search(fit, v, k, n=1500, top=6, steps=120, seed=0):
+    """Whole-body search for one frame: n random poses (any body turn and lean, every limb anywhere in its range, the
+    camera a little either way) ranked on a coarse window, the best few refined by gradient; the winner is kept
+    if it beats the current pose. For frames where parts must move together (a body turned side-on)."""
+    view = fit.views[v]
+    i = view.idx[k]
+    g = torch.Generator().manual_seed(seed)
+    with torch.no_grad():
+        J = LO + (HI - LO) * torch.rand(n, NJ, generator=g)
+        for (b, ax), jj in ((j, F.JI[j] - NC) for j in F.JOINTS):
+            if ax == 1 and b != 'hips':
+                J[:, jj] = J[:, jj] * 0.4
+        J[:, F.JI[('hips', 1)] - NC] = fit.J[k, F.JI[('hips', 1)] - NC] + torch.rand(n, generator=g) * 360 - 180
+        J[0] = fit.J[k].detach()
+        cam = (fit.cams[v][k] * CAM_UNIT).detach().expand(n, 5).clone()
+        cam[1:, 0] += torch.randn(n - 1, generator=g) * 15
+        cam[1:, 1] += torch.randn(n - 1, generator=g) * 10
+        losses = torch.cat([window_loss(fit, v, i, J[c:c + 16], cam[c:c + 16], 2.0, stride=2) for c in range(0, n, 16)])
+        best = torch.argsort(losses)[:top]
+        current = float(window_loss(fit, v, i, fit.J[k:k + 1].detach(), cam[:1], 0.7)[0])
+    winner = None
+    for b in best.tolist():
+        Jb = J[b:b + 1].clone().requires_grad_()
+        cb = (cam[b:b + 1] / CAM_UNIT).clone().requires_grad_()
+        opt = torch.optim.Adam([{'params': [Jb], 'lr': 1.5}, {'params': [cb], 'lr': 0.15}])
+        for s in range(steps):
+            sig = 4.0 * (0.7 / 4.0) ** (s / max(1, steps - 1))
+            opt.zero_grad()
+            loss = window_loss(fit, v, i, Jb, cb * CAM_UNIT, sig)[0]
+            loss = loss + (torch.relu(Jb - HI) ** 2 + torch.relu(LO - Jb) ** 2).sum() * 0.01
+            loss.backward()
+            opt.step()
+        if winner is None or float(loss) < winner[0]:
+            winner = (float(loss), Jb.detach()[0], cb.detach()[0])
+    if winner[0] < current:
+        with torch.no_grad():
+            if v == 0:
+                fit.J[k] = winner[1]
+            fit.cams[v][k] = winner[2]
+        return winner[0], current
+    return current, current
 
 
 def adam(params_groups, steps, closure, sigma0, sigma1):
@@ -258,6 +336,7 @@ def adam(params_groups, steps, closure, sigma0, sigma1):
 def warm_start(fit, v, fitter, log):
     """Frame by frame: start from the last frame, keep the best of a spread of limb directions, then descend."""
     view = fit.views[v]
+    last_loss = float('inf')
     for k in range(len(view.idx)):
         i = view.idx[k]
         with torch.no_grad():
@@ -272,14 +351,13 @@ def warm_start(fit, v, fitter, log):
                 cam = (fit.cams[v][k] * CAM_UNIT).expand(len(cands), 5)
                 quads, depth, vis, shade = geometry(cands, cam, fit.persp[v], fit.lights[v])
                 w = view.windows[i]
-                sub = slice(None, None, 3)  # every third pixel is plenty to rank candidates
                 losses = []
-                for c0 in range(0, len(cands), 24):
-                    sl = slice(c0, c0 + 24)
+                for c0 in range(0, len(cands), 8):
+                    sl = slice(c0, c0 + 8)
                     n = quads[sl].shape[0]
-                    prob, sh = rasterise(quads[sl], depth[sl], vis[sl], shade[sl], w[0][sub].expand(n, -1, -1), 1.5 * w[3],
+                    prob, sh = rasterise(quads[sl], depth[sl], vis[sl], shade[sl], w[0].expand(n, -1, -1), 1.5 * w[3],
                                          fit.classes, fit.ncls)
-                    losses.append(frame_loss(prob, sh, w[1][sub].expand(n, -1), w[2][sub].expand(n, -1), fit.ncls))
+                    losses.append(frame_loss(prob, sh, w[1].expand(n, -1), w[2].expand(n, -1), fit.ncls, view.res))
                 fit.J[k] = cands[int(torch.argmin(torch.cat(losses)))]
         prevJ = fit.J[k - 1].detach().clone() if k > 0 else None
         prevC = fit.cams[v][k - 1].detach().clone() if k > 0 else None
@@ -295,7 +373,13 @@ def warm_start(fit, v, fitter, log):
         groups = [{'params': [fit.cams[v]], 'lr': 0.15}]
         if v == 0:
             groups.append({'params': [fit.J], 'lr': 1.5})
-        loss = adam(groups, 60, closure, 2.0, 0.7)
+        loss = adam(groups, 60, closure, 4.0, 0.7)
+        if v == 0 and (k == 0 or loss > 1.25 * last_loss):
+            after, before = global_search(fit, v, k, seed=k)
+            if after < before:
+                log(f'view {v + 1} frame {i}: whole-body search {before:.3f} -> {after:.3f}')
+                loss = after
+        last_loss = loss
         log(f'view {v + 1} frame {i}: {loss:.3f}')
 
 
@@ -309,7 +393,7 @@ def joint_refine(fit, steps, fitters, log, batch=6):
             for v, view in enumerate(fit.views):
                 for k, i in enumerate(view.idx):
                     view.window(i, fit.params_of(v, k), fitters[v])
-        sig = 1.5 * (0.5 / 1.5) ** (s / max(1, steps - 1))
+        sig = 3.0 * (0.5 / 3.0) ** (s / max(1, steps - 1))
         opt.zero_grad()
         loss = fit.regular()
         for v, view in enumerate(fit.views):
