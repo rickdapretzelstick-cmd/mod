@@ -95,6 +95,8 @@ def geometry(J, cam, persp, light, corners=False):
     V = (view[:, None, None] @ X.unsqueeze(-1)).squeeze(-1)  # (B, P, 8, 3)
     f = cam[:, 2, None, None] / torch.clamp(1 - V[..., 2] * persp, min=0.2)
     uv = torch.stack([cam[:, 3, None, None] + f * V[..., 0], cam[:, 4, None, None] - f * V[..., 1]], -1)  # (B, P, 8, 2)
+    if corners == 'depth':
+        return uv, V[..., 2].mean(-1)  # corners (B, boxes, 8, 2) footage px; each box's mean depth (B, boxes)
     if corners:
         return uv  # (B, boxes, 8, 2) footage px
     quads = uv[:, :, FACE_IDX]  # (B, P, 6, 4, 2)
@@ -157,6 +159,7 @@ class View:
         self.coloured_edges = {}
         self.edge_samples = {}
         self.judge_cache = {}
+        self.gray = {}
         self.folds = {}  # frame -> [(segment, colour)]: straight lines inside one colour (where two faces meet)
         self.predicted_folds = {}  # frame -> [(segment, colour)]: folds implied by obtuse corners (predict_folds)
         self.targets = {}  # frame -> (boxes' target masks (boxes, N), which boxes have one (boxes,))
@@ -192,6 +195,7 @@ class View:
         xs = np.clip(gx.astype(int), 0, W - 1)
         ys = np.clip(gy.astype(int), 0, H - 1)
         gray = self.frames[i][ys, xs].astype(float) @ np.array([0.299, 0.587, 0.114])
+        self.gray[i] = gray
         unit = 6 * p[2] * k
         self.rects[i] = (RR.detect_edges(gray, obs, counts, unit), obs)
         # The straight edges as a field: every pixel's distance to the nearest edge and that edge's direction.
@@ -1327,6 +1331,156 @@ def init_camera_for(fitter, enc, joints, flip=False):
     return p
 
 
+LIMB_JOINTS = {'rightArm': 'rightArm', 'leftArm': 'leftArm', 'rightLeg': 'rightThigh', 'leftLeg': 'leftThigh'}
+
+
+def front_maps(fit, v, i, J, cam):
+    """Which box is front-most at each window pixel, for a batch of poses: (B, side, side) of box index + 1 (0 floor),
+    boxes painted far to near with OpenCV."""
+    view = fit.views[v]
+    pix, _, _, scale = view.windows[i]
+    side = view.res
+    x0, y0, sc = float(pix[0, 0]) - 0.5 * float(scale), float(pix[0, 1]) - 0.5 * float(scale), float(scale)
+    with torch.no_grad():
+        uv, z = geometry(J, cam, fit.persp[v], fit.lights[v], corners='depth')
+    uv = ((uv.numpy() - (x0, y0)) / sc)
+    z = z.numpy()
+    out = np.zeros((uv.shape[0], side, side), np.uint8)
+    parts = [j for j, pp in enumerate(F.PARTS) if pp[3] != 'face']
+    for b in range(uv.shape[0]):
+        for j in sorted(parts, key=lambda jj: z[b, jj]):
+            hull = cv2.convexHull(uv[b, j].astype(np.float32)).reshape(-1, 2)
+            cv2.fillConvexPoly(out[b], np.round(hull).astype(np.int32), int(j + 1))
+    return out
+
+
+def measure_limbs(fit, v, k, prev=None, log=None):
+    """Each limb measured from the picture instead of searched (see the module notes): the head's yellow removed first;
+    each limb's own pixels (patches of its colour given to the nearest shoulder/hip, a patch touching both split by two
+    rectangles); its direction from the long axis of those pixels; its tilt toward/away from the camera from how much
+    shorter than its 2 studs it looks; then only toward-vs-away and its twist are decided, by how fully the box -- drawn
+    behind/in front of the others as it would be -- covers the limb's pixels (the previous frame breaks ties). A limb
+    whose measured box covers less than 55% of its pixels falls back to trying every angle. Returns {part: coverage}."""
+    view = fit.views[v]
+    i = view.idx[k]
+    pix, obs_t, _, scale = view.windows[i]
+    side = view.res
+    obs = obs_t.numpy().reshape(side, side)
+    if F.FACE > 0:
+        obs = np.where(obs == F.FACE, F.HEAD, obs)
+    J = fit.joints_at(v, k).detach().clone()
+    cam = (fit.cams[v][k] * CAM_UNIT).detach().clone()
+    sc = float(scale)
+    x0, y0 = float(pix[0, 0]) - 0.5 * sc, float(pix[0, 1]) - 0.5 * sc
+    stud = 6 * float(cam[2]) / sc  # one stud in window px
+    to_win = lambda q: (np.asarray(q) - (x0, y0)) / sc
+    body = RR.body_cluster(obs, {c: 1 for c in set(F.CLASS_OF.values())})
+    # 1. The head first: its box where the pose puts it, a little enlarged; that colour is head, not arm.
+    with torch.no_grad():
+        uv = geometry(J[None], cam[None], fit.persp[v], fit.lights[v], corners=True)[0].numpy()
+    jh = next(jj for jj, pp in enumerate(F.PARTS) if pp[3] == 'head')
+    head = np.zeros((side, side), np.uint8)
+    cv2.fillConvexPoly(head, np.round(cv2.convexHull(to_win(uv[jh]).astype(np.float32)).reshape(-1, 2)).astype(np.int32), 1)
+    head = ndimage.binary_dilation(head.astype(bool), iterations=max(1, int(round(0.3 * stud))))
+    # 2. Each limb's own pixels.
+    wr, wt, view_r = _body_frames(J, cam)
+    joint2d = {part: to_win(_to_screen(cam, view_r, wt[BONES.index(bone)])) for part, bone in LIMB_JOINTS.items()}
+    owned = {}
+    for cls in {F.CLASS_OF[p_] for p_ in LIMB_JOINTS}:
+        limbs = [p_ for p_ in LIMB_JOINTS if F.CLASS_OF[p_] == cls]
+        pool = (obs == cls) & body & ~(head if cls == F.CLASS_OF['head'] else False)
+        lab, n = ndimage.label(pool)
+        patches = []
+        for c in range(1, n + 1):
+            ys, xs = np.nonzero(lab == c)
+            if len(xs) >= 0.25 * stud * stud:
+                patches.append(np.stack([xs, ys], 1))
+        patches.sort(key=len, reverse=True)
+        if len(limbs) == 2 and len(patches) == 1 and len(patches[0]) > 2.5 * stud * stud:
+            # One patch holding both limbs (touching): split it into two rectangles.
+            halves = RR.fit_rects(patches[0], 2)
+            if len(halves) == 2:
+                patches = [g for _, g in halves]
+        groups = {p_: [] for p_ in limbs}
+        if patches:
+            # One patch per limb, the pairing with the least total joint-to-patch distance; extra patches to the nearest.
+            from scipy.optimize import linear_sum_assignment
+            d = np.array([[np.min(np.hypot(*(g - joint2d[p_]).T)) for p_ in limbs] for g in patches])
+            rows, colsx = linear_sum_assignment(d)
+            for r_, c_ in zip(rows, colsx):
+                groups[limbs[c_]].append(patches[r_])
+            for r_ in set(range(len(patches))) - set(rows):
+                groups[limbs[int(np.argmin(d[r_]))]].append(patches[r_])
+        for p_ in limbs:
+            if groups[p_]:
+                owned[p_] = np.concatenate(groups[p_])
+    report = {}
+    for part, bone in LIMB_JOINTS.items():
+        j = next(jj for jj, pp in enumerate(F.PARTS) if pp[3] == part)
+        pts = owned.get(part)
+        if pts is None or len(pts) < 0.5 * stud * stud:
+            continue
+        target = np.zeros((side, side), bool)
+        target[pts[:, 1], pts[:, 0]] = True
+        # 3. Direction: the long axis of the limb's pixels, pointing away from its joint.
+        ctr = pts.mean(0)
+        u = np.linalg.svd(pts - ctr, full_matrices=False)[2][0]
+        if (ctr - joint2d[part]) @ u < 0:
+            u = -u
+        t = (pts - joint2d[part]) @ u
+        reach = max(0.0, np.percentile(t, 98) - max(0.0, np.percentile(t, 2)))
+        # 4. Tilt: a 2-stud box tilted phi out of the picture shows about 2 cos(phi) + 1.2 sin(phi) studs along its axis.
+        phis = np.radians(np.arange(0, 90, 1.0))
+        shown = stud * (2 * np.cos(phis) + 1.2 * np.sin(phis))
+        phi = phis[int(np.argmin(np.abs(shown - max(reach, stud))))]
+        d2 = u * (2 * stud * math.cos(phi)) * sc  # footage px, joint to far end on the picture plane
+        b = BONES.index(bone)
+        par = PARENT_IDX[b]
+        cands = []
+        for sgn in (1, -1):
+            a = wr[par].T @ _dir_model(view_r, d2, 12.0, sgn, cam)
+            xd = math.degrees(math.asin(float(torch.clamp(a[2], -1, 1))))
+            zd = math.degrees(math.atan2(-float(a[0]), float(a[1])))
+            cands += twisted(J, bone, xd, zd, tuple(range(-45, 46, 9)))
+        # 5. Decide toward/away and twist by coverage of the limb's own pixels (drawn with the others in place).
+        def coverage(Js):
+            maps = front_maps(fit, v, i, torch.stack(Js), cam.expand(len(Js), 5))
+            mine = maps == (j + 1)
+            inter = (mine & target).sum((1, 2))
+            union = (mine | target).sum((1, 2))
+            return inter / np.maximum(1, union)
+        cov = coverage(cands)
+        if prev is not None:
+            idxs = [F.JI[(bone, a_)] - NC for a_ in range(3)]
+            drift = np.array([np.abs((c[idxs] - prev[idxs] + 180) % 360 - 180).mean() for c in cands])
+            cov = cov - 0.0005 * drift  # the previous frame only breaks near-ties
+        best = int(np.argmax(cov))
+        how = 'measured'
+        if cov[best] < 0.55:
+            # 6. Clue missing or misleading: every angle of this limb, then its twist.
+            sgn_ = 1 if bone.startswith('right') else -1
+            grid = []
+            for xg in range(-180, 61, 6):
+                for zg in range(-30, 161, 6):
+                    q = J.clone()
+                    q[F.JI[(bone, 0)] - NC], q[F.JI[(bone, 1)] - NC], q[F.JI[(bone, 2)] - NC] = xg, 0.0, sgn_ * zg
+                    grid.append(q)
+            gcov = coverage(grid)
+            g = grid[int(np.argmax(gcov))]
+            tw = twisted(J, bone, float(g[F.JI[(bone, 0)] - NC]), float(g[F.JI[(bone, 2)] - NC]), tuple(range(-45, 46, 9)))
+            tcov = coverage(tw)
+            if tcov.max() > cov[best]:
+                cands, cov, best, how = tw, tcov, int(np.argmax(tcov)), 'searched'
+        J = cands[best]
+        report[part] = (round(float(cov[best]), 2), how)
+    with torch.no_grad():
+        if v == 0:
+            fit.J[k] = J
+    if log:
+        log(f'frame {i}: limbs ' + ', '.join(f'{p_} {c} ({h})' for p_, (c, h) in report.items()))
+    return report
+
+
 PART_BONES = [('torso', 'hips'), ('head', 'head'), ('rightArm', 'rightArm'), ('leftArm', 'leftArm'),
               ('rightLeg', 'rightThigh'), ('leftLeg', 'leftThigh')]
 PART_SURE = 0.4  # a part is "seen" when this share of its front-most pixels is its own colour (and enough of them)
@@ -1377,7 +1531,10 @@ def run_keyframes(frames, idx, fps, args, log=print):
                 fit.cams[0][k] = fit.cams[0][k - 1]
         view.window(i, fit.params_of(0, k), f0)
         fit.assign(0, k)
-        lift_all(fit, 0, k, steps=80)
+        lift_all(fit, 0, k, steps=60)
+        view.window(i, fit.params_of(0, k), f0)
+        measure_limbs(fit, 0, k, prev=fit.J.detach()[k - 1].clone() if k else None, log=log)
+        polish(fit, 0, k, 30, sigma0=0.8, sigma1=0.4)
         view.window(i, fit.params_of(0, k), f0)
         cam = (fit.cams[0][[k]] * CAM_UNIT).detach()
         agree[k] = float(agreement(fit, 0, i, fit.J.detach()[[k]], cam)[0])
@@ -1411,9 +1568,18 @@ def run_keyframes(frames, idx, fps, args, log=print):
             b = kept[kept > k].min() if (kept > k).any() else kept.max()
             f = 0.0 if a == b else (k - a) / (b - a)
             dj = (J[b] - J[a] + 180) % 360 - 180
-            fit.J[k] = torch.tensor(J[a] + f * dj, dtype=DT)
-            fit.cams[0][k] = torch.tensor(C[a] + f * (C[b] - C[a]), dtype=DT)
-    log(f'kept {int(keep.sum())} of {len(idx)} frames as clear; the rest eased between them')
+            eased_J = torch.tensor(J[a] + f * dj, dtype=DT)
+            eased_C = torch.tensor(C[a] + f * (C[b] - C[a]), dtype=DT)
+            # Only when the eased pose matches the footage at least as well as the frame's own fit (never overrule
+            # what the footage shows); else the frame keeps its fit.
+            both = agreement(fit, 0, idx[k], torch.stack([fit.J[k].detach(), eased_J]),
+                             torch.stack([fit.cams[0][k].detach() * CAM_UNIT, eased_C * CAM_UNIT]))
+            if float(both[1]) >= float(both[0]) - 0.01:
+                fit.J[k] = eased_J
+                fit.cams[0][k] = eased_C
+            else:
+                keep[k] = True
+    log(f'{int((~keep).sum())} of {len(idx)} frames eased between their neighbours (the rest keep their own fit)')
     # Per part: a part that cannot be seen in a frame (behind another part, in something in front of the body) takes
     # its angles eased between the nearest frames where that same part was clearly seen.
     conf = np.zeros((len(idx), len(PART_BONES)))
