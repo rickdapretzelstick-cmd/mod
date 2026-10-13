@@ -1,0 +1,591 @@
+#!/usr/bin/env python3
+"""
+Measures a Roblox (R6) animation from footage and writes it as a clip of this mod, by colour: an R6 body is six rigid
+boxes, so when its parts have known colours (the plain "noob" of the JJS wiki GIFs: red torso, yellow head and arms,
+lime legs; or any avatar with per-part body colours) each frame's colour masks pin its pose. The fitter renders this
+mod's own bone hierarchy and rotation math (client.anim.rig.Rig: hips -> head/arms/thighs, Euler ZYX, y down, -z
+forward) with R6 proportions, in those colours, through a fitted orthographic camera, and searches each frame for the
+joint angles whose coloured silhouette matches the frame best (from the last frame's pose, so the left/right limbs
+keep their identity). The angles are the clip's bone rotations directly: no retargeting step.
+
+    python3 tools/r6_fit.py <video.gif|mp4> --out build/fit/<name>      # every frame: params.json + sheet.png overlays
+    python3 tools/r6_fit.py <video> --range 30:62 --clip <group>/<name> [--merge] [--speed 1.0] [--out build/fit/<name>]
+
+  --range a:b     frames of one move (pick them from the overlay sheet of a full pass)
+  --warmup w      start tracking at frame w (< a): a calm, upright frame of the same shot pins the camera best
+  --clip g/n      write assets/jjk/animations/g/n.json (keys reduced to within --tol degrees, LINEAR between them)
+  --merge         keep that clip's other tracks (forearms, shins, hands, feet, chest, root) and its header
+  --at x,y        where the character is in the first frame (default: the biggest patch of its colours)
+  --flip          start facing the other way (an R6 body is front/back symmetric; the face decides when visible)
+  --palette f     part colours (JSON like PALETTE; tools/r6_palettes/) for other avatars
+  --fps n         frame rate of the footage when it is not in the file (wiki GIFs: 50)
+  --compare       with --clip: render the written clip in the animation viewer from each frame's fitted camera and
+                  stack it under the footage (<out>/compare.png): the end-to-end check, footage -> clip -> game rig
+
+Recording reference footage (what makes the fit accurate; tools/r6_fit_selftest.py measures it):
+  - Avatar: one colour per body part, tools/r6_palettes/six.json (Avatar > Skin Tone > Advanced), no clothes/accessories.
+  - Camera: from the side of the move, near eye level, still; zoomed so the character is >= 150 px tall; 60 fps.
+    (Swings toward or away from the camera foreshorten: a side view sees them whole.)
+  - One move per clip, starting and ending standing; a dummy or VFX in front of the body only costs those frames.
+
+The sheet (<out>/sheet.png) draws the fitted boxes over each frame with the frame number and its mismatch: use it to
+judge the fit and choose the range; then view the clip in the animation viewer (tools/build_anim_viewer.py).
+R6 limbs have no elbows or knees: the fit gives the upper limbs and body; bends come from --merge or authoring.
+"""
+import argparse
+import json
+import math
+import os
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont, ImageSequence
+from scipy import ndimage
+
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+ANIMS = os.path.join(ROOT, 'src', 'main', 'resources', 'assets', 'jjk', 'animations')
+
+# Part colours: classes in order, each an HSV range (PIL scale: h, s, v 0-255; a hue range may wrap, lo > hi) and the
+# body parts wearing it. "face" (dark marks enclosed by the head's colour) is optional. The default is the plain noob of
+# the JJS wiki GIFs; avatars with one colour per part (tools/r6_palettes/six.json) are what makes left and right certain.
+PALETTE = {'classes': [
+    {'name': 'torso', 'parts': ['torso'], 'h': [245, 12], 's': [110, 255], 'v': [60, 255], 'show': [255, 60, 60]},
+    {'name': 'arms', 'parts': ['head', 'rightArm', 'leftArm'], 'h': [28, 42], 's': [100, 255], 'v': [90, 255], 'show': [255, 240, 60]},
+    {'name': 'legs', 'parts': ['rightLeg', 'leftLeg'], 'h': [42, 66], 's': [90, 255], 'v': [80, 255], 'show': [120, 255, 80]},
+    {'name': 'face', 'parts': ['face'], 'v': [0, 70], 'show': [40, 40, 255]}]}
+BG = 0
+CLASS_OF, FACE, HEAD, BODY_CLASSES, COST, SHOW = {}, -1, 0, [], None, {}
+
+
+def use_palette(pal):
+    """Sets the part -> class map and the mismatch costs for a palette."""
+    global FACE, HEAD, BODY_CLASSES, COST
+    CLASS_OF.clear()
+    SHOW.clear()
+    FACE = -1
+    for i, c in enumerate(pal['classes'], 1):
+        for part in c['parts']:
+            CLASS_OF[part] = i
+        SHOW[i] = tuple(c.get('show', (255, 255, 255)))
+        if c['name'] == 'face':
+            FACE = i
+    CLASS_OF.setdefault('face', CLASS_OF['head'])
+    HEAD = CLASS_OF['head']
+    BODY_CLASSES = [i for i in range(1, len(pal['classes']) + 1) if i != FACE]
+    n = len(pal['classes']) + 1
+    # Cost of observing class o where class r is rendered (rows o, columns r): background under the body is cheap
+    # (other things occlude it); the face may hide in the head.
+    COST = np.ones((n, n), np.float32)
+    np.fill_diagonal(COST, 0)
+    COST[BG, 1:] = .6
+    if FACE > 0:
+        COST[FACE, HEAD] = COST[HEAD, FACE] = .3
+
+
+# The fit rig: this mod's bone math with Roblox R6 pivots and boxes (px, y down, -z forward; 1 stud = 6 px).
+REST = {'root': (0, 24, 0), 'hips': (0, 12, 0), 'head': (0, 0, 0), 'rightArm': (-6, 3, 0), 'leftArm': (6, 3, 0),
+        'rightThigh': (-6, 12, 0), 'leftThigh': (6, 12, 0)}
+PARENT = {'root': None, 'hips': 'root', 'head': 'hips', 'rightArm': 'hips', 'leftArm': 'hips', 'rightThigh': 'hips',
+          'leftThigh': 'hips'}
+PARTS = [('hips', (-6, -12, -3), (6, 0, 3), 'torso'), ('head', (-3.6, -7, -3.6), (3.6, 0, 3.6), 'head'),
+         ('head', (-2.4, -5.4, -3.9), (2.4, -1.6, -3.5), 'face'),
+         ('rightArm', (-6, -3, -3), (0, 9, 3), 'rightArm'), ('leftArm', (0, -3, -3), (6, 9, 3), 'leftArm'),
+         ('rightThigh', (0, 0, -3), (6, 12, 3), 'rightLeg'), ('leftThigh', (-6, 0, -3), (0, 12, 3), 'leftLeg')]
+# Parameters: camera (yaw, pitch, scale, x, y) then joint angles in degrees as (bone, axis).
+CAM = ['cyaw', 'cpitch', 'scale', 'tx', 'ty']
+JOINTS = [('hips', 0), ('hips', 1), ('hips', 2), ('head', 0), ('head', 1), ('rightArm', 0), ('rightArm', 2),
+          ('leftArm', 0), ('leftArm', 2), ('rightThigh', 0), ('rightThigh', 2), ('leftThigh', 0), ('leftThigh', 2)]
+NP = len(CAM) + len(JOINTS)
+LIMITS = {('hips', 0): (-150, 150), ('hips', 1): (-180, 180), ('hips', 2): (-120, 120), ('head', 0): (-50, 50), ('head', 1): (-70, 70),
+          ('rightArm', 0): (-200, 60), ('leftArm', 0): (-200, 60), ('rightArm', 2): (-30, 160), ('leftArm', 2): (-160, 30),
+          ('rightThigh', 0): (-150, 70), ('leftThigh', 0): (-150, 70), ('rightThigh', 2): (-20, 110), ('leftThigh', 2): (-110, 20)}
+use_palette(PALETTE)
+
+
+def rot(x, y, z):
+    x, y, z = (math.radians(a) for a in (x, y, z))
+    cx, sx, cy, sy, cz, sz = math.cos(x), math.sin(x), math.cos(y), math.sin(y), math.cos(z), math.sin(z)
+    rx = np.array([[1, 0, 0], [0, cx, -sx], [0, sx, cx]])
+    ry = np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]])
+    rz = np.array([[cz, -sz, 0], [sz, cz, 0], [0, 0, 1]])
+    return rz @ ry @ rx
+
+
+def angles(p):
+    a = {b: [0.0, 0.0, 0.0] for b in REST}
+    for (b, ax), v in zip(JOINTS, p[len(CAM):]):
+        a[b][ax] = v
+    return a
+
+
+def boxes(p):
+    """Projected parts: [(depth, polygon, class)] in footage pixels."""
+    a = angles(p)
+    world = {}
+    for b in REST:
+        r, par = np.array(REST[b], float), PARENT[b]
+        m = np.eye(4)
+        m[:3, :3] = rot(*a[b])
+        m[:3, 3] = r - (np.array(REST[par], float) if par else 0)
+        world[b] = world[par] @ m if par else m
+    cyaw, cpitch, s, tx, ty = p[:5]
+    view = rot(cpitch, 0, 0) @ rot(0, cyaw, 0) @ np.diag([-1.0, -1.0, 1.0])  # model (y down) -> world (y up) -> camera
+    out = []
+    for bone, lo, hi, part in PARTS:
+        cls = CLASS_OF[part]
+        c = np.array([[x, y, z, 1] for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])]).T
+        v = view @ (world[bone] @ c)[:3]
+        uv = np.stack([tx + s * v[0], ty - s * v[1]], 1)
+        out.append((v[2].mean() + (0.01 if part == 'face' else 0), hull(uv), cls))
+    out.sort(key=lambda e: e[0])
+    return out
+
+
+def hull(pts):
+    pts = sorted(map(tuple, pts))
+    def half(seq):
+        h = []
+        for q in seq:
+            while len(h) >= 2 and (h[-1][0] - h[-2][0]) * (q[1] - h[-2][1]) - (h[-1][1] - h[-2][1]) * (q[0] - h[-2][0]) <= 0:
+                h.pop()
+            h.append(q)
+        return h
+    lower, upper = half(pts), half(reversed(pts))
+    return lower[:-1] + upper[:-1]
+
+
+def render(p, roi):
+    x0, y0, k, w, h = roi
+    img = Image.new('L', (w, h), 0)
+    d = ImageDraw.Draw(img)
+    for _, poly, cls in boxes(p):
+        d.polygon([((u - x0) * k, (v - y0) * k) for u, v in poly], fill=cls)
+    return np.asarray(img)
+
+
+def in_range(ch, r):
+    lo, hi = r
+    return (ch >= lo) & (ch <= hi) if lo <= hi else (ch >= lo) | (ch <= hi)
+
+
+def classify(rgb, pal):
+    hsv = np.asarray(Image.fromarray(rgb).convert('HSV')).astype(int)
+    h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+    out = np.zeros(h.shape, np.uint8)
+    for cls, c in enumerate(pal['classes'], 1):
+        if cls != FACE:
+            out[in_range(h, c.get('h', [0, 255])) & in_range(s, c.get('s', [0, 255])) & in_range(v, c.get('v', [0, 255]))] = cls
+    if FACE > 0:
+        # The face: dark marks enclosed by the head's colour.
+        head = ndimage.binary_closing(out == HEAD, iterations=3)
+        out[(out == BG) & head & in_range(v, pal['classes'][FACE - 1]['v'])] = FACE
+    return out
+
+
+def frames_of(path, fps):
+    if path.lower().endswith('.gif'):
+        im = Image.open(path)
+        out = [np.array(f.convert('RGB')) for f in ImageSequence.Iterator(im)]
+        return out, fps or 1000.0 / (im.info.get('duration') or 20)
+    import cv2
+    cap, out = cv2.VideoCapture(path), []
+    while True:
+        ok, f = cap.read()
+        if not ok:
+            break
+        out.append(f[..., ::-1].copy())
+    return out, fps or cap.get(cv2.CAP_PROP_FPS) or 30
+
+
+class Fitter:
+    def __init__(self, res=96):
+        self.res = res
+        self.w = np.array([4, 4, 0, 0, 0] + [0.15] * len(JOINTS))  # temporal stiffness: the camera moves slowly
+        self.step0 = np.array([8, 6, 0.04, 3, 3] + [16] * len(JOINTS), float)
+        self.init_sigma = [20, 15, 0.4, 4, 4] + [40] * len(JOINTS)
+        self.track_sigma = [3, 3, 0.15, 3, 3] + [18] * len(JOINTS)
+
+    def roi(self, p, obs_full):
+        s, tx, ty = p[2], p[3], p[4]
+        half = 26 * s  # the body is ~31 rig px tall around its middle
+        x0, y0 = tx - half, ty - half
+        return (x0, y0, self.res / (2 * half), self.res, self.res)
+
+    def view(self, obs_full, roi):
+        x0, y0, k, w, h = roi
+        H, W = obs_full.shape
+        ys = np.clip(((np.arange(h) + 0.5) / k + y0).astype(int), 0, H - 1)
+        xs = np.clip(((np.arange(w) + 0.5) / k + x0).astype(int), 0, W - 1)
+        o = obs_full[ys][:, xs].copy()
+        oob = ((np.arange(h) + 0.5) / k + y0 < 0) | ((np.arange(h) + 0.5) / k + y0 >= H)
+        o[oob] = BG
+        o[:, ((np.arange(w) + 0.5) / k + x0 < 0) | ((np.arange(w) + 0.5) / k + x0 >= W)] = BG
+        return o
+
+    def prepare(self, obs):
+        """The frame's class map plus, per part colour, each pixel's distance to the nearest pixel of that colour."""
+        dist = {c: np.minimum(ndimage.distance_transform_edt(obs != c), 16).astype(np.float32) if (obs == c).any() else None
+                for c in BODY_CLASSES}
+        area = {c: int((obs == c).sum()) for c in BODY_CLASSES}
+        return obs, dist, area
+
+    def cost(self, p, frame, roi, prev):
+        obs, dist, area = frame
+        ren = render(p, roi)
+        n = self.res * self.res
+        c = float(COST[obs, ren].sum()) / n * 100
+        for k in BODY_CLASSES:
+            m = ren == k
+            a = int(m.sum())
+            # Rendered parts are pulled toward where their colour is; each colour's visible area should match.
+            if dist[k] is not None and a:
+                c += float(dist[k][m].sum()) / n * 6
+            c += abs(a - area[k]) / n * 40
+        n0 = len(CAM)
+        c += (p[n0] ** 2 + p[n0 + 2] ** 2) * 0.0005
+        if prev is not None:
+            d = p - prev
+            d[:2] = (d[:2] + 180) % 360 - 180
+            c += float((self.w * d * d).sum()) / 100
+        return c
+
+    def clamp(self, p):
+        for i, j in enumerate(JOINTS):
+            lo, hi = LIMITS.get(j, (-180, 180))
+            p[len(CAM) + i] = min(hi, max(lo, p[len(CAM) + i]))
+        p[1] = min(85, max(-30, p[1]))
+        return p
+
+    def descend(self, p, obs_full, prev, levels=4):
+        roi = self.roi(p, obs_full)
+        obs = self.prepare(self.view(obs_full, roi))
+        best = self.cost(p, obs, roi, prev)
+        step = self.step0.copy()
+        for _ in range(levels):
+            improved = True
+            while improved:
+                improved = False
+                for i in range(NP):
+                    if step[i] == 0:
+                        continue
+                    for sgn in (1, -1):
+                        q = p.copy()
+                        q[i] = q[i] * (1 + sgn * step[i]) if i == 2 else q[i] + sgn * step[i]
+                        self.clamp(q)
+                        c = self.cost(q, obs, roi, prev)
+                        if c < best - 1e-4:
+                            p, best, improved = q, c, True
+                            break
+            step /= 2
+        return p, best
+
+    def cem(self, p, sigma, obs_full, prev, iters=25, pop=48, elite=8, seed=0):
+        """Cross-entropy search around p: sample whole poses, keep the best few, narrow onto them."""
+        roi = self.roi(p, obs_full)
+        obs = self.prepare(self.view(obs_full, roi))
+        rng = np.random.default_rng(seed)
+        mean, sd = p.copy(), np.array(sigma, float)
+        best, bc = p.copy(), self.cost(p, obs, roi, prev)
+        for _ in range(iters):
+            pts = mean + rng.normal(size=(pop, NP)) * sd
+            pts[:, 2] = np.maximum(pts[:, 2], 0.2)
+            scored = []
+            for q in pts:
+                self.clamp(q)
+                scored.append((self.cost(q, obs, roi, prev), q))
+            scored.sort(key=lambda e: e[0])
+            if scored[0][0] < bc:
+                bc, best = scored[0][0], scored[0][1].copy()
+            el = np.array([q for _, q in scored[:elite]])
+            mean = 0.7 * el.mean(0) + 0.3 * best
+            sd = np.maximum(0.6 * sd + 0.4 * el.std(0), np.array(sigma) * 0.05)
+        return best
+
+    def reseed(self, p, obs_full, prev):
+        """Tries each limb at a spread of directions and the left/right swaps, keeping what fits better."""
+        roi = self.roi(p, obs_full)
+        obs = self.prepare(self.view(obs_full, roi))
+        best = self.cost(p, obs, roi, prev)
+        n = len(CAM)
+        # The body's lean first (it carries every limb), then each limb.
+        for x in (-90, -45, 0, 45, 90):
+            for z in (-90, -45, 0, 45, 90):
+                q = p.copy()
+                q[n], q[n + 2] = x, z
+                c = self.cost(q, obs, roi, prev)
+                if c < best:
+                    p, best = q, c
+        for limb in range(4):
+            i = n + 5 + 2 * limb
+            for x in (-160, -120, -80, -40, 0, 40):
+                for z in (0, 45, 90):
+                    q = p.copy()
+                    q[i], q[i + 1] = x, z if limb % 2 == 0 else -z
+                    self.clamp(q)
+                    c = self.cost(q, obs, roi, prev)
+                    if c < best:
+                        p, best = q, c
+        for a in ((5, 7), (9, 11)):
+            q = p.copy()
+            i, j = n + a[0], n + a[1]
+            q[i], q[j] = p[j], p[i]
+            q[i + 1], q[j + 1] = -p[j + 1], -p[i + 1]
+            c = self.cost(q, obs, roi, prev)
+            if c < best:
+                p, best = q, c
+        rng = np.random.default_rng(len(self.__dict__))
+        for _ in range(150):
+            q = p.copy()
+            q[n:] += rng.normal(0, 25, len(JOINTS)) * (rng.random(len(JOINTS)) < 0.35)
+            self.clamp(q)
+            c = self.cost(q, obs, roi, prev)
+            if c < best:
+                p, best = q, c
+        return p
+
+    def init(self, obs_full, at, flip):
+        if at is None:
+            lab, n = ndimage.label(ndimage.binary_dilation(obs_full > 0, iterations=4))
+            sizes = ndimage.sum(obs_full > 0, lab, range(1, n + 1))
+            at = ndimage.center_of_mass(lab == (1 + int(np.argmax(sizes))))[::-1]
+        ys, xs = np.nonzero(obs_full > 0)
+        near = (abs(xs - at[0]) < 80) & (abs(ys - at[1]) < 80)
+        hgt = max(10, np.ptp(ys[near]) if near.any() else 40)
+        cands = []
+        for cyaw in range(0, 360, 20):
+            for cpitch in range(0, 90, 10):
+                p = np.zeros(NP)
+                p[:5] = cyaw + (180 if flip else 0), cpitch, hgt / 31, at[0], at[1]
+                roi = self.roi(p, obs_full)
+                cands.append((self.cost(p, self.prepare(self.view(obs_full, roi)), roi, None), p))
+        cands.sort(key=lambda e: e[0])
+        best = None
+        nc = len(CAM)
+        cam_only = self.init_sigma[:nc] + [0] * len(JOINTS)
+        joints_only = [0, 0, 0.05, 2, 2] + self.init_sigma[nc:]
+        for k, (_, p) in enumerate(cands[:6]):
+            # In stages: the camera with the body at rest, then the joints under that camera, then all of it gently.
+            p = self.cem(p, cam_only, obs_full, None, iters=20, pop=48, seed=k)
+            p = self.cem(p, joints_only, obs_full, None, iters=40, pop=64, seed=k + 100)
+            p = self.cem(p, [s / 3 for s in self.init_sigma], obs_full, None, iters=20, pop=48, seed=k + 200)
+            p, c = self.descend(p, obs_full, None)
+            if best is None or c < best[1]:
+                best = (p, c)
+        return best
+
+
+def track(fit, frames, obs, first, hi, at, flip, start=None):
+    """Fits frames first..hi in order, each from the last; a camera cut starts over (from start[frame] when given)."""
+    params, costs, prev, shots = {}, {}, None, []
+    for i in range(first, hi + 1):
+        # A camera cut (most of the picture changes at once) starts the fit over.
+        if i > first and np.abs(frames[i].astype(int) - frames[i - 1]).mean() > 28:
+            prev, at = None, None
+        if prev is None:
+            shots.append(i)
+            if start and i in start:
+                p = fit.cem(start[i], fit.track_sigma, obs[i], None, seed=i)
+                p, c = fit.descend(p, obs[i], None)
+            else:
+                p, c = fit.init(obs[i], at, flip)
+        else:
+            p = fit.reseed(prev.copy(), obs[i], prev)
+            p = fit.cem(p, fit.track_sigma, obs[i], prev, seed=i)
+            p, c = fit.descend(p, obs[i], prev)
+        params[i], costs[i], prev = p, c, p
+        print(f'frame {i}: mismatch {c:.1f}', flush=True)
+    return params, costs, shots
+
+
+def refine_camera(fit, obs, params, span):
+    """The camera (yaw, pitch) shift under which a spread of the shot's frames, each re-posed, fits best in total."""
+    sample = span[::max(1, len(span) // 8)][:8]
+    sig = list(fit.track_sigma)
+    sig[0] = sig[1] = 0
+
+    def score(dy, dp):
+        total = 0.0
+        for i in sample:
+            q = params[i].copy()
+            q[0] += dy
+            q[1] += dp
+            q = fit.cem(q, sig, obs[i], None, iters=12, seed=i)
+            roi = fit.roi(q, None)
+            total += fit.cost(q, fit.prepare(fit.view(obs[i], roi)), roi, None)
+        return total
+
+    if len(sample) < 4:
+        return 0, 0
+    best, bs = (0, 0), score(0, 0)
+    for dp in (-20, -15, -10, -5, 5, 10, 15, 20):
+        sc = score(0, dp)
+        if sc < bs:
+            best, bs = (0, dp), sc
+    for dy in (-30, -20, -10, 10, 20, 30):
+        sc = score(dy, best[1])
+        if sc < bs:
+            best, bs = (dy, best[1]), sc
+    return best
+
+
+def unwrap(a):
+    return np.degrees(np.unwrap(np.radians(a)))
+
+
+def reduce_keys(times, curves, tol):
+    """Ramer-Douglas-Peucker over all angle curves at once: the frames to keep."""
+    keep = {0, len(times) - 1}
+    def rdp(i, j):
+        if j <= i + 1:
+            return
+        f = (times[i + 1:j] - times[i]) / (times[j] - times[i])
+        lin = curves[i] + (curves[j] - curves[i]) * f[:, None]
+        err = np.abs(curves[i + 1:j] - lin).max(1)
+        k = int(np.argmax(err))
+        if err[k] > tol:
+            keep.add(i + 1 + k)
+            rdp(i, i + 1 + k)
+            rdp(i + 1 + k, j)
+    rdp(0, len(times) - 1)
+    return sorted(keep)
+
+
+def sheet(frames, params, costs, idx, roi_of, path):
+    tiles = []
+    font = ImageFont.load_default()
+    for i in idx:
+        p = params[i]
+        x0, y0, k, w, h = roi_of(p)
+        big = 160
+        sc = big / w
+        crop = Image.fromarray(frames[i]).crop((int(x0), int(y0), int(x0 + w / k), int(y0 + h / k))).resize((big, big))
+        d = ImageDraw.Draw(crop)
+        if p is not None:
+            for _, poly, cls in boxes(p):
+                d.polygon([((u - x0) * k * sc, (v - y0) * k * sc) for u, v in poly], outline=SHOW[cls])
+        d.text((3, 2), f'{i}  {costs[i]:.1f}', fill=(255, 255, 255), font=font)
+        tiles.append(crop)
+    cols = 8
+    out = Image.new('RGB', (160 * cols, 160 * ((len(tiles) + cols - 1) // cols)))
+    for n, t in enumerate(tiles):
+        out.paste(t, (160 * (n % cols), 160 * (n // cols)))
+    out.save(path)
+
+
+def write_clip(target, times_ms, P, tol, merge, src):
+    curves = np.stack([unwrap(P[:, len(CAM) + i]) for i in range(len(JOINTS))], 1)
+    curves[:, 1] -= curves[0, 1]  # the body turns from facing forward at the move's first frame
+    curves = ndimage.gaussian_filter1d(curves, 0.8, axis=0, mode='nearest')
+    keep = reduce_keys(times_ms, curves, tol)
+    path = os.path.join(ANIMS, target + '.json')
+    clip = json.load(open(path)) if merge and os.path.exists(path) else {}
+    fitted = {b for b, _ in JOINTS}
+    keys = []
+    for k in keep:
+        bones = {}
+        for (b, ax), v in zip(JOINTS, curves[k]):
+            bones.setdefault(b, {'rot': [0, 0, 0]})['rot'][ax] = round(float(v), 1)
+        keys.append({'t': round(float(times_ms[k] - times_ms[0])), 'ease': 'LINEAR', 'bones': bones})
+    if merge and clip.get('keys'):
+        # The old clip's other bones keep their own keys, rescaled onto the new length.
+        span = clip.get('duration', 500)
+        dur = keys[-1]['t'] or 1
+        for ok in clip['keys']:
+            other = {b: v for b, v in (ok.get('bones') or {}).items() if b not in fitted}
+            if other:
+                t = round(ok.get('t', 0) / span * dur)
+                keys.append({'t': t, 'ease': ok.get('ease', 'EASE_IN_OUT'), 'bones': other})
+        keys.sort(key=lambda k: k['t'])
+    clip.update({'name': os.path.basename(target), 'duration': keys[-1]['t'], 'keys': keys,
+                 'fitted': f'tools/r6_fit.py from {src}'})
+    clip.setdefault('blendIn', 60)
+    clip.setdefault('blendOut', 150)
+    clip.setdefault('priority', 'ATTACK')
+    clip.pop('authored', None)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    json.dump(clip, open(path, 'w'), indent=1)
+    return path, len(keep)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('video')
+    ap.add_argument('--out', default=None)
+    ap.add_argument('--range', default=None)
+    ap.add_argument('--clip', default=None)
+    ap.add_argument('--merge', action='store_true')
+    ap.add_argument('--speed', type=float, default=1.0)
+    ap.add_argument('--tol', type=float, default=4.0)
+    ap.add_argument('--at', default=None)
+    ap.add_argument('--flip', action='store_true')
+    ap.add_argument('--palette', default=None)
+    ap.add_argument('--fps', type=float, default=None)
+    ap.add_argument('--compare', action='store_true')
+    ap.add_argument('--warmup', type=int, default=None)
+    a = ap.parse_args()
+    pal = json.load(open(a.palette)) if a.palette else PALETTE
+    use_palette(pal)
+    frames, fps = frames_of(a.video, a.fps)
+    lo, hi = (int(x) for x in a.range.split(':')) if a.range else (0, len(frames) - 1)
+    first = min(lo, a.warmup) if a.warmup is not None else lo
+    out = a.out or os.path.join(ROOT, 'build', 'fit', os.path.splitext(os.path.basename(a.video))[0])
+    os.makedirs(out, exist_ok=True)
+    obs = {i: classify(frames[i], pal) for i in range(first, hi + 1)}
+    fit = Fitter()
+    at = tuple(float(x) for x in a.at.split(',')) if a.at else None
+    params, costs, shots = track(fit, frames, obs, first, hi, at, a.flip)
+    # The camera of each shot, from all of it: shift it to where the shot's frames fit best together, then track again.
+    start = {}
+    for k, s0 in enumerate(shots):
+        span = [i for i in range(s0, (shots[k + 1] if k + 1 < len(shots) else hi + 1))]
+        dy, dp = refine_camera(fit, obs, params, span)
+        print(f'shot from frame {s0}: camera yaw {dy:+.0f}, pitch {dp:+.0f}', flush=True)
+        q = params[s0].copy()
+        q[0] += dy
+        q[1] += dp
+        start[s0] = q
+    params, costs, _ = track(fit, frames, obs, first, hi, at, a.flip, start)
+    idx = list(range(lo, hi + 1))
+    json.dump({'fps': fps, 'frames': {i: [round(float(x), 2) for x in params[i]] for i in idx},
+               'cost': {i: round(float(costs[i]), 2) for i in idx}, 'params': CAM + [f'{b}.{"xyz"[ax]}' for b, ax in JOINTS]},
+              open(os.path.join(out, 'params.json'), 'w'))
+    step = max(1, len(idx) // 48)
+    sheet(frames, params, costs, idx[::step], lambda p: fit.roi(p, None), os.path.join(out, 'sheet.png'))
+    print(f'{out}/sheet.png, {out}/params.json')
+    if a.clip:
+        P = np.stack([params[i] for i in idx])
+        times = np.array([(i - lo) * 1000.0 / fps / a.speed for i in idx])
+        path, n = write_clip(a.clip, times, P, a.tol, a.merge, os.path.basename(a.video) + f' frames {lo}-{hi}')
+        print(f'{path}: {n} keys, {int(times[-1])} ms')
+        if a.compare:
+            compare(frames, params, idx, times, a.clip, fit, out)
+
+
+def compare(frames, params, idx, times, clip, fit, out):
+    import subprocess
+    subprocess.run(['python3', os.path.join(ROOT, 'tools', 'build_anim_viewer.py')], check=True, stdout=subprocess.DEVNULL)
+    pick = idx[::max(1, len(idx) // 12)]
+    # The fit's camera (world turned by yaw, then pitch) is the viewer's orbit camera at yaw + 180 degrees; the clip starts
+    # the body facing forward, so the camera turns with it by the first frame's body yaw (mirrored by the model flip).
+    hy0 = params[idx[0]][len(CAM) + 1]
+    shots = [f'{times[idx.index(i)]:.0f}:{math.radians(params[i][0] - hy0) + math.pi:.4f}:{math.radians(params[i][1]):.4f}' for i in pick]
+    snaps = os.path.join(out, 'snaps')
+    npm = subprocess.run(['npm', 'root', '-g'], capture_output=True, text=True).stdout.strip()
+    subprocess.run(['node', os.path.join(ROOT, 'tools', 'anim_viewer', 'snap.js'), os.path.join(ROOT, 'build', 'anim_viewer.html'),
+                    snaps, clip, *shots], check=True, env={**os.environ, 'NODE_PATH': npm})
+    w = 180
+    sheet_img = Image.new('RGB', (w * len(pick), 2 * w), (0, 0, 0))
+    for k, i in enumerate(pick):
+        x0, y0, kk, rw, rh = fit.roi(params[i], None)
+        crop = Image.fromarray(frames[i]).crop((int(x0), int(y0), int(x0 + rw / kk), int(y0 + rh / kk))).resize((w, w))
+        snap = Image.open(os.path.join(snaps, f'{k:03d}.png')).convert('RGB')
+        side = min(snap.size)
+        snap = snap.crop(((snap.width - side) // 2, (snap.height - side) // 2, (snap.width + side) // 2, (snap.height + side) // 2))
+        sheet_img.paste(crop, (w * k, 0))
+        sheet_img.paste(snap.resize((w, w)), (w * k, w))
+        ImageDraw.Draw(sheet_img).text((w * k + 3, 2), f'{i}  {times[idx.index(i)]:.0f} ms', fill=(255, 255, 255))
+    sheet_img.save(os.path.join(out, 'compare.png'))
+    print(f'{out}/compare.png')
+
+
+if __name__ == '__main__':
+    main()

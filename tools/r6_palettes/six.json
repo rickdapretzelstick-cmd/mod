@@ -1,0 +1,9 @@
+{"about": "One colour per R6 part, for recording reference footage in Roblox (Avatar > Skin Tone > Advanced, body colours): Head New Yeller, Torso Really red, Right Arm Really blue, Left Arm Magenta, Right Leg Lime green, Left Leg Toothpaste. Keep the default face; no clothing or accessories.",
+ "classes": [
+  {"name": "torso", "parts": ["torso"], "h": [245, 10], "s": [120, 255], "v": [60, 255], "show": [255, 60, 60]},
+  {"name": "head", "parts": ["head"], "h": [30, 50], "s": [120, 255], "v": [80, 255], "show": [255, 240, 60]},
+  {"name": "rightArm", "parts": ["rightArm"], "h": [155, 185], "s": [120, 255], "v": [50, 255], "show": [60, 90, 255]},
+  {"name": "leftArm", "parts": ["leftArm"], "h": [195, 230], "s": [100, 255], "v": [50, 255], "show": [220, 60, 220]},
+  {"name": "rightLeg", "parts": ["rightLeg"], "h": [65, 105], "s": [120, 255], "v": [60, 255], "show": [80, 255, 80]},
+  {"name": "leftLeg", "parts": ["leftLeg"], "h": [115, 145], "s": [120, 255], "v": [60, 255], "show": [60, 255, 255]},
+  {"name": "face", "parts": ["face"], "v": [0, 70], "show": [40, 40, 40]}]}

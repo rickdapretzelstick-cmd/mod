@@ -295,6 +295,15 @@ function frame(now) {
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
+// Scripted control (tools/anim_viewer/snap.js): show one clip, paused at a time, from a camera yaw/pitch (radians).
+window.jjkShow = (id, t, yaw, pitch) => {
+  const c = CLIPS.find(c => c.group + '/' + c.name === id);
+  if (!c) return false;
+  select(c); setPlaying(false); state.t = t;
+  if (yaw !== undefined) { cam.yaw = yaw; cam.pitch = pitch; }
+  pose(rig, c, t); placeCamera(); renderer.render(scene, camera);
+  return true;
+};
 let start = CLIPS[0];
 try { const saved = localStorage.getItem('jjk-anim-clip'); start = CLIPS.find(c => c.group + '/' + c.name === saved) || CLIPS.find(c => c.name === 'light_1') || start; } catch (e) {}
 renderList();
