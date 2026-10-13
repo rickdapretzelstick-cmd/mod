@@ -457,10 +457,10 @@ def agreement(fit, v, i, J, cam):
 # Corner indices (x, y, z picks as in CORNERS: index = 4 xi + 2 yi + zi) of a box's two end caps along its long axis.
 CAP_FAR = {2, 3, 6, 7}   # local y max: a limb's hand / foot end, the torso's hip end
 CAP_NEAR = {0, 1, 4, 5}  # local y min: the joint end, the torso's shoulder end
-SEEK_OVERLAP = 0.5
+SEEK_OVERLAP = 0.5  # a box over another part's colour (one part in front of another): half credit, not a fault
 # The hard end rule (every limb that shows has its hand or shoulder end flush on an edge of its colour). On footage
 # whose limb ends are blurred or hidden (the wiki GIFs) no pose can keep it, and it drags the fit: R6_END_RULE=0 off.
-END_RULE = os.environ.get('R6_END_RULE', '1') != '0'  # a box over another part's colour (one part in front of another): half credit, not a fault
+END_RULE = os.environ.get('R6_END_RULE', '1') != '0'
 
 
 def judge(fit, v, i, J, cam, detail=False, only=None):
