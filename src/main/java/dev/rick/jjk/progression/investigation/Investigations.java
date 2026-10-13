@@ -315,6 +315,15 @@ public final class Investigations {
      * for one, a board in the open by the bell.
      */
     @Nullable
+    /** Admin/test hook: a guardian contract that isn't set off yet fights this body (false if it isn't one). */
+    public static boolean chooseGuardian(Incident in, String body) {
+        if (in.def() == null || in.def().objective() != IncidentTemplate.Objective.GUARDIAN || in.state != Incident.State.OPEN) return false;
+        if (!body.startsWith("guardian_")) return false;
+        in.guardian = body;
+        in.variant = 0;
+        return true;
+    }
+
     public static BlockPos placeNews(ServerLevel level, BlockPos bell) {
         BlockPos inHouse = NewsHouse.placeNear(level, bell);
         return inHouse != null ? inHouse : placeBoard(level, bell);

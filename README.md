@@ -1446,6 +1446,17 @@ Domain structures are separate and restore as soon as the domain ends. `/jjk res
 
 ## Commands (op)
 
+**Playtesting: `/jjk test`.** One clickable menu in chat for testing everything: click a category, then click an
+action (hover one to see the command it runs). Categories: **Setup** (heal and reset, no cooldowns, full energy and
+awakening, game mode, dummies), **Characters** (become any of the five), **Relic trials** (start any character's trial,
+pass, fail or leave it, issue a relic), **Cursed realms** (straight into any of the ten realms, and out again),
+**Guardians** (a Grade 1 contract against a chosen body, in its own arena), **Curses** (spawn any curse, hostile, a few
+blocks ahead), **Strength contests** (get grabbed at once, or a sparring curse to block and counter), **Black Flash**
+(Yuji or Yuta, a target, a finishable target for the lethal one), **Cursed tools & items**, **Domains & Prison Realm**,
+and **Cleanup** (clear curses, leave the realm, restore terrain). Its shortcuts work typed too:
+`/jjk test realm <incident>` · `/jjk test guardian <body>` · `/jjk test leave` · `/jjk test spawn <curse>` ·
+`/jjk test weak <curse>` · `/jjk test grab` · `/jjk test clear` · `/jjk test heal`.
+
 `/jjk arena` test arena with dummies · `/jjk dummy [stand|jump|fight] [n]` · `/jjk dummy domain <void|idg|shrine> [skill]` (solo clash practice: the nearest dummy opens that domain; press Awakening in the counter window to clash it; skill 0–1 is how well it plays) · `/jjk nocooldown true|false` ·
 `/jjk awakening <amount>|end` · `/jjk reset` · `/jjk character gojo|hakari|yuji|yuta|none` · `/jjk domain cancel [all]` ·
 `/jjk status [target]` · `/jjk config reload` · `/jjk kit ...` (Survival kit ownership, see Survival progression) ·
