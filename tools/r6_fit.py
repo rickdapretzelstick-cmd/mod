@@ -308,19 +308,25 @@ def classify(rgb, pal):
     return out.astype(np.int32) * 1000 + v
 
 
-def frames_of(path, fps):
+def frames_of(path, fps, every=1, width=None):
+    """The frames as RGB arrays and the frame rate; every: keep every n-th frame (the rate divided to match); width:
+    shrink frames wider than this (a long 1080p video would not fit in memory otherwise)."""
     if path.lower().endswith('.gif'):
         im = Image.open(path)
-        out = [np.array(f.convert('RGB')) for f in ImageSequence.Iterator(im)]
-        return out, fps or 1000.0 / (im.info.get('duration') or 20)
+        out = [np.array(f.convert('RGB')) for f in ImageSequence.Iterator(im)][::every]
+        return out, (fps or 1000.0 / (im.info.get('duration') or 20)) / every
     import cv2
-    cap, out = cv2.VideoCapture(path), []
+    cap, out, n = cv2.VideoCapture(path), [], 0
     while True:
         ok, f = cap.read()
         if not ok:
             break
-        out.append(f[..., ::-1].copy())
-    return out, fps or cap.get(cv2.CAP_PROP_FPS) or 30
+        if n % every == 0:
+            if width and f.shape[1] > width:
+                f = cv2.resize(f, (width, round(f.shape[0] * width / f.shape[1] / 2) * 2), interpolation=cv2.INTER_AREA)
+            out.append(f[..., ::-1].copy())
+        n += 1
+    return out, (fps or cap.get(cv2.CAP_PROP_FPS) or 30) / every
 
 
 class Fitter:
@@ -555,7 +561,7 @@ class Fitter:
                 p, best = q, c
         return p
 
-    def init(self, obs_full, at, flip):
+    def init(self, obs_full, at, flip, quick=False):
         if at is None:
             fg = obs_full >= 1000
             lab, n = ndimage.label(ndimage.binary_dilation(fg, iterations=4))
@@ -565,8 +571,8 @@ class Fitter:
         near = (abs(xs - at[0]) < 80) & (abs(ys - at[1]) < 80)
         hgt = max(10, np.ptp(ys[near]) if near.any() else 40)
         cands = []
-        for cyaw in range(0, 360, 20):
-            for cpitch in range(0, 90, 10):
+        for cyaw in range(0, 360, 30 if quick else 20):
+            for cpitch in range(0, 90, 15 if quick else 10):
                 p = np.zeros(NP)
                 p[:6] = cyaw + (180 if flip else 0), cpitch, hgt / 31, at[0], at[1], 0.005
                 roi = self.roi(p, obs_full)
@@ -576,18 +582,21 @@ class Fitter:
         nc = len(CAM)
         cam_only = self.init_sigma[:nc] + [0] * len(JOINTS)
         joints_only = [0, 0, 0.05, 2, 2, 0] + self.init_sigma[nc:]
-        for k, (_, p) in enumerate(cands[:6]):
+        # quick: the 2 best starts and about a third of the search (footage with one colour per part, where the
+        # gradient tracking after it does the fine work).
+        q = 3 if quick else 1
+        for k, (_, p) in enumerate(cands[:2 if quick else 6]):
             # In stages: the camera with the body at rest, then the joints under that camera, then all of it gently.
-            p = self.cem(p, cam_only, obs_full, None, iters=20, pop=48, seed=k)
-            p = self.cem(p, joints_only, obs_full, None, iters=40, pop=64, seed=k + 100)
-            p = self.cem(p, [s / 3 for s in self.init_sigma], obs_full, None, iters=20, pop=48, seed=k + 200)
-            p, c = self.descend(p, obs_full, None)
+            p = self.cem(p, cam_only, obs_full, None, iters=20 // q, pop=48 // (2 if quick else 1), seed=k)
+            p = self.cem(p, joints_only, obs_full, None, iters=40 // q, pop=64 // (2 if quick else 1), seed=k + 100)
+            p = self.cem(p, [s / 3 for s in self.init_sigma], obs_full, None, iters=20 // q, pop=48 // (2 if quick else 1), seed=k + 200)
+            p, c = self.descend(p, obs_full, None, levels=2 if quick else 4)
             if best is None or c < best[1]:
                 best = (p, c)
         # The light, from the shading of the pose found; then the pose again under it.
         self.fit_light(best[0], obs_full)
-        p = self.cem(best[0], [s / 4 for s in self.init_sigma], obs_full, None, iters=20, pop=48, seed=300)
-        return self.descend(p, obs_full, None)
+        p = self.cem(best[0], [s / 4 for s in self.init_sigma], obs_full, None, iters=20 // q, pop=48 // (2 if quick else 1), seed=300)
+        return self.descend(p, obs_full, None, levels=2 if quick else 4)
 
     def fit_light(self, p, obs_full):
         roi = self.roi(p, obs_full)

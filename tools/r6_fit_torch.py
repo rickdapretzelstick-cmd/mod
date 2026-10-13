@@ -169,6 +169,7 @@ class View:
         self.folds = {}  # frame -> [(segment, colour)]: straight lines inside one colour (where two faces meet)
         self.predicted_folds = {}  # frame -> [(segment, colour)]: folds implied by obtuse corners (predict_folds)
         self.targets = {}  # frame -> (boxes' target masks (boxes, N), which boxes have one (boxes,))
+        self.lite = False  # fast mode: the colour map only (no rectangles, edges, corners or folds)
 
     def window(self, i, p, fitter):
         """The frame's window (footage px per pixel) around the body's colours; class/shade targets in it."""
@@ -191,6 +192,12 @@ class View:
         gx, gy = np.meshgrid((np.arange(w) + 0.5) / k + x0, (np.arange(h) + 0.5) / k + y0)
         self.windows[i] = (torch.tensor(np.stack([gx, gy], -1).reshape(-1, 2), dtype=DT),
                            torch.tensor(obs.reshape(-1).astype(np.int64)), torch.tensor(shade.reshape(-1), dtype=DT), 1 / k)
+        if self.lite:
+            # One colour per part: the colour map alone places every box, so nothing else is worked out.
+            side = obs.shape[0]
+            self.targets[i] = (torch.zeros((len(F.PARTS), side * side)), torch.zeros(len(F.PARTS), dtype=torch.bool))
+            self.judge_cache.pop(i, None)
+            return
         # The 2D stage: tight rectangles around each colour's parts (see tools/r6_rects.py).
         counts = {}
         for _, _, _, part in F.PARTS:
@@ -2505,6 +2512,186 @@ def run_keyframes(frames, idx, fps, args, log=print):
     return fit, f0, keep, agree
 
 
+def track_step(fit, k, steps=25, sigma0=1.0, sigma1=0.4, lr=0.8, every=5):
+    """Fast mode's per-frame fit: gradient steps on frame k alone from where it starts (the last frame's pose), all
+    but the last 5 on every other pixel; every `every` steps the hard colour agreement is checked and the best state
+    seen (the start included) is kept. Every other frame is put back as it was."""
+    groups = [{'params': [fit.cams[0]], 'lr': 0.1 * lr}, {'params': [fit.J], 'lr': lr}]
+    opt = torch.optim.Adam(groups)
+    keep_J, keep_C = fit.J.detach().clone(), fit.cams[0].detach().clone()
+    view = fit.views[0]
+    i = view.idx[k]
+    score = lambda: float(agreement(fit, 0, i, fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
+    best = (score(), fit.J[k].detach().clone(), fit.cams[0][k].detach().clone()) if every else None
+    for st in range(steps):
+        sig = sigma0 * (sigma1 / sigma0) ** (st / max(1, steps - 1))
+        opt.zero_grad()
+        loss = fit.loss_frames(0, [k], sig, stride=2 if st < steps - 5 else 1)[0] + fit.regular() * 0.1
+        loss.backward()
+        opt.step()
+        if every and (st % every == every - 1 or st == steps - 1):
+            a = score()
+            if a > best[0]:
+                best = (a, fit.J[k].detach().clone(), fit.cams[0][k].detach().clone())
+    with torch.no_grad():
+        Jk, Ck = (best[1], best[2]) if every else (fit.J[k].detach().clone(), fit.cams[0][k].detach().clone())
+        fit.J.copy_(keep_J)
+        fit.cams[0].copy_(keep_C)
+        fit.J[k] = Jk
+        fit.cams[0][k] = Ck
+
+
+def torso_from_box(fit, k):
+    """The torso's turn read from its own colour area: its box drawn from the outline (box_from_outline; other body
+    colours may hide it), every reading of which drawn side is up (the 12 x 12 faces: either of the two long sides,
+    either way) and both mirror readings, each set as the hips' turn with the limbs kept as they are; the best by hard
+    colour agreement is kept if it beats the pose now. Returns the agreement."""
+    import itertools
+    view = fit.views[0]
+    i = view.idx[k]
+    pix, obs_t, _, scale = view.windows[i]
+    side = view.res
+    obs = obs_t.numpy().reshape(side, side)
+    tcls = F.CLASS_OF['torso']
+    mask = obs == tcls
+    J = fit.J.detach()[k].clone()
+    cam = (fit.cams[0][k] * CAM_UNIT).detach().clone()
+    now = float(agreement(fit, 0, i, J[None], cam[None])[0])
+    unit = 6 * float(cam[2]) / float(scale)
+    if mask.sum() < 0.5 * unit * unit:
+        return now
+    free = (obs > 0) & (obs != tcls)
+    r = box_from_outline(mask, unit, BOX_DIMS['torso'], free)
+    if r is None:
+        return now
+    _, _, _, Rm, L = r
+    zc = int(np.argmin(L))  # the 6-deep side
+    a_, b_ = [c for c in range(3) if c != zc]
+    _, _, view_r = _body_frames(J, cam)
+    vr = view_r.numpy()
+    mirror = np.diag([1.0, 1.0, -1.0])
+    cands = []
+    for R0 in (Rm, mirror @ Rm):
+        for yc, xc in ((a_, b_), (b_, a_)):
+            for sy, sx in itertools.product((1, -1), repeat=2):
+                X, Y = sx * R0[:, xc], sy * R0[:, yc]
+                R_cam = np.stack([X, Y, np.cross(X, Y)], 1)
+                xd, yd, zd = joints_for_rotation(R_cam, vr, np.eye(3))
+                q = J.clone()
+                q[F.JI[('hips', 0)] - NC], q[F.JI[('hips', 1)] - NC], q[F.JI[('hips', 2)] - NC] = xd, yd, zd
+                cands.append(q)
+    Js = torch.stack(cands)
+    sc = agreement(fit, 0, i, Js, cam[None].expand(len(cands), 5))
+    best = int(torch.argmax(sc))
+    if float(sc[best]) > now:
+        with torch.no_grad():
+            fit.J[k] = Js[best]
+        return float(sc[best])
+    return now
+
+
+_FAST = {}  # the frames, shared with the worker processes (forked, so not copied)
+
+
+def _fast_chunk(job):
+    """One stretch of frames (no camera cut inside), fitted in order: a quick start search on its first frame, then
+    every frame tracked from the last (track_step); a frame that still fits badly gets the full limb measuring.
+    Returns [(frame, params, agreement)]."""
+    chunk, pal, res, flip, steps, redo = job
+    torch.set_num_threads(1)
+    frames, fps = _FAST['frames'], _FAST['fps']
+    F.use_palette(pal)
+    encs = {i: F.classify(frames[i], pal) for i in chunk}
+    view = View(frames, encs, chunk, fps, res)
+    view.lite = True
+    f0 = F.Fitter()
+    p0, _ = f0.init(encs[chunk[0]], None, flip, quick=True)
+    fit = Fit([view], np.tile(p0[NC:], (len(chunk), 1)), [np.tile(p0[:5], (len(chunk), 1))], [float(p0[5])], [f0.light])
+    out = []
+    last_init = 0
+    for k, i in enumerate(chunk):
+        with torch.no_grad():
+            if k:
+                fit.J[k] = fit.J[k - 1]
+                fit.cams[0][k] = fit.cams[0][k - 1]
+        view.window(i, fit.params_of(0, k), f0)
+        track_step(fit, k, steps)
+        view.window(i, fit.params_of(0, k), f0)
+        cam = lambda: (fit.cams[0][[k]] * CAM_UNIT).detach()
+        a = float(agreement(fit, 0, i, fit.J.detach()[[k]], cam())[0])
+        if a < redo:
+            # Lost (a fast turn, a limb swung far): the torso's turn read from its colour area, then the full
+            # measuring of the limbs from theirs; kept only if better.
+            snapJ, snapC = fit.J[k].detach().clone(), fit.cams[0][k].detach().clone()
+            torso_from_box(fit, k)
+            view.lite = False
+            view.window(i, fit.params_of(0, k), f0)
+            fit.assign(0, k)
+            measure_limbs(fit, 0, k, prev=fit.J.detach()[k - 1].clone() if k else None, log=None)
+            view.lite = True
+            view.window(i, fit.params_of(0, k), f0)
+            track_step(fit, k, steps)
+            view.window(i, fit.params_of(0, k), f0)
+            a2 = float(agreement(fit, 0, i, fit.J.detach()[[k]], cam())[0])
+            if a2 > a:
+                a = a2
+            else:
+                with torch.no_grad():
+                    fit.J[k], fit.cams[0][k] = snapJ, snapC
+                view.window(i, fit.params_of(0, k), f0)
+        if a < 0.25 and k and k - last_init >= 5:
+            last_init = k
+            # Collapsed (a camera cut, or the body lost): a fresh quick search on this frame, kept if better.
+            p1, _ = f0.init(encs[i], None, flip, quick=True)
+            snapJ, snapC = fit.J[k].detach().clone(), fit.cams[0][k].detach().clone()
+            with torch.no_grad():
+                fit.J[k] = torch.tensor(p1[NC:], dtype=DT)
+                fit.cams[0][k] = torch.tensor(p1[:5], dtype=DT) / CAM_UNIT
+            view.window(i, fit.params_of(0, k), f0)
+            track_step(fit, k, steps)
+            view.window(i, fit.params_of(0, k), f0)
+            a2 = float(agreement(fit, 0, i, fit.J.detach()[[k]], cam())[0])
+            if a2 > a:
+                a = a2
+            else:
+                with torch.no_grad():
+                    fit.J[k], fit.cams[0][k] = snapJ, snapC
+                view.window(i, fit.params_of(0, k), f0)
+        out.append((i, fit.params_of(0, k), a))
+    return out
+
+
+def run_fast(frames, idx, fps, args, log=print):
+    """Fast mode, for footage with one colour per body part: the frames split into one even stretch per worker
+    process, fitted side by side (_fast_chunk), the results joined. Returns (fit, fitter, agreement per frame)."""
+    import multiprocessing as mp
+    pal = json.load(open(args.palette)) if args.palette else F.PALETTE
+    F.use_palette(pal)
+    t0 = time.time()
+    workers = max(1, min(args.workers, os.cpu_count() or 1))
+    # One even stretch per process, each with its own quick start (a camera cut inside one restarts by itself).
+    size = math.ceil(len(idx) / workers)
+    chunks = [idx[a:a + size] for a in range(0, len(idx), size)]
+    log(f'{len(idx)} frames in {len(chunks)} stretches on {workers} processes')
+    _FAST['frames'], _FAST['fps'] = frames, fps
+    jobs = [(c, pal, args.res, args.flip, args.fast_steps, args.redo) for c in chunks]
+    if workers > 1:
+        with mp.get_context('fork').Pool(workers) as pool:
+            results = pool.map(_fast_chunk, jobs, chunksize=1)
+    else:
+        results = [_fast_chunk(j) for j in jobs]
+    got = {i: (p, a) for r in results for i, p, a in r}
+    P = np.stack([got[i][0] for i in idx])
+    agree = np.array([got[i][1] for i in idx])
+    log(f'fitted in {time.time() - t0:.0f} s; colour agreement median {np.median(agree):.2f}, '
+        f'{int((agree >= 0.8).sum())} of {len(idx)} frames at 0.8 or better')
+    encs = {i: F.classify(frames[i], pal) for i in idx[:1]}
+    view = View(frames, encs, idx, fps, args.res)
+    f0 = F.Fitter()
+    fit = Fit([view], P[:, NC:], [P[:, :5]], [float(P[0, 5])], [f0.light])
+    return fit, f0, agree
+
+
 def run(views_in, args, log=print):
     """views_in: [(frames, idx, fps)]; returns (fit, fitter_per_view)."""
     pal = json.load(open(args.palette)) if args.palette else F.PALETTE
@@ -2585,15 +2772,27 @@ def main():
     ap.add_argument('--flip', action='store_true')
     ap.add_argument('--palette', default=None)
     ap.add_argument('--fps', type=float, default=None)
-    ap.add_argument('--res', type=int, default=112)
+    ap.add_argument('--res', type=int, default=None, help='fitting window size (default 112; 64 in fast mode)')
     ap.add_argument('--steps', type=int, default=400)
     ap.add_argument('--out', default=None)
     ap.add_argument('--selftest', action='store_true')
     ap.add_argument('--keyframes', action='store_true')
+    ap.add_argument('--fast', action='store_true', help='footage with one colour per part: quick tracking, in parallel')
+    ap.add_argument('--workers', type=int, default=4)
+    ap.add_argument('--fast-steps', type=int, default=25)
+    ap.add_argument('--redo', type=float, default=0.85, help='fast mode: full limb measuring below this agreement')
+    ap.add_argument('--fps-step', type=int, default=1, help='fast mode: fit every n-th frame of the video')
+    ap.add_argument('--width', type=int, default=960, help='fast mode: shrink frames to this width')
     a = ap.parse_args()
+    if a.res is None:
+        a.res = 64 if a.fast else 112
     if a.selftest:
         return selftest(a)
-    frames, fps = F.frames_of(a.video, a.fps)
+    if a.fast:
+        # Fast mode loads only the frames it fits (every --fps-step-th), shrunk to --width.
+        frames, fps = F.frames_of(a.video, a.fps, every=a.fps_step, width=a.width)
+    else:
+        frames, fps = F.frames_of(a.video, a.fps)
     lo, hi = (int(x) for x in a.range.split(':')) if a.range else (0, len(frames) - 1)
     first = min(lo, a.warmup) if a.warmup is not None else lo
     vin = [(frames, list(range(first, hi + 1)), fps)]
@@ -2601,7 +2800,16 @@ def main():
         f2, fps2 = F.frames_of(a.view2, a.fps)
         lo2, hi2 = (int(x) for x in a.range2.split(':')) if a.range2 else (0, len(f2) - 1)
         vin.append((f2, list(range(lo2, hi2 + 1)), fps2))
-    if a.keyframes:
+    if a.fast:
+        idx_f = list(range(first, hi + 1))
+        fit, f0, agree = run_fast(frames, idx_f, fps, a)
+        fitters = [f0]
+        lo = idx_f[0]
+        if a.out:
+            os.makedirs(a.out, exist_ok=True)
+            json.dump({'frames': idx_f, 'agreement': [round(float(x), 3) for x in agree]},
+                      open(os.path.join(a.out, 'agreement.json'), 'w'))
+    elif a.keyframes:
         fit, f0, keep, agree = run_keyframes(frames, vin[0][1], fps, a)
         fitters = [f0]
         json.dump({'kept': [int(x) for x in np.nonzero(keep)[0]], 'agreement': [round(float(x), 3) for x in agree]},
