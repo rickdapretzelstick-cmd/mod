@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Accuracy check for tools/r6_fit.py: renders a known kick-like motion (body lean and turn, an arm swing, a leg swinging
-up to ~110 degrees) as R6 footage in a palette's colours, fits it blind, and prints the mean error of every joint.
+Accuracy check for tools/r6_fit.py: renders a known kick-like motion (body lean and turn, an arm swing with a twist, a
+leg swinging up to ~110 degrees, a head tilt) as shaded R6 footage through a perspective camera, in a palette's colours,
+fits it blind, and prints the mean error of every joint.
 
     python3 tools/r6_fit_selftest.py [six|noob] [camera_yaw camera_pitch]
 
-Measured when written: six colours from the side (250, 12): 6.8 degrees mean, camera recovered exactly; six colours from
-above and behind (200, 35): 9.0 (swings toward the camera foreshorten: record from the side); noob colours: 26.
+Measured (shaded fitter): six colours from the side (250, 12): 7.8 degrees mean over 18 rotations, twists 3-10, head
+tilt 2.5; the worst, 34, is the far arm's sideways angle while the torso hides it (record that side too). Silhouette-only
+fitter, flat footage: six colours side 6.8, above-behind 9.0 (swings toward the camera foreshorten), noob colours 26.
 """
 import json
 import os
