@@ -30,6 +30,7 @@ import torch
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import r6_fit as F  # noqa: E402
+import r6_rects as RR  # noqa: E402
 
 torch.set_num_threads(max(1, os.cpu_count() or 1))
 DT = torch.float32
@@ -43,6 +44,7 @@ for _i, (_b, _ax) in enumerate(F.JOINTS):
 LO = torch.tensor([F.LIMITS.get(j, (-180, 180))[0] for j in F.JOINTS], dtype=DT)
 HI = torch.tensor([F.LIMITS.get(j, (-180, 180))[1] for j in F.JOINTS], dtype=DT)
 PART_BONE = [BONES.index(b) for b, _, _, _ in F.PARTS]
+PART_OF_FACE = torch.arange(len(F.PARTS)).repeat_interleave(6)  # which box each face belongs to
 CORNERS = torch.tensor([[[x, y, z] for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])]
                         for _, lo, hi, _ in F.PARTS], dtype=DT)  # (parts, 8, 3)
 FACE_IDX = torch.tensor([f[0] for f in F.FACES])  # (6, 4)
@@ -50,6 +52,7 @@ FACE_N = torch.tensor(np.stack([f[1] for f in F.FACES]), dtype=DT)  # (6, 3)
 M2W = torch.tensor([-1.0, -1.0, 1.0], dtype=DT)
 # Cameras are optimised in these units (degrees, 1/100 of the scale, pixels) so one step size suits every entry.
 CAM_UNIT = torch.tensor([1.0, 1.0, 0.01, 1.0, 1.0], dtype=DT)
+RECT_W = 1.5  # weight of each box's own-rectangle overlap
 
 
 def rotm(a):
@@ -104,7 +107,7 @@ def geometry(J, cam, persp, light):
     return quads.reshape(B, -1, 4, 2), depth.reshape(B, -1), vis.reshape(B, -1), shade.reshape(B, -1)
 
 
-def rasterise(quads, depth, vis, shade, pix, sigma, classes, ncls):
+def rasterise(quads, depth, vis, shade, pix, sigma, classes, ncls, parts=False):
     """Soft render: per pixel the probability of each class (0 = floor) and the shade. pix (B, N, 2) footage px."""
     a = quads
     b = torch.roll(quads, -1, 2)
@@ -129,6 +132,10 @@ def rasterise(quads, depth, vis, shade, pix, sigma, classes, ncls):
     prob = w @ onehot  # (B, N, C)
     prob = torch.cat([prob[..., :1] + floor.unsqueeze(-1), prob[..., 1:]], -1)
     sh = (w * torch.gather(shade, 1, order)[:, None]).sum(-1) / (w.sum(-1) + 1e-6)
+    if parts:
+        pid = torch.gather(PART_OF_FACE.expand(order.shape[0], -1), 1, order)
+        pprob = w @ torch.nn.functional.one_hot(pid, len(F.PARTS)).to(DT)  # (B, N, boxes): each box's share
+        return prob, sh, pprob
     return prob, sh
 
 
@@ -139,6 +146,8 @@ class View:
         self.frames, self.idx, self.fps, self.res = frames, idx, fps, res
         self.encs = encs
         self.windows = {}
+        self.rects = {}
+        self.targets = {}  # frame -> (boxes' target masks (boxes, N), which boxes have one (boxes,))
 
     def window(self, i, p, fitter):
         """The frame's window (footage px per pixel) around the body's colours; class/shade targets in it."""
@@ -150,6 +159,13 @@ class View:
         gx, gy = np.meshgrid((np.arange(w) + 0.5) / k + x0, (np.arange(h) + 0.5) / k + y0)
         self.windows[i] = (torch.tensor(np.stack([gx, gy], -1).reshape(-1, 2), dtype=DT),
                            torch.tensor(obs.reshape(-1).astype(np.int64)), torch.tensor(shade.reshape(-1), dtype=DT), 1 / k)
+        # The 2D stage: tight rectangles around each colour's parts (see tools/r6_rects.py).
+        counts = {}
+        for _, _, _, part in F.PARTS:
+            if part != 'face':
+                counts[F.CLASS_OF[part]] = counts.get(F.CLASS_OF[part], 0) + 1
+        self.rects[i] = (RR.detect(obs, counts), obs)
+        self.targets.pop(i, None)
 
 
 def frame_loss(prob, sh, obs, shade, ncls, side=None):
@@ -202,6 +218,56 @@ class Fit:
         b, f = min(n1 - 1, a + 1), s - a
         return self.J[a] * (1 - f) + self.J[b] * f
 
+    def assign(self, v, k):
+        """Each box's rectangle in frame k (by overlap with where the box is now); the target is the rectangle's pixels
+        of its colour."""
+        view = self.views[v]
+        i = view.idx[k]
+        rects, obs = view.rects[i]
+        side = view.res
+        with torch.no_grad():
+            J = self.joints_at(v, k)[None]
+            cam = self.cams[v][[k]] * CAM_UNIT
+            quads, depth, vis, shade = geometry(J, cam, self.persp[v], self.lights[v])
+            pix = view.windows[i][0]
+            _, _, pprob = rasterise(quads, depth, vis, shade, pix[None], 0.3 * view.windows[i][3], self.classes, self.ncls, parts=True)
+            hard = pprob[0].argmax(-1).reshape(side, side).numpy()
+            covered = pprob[0].sum(-1).reshape(side, side).numpy() > 0.5
+        part_cls = [F.CLASS_OF[part] for _, _, _, part in F.PARTS]
+        masks = [(hard == j) & covered for j in range(len(F.PARTS))]
+        pairs = RR.assign(masks, [c if F.PARTS[j][3] != 'face' else -1 for j, c in enumerate(part_cls)], rects)
+        tgt = np.zeros((len(F.PARTS), side * side), np.float32)
+        has = np.zeros(len(F.PARTS), bool)
+        for j, r in pairs:
+            m = r.mask((side, side), colour=(obs == r.cls))
+            if m.sum() > 4:
+                tgt[j], has[j] = m.reshape(-1), True
+        view.targets[i] = (torch.tensor(tgt), torch.tensor(has))
+
+    def box_scores(self, v, k):
+        """Each box with a rectangle: how much of the rectangle's colour it covers, as overlap (IoU) of its visible
+        silhouette with those pixels -- the fit's accuracy, part by part."""
+        view = self.views[v]
+        i = view.idx[k]
+        if i not in view.targets:
+            self.assign(v, k)
+        tgt, has = view.targets[i]
+        with torch.no_grad():
+            J = self.joints_at(v, k)[None]
+            cam = self.cams[v][[k]] * CAM_UNIT
+            quads, depth, vis, shade = geometry(J, cam, self.persp[v], self.lights[v])
+            _, _, pprob = rasterise(quads, depth, vis, shade, view.windows[i][0][None], 0.3 * view.windows[i][3],
+                                    self.classes, self.ncls, parts=True)
+            hard = pprob[0].argmax(-1)
+            covered = pprob[0].sum(-1) > 0.5
+        out = {}
+        for j in range(len(F.PARTS)):
+            if has[j]:
+                mine = (hard == j) & covered
+                t = tgt[j] > 0.5
+                out[F.PARTS[j][3]] = float((mine & t).sum()) / max(1.0, float((mine | t).sum()))
+        return out
+
     def loss_frames(self, v, ks, sigma_px):
         view = self.views[v]
         J = torch.stack([self.joints_at(v, k) for k in ks])
@@ -211,8 +277,23 @@ class Fit:
         obs = torch.stack([view.windows[view.idx[k]][1] for k in ks])
         tsh = torch.stack([view.windows[view.idx[k]][2] for k in ks])
         scale = torch.tensor([view.windows[view.idx[k]][3] for k in ks], dtype=DT)
-        prob, sh = rasterise(quads, depth, vis, shade, pix, (sigma_px * scale)[:, None, None], self.classes, self.ncls)
-        return frame_loss(prob, sh, obs, tsh, self.ncls, view.res)
+        prob, sh, pprob = rasterise(quads, depth, vis, shade, pix, (sigma_px * scale)[:, None, None], self.classes,
+                                    self.ncls, parts=True)
+        loss = frame_loss(prob, sh, obs, tsh, self.ncls, view.res)
+        # Every box onto its own rectangle: soft overlap of the box's share of each pixel with the rectangle's colour.
+        for b, k in enumerate(ks):
+            i = view.idx[k]
+            if i not in view.targets:
+                self.assign(v, k)
+            tgt, has = view.targets[i]
+            if has.any():
+                p = pprob[b][:, has].T  # (boxes with a rectangle, N)
+                t = tgt[has]
+                inter = (p * t).sum(-1)
+                union = p.sum(-1) + t.sum(-1) - inter
+                loss = loss + torch.cat([loss.new_zeros(b), (RECT_W * (1 - inter / (union + 1e-6))).sum()[None],
+                                         loss.new_zeros(len(ks) - b - 1)])
+        return loss
 
     def regular(self):
         J = self.J

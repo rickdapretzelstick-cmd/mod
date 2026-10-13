@@ -54,7 +54,8 @@ PALETTE = {'classes': [
     {'name': 'torso', 'parts': ['torso'], 'h': [245, 12], 's': [110, 255], 'v': [60, 255], 'show': [255, 60, 60]},
     {'name': 'arms', 'parts': ['head', 'rightArm', 'leftArm'], 'h': [28, 42], 's': [100, 255], 'v': [90, 255], 'show': [255, 240, 60]},
     {'name': 'legs', 'parts': ['rightLeg', 'leftLeg'], 'h': [42, 66], 's': [90, 255], 'v': [80, 255], 'show': [120, 255, 80]},
-    {'name': 'face', 'parts': ['face'], 'v': [0, 70], 'show': [40, 40, 255]}]}
+    {'name': 'face', 'parts': ['face'], 'v': [0, 70], 'show': [40, 40, 255]}],
+    'adaptive': [['arms', 'legs']]}
 BG = 0
 CLASS_OF, FACE, HEAD, BODY_CLASSES, COST, SHOW, UNKNOWN = {}, -1, 0, [], None, {}, 99
 
@@ -281,6 +282,24 @@ def classify(rgb, pal):
     for cls, c in enumerate(pal['classes'], 1):
         if cls != FACE:
             out[in_range(h, c.get('h', [0, 255])) & in_range(s, c.get('s', [0, 255])) & in_range(v, c.get('v', [0, 255]))] = cls
+    # Two colours close in hue (the noob's yellow arms and lime legs) are split where this frame's hues of the pair
+    # actually divide (lighting shifts both), not at a fixed hue.
+    for pair in pal.get('adaptive', []):
+        a_cls, b_cls = (next(i for i, c in enumerate(pal['classes'], 1) if c['name'] == nm) for nm in pair)
+        m = (out == a_cls) | (out == b_cls)
+        hs = h[m].astype(float)
+        if len(hs) > 50:
+            c0, c1 = np.percentile(hs, 20), np.percentile(hs, 80)
+            for _ in range(10):
+                cut = (c0 + c1) / 2
+                lo_, hi_ = hs[hs <= cut], hs[hs > cut]
+                if not len(lo_) or not len(hi_):
+                    break
+                c0, c1 = lo_.mean(), hi_.mean()
+            if c1 - c0 > 4:
+                lower = a_cls if np.mean(pal['classes'][a_cls - 1]['h']) < np.mean(pal['classes'][b_cls - 1]['h']) else b_cls
+                upper = b_cls if lower == a_cls else a_cls
+                out[m] = np.where(h[m] <= (c0 + c1) / 2, lower, upper)
     if FACE > 0:
         # The face: dark marks enclosed by the head's colour.
         head = ndimage.binary_closing(out == HEAD, iterations=3)
