@@ -2721,6 +2721,56 @@ def pose_features(enc):
     return np.array(feat), np.array(vis)
 
 
+def find_moves(frames, pal, fps, calm=0.15, active=0.2, min_calm_s=0.15, min_len_s=1.5, size=480):
+    """Where a move is performed, from the footage alone: each frame's body (its colours' area, centred and scaled to
+    its own size, so the camera's panning and zoom drop out) against the body two frames before; standing idle it
+    hardly changes, during a move it changes a lot. A move starts where the change rises above `active` after at
+    least min_calm_s of calm (below `calm`), and ends where calm returns. Returns [(first frame, last frame)]."""
+    import cv2
+    norm = []
+    for f in frames:
+        small = cv2.resize(f, (size, round(f.shape[0] * size / f.shape[1])))
+        cl = (F.classify(small, pal) // 1000).astype(np.uint8)
+        body = np.isin(cl, F.BODY_CLASSES)
+        lab, k = ndimage.label(ndimage.binary_dilation(body, iterations=2))
+        if not k or body.sum() < 60:
+            norm.append(None)
+            continue
+        sz = ndimage.sum(body, lab, range(1, k + 1))
+        m = (lab == 1 + int(np.argmax(sz))) & body
+        ys, xs = np.nonzero(m)
+        sc = math.sqrt(m.sum())
+        g = np.zeros((48, 48), np.uint8)
+        g[np.clip(((ys - ys.mean()) / sc * 12 + 24).astype(int), 0, 47),
+          np.clip(((xs - xs.mean()) / sc * 12 + 24).astype(int), 0, 47)] = cl[ys, xs]
+        norm.append(g)
+    chg = np.full(len(norm), np.nan)
+    for i in range(2, len(norm)):
+        a, b = norm[i], norm[i - 2]
+        if a is not None and b is not None:
+            both = (a > 0) | (b > 0)
+            chg[i] = ((a != b) & both).sum() / max(1, both.sum())
+    seen = ~np.isnan(chg)
+    sm = ndimage.uniform_filter1d(np.nan_to_num(chg, nan=1.0), 3)
+    need = max(1, round(min_calm_s * fps))
+    moves, run, start, armed = [], 0, None, False
+    for i in range(len(sm)):
+        calm_now = seen[i] and sm[i] < calm
+        if start is None:
+            run = run + 1 if calm_now else 0
+            armed = armed or run >= need
+            if armed and not calm_now and seen[i] and sm[i] > active:
+                start, run, armed = i, 0, False
+        else:
+            run = run + 1 if calm_now else 0
+            if run >= need:
+                end = i - run
+                if (end - start) / fps >= min_len_s and seen[start:end + 1].mean() >= 0.7:
+                    moves.append((start, end))
+                start, armed = None, True
+    return moves
+
+
 def pick_key_poses(encs, idx, most=10, tol=0.25, near=2):
     """Key poses of a move: the first and last frames, then repeatedly the frame that straight in-betweening of the
     keys so far would miss most (pose_features), until every frame is within tol or `most` keys are chosen; each key
@@ -2873,6 +2923,7 @@ def main():
     ap.add_argument('--out', default=None)
     ap.add_argument('--selftest', action='store_true')
     ap.add_argument('--keyframes', action='store_true')
+    ap.add_argument('--find-moves', action='store_true', help='list where moves are performed (from idle to idle)')
     ap.add_argument('--keyposes', type=int, default=0, help='fit only up to this many key poses, ease the rest')
     ap.add_argument('--quick-start', action='store_true', help='a quicker start search')
     ap.add_argument('--fast', action='store_true', help='footage with one colour per part: quick tracking, in parallel')
@@ -2882,6 +2933,13 @@ def main():
     ap.add_argument('--fps-step', type=int, default=1, help='fast mode: fit every n-th frame of the video')
     ap.add_argument('--width', type=int, default=960, help='fast mode: shrink frames to this width')
     a = ap.parse_args()
+    if a.find_moves:
+        pal = json.load(open(a.palette)) if a.palette else F.PALETTE
+        F.use_palette(pal)
+        frames, fps = F.frames_of(a.video, a.fps, width=480)
+        for m0, m1 in find_moves(frames, pal, fps):
+            print(f'move: frames {m0}-{m1} ({m0 / fps:.2f}-{m1 / fps:.2f} s, {(m1 - m0) / fps:.2f} s)')
+        return
     if a.res is None:
         a.res = 64 if a.fast else 112
     if a.selftest:
