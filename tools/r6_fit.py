@@ -58,6 +58,9 @@ PALETTE = {'classes': [
     'adaptive': [['arms', 'legs']]}
 BG = 0
 CLASS_OF, FACE, HEAD, BODY_CLASSES, COST, SHOW, UNKNOWN = {}, -1, 0, [], None, {}, 99
+# Each part's six box sides' classes (right, left, top, bottom, front, back: the order of FACES); a palette with
+# 'sides' gives every side its own colour (clothing painted per side), otherwise all six are the part's colour.
+SIDE_CLASS = {}
 
 
 def use_palette(pal):
@@ -74,6 +77,11 @@ def use_palette(pal):
             FACE = i
     CLASS_OF.setdefault('face', CLASS_OF['head'])
     HEAD = CLASS_OF['head']
+    SIDE_CLASS.clear()
+    names = {c['name']: i for i, c in enumerate(pal['classes'], 1)}
+    for part, cls in CLASS_OF.items():
+        sides = pal.get('sides', {}).get(part)
+        SIDE_CLASS[part] = [names[n] for n in sides] if sides else [cls] * 6
     BODY_CLASSES = [i for i in range(1, len(pal['classes']) + 1) if i != FACE]
     UNKNOWN = len(pal['classes']) + 1
     n = len(pal['classes']) + 1
@@ -194,7 +202,7 @@ def faces(p, light):
         v = view @ wc
         uv = project(v)
         rotw = MODEL_TO_WORLD @ world[bone][:3, :3]
-        for idx, normal in FACES:
+        for fi, (idx, normal) in enumerate(FACES):
             nw = rotw @ normal
             nc = view @ nw
             centre = v[:, idx].mean(1)
@@ -202,7 +210,7 @@ def faces(p, light):
             if nc @ toward <= 0:
                 continue
             shade = amb + (1 - amb) * max(0.0, float(nw @ ldir))
-            out.append((centre[2] + (0.01 if part == 'face' else 0), [tuple(uv[k]) for k in idx], CLASS_OF[part], shade))
+            out.append((centre[2] + (0.01 if part == 'face' else 0), [tuple(uv[k]) for k in idx], SIDE_CLASS[part][fi], shade))
     out.sort(key=lambda e: e[0])
     return [(poly, cls, sh) for _, poly, cls, sh in out]
 
@@ -300,6 +308,11 @@ def classify(rgb, pal):
                 lower = a_cls if np.mean(pal['classes'][a_cls - 1]['h']) < np.mean(pal['classes'][b_cls - 1]['h']) else b_cls
                 upper = b_cls if lower == a_cls else a_cls
                 out[m] = np.where(h[m] <= (c0 + c1) / 2, lower, upper)
+    if pal.get('marks'):
+        # Lettering and seams printed on clothing (white text, dark lines) inside the body: not floor, unknown.
+        body = (out > 0) & (out != FACE)
+        closed = ndimage.binary_fill_holes(ndimage.binary_closing(body, iterations=2))
+        out[closed & ~body & (out == BG)] = UNKNOWN
     if FACE > 0:
         # The face: dark marks enclosed by the head's colour.
         head = ndimage.binary_closing(out == HEAD, iterations=3)

@@ -74,6 +74,17 @@ def part_classes():
     return torch.tensor([F.CLASS_OF[part] for _, _, _, part in F.PARTS])
 
 
+def face_classes():
+    """Every box side's class, parts in F.PARTS order, sides in F.FACES order (one colour per side when the palette
+    paints sides, else the part's colour six times)."""
+    return torch.tensor([c for _, _, _, part in F.PARTS for c in F.SIDE_CLASS[part]])
+
+
+def sides_mode():
+    """Clothing painted per side: parts no longer have one colour each (the per-part steps do not apply)."""
+    return any(len(set(v)) > 1 for v in F.SIDE_CLASS.values())
+
+
 def geometry(J, cam, persp, light, corners=False):
     """Faces of a batch of poses: 2D quads (B, faces, 4, 2) in footage px, depth (B, faces), visible (B, faces),
     shade (B, faces). J (B, joints) degrees, cam (B, 5) = yaw, pitch, scale, x, y."""
@@ -179,7 +190,7 @@ class View:
         prep = fitter.prepare(fitter.view(self.encs[i], roi))
         obs, shade = prep[0].copy(), prep[3]
         # Only the body's own cluster of colours is body (a lamp or an effect of the same colour further off is floor).
-        body_cls = sorted({F.CLASS_OF[part] for _, _, _, part in F.PARTS})
+        body_cls = sorted(F.BODY_CLASSES)  # every body colour (a part may show several, one per side)
         stray = np.isin(obs, body_cls) & ~RR.body_cluster(obs, {c: 1 for c in body_cls})
         obs[stray] = 0
         # The footage's colour borders are blended (blur, dithering): the 1-pixel band along them is left out of the score.
@@ -658,7 +669,7 @@ class Fit:
         self.cams = [(torch.tensor(c, dtype=DT) / CAM_UNIT).requires_grad_() for c in cams0]
         self.persp = persp
         self.lights = [(torch.tensor(l[0], dtype=DT), float(l[1])) for l in lights]
-        self.classes = part_classes().repeat_interleave(6)
+        self.classes = face_classes()
         self.ncls = max(F.CLASS_OF.values()) + 1
 
     def joints_at(self, v, k):
@@ -2403,6 +2414,8 @@ def run_keyframes(frames, idx, fps, args, log=print):
     F.use_palette(pal)
     encs = {i: F.classify(frames[i], pal) for i in idx}
     view = View(frames, encs, idx, fps, args.res)
+    sides = sides_mode()
+    view.lite = sides  # clothing painted per side: the colour map alone (the per-part steps assume a colour per part)
     f0 = F.Fitter()
     p0, _ = f0.init(encs[idx[0]], tuple(float(x) for x in args.at.split(',')) if args.at else None, args.flip,
                     quick=getattr(args, 'quick_start', False))
@@ -2414,6 +2427,35 @@ def run_keyframes(frames, idx, fps, args, log=print):
                 fit.J[k] = fit.J[k - 1]
                 fit.cams[0][k] = fit.cams[0][k - 1]
         view.window(i, fit.params_of(0, k), f0)
+        if sides:
+            # Every side's colour says how the box is turned: gradient steps from the last pose, then from a
+            # quick search when the last pose is far off (a turn, a cut).
+            track_step(fit, k, 60, sigma0=1.5)
+            view.window(i, fit.params_of(0, k), f0)
+            a_k = float(agreement(fit, 0, i, fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
+            if a_k < 0.85:
+                a_k = turn_sweep(fit, k)
+                view.window(i, fit.params_of(0, k), f0)
+            if a_k < 0.4 and k:
+                snapJ, snapC = fit.J[k].detach().clone(), fit.cams[0][k].detach().clone()
+                p1, _ = f0.init(encs[i], None, args.flip, quick=True)
+                with torch.no_grad():
+                    fit.J[k] = torch.tensor(p1[NC:], dtype=DT)
+                    fit.cams[0][k] = torch.tensor(p1[:5], dtype=DT) / CAM_UNIT
+                view.window(i, fit.params_of(0, k), f0)
+                track_step(fit, k, 60, sigma0=1.5)
+                view.window(i, fit.params_of(0, k), f0)
+                a2 = float(agreement(fit, 0, i, fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
+                if a2 <= a_k:
+                    with torch.no_grad():
+                        fit.J[k], fit.cams[0][k] = snapJ, snapC
+                    view.window(i, fit.params_of(0, k), f0)
+            cam = (fit.cams[0][[k]] * CAM_UNIT).detach()
+            agree[k] = float(agreement(fit, 0, i, fit.J.detach()[[k]], cam)[0])
+            obs = view.windows[i][1].numpy()
+            hidden[k] = (obs == F.UNKNOWN).sum() / max(1, (obs > 0).sum())
+            log(f'frame {i}: colour agreement {agree[k]:.2f}, hidden {hidden[k]:.2f}')
+            continue
         fit.assign(0, k)
         lift_all(fit, 0, k, steps=60)
         view.window(i, fit.params_of(0, k), f0)
@@ -2493,8 +2535,8 @@ def run_keyframes(frames, idx, fps, args, log=print):
     # its angles eased between the nearest frames where that same part was clearly seen.
     conf = np.zeros((len(idx), len(PART_BONES)))
     for k, i in enumerate(idx):
-        if not keep[k]:
-            continue  # already eased as a whole
+        if not keep[k] or sides:
+            continue  # already eased as a whole (per-part confidence needs a colour per part)
         conf[k] = part_confidence(fit, 0, k)
     sure = conf >= PART_SURE
     J = fit.J.detach().numpy().copy()
@@ -2601,6 +2643,45 @@ def torso_from_box(fit, k):
             fit.J[k] = Js[best]
         return float(sc[best])
     return now
+
+
+def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
+    """Side-coloured clothing: the camera tried all round the body (yaws x pitches; position, size and pose kept),
+    every candidate scored by hard colour agreement (each side's colour makes the right turn stand out), the best
+    few polished by gradient (track_step); frame k keeps the best, or what it had when nothing beats it."""
+    view = fit.views[0]
+    i = view.idx[k]
+    J = fit.J.detach()[k].clone()
+    c0 = (fit.cams[0][k] * CAM_UNIT).detach().clone()
+    # The body as it is, and upright (camera tilt and a backward lean look alike; a wrong pair must not stick).
+    upright = J.clone()
+    upright[F.JI[('hips', 0)] - NC] = 0.0
+    upright[F.JI[('hips', 2)] - NC] = 0.0
+    cams, poses = [], []
+    for body in (J, upright):
+        for y in range(yaws):
+            for pt in pitches:
+                c = c0.clone()
+                c[0], c[1] = c0[0] + 360.0 * y / yaws, float(pt)
+                cams.append(c)
+                poses.append(body)
+    C, Js = torch.stack(cams), torch.stack(poses)
+    sc = agreement(fit, 0, i, Js, C)
+    now = float(agreement(fit, 0, i, J[None], c0[None])[0])
+    best = (now, J, c0 / CAM_UNIT)
+    order = torch.argsort(sc, descending=True)[:top]
+    for o in order.tolist():
+        with torch.no_grad():
+            fit.J[k] = Js[o]
+            fit.cams[0][k] = C[o] / CAM_UNIT
+        view.window(i, fit.params_of(0, k), F.Fitter(view.res))
+        track_step(fit, k, steps, sigma0=1.5)
+        a = float(agreement(fit, 0, i, fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
+        if a > best[0]:
+            best = (a, fit.J[k].detach().clone(), fit.cams[0][k].detach().clone())
+    with torch.no_grad():
+        fit.J[k], fit.cams[0][k] = best[1], best[2]
+    return best[0]
 
 
 _FAST = {}  # the frames, shared with the worker processes (forked, so not copied)
