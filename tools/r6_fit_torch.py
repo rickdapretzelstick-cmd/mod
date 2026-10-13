@@ -233,7 +233,7 @@ class View:
         self.coloured_edges[i] = coloured
         # Folds from every straight line in the picture, short ones too (a face of a limb is only a stud wide).
         lsd = cv2.createLineSegmentDetector()
-        raw = lsd.detect(gray.astype(np.uint8))[0]
+        raw = lsd.detect(gray.astype(np.uint8))[0] if EXPERIMENTAL else None
         for x1, y1, x2, y2 in (raw.reshape(-1, 4) if raw is not None else []):
             d = np.array([x2 - x1, y2 - y1], float)
             L = np.linalg.norm(d)
@@ -254,7 +254,7 @@ class View:
         self.folds[i] = folds
         # Predicted folds: where two straight edges of one colour meet at an obtuse corner (a box's end, its two
         # visible end faces), the fold between those faces runs from the corner parallel to the box's long side.
-        self.predicted_folds[i] = predict_folds(coloured, obs, unit)
+        self.predicted_folds[i] = predict_folds(coloured, obs, unit) if EXPERIMENTAL else []
         self.targets.pop(i, None)
 
 
@@ -547,10 +547,13 @@ CAP_NEAR = {0, 1, 4, 5}  # local y min: the joint end, the torso's shoulder end
 SEEK_OVERLAP = 0.5  # a box over another part's colour (one part in front of another): half credit, not a fault
 # The hard end rule (every limb that shows has its hand or shoulder end flush on an edge of its colour). On footage
 # whose limb ends are blurred or hidden (the wiki GIFs) no pose can keep it, and it drags the fit: R6_END_RULE=0 off.
-END_RULE = os.environ.get('R6_END_RULE', '1') != '0'
+# Experimental rules, off by default (R6_EXPERIMENTAL=1 turns them on): the end-cap score and the hard either-end
+# rule, face folds and corner-predicted folds. On the wiki GIFs they made the fit worse or did nothing yet.
+EXPERIMENTAL = os.environ.get('R6_EXPERIMENTAL', '0') == '1'
+END_RULE = EXPERIMENTAL and os.environ.get('R6_END_RULE', '1') != '0'
 # How close counts as flush, in studs (scales with the footage): measured on the wiki kick, fitted limb ends land
 # 2-4 px (window) from their edges at ~12 px per stud, so 1.5 px (1/8 stud) was beyond what the blurred GIF resolves.
-SIDE_TOL, END_TOL, END_ANGLE = 0.2, 0.3, 10
+SIDE_TOL, END_TOL, END_ANGLE = 0.125, 0.3, 10
 
 
 def judge(fit, v, i, J, cam, detail=False, only=None):
@@ -560,9 +563,8 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
       pixel should be under some box of that colour;
     - edges (the steadfast rule): every straight edge of the footage with a body colour along it must be covered by
       the outline of a box of that colour, and every box's end must meet such an edge;
-    weighted side edges 5, ends 1, colour 1;
-    - and the hard rule: each visible limb has its hand end or its shoulder end flush on an edge of its colour (a pose
-      breaking it scores below every pose keeping it).
+    by default weighted colour 4, side edges 1 (edge-led weightings scored wrong poses as highly as right ones); with R6_EXPERIMENTAL=1 also the box ends (1) and the hard rule that each
+    visible limb has its hand end or its shoulder end flush on an edge of its colour.
     Batched over J (B, joints), cam (B, 5)."""
     view = fit.views[v]
     pix, obs_t, _, scale = view.windows[i]
@@ -605,8 +607,8 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
                 if np.hypot(*(b_ - a_)) >= 2:
                     outlines.append((cls, a_, b_, centre))
             # End caps, both ends of every box (hand/foot end and shoulder/hip end).
-            hidx = cv2.convexHull(pts.astype(np.float32), returnPoints=False).reshape(-1)
-            for ci, cap in enumerate((CAP_FAR, CAP_NEAR)):
+            hidx = cv2.convexHull(pts.astype(np.float32), returnPoints=False).reshape(-1) if EXPERIMENTAL else []
+            for ci, cap in enumerate((CAP_FAR, CAP_NEAR) if EXPERIMENTAL else ()):
                 for ia, ib in zip(hidx, np.roll(hidx, -1)):
                     if ia in cap and ib in cap and np.hypot(*(pts[ib] - pts[ia])) >= 2:
                         ends.append((j, ci, cls, pts[ia], pts[ib], centre))
@@ -710,7 +712,10 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
                     flush += 1
             broken += max(0, required - flush)
         # Side edges first (5), then the ends (1, they mostly settle each box's turn) and colour (1).
-        total = (5 * edge + endr + colour) / 7 - (broken if END_RULE else 0)  # breaking it loses to keeping it
+        if EXPERIMENTAL:
+            total = (5 * edge + endr + colour) / 7 - (broken if END_RULE else 0)  # breaking it loses to keeping it
+        else:
+            total = (4 * colour + edge) / 5  # the default: colour leads (4), coloured side edges break ties (1)
         out.append((total, colour, edge, endr, broken) if detail else total)
     return out if detail else torch.tensor(out)
 
@@ -992,7 +997,7 @@ def lift_all(fit, v, k, turns=8, rounds=2, steps=150):
                             a = wr[par].T @ _dir_model(view_r, en - st, 12.0, sgn, cam)
                             xd = math.degrees(math.asin(float(torch.clamp(a[2], -1, 1))))
                             zd = math.degrees(math.atan2(-float(a[0]), float(a[1])))
-                            opts += twisted(J, bone, xd, zd)
+                            opts += twisted(J, bone, xd, zd, TWISTS if EXPERIMENTAL else (0,))
                 # Generic directions too: a limb with no rectangle of its own (hidden) settles where it disagrees least.
                 sgn_ = 1 if bone.startswith('right') else -1
                 for gx in (-150, -90, -45, 0, 30):
@@ -1005,8 +1010,9 @@ def lift_all(fit, v, k, turns=8, rounds=2, steps=150):
         results.append((float(score(J[None], cam)[0]), J, cam))
     results.sort(key=lambda e: -e[0])
     # The winner's boxes each turned about their own axis until their ends meet their edges.
-    best_J = twist_sweep(fit, v, k, results[0][2], results[0][1], score)
-    results[0] = (float(score(best_J[None], results[0][2])[0]), best_J, results[0][2])
+    if EXPERIMENTAL:
+        best_J = twist_sweep(fit, v, k, results[0][2], results[0][1], score)
+        results[0] = (float(score(best_J[None], results[0][2])[0]), best_J, results[0][2])
     if os.environ.get('R6_DEBUG'):
         print('torso candidates', len(torsos), 'top torso-only', [round(torso_score(t), 3) for t in ranked[:4]],
               'whole poses', [round(r[0], 3) for r in results[:5]])
