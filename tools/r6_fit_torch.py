@@ -457,7 +457,10 @@ def agreement(fit, v, i, J, cam):
 # Corner indices (x, y, z picks as in CORNERS: index = 4 xi + 2 yi + zi) of a box's two end caps along its long axis.
 CAP_FAR = {2, 3, 6, 7}   # local y max: a limb's hand / foot end, the torso's hip end
 CAP_NEAR = {0, 1, 4, 5}  # local y min: the joint end, the torso's shoulder end
-SEEK_OVERLAP = 0.5  # a box over another part's colour (one part in front of another): half credit, not a fault
+SEEK_OVERLAP = 0.5
+# The hard end rule (every limb that shows has its hand or shoulder end flush on an edge of its colour). On footage
+# whose limb ends are blurred or hidden (the wiki GIFs) no pose can keep it, and it drags the fit: R6_END_RULE=0 off.
+END_RULE = os.environ.get('R6_END_RULE', '1') != '0'  # a box over another part's colour (one part in front of another): half credit, not a fault
 
 
 def judge(fit, v, i, J, cam, detail=False, only=None):
@@ -467,7 +470,9 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
       pixel should be under some box of that colour;
     - edges (the steadfast rule): every straight edge of the footage with a body colour along it must be covered by
       the outline of a box of that colour, and every box's end must meet such an edge;
-    weighted side edges 5, ends 1, colour 1.
+    weighted side edges 5, ends 1, colour 1;
+    - and the hard rule: each visible limb has its hand end or its shoulder end flush on an edge of its colour (a pose
+      breaking it scores below every pose keeping it).
     Batched over J (B, joints), cam (B, 5)."""
     view = fit.views[v]
     pix, obs_t, _, scale = view.windows[i]
@@ -594,9 +599,28 @@ def judge(fit, v, i, J, cam, detail=False, only=None):
                 n_cov += best_c[0]
                 n_len += best_c[1]
         endr = n_cov / n_len if n_len else 1.0
+        # The hard rule: every limb that shows has its hand end or its shoulder end -- either, never neither -- flush on
+        # an edge of its colour (60% of that end's outline covered).
+        # How many limbs of each colour must keep it comes from the footage (the limb rectangles found of that colour),
+        # not from where the boxes are -- so moving a box off its colour cannot dodge the rule.
+        broken = 0
+        limbs_of = {}
+        for j, (_, _, _, part) in enumerate(F.PARTS):
+            if part not in ('torso', 'head', 'face'):
+                limbs_of.setdefault(F.CLASS_OF[part], []).append(j)
+        rects_i = view.rects[i][0]
+        for cls_, js in limbs_of.items():
+            limb_rects = [r for r in rects_i.get(cls_, []) if RR.aspect(r) >= 1.4]
+            required = min(len(js), len(limb_rects))
+            flush = 0
+            for j in js:
+                capsj = [per_cap[(j, c)] for c in (0, 1) if (j, c) in per_cap]
+                if any(c[0] / max(1e-6, c[1]) >= 0.6 for c in capsj):
+                    flush += 1
+            broken += max(0, required - flush)
         # Side edges first (5), then the ends (1, they mostly settle each box's turn) and colour (1).
-        total = (5 * edge + endr + colour) / 7
-        out.append((total, colour, edge, endr) if detail else total)
+        total = (5 * edge + endr + colour) / 7 - (broken if END_RULE else 0)  # breaking it loses to keeping it
+        out.append((total, colour, edge, endr, broken) if detail else total)
     return out if detail else torch.tensor(out)
 
 
