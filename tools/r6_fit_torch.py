@@ -1648,29 +1648,41 @@ def sketch_boxes(view, i, cam_scale, classes=None):
     return [k[:5] for k in kept]
 
 
-def outline_directions(mask, unit, eps=0.12, tol=10.0):
-    """The directions a part's outline runs in: its outline simplified, its edges grouped by direction (within 10 deg,
-    either way along), each group weighted by its total length. [(unit direction, total length, longest edge)],
-    longest groups first. A box seen at a slant shows three groups (its three axes), seen face-on two."""
-    m = mask.astype(np.uint8)
-    contours, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    edges = []
+def outline_edges(mask, unit, eps=0.05, up=3):
+    """A part's outline as straight edges, traced finely: the shape enlarged 3x and smoothed (so the pixel staircase
+    makes no false angles), then simplified at 0.05 stud. [(start, end)] in window px."""
+    if up == 1:
+        big = mask.astype(np.uint8)
+    else:
+        big = cv2.resize(mask.astype(np.float32), None, fx=up, fy=up, interpolation=cv2.INTER_LINEAR)
+        big = (cv2.GaussianBlur(big, (0, 0), up * 0.6) > 0.5).astype(np.uint8)
+    contours, _ = cv2.findContours(big, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    out = []
     for cnt in contours:
-        if cv2.contourArea(cnt) < 0.5 * unit * unit:
+        if cv2.contourArea(cnt) < 0.5 * (unit * up) ** 2:
             continue
-        poly = cv2.approxPolyDP(cnt, eps * unit, True).reshape(-1, 2).astype(float)
+        poly = cv2.approxPolyDP(cnt, eps * unit * up, True).reshape(-1, 2).astype(float) / up
         for a, b in zip(poly, np.roll(poly, -1, 0)):
-            L = np.linalg.norm(b - a)
-            if L >= 0.2 * unit:
-                ang = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])) % 180
-                edges.append((ang, L))
+            out.append((a, b))
+    return out
+
+
+def outline_directions(mask, unit, tol=6.0, min_len=0.12, eps=0.05, up=3):
+    """The directions a part's outline runs in: its finely traced edges (outline_edges) of at least 0.12 stud grouped
+    by direction (within 4 deg, either way along -- so a short end edge tilted a few degrees off the long sides, the end
+    face seen at a slant, keeps its own direction), each group weighted by its total length.
+    [(unit direction, total length, longest edge)], longest groups first."""
+    edges = []
+    for a, b in outline_edges(mask, unit, eps=eps, up=up):
+        L = np.linalg.norm(b - a)
+        if L >= min_len * unit:
+            edges.append((math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])) % 180, L))
     groups = []
     for ang, L in sorted(edges, key=lambda e: -e[1]):
         for g in groups:
-            if abs((ang - g[0] + 90) % 180 - 90) <= tol:
+            da = (ang - g[0] + 90) % 180 - 90
+            if abs(da) <= tol:
                 w = g[1] + L
-                # Length-weighted mean angle (mod 180).
-                da = (ang - g[0] + 90) % 180 - 90
                 g[0] = (g[0] + da * L / w) % 180
                 g[1] = w
                 g[2] = max(g[2], L)
@@ -1718,7 +1730,10 @@ def shape_candidates(fit, v, k, J, cam, part, mask, unit):
     """Joint vectors turning one part's box to the three directions its outline runs in (or two, seen face-on): every
     assignment of the box's real sides to those directions, both mirror readings; each assignment's implied scale must
     agree with the camera's within 35%."""
-    groups = outline_directions(mask, unit)
+    # Coarse tracing of the raw pixels (steadier long sides): the two main directions, and a third when it shows one; fine tracing adds
+    # further third-direction options from short end edges (the end face seen at a slant).
+    groups = outline_directions(mask, unit, tol=10.0, min_len=0.2, eps=0.12, up=1)
+    fine = outline_directions(mask, unit)
     if len(groups) < 2:
         return []
     bone = 'hips' if part == 'torso' else LIMB_JOINTS[part]
@@ -1728,14 +1743,35 @@ def shape_candidates(fit, v, k, J, cam, part, mask, unit):
     par = PARENT_IDX[b]
     parent_rot = wr[par].numpy() if par >= 0 else np.eye(3)
     vr = view_r.numpy()
-    dirs = [g[0] for g in groups[:3]]
-    lens = [g[2] for g in groups[:3]]
+    # The two strongest directions are the long sides; the third (a short end edge, the end face at a slant) is tried
+    # from each of the next few distinct directions, the colour check choosing among the turns they give.
+    ang = lambda g, h: abs((math.degrees(math.atan2(g[0][1], g[0][0])) - math.degrees(math.atan2(h[0][1], h[0][0])) + 90) % 180 - 90)
+    first = groups[0]
+    second = next((g for g in groups[1:] if ang(g, first) >= 15), None)
+    if second is None:
+        return []
+    thirds = [g for g in groups if g is not first and g is not second and ang(g, first) >= 10 and ang(g, second) >= 10][:2]
+    thirds += [g for g in fine if ang(g, first) >= 5 and ang(g, second) >= 5
+               and all(ang(g, t) >= 4 for t in thirds)][:3]
+    # The plain coarse reading (its three strongest directions) always goes first; the end-edge readings are extra
+    # options, so the colour check can only gain from them.
+    triples = [groups[:3]] + [[first, second, g3] for g3 in thirds
+                              if not (len(groups) >= 3 and g3 is groups[2] and second is groups[1])]
+    out = []
+    import itertools
+    for trip in triples:
+        dirs = [g[0] for g in trip]
+        lens = [g[2] for g in trip]
+        out += _shape_turns(dirs, lens, dims, unit, J, bone, vr, parent_rot, len(trip) >= 3)
+    return out
+
+
+def _shape_turns(dirs, lens, dims, unit, J, bone, vr, parent_rot, three):
     out = []
     import itertools
     for perm in set(itertools.permutations(range(3))):
-        if len(groups) >= 3:
+        if three:
             rots = rotations_from_three(dirs)
-            lam_ok = True
         else:
             # Two directions at right angles on screen, third toward the camera.
             u0, u1 = np.array([dirs[0][0], -dirs[0][1]]), np.array([dirs[1][0], -dirs[1][1]])
@@ -1749,7 +1785,7 @@ def shape_candidates(fit, v, k, J, cam, part, mask, unit):
             rots = [Rm]
         for Rm in rots:
             # Scale check: the longest edge along each direction against that side's real length.
-            if len(groups) >= 3:
+            if three:
                 implied = [lens[n] / max(1e-6, dims[perm[n]] * math.hypot(Rm[0, n], Rm[1, n])) for n in range(3)]
                 ok = [x for x in implied if np.isfinite(x)]
                 if not ok or max(abs(x / (unit / 6) - 1) for x in ok) > 0.35:
