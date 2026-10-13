@@ -56,12 +56,12 @@ PALETTE = {'classes': [
     {'name': 'legs', 'parts': ['rightLeg', 'leftLeg'], 'h': [42, 66], 's': [90, 255], 'v': [80, 255], 'show': [120, 255, 80]},
     {'name': 'face', 'parts': ['face'], 'v': [0, 70], 'show': [40, 40, 255]}]}
 BG = 0
-CLASS_OF, FACE, HEAD, BODY_CLASSES, COST, SHOW = {}, -1, 0, [], None, {}
+CLASS_OF, FACE, HEAD, BODY_CLASSES, COST, SHOW, UNKNOWN = {}, -1, 0, [], None, {}, 99
 
 
 def use_palette(pal):
     """Sets the part -> class map and the mismatch costs for a palette."""
-    global FACE, HEAD, BODY_CLASSES, COST
+    global FACE, HEAD, BODY_CLASSES, COST, UNKNOWN
     CLASS_OF.clear()
     SHOW.clear()
     FACE = -1
@@ -74,12 +74,14 @@ def use_palette(pal):
     CLASS_OF.setdefault('face', CLASS_OF['head'])
     HEAD = CLASS_OF['head']
     BODY_CLASSES = [i for i in range(1, len(pal['classes']) + 1) if i != FACE]
+    UNKNOWN = len(pal['classes']) + 1
     n = len(pal['classes']) + 1
     # Cost of observing class o where class r is rendered (rows o, columns r): background under the body is cheap
     # (other things occlude it); the face may hide in the head.
-    COST = np.ones((n, n), np.float32)
+    COST = np.ones((n + 1, n), np.float32)
     np.fill_diagonal(COST, 0)
     COST[BG, 1:] = .6
+    COST[n] = 0  # UNKNOWN: something in front of the body may hide any part (see Fitter.prepare)
     if FACE > 0:
         COST[FACE, HEAD] = COST[HEAD, FACE] = .3
 
@@ -239,6 +241,34 @@ def render(p, roi, light=DEFAULT_LIGHT):
     return np.asarray(img)
 
 
+def body_fill(mask):
+    """The body's outline with its narrow gaps closed: the biggest group of mask pixels lying close together (a lamp or
+    an effect of the same colour further off stays out), with every gap narrower than about a limb filled -- where
+    something in front of the body can hide a part. Wider gaps (between spread legs) stay floor."""
+    lab, n = ndimage.label(ndimage.binary_dilation(mask, iterations=3))
+    if not n:
+        return mask.copy()
+    sizes = ndimage.sum(mask, lab, range(1, n + 1))
+    keep = mask & (lab == 1 + int(np.argmax(sizes)))
+    r = max(3, mask.shape[0] // 16)
+    pad = np.pad(keep, r)
+    return ndimage.binary_closing(pad, iterations=r)[r:-r, r:-r] | mask
+
+
+def straighten(border):
+    """A border redrawn as the straight segments found in it (Hough), plus what no segment explains."""
+    import cv2
+    img = border.astype(np.uint8) * 255
+    lines = cv2.HoughLinesP(img, 1, np.pi / 90, threshold=6, minLineLength=max(4, border.shape[0] // 24), maxLineGap=2)
+    if lines is None:
+        return border
+    out = np.zeros_like(img)
+    for x1, y1, x2, y2 in lines.reshape(-1, 4):
+        cv2.line(out, (int(x1), int(y1)), (int(x2), int(y2)), 255, 1)
+    covered = ndimage.binary_dilation(out > 0, iterations=1)
+    return (out > 0) | (border & ~covered)
+
+
 def in_range(ch, r):
     lo, hi = r
     return (ch >= lo) & (ch <= hi) if lo <= hi else (ch >= lo) | (ch <= hi)
@@ -284,6 +314,7 @@ class Fitter:
         self.light = DEFAULT_LIGHT
         self.shade_w = 2.0
         self.edge_w = 1.2
+        self.fold_w = 0.6
 
     def roi(self, p, obs_full):
         """The window the fit looks through: around the body's colours in the frame when it has one (so a body bigger
@@ -315,54 +346,83 @@ class Fitter:
         return o
 
     def prepare(self, enc):
-        """The frame's class map, per part colour each pixel's distance to the nearest pixel of that colour, and the
-        shading: each pixel's brightness relative to the brightest of its colour."""
+        """What the cost compares a render with, from one window of the frame:
+        - the class map, with UNKNOWN in the body's narrow gaps (where the dummy or an effect in front of it can hide a
+          part): parts may lie there at no cost;
+        - per part colour, each pixel's distance to that colour (pulls parts toward it) and its visible area;
+        - per part colour, each pixel's distance to that colour's border, the border straightened into the line
+          segments it is made of (box edges are straight), so outlines sit flush on it;
+        - the folds: where the brightness steps inside one colour (two faces of a box meeting), and the distance to them;
+        - the shading: each pixel's brightness relative to the brightest of its colour."""
         obs, val = enc // 1000, (enc % 1000).astype(np.float32)
+        body = (obs > 0) & (obs != FACE) if FACE > 0 else obs > 0
+        hull = body_fill(body)
+        obs = obs.copy()
+        obs[hull & (obs == BG)] = UNKNOWN
         dist = {c: np.minimum(ndimage.distance_transform_edt(obs != c), 16).astype(np.float32) if (obs == c).any() else None
                 for c in BODY_CLASSES}
         area = {c: int((obs == c).sum()) for c in BODY_CLASSES}
-        # Each colour's border in the footage (where it meets another colour or the background), and every pixel's
-        # distance to the nearest stretch of it: rendered box edges are pulled onto those borders.
-        edist = {}
+        unknown = int((obs == UNKNOWN).sum())
+        edist, fdist = {}, {}
+        smooth = ndimage.gaussian_filter(val, 1.0)
+        grad = np.hypot(ndimage.sobel(smooth, 0), ndimage.sobel(smooth, 1))
         for c in BODY_CLASSES:
             m = obs == c
-            if m.sum() > 8:
-                border = m & ~ndimage.binary_erosion(m)
-                edist[c] = np.minimum(ndimage.distance_transform_edt(~border), 12).astype(np.float32)
+            if m.sum() <= 8:
+                continue
+            border = m & ~ndimage.binary_erosion(m)
+            # Only borders with the floor or another part are real edges; one with something in front is not.
+            border &= ~ndimage.binary_dilation(obs == UNKNOWN, iterations=1)
+            edist[c] = np.minimum(ndimage.distance_transform_edt(~straighten(border)), 12).astype(np.float32)
+            inner = ndimage.binary_erosion(m, iterations=2)
+            fold = inner & (grad > 4 * 18)
+            if fold.sum() > 4:
+                fdist[c] = np.minimum(ndimage.distance_transform_edt(~fold), 8).astype(np.float32)
         shade = np.zeros(obs.shape, np.float32)
         for c in BODY_CLASSES:
             m = obs == c
             if m.sum() > 8:
                 shade[m] = np.minimum(1.2, val[m] / max(1.0, float(np.percentile(val[m], 95))))
-        return obs, dist, area, shade, edist
+        return obs, dist, area, shade, edist, fdist, unknown
 
     def cost(self, p, frame, roi, prev):
-        obs, dist, area, shade, edist = frame
+        obs, dist, area, shade, edist, fdist, unknown = frame
         enc = render(p, roi, self.light)
-        ren, rsh = enc // 1000, (enc % 1000).astype(np.float32)
+        ren, rsh = enc // 1000, enc % 1000
         n = self.res * self.res
         c = float(COST[obs, ren].sum()) / n * 100
+        hidden = obs == UNKNOWN
         for k in BODY_CLASSES:
             m = ren == k
             a = int(m.sum())
-            # Rendered parts are pulled toward where their colour is; each colour's visible area should match.
+            # Rendered parts are pulled toward where their colour is; each colour's visible area should match (a part
+            # may be bigger than what shows by as much as is hidden).
             if dist[k] is not None and a:
                 c += float(dist[k][m].sum()) / n * 6
-            c += abs(a - area[k]) / n * 40
-            # Each rendered colour's outline should sit flush on that colour's border in the footage.
-            if k in edist and a:
-                inner = m.copy()
-                inner[1:, :] &= m[:-1, :]
-                inner[:-1, :] &= m[1:, :]
-                inner[:, 1:] &= m[:, :-1]
-                inner[:, :-1] &= m[:, 1:]
-                edge = m & ~inner
-                if edge.any():
-                    c += float(edist[k][edge].mean()) * self.edge_w
-            # Where the colours agree, the faces' shading should too: it is what shows how each box is turned.
+            c += (max(0, area[k] - a) + max(0, a - area[k] - unknown)) / n * 40
+            if not a:
+                continue
+            inner = m.copy()
+            inner[1:, :] &= m[:-1, :]
+            inner[:-1, :] &= m[1:, :]
+            inner[:, 1:] &= m[:, :-1]
+            inner[:, :-1] &= m[:, 1:]
+            # Each rendered colour's outline should sit flush on that colour's border in the footage (where it shows).
+            edge = m & ~inner & ~hidden
+            if k in edist and edge.any():
+                c += float(edist[k][edge].mean()) * self.edge_w
+            # The rendered folds (two faces of one box meeting) should lie on the footage's folds: the box's turn.
+            if k in fdist:
+                f = np.zeros_like(m)
+                f[:, 1:] |= (rsh[:, 1:] != rsh[:, :-1]) & m[:, 1:] & m[:, :-1]
+                f[1:, :] |= (rsh[1:, :] != rsh[:-1, :]) & m[1:, :] & m[:-1, :]
+                f &= ~hidden
+                if f.sum() > 2:
+                    c += float(fdist[k][f].mean()) * self.fold_w
+            # Where the colours agree, the faces' shading should too.
             both = m & (obs == k)
             if both.any():
-                rs = rsh[both] / max(1.0, float(rsh[m].max()))
+                rs = rsh[both].astype(np.float32) / max(1.0, float(rsh[m].max()))
                 c += float(np.abs(rs - shade[both]).sum()) / n * 100 * self.shade_w
         n0 = len(CAM)
         c += (p[n0] ** 2 + p[n0 + 2] ** 2) * 0.0005
@@ -371,6 +431,15 @@ class Fitter:
             d[:2] = (d[:2] + 180) % 360 - 180
             c += float((self.w * d * d).sum()) / 100
         return c
+
+    def polish(self, p, obs_full, prev, res=192):
+        """The last refinement at twice the window's resolution: edges land within a footage pixel."""
+        keep = self.res, self.step0
+        self.res, self.step0 = res, self.step0 / 4
+        try:
+            return self.descend(p, obs_full, prev, levels=2)
+        finally:
+            self.res, self.step0 = keep
 
     def clamp(self, p):
         for i, j in enumerate(JOINTS):
@@ -516,7 +585,7 @@ class Fitter:
         self.light = best[1]
 
 
-def track(fit, frames, obs, first, hi, at, flip, start=None):
+def track(fit, frames, obs, first, hi, at, flip, start=None, final=False):
     """Fits frames first..hi in order, each from the last; a camera cut starts over (from start[frame] when given)."""
     params, costs, prev, shots = {}, {}, None, []
     for i in range(first, hi + 1):
@@ -528,12 +597,16 @@ def track(fit, frames, obs, first, hi, at, flip, start=None):
             if start and i in start:
                 p = fit.cem(start[i], fit.track_sigma, obs[i], None, seed=i)
                 p, c = fit.descend(p, obs[i], None)
+                if final:
+                    p, c = fit.polish(p, obs[i], None)
             else:
                 p, c = fit.init(obs[i], at, flip)
         else:
             p = fit.reseed(prev.copy(), obs[i], prev)
             p = fit.cem(p, fit.track_sigma, obs[i], prev, seed=i)
             p, c = fit.descend(p, obs[i], prev)
+            if final:
+                p, c = fit.polish(p, obs[i], prev)
         params[i], costs[i], prev = p, c, p
         print(f'frame {i}: mismatch {c:.1f}', flush=True)
     return params, costs, shots
@@ -697,7 +770,7 @@ def main():
         if pe is not None:
             q[5] = pe
         start[s0] = q
-    params, costs, _ = track(fit, frames, obs, first, hi, at, a.flip, start)
+    params, costs, _ = track(fit, frames, obs, first, hi, at, a.flip, start, final=True)
     idx = list(range(lo, hi + 1))
     json.dump({'fps': fps, 'frames': {i: [round(float(x), 2) for x in params[i]] for i in idx},
                'cost': {i: round(float(costs[i]), 2) for i in idx}, 'params': CAM + [f'{b}.{"xyz"[ax]}' for b, ax in JOINTS]},
