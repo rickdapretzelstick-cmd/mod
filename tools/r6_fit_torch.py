@@ -351,45 +351,46 @@ def find_corners(coloured, unit, obs=None, classes=(), min_angle=50, max_angle=1
                 continue
             m = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
             contours, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-            w = max(2, int(round(0.4 * unit)))  # how far along the outline each side of a bend is measured
-            for cnt in contours:
-                if cv2.contourArea(cnt) < unit * unit * 0.3:
-                    continue
-                pts = cnt.reshape(-1, 2).astype(float)
-                n = len(pts)
-                if n < 4 * w:
-                    continue
-                # Smooth the pixel staircase a little, then measure how much the outline turns at every point.
-                k_ = np.ones(3) / 3
-                pts = np.stack([np.convolve(np.r_[pts[-1:, c], pts[:, c], pts[:1, c]], k_, 'valid') for c in (0, 1)], 1)
-                orient = np.sign(cv2.contourArea(pts.astype(np.float32), oriented=True)) or 1.0
-                a_ = np.roll(pts, w, 0) - pts
-                b_ = np.roll(pts, -w, 0) - pts
-                cosang = (a_ * b_).sum(1) / (np.linalg.norm(a_, axis=1) * np.linalg.norm(b_, axis=1) + 1e-9)
-                turn = 180 - np.degrees(np.arccos(np.clip(cosang, -1, 1)))
-                cross = a_[:, 0] * b_[:, 1] - a_[:, 1] * b_[:, 0]
-                for k in range(n):
-                    if turn[k] < 180 - max_angle or cross[k] * orient > 0:
-                        continue  # too straight, or concave (where parts overlap)
-                    win = turn[np.arange(k - w, k + w + 1) % n]
-                    if turn[k] < win.max() or (turn[k] == win.max() and k % n != (np.arange(k - w, k + w + 1) % n)[int(np.argmax(win))]):
-                        continue  # not the sharpest point of this bend
-                    # Flush to the edges: a line fitted to the outline on each side (past the corner's rounding), the
-                    # corner where they cross.
-                    side_a = pts[np.arange(k - 3 * w, k - w // 2) % n]
-                    side_b = pts[np.arange(k + w // 2 + 1, k + 3 * w + 1) % n]
-                    pa, da = _line_through(side_a)
-                    pb, db = _line_through(side_b)
-                    den = da[0] * db[1] - da[1] * db[0]
-                    corner = pts[k]
-                    if abs(den) > 1e-3:
-                        t_ = ((pb[0] - pa[0]) * db[1] - (pb[1] - pa[1]) * db[0]) / den
-                        x = pa + t_ * da
-                        if np.linalg.norm(x - pts[k]) < 0.6 * unit:
-                            corner = x
-                    a_dir = side_a.mean(0) - corner
-                    b_dir = side_b.mean(0) - corner
-                    add(corner, a_dir, b_dir, c)
+            for reach in (0.25, 0.4):  # short: a slanted end's two close corners; longer: gentle bends
+              w = max(2, int(round(reach * unit)))
+              for cnt in contours:
+                  if cv2.contourArea(cnt) < unit * unit * 0.3:
+                      continue
+                  pts = cnt.reshape(-1, 2).astype(float)
+                  n = len(pts)
+                  if n < 4 * w:
+                      continue
+                  # Smooth the pixel staircase a little, then measure how much the outline turns at every point.
+                  k_ = np.ones(3) / 3
+                  pts = np.stack([np.convolve(np.r_[pts[-1:, c], pts[:, c], pts[:1, c]], k_, 'valid') for c in (0, 1)], 1)
+                  orient = np.sign(cv2.contourArea(pts.astype(np.float32), oriented=True)) or 1.0
+                  a_ = np.roll(pts, w, 0) - pts
+                  b_ = np.roll(pts, -w, 0) - pts
+                  cosang = (a_ * b_).sum(1) / (np.linalg.norm(a_, axis=1) * np.linalg.norm(b_, axis=1) + 1e-9)
+                  turn = 180 - np.degrees(np.arccos(np.clip(cosang, -1, 1)))
+                  cross = a_[:, 0] * b_[:, 1] - a_[:, 1] * b_[:, 0]
+                  for k in range(n):
+                      if turn[k] < 180 - max_angle or cross[k] * orient > 0:
+                          continue  # too straight, or concave (where parts overlap)
+                      win = turn[np.arange(k - w, k + w + 1) % n]
+                      if turn[k] < win.max() or (turn[k] == win.max() and k % n != (np.arange(k - w, k + w + 1) % n)[int(np.argmax(win))]):
+                          continue  # not the sharpest point of this bend
+                      # Flush to the edges: a line fitted to the outline on each side (past the corner's rounding), the
+                      # corner where they cross.
+                      side_a = pts[np.arange(k - 2 * w, k) % n]
+                      side_b = pts[np.arange(k + 1, k + 2 * w + 1) % n]
+                      pa, da = _line_through(side_a)
+                      pb, db = _line_through(side_b)
+                      den = da[0] * db[1] - da[1] * db[0]
+                      corner = pts[k]
+                      if abs(den) > 1e-3:
+                          t_ = ((pb[0] - pa[0]) * db[1] - (pb[1] - pa[1]) * db[0]) / den
+                          x = pa + t_ * da
+                          if np.linalg.norm(x - pts[k]) < 0.6 * unit:
+                              corner = x
+                      a_dir = side_a.mean(0) - corner
+                      b_dir = side_b.mean(0) - corner
+                      add(corner, a_dir, b_dir, c)
     # Straight edges meeting, or crossing when extended.
     segs = [(seg, c) for seg, sides, _ in coloured for c in sides]
     for a in range(len(segs)):
@@ -411,10 +412,10 @@ def find_corners(coloured, unit, obs=None, classes=(), min_angle=50, max_angle=1
             f1 = q1 if e1 is p1 else p1  # the far ends: the edges leave the corner toward them
             f2 = q2 if e2 is p2 else p2
             add(x, f1 - x, f2 - x, c1)
-    # Merge corners of a colour closer than 0.4 stud (keep the first).
+    # Merge corners of a colour closer than 0.25 stud (keep the first).
     out = []
     for cn in found:
-        if all(cn[3] != o[3] or np.linalg.norm(cn[0] - o[0]) > 0.4 * unit for o in out):
+        if all(cn[3] != o[3] or np.linalg.norm(cn[0] - o[0]) > 0.25 * unit for o in out):
             out.append(cn)
     return out
 
