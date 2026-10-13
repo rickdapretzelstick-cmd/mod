@@ -154,6 +154,7 @@ class View:
         self.border = {}
         self.edges = {}
         self.coloured_edges = {}
+        self.folds = {}  # frame -> [(segment, colour)]: straight lines inside one colour (where two faces meet)
         self.targets = {}  # frame -> (boxes' target masks (boxes, N), which boxes have one (boxes,))
 
     def window(self, i, p, fitter):
@@ -203,6 +204,7 @@ class View:
         # Each straight edge's colours: the body colour (if any) along either side of it.
         side_n = obs.shape[0]
         coloured = []
+        folds = []
         for x1, y1, x2, y2 in segs:
             d = np.array([x2 - x1, y2 - y1], float)
             L = np.linalg.norm(d)
@@ -212,6 +214,7 @@ class View:
             t = np.linspace(0.1, 0.9, 9)
             pts = np.stack([x1 + d[0] * t, y1 + d[1] * t], 1)
             cls_sides = {}  # colour -> which side of the edge it is on (+1 along nrm, -1 against)
+            seen = []
             for sgn in (1, -1):
                 q = np.clip(np.round(pts + sgn * 2.0 * nrm).astype(int), 0, side_n - 1)
                 vals = obs[q[:, 1], q[:, 0]]
@@ -220,9 +223,34 @@ class View:
                     c_, n_ = np.unique(vals, return_counts=True)
                     if n_.max() >= 5:
                         cls_sides.setdefault(int(c_[np.argmax(n_)]), sgn)
-            if cls_sides:
+                        seen.append(int(c_[np.argmax(n_)]))
+            if len(seen) == 2 and seen[0] == seen[1]:
+                # The same colour on both sides: not a border but a fold -- two faces of one box meeting.
+                folds.append((np.array([x1, y1, x2, y2], float), seen[0]))
+            elif cls_sides:
                 coloured.append((np.array([x1, y1, x2, y2], float), cls_sides, nrm))
         self.coloured_edges[i] = coloured
+        # Folds from every straight line in the picture, short ones too (a face of a limb is only a stud wide).
+        lsd = cv2.createLineSegmentDetector()
+        raw = lsd.detect(gray.astype(np.uint8))[0]
+        for x1, y1, x2, y2 in (raw.reshape(-1, 4) if raw is not None else []):
+            d = np.array([x2 - x1, y2 - y1], float)
+            L = np.linalg.norm(d)
+            if L < 3:
+                continue
+            nrm = np.array([-d[1], d[0]]) / L
+            t = np.linspace(0.15, 0.85, 7)
+            pts = np.stack([x1 + d[0] * t, y1 + d[1] * t], 1)
+            seen = []
+            for sgn in (1, -1):
+                q = np.clip(np.round(pts + sgn * 1.5 * nrm).astype(int), 0, side_n - 1)
+                vals = obs[q[:, 1], q[:, 0]]
+                c_, n_ = np.unique(vals, return_counts=True)
+                top = int(c_[np.argmax(n_)])
+                seen.append(top if n_.max() >= 5 and top in counts else -1)
+            if seen[0] == seen[1] and seen[0] != -1:
+                folds.append((np.array([x1, y1, x2, y2], float), seen[0]))
+        self.folds[i] = folds
         self.targets.pop(i, None)
 
 
