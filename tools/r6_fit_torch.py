@@ -155,6 +155,7 @@ class View:
         self.edges = {}
         self.coloured_edges = {}
         self.folds = {}  # frame -> [(segment, colour)]: straight lines inside one colour (where two faces meet)
+        self.predicted_folds = {}  # frame -> [(segment, colour)]: folds implied by obtuse corners (predict_folds)
         self.targets = {}  # frame -> (boxes' target masks (boxes, N), which boxes have one (boxes,))
 
     def window(self, i, p, fitter):
@@ -251,7 +252,65 @@ class View:
             if seen[0] == seen[1] and seen[0] != -1:
                 folds.append((np.array([x1, y1, x2, y2], float), seen[0]))
         self.folds[i] = folds
+        # Predicted folds: where two straight edges of one colour meet at an obtuse corner (a box's end, its two
+        # visible end faces), the fold between those faces runs from the corner parallel to the box's long side.
+        self.predicted_folds[i] = predict_folds(coloured, obs, unit)
         self.targets.pop(i, None)
+
+
+def predict_folds(coloured, obs, unit, min_angle=95, max_angle=175):
+    """Folds implied by corners: two straight edges of the same colour whose ends meet (within 0.3 stud) at an obtuse
+    angle are a box's end seen at a slant; from that corner a line is drawn parallel to the box's long side -- the
+    longer of the two edges, or, when that would only retrace an edge (the two are the end's short sides), the longest
+    edge of that colour starting near the corner -- into the colour, as long as that side. [(segment, colour)]"""
+    out = []
+    side_n = obs.shape[0]
+    tol = 0.3 * unit
+    segs = [(seg, c) for seg, sides, _ in coloured for c in sides]
+    for a in range(len(segs)):
+        for b in range(a + 1, len(segs)):
+            (s1, c1), (s2, c2) = segs[a], segs[b]
+            if c1 != c2:
+                continue
+            e1 = [s1[:2], s1[2:]]
+            e2 = [s2[:2], s2[2:]]
+            pair = min(((p, q) for p in range(2) for q in range(2)), key=lambda pq: np.linalg.norm(e1[pq[0]] - e2[pq[1]]))
+            if np.linalg.norm(e1[pair[0]] - e2[pair[1]]) > tol:
+                continue
+            corner = (e1[pair[0]] + e2[pair[1]]) / 2
+            d1 = e1[1 - pair[0]] - e1[pair[0]]
+            d2 = e2[1 - pair[1]] - e2[pair[1]]
+            ang = math.degrees(math.acos(np.clip(d1 @ d2 / (np.linalg.norm(d1) * np.linalg.norm(d2) + 1e-9), -1, 1)))
+            if not (min_angle <= ang <= max_angle):
+                continue
+            # The long side: the longest same-colour edge with an end within a stud of the corner, other than these two
+            # if both are short (an end's sides); else the longer of the two.
+            l1, l2 = np.linalg.norm(d1), np.linalg.norm(d2)
+            long_dir, long_len = (d1, l1) if l1 >= l2 else (d2, l2)
+            near = []
+            for k, (s3, c3) in enumerate(segs):
+                if k in (a, b) or c3 != c1:
+                    continue
+                ends3 = [s3[:2], s3[2:]]
+                if min(np.linalg.norm(e - corner) for e in ends3) <= unit:
+                    d3 = s3[2:] - s3[:2]
+                    near.append((np.linalg.norm(d3), d3))
+            if near and max(near, key=lambda e: e[0])[0] > max(l1, l2):
+                long_len, long_dir = max(near, key=lambda e: e[0])
+            u = long_dir / max(1e-9, np.linalg.norm(long_dir))
+            # Into the colour: the direction along which the colour lies just past the corner.
+            best = None
+            for sgn in (1, -1):
+                probe = corner + sgn * u * min(long_len, unit) * 0.6
+                x, y = int(round(probe[0])), int(round(probe[1]))
+                if 0 <= x < side_n and 0 <= y < side_n and obs[y, x] == c1:
+                    best = sgn
+                    break
+            if best is None:
+                continue
+            end = corner + best * u * long_len
+            out.append((np.array([corner[0], corner[1], end[0], end[1]]), c1))
+    return out
 
 
 def frame_loss(prob, sh, obs, shade, ncls, side=None):
