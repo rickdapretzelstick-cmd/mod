@@ -163,7 +163,8 @@ class View:
         self.gray = {}
         self.corners = {}
         self.shadowed = {}
-        self.ref_boxes = {}  # frame -> {part: sketch_part_box result}  # frame -> class map with each part colour grown into its shadow (for corners)  # frame -> [(point, dir1, dir2, colour, angle)]: where two straight edges of a colour meet
+        self.ref_boxes = {}
+        self.depth_folds = {}  # frame -> [(segment x1 y1 x2 y2, colour)]: faint lines inside a part where two faces meet  # frame -> {part: sketch_part_box result}  # frame -> class map with each part colour grown into its shadow (for corners)  # frame -> [(point, dir1, dir2, colour, angle)]: where two straight edges of a colour meet
         self.folds = {}  # frame -> [(segment, colour)]: straight lines inside one colour (where two faces meet)
         self.predicted_folds = {}  # frame -> [(segment, colour)]: folds implied by obtuse corners (predict_folds)
         self.targets = {}  # frame -> (boxes' target masks (boxes, N), which boxes have one (boxes,))
@@ -247,6 +248,7 @@ class View:
         rgb = self.frames[i][ys, xs].astype(np.uint8)
         self.shadowed[i] = shadow_extend(obs, rgb, list(counts))
         self.corners[i] = find_corners(coloured, unit, self.shadowed[i], list(counts))
+        self.depth_folds[i] = find_depth_folds(rgb, self.shadowed[i], list(counts), unit)
         self.edge_samples.pop(i, None)
         self.judge_cache.pop(i, None)
         # Folds from every straight line in the picture, short ones too (a face of a limb is only a stud wide).
@@ -274,6 +276,41 @@ class View:
         # visible end faces), the fold between those faces runs from the corner parallel to the box's long side.
         self.predicted_folds[i] = predict_folds(coloured, obs, unit) if EXPERIMENTAL else []
         self.targets.pop(i, None)
+
+
+def find_depth_folds(rgb, obs, classes, unit, upscale=3):
+    """The faint straight lines inside each part where one face of its box meets the next (a lit face against a
+    shadier one): per part colour, only that colour's area (shadow included), its brightness stretched to the full
+    range so a step of a few shades becomes a clear line, dithering blurred out, everything outside filled with the
+    part's own average (its outline makes no line); straight lines found there (at 3x size), kept when at least 0.4
+    stud long and lying inside the part, not on its border. [(segment in window px, colour)]"""
+    val = np.asarray(Image.fromarray(rgb).convert('HSV'))[..., 2].astype(float)
+    out = []
+    lsd = cv2.createLineSegmentDetector()
+    for cls in classes:
+        m = obs == cls
+        if m.sum() < unit * unit:
+            continue
+        inner = ndimage.binary_erosion(m, iterations=1)
+        lo, hi = np.percentile(val[m], 3), np.percentile(val[m], 97)
+        if hi - lo < 4:
+            continue
+        img = np.where(m, np.clip((val - lo) / (hi - lo), 0, 1), np.clip((val[m].mean() - lo) / (hi - lo), 0, 1))
+        img = ndimage.gaussian_filter(img, 0.7)
+        big = cv2.resize((img * 255).astype(np.uint8), None, fx=upscale, fy=upscale, interpolation=cv2.INTER_CUBIC)
+        lines = lsd.detect(big)[0]
+        if lines is None:
+            continue
+        for x1, y1, x2, y2 in lines.reshape(-1, 4) / upscale:
+            L = math.hypot(x2 - x1, y2 - y1)
+            if L < 0.4 * unit:
+                continue
+            t = np.linspace(0.1, 0.9, 9)
+            xs = np.clip(np.round(x1 + (x2 - x1) * t).astype(int), 0, m.shape[1] - 1)
+            ys = np.clip(np.round(y1 + (y2 - y1) * t).astype(int), 0, m.shape[0] - 1)
+            if inner[ys, xs].mean() >= 0.8:  # inside the part, not along its border
+                out.append((np.array([x1, y1, x2, y2]), cls))
+    return out
 
 
 def shadow_extend(obs, rgb, classes):
