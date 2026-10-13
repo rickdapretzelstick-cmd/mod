@@ -15,6 +15,7 @@ A second take (--view2) of the same move from another side gets its own camera; 
     python3 tools/r6_fit_torch.py <video> --range a:b --clip yuji/manji_kick [--merge] [--view2 <video> --range2 c:d]
     python3 tools/r6_fit_torch.py <video> --range a:b --preview name          # Conversions tab only
     python3 tools/r6_fit_torch.py --selftest                                  # synthetic one- vs two-view accuracy
+    python3 tools/r6_fit_torch.py <video> --range a:b --keyframes --preview n # clear frames only, the rest eased
 
 Options shared with tools/r6_fit.py: --warmup, --palette, --fps, --speed, --tol, --flip, --at, --out.
 """
@@ -1175,6 +1176,58 @@ def init_camera_for(fitter, enc, joints, flip=False):
     return p
 
 
+def run_keyframes(frames, idx, fps, args, log=print):
+    """Clear frames first: every frame is fitted from the last (rectangles, lifting, polish); the frames that fit well
+    with little of the body hidden, and whose pose does not jump away from its neighbours (a flip, swapped limbs),
+    are kept; every other frame takes its pose eased between the nearest kept frames. Returns (fit, fitter, keep)."""
+    pal = json.load(open(args.palette)) if args.palette else F.PALETTE
+    F.use_palette(pal)
+    encs = {i: F.classify(frames[i], pal) for i in idx}
+    view = View(frames, encs, idx, fps, args.res)
+    f0 = F.Fitter()
+    p0, _ = f0.init(encs[idx[0]], tuple(float(x) for x in args.at.split(',')) if args.at else None, args.flip)
+    fit = Fit([view], np.tile(p0[NC:], (len(idx), 1)), [np.tile(p0[:5], (len(idx), 1))], [float(p0[5])], [f0.light])
+    agree, hidden = np.zeros(len(idx)), np.zeros(len(idx))
+    for k, i in enumerate(idx):
+        with torch.no_grad():
+            if k:
+                fit.J[k] = fit.J[k - 1]
+                fit.cams[0][k] = fit.cams[0][k - 1]
+        view.window(i, fit.params_of(0, k), f0)
+        fit.assign(0, k)
+        lift_all(fit, 0, k, steps=80)
+        view.window(i, fit.params_of(0, k), f0)
+        cam = (fit.cams[0][[k]] * CAM_UNIT).detach()
+        agree[k] = float(agreement(fit, 0, i, fit.J.detach()[[k]], cam)[0])
+        obs = view.windows[i][1].numpy()
+        hidden[k] = (obs == F.UNKNOWN).sum() / max(1, (obs > 0).sum())
+        log(f'frame {i}: colour agreement {agree[k]:.2f}, hidden {hidden[k]:.2f}')
+    J = fit.J.detach().numpy().copy()
+    # Clear: fits at least as well as the median frame, little hidden; and no jump from both neighbours.
+    keep = (agree >= np.median(agree) - 0.05) & (hidden <= 0.35)
+    for k in range(1, len(idx) - 1):
+        d_prev = np.abs((J[k] - J[k - 1] + 180) % 360 - 180).mean()
+        d_next = np.abs((J[k] - J[k + 1] + 180) % 360 - 180).mean()
+        if min(d_prev, d_next) > 35:
+            keep[k] = False
+    if keep.sum() < 2:
+        keep[np.argsort(-agree)[:2]] = True
+    kept = np.nonzero(keep)[0]
+    with torch.no_grad():
+        C = fit.cams[0].detach().numpy().copy()
+        for k in range(len(idx)):
+            if keep[k]:
+                continue
+            a = kept[kept < k].max() if (kept < k).any() else kept.min()
+            b = kept[kept > k].min() if (kept > k).any() else kept.max()
+            f = 0.0 if a == b else (k - a) / (b - a)
+            dj = (J[b] - J[a] + 180) % 360 - 180
+            fit.J[k] = torch.tensor(J[a] + f * dj, dtype=DT)
+            fit.cams[0][k] = torch.tensor(C[a] + f * (C[b] - C[a]), dtype=DT)
+    log(f'kept {int(keep.sum())} of {len(idx)} frames as clear; the rest eased between them')
+    return fit, f0, keep, agree
+
+
 def run(views_in, args, log=print):
     """views_in: [(frames, idx, fps)]; returns (fit, fitter_per_view)."""
     pal = json.load(open(args.palette)) if args.palette else F.PALETTE
@@ -1259,6 +1312,7 @@ def main():
     ap.add_argument('--steps', type=int, default=400)
     ap.add_argument('--out', default=None)
     ap.add_argument('--selftest', action='store_true')
+    ap.add_argument('--keyframes', action='store_true')
     a = ap.parse_args()
     if a.selftest:
         return selftest(a)
@@ -1270,7 +1324,14 @@ def main():
         f2, fps2 = F.frames_of(a.view2, a.fps)
         lo2, hi2 = (int(x) for x in a.range2.split(':')) if a.range2 else (0, len(f2) - 1)
         vin.append((f2, list(range(lo2, hi2 + 1)), fps2))
-    fit, fitters = run(vin, a)
+    if a.keyframes:
+        fit, f0, keep, agree = run_keyframes(frames, vin[0][1], fps, a)
+        fitters = [f0]
+        json.dump({'kept': [int(x) for x in np.nonzero(keep)[0]], 'agreement': [round(float(x), 3) for x in agree]},
+                  open(os.path.join(a.out or os.path.join(F.ROOT, 'build', 'fit', os.path.splitext(os.path.basename(a.video))[0]), 'keyframes.json')
+                       if os.path.isdir(a.out or '') else os.devnull, 'w'))
+    else:
+        fit, fitters = run(vin, a)
     out = a.out or os.path.join(F.ROOT, 'build', 'fit', os.path.splitext(os.path.basename(a.video))[0])
     os.makedirs(out, exist_ok=True)
     clip = a.clip or ('preview/' + a.preview if a.preview else None)
