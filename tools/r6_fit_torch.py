@@ -1648,6 +1648,124 @@ def sketch_boxes(view, i, cam_scale, classes=None):
     return [k[:5] for k in kept]
 
 
+def outline_directions(mask, unit, eps=0.12, tol=10.0):
+    """The directions a part's outline runs in: its outline simplified, its edges grouped by direction (within 10 deg,
+    either way along), each group weighted by its total length. [(unit direction, total length, longest edge)],
+    longest groups first. A box seen at a slant shows three groups (its three axes), seen face-on two."""
+    m = mask.astype(np.uint8)
+    contours, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    edges = []
+    for cnt in contours:
+        if cv2.contourArea(cnt) < 0.5 * unit * unit:
+            continue
+        poly = cv2.approxPolyDP(cnt, eps * unit, True).reshape(-1, 2).astype(float)
+        for a, b in zip(poly, np.roll(poly, -1, 0)):
+            L = np.linalg.norm(b - a)
+            if L >= 0.2 * unit:
+                ang = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])) % 180
+                edges.append((ang, L))
+    groups = []
+    for ang, L in sorted(edges, key=lambda e: -e[1]):
+        for g in groups:
+            if abs((ang - g[0] + 90) % 180 - 90) <= tol:
+                w = g[1] + L
+                # Length-weighted mean angle (mod 180).
+                da = (ang - g[0] + 90) % 180 - 90
+                g[0] = (g[0] + da * L / w) % 180
+                g[1] = w
+                g[2] = max(g[2], L)
+                break
+        else:
+            groups.append([ang, L, L])
+    groups.sort(key=lambda g: -g[1])
+    return [(np.array([math.cos(math.radians(g[0])), math.sin(math.radians(g[0]))]), g[1], g[2]) for g in groups]
+
+
+def rotations_from_three(dirs_img):
+    """Every turn of a box whose three axes run along the three screen directions dirs_img (image px, y down): with
+    the axes at right angles in 3D, how much each is shortened on screen (lam_i) solves sum lam_i^2 u_i u_i^T = I,
+    each axis's tilt out of the picture follows, and the right angles pair the tilts' signs (up to a mirror).
+    Returns camera-space rotations (columns = the three axes in the given order) -- empty if no turn fits."""
+    U = [np.array([d[0], -d[1]]) for d in dirs_img]  # camera plane, y up
+    M = np.array([[u[0] * u[0] for u in U], [u[0] * u[1] for u in U], [u[1] * u[1] for u in U]])
+    try:
+        lam2 = np.linalg.solve(M, np.array([1.0, 0.0, 1.0]))
+    except np.linalg.LinAlgError:
+        return []
+    if np.any(lam2 < -0.05) or np.any(lam2 > 1.05):
+        return []
+    lam2 = np.clip(lam2, 0, 1)
+    lam = np.sqrt(lam2)
+    z = np.sqrt(1 - lam2)
+    out = []
+    for s0 in (1, -1):
+        zs = [s0 * z[0], None, None]
+        for j in (1, 2):
+            # e_0 . e_j = lam0 lamj (u0 . uj) + z0 zj = 0 fixes zj's sign against z0.
+            want = -lam[0] * lam[j] * (U[0] @ U[j])
+            zs[j] = z[j] if (zs[0] * z[j] - want) ** 2 <= (zs[0] * -z[j] - want) ** 2 else -z[j]
+        cols = [np.array([lam[n] * U[n][0], lam[n] * U[n][1], zs[n]]) for n in range(3)]
+        Rm = np.stack(cols, 1)
+        uu, _, vv = np.linalg.svd(Rm)  # nearest true rotation
+        Rm = uu @ vv
+        if np.linalg.det(Rm) < 0:
+            Rm[:, 2] *= -1
+        out.append(Rm)
+    return out
+
+
+def shape_candidates(fit, v, k, J, cam, part, mask, unit):
+    """Joint vectors turning one part's box to the three directions its outline runs in (or two, seen face-on): every
+    assignment of the box's real sides to those directions, both mirror readings; each assignment's implied scale must
+    agree with the camera's within 35%."""
+    groups = outline_directions(mask, unit)
+    if len(groups) < 2:
+        return []
+    bone = 'hips' if part == 'torso' else LIMB_JOINTS[part]
+    dims = BOX_DIMS.get(part, (6, 12, 6))
+    wr, wt, view_r = _body_frames(J, cam)
+    b = BONES.index(bone)
+    par = PARENT_IDX[b]
+    parent_rot = wr[par].numpy() if par >= 0 else np.eye(3)
+    vr = view_r.numpy()
+    dirs = [g[0] for g in groups[:3]]
+    lens = [g[2] for g in groups[:3]]
+    out = []
+    import itertools
+    for perm in set(itertools.permutations(range(3))):
+        if len(groups) >= 3:
+            rots = rotations_from_three(dirs)
+            lam_ok = True
+        else:
+            # Two directions at right angles on screen, third toward the camera.
+            u0, u1 = np.array([dirs[0][0], -dirs[0][1]]), np.array([dirs[1][0], -dirs[1][1]])
+            if abs(u0 @ u1) > 0.35:
+                continue
+            u1 = u1 - (u1 @ u0) * u0
+            u1 = u1 / np.linalg.norm(u1)
+            Rm = np.stack([np.r_[u0, 0], np.r_[u1, 0], np.array([0, 0, 1.0])], 1)
+            if np.linalg.det(Rm) < 0:
+                Rm[:, 2] *= -1
+            rots = [Rm]
+        for Rm in rots:
+            # Scale check: the longest edge along each direction against that side's real length.
+            if len(groups) >= 3:
+                implied = [lens[n] / max(1e-6, dims[perm[n]] * math.hypot(Rm[0, n], Rm[1, n])) for n in range(3)]
+                ok = [x for x in implied if np.isfinite(x)]
+                if not ok or max(abs(x / (unit / 6) - 1) for x in ok) > 0.35:
+                    continue
+            R_cam = np.zeros((3, 3))
+            for n in range(3):
+                R_cam[:, perm[n]] = Rm[:, n]
+            if np.linalg.det(R_cam) < 0:
+                R_cam[:, perm[2]] *= -1
+            xd, yd, zd = joints_for_rotation(R_cam, vr, parent_rot)
+            q = J.clone()
+            q[F.JI[(bone, 0)] - NC], q[F.JI[(bone, 1)] - NC], q[F.JI[(bone, 2)] - NC] = xd, yd, zd
+            out.append(q)
+    return out
+
+
 def sketch_part_box(view, i, cam_scale, part, target, corners):
     """The reference box of one part, from that part's own corners only (corners of its colour lying on its own pixels):
     each corner read as two sides of the part's box (real size), completed into the whole box anchored on the corner,
@@ -1912,6 +2030,8 @@ def measure_limbs(fit, v, k, prev=None, log=None):
             q = J.clone()
             q[F.JI[(bone, 0)] - NC], q[F.JI[(bone, 1)] - NC], q[F.JI[(bone, 2)] - NC] = xd_, yd_, zd_
             cands.insert(0, q)
+        # Shape-built turns: the three directions the limb's outline runs in are its box's three axes.
+        cands += shape_candidates(fit, v, k, J, cam, part, target, stud)
         # Corner-built turns: each of the limb's own corners read as two of its box's edges (exact box geometry).
         cands += [q for q, _ in corner_candidates(fit, v, k, J, cam, part, mine_c, view.shadowed[i], stud, sc, x0, y0)]
         # 5. Decide toward/away and twist by coverage of the limb's own pixels (drawn with the others in place).
