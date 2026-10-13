@@ -1607,17 +1607,27 @@ def joint_refine(fit, steps, fitters, log, batch=6):
             log(f'refine {s}: {float(loss):.3f}')
 
 
-def init_camera_for(fitter, enc, joints, flip=False):
-    """A take's first camera with the pose already known (view 2): search the camera only."""
+def init_camera_for(fitter, enc, joints, flip=False, keep_scale=False):
+    """A take's first camera with the pose already known (view 2): search the camera only. keep_scale: the size held
+    near the character's measured height (a pose that does not match exactly would otherwise shrink the body to
+    nothing). Returns the parameters, or None when no patch shows most of the body's colours."""
+    fg = enc >= 1000
+    lab, n = F.ndimage.label(F.ndimage.binary_dilation(fg, iterations=4))
+    # The character: the patch with the most different body colours (a yellow wall or a tree trunk shows one), the
+    # larger on a tie.
+    cl = enc // 1000
+    score = [(len(np.unique(cl[(lab == c) & fg])), float(((lab == c) & fg).sum())) for c in range(1, n + 1)]
+    if not n:
+        return None
+    pick = 1 + max(range(n), key=lambda c: score[c])
+    if keep_scale and score[pick - 1][0] < 4:
+        return None
+    cy, cx = F.ndimage.center_of_mass(lab == pick)
+    ys = np.nonzero(lab == pick)[0]
     best = None
     for cyaw in range(0, 360, 20):
         for cpitch in range(0, 90, 15):
             p = np.zeros(F.NP)
-            fg = enc >= 1000
-            lab, n = F.ndimage.label(F.ndimage.binary_dilation(fg, iterations=4))
-            sizes = F.ndimage.sum(fg, lab, range(1, n + 1))
-            cy, cx = F.ndimage.center_of_mass(lab == (1 + int(np.argmax(sizes))))
-            ys = np.nonzero(lab == (1 + int(np.argmax(sizes))))[0]
             p[:6] = cyaw + (180 if flip else 0), cpitch, max(10, np.ptp(ys)) / 31, cx, cy, 0.005
             p[NC:] = joints
             roi = fitter.roi(p, enc)
@@ -1625,6 +1635,8 @@ def init_camera_for(fitter, enc, joints, flip=False):
             if best is None or c < best[0]:
                 best = (c, p)
     sig = list(fitter.init_sigma[:NC]) + [0] * NJ
+    if keep_scale:
+        sig[2] = 0.03 * best[1][2]
     p = fitter.cem(best[1], sig, enc, None, iters=30, pop=48)
     fitter.fit_light(p, enc)
     return p
@@ -2838,6 +2850,114 @@ def run_keyposes(frames, idx, fps, args, log=print):
     return fit, f0, keys, agree
 
 
+def map_time(i, a, b):
+    """Frame i of one performance to the same moment of another: piecewise straight between matching events
+    (a, b: the same events' frames in each, e.g. start, first hit, end)."""
+    for n in range(len(a) - 1):
+        if i <= a[n + 1] or n == len(a) - 2:
+            f = (i - a[n]) / max(1e-9, a[n + 1] - a[n])
+            return int(round(b[n] + f * (b[n + 1] - b[n])))
+    return b[-1]
+
+
+def run_two_view_keys(frames, fps, fit_dir, anchors1, anchors2, args, steps=40, log=print):
+    """A move's key poses (an earlier key-pose fit in fit_dir) refined from a second performance of the same move
+    seen from another angle: each key's moment in the second performance (map_time on the matching events), that
+    view's camera searched with the pose held, then the pose and both cameras fitted to both views at once (one set
+    of joints, a camera per view), kept per key only where it matches both views better than before. Every other
+    frame is eased between the keys. Returns (fit over every frame of performance 1, fitter, report)."""
+    pal = json.load(open(args.palette)) if args.palette else F.PALETTE
+    F.use_palette(pal)
+    t0 = time.time()
+    P = json.load(open(os.path.join(fit_dir, 'params.json')))
+    K = json.load(open(os.path.join(fit_dir, 'keyposes.json')))
+    params = {int(i): np.array(v, float) for i, v in P['frames'].items()}
+    idx = sorted(params)
+    keys = [int(k) for k in K['keys']]
+    keys2 = [map_time(i, anchors1, anchors2) for i in keys]
+    log(f'key poses {keys} -> second view frames {keys2}')
+    encs1 = {i: F.classify(frames[i], pal) for i in keys}
+    encs2 = {i: F.classify(frames[i], pal) for i in keys2}
+    v1 = View(frames, encs1, keys, fps, args.res)
+    v2 = View(frames, encs2, keys2, fps, args.res)
+    v1.lite = v2.lite = True
+    f1, f2 = F.Fitter(), F.Fitter()
+    J = np.stack([params[i][NC:] for i in keys])
+    C1 = np.stack([params[i][:5] for i in keys])
+    # View 2's camera per key, the pose held: a full search on the first, then each from the last.
+    C2 = np.zeros_like(C1)
+    seen2 = []
+    for n, i in enumerate(keys2):
+        p2 = init_camera_for(f2, encs2[i], J[n], keep_scale=True) if 0 <= i < len(frames) else None
+        seen2.append(p2 is not None)
+        C2[n] = p2[:5] if p2 is not None else C1[n]
+    log(f'second view cameras found ({time.time() - t0:.0f} s); body shown in {sum(seen2)} of {len(keys2)}')
+    persp = float(params[keys[0]][5])
+    fit = Fit([v1, v2], J, [C1, C2], [persp, persp], [f1.light, f2.light])
+    for n in range(len(keys)):
+        v1.window(keys[n], fit.params_of(0, n), f1)
+        if seen2[n]:
+            v2.window(keys2[n], fit.params_of(1, n), f2)
+    def both(n):
+        a = float(agreement(fit, 0, keys[n], fit.J.detach()[[n]], (fit.cams[0][[n]] * CAM_UNIT).detach())[0])
+        b = float(agreement(fit, 1, keys2[n], fit.J.detach()[[n]], (fit.cams[1][[n]] * CAM_UNIT).detach())[0])
+        return a, b
+    report = []
+    for n in range(len(keys)):
+        if not seen2[n]:
+            log(f'key {keys[n]}: the body is not shown in the second view (frame {keys2[n]}); kept as fitted')
+            continue
+        before = both(n)
+        keep = (fit.J.detach().clone(), [c.detach().clone() for c in fit.cams])
+        opt = torch.optim.Adam([{'params': [fit.J], 'lr': 0.8}, {'params': fit.cams, 'lr': 0.08}])
+        best = (sum(before), fit.J[n].detach().clone(), fit.cams[0][n].detach().clone(), fit.cams[1][n].detach().clone())
+        for st in range(steps):
+            sig = 1.2 * (0.4 / 1.2) ** (st / max(1, steps - 1))
+            opt.zero_grad()
+            stride = 2 if st < steps - 8 else 1
+            loss = fit.loss_frames(0, [n], sig, stride)[0] + fit.loss_frames(1, [n], sig, stride)[0] + fit.regular() * 0.1
+            loss.backward()
+            opt.step()
+            if st % 8 == 7 or st == steps - 1:
+                v1.window(keys[n], fit.params_of(0, n), f1)
+                v2.window(keys2[n], fit.params_of(1, n), f2)
+                b1, b2 = both(n)
+                s_ = b1 + b2
+                # Better on both together, never at the first view's cost.
+                if s_ > best[0] and b1 >= before[0] - 0.02:
+                    best = (s_, fit.J[n].detach().clone(), fit.cams[0][n].detach().clone(), fit.cams[1][n].detach().clone())
+        with torch.no_grad():
+            fit.J.copy_(keep[0])
+            fit.cams[0].copy_(keep[1][0])
+            fit.cams[1].copy_(keep[1][1])
+            fit.J[n], fit.cams[0][n], fit.cams[1][n] = best[1], best[2], best[3]
+        v1.window(keys[n], fit.params_of(0, n), f1)
+        v2.window(keys2[n], fit.params_of(1, n), f2)
+        after = both(n)
+        report.append((keys[n], keys2[n], before, after))
+        log(f'key {keys[n]} / {keys2[n]}: view 1 {before[0]:.2f} -> {after[0]:.2f}, view 2 {before[1]:.2f} -> {after[1]:.2f}')
+    PK = {keys[n]: fit.params_of(0, n) for n in range(len(keys))}
+    out = np.zeros((len(idx), F.NP))
+    for m, i in enumerate(idx):
+        if i in PK:
+            out[m] = PK[i]
+            continue
+        b = int(np.searchsorted(keys, i))
+        ka, kb = keys[max(0, b - 1)], keys[min(len(keys) - 1, b)]
+        f = 0.0 if ka == kb else (i - ka) / (kb - ka)
+        f = f * f * (3 - 2 * f)
+        d = PK[kb] - PK[ka]
+        d[NC:] = (d[NC:] + 180) % 360 - 180
+        # Between keys the first view's own camera (it moves), the pose eased.
+        out[m] = params[i].copy()
+        out[m][NC:] = PK[ka][NC:] + f * d[NC:]
+    log(f'two-view fit in {time.time() - t0:.0f} s')
+    view = View(frames, {i: F.classify(frames[i], pal) for i in idx[:1]}, idx, fps, args.res)
+    full = Fit([view], out[:, NC:], [out[:, :5]], [persp], [f1.light])
+    full.view2 = {'keys2': keys2, 'params2': {keys2[n]: fit.params_of(1, n) for n in range(len(keys))}}
+    return full, f1, report
+
+
 def run(views_in, args, log=print):
     """views_in: [(frames, idx, fps)]; returns (fit, fitter_per_view)."""
     pal = json.load(open(args.palette)) if args.palette else F.PALETTE
@@ -2923,6 +3043,9 @@ def main():
     ap.add_argument('--out', default=None)
     ap.add_argument('--selftest', action='store_true')
     ap.add_argument('--keyframes', action='store_true')
+    ap.add_argument('--two-view', default=None, help='refine an earlier --keyposes fit (its --out dir) from a second performance')
+    ap.add_argument('--anchors', default=None, help='two-view: frames of matching events in performance 1 (start,hit,end)')
+    ap.add_argument('--anchors2', default=None, help='two-view: the same events in performance 2')
     ap.add_argument('--find-moves', action='store_true', help='list where moves are performed (from idle to idle)')
     ap.add_argument('--keyposes', type=int, default=0, help='fit only up to this many key poses, ease the rest')
     ap.add_argument('--quick-start', action='store_true', help='a quicker start search')
@@ -2944,7 +3067,7 @@ def main():
         a.res = 64 if a.fast else 112
     if a.selftest:
         return selftest(a)
-    if a.fast or a.keyposes:
+    if a.fast or a.keyposes or a.two_view:
         # Fast and key-pose modes load only the frames it fits (every --fps-step-th), shrunk to --width.
         frames, fps = F.frames_of(a.video, a.fps, every=a.fps_step, width=a.width)
     else:
@@ -2956,7 +3079,18 @@ def main():
         f2, fps2 = F.frames_of(a.view2, a.fps)
         lo2, hi2 = (int(x) for x in a.range2.split(':')) if a.range2 else (0, len(f2) - 1)
         vin.append((f2, list(range(lo2, hi2 + 1)), fps2))
-    if a.keyposes:
+    if a.two_view:
+        an1 = [int(x) for x in a.anchors.split(',')]
+        an2 = [int(x) for x in a.anchors2.split(',')]
+        fit, f0, report = run_two_view_keys(frames, fps, a.two_view, an1, an2, a)
+        fitters = [f0]
+        lo = fit.views[0].idx[0]
+        if a.out:
+            os.makedirs(a.out, exist_ok=True)
+            json.dump({'report': [[k1, k2, list(b), list(c)] for k1, k2, b, c in report],
+                       'view2': {str(k): [round(float(x), 3) for x in v] for k, v in fit.view2['params2'].items()}},
+                      open(os.path.join(a.out, 'two_view.json'), 'w'))
+    elif a.keyposes:
         fit, f0, keys, agree = run_keyposes(frames, list(range(first, hi + 1)), fps, a)
         fitters = [f0]
         if a.out:
