@@ -332,6 +332,39 @@ def classify(rgb, pal):
         body = (out > 0) & (out != FACE)
         closed = ndimage.binary_fill_holes(ndimage.binary_closing(body, iterations=2))
         out[closed & ~body & (out == BG)] = UNKNOWN
+    if pal.get('veil'):
+        # Smoke, dust and flashes over the body: white mixed over its colours. Mixing in white leaves a colour's hue
+        # as it was (it only turns paler and brighter), so near the body a pale, bright pixel still names its part by
+        # hue alone; one too washed out to show any hue may hide a part: unknown, never floor.
+        vc = pal['veil']
+        import cv2
+        body = (out > 0) & (out != FACE) & (out != UNKNOWN)
+        # Only within each body patch's own outline (its convex hull, a little wider): smoke over a part lies inside
+        # the body's shape; a pale wall or the sky beside it does not.
+        lab, n = ndimage.label(ndimage.binary_dilation(body, iterations=3))
+        hull = np.zeros(out.shape, np.uint8)
+        for c in range(1, n + 1):
+            ys, xs = np.nonzero(lab == c)
+            if len(xs) < 200:
+                continue
+            pts = np.stack([xs, ys], 1).astype(np.int32)
+            cv2.fillConvexPoly(hull, cv2.convexHull(pts), 1)
+        near = ndimage.binary_dilation(hull.astype(bool), iterations=max(2, int(vc.get('reach', 0.02) * out.shape[0])))
+        free = near & (out == BG) & (v >= vc.get('v_min', 150))
+        tinted = free & (s >= vc.get('s_min', 22))
+        seen = out.copy()
+        for cls, c in enumerate(pal['classes'], 1):
+            if cls == FACE or 'h' not in c or c.get('s', [0])[0] > 255:
+                continue
+            core = seen == cls
+            if not core.any():
+                continue
+            # Only grown from the part's clearly seen colour (a pale wall of a similar hue nearby is not joined to it).
+            hue = tinted & in_range(h, c['h']) & (out == BG)
+            grown = ndimage.binary_propagation(core, mask=core | hue)
+            out[grown & hue] = cls
+        # Washed out past any hue: unknown, but only inside the body's outline itself (no halo round a clean body).
+        out[free & hull.astype(bool) & (s < vc.get('s_min', 22))] = UNKNOWN
     if FACE > 0:
         # The face: dark marks enclosed by the head's colour.
         head = ndimage.binary_closing(out == HEAD, iterations=3)
@@ -340,14 +373,15 @@ def classify(rgb, pal):
     return out.astype(np.int32) * 1000 + v
 
 
-def pick_character(cl, fg):
-    """The character among patches of body colour (cl: class map, fg: body pixels): the patch showing the most
-    different body colours in solid amounts (each at least 3% of it; a wall with stray pixels shows one), then the
-    largest. Returns its mask."""
+def pick_character(cl, fg, near=None):
+    """The character among patches of body colour (cl: class map, fg: body pixels): of the patches showing at least 3
+    different body colours in solid amounts (each at least 3% of it; a wall with stray pixels shows one or two), the
+    one nearest `near` (x, y: where it is expected), else the largest; with no such patch, the one showing the most.
+    Returns its mask."""
     lab, n = ndimage.label(ndimage.binary_dilation(fg, iterations=4))
     if not n:
         return fg
-    best, pick = None, 0
+    found = []
     for c in range(1, n + 1):
         m = (lab == c) & fg
         cls = cl[m]
@@ -355,10 +389,18 @@ def pick_character(cl, fg):
         if not len(cls):
             continue
         _, k = np.unique(cls, return_counts=True)
-        sc = (int((k >= 0.03 * len(cls)).sum()), len(cls))
-        if best is None or sc > best:
-            best, pick = sc, c
-    return (lab == pick) & fg if pick else fg
+        ys, xs = np.nonzero(m)
+        found.append((int((k >= 0.03 * len(cls)).sum()), len(cls), c, xs.mean(), ys.mean()))
+    if not found:
+        return fg
+    rich = [f for f in found if f[0] >= 3]
+    if rich and near is not None:
+        pick = min(rich, key=lambda f: (f[3] - near[0]) ** 2 + (f[4] - near[1]) ** 2)[2]
+    elif rich:
+        pick = max(rich, key=lambda f: f[1])[2]
+    else:
+        pick = max(found, key=lambda f: (f[0], f[1]))[2]
+    return (lab == pick) & fg
 
 
 def frames_of(path, fps, every=1, width=None, only=None):
@@ -412,7 +454,7 @@ class Fitter:
             if any(len(set(v)) > 1 for v in SIDE_CLASS.values()):
                 # Side-coloured clothing: only the character's patch (a wall of one body colour beside it would
                 # stretch the window, and the character shrink to a few pixels in it).
-                fg = pick_character(sub // 1000, fg)
+                fg = pick_character(sub // 1000, fg, near=(cx - xa, cy - ya))
             ys, xs = np.nonzero(fg)
             if len(xs) > 30:
                 lo_x, hi_x = np.percentile(xs, [1, 99]) + xa

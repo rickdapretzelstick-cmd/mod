@@ -702,6 +702,7 @@ class Fit:
         self.lights = [(torch.tensor(l[0], dtype=DT), float(l[1])) for l in lights]
         self.classes = face_classes()
         self.head_lock = None  # per-frame weight on the head's turn (None: the head is free)
+        self.lean_w = None  # the body-lean hold (None: BODY_LEAN_W; small once the camera is known)
         self.ncls = max(F.CLASS_OF.values()) + 1
 
     def joints_at(self, v, k):
@@ -810,7 +811,7 @@ class Fit:
             # The whole body tipped and the camera tilted look the same from one view: the body is held upright and
             # the camera's tilt takes it (a Roblox camera tilts; a standing character does not lean).
             bx, bz = F.JI[('hips', 0)] - NC, F.JI[('hips', 2)] - NC
-            r = r + (J[:, bx] ** 2 + J[:, bz] ** 2).sum() * BODY_LEAN_W
+            r = r + (J[:, bx] ** 2 + J[:, bz] ** 2).sum() * (BODY_LEAN_W if self.lean_w is None else self.lean_w)
         r = r + (J[:, 0] ** 2 + J[:, 2] ** 2).sum() * 2e-5
         if len(J) > 2:
             acc = J[2:] - 2 * J[1:-1] + J[:-2]
@@ -2651,7 +2652,7 @@ def run_keyframes(frames, idx, fps, args, log=print):
     return fit, f0, keep, agree
 
 
-def track_step(fit, k, steps=25, sigma0=1.0, sigma1=0.4, lr=0.8, every=5, joints=True):
+def track_step(fit, k, steps=25, sigma0=1.0, sigma1=0.4, lr=0.8, every=5, joints=True, cam_lock=None):
     """Fast mode's per-frame fit: gradient steps on frame k alone from where it starts (the last frame's pose), all
     but the last 5 on every other pixel; every `every` steps the hard colour agreement is checked and the best state
     seen (the start included) is kept. Every other frame is put back as it was."""
@@ -2670,6 +2671,9 @@ def track_step(fit, k, steps=25, sigma0=1.0, sigma1=0.4, lr=0.8, every=5, joints
         loss = fit.loss_frames(0, [k], sig, stride=2 if st < steps - 5 else 1)[0] + fit.regular() * 0.1
         loss.backward()
         opt.step()
+        if cam_lock is not None:
+            with torch.no_grad():
+                fit.cams[0][k, :2] = torch.as_tensor(cam_lock[:2], dtype=DT) / CAM_UNIT[:2]
         if every and (st % every == every - 1 or st == steps - 1):
             a = score()
             if a > best[0]:
@@ -2742,15 +2746,86 @@ def colour_score(classes):
 
 
 def character_mask(obs):
-    """The character in a class map: the connected patch of body colours showing the most different colours (a wall,
-    a sign or a tree shows one), the larger on a tie; unknown pixels inside it count."""
-    body = np.isin(obs, F.BODY_CLASSES) | (obs == F.UNKNOWN)
-    lab, n = F.ndimage.label(F.ndimage.binary_dilation(body, iterations=1))
-    if not n:
-        return body
-    score = [colour_score(obs[(lab == c) & body]) for c in range(1, n + 1)]
-    pick = 1 + max(range(n), key=lambda c: score[c])
-    return (lab == pick) & body & (obs != F.UNKNOWN)
+    """The character in a window's class map (F.pick_character, nearest the window's centre, where the fit expects
+    it); unknown pixels are not part of it."""
+    body = np.isin(obs, F.BODY_CLASSES)
+    m = F.pick_character(obs, body, near=(obs.shape[1] / 2, obs.shape[0] / 2))
+    return m & (obs != F.UNKNOWN)
+
+
+def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 60), rolls=(-45, 0, 45)):
+    """A still camera already known (cam_lock: its yaw and tilt): the body tried turned every way instead -- lean x
+    turn (every 15 deg) x roll, the limbs as they are and straight -- each placed onto the character (centre and size)
+    and scored by hard colour agreement (quick ranking on every other pixel, the shortlist on every pixel); the best few
+    get the limbs searched all round (limb_sweep) and polished with the camera's turn and tilt held. Frame k keeps the
+    best, or what it had when nothing beats it."""
+    view = fit.views[0]
+    i = view.idx[k]
+    J0 = fit.J.detach()[k].clone()
+    c0 = (fit.cams[0][k] * CAM_UNIT).detach().clone()
+    c0[0], c0[1] = float(cam_lock[0]), float(cam_lock[1])
+    hx, hy, hz = (F.JI[('hips', a)] - NC for a in range(3))
+    straight = torch.zeros_like(J0)
+    poses = []
+    for limbs in (J0, straight):
+        for lean in leans:
+            for turn in range(0, 360, 15):
+                for roll in rolls:
+                    q = limbs.clone()
+                    q[hx], q[hy], q[hz] = float(lean), float(turn), float(roll)
+                    poses.append(q)
+    Js = torch.stack(poses)
+    C = c0[None].repeat(len(Js), 1)
+    place(view, i, fit, Js, C)
+    sc = agreement(fit, 0, i, Js, C, stride=2)
+    short = torch.argsort(sc, descending=True)[:4 * top]
+    full = agreement(fit, 0, i, Js[short], C[short])
+    order = short[torch.argsort(full, descending=True)[:top]]
+    now = float(agreement(fit, 0, i, J0[None], c0[None])[0])
+    best = (now, J0, (fit.cams[0][k]).detach().clone())
+    f0 = F.Fitter(view.res)
+    for o in order.tolist():
+        with torch.no_grad():
+            fit.J[k] = Js[o]
+            fit.cams[0][k] = C[o] / CAM_UNIT
+        view.window(i, fit.params_of(0, k), f0)
+        limb_sweep(fit, k)
+        view.window(i, fit.params_of(0, k), f0)
+        track_step(fit, k, steps, sigma0=1.2, cam_lock=cam_lock)
+        view.window(i, fit.params_of(0, k), f0)
+        a = float(agreement(fit, 0, i, fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
+        if a > best[0]:
+            best = (a, fit.J[k].detach().clone(), fit.cams[0][k].detach().clone())
+    with torch.no_grad():
+        fit.J[k], fit.cams[0][k] = best[1], best[2]
+    view.window(i, fit.params_of(0, k), f0)
+    return best[0]
+
+
+def place(view, i, fit, Js, C):
+    """Candidates (poses Js, cameras C, changed in place) put onto the character: each one's drawn boxes sized to the
+    character's full extent (height and width; printed lettering and seams inside it included) and centred on it."""
+    pix, obs, _, sc_w = view.windows[i]
+    o2 = obs.numpy().reshape(view.res, view.res)
+    body = character_mask(o2)
+    whole = F.ndimage.binary_fill_holes(F.ndimage.binary_closing(body | (o2 == F.UNKNOWN), iterations=2)) & (
+        F.ndimage.binary_dilation(body, iterations=3))
+    whole = torch.tensor(whole.reshape(-1))
+    if int(torch.tensor(body).sum()) <= 20:
+        return
+    bp = pix[whole]
+    half = 0.5 * float(sc_w)
+    o_h = bp[:, 1].max() - bp[:, 1].min() + 2 * half
+    o_w = bp[:, 0].max() - bp[:, 0].min() + 2 * half
+    o_c = 0.5 * (bp.max(0).values + bp.min(0).values)
+    with torch.no_grad():
+        for _ in range(2):
+            uv = geometry(Js, C, fit.persp[0], fit.lights[0], corners=True).reshape(len(C), -1, 2)
+            d_h = (uv[..., 1].max(1).values - uv[..., 1].min(1).values).clamp(min=1.0)
+            d_w = (uv[..., 0].max(1).values - uv[..., 0].min(1).values).clamp(min=1.0)
+            C[:, 2] = C[:, 2] * torch.sqrt((o_h / d_h) * (o_w / d_w)).clamp(0.7, 1.4)
+            uv = geometry(Js, C, fit.persp[0], fit.lights[0], corners=True).reshape(len(C), -1, 2)
+            C[:, 3:5] = C[:, 3:5] + (o_c - 0.5 * (uv.max(1).values + uv.min(1).values))
 
 
 def limb_sweep(fit, k, step=30, rounds=2):
