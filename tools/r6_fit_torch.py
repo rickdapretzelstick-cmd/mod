@@ -867,12 +867,18 @@ def window_loss(fit, v, i, J, cam, sigma, stride=1):
     return loss
 
 
-def agreement(fit, v, i, J, cam):
+def agreement(fit, v, i, J, cam, stride=1):
     """The fit's rule: drawn hard (the boxes at their exact R6 sizes), how many pixels have the footage's colour.
     Agreeing body pixels over all body pixels of either (a box on floor, or body colour with no box on it, both count
     against; pixels hidden behind something are left out). 1.0 is a perfect fit. Batched: (B,)."""
     view = fit.views[v]
     pix, obs, _, scale = view.windows[i]
+    border = view.border[i]
+    if stride > 1:
+        # Every stride-th pixel each way (candidates ranked at a fraction of the work).
+        side = view.res
+        sel = torch.arange(side * side).reshape(side, side)[::stride, ::stride].reshape(-1)
+        pix, obs, border = pix[sel], obs[sel], border[sel]
     with torch.no_grad():
         quads, depth, vis, shade = geometry(J, cam, fit.persp[v], fit.lights[v])
         out = []
@@ -884,7 +890,7 @@ def agreement(fit, v, i, J, cam):
             if F.FACE > 0:
                 drawn = torch.where(drawn == F.FACE, F.HEAD, drawn)
             o = torch.where(obs == F.FACE, F.HEAD, obs) if F.FACE > 0 else obs
-            known = (o != F.UNKNOWN) & ~view.border[i]
+            known = (o != F.UNKNOWN) & ~border
             body = ((o > 0) | (drawn > 0)) & known
             agree = (drawn == o) & (o > 0) & known
             out.append(agree.sum(-1).float() / body.sum(-1).clamp(min=1).float())
@@ -2441,8 +2447,11 @@ def run_keyframes(frames, idx, fps, args, log=print):
     sides = sides_mode()
     view.lite = sides  # clothing painted per side: the colour map alone (the per-part steps assume a colour per part)
     f0 = F.Fitter()
-    p0, _ = f0.init(encs[idx[0]], tuple(float(x) for x in args.at.split(',')) if args.at else None, args.flip,
-                    quick=getattr(args, 'quick_start', False))
+    if sides:
+        p0 = standing_start(encs[idx[0]])  # the turn sweep on the first frame does the search
+    else:
+        p0, _ = f0.init(encs[idx[0]], tuple(float(x) for x in args.at.split(',')) if args.at else None, args.flip,
+                        quick=getattr(args, 'quick_start', False))
     fit = Fit([view], np.tile(p0[NC:], (len(idx), 1)), [np.tile(p0[:5], (len(idx), 1))], [float(p0[5])], [f0.light])
     if sides:
         fit.head_lock = torch.full((len(idx),), HEAD_TURN_W, dtype=DT)
@@ -2466,7 +2475,11 @@ def run_keyframes(frames, idx, fps, args, log=print):
             if a_k < 0.85 or k == 0:
                 a_k = turn_sweep(fit, k)
                 view.window(i, fit.params_of(0, k), f0)
-            if a_k < 0.4 and k:
+            if k == 0:
+                # The light, from the shading of the first frame's pose.
+                f0.fit_light(fit.params_of(0, 0), encs[i])
+                fit.lights[0] = (torch.tensor(f0.light[0], dtype=DT), float(f0.light[1]))
+            if a_k < 0.4:
                 snapJ, snapC = fit.J[k].detach().clone(), fit.cams[0][k].detach().clone()
                 p1, _ = f0.init(encs[i], None, args.flip, quick=True)
                 with torch.no_grad():
@@ -2481,6 +2494,14 @@ def run_keyframes(frames, idx, fps, args, log=print):
                         fit.J[k], fit.cams[0][k] = snapJ, snapC
                     view.window(i, fit.params_of(0, k), f0)
             cam = (fit.cams[0][[k]] * CAM_UNIT).detach()
+            # Standing still is exactly still: the plain standing pose (same turn) taken when it matches as well.
+            Jk = fit.J.detach()[k].clone()
+            stand = torch.zeros_like(Jk)
+            stand[F.JI[('hips', 1)] - NC] = Jk[F.JI[('hips', 1)] - NC]
+            both = agreement(fit, 0, i, torch.stack([Jk, stand]), cam.expand(2, 5))
+            if float(both[1]) >= float(both[0]) - 0.005:
+                with torch.no_grad():
+                    fit.J[k] = stand
             agree[k] = float(agreement(fit, 0, i, fit.J.detach()[[k]], cam)[0])
             obs = view.windows[i][1].numpy()
             hidden[k] = (obs == F.UNKNOWN).sum() / max(1, (obs > 0).sum())
@@ -2679,6 +2700,36 @@ def torso_from_box(fit, k):
     return now
 
 
+def character_mask(obs):
+    """The character in a class map: the connected patch of body colours showing the most different colours (a wall,
+    a sign or a tree shows one), the larger on a tie; unknown pixels inside it count."""
+    body = np.isin(obs, F.BODY_CLASSES) | (obs == F.UNKNOWN)
+    lab, n = F.ndimage.label(F.ndimage.binary_dilation(body, iterations=1))
+    if not n:
+        return body
+    score = [(len(np.unique(obs[(lab == c) & body])), int(((lab == c) & body).sum())) for c in range(1, n + 1)]
+    pick = 1 + max(range(n), key=lambda c: score[c])
+    return (lab == pick) & body & (obs != F.UNKNOWN)
+
+
+def standing_start(enc):
+    """Side mode's start: the plain standing pose under a camera guessed from the character (the patch showing the
+    most body colours: its centre and height); turn_sweep then searches every turn and tilt from it."""
+    fg = enc >= 1000
+    lab, n = F.ndimage.label(F.ndimage.binary_dilation(fg, iterations=4))
+    p = np.zeros(F.NP)
+    if not n:
+        p[:6] = 0, 20, 1.0, enc.shape[1] / 2, enc.shape[0] / 2, 0.005
+        return p
+    cl = enc // 1000
+    score = [(len(np.unique(cl[(lab == c) & fg])), float(((lab == c) & fg).sum())) for c in range(1, n + 1)]
+    pick = 1 + max(range(n), key=lambda c: score[c])
+    cy, cx = F.ndimage.center_of_mass(lab == pick)
+    ys = np.nonzero(lab == pick)[0]
+    p[:6] = 0, 20, max(10, np.ptp(ys)) / 31, cx, cy, 0.005
+    return p
+
+
 def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
     """Side-coloured clothing: the camera tried all round the body (yaws x pitches; position, size and pose kept),
     every candidate scored by hard colour agreement (each side's colour makes the right turn stand out), the best
@@ -2709,7 +2760,8 @@ def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
     # Each candidate placed onto the character: its drawn boxes' centre and height matched to the body's colours
     # (turning the camera swings the body about its feet; unplaced, a right turn would score as wrong).
     pix, obs, _, _ = view.windows[i]
-    body = (obs > 0) & (obs != F.UNKNOWN)
+    body = character_mask(obs.numpy().reshape(view.res, view.res))
+    body = torch.tensor(body.reshape(-1))
     if int(body.sum()) > 20:
         bp = pix[body]
         o_c = bp.mean(0)
@@ -2722,7 +2774,7 @@ def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
                 C[:, 2] = C[:, 2] * (o_h / d_h.clamp(min=1.0)).clamp(0.7, 1.4)
                 uv = geometry(Js, C, fit.persp[0], fit.lights[0], corners=True).reshape(len(C), -1, 2)
                 C[:, 3:5] = C[:, 3:5] + (o_c - uv.mean(1))
-    sc = agreement(fit, 0, i, Js, C)
+    sc = agreement(fit, 0, i, Js, C, stride=2)
     now = float(agreement(fit, 0, i, J[None], c0[None])[0])
     best = (now, J, c0 / CAM_UNIT)
     order = torch.argsort(sc, descending=True)[:top]
