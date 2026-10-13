@@ -340,6 +340,27 @@ def classify(rgb, pal):
     return out.astype(np.int32) * 1000 + v
 
 
+def pick_character(cl, fg):
+    """The character among patches of body colour (cl: class map, fg: body pixels): the patch showing the most
+    different body colours in solid amounts (each at least 3% of it; a wall with stray pixels shows one), then the
+    largest. Returns its mask."""
+    lab, n = ndimage.label(ndimage.binary_dilation(fg, iterations=4))
+    if not n:
+        return fg
+    best, pick = None, 0
+    for c in range(1, n + 1):
+        m = (lab == c) & fg
+        cls = cl[m]
+        cls = cls[np.isin(cls, BODY_CLASSES)]
+        if not len(cls):
+            continue
+        _, k = np.unique(cls, return_counts=True)
+        sc = (int((k >= 0.03 * len(cls)).sum()), len(cls))
+        if best is None or sc > best:
+            best, pick = sc, c
+    return (lab == pick) & fg if pick else fg
+
+
 def frames_of(path, fps, every=1, width=None, only=None):
     """The frames as RGB arrays and the frame rate; every: keep every n-th frame (the rate divided to match); width:
     shrink frames wider than this (a long 1080p video would not fit in memory otherwise); only: (first, last) kept
@@ -386,7 +407,13 @@ class Fitter:
             H, W = obs_full.shape
             r = int(60 * s) + 20
             ya, yb, xa, xb = max(0, int(cy) - r), min(H, int(cy) + r), max(0, int(cx) - r), min(W, int(cx) + r)
-            ys, xs = np.nonzero(obs_full[ya:yb, xa:xb] >= 1000)
+            sub = obs_full[ya:yb, xa:xb]
+            fg = sub >= 1000
+            if any(len(set(v)) > 1 for v in SIDE_CLASS.values()):
+                # Side-coloured clothing: only the character's patch (a wall of one body colour beside it would
+                # stretch the window, and the character shrink to a few pixels in it).
+                fg = pick_character(sub // 1000, fg)
+            ys, xs = np.nonzero(fg)
             if len(xs) > 30:
                 lo_x, hi_x = np.percentile(xs, [1, 99]) + xa
                 lo_y, hi_y = np.percentile(ys, [1, 99]) + ya

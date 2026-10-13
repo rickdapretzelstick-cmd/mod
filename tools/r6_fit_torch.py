@@ -1674,7 +1674,7 @@ def init_camera_for(fitter, enc, joints, flip=False, keep_scale=False):
     # The character: the patch with the most different body colours (a yellow wall or a tree trunk shows one), the
     # larger on a tie.
     cl = enc // 1000
-    score = [(len(np.unique(cl[(lab == c) & fg])), float(((lab == c) & fg).sum())) for c in range(1, n + 1)]
+    score = [colour_score(cl[(lab == c) & fg]) for c in range(1, n + 1)]
     if not n:
         return None
     pick = 1 + max(range(n), key=lambda c: score[c])
@@ -2492,6 +2492,20 @@ def run_keyframes(frames, idx, fps, args, log=print):
             if a_k < 0.85 or k == 0:
                 a_k = turn_sweep(fit, k)
                 view.window(i, fit.params_of(0, k), f0)
+            if a_k < 0.85:
+                # The limbs, each searched all round (a punch or kick swings far between frames), then polished.
+                snapJ, snapC = fit.J[k].detach().clone(), fit.cams[0][k].detach().clone()
+                limb_sweep(fit, k)
+                view.window(i, fit.params_of(0, k), f0)
+                track_step(fit, k, 40, sigma0=1.0)
+                view.window(i, fit.params_of(0, k), f0)
+                a2 = float(agreement(fit, 0, i, fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
+                if a2 > a_k:
+                    a_k = a2
+                else:
+                    with torch.no_grad():
+                        fit.J[k], fit.cams[0][k] = snapJ, snapC
+                    view.window(i, fit.params_of(0, k), f0)
             if k == 0:
                 # The light, from the shading of the first frame's pose.
                 f0.fit_light(fit.params_of(0, 0), encs[i])
@@ -2717,6 +2731,16 @@ def torso_from_box(fit, k):
     return now
 
 
+def colour_score(classes):
+    """How much a patch looks like the character: how many different body colours it shows in solid amounts (each at
+    least 3% of it; a red wall with a few stray pixels of other colours shows one), then its size."""
+    cls = classes[np.isin(classes, F.BODY_CLASSES)]
+    if not len(cls):
+        return (0, 0)
+    u, k = np.unique(cls, return_counts=True)
+    return (int((k >= 0.03 * len(cls)).sum()), int(len(cls)))
+
+
 def character_mask(obs):
     """The character in a class map: the connected patch of body colours showing the most different colours (a wall,
     a sign or a tree shows one), the larger on a tie; unknown pixels inside it count."""
@@ -2724,9 +2748,39 @@ def character_mask(obs):
     lab, n = F.ndimage.label(F.ndimage.binary_dilation(body, iterations=1))
     if not n:
         return body
-    score = [(len(np.unique(obs[(lab == c) & body])), int(((lab == c) & body).sum())) for c in range(1, n + 1)]
+    score = [colour_score(obs[(lab == c) & body]) for c in range(1, n + 1)]
     pick = 1 + max(range(n), key=lambda c: score[c])
     return (lab == pick) & body & (obs != F.UNKNOWN)
+
+
+def limb_sweep(fit, k, step=30, rounds=2):
+    """Side-coloured clothing: each limb (arms, then legs) tried pointing every way within its range (its two swing
+    angles on a step-degree grid, its twist kept), every candidate scored at once by hard colour agreement, the best
+    kept; twice round (a limb found helps the next). A fast swing between frames is found here, where gradient steps
+    from the last frame would stall."""
+    view = fit.views[0]
+    i = view.idx[k]
+    cam = (fit.cams[0][[k]] * CAM_UNIT).detach()
+    J = fit.J.detach()[k].clone()
+    best = float(agreement(fit, 0, i, J[None], cam)[0])
+    for _ in range(rounds):
+        for bone in ('rightArm', 'leftArm', 'rightThigh', 'leftThigh'):
+            jx, jz = F.JI[(bone, 0)] - NC, F.JI[(bone, 2)] - NC
+            lx, lz = F.LIMITS[(bone, 0)], F.LIMITS[(bone, 2)]
+            cands = []
+            for ax in np.arange(lx[0], lx[1] + 1, step):
+                for az in np.arange(lz[0], lz[1] + 1, step):
+                    q = J.clone()
+                    q[jx], q[jz] = float(ax), float(az)
+                    cands.append(q)
+            Js = torch.stack(cands)
+            sc = agreement(fit, 0, i, Js, cam.expand(len(Js), 5))
+            o = int(torch.argmax(sc))
+            if float(sc[o]) > best:
+                best, J = float(sc[o]), Js[o].clone()
+    with torch.no_grad():
+        fit.J[k] = J
+    return best
 
 
 def standing_start(enc):
@@ -2739,7 +2793,7 @@ def standing_start(enc):
         p[:6] = 0, 20, 1.0, enc.shape[1] / 2, enc.shape[0] / 2, 0.005
         return p
     cl = enc // 1000
-    score = [(len(np.unique(cl[(lab == c) & fg])), float(((lab == c) & fg).sum())) for c in range(1, n + 1)]
+    score = [colour_score(cl[(lab == c) & fg]) for c in range(1, n + 1)]
     pick = 1 + max(range(n), key=lambda c: score[c])
     cy, cx = F.ndimage.center_of_mass(lab == pick)
     ys = np.nonzero(lab == pick)[0]
@@ -3098,7 +3152,8 @@ def run_keyposes(frames, idx, fps, args, log=print):
     pal = json.load(open(args.palette)) if args.palette else F.PALETTE
     F.use_palette(pal)
     t0 = time.time()
-    encs = {i: F.classify(frames[i], pal) for i in idx}
+    # Side-coloured clothing: keys evenly spaced, nothing to read first (each frame's colours cost ~1 s at 1080p).
+    encs = {} if sides_mode() else {i: F.classify(frames[i], pal) for i in idx}
     keys = pick_key_poses(encs, idx, most=args.keyposes)
     log(f'{len(keys)} key poses of {len(idx)} frames: {keys} ({time.time() - t0:.0f} s)')
     fit_k, f0, _, agree = run_keyframes(frames, keys, fps, args, log=log)
@@ -3116,7 +3171,7 @@ def run_keyposes(frames, idx, fps, args, log=print):
         d[NC:] = (d[NC:] + 180) % 360 - 180
         P[n] = PK[a_] + f * d
     log(f'key-pose fit in {time.time() - t0:.0f} s; key colour agreement ' + ' '.join(f'{x:.2f}' for x in agree))
-    view = View(frames, {i: encs[i] for i in idx}, idx, fps, args.res)
+    view = View(frames, {i: encs[i] for i in idx if i in encs}, idx, fps, args.res)
     fit = Fit([view], P[:, NC:], [P[:, :5]], [float(P[0, 5])], [f0.light])
     return fit, f0, keys, agree
 
