@@ -269,7 +269,7 @@ class View:
         self.targets.pop(i, None)
 
 
-def find_corners(coloured, unit, obs=None, classes=(), min_angle=50, max_angle=160):
+def find_corners(coloured, unit, obs=None, classes=(), min_angle=50, max_angle=175):
     """Box corners in the footage, three ways, merged (within 0.25 stud):
     - each colour area's outline simplified to a polygon: its convex vertices are corners (found however blurred);
     - two straight edges of a colour whose ends meet (within 0.3 stud);
@@ -293,23 +293,31 @@ def find_corners(coloured, unit, obs=None, classes=(), min_angle=50, max_angle=1
                 continue
             m = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
             contours, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            w = max(2, int(round(0.4 * unit)))  # how far along the outline each side of a bend is measured
             for cnt in contours:
                 if cv2.contourArea(cnt) < unit * unit * 0.3:
                     continue
-                # Coarse enough that a blurred corner's short bevel collapses into one vertex.
-                poly = cv2.approxPolyDP(cnt, 0.3 * unit, True).reshape(-1, 2).astype(float)
-                n = len(poly)
-                if n < 3:
+                pts = cnt.reshape(-1, 2).astype(float)
+                n = len(pts)
+                if n < 4 * w:
                     continue
-                orient = np.sign(cv2.contourArea(poly.astype(np.float32), oriented=True)) or 1.0
+                # Smooth the pixel staircase a little, then measure how much the outline turns at every point.
+                k_ = np.ones(3) / 3
+                pts = np.stack([np.convolve(np.r_[pts[-1:, c], pts[:, c], pts[:1, c]], k_, 'valid') for c in (0, 1)], 1)
+                orient = np.sign(cv2.contourArea(pts.astype(np.float32), oriented=True)) or 1.0
+                a_ = np.roll(pts, w, 0) - pts
+                b_ = np.roll(pts, -w, 0) - pts
+                cosang = (a_ * b_).sum(1) / (np.linalg.norm(a_, axis=1) * np.linalg.norm(b_, axis=1) + 1e-9)
+                turn = 180 - np.degrees(np.arccos(np.clip(cosang, -1, 1)))
+                cross = a_[:, 0] * b_[:, 1] - a_[:, 1] * b_[:, 0]
                 for k in range(n):
-                    p_, a_, b_ = poly[k], poly[k - 1], poly[(k + 1) % n]
-                    if min(np.linalg.norm(a_ - p_), np.linalg.norm(b_ - p_)) < 0.15 * unit:
-                        continue  # a nick in the outline, not a box corner
-                    cross = (p_[0] - a_[0]) * (b_[1] - p_[1]) - (p_[1] - a_[1]) * (b_[0] - p_[0])
-                    if cross * orient < 0:
-                        continue  # a concave vertex: where parts overlap, not a box corner
-                    add(p_, a_ - p_, b_ - p_, c)
+                    if turn[k] < 180 - max_angle or cross[k] * orient > 0:
+                        continue  # too straight, or concave (where parts overlap)
+                    win = turn[np.arange(k - w, k + w + 1) % n]
+                    if turn[k] < win.max() or (turn[k] == win.max() and k % n != (np.arange(k - w, k + w + 1) % n)[int(np.argmax(win))]):
+                        continue  # not the sharpest point of this bend
+                    # The edge directions from further out, past the corner's rounding.
+                    add(pts[k], pts[(k - 2 * w) % n] - pts[k], pts[(k + 2 * w) % n] - pts[k], c)
     # Straight edges meeting, or crossing when extended.
     segs = [(seg, c) for seg, sides, _ in coloured for c in sides]
     for a in range(len(segs)):
@@ -331,10 +339,10 @@ def find_corners(coloured, unit, obs=None, classes=(), min_angle=50, max_angle=1
             f1 = q1 if e1 is p1 else p1  # the far ends: the edges leave the corner toward them
             f2 = q2 if e2 is p2 else p2
             add(x, f1 - x, f2 - x, c1)
-    # Merge corners of a colour closer than 0.25 stud (keep the first).
+    # Merge corners of a colour closer than 0.4 stud (keep the first).
     out = []
     for cn in found:
-        if all(cn[3] != o[3] or np.linalg.norm(cn[0] - o[0]) > 0.25 * unit for o in out):
+        if all(cn[3] != o[3] or np.linalg.norm(cn[0] - o[0]) > 0.4 * unit for o in out):
             out.append(cn)
     return out
 
@@ -346,7 +354,7 @@ def corner_hits(hull_pts, corners, stud):
         return 0
     n = len(hull_pts)
     hits = 0
-    for cpt, d1, d2, _, _ in corners:
+    for cpt, d1, d2, _, ang in corners:
         dist = np.hypot(*(hull_pts - cpt).T)
         vi = int(np.argmin(dist))
         if dist[vi] > 0.35 * stud:
@@ -355,8 +363,9 @@ def corner_hits(hull_pts, corners, stud):
         o1 = hull_pts[(vi - 1) % n] - v
         o2 = hull_pts[(vi + 1) % n] - v
         o1, o2 = o1 / max(1e-9, np.linalg.norm(o1)), o2 / max(1e-9, np.linalg.norm(o2))
-        cos12 = math.cos(math.radians(12))
-        if (o1 @ d1 > cos12 and o2 @ d2 > cos12) or (o1 @ d2 > cos12 and o2 @ d1 > cos12):
+        # A shallow corner (a slight bend) needs a tighter direction match, or a straight edge would pass for it.
+        tol = math.cos(math.radians(min(12.0, max(3.0, (180 - ang) / 3))))
+        if (o1 @ d1 > tol and o2 @ d2 > tol) or (o1 @ d2 > tol and o2 @ d1 > tol):
             hits += 1
     return hits
 
