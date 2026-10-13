@@ -167,5 +167,145 @@ def main():
     print('wrote the M1 chain, Divergent Fist and Cursed Strikes clips')
 
 
+# --- Variants (pass 2): everything else in the M1, Divergent Fist, Cursed Strikes and Manji Kick families ---
+
+def tucked(p, lift=1.5):
+    """The same upper body in the air: legs tucked under, no crouch, a little lift."""
+    q = dict(p)
+    q.update(leg('right', -40, 78, 6, 10))
+    q.update(leg('left', -18, 62, 6, 8))
+    r = q['root']['pos']
+    q['root'] = {'pos': [r[0], lift, r[2]]}
+    return q
+
+
+UPPER_WIND = pose(body(twist=30, lean=18, crouch=5.0, head_down=6), arm('right', 24, 20, 20, -120, 16), arm('left', -80, -14, 12, -100, 6),
+                  leg('right', 28, 56, 6, -14), leg('left', -26, 50, 6, 14))
+UPPER_HIT = pose(body(twist=-24, lean=-14, crouch=-1.5, fwd=2.5, head_down=-14), arm('right', -168, 6, 8, -26, -10), arm('left', -30, -10, 20, -110, 6),
+                 leg('right', 22, 8, 4, -16), leg('left', -14, 12, 4, 10))
+UPPER_SETTLE = pose(body(twist=-20, lean=-10, crouch=-1.0, fwd=2.0, head_down=-10), arm('right', -160, 4, 8, -34, -8), arm('left', -34, -10, 20, -106, 6),
+                    leg('right', 20, 12, 4, -14), leg('left', -14, 14, 4, 10))
+SLAM_WIND = pose(body(twist=0, lean=-14, crouch=-1.0, head_down=-10), arm('right', -172, 0, 10, -70, 10), arm('left', -172, 0, 10, -70, 10),
+                 leg('right', -40, 80, 6, 10), leg('left', -20, 64, 6, 8))
+SLAM_HIT = pose(body(twist=0, lean=42, crouch=3.5, fwd=2.0, head_down=14), arm('right', -40, 0, 6, -12, -10), arm('left', -40, 0, 6, -12, -10),
+                leg('right', -30, 70, 6, 10), leg('left', -10, 50, 6, 8))
+STOMP_WIND = pose(body(twist=8, lean=-6, crouch=0.5, head_down=12), arm('right', -40, 10, 40, -60, 0), arm('left', -50, -10, 36, -70, 0),
+                  leg('right', -95, 100, 6, 18), leg('left', 4, 14, 4, 4))
+STOMP_HIT = pose(body(twist=4, lean=18, crouch=3.0, head_down=26), arm('right', -20, 10, 46, -40, 0), arm('left', -26, -10, 44, -46, 0),
+                 leg('right', -10, 14, 6, -6), leg('left', 14, 40, 4, 8))
+RUN_WIND = pose(body(twist=26, lean=28, crouch=2.0, fwd=1.0), arm('right', 40, 20, 18, -70, 10), arm('left', -70, -10, 10, -90, 6),
+                leg('right', 40, 60, 4, -10), leg('left', -50, 40, 4, 12))
+DROPKICK = pose(body(twist=-10, lean=-58, crouch=-2.0, fwd=4.0, head_down=30), arm('right', 40, 10, 50, -20, 0), arm('left', 30, -10, 50, -20, 0),
+                leg('right', -92, 0, 4, 20), leg('left', -80, 14, 4, 20))
+DIVE = pose(body(twist=-6, lean=-36, crouch=-1.0, fwd=3.0, head_down=24), arm('right', 20, 10, 40, -40, 0), arm('left', -60, -10, 40, -60, 0),
+            leg('right', -72, 6, 6, 20), leg('left', -30, 70, 6, 10))
+HOP = pose(body(twist=10, lean=10, crouch=-2.0, head_down=-6), arm('right', -120, 10, 30, -60, 0), arm('left', -110, -10, 30, -60, 0),
+           leg('right', -60, 96, 6, 16), leg('left', -40, 90, 6, 14))
+LAND = pose(body(twist=12, lean=34, crouch=6.0, fwd=1.0, head_down=8), arm('right', -24, 16, 24, -6, -10), arm('left', -70, -20, 30, -60, 0),
+            leg('right', 30, 76, 10, -18), leg('left', -42, 64, 8, 16))
+FLOOR_WIND = pose(body(twist=30, lean=40, crouch=5.0, head_down=24), arm('right', -150, 20, 20, -80, 0), arm('left', -60, -10, 30, -60, 0),
+                  leg('right', 30, 80, 10, -16), leg('left', -40, 70, 8, 14))
+FLOOR_HIT = pose(body(twist=-20, lean=58, crouch=6.5, fwd=2.0, head_down=34), arm('right', -40, 6, 8, 0, -10), arm('left', -30, -20, 40, -40, 0),
+                 leg('right', 34, 90, 10, -20), leg('left', -44, 76, 8, 14))
+RECOIL = pose(body(twist=26, lean=-16, crouch=2.0, fwd=-3.0, head_down=-12), arm('right', -40, 30, 40, -60, 10), arm('left', -30, -20, 40, -60, 10),
+              leg('right', 30, 26, 6, -8), leg('left', -10, 20, 4, 4))
+SPIN_WIND = pose(body(twist=70, lean=10, crouch=3.0, roll=-6), arm('right', -60, 30, -20, -130, 0), arm('left', -70, -20, 30, -90, 0),
+                 leg('right', 24, 40, 6, -10), leg('left', -24, 36, 6, 10))
+SPIN_HIT = pose(body(twist=-90, lean=6, crouch=2.0, fwd=2.0, roll=6), arm('right', -92, -10, 86, -10, 0), arm('left', -60, -20, 30, -100, 0),
+                leg('right', 20, 30, 6, -8), leg('left', -26, 34, 6, 10))
+# Manji Kick (JJS GIF): the low counter guard, the duck under the blow, then the spinning rising kick with the body thrown
+# sideways and the kicking leg straight up (the manji), the arms flung out for balance.
+MANJI_STANCE = pose(body(twist=10, lean=14, crouch=3.4, head_down=6), arm('right', -84, -20, -16, -118, 10), arm('left', -78, -24, -18, -112, 10),
+                    leg('right', 18, 40, 14, -10), leg('left', -20, 36, 12, 10))
+MANJI_DUCK = pose(body(twist=40, lean=30, crouch=6.4, side=-2.0, roll=22, head_down=14), arm('right', -40, 20, 40, -100, 0), arm('left', -70, -10, 20, -110, 0),
+                  leg('right', 30, 80, 14, -14), leg('left', -36, 70, 12, 14))
+MANJI_CHAMBER = pose(body(twist=70, lean=-10, crouch=2.0, roll=-30, head_down=-6), arm('right', -30, 20, 70, -40, 0), arm('left', -20, -20, 80, -30, 0),
+                     leg('right', -84, 110, 24, 20), leg('left', 0, 26, 4, 4))
+MANJI_HIT = pose(body(twist=-30, lean=-30, crouch=-0.5, fwd=1.5, roll=-52, head_down=-10), arm('right', 10, 30, 84, -10, 0), arm('left', -10, -20, 96, -14, 0),
+                 leg('right', -158, 0, 36, 30), leg('left', 8, 16, 6, 4))
+MANJI_HOLD = pose(body(twist=-26, lean=-26, crouch=0.0, fwd=1.5, roll=-46, head_down=-8), arm('right', 6, 28, 80, -16, 0), arm('left', -12, -20, 90, -18, 0),
+                  leg('right', -146, 10, 34, 28), leg('left', 6, 18, 6, 4))
+FACE_KICK = pose(body(twist=-12, lean=-24, crouch=-0.5, fwd=2.0, roll=-8, head_down=-12), arm('right', 20, 20, 70, -20, 0), arm('left', -10, -20, 70, -20, 0),
+                 leg('right', -170, 0, 6, 34), leg('left', 10, 14, 4, 4))
+SWOOP = pose(body(twist=-20, lean=44, crouch=5.0, fwd=3.0, roll=10, head_down=-10), arm('right', 50, 20, 30, -20, 0), arm('left', 46, -20, 30, -20, 0),
+             leg('right', 44, 70, 8, -14), leg('left', -54, 50, 8, 18))
+GRAB = pose(body(twist=-10, lean=16, crouch=2.0, fwd=3.0), arm('right', -96, -16, -10, -36, 0), arm('left', -96, 16, -10, -36, 0),
+            leg('right', 24, 26, 6, -8), leg('left', -24, 30, 6, 8))
+GRAB_SPIN = pose(body(twist=80, lean=6, crouch=2.6, fwd=1.0, roll=-10), arm('right', -86, 40, 30, -50, 0), arm('left', -100, 10, 0, -40, 0),
+                 leg('right', 10, 30, 14, -6), leg('left', -30, 40, 14, 10))
+THROW_UP = pose(body(twist=10, lean=-22, crouch=-1.0, head_down=-24), arm('right', -170, 0, 16, -40, 0), arm('left', -170, 0, 16, -40, 0),
+                leg('right', 16, 10, 6, -8), leg('left', -16, 12, 6, 8))
+THROW_DOWN = pose(body(twist=0, lean=50, crouch=5.0, fwd=3.0, head_down=30), arm('right', -30, 0, 10, -6, -10), arm('left', -30, 0, 10, -6, -10),
+                  leg('right', 40, 60, 8, -16), leg('left', -40, 70, 8, 14))
+
+
+def meta(group, name):
+    return json.load(open(os.path.join(OUT, group, name + '.json')))
+
+
+def rework(group, name, keys):
+    """Rewrites a clip's keys, keeping its length, hold, blends and priority exactly (the move's timing is the server's)."""
+    m = meta(group, name)
+    d = m['duration']
+    keys = [dict(k, t=min(d, max(0, int(round(k['t'] * d if isinstance(k['t'], float) and k['t'] <= 1.0 else k['t']))))) for k in keys]
+    clip(group, name, d, keys, m['priority'], m.get('blendIn', 40), m.get('blendOut', 150), hold=m.get('hold', False))
+
+
+def f(x):
+    """A key time as a share of the clip's length."""
+    return float(x)
+
+
+def variants():
+    a = 'common'
+    # Air M1s: the same strikes, legs tucked.
+    rework(a, 'air_1', [key(0, tucked(STANCE)), key(70, tucked(jab_wind('right')), 'EASE_OUT'), key(130, tucked(jab_hit('right')), 'EASE_IN'),
+                        key(200, tucked(jab_settle('right')), 'EASE_OUT'), key(f(1.0), tucked(STANCE), 'EASE_IN_OUT')])
+    rework(a, 'air_2', [key(0, tucked(STANCE)), key(70, tucked(jab_wind('left')), 'EASE_OUT'), key(130, tucked(jab_hit('left', 1.1)), 'EASE_IN'),
+                        key(200, tucked(jab_settle('left')), 'EASE_OUT'), key(f(1.0), tucked(STANCE), 'EASE_IN_OUT')])
+    rework(a, 'air_3', [key(0, tucked(STANCE)), key(110, tucked(HOOK_WIND), 'EASE_OUT'), key(190, tucked(HOOK_HIT), 'EASE_IN'),
+                        key(260, tucked(HOOK_SETTLE), 'EASE_OUT'), key(f(1.0), tucked(STANCE), 'EASE_IN_OUT')])
+    rework(a, 'uppercut', [key(0, STANCE), key(110, UPPER_WIND, 'EASE_OUT'), key(170, UPPER_HIT, 'EASE_IN'), key(280, UPPER_SETTLE, 'EASE_OUT'),
+                           key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    rework(a, 'downslam', [key(0, tucked(STANCE)), key(120, SLAM_WIND, 'EASE_OUT'), key(190, SLAM_HIT, 'EASE_IN'), key(330, SLAM_HIT, 'EASE_OUT'),
+                           key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    rework(a, 'stomp', [key(0, STANCE), key(90, STOMP_WIND, 'EASE_OUT'), key(150, STOMP_HIT, 'EASE_IN'), key(260, STOMP_HIT, 'EASE_OUT'),
+                        key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    rework(a, 'sprint', [key(0, RUN_WIND), key(150, FIN_WIND, 'EASE_OUT'), key(220, FIN_HIT, 'EASE_IN'), key(420, FIN_SETTLE, 'EASE_OUT'),
+                         key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    rework(a, 'heavy_charge', [key(0, STANCE), key(f(1.0), FIN_WIND, 'EASE_OUT')])
+    rework(a, 'heavy', [key(0, FIN_WIND), key(90, DF_COIL_DEEP, 'EASE_OUT'), key(150, FIN_HIT, 'EASE_IN'), key(330, FIN_SETTLE, 'EASE_OUT'),
+                        key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    y = 'yuji'
+    # Black Flash strikes (Divergent Fist's timed press, and its chain off the back).
+    rework(y, 'black_flash_punch', [key(0, DF_COIL_DEEP), key(55, DF_HIT, 'EASE_IN'), key(260, DF_FOLLOW, 'EASE_OUT'), key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    rework(y, 'black_flash', [key(0, STANCE), key(200, DF_COIL_DEEP, 'EASE_OUT'), key(260, DF_HIT, 'EASE_IN'), key(480, DF_FOLLOW, 'EASE_OUT'),
+                              key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    rework(y, 'black_flash_uppercut', [key(0, UPPER_WIND), key(80, UPPER_HIT, 'EASE_IN'), key(300, UPPER_SETTLE, 'EASE_OUT'), key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    rework(y, 'black_flash_dropkick', [key(0, STANCE), key(110, HOP, 'EASE_OUT'), key(170, DROPKICK, 'EASE_IN'), key(420, DROPKICK, 'EASE_OUT'),
+                                       key(f(1.0), LAND, 'EASE_IN_OUT')])
+    # Cursed Strikes' other beats.
+    rework(y, 'cursed_strikes_hop', [key(0, CS_READY), key(f(1.0), HOP, 'EASE_OUT')])
+    rework(y, 'cursed_strikes_dropkick', [key(0, HOP), key(f(1.0), DIVE, 'EASE_OUT')])
+    rework(y, 'cursed_strikes_land', [key(0, DIVE), key(90, LAND, 'EASE_IN'), key(260, LAND, 'EASE_OUT'), key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    rework(y, 'cursed_strikes_floor', [key(0, STANCE), key(140, FLOOR_WIND, 'EASE_OUT'), key(210, FLOOR_HIT, 'EASE_IN'), key(330, FLOOR_HIT, 'EASE_OUT'),
+                                       key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    rework(y, 'cursed_strikes_blocked', [key(0, jab_hit('right')), key(110, RECOIL, 'EASE_OUT'), key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    rework(y, 'cursed_strikes_spin', [key(0, STANCE), key(150, SPIN_WIND, 'EASE_OUT'), key(220, SPIN_HIT, 'EASE_IN'), key(380, SPIN_HIT, 'EASE_OUT'),
+                                      key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    # Manji Kick and its variants.
+    rework(y, 'manji_stance', [key(0, STANCE), key(f(1.0), MANJI_STANCE, 'EASE_OUT')])
+    rework(y, 'manji_dodge', [key(0, MANJI_STANCE), key(110, MANJI_DUCK, 'EASE_OUT'), key(f(1.0), MANJI_DUCK, 'EASE_IN_OUT')])
+    rework(y, 'manji_kick', [key(0, MANJI_DUCK), key(140, MANJI_CHAMBER, 'EASE_OUT'), key(210, MANJI_HIT, 'EASE_IN'), key(400, MANJI_HOLD, 'EASE_OUT'),
+                             key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    rework(y, 'manji_face_kick', [key(0, MANJI_DUCK), key(100, MANJI_CHAMBER, 'EASE_OUT'), key(160, FACE_KICK, 'EASE_IN'), key(f(1.0), FACE_KICK, 'EASE_OUT')])
+    rework(y, 'manji_recover', [key(0, MANJI_HOLD), key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    rework(y, 'manji_swoop', [key(0, MANJI_STANCE), key(180, SWOOP, 'EASE_OUT'), key(f(1.0), SWOOP, 'EASE_IN_OUT')])
+    rework(y, 'manji_grapple_spin', [key(0, SWOOP), key(150, GRAB, 'EASE_OUT'), key(400, GRAB_SPIN, 'EASE_IN_OUT'), key(f(1.0), THROW_UP, 'EASE_OUT')])
+    rework(y, 'manji_slam', [key(0, THROW_UP), key(140, THROW_DOWN, 'EASE_IN'), key(300, THROW_DOWN, 'EASE_OUT'), key(f(1.0), STANCE, 'EASE_IN_OUT')])
+    print('wrote the variants: air M1s, uppercut, downslam, stomp, sprint, heavy, Black Flash strikes, Cursed Strikes, Manji Kick')
+
+
 if __name__ == '__main__':
     main()
+    variants()

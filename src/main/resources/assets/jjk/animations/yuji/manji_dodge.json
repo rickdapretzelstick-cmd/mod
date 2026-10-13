@@ -1,24 +1,363 @@
 {
-  "name": "manji_dodge",
-  "duration": 300,
-  "blendIn": 10, "blendOut": 100,
-  "priority": "COMBAT",
-  "keys": [
-    {"t": 150, "ease": "OVERSHOOT", "bones": {
-        "rightArm": {"rot": [-20, 0, 90]},
-        "leftArm": {"rot": [-20, 0, -90]},
-        "rightThigh": {"rot": [-30, 0, 40]},
-        "leftThigh": {"rot": [20, 0, -20]},
-        "hips": {"rot": [22, 0, -42]},
-        "root": {"pos": [3, -3, 0]}}},
-    {"t": 300, "ease": "EASE_OUT", "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [-8, 0, 6]},
-        "leftArm": {"rot": [-8, 0, -6]},
-        "rightThigh": {"rot": [0, 0, 0]},
-        "leftThigh": {"rot": [0, 0, 0]},
-        "hips": {"rot": [0, 0, 0]},
-        "root": {"pos": [0, 0, 0]}}}
-  ]
+ "name": "manji_dodge",
+ "duration": 300,
+ "blendIn": 10,
+ "blendOut": 100,
+ "priority": "COMBAT",
+ "authored": "tools/anim_author.py (reference: JJS wiki GIFs)",
+ "keys": [
+  {
+   "t": 0,
+   "bones": {
+    "chest": {
+     "rot": [
+      7.0,
+      10,
+      0.0
+     ]
+    },
+    "hips": {
+     "rot": [
+      14,
+      5.5,
+      0
+     ]
+    },
+    "head": {
+     "rot": [
+      6,
+      -6.0,
+      0
+     ]
+    },
+    "root": {
+     "pos": [
+      0.0,
+      -3.4,
+      0.0
+     ]
+    },
+    "rightArm": {
+     "rot": [
+      -84,
+      -20,
+      -16
+     ]
+    },
+    "rightForearm": {
+     "rot": [
+      -118,
+      0,
+      0
+     ]
+    },
+    "rightHand": {
+     "rot": [
+      10,
+      0,
+      0
+     ]
+    },
+    "leftArm": {
+     "rot": [
+      -78,
+      24,
+      18
+     ]
+    },
+    "leftForearm": {
+     "rot": [
+      -112,
+      0,
+      0
+     ]
+    },
+    "leftHand": {
+     "rot": [
+      10,
+      0,
+      0
+     ]
+    },
+    "rightThigh": {
+     "rot": [
+      18,
+      0,
+      14
+     ]
+    },
+    "rightShin": {
+     "rot": [
+      40,
+      0,
+      0
+     ]
+    },
+    "rightFoot": {
+     "rot": [
+      -10,
+      0,
+      0
+     ]
+    },
+    "leftThigh": {
+     "rot": [
+      -20,
+      0,
+      -12
+     ]
+    },
+    "leftShin": {
+     "rot": [
+      36,
+      0,
+      0
+     ]
+    },
+    "leftFoot": {
+     "rot": [
+      10,
+      0,
+      0
+     ]
+    }
+   }
+  },
+  {
+   "t": 110,
+   "bones": {
+    "chest": {
+     "rot": [
+      15.0,
+      40,
+      22
+     ]
+    },
+    "hips": {
+     "rot": [
+      30,
+      22.0,
+      0
+     ]
+    },
+    "head": {
+     "rot": [
+      14,
+      -24.0,
+      0
+     ]
+    },
+    "root": {
+     "pos": [
+      -2.0,
+      -6.4,
+      0.0
+     ]
+    },
+    "rightArm": {
+     "rot": [
+      -40,
+      20,
+      40
+     ]
+    },
+    "rightForearm": {
+     "rot": [
+      -100,
+      0,
+      0
+     ]
+    },
+    "rightHand": {
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "leftArm": {
+     "rot": [
+      -70,
+      10,
+      -20
+     ]
+    },
+    "leftForearm": {
+     "rot": [
+      -110,
+      0,
+      0
+     ]
+    },
+    "leftHand": {
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "rightThigh": {
+     "rot": [
+      30,
+      0,
+      14
+     ]
+    },
+    "rightShin": {
+     "rot": [
+      80,
+      0,
+      0
+     ]
+    },
+    "rightFoot": {
+     "rot": [
+      -14,
+      0,
+      0
+     ]
+    },
+    "leftThigh": {
+     "rot": [
+      -36,
+      0,
+      -12
+     ]
+    },
+    "leftShin": {
+     "rot": [
+      70,
+      0,
+      0
+     ]
+    },
+    "leftFoot": {
+     "rot": [
+      14,
+      0,
+      0
+     ]
+    }
+   },
+   "ease": "EASE_OUT"
+  },
+  {
+   "t": 300,
+   "bones": {
+    "chest": {
+     "rot": [
+      15.0,
+      40,
+      22
+     ]
+    },
+    "hips": {
+     "rot": [
+      30,
+      22.0,
+      0
+     ]
+    },
+    "head": {
+     "rot": [
+      14,
+      -24.0,
+      0
+     ]
+    },
+    "root": {
+     "pos": [
+      -2.0,
+      -6.4,
+      0.0
+     ]
+    },
+    "rightArm": {
+     "rot": [
+      -40,
+      20,
+      40
+     ]
+    },
+    "rightForearm": {
+     "rot": [
+      -100,
+      0,
+      0
+     ]
+    },
+    "rightHand": {
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "leftArm": {
+     "rot": [
+      -70,
+      10,
+      -20
+     ]
+    },
+    "leftForearm": {
+     "rot": [
+      -110,
+      0,
+      0
+     ]
+    },
+    "leftHand": {
+     "rot": [
+      0,
+      0,
+      0
+     ]
+    },
+    "rightThigh": {
+     "rot": [
+      30,
+      0,
+      14
+     ]
+    },
+    "rightShin": {
+     "rot": [
+      80,
+      0,
+      0
+     ]
+    },
+    "rightFoot": {
+     "rot": [
+      -14,
+      0,
+      0
+     ]
+    },
+    "leftThigh": {
+     "rot": [
+      -36,
+      0,
+      -12
+     ]
+    },
+    "leftShin": {
+     "rot": [
+      70,
+      0,
+      0
+     ]
+    },
+    "leftFoot": {
+     "rot": [
+      14,
+      0,
+      0
+     ]
+    }
+   },
+   "ease": "EASE_IN_OUT"
+  }
+ ]
 }
