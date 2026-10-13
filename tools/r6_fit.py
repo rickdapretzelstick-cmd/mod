@@ -283,12 +283,25 @@ class Fitter:
         self.track_sigma = [3, 3, 0.15, 3, 3, 0] + [18] * len(JOINTS)
         self.light = DEFAULT_LIGHT
         self.shade_w = 2.0
+        self.edge_w = 1.2
 
     def roi(self, p, obs_full):
+        """The window the fit looks through: around the body's colours in the frame when it has one (so a body bigger
+        than the current guess is still all in view and pulls the guess up), else around the guess."""
         s, tx, ty = p[2], p[3], p[4]
-        half = 26 * s  # the body is ~31 rig px tall around its middle
-        x0, y0 = tx - half, ty - half
-        return (x0, y0, self.res / (2 * half), self.res, self.res)
+        half = 30 * s  # the body is ~31 rig px tall around its middle
+        cx, cy = tx, ty - 6 * s
+        if obs_full is not None:
+            H, W = obs_full.shape
+            r = int(60 * s) + 20
+            ya, yb, xa, xb = max(0, int(cy) - r), min(H, int(cy) + r), max(0, int(cx) - r), min(W, int(cx) + r)
+            ys, xs = np.nonzero(obs_full[ya:yb, xa:xb] >= 1000)
+            if len(xs) > 30:
+                lo_x, hi_x = np.percentile(xs, [1, 99]) + xa
+                lo_y, hi_y = np.percentile(ys, [1, 99]) + ya
+                cx, cy = (lo_x + hi_x) / 2, (lo_y + hi_y) / 2
+                half = max(half * 0.7, 0.62 * max(hi_x - lo_x, hi_y - lo_y))
+        return (cx - half, cy - half, self.res / (2 * half), self.res, self.res)
 
     def view(self, obs_full, roi):
         x0, y0, k, w, h = roi
@@ -308,15 +321,23 @@ class Fitter:
         dist = {c: np.minimum(ndimage.distance_transform_edt(obs != c), 16).astype(np.float32) if (obs == c).any() else None
                 for c in BODY_CLASSES}
         area = {c: int((obs == c).sum()) for c in BODY_CLASSES}
+        # Each colour's border in the footage (where it meets another colour or the background), and every pixel's
+        # distance to the nearest stretch of it: rendered box edges are pulled onto those borders.
+        edist = {}
+        for c in BODY_CLASSES:
+            m = obs == c
+            if m.sum() > 8:
+                border = m & ~ndimage.binary_erosion(m)
+                edist[c] = np.minimum(ndimage.distance_transform_edt(~border), 12).astype(np.float32)
         shade = np.zeros(obs.shape, np.float32)
         for c in BODY_CLASSES:
             m = obs == c
             if m.sum() > 8:
                 shade[m] = np.minimum(1.2, val[m] / max(1.0, float(np.percentile(val[m], 95))))
-        return obs, dist, area, shade
+        return obs, dist, area, shade, edist
 
     def cost(self, p, frame, roi, prev):
-        obs, dist, area, shade = frame
+        obs, dist, area, shade, edist = frame
         enc = render(p, roi, self.light)
         ren, rsh = enc // 1000, (enc % 1000).astype(np.float32)
         n = self.res * self.res
@@ -328,6 +349,16 @@ class Fitter:
             if dist[k] is not None and a:
                 c += float(dist[k][m].sum()) / n * 6
             c += abs(a - area[k]) / n * 40
+            # Each rendered colour's outline should sit flush on that colour's border in the footage.
+            if k in edist and a:
+                inner = m.copy()
+                inner[1:, :] &= m[:-1, :]
+                inner[:-1, :] &= m[1:, :]
+                inner[:, 1:] &= m[:, :-1]
+                inner[:, :-1] &= m[:, 1:]
+                edge = m & ~inner
+                if edge.any():
+                    c += float(edist[k][edge].mean()) * self.edge_w
             # Where the colours agree, the faces' shading should too: it is what shows how each box is turned.
             both = m & (obs == k)
             if both.any():
