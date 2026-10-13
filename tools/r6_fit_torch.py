@@ -220,6 +220,10 @@ class View:
         body_cls = sorted(F.BODY_CLASSES)  # every body colour (a part may show several, one per side)
         stray = np.isin(obs, body_cls) & ~RR.body_cluster(obs, {c: 1 for c in body_cls})
         obs[stray] = 0
+        if self.lite:
+            # Only the character's own patch (scenery of a body colour inside a wide window is not the body).
+            keep = F.ndimage.binary_dilation(character_mask(obs), iterations=2) & (obs > 0) | character_mask(obs)
+            obs[~keep & (obs > 0)] = 0
         # The footage's colour borders are blended (blur, dithering): the 1-pixel band along them is left out of the score.
         edge = np.zeros(obs.shape, bool)
         edge[:, 1:] |= obs[:, 1:] != obs[:, :-1]
@@ -2772,25 +2776,39 @@ def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
     C, Js = torch.stack(cams), torch.stack(poses)
     # Each candidate placed onto the character: its drawn boxes' centre and height matched to the body's colours
     # (turning the camera swings the body about its feet; unplaced, a right turn would score as wrong).
-    pix, obs, _, _ = view.windows[i]
-    body = character_mask(obs.numpy().reshape(view.res, view.res))
+    pix, obs, _, sc_w = view.windows[i]
+    o2 = obs.numpy().reshape(view.res, view.res)
+    body = character_mask(o2)
+    # Its full extent: printed lettering and dark seams inside it count (they are part of the body's outline).
+    whole = F.ndimage.binary_fill_holes(F.ndimage.binary_closing(body | (o2 == F.UNKNOWN), iterations=2)) & (
+        F.ndimage.binary_dilation(body, iterations=3))
     body = torch.tensor(body.reshape(-1))
+    whole = torch.tensor(whole.reshape(-1))
     if int(body.sum()) > 20:
-        bp = pix[body]
+        bp = pix[whole]
         o_c = bp.mean(0)
-        o_h = torch.quantile(bp[:, 1], 0.98) - torch.quantile(bp[:, 1], 0.02)
+        half = 0.5 * float(sc_w)  # a window pixel's half width, in footage px
+        o_h = bp[:, 1].max() - bp[:, 1].min() + 2 * half
+        o_w = bp[:, 0].max() - bp[:, 0].min() + 2 * half
         with torch.no_grad():
             for _ in range(2):
                 uv = geometry(Js, C, fit.persp[0], fit.lights[0], corners=True).reshape(len(C), -1, 2)
-                d_c = uv.mean(1)
-                d_h = uv[..., 1].max(1).values - uv[..., 1].min(1).values
-                C[:, 2] = C[:, 2] * (o_h / d_h.clamp(min=1.0)).clamp(0.7, 1.4)
+                d_h = (uv[..., 1].max(1).values - uv[..., 1].min(1).values).clamp(min=1.0)
+                d_w = (uv[..., 0].max(1).values - uv[..., 0].min(1).values).clamp(min=1.0)
+                C[:, 2] = C[:, 2] * torch.sqrt((o_h / d_h) * (o_w / d_w)).clamp(0.7, 1.4)
                 uv = geometry(Js, C, fit.persp[0], fit.lights[0], corners=True).reshape(len(C), -1, 2)
-                C[:, 3:5] = C[:, 3:5] + (o_c - uv.mean(1))
+                C[:, 3:5] = C[:, 3:5] + (o_c - 0.5 * (uv.max(1).values + uv.min(1).values))
+            o_c = 0.5 * (bp.max(0).values + bp.min(0).values)
+            uv = geometry(Js, C, fit.persp[0], fit.lights[0], corners=True).reshape(len(C), -1, 2)
+            C[:, 3:5] = C[:, 3:5] + (o_c - 0.5 * (uv.max(1).values + uv.min(1).values))
     sc = agreement(fit, 0, i, Js, C, stride=2)
     now = float(agreement(fit, 0, i, J[None], c0[None])[0])
     best = (now, J, c0 / CAM_UNIT)
-    order = torch.argsort(sc, descending=True)[:top]
+    # The quick ranking (every other pixel) shortlists; the shortlist is ranked again on every pixel (close candidates
+    # on a small character are not told apart on a quarter of the pixels).
+    short = torch.argsort(sc, descending=True)[:4 * top]
+    full = agreement(fit, 0, i, Js[short], C[short])
+    order = short[torch.argsort(full, descending=True)[:top]]
     for o in order.tolist():
         with torch.no_grad():
             fit.J[k] = Js[o]

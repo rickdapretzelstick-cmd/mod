@@ -23,6 +23,7 @@ import r6_fit as F  # noqa: E402
 import r6_fit_torch as T  # noqa: E402
 
 GROUPS = ['torso', 'head', 'arms', 'legs']
+PRIOR = torch.tensor([2.0, 0.3, 2.0, 2.0], dtype=torch.float64)
 
 
 def main():
@@ -83,7 +84,9 @@ def main():
         T.SCALE_OVERRIDE = torch.exp(logs.clamp(math.log(0.75), math.log(1.35)))[group_of]
         opt.zero_grad()
         loss = sum(fit.loss_frames(0, [k], sig, stride=2 if st < a.steps - 20 else 1)[0] for k in idx)
-        loss = loss + (logs ** 2).sum() * 2.0  # sizes stay standard unless the footage says otherwise
+        # Sizes stay standard unless the footage says otherwise; the head's held more loosely (only back and side views
+        # measure it: from the front it runs into the shirt's same red).
+        loss = loss + ((logs ** 2).sum(1) * PRIOR).sum()
         loss.backward()
         opt.step()
         if st % 25 == 24 or st == a.steps - 1:
