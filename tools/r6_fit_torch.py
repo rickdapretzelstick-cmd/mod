@@ -163,6 +163,7 @@ class View:
         self.gray = {}
         self.corners = {}
         self.shadowed = {}
+        self.rgb = {}
         self.ref_boxes = {}
         self.depth_folds = {}  # frame -> [(segment x1 y1 x2 y2, colour)]: faint lines inside a part where two faces meet  # frame -> {part: sketch_part_box result}  # frame -> class map with each part colour grown into its shadow (for corners)  # frame -> [(point, dir1, dir2, colour, angle)]: where two straight edges of a colour meet
         self.folds = {}  # frame -> [(segment, colour)]: straight lines inside one colour (where two faces meet)
@@ -246,6 +247,7 @@ class View:
         # Corners from each part's colour grown into its own shadow (same hue, darker), so outlines follow the part's
         # real edge and a shadow line across it makes no corner.
         rgb = self.frames[i][ys, xs].astype(np.uint8)
+        self.rgb[i] = rgb
         self.shadowed[i] = shadow_extend(obs, rgb, list(counts))
         self.corners[i] = find_corners(coloured, unit, self.shadowed[i], list(counts))
         self.depth_folds[i] = find_depth_folds(rgb, self.shadowed[i], list(counts), unit)
@@ -332,6 +334,82 @@ def shadow_extend(obs, rgb, classes):
         grown = ndimage.binary_propagation(core, mask=cand | core)
         out[grown & ~core & ((obs == 0) | (obs == F.UNKNOWN))] = cls
     return out
+
+
+def road_mask(rgb, obs, unit):
+    """The road (floor) in a window: its colour learned from the window's outer ring (mostly floor: the median and
+    spread of the background pixels there), then every background pixel of that colour within a tight band, in
+    patches joined to the ring or at least a third of a stud^2. Very dark pixels (black clothes, hair, another
+    player's dark arm, the floor's grid lines) and lighter greys (a hat) fall outside the band, so they never count."""
+    side = obs.shape[0]
+    ring = np.zeros(obs.shape, bool)
+    b = max(2, side // 20)
+    ring[:b], ring[-b:], ring[:, :b], ring[:, -b:] = True, True, True, True
+    px = rgb.astype(float)
+    bg = (obs == 0)
+    val = px.max(-1)
+    cand = ring & bg & (val >= 30)
+    if cand.sum() < 20:
+        return np.zeros(obs.shape, bool)
+    med = np.median(px[cand], 0)
+    mad = np.median(np.abs(px[cand] - med), 0) * 1.4826
+    band = np.clip(2.5 * mad, 6, 14)
+    # Its greyness too: the floor's channel differences stay as in the floor (dark clothes lean red/blue).
+    dif = px - px.mean(-1, keepdims=True)
+    mdif = med - med.mean()
+    road = bg & np.all(np.abs(px - med) <= band, -1) & np.all(np.abs(dif - mdif) <= 5, -1)
+    road = ndimage.binary_opening(road, np.ones((2, 2), bool))
+    lab, n = ndimage.label(road)
+    if n == 0:
+        return road
+    keep = np.zeros(n + 1, bool)
+    keep[np.unique(lab[ring & road])] = True
+    sizes = ndimage.sum(road, lab, range(1, n + 1))
+    keep[1:] |= sizes >= unit * unit / 3
+    keep[0] = False
+    return keep[lab]
+
+
+def part_shade_mask(rgb, obs, cls, unit):
+    """One colour's pixels plus its shading: pixels of the same hue, however much darker (the faces of a limb turned
+    away from the light), joined to the colour, at most a stud's growth from it -- taking pixels the colour split
+    called another class or unknown, never other body colours' own hues."""
+    core = obs == cls
+    if core.sum() < 8:
+        return core
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV_FULL).astype(int)
+    h, sat, val = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+    hues = h[core]
+    mid = np.median(hues)
+    span = max(6, (np.percentile(hues, 95) - np.percentile(hues, 5)) / 2 + 6)
+    dh = np.abs((h - mid + 128) % 256 - 128)
+    cand = (dh <= span) & (sat >= 60) & (val >= 30)
+    # Another body colour's pixels only where clearly darker than this colour (its shade the split misread).
+    other = (obs != cls) & (obs != 0) & (obs != F.UNKNOWN)
+    cand &= ~other | (val < 0.75 * np.median(val[core]))
+    near = ndimage.distance_transform_edt(~core) <= unit
+    grown = ndimage.binary_propagation(core, mask=(cand & near) | core)
+    return grown
+
+
+def part_pieces(rgb, obs, cls, unit, min_px=60):
+    """One colour's separate pieces with their shading: each connected area of the colour itself (at least min_px)
+    is a piece, and every shading pixel (part_shade_mask) goes to the piece nearest it -- so two limbs of one colour
+    whose shaded faces touch stay two pieces. [mask] largest first."""
+    core = obs == cls
+    lab, n = ndimage.label(core)
+    if n == 0:
+        return []
+    sizes = ndimage.sum(core, lab, range(1, n + 1))
+    keep = [k + 1 for k in range(n) if sizes[k] >= min_px]
+    if not keep:
+        return []
+    seeds = np.where(np.isin(lab, keep), lab, 0)
+    _, (iy, ix) = ndimage.distance_transform_edt(seeds == 0, return_indices=True)
+    nearest = seeds[iy, ix]
+    shade = part_shade_mask(rgb, obs, cls, unit)
+    out = [shade & (nearest == k) for k in keep]
+    return sorted(out, key=lambda m: -int(m.sum()))
 
 
 def _line_through(pts):
@@ -1766,12 +1844,14 @@ def _box_points(Rm, L, centre, unit):
     return np.array([centre + sum((b[n] - 0.5) * ax[n] for n in range(3)) for b in _BITS])
 
 
-def box_from_outline(mask, unit, dims=(6, 12, 6), free=None):
+def box_from_outline(mask, unit, dims=(6, 12, 6), free=None, road=None):
     """Draws a part's box from its outline: every direction reading (direction_triples) solved into box turns
     (rotations_from_three, and the face-on reading of its two long sides), every way of laying the box's real sides
     along them, at 0.85 / 1 / 1.15 x the camera's size around the part's centre; the best few are then fine-tuned
-    (position, size within 20% of the camera's, a few degrees of turn). Score: overlap with the part's pixels (intersection over union), where
-    box area over `free` pixels (other body parts that may hide it) costs nothing. Returns (iou, 8 window-px corners
+    (position, size within 20% of the camera's, a few degrees of turn). Score: overlap with the part's pixels
+    (intersection over union), where box area over `free` pixels (other body parts that may hide it) costs nothing and
+    over other non-road background (dark clothes, another player, that may hide it too) half; any `road` inside the box
+    (more than 2 px of it, the box's 1 px rim aside) fails the box outright. Real size is slightly preferred. Returns (iou, 8 window-px corners
     indexed by bits (x, y, z), [(corner a, corner b, visible)] for its 12 edges, rotation, sides) or None."""
     import itertools
     m = mask.astype(np.uint8)
@@ -1779,6 +1859,11 @@ def box_from_outline(mask, unit, dims=(6, 12, 6), free=None):
     if area < 4:
         return None
     cost = (1 - m) if free is None else ((1 - m) & (1 - free.astype(np.uint8)))
+    road8 = None if road is None else road.astype(np.uint8)
+    costw = cost.astype(np.float32) * (1.0 if road is None else 0.5)
+    if road is not None:
+        costw += (cost & road8) * 0.5
+    inner = np.zeros_like(m)
     ys, xs = np.nonzero(m)
     c0 = np.array([xs.mean(), ys.mean()])
     canvas = np.zeros_like(m)
@@ -1787,8 +1872,12 @@ def box_from_outline(mask, unit, dims=(6, 12, 6), free=None):
         pts = _box_points(Rm, L, centre, unit)
         canvas[:] = 0
         cv2.fillConvexPoly(canvas, np.round(cv2.convexHull(pts.astype(np.float32)).reshape(-1, 2)).astype(np.int32), 1)
+        if road8 is not None:
+            inner[:] = cv2.erode(canvas, np.ones((3, 3), np.uint8))
+            if int((inner & road8).sum()) > 2:
+                return -1.0, pts
         inter = float((canvas & m).sum())
-        return inter / max(1.0, area + float((canvas & cost).sum())), pts
+        return inter / max(1.0, area + float(costw[canvas == 1].sum())), pts
 
     turns = []
     for trip in direction_triples(mask, unit):
@@ -1811,16 +1900,18 @@ def box_from_outline(mask, unit, dims=(6, 12, 6), free=None):
             for sc in (0.85, 1.0, 1.15):
                 for dx, dy in itertools.product((-0.15, 0, 0.15), repeat=2):
                     c = c0 + np.array([dx, dy]) * unit
-                    seeds.append((score(Rm, L * sc, c)[0], Rm, L, sc, c))
+                    seeds.append((score(Rm, L * sc, c)[0] - 0.02 * abs(math.log(sc)), Rm, L, sc, c))
     if not seeds:
         return None
     seeds.sort(key=lambda t: -t[0])
+    if seeds[0][0] < 0:
+        return None  # every box takes in road
     best = None
-    for s0, Rm0, L, sc0, cc in seeds[:8]:
+    for s0, Rm0, L, sc0, cc in [t for t in seeds if t[0] >= 0][:8]:
         # Fine-tune: position, size, small turns about the camera axes; steps halve when nothing improves.
         x = np.array([cc[0], cc[1], math.log(sc0), 0.0, 0.0, 0.0])
         step = np.array([0.1 * unit, 0.1 * unit, 0.05, 3.0, 3.0, 3.0])
-        f = lambda x: score(_axis_turn(*x[3:]) @ Rm0, L * math.exp(x[2]), x[:2])[0]
+        f = lambda x: score(_axis_turn(*x[3:]) @ Rm0, L * math.exp(x[2]), x[:2])[0] - 0.02 * abs(x[2])
         fx = f(x)
         for _ in range(4):
             moved = True
@@ -1839,8 +1930,8 @@ def box_from_outline(mask, unit, dims=(6, 12, 6), free=None):
             step = step / 2
         if best is None or fx > best[0]:
             Rm = _axis_turn(*x[3:]) @ Rm0
-            best = (fx, score(Rm, L * math.exp(x[2]), x[:2])[1], Rm, L * math.exp(x[2]))
-    iou, pts, Rm, L = best
+            best = (fx, score(Rm, L * math.exp(x[2]), x[:2]), Rm, L * math.exp(x[2]))
+    _, (iou, pts), Rm, L = best
     edges = []
     for a in range(8):
         for n in range(3):
@@ -1852,7 +1943,7 @@ def box_from_outline(mask, unit, dims=(6, 12, 6), free=None):
     return iou, pts, edges, Rm, L
 
 
-def boxes_from_outline(mask, unit, dims=(6, 12, 6), free=None, most=2):
+def boxes_from_outline(mask, unit, dims=(6, 12, 6), free=None, most=2, road=None):
     """box_from_outline, then -- when a sizeable piece of the part's colour is left outside the box (two limbs of one
     colour touching) -- another box drawn for that leftover piece (the first box's area free for it), up to `most`."""
     from scipy import ndimage
@@ -1860,7 +1951,7 @@ def boxes_from_outline(mask, unit, dims=(6, 12, 6), free=None, most=2):
     left = mask.astype(bool).copy()
     free_now = np.zeros_like(left) if free is None else free.astype(bool).copy()
     for _ in range(most):
-        r = box_from_outline(left, unit, dims, free_now)
+        r = box_from_outline(left, unit, dims, free_now, road)
         if r is None:
             break
         out.append(r)
@@ -1872,7 +1963,7 @@ def boxes_from_outline(mask, unit, dims=(6, 12, 6), free=None, most=2):
             break
         sizes = ndimage.sum(rest, lab, range(1, n + 1))
         k = int(np.argmax(sizes)) + 1
-        if sizes[k - 1] < 0.5 * unit * unit:
+        if sizes[k - 1] < 0.3 * unit * unit:
             break
         free_now = free_now | drawn.astype(bool) | (rest & (lab != k))
         left = lab == k
