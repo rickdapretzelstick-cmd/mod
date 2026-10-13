@@ -29,6 +29,7 @@ import time
 import numpy as np
 import torch
 import cv2
+from PIL import Image
 from scipy import ndimage
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -160,7 +161,8 @@ class View:
         self.edge_samples = {}
         self.judge_cache = {}
         self.gray = {}
-        self.corners = {}  # frame -> [(point, dir1, dir2, colour, angle)]: where two straight edges of a colour meet
+        self.corners = {}
+        self.shadowed = {}  # frame -> class map with each part colour grown into its shadow (for corners)  # frame -> [(point, dir1, dir2, colour, angle)]: where two straight edges of a colour meet
         self.folds = {}  # frame -> [(segment, colour)]: straight lines inside one colour (where two faces meet)
         self.predicted_folds = {}  # frame -> [(segment, colour)]: folds implied by obtuse corners (predict_folds)
         self.targets = {}  # frame -> (boxes' target masks (boxes, N), which boxes have one (boxes,))
@@ -239,7 +241,11 @@ class View:
             elif cls_sides:
                 coloured.append((np.array([x1, y1, x2, y2], float), cls_sides, nrm))
         self.coloured_edges[i] = coloured
-        self.corners[i] = find_corners(coloured, unit, obs, list(counts))
+        # Corners from each part's colour grown into its own shadow (same hue, darker), so outlines follow the part's
+        # real edge and a shadow line across it makes no corner.
+        rgb = self.frames[i][ys, xs].astype(np.uint8)
+        self.shadowed[i] = shadow_extend(obs, rgb, list(counts))
+        self.corners[i] = find_corners(coloured, unit, self.shadowed[i], list(counts))
         self.edge_samples.pop(i, None)
         self.judge_cache.pop(i, None)
         # Folds from every straight line in the picture, short ones too (a face of a limb is only a stud wide).
@@ -267,6 +273,33 @@ class View:
         # visible end faces), the fold between those faces runs from the corner parallel to the box's long side.
         self.predicted_folds[i] = predict_folds(coloured, obs, unit) if EXPERIMENTAL else []
         self.targets.pop(i, None)
+
+
+def shadow_extend(obs, rgb, classes):
+    """The class map with each part colour grown into connected pixels of the same hue that are darker or duller (in
+    the part's own shadow), at most a stud's worth of growth from where the colour was seen."""
+    hsv = np.asarray(Image.fromarray(rgb).convert('HSV')).astype(int)
+    h, sat, val = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+    out = obs.copy()
+    for cls in classes:
+        core = obs == cls
+        if core.sum() < 8:
+            continue
+        hues = h[core]
+        lo, hi = np.percentile(hues, 5), np.percentile(hues, 95)
+        span = max(4, (hi - lo) / 2 + 4)
+        mid = np.median(hues)
+        dh = np.abs((h - mid + 128) % 256 - 128)
+        cand = (dh <= span) & (sat >= 50) & (val >= 25) & ((obs == 0) | (obs == F.UNKNOWN) | core)
+        grown = ndimage.binary_propagation(core, mask=cand | core)
+        out[grown & ~core & ((obs == 0) | (obs == F.UNKNOWN))] = cls
+    return out
+
+
+def _line_through(pts):
+    """Least-squares line through points: (point on it, unit direction)."""
+    vx, vy, x0, y0 = cv2.fitLine(pts.astype(np.float32), cv2.DIST_L2, 0, 0.01, 0.01).reshape(-1)
+    return np.array([x0, y0]), np.array([vx, vy])
 
 
 def find_corners(coloured, unit, obs=None, classes=(), min_angle=50, max_angle=175):
@@ -316,8 +349,22 @@ def find_corners(coloured, unit, obs=None, classes=(), min_angle=50, max_angle=1
                     win = turn[np.arange(k - w, k + w + 1) % n]
                     if turn[k] < win.max() or (turn[k] == win.max() and k % n != (np.arange(k - w, k + w + 1) % n)[int(np.argmax(win))]):
                         continue  # not the sharpest point of this bend
-                    # The edge directions from further out, past the corner's rounding.
-                    add(pts[k], pts[(k - 2 * w) % n] - pts[k], pts[(k + 2 * w) % n] - pts[k], c)
+                    # Flush to the edges: a line fitted to the outline on each side (past the corner's rounding), the
+                    # corner where they cross.
+                    side_a = pts[np.arange(k - 3 * w, k - w // 2) % n]
+                    side_b = pts[np.arange(k + w // 2 + 1, k + 3 * w + 1) % n]
+                    pa, da = _line_through(side_a)
+                    pb, db = _line_through(side_b)
+                    den = da[0] * db[1] - da[1] * db[0]
+                    corner = pts[k]
+                    if abs(den) > 1e-3:
+                        t_ = ((pb[0] - pa[0]) * db[1] - (pb[1] - pa[1]) * db[0]) / den
+                        x = pa + t_ * da
+                        if np.linalg.norm(x - pts[k]) < 0.6 * unit:
+                            corner = x
+                    a_dir = side_a.mean(0) - corner
+                    b_dir = side_b.mean(0) - corner
+                    add(corner, a_dir, b_dir, c)
     # Straight edges meeting, or crossing when extended.
     segs = [(seg, c) for seg, sides, _ in coloured for c in sides]
     for a in range(len(segs)):
