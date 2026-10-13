@@ -160,6 +160,7 @@ class View:
         self.edge_samples = {}
         self.judge_cache = {}
         self.gray = {}
+        self.corners = {}  # frame -> [(point, dir1, dir2, colour, angle)]: where two straight edges of a colour meet
         self.folds = {}  # frame -> [(segment, colour)]: straight lines inside one colour (where two faces meet)
         self.predicted_folds = {}  # frame -> [(segment, colour)]: folds implied by obtuse corners (predict_folds)
         self.targets = {}  # frame -> (boxes' target masks (boxes, N), which boxes have one (boxes,))
@@ -238,6 +239,7 @@ class View:
             elif cls_sides:
                 coloured.append((np.array([x1, y1, x2, y2], float), cls_sides, nrm))
         self.coloured_edges[i] = coloured
+        self.corners[i] = find_corners(coloured, unit, obs, list(counts))
         self.edge_samples.pop(i, None)
         self.judge_cache.pop(i, None)
         # Folds from every straight line in the picture, short ones too (a face of a limb is only a stud wide).
@@ -265,6 +267,98 @@ class View:
         # visible end faces), the fold between those faces runs from the corner parallel to the box's long side.
         self.predicted_folds[i] = predict_folds(coloured, obs, unit) if EXPERIMENTAL else []
         self.targets.pop(i, None)
+
+
+def find_corners(coloured, unit, obs=None, classes=(), min_angle=50, max_angle=160):
+    """Box corners in the footage, three ways, merged (within 0.25 stud):
+    - each colour area's outline simplified to a polygon: its convex vertices are corners (found however blurred);
+    - two straight edges of a colour whose ends meet (within 0.3 stud);
+    - two straight edges of a colour that stop short of each other but whose lines cross within half a stud of both
+      ends (the line finder stops a few pixels before a blurred corner).
+    Angles 50-160 degrees. [(corner point, unit direction along edge 1, along edge 2 (both away), colour, angle)]"""
+    found = []
+
+    def add(pt, d1, d2, c):
+        d1 = d1 / max(1e-9, np.linalg.norm(d1))
+        d2 = d2 / max(1e-9, np.linalg.norm(d2))
+        ang = math.degrees(math.acos(float(np.clip(d1 @ d2, -1, 1))))
+        if min_angle <= ang <= max_angle:
+            found.append((np.asarray(pt, float), d1, d2, c, ang))
+
+    # Outlines.
+    if obs is not None:
+        for c in classes:
+            m = (obs == c).astype(np.uint8)
+            if m.sum() < unit * unit * 0.3:
+                continue
+            m = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
+            contours, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            for cnt in contours:
+                if cv2.contourArea(cnt) < unit * unit * 0.3:
+                    continue
+                # Coarse enough that a blurred corner's short bevel collapses into one vertex.
+                poly = cv2.approxPolyDP(cnt, 0.3 * unit, True).reshape(-1, 2).astype(float)
+                n = len(poly)
+                if n < 3:
+                    continue
+                orient = np.sign(cv2.contourArea(poly.astype(np.float32), oriented=True)) or 1.0
+                for k in range(n):
+                    p_, a_, b_ = poly[k], poly[k - 1], poly[(k + 1) % n]
+                    if min(np.linalg.norm(a_ - p_), np.linalg.norm(b_ - p_)) < 0.15 * unit:
+                        continue  # a nick in the outline, not a box corner
+                    cross = (p_[0] - a_[0]) * (b_[1] - p_[1]) - (p_[1] - a_[1]) * (b_[0] - p_[0])
+                    if cross * orient < 0:
+                        continue  # a concave vertex: where parts overlap, not a box corner
+                    add(p_, a_ - p_, b_ - p_, c)
+    # Straight edges meeting, or crossing when extended.
+    segs = [(seg, c) for seg, sides, _ in coloured for c in sides]
+    for a in range(len(segs)):
+        for b in range(a + 1, len(segs)):
+            (s1, c1), (s2, c2) = segs[a], segs[b]
+            if c1 != c2:
+                continue
+            p1, q1, p2, q2 = s1[:2], s1[2:], s2[:2], s2[2:]
+            r, t_ = q1 - p1, q2 - p2
+            den = r[0] * t_[1] - r[1] * t_[0]
+            if abs(den) < 1e-6:
+                continue
+            u_ = ((p2[0] - p1[0]) * t_[1] - (p2[1] - p1[1]) * t_[0]) / den
+            x = p1 + u_ * r  # where the two lines cross
+            e1 = min((p1, q1), key=lambda e: np.linalg.norm(e - x))
+            e2 = min((p2, q2), key=lambda e: np.linalg.norm(e - x))
+            if max(np.linalg.norm(e1 - x), np.linalg.norm(e2 - x)) > 0.5 * unit:
+                continue
+            f1 = q1 if e1 is p1 else p1  # the far ends: the edges leave the corner toward them
+            f2 = q2 if e2 is p2 else p2
+            add(x, f1 - x, f2 - x, c1)
+    # Merge corners of a colour closer than 0.25 stud (keep the first).
+    out = []
+    for cn in found:
+        if all(cn[3] != o[3] or np.linalg.norm(cn[0] - o[0]) > 0.25 * unit for o in out):
+            out.append(cn)
+    return out
+
+
+def corner_hits(hull_pts, corners, stud):
+    """How many footage corners a box outline lands on: an outline vertex within 0.35 stud of the corner whose two
+    outline edges point the same ways as the corner's two edges (within 12 degrees, either pairing)."""
+    if not corners or len(hull_pts) < 3:
+        return 0
+    n = len(hull_pts)
+    hits = 0
+    for cpt, d1, d2, _, _ in corners:
+        dist = np.hypot(*(hull_pts - cpt).T)
+        vi = int(np.argmin(dist))
+        if dist[vi] > 0.35 * stud:
+            continue
+        v = hull_pts[vi]
+        o1 = hull_pts[(vi - 1) % n] - v
+        o2 = hull_pts[(vi + 1) % n] - v
+        o1, o2 = o1 / max(1e-9, np.linalg.norm(o1)), o2 / max(1e-9, np.linalg.norm(o2))
+        cos12 = math.cos(math.radians(12))
+        if (o1 @ d1 > cos12 and o2 @ d2 > cos12) or (o1 @ d2 > cos12 and o2 @ d1 > cos12):
+            hits += 1
+    return hits
 
 
 def predict_folds(coloured, obs, unit, min_angle=95, max_angle=175):
@@ -1429,6 +1523,18 @@ def measure_limbs(fit, v, k, prev=None, log=None):
             u = -u
         t = (pts - joint2d[part]) @ u
         reach = max(0.0, np.percentile(t, 98) - max(0.0, np.percentile(t, 2)))
+        # The limb's own corners (footage corners of its colour on its pixels); those at its far end give the tip.
+        cls_ = F.CLASS_OF[part]
+        mine_c = []
+        for cn in view.corners.get(i, []):
+            if cn[3] != cls_:
+                continue
+            q = np.clip(np.round(cn[0]).astype(int), 0, side - 1)
+            if ndimage.binary_dilation(target, iterations=2)[q[1], q[0]]:
+                mine_c.append(cn)
+        far = [cn for cn in mine_c if (cn[0] - joint2d[part]) @ u > 0.6 * reach]
+        if far:
+            reach = max(reach * 0.5, max((cn[0] - joint2d[part]) @ u for cn in far) - max(0.0, np.percentile(t, 2)))
         # 4. Tilt: a 2-stud box tilted phi out of the picture shows about 2 cos(phi) + 1.2 sin(phi) studs along its axis.
         phis = np.radians(np.arange(0, 90, 1.0))
         shown = stud * (2 * np.cos(phis) + 1.2 * np.sin(phis))
@@ -1444,11 +1550,20 @@ def measure_limbs(fit, v, k, prev=None, log=None):
             cands += twisted(J, bone, xd, zd, tuple(range(-45, 46, 9)))
         # 5. Decide toward/away and twist by coverage of the limb's own pixels (drawn with the others in place).
         def coverage(Js):
+            """How fully the box covers the limb's pixels (overlap), plus 0.3 x the share of the limb's own corners its
+            outline lands on with matching edge directions."""
             maps = front_maps(fit, v, i, torch.stack(Js), cam.expand(len(Js), 5))
             mine = maps == (j + 1)
             inter = (mine & target).sum((1, 2))
             union = (mine | target).sum((1, 2))
-            return inter / np.maximum(1, union)
+            cov_ = inter / np.maximum(1, union)
+            if mine_c:
+                with torch.no_grad():
+                    uvs = geometry(torch.stack(Js), cam.expand(len(Js), 5), fit.persp[v], fit.lights[v], corners=True).numpy()
+                hits = np.array([corner_hits(cv2.convexHull(to_win(uvs[n_, j]).astype(np.float32)).reshape(-1, 2), mine_c, stud)
+                                 for n_ in range(len(Js))])
+                cov_ = cov_ + 0.3 * hits / max(3, len(mine_c))  # a lone (maybe blurred) corner counts a third
+            return cov_
         cov = coverage(cands)
         if prev is not None:
             idxs = [F.JI[(bone, a_)] - NC for a_ in range(3)]
@@ -1472,12 +1587,12 @@ def measure_limbs(fit, v, k, prev=None, log=None):
             if tcov.max() > cov[best]:
                 cands, cov, best, how = tw, tcov, int(np.argmax(tcov)), 'searched'
         J = cands[best]
-        report[part] = (round(float(cov[best]), 2), how)
+        report[part] = (round(float(cov[best]), 2), how, len(mine_c))
     with torch.no_grad():
         if v == 0:
             fit.J[k] = J
     if log:
-        log(f'frame {i}: limbs ' + ', '.join(f'{p_} {c} ({h})' for p_, (c, h) in report.items()))
+        log(f'frame {i}: limbs ' + ', '.join(f'{p_} {c} ({h}, {nc} corners)' for p_, (c, h, nc) in report.items()))
     return report
 
 
