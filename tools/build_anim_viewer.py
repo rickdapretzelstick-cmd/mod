@@ -139,7 +139,7 @@ def main():
     for f in sorted(glob.glob(os.path.join(ROOT, 'build', 'fit', '*', 'conversion.json'))):
         v = json.load(open(f))
         own = os.path.join(os.path.dirname(f), 'clip.json')
-        if v.get('clip', '').startswith('preview/') and os.path.exists(own):
+        if v.get('clip', '').startswith('preview/') and v['clip'] not in ids and os.path.exists(own):
             # A preview's clip lives beside it, not in the game's assets.
             d = json.load(open(own))
             clips.append({'name': v['clip'].split('/', 1)[1], 'group': 'preview', 'duration': d.get('duration', 500), 'hold': False,
