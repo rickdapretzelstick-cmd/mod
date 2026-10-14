@@ -72,14 +72,15 @@ RECT_W = 1.5  # weight of each box's own-rectangle overlap
 
 
 def rotm(a):
-    """(..., 3) degrees -> (..., 3, 3) = Rz Ry Rx, as client.anim.rig.Rig."""
-    x, y, z = torch.deg2rad(a).unbind(-1)
-    o, n = torch.ones_like(x), torch.zeros_like(x)
-    sh = x.shape + (3, 3)
-    rx = torch.stack([o, n, n, n, x.cos(), -x.sin(), n, x.sin(), x.cos()], -1).reshape(sh)
-    ry = torch.stack([y.cos(), n, y.sin(), n, o, n, -y.sin(), n, y.cos()], -1).reshape(sh)
-    rz = torch.stack([z.cos(), -z.sin(), n, z.sin(), z.cos(), n, n, n, o], -1).reshape(sh)
-    return rz @ ry @ rx
+    """(..., 3) degrees -> (..., 3, 3) = Rz Ry Rx, as client.anim.rig.Rig (the product written out: one stack, no
+    matrix products)."""
+    r = torch.deg2rad(a)
+    c, s = r.cos(), r.sin()
+    cx, cy, cz = c.unbind(-1)
+    sx, sy, sz = s.unbind(-1)
+    return torch.stack([cz * cy, cz * sy * sx - sz * cx, cz * sy * cx + sz * sx,
+                        sz * cy, sz * sy * sx + cz * cx, sz * sy * cx - cz * sx,
+                        -sy, cy * sx, cy * cx], -1).reshape(a.shape[:-1] + (3, 3))
 
 
 HEAD_TILT_W, HEAD_TURN_W, HEAD_TURN_FACE_W, BODY_LEAN_W = 0.1, 0.1, 0.002, 0.02
@@ -940,9 +941,9 @@ def hard_draw(view, i, J, cam, persp, light, classes, leave_out=()):
     out = np.zeros((len(q), res, res), np.uint8)
     for b in range(len(q)):
         img = out[b]
-        for f in order[b]:
-            if show[b, f]:
-                cv2.fillConvexPoly(img, pts[b, f], int(cls[f]), lineType=cv2.LINE_8, shift=4)
+        ob = order[b]
+        for f, cf in zip(ob[show[b, ob]].tolist(), cls[ob[show[b, ob]]].tolist()):
+            cv2.fillConvexPoly(img, pts[b, f], cf, lineType=cv2.LINE_8, shift=4)
     return out
 
 
