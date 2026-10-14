@@ -155,6 +155,14 @@ def geometry(J, cam, persp, light, corners=False):
 
 def rasterise(quads, depth, vis, shade, pix, sigma, classes, ncls, parts=False):
     """Soft render: per pixel the probability of each class (0 = floor) and the shade. pix (B, N, 2) footage px."""
+    # Faces turned away in every sample (vis 0) add nothing (their alpha is exactly 0, and so is its gradient): left out,
+    # about half the work.
+    face_part = PART_OF_FACE
+    keep = vis.detach().amax(0) > 0
+    if not bool(keep.all()):
+        sel = keep.nonzero()[:, 0]
+        quads, depth, vis, shade = quads[:, sel], depth[:, sel], vis[:, sel], shade[:, sel]
+        classes, face_part = classes[sel], face_part[sel]
     a = quads
     b = torch.roll(quads, -1, 2)
     e = b - a  # (B, Fc, 4, 2)
@@ -179,7 +187,7 @@ def rasterise(quads, depth, vis, shade, pix, sigma, classes, ncls, parts=False):
     prob = torch.cat([prob[..., :1] + floor.unsqueeze(-1), prob[..., 1:]], -1)
     sh = (w * torch.gather(shade, 1, order)[:, None]).sum(-1) / (w.sum(-1) + 1e-6)
     if parts:
-        pid = torch.gather(PART_OF_FACE.expand(order.shape[0], -1), 1, order)
+        pid = torch.gather(face_part.expand(order.shape[0], -1), 1, order)
         pprob = w @ torch.nn.functional.one_hot(pid, len(F.PARTS)).to(DT)  # (B, N, boxes): each box's share
         return prob, sh, pprob
     return prob, sh
@@ -214,8 +222,11 @@ class View:
         fitter.res = self.res
         roi = fitter.roi(p, self.encs[i])
         x0, y0, k, w, h = roi
-        prep = fitter.prepare(fitter.view(self.encs[i], roi))
-        obs, shade = prep[0].copy(), prep[3]
+        if self.lite:
+            obs, shade = fitter.prepare_lite(fitter.view(self.encs[i], roi))
+        else:
+            prep = fitter.prepare(fitter.view(self.encs[i], roi))
+            obs, shade = prep[0].copy(), prep[3]
         # Only the body's own cluster of colours is body (a lamp or an effect of the same colour further off is floor).
         body_cls = sorted(F.BODY_CLASSES)  # every body colour (a part may show several, one per side)
         stray = np.isin(obs, body_cls) & ~RR.body_cluster(obs, {c: 1 for c in body_cls})
@@ -782,16 +793,21 @@ class Fit:
         scale = torch.tensor([view.windows[view.idx[k]][3] for k in ks], dtype=DT) * stride
         if sel is not None:
             pix, obs, tsh = pix[:, sel], obs[:, sel], tsh[:, sel]
-        prob, sh, pprob = rasterise(quads, depth, vis, shade, pix, (sigma_px * scale)[:, None, None], self.classes,
-                                    self.ncls, parts=True)
+        for k in ks:
+            if view.idx[k] not in view.targets:
+                self.assign(v, k)
+        # Each box's share of the pixels is only worked out when some box has a rectangle to be pulled onto.
+        rects = any(bool(view.targets[view.idx[k]][1].any()) for k in ks)
+        out = rasterise(quads, depth, vis, shade, pix, (sigma_px * scale)[:, None, None], self.classes, self.ncls,
+                        parts=rects)
+        prob, sh = out[0], out[1]
         loss = frame_loss(prob, sh, obs, tsh, self.ncls, side)
         # Every box onto its own rectangle: soft overlap of the box's share of each pixel with the rectangle's colour.
         for b, k in enumerate(ks):
             i = view.idx[k]
-            if i not in view.targets:
-                self.assign(v, k)
             tgt, has = view.targets[i]
             if has.any():
+                pprob = out[2]
                 p = pprob[b][:, has].T  # (boxes with a rectangle, N)
                 t = tgt[has] if sel is None else tgt[has][:, sel]
                 inter = (p * t).sum(-1)

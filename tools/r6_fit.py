@@ -302,7 +302,136 @@ def in_range(ch, r):
     return (ch >= lo) & (ch <= hi) if lo <= hi else (ch >= lo) | (ch <= hi)
 
 
+_CROSS = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], np.uint8)
+
+
+def _class_bits(pal):
+    """Per channel (h, s, v), a 256-entry table of bit masks: bit cls set where that channel's value is in class cls's
+    range. A pixel's class is the highest bit set in all three (classify paints classes in order, the last one wins)."""
+    key = id(pal)
+    if _class_bits.cache.get('key') == (key, json.dumps(pal['classes'], sort_keys=True)):
+        return _class_bits.cache['bits']
+    vals = np.arange(256)
+    bits = [np.zeros(256, np.uint32) for _ in range(3)]
+    for cls, c in enumerate(pal['classes'], 1):
+        if cls == FACE:
+            continue
+        for ch, name in enumerate('hsv'):
+            bits[ch] |= np.where(in_range(vals, c.get(name, [0, 255])), np.uint32(1 << cls), np.uint32(0))
+    top = np.zeros(1 << (len(pal['classes']) + 1), np.uint8)  # highest set bit of every mask
+    for m in range(1, len(top)):
+        top[m] = m.bit_length() - 1
+    _class_bits.cache = {'key': (key, json.dumps(pal['classes'], sort_keys=True)), 'bits': (bits, top)}
+    return bits, top
+
+
+_class_bits.cache = {}
+
+
+def _cv_closing(mask, iterations):
+    """scipy.ndimage.binary_closing(mask, iterations=n) (cross structure, border 0) with OpenCV: same result."""
+    import cv2
+    m = mask.astype(np.uint8)
+    m = cv2.dilate(m, _CROSS, iterations=iterations, borderType=cv2.BORDER_CONSTANT, borderValue=0)
+    m = cv2.erode(m, _CROSS, iterations=iterations, borderType=cv2.BORDER_CONSTANT, borderValue=0)
+    return m.astype(bool)
+
+
+def _cv_fill_holes(mask):
+    """scipy.ndimage.binary_fill_holes(mask) (cross structure) with OpenCV: background areas (4-connected) not
+    reaching the image's edge are filled."""
+    import cv2
+    n, lab = cv2.connectedComponents((~mask).astype(np.uint8), connectivity=4)
+    outside = np.zeros(n, bool)
+    outside[np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))] = True
+    outside[0] = False  # label 0: the mask itself
+    return ~outside[lab]
+
+
+def _cv_propagate(core, mask):
+    """scipy.ndimage.binary_propagation(core, mask=mask) (cross structure): the 4-connected areas of mask holding a
+    core pixel."""
+    import cv2
+    n, lab = cv2.connectedComponents(mask.astype(np.uint8), connectivity=4)
+    hit = np.zeros(n, bool)
+    hit[np.unique(lab[core & mask])] = True
+    hit[0] = False
+    return hit[lab]
+
+
 def classify(rgb, pal):
+    """The class map of a frame (classify_ref's rules, the same result), worked out with lookup tables and OpenCV
+    morphology instead of full-frame numpy/scipy passes (~10x faster at 1080p)."""
+    import cv2
+    hsv = np.asarray(Image.fromarray(rgb).convert('HSV'))
+    h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+    (bh, bs, bv), top = _class_bits(pal)
+    out = top[bh[h] & bs[s] & bv[v]]
+    if pal.get('adaptive'):
+        hi_ = h.astype(int)
+        for pair in pal.get('adaptive', []):
+            a_cls, b_cls = (next(i for i, c in enumerate(pal['classes'], 1) if c['name'] == nm) for nm in pair)
+            m = (out == a_cls) | (out == b_cls)
+            hs = hi_[m].astype(float)
+            if len(hs) > 50:
+                c0, c1 = np.percentile(hs, 20), np.percentile(hs, 80)
+                for _ in range(10):
+                    cut = (c0 + c1) / 2
+                    lo_, hi2 = hs[hs <= cut], hs[hs > cut]
+                    if not len(lo_) or not len(hi2):
+                        break
+                    c0, c1 = lo_.mean(), hi2.mean()
+                if c1 - c0 > 4:
+                    lower = a_cls if np.mean(pal['classes'][a_cls - 1]['h']) < np.mean(pal['classes'][b_cls - 1]['h']) else b_cls
+                    upper = b_cls if lower == a_cls else a_cls
+                    out[m] = np.where(hi_[m] <= (c0 + c1) / 2, lower, upper)
+    if pal.get('marks'):
+        body = (out > 0) & (out != FACE)
+        closed = _cv_fill_holes(_cv_closing(body, 2))
+        out[closed & ~body & (out == BG)] = UNKNOWN
+    if pal.get('veil'):
+        vc = pal['veil']
+        body = (out > 0) & (out != FACE) & (out != UNKNOWN)
+        grown3 = cv2.dilate(body.astype(np.uint8), _CROSS, iterations=3)
+        n, lab, stats, _ = cv2.connectedComponentsWithStats(grown3, connectivity=4)
+        hull = np.zeros(out.shape, np.uint8)
+        for c in range(1, n):
+            if stats[c, cv2.CC_STAT_AREA] < 200:
+                continue
+            x, y, w, hh = stats[c, :4]
+            ys, xs = np.nonzero(lab[y:y + hh, x:x + w] == c)
+            pts = np.stack([xs + x, ys + y], 1).astype(np.int32)
+            cv2.fillConvexPoly(hull, cv2.convexHull(pts), 1)
+        reach = max(2, int(vc.get('reach', 0.02) * out.shape[0]))
+        near = cv2.dilate(hull, _CROSS, iterations=reach).astype(bool)
+        free = near & (out == BG) & (v >= vc.get('v_min', 150))
+        tinted = free & (s >= vc.get('s_min', 22))
+        if tinted.any():
+            # Only the box around the pale pixels (+1) can join them to a part's colour (see classify_ref).
+            ys, xs = np.nonzero(tinted)
+            ya, yb = max(0, ys.min() - 1), min(out.shape[0], ys.max() + 2)
+            xa, xb = max(0, xs.min() - 1), min(out.shape[1], xs.max() + 2)
+            sub_out, sub_t, sub_h = out[ya:yb, xa:xb], tinted[ya:yb, xa:xb], h[ya:yb, xa:xb]
+            seen = sub_out.copy()
+            for cls, c in enumerate(pal['classes'], 1):
+                if cls == FACE or 'h' not in c or c.get('s', [0])[0] > 255:
+                    continue
+                core = seen == cls
+                if not core.any():
+                    continue
+                hue = sub_t & in_range(sub_h, c['h']) & (sub_out == BG)
+                if not hue.any():
+                    continue
+                grown = _cv_propagate(core, core | hue)
+                sub_out[grown & hue] = cls
+        out[free & hull.astype(bool) & (s < vc.get('s_min', 22))] = UNKNOWN
+    if FACE > 0:
+        head = _cv_closing(out == HEAD, 3)
+        out[(out == BG) & head & in_range(v, pal['classes'][FACE - 1]['v'])] = FACE
+    return out.astype(np.int32) * 1000 + v
+
+
+def classify_ref(rgb, pal):
     hsv = np.asarray(Image.fromarray(rgb).convert('HSV')).astype(int)
     h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
     out = np.zeros(h.shape, np.uint8)
@@ -378,6 +507,41 @@ def pick_character(cl, fg, near=None):
     different body colours in solid amounts (each at least 3% of it; a wall with stray pixels shows one or two), the
     one nearest `near` (x, y: where it is expected), else the largest; with no such patch, the one showing the most.
     Returns its mask."""
+    import cv2
+    grown = cv2.dilate(fg.astype(np.uint8), _CROSS, iterations=4)  # = ndimage.binary_dilation(fg, iterations=4)
+    lab, n = ndimage.label(grown)
+    if not n:
+        return fg
+    # Per patch: its body pixels per class, and where its pixels lie (counted at once, not patch by patch).
+    ys, xs = np.nonzero(fg)
+    lf = lab[ys, xs]
+    cf = cl[ys, xs].astype(np.int64)
+    K = int(max(cf.max(initial=0), max(BODY_CLASSES, default=0))) + 1
+    isb = np.isin(cf, BODY_CLASSES)
+    per = np.bincount(lf[isb] * K + cf[isb], minlength=(n + 1) * K).reshape(n + 1, K)
+    npx = np.bincount(lf, minlength=n + 1)
+    sx = np.bincount(lf, weights=xs, minlength=n + 1)
+    sy = np.bincount(lf, weights=ys, minlength=n + 1)
+    found = []
+    for c in range(1, n + 1):
+        tot = int(per[c].sum())
+        if not tot:
+            continue
+        k = per[c][per[c] > 0]
+        found.append((int((k >= 0.03 * tot).sum()), tot, c, sx[c] / npx[c], sy[c] / npx[c]))
+    if not found:
+        return fg
+    rich = [f for f in found if f[0] >= 3]
+    if rich and near is not None:
+        pick = min(rich, key=lambda f: (f[3] - near[0]) ** 2 + (f[4] - near[1]) ** 2)[2]
+    elif rich:
+        pick = max(rich, key=lambda f: f[1])[2]
+    else:
+        pick = max(found, key=lambda f: (f[0], f[1]))[2]
+    return (lab == pick) & fg
+
+
+def pick_character_ref(cl, fg, near=None):
     lab, n = ndimage.label(ndimage.binary_dilation(fg, iterations=4))
     if not n:
         return fg
@@ -513,6 +677,20 @@ class Fitter:
             if m.sum() > 8:
                 shade[m] = np.minimum(1.2, val[m] / max(1.0, float(np.percentile(val[m], 95))))
         return obs, dist, area, shade, edist, fdist, unknown
+
+    def prepare_lite(self, enc):
+        """prepare's class map and shading only (what the per-frame tracker uses), the same values."""
+        obs, val = enc // 1000, (enc % 1000).astype(np.float32)
+        body = (obs > 0) & (obs != FACE) if FACE > 0 else obs > 0
+        hull = body_fill(body)
+        obs = obs.copy()
+        obs[hull & (obs == BG)] = UNKNOWN
+        shade = np.zeros(obs.shape, np.float32)
+        for c in BODY_CLASSES:
+            m = obs == c
+            if m.sum() > 8:
+                shade[m] = np.minimum(1.2, val[m] / max(1.0, float(np.percentile(val[m], 95))))
+        return obs, shade
 
     def cost(self, p, frame, roi, prev):
         obs, dist, area, shade, edist, fdist, unknown = frame
