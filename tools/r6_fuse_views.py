@@ -246,7 +246,9 @@ def multi_score(t, poses):
 # Per moment: the pose that fits all views best -- every track's pose, the weighted average, then each bone swapped
 # for any track's version of it while that helps, then each limb nudged.
 sel, sel_score = {}, {}
-for t in fused:
+# EVAL=n: every n-th moment only, scored per view, nothing written (for comparing methods).
+EVAL = int(os.environ.get('EVAL', '0'))
+for t in [t for t in fused if not EVAL or (t - first) % EVAL == 0]:
     cands = [dict(fused[t])]
     opts = {b: [fused[t][b]] for b in BONES}
     for rep in REPS:
@@ -275,6 +277,23 @@ for t in fused:
             best, bs = trial[int(np.argmax(sc))], float(sc.max())
     sel[t], sel_score[t] = best, bs
 print('selected poses for', len(sel), 'moments', flush=True)
+if EVAL:
+    per_view = {}
+    for t in sel:
+        for rep in REPS:
+            k = src_frame(rep, t)
+            vw = view_of(rep, k)
+            if vw is None or own_ag(rep, k) is None:
+                continue
+            _, fit, cp, _ = vw
+            p = params_for(rep, sel[t], cp)
+            ag = float(T.agreement(fit, 0, 0, torch.tensor(p[None, NC:], dtype=T.DT), torch.tensor(p[None, :5], dtype=T.DT))[0])
+            per_view.setdefault(rep, []).append((own_ag(rep, k), ag))
+    out = {r: {'own': round(float(np.mean([a for a, _ in v])), 3), 'combined': round(float(np.mean([b for _, b in v])), 3),
+               'combined_below_0.80': sum(b < 0.8 for _, b in v), 'n': len(v)} for r, v in per_view.items()}
+    out['all_views_mean'] = round(float(np.mean([b for v in per_view.values() for _, b in v])), 3)
+    print('EVAL', json.dumps(out), flush=True)
+    sys.exit(0)
 
 # The clip: on the reference view's timeline, from 3 frames before the move to the end of the reference repetition.
 out_dir = f'/home/user/mod/build/fit/{NAME}'
