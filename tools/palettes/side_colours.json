@@ -287,6 +287,25 @@
    0.972
   ]
  },
+ "glow": {
+  "comment": "energy trails in the head/torso red (see r6_fit.glow_of): cores brighter and purer than any lit face",
+  "classes": ["red"],
+  "core_s": 240,
+  "core_v": 222,
+  "min_px": 20,
+  "reach": 0.03,
+  "rim": 0.007,
+  "inside": 0.5,
+  "thin": 0.15,
+  "solid_s": 150,
+  "white_v": 245,
+  "halo_s": 22,
+  "halo_v": 130,
+  "hue_pad": 6,
+  "tint": 0.012,
+  "face_s": 140,
+  "face_spread": 24
+ },
  "veil": {
   "s_min": 22,
   "v_min": 150,

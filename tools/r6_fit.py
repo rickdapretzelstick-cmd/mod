@@ -302,6 +302,66 @@ def in_range(ch, r):
     return (ch >= lo) & (ch <= hi) if lo <= hi else (ch >= lo) | (ch <= hi)
 
 
+def glow_of(rgb, h, s, v, out, pal):
+    """Light effects in a part's colour (an energy trail: a streak of pure, over-bright colour with a white-hot core and
+    a soft halo fading into whatever is behind it) -- not body. Returns the mask (or None).
+
+    A streak's core is purer and brighter than any lit face of that colour. A face lit by the streak can look the same,
+    but it is a patch inside the part's own solid colour, while the streak runs out of it (most of the streak's rim
+    is halo or other things). From the streaks the glow spreads over the colour's hue through pixels paler than any
+    body face of it (the halo: the colour faded into what is behind) or white-hot, as far as a halo reaches, plus the
+    tint it casts on other colours just beside it."""
+    import cv2
+    g = pal['glow']
+    H = out.shape[0]
+    hue = np.zeros(out.shape, bool)
+    for c in pal['classes']:
+        if c['name'] in g.get('classes', ()):
+            pad = g.get('hue_pad', 6)
+            hue |= in_range(h, ((c['h'][0] - pad) % 256, (c['h'][1] + pad) % 256))
+    core_v, solid_s = g.get('core_v', 222), g.get('solid_s', 150)
+    core = hue & (s >= g.get('core_s', 240)) & (v >= core_v)
+    if core.sum() < g.get('min_px', 20):
+        return None
+    reach = max(3, int(g.get('reach', 0.03) * H))
+    ys, xs = np.nonzero(core)
+    y0, y1 = max(0, ys.min() - reach - 3), min(H, ys.max() + reach + 4)
+    x0, x1 = max(0, xs.min() - reach - 3), min(out.shape[1], xs.max() + reach + 4)
+    sl = (slice(y0, y1), slice(x0, x1))
+    core, hue, s, v, out = core[sl], hue[sl], s[sl], v[sl], out[sl]
+    # The part's own solid colour (body saturation, body brightness).
+    solid = hue & (s >= solid_s) & (v < core_v) & (out > 0)
+    # Per core pixel: what surrounds it, apart from other core pixels -- the part's solid colour (a lit patch of a
+    # face) or not (a streak, even where it runs out of a part).
+    win = 2 * max(2, int(g.get('rim', 0.007) * H)) + 1
+    other = cv2.boxFilter((~core).astype(np.float32), -1, (win, win), normalize=False)
+    inside = cv2.boxFilter(solid.astype(np.float32), -1, (win, win), normalize=False) / np.maximum(other, 1)
+    # (deep inside a wide patch of it, with nothing else near: a lit face, not a streak, which is thin)
+    seed = core & (inside < g.get('inside', 0.5)) & (other >= g.get('thin', 0.15) * win * win)
+    if not seed.any():
+        return None
+    near = cv2.dilate(seed.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * reach + 1,) * 2)) > 0
+    halo = near & hue & (s >= g.get('halo_s', 22)) & (v >= g.get('halo_v', 130)) & ((s < solid_s) | (v >= g.get('white_v', 245)))
+    grown = ndimage.binary_propagation(seed, mask=seed | halo)
+    # The tint it casts round itself (what is behind turns pinkish, uneven, washed out), and its own soft edges:
+    # every pixel close by but a solid face (saturated and even over a few pixels).
+    tw = max(2, int(g.get('tint', 0.012) * H))
+    band = cv2.dilate(grown.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * tw + 1,) * 2)) > 0
+    img = np.ascontiguousarray(rgb[sl])
+    k5 = np.ones((5, 5), np.uint8)
+    spread = (cv2.dilate(img, k5).astype(np.int16) - cv2.erode(img, k5)).max(-1)
+    face = (s >= g.get('face_s', 140)) & (spread <= g.get('face_spread', 24)) & ~grown
+    # (the colour itself at body saturation is the part or a face lit by the streak: kept)
+    grown |= band & ~face & ~(hue & (s >= solid_s)) & ((out > 0) | (s >= g.get('halo_s', 22)))
+    # The streak's own rims in its colour: thin slivers of it beside the glow (a part is thick).
+    rest = (hue & (s >= solid_s) & ~grown).astype(np.uint8)
+    thick = cv2.dilate(cv2.erode(rest, k5), k5) > 0
+    grown |= band & (rest > 0) & ~thick
+    m = np.zeros(h.shape, bool)
+    m[sl] = grown
+    return m
+
+
 def classify(rgb, pal):
     hsv = np.asarray(Image.fromarray(rgb).convert('HSV')).astype(int)
     h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
@@ -327,6 +387,9 @@ def classify(rgb, pal):
                 lower = a_cls if np.mean(pal['classes'][a_cls - 1]['h']) < np.mean(pal['classes'][b_cls - 1]['h']) else b_cls
                 upper = b_cls if lower == a_cls else a_cls
                 out[m] = np.where(h[m] <= (c0 + c1) / 2, lower, upper)
+    glow = glow_of(rgb, h, s, v, out, pal) if pal.get('glow') else None
+    if glow is not None:
+        out[glow] = BG
     if pal.get('marks'):
         # Lettering and seams printed on clothing (white text, dark lines) inside the body: not floor, unknown.
         body = (out > 0) & (out != FACE)
@@ -361,10 +424,15 @@ def classify(rgb, pal):
                 continue
             # Only grown from the part's clearly seen colour (a pale wall of a similar hue nearby is not joined to it).
             hue = tinted & in_range(h, c['h']) & (out == BG)
+            if glow is not None:
+                hue &= ~glow
             grown = ndimage.binary_propagation(core, mask=core | hue)
             out[grown & hue] = cls
         # Washed out past any hue: unknown, but only inside the body's outline itself (no halo round a clean body).
         out[free & hull.astype(bool) & (s < vc.get('s_min', 22))] = UNKNOWN
+        if glow is not None:
+            # Glow over the body may hide a part (unknown); glow beside it is floor.
+            out[glow & hull.astype(bool) & (out == BG)] = UNKNOWN
     if FACE > 0:
         # The face: dark marks enclosed by the head's colour.
         head = ndimage.binary_closing(out == HEAD, iterations=3)
