@@ -235,6 +235,11 @@ class View:
         else:
             prep = fitter.prepare(fitter.view(self.encs[i], roi))
             obs, shade = prep[0].copy(), prep[3]
+        gate = getattr(fitter, 'gate', None)
+        if gate is not None:
+            # Tracking: only what lies near where the character was last frame is it (another player beside it, or an
+            # effect trailing off it, is floor).
+            obs[(obs > 0) & ~gate(roi, obs)] = 0
         # Only the body's own cluster of colours is body (a lamp or an effect of the same colour further off is floor).
         body_cls = sorted(F.BODY_CLASSES)  # every body colour (a part may show several, one per side)
         stray = np.isin(obs, body_cls) & ~RR.body_cluster(obs, {c: 1 for c in body_cls})
@@ -2759,6 +2764,11 @@ def track_step(fit, k, steps=25, sigma0=1.0, sigma1=0.4, lr=0.8, every=5, joints
         if cam_lock is not None:
             with torch.no_grad():
                 fit.cams[0][k, :2] = torch.as_tensor(cam_lock[:2], dtype=DT) / CAM_UNIT[:2]
+                if len(cam_lock) > 2:
+                    # The camera's scale held in its band (cam_lock[2] = (lo, hi)): a still camera's character only
+                    # grows or shrinks a little as it moves nearer or farther.
+                    lo, hi = cam_lock[2]
+                    fit.cams[0][k, 2] = fit.cams[0][k, 2].clamp(lo / float(CAM_UNIT[2]), hi / float(CAM_UNIT[2]))
         if every and (st % every == every - 1 or st == steps - 1):
             a = score()
             if a > best[0]:
@@ -2839,7 +2849,7 @@ def character_mask(obs):
 
 
 def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 60), rolls=(-45, 0, 45), prev=None,
-               cont_w=0.0, lean_max=45.0):
+               cont_w=0.0, lean_max=45.0, window=None):
     """A still camera already known (cam_lock: its yaw and tilt): the body tried turned every way instead -- lean x
     turn (every 15 deg) x roll, the limbs as they are and straight -- each placed onto the character (centre and size)
     and scored by hard colour agreement (quick ranking on every other pixel, the shortlist on every pixel); the best few
@@ -2886,7 +2896,7 @@ def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 6
     order = short[torch.argsort(full, descending=True)[:top]]
     now = float(agreement(fit, 0, i, J0[None], c0[None])[0])
     best = (now, J0, (fit.cams[0][k]).detach().clone())
-    f0 = F.Fitter(view.res)
+    f0 = window if window is not None else F.Fitter(view.res)  # the window the frame is seen through (track_frame's)
     for o in order.tolist():
         with torch.no_grad():
             fit.J[k] = Js[o]
@@ -2936,7 +2946,7 @@ def leg_cost(Q, per_deg=1.0):
 
 
 def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, keep=7, polish=3, steps=25,
-                limb_rounds=1, fine=6.0, deadline=None):
+                limb_rounds=1, fine=6.0, deadline=None, window=None):
     """The body and legs searched together, then the limbs, for a still camera (cam_lock: its turn and tilt). Hard
     colour scores (hard_draw) make thousands of candidates affordable:
       1. the body turned all round (15 deg steps; a turn far from the last frame's pays for it) x lean x roll near the
@@ -3042,7 +3052,7 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
         print(f'  times {t1 - t0:.2f} {t2 - t1:.2f} {time.time() - t2:.2f}')
         print('  limbs', [(round(r[0], 3), [round(float(x)) for x in r[1]]) for r in results])
     t3 = time.time()
-    f0 = F.Fitter(view.res)
+    f0 = window if window is not None else F.Fitter(view.res)  # the window the frame is seen through (track_frame's)
     best = None
     done = []
     for a, Jq, Cq in results:
@@ -3067,19 +3077,115 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
     return float(agreement(fit, 0, i, fit.J.detach()[[k]], cam_k())[0])
 
 
+def rig_outline(p, light):
+    """The rig of params p: each box's 8 corners in footage px (P, 8, 2)."""
+    with torch.no_grad():
+        J = torch.tensor(np.asarray(p[NC:], float)[None], dtype=DT)
+        C = torch.tensor(np.asarray(p[:5], float)[None], dtype=DT)
+        return geometry(J, C, float(p[5]), light, corners=True)[0].numpy()
+
+
+class TrackWindow:
+    """The window a tracked frame is seen through, anchored on the rig instead of on whatever colours are nearby: only
+    colours within `reach` studs of the outline of the rig as drawn in the last frame (prev_p; its boxes' convex hull,
+    so a limb swung between frames stays in) can be the character -- another player beside it, or an effect trailing
+    off it, is not. The window takes in the rig drawn now (params p) and those colours, centred on both and sized from
+    them, so the character stays whole in view even where the rig is off, and nothing else can drag the window away or
+    balloon it. Stands in for an r6_fit.Fitter in View.window (prepare and view are the fitter's own)."""
+
+    def __init__(self, fitter, prev_p, light, res, reach=1.25):
+        self.base, self.light, self.res = fitter, light, res
+        self.hull = cv2.convexHull(rig_outline(prev_p, light).reshape(-1, 2).astype(np.float32))[:, 0]
+        self.reach_px = reach * 6 * float(prev_p[2])  # footage px (one stud is 6 rig units)
+        self.colours = None  # the frame's colours inside the gate: (x lo, y lo, x hi, y hi), footage px
+
+    def _near(self, cls, x0, y0, k):
+        """Which of these pixels (class map cls, its top left (x0, y0) in footage px, k pixels per footage px) can be
+        the character: colours within reach of the last frame's outline, in pieces that touch the outline itself (a
+        hand of another player standing just behind it is a piece of its own; a limb swung out is joined to the
+        body). Unknown pixels (smoke, blur over it) count as joining."""
+        m = np.zeros(cls.shape, np.uint8)
+        cv2.fillConvexPoly(m, np.round(((self.hull - [x0, y0]) * k - 0.5) * 16).astype(np.int32), 1,
+                           lineType=cv2.LINE_8, shift=4)
+        if not m.any():
+            return np.ones(cls.shape, bool)
+        d = cv2.distanceTransform(1 - m, cv2.DIST_L2, 3)
+        some = (np.isin(cls, F.BODY_CLASSES) | (cls == F.UNKNOWN)) & (d <= self.reach_px * k)
+        n, lab = cv2.connectedComponents(cv2.dilate(some.astype(np.uint8), np.ones((3, 3), np.uint8)), connectivity=8)
+        touch = np.unique(lab[some & (d <= 0.25 * self.reach_px * k)])
+        return np.isin(lab, touch[touch > 0]) & some
+
+    def _seen(self, obs_full):
+        if self.colours is None:
+            H, W = obs_full.shape
+            lo = np.floor(self.hull.min(0) - self.reach_px).astype(int)
+            hi = np.ceil(self.hull.max(0) + self.reach_px).astype(int)
+            xa, ya = max(0, lo[0]), max(0, lo[1])
+            xb, yb = min(W, hi[0] + 1), min(H, hi[1] + 1)
+            self.colours = ()
+            if xb > xa and yb > ya:
+                cl = obs_full[ya:yb, xa:xb] // 1000
+                ys, xs = np.nonzero(self._near(cl, xa - 0.5, ya - 0.5, 1.0) & np.isin(cl, F.BODY_CLASSES))
+                if len(xs) > 30:
+                    self.colours = (np.percentile(xs, 1) + xa, np.percentile(ys, 1) + ya, np.percentile(xs, 99) + xa,
+                                    np.percentile(ys, 99) + ya)
+        return self.colours
+
+    def roi(self, p, obs_full):
+        uv = rig_outline(p, self.light).reshape(-1, 2)
+        lo, hi = uv.min(0), uv.max(0)
+        seen = self._seen(obs_full) if obs_full is not None else ()
+        if seen:
+            lo, hi = np.minimum(lo, seen[:2]), np.maximum(hi, seen[2:])
+        cx, cy = 0.5 * (lo + hi)
+        half = max(0.7 * 30 * float(p[2]), 0.62 * float((hi - lo).max()))
+        return (cx - half, cy - half, self.res / (2 * half), self.res, self.res)
+
+    def gate(self, roi, obs):
+        x0, y0, k, w, h = roi
+        return self._near(obs, x0, y0, k)
+
+    def view(self, obs_full, roi):
+        return self.base.view(obs_full, roi)
+
+    def prepare(self, enc):
+        return self.base.prepare(enc)
+
+    def prepare_lite(self, enc):
+        return self.base.prepare_lite(enc)
+
+
+# A still camera's scale while tracking: within this share of where tracking started, and of the last frame's.
+SCALE_BAND, SCALE_STEP = 0.06, 0.01
+
+
 def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, budget=7.5):
     """A still camera's next frame from the last one's params p (cam_lock: the camera's turn and tilt, found on the
-    idle frame; light and fitter from that fit): re-centred onto the character, gradient steps from the last pose, and
-    when that fits below `good` the body, legs and limbs searched (pose_search), within `budget` seconds. Returns
+    idle frame, and optionally its scale there; light and fitter from that fit): re-centred onto the character, gradient
+    steps from the last pose, and when that fits below `good` the body, legs and limbs searched (pose_search), within
+    `budget` seconds. The window follows the rig (TrackWindow), not the footage's colours, and the camera's scale stays
+    near the idle frame's (without one in cam_lock: the first tracked frame's, remembered on the fitter). Returns
     (params, agreement, how)."""
     t_start = time.time()
     v = View([rgb], {0: enc}, [0], 30, 112)
     v.lite = True
+    if len(cam_lock) > 2:
+        ref = float(cam_lock[2])
+    else:
+        ref = fitter.__dict__.setdefault('track_scale', float(p[2]))
+    lo = max(ref * (1 - SCALE_BAND), float(p[2]) * (1 - SCALE_STEP))
+    hi = min(ref * (1 + SCALE_BAND), float(p[2]) * (1 + SCALE_STEP))
+    if lo > hi:  # the last frame's scale outside the band: back toward it
+        lo = hi = ref * (1 - SCALE_BAND) if float(p[2]) < ref else ref * (1 + SCALE_BAND)
+    lock = (float(cam_lock[0]), float(cam_lock[1]), (lo, hi))
+    p = np.array(p, float)
+    p[2] = min(hi, max(lo, p[2]))
+    win = TrackWindow(fitter, p, light, v.res)
     fit = Fit([v], p[None, NC:], [p[None, :5]], [float(p[5])], [light])
     fit.head_lock = torch.full((1,), HEAD_TURN_W, dtype=DT)
     fit.lean_w = 1e-4
     prev = torch.tensor(p[NC:], dtype=DT)
-    v.window(0, p, fitter)
+    v.window(0, p, win)
     # Where the last pose fits best: as it was, or centred on the character's outline (place), each slid a little
     # (an arm reaching out moves the outline's centre, not the body).
     C = (fit.cams[0][[0]] * CAM_UNIT).detach().clone().repeat(2, 1)
@@ -3088,13 +3194,13 @@ def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, bud
     sc, C = shifted_match(fit, 0, Jl, C, [(dx, dy) for dx in range(-6, 7, 2) for dy in range(-6, 7, 2)], full=True)
     with torch.no_grad():
         fit.cams[0][0] = C[int(torch.argmax(sc))] / CAM_UNIT
-    v.window(0, fit.params_of(0, 0), fitter)
-    track_step(fit, 0, 30, sigma0=1.2, cam_lock=cam_lock)
-    v.window(0, fit.params_of(0, 0), fitter)
+    v.window(0, fit.params_of(0, 0), win)
+    track_step(fit, 0, 30, sigma0=1.2, cam_lock=lock)
+    v.window(0, fit.params_of(0, 0), win)
     ag = float(agreement(fit, 0, 0, fit.J.detach()[[0]], (fit.cams[0][[0]] * CAM_UNIT).detach())[0])
     how = 'tracked'
     if ag < good:
-        ag = pose_search(fit, 0, cam_lock, prev, cont_w=cont_w, deadline=t_start + budget)
+        ag = pose_search(fit, 0, lock, prev, cont_w=cont_w, deadline=t_start + budget, window=win)
         how = 'searched'
     return fit.params_of(0, 0), ag, how
 
