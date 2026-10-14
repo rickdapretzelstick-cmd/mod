@@ -888,11 +888,66 @@ def window_loss(fit, v, i, J, cam, sigma, stride=1):
     return loss
 
 
+# Hard colour scores drawn by painting each candidate's faces (farthest first) with OpenCV instead of the soft rasteriser:
+# the same picture argmax(rasterise) gives (bar sub-pixel edges and faces cutting into each other), at ~1/50 the cost.
+# R6_SOFT_SCORE=1 goes back to the soft rasteriser.
+HARD_SCORE = os.environ.get('R6_SOFT_SCORE', '0') != '1'
+
+
+def hard_draw(view, i, J, cam, persp, light, classes, leave_out=()):
+    """Each candidate's hard picture in frame i's window: (B, res, res) class labels (0 = floor), the nearest face on
+    top (faces sorted by their centres' depth, as rasterise does), back faces and slivers under ~10 px left out."""
+    pix, _, _, scale = view.windows[i]
+    res = view.res
+    k = 1.0 / float(scale)
+    x0, y0 = float(pix[0, 0]) - 0.5 * float(scale), float(pix[0, 1]) - 0.5 * float(scale)
+    with torch.no_grad():
+        quads, depth, vis, _ = geometry(J, cam, persp, light)
+    q = quads.numpy()
+    a_ = q[..., 0] * np.roll(q[..., 1], -1, 2) - np.roll(q[..., 0], -1, 2) * q[..., 1]
+    area = np.abs(a_.sum(-1))  # twice the area, footage px (B, Fc)
+    show = (vis.numpy() > 0.5) & (area >= 20.0)
+    if leave_out:
+        keep = np.array([part not in leave_out for _, _, _, part in F.PARTS]).repeat(6)
+        show &= keep[None]
+    # Window pixel coordinates (pixel centres on integers), 4 bits of sub-pixel precision for OpenCV.
+    pts = np.round(((q - [x0, y0]) * k - 0.5) * 16).astype(np.int32)
+    order = np.argsort(depth.numpy(), 1)  # farthest first (depth grows toward the camera)
+    cls = classes.numpy()
+    out = np.zeros((len(q), res, res), np.uint8)
+    for b in range(len(q)):
+        img = out[b]
+        for f in order[b]:
+            if show[b, f]:
+                cv2.fillConvexPoly(img, pts[b, f], int(cls[f]), lineType=cv2.LINE_8, shift=4)
+    return out
+
+
+def _hard_counts(view, i, drawn, stride=1):
+    """drawn (B, res, res) against frame i's colours: agreeing and body pixels (border and unknown left out)."""
+    _, obs, _, _ = view.windows[i]
+    res = view.res
+    o = obs.numpy().reshape(res, res)
+    known = (o != F.UNKNOWN) & ~view.border[i].numpy().reshape(res, res)
+    if F.FACE > 0:
+        o = np.where(o == F.FACE, F.HEAD, o)
+        drawn = np.where(drawn == F.FACE, F.HEAD, drawn)
+    if stride > 1:
+        o, known, drawn = o[::stride, ::stride], known[::stride, ::stride], drawn[:, ::stride, ::stride]
+    return o, known, drawn
+
+
 def agreement(fit, v, i, J, cam, stride=1):
     """The fit's rule: drawn hard (the boxes at their exact R6 sizes), how many pixels have the footage's colour.
     Agreeing body pixels over all body pixels of either (a box on floor, or body colour with no box on it, both count
     against; pixels hidden behind something are left out). 1.0 is a perfect fit. Batched: (B,)."""
     view = fit.views[v]
+    if HARD_SCORE:
+        drawn = hard_draw(view, i, J.detach(), cam.detach(), fit.persp[v], fit.lights[v], fit.classes)
+        o, known, drawn = _hard_counts(view, i, drawn, stride)
+        body = (((o > 0)[None] | (drawn > 0)) & known[None]).sum((1, 2))
+        agree = ((drawn == o[None]) & (o > 0)[None] & known[None]).sum((1, 2))
+        return torch.tensor(agree / np.maximum(body, 1), dtype=DT)
     pix, obs, _, scale = view.windows[i]
     border = view.border[i]
     if stride > 1:
@@ -2823,6 +2878,34 @@ def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 6
     return best[0]
 
 
+
+def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85):
+    """A still camera's next frame from the last one's params p (cam_lock: the camera's turn and tilt, found on the
+    idle frame; light and fitter from that fit): re-centred onto the character, gradient steps from the last pose, and
+    when that fits below `good` the body and limbs searched near the last pose (body_sweep). Returns (params, agreement,
+    how)."""
+    v = View([rgb], {0: enc}, [0], 30, 112)
+    v.lite = True
+    fit = Fit([v], p[None, NC:], [p[None, :5]], [float(p[5])], [light])
+    fit.head_lock = torch.full((1,), HEAD_TURN_W, dtype=DT)
+    fit.lean_w = 1e-4
+    prev = torch.tensor(p[NC:], dtype=DT)
+    v.window(0, p, fitter)
+    C = (fit.cams[0][[0]] * CAM_UNIT).detach().clone()
+    place(v, 0, fit, fit.J.detach()[[0]], C, size=False)
+    with torch.no_grad():
+        fit.cams[0][0] = C[0] / CAM_UNIT
+    v.window(0, fit.params_of(0, 0), fitter)
+    track_step(fit, 0, 30, sigma0=1.2, cam_lock=cam_lock)
+    v.window(0, fit.params_of(0, 0), fitter)
+    ag = float(agreement(fit, 0, 0, fit.J.detach()[[0]], (fit.cams[0][[0]] * CAM_UNIT).detach())[0])
+    how = 'tracked'
+    if ag < good:
+        ag = body_sweep(fit, 0, cam_lock, prev=prev, cont_w=cont_w)
+        how = 'searched'
+    return fit.params_of(0, 0), ag, how
+
+
 ARM_PARTS = ('rightArm', 'leftArm')
 
 
@@ -2831,6 +2914,19 @@ def drawn_match(fit, i, Js, C, leave_out=ARM_PARTS, stride=1):
     colour agrees, less half of those whose seen colour differs (unknown pixels left out). The arms' pose is not yet
     known while the body's turn is searched; a wrong arm would swamp the score, so they are left undrawn. (B,)"""
     view = fit.views[0]
+    if HARD_SCORE:
+        drawn = hard_draw(view, i, Js.detach(), C.detach(), fit.persp[0], fit.lights[0], fit.classes, leave_out)
+        _, obs, _, _ = view.windows[i]
+        o = obs.numpy().reshape(view.res, view.res)
+        if F.FACE > 0:
+            o = np.where(o == F.FACE, F.HEAD, o)
+            drawn = np.where(drawn == F.FACE, F.HEAD, drawn)
+        if stride > 1:
+            o, drawn = o[::stride, ::stride], drawn[:, ::stride, ::stride]
+        known = (o != F.UNKNOWN)[None]
+        good = ((drawn == o[None]) & (drawn > 0) & known).sum((1, 2))
+        bad = ((drawn != o[None]) & (drawn > 0) & known).sum((1, 2))
+        return torch.tensor(good - 0.5 * bad, dtype=DT)
     pix, obs, _, scale = view.windows[i]
     if stride > 1:
         side = view.res
