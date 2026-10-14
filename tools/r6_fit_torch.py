@@ -2911,7 +2911,8 @@ def leg_cost(Q, per_deg=1.0):
     return per_deg * out
 
 
-def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, keep=5, polish=2, steps=25):
+def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, keep=7, polish=3, steps=25,
+                limb_rounds=1, fine=6.0, deadline=None):
     """The body and legs searched together, then the limbs, for a still camera (cam_lock: its turn and tilt). Hard
     colour scores (hard_draw) make thousands of candidates affordable:
       1. the body turned all round (15 deg steps; a turn far from the last frame's pays for it) x lean x roll near the
@@ -2982,6 +2983,18 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
     Js2, C2 = torch.cat(poses), torch.cat(cams)
     sc2, C2 = rank(Js2, C2, near)
     tops = _distinct(Js2, torch.argsort(sc2, descending=True), body + legs, 10, keep)
+    if fine:  # 2b. each kept pose's body within +-fine deg (lean, turn, roll), its legs held
+        d = torch.tensor([[a, b, c] for a in (-fine, 0, fine) for b in (-fine, 0, fine) for c in (-fine, 0, fine)],
+                         dtype=DT)
+        Q = Js2[tops].repeat_interleave(len(d), 0)
+        Q[:, body] = Q[:, body] + d.repeat(len(tops), 1)
+        Q[:, hx] = Q[:, hx].clamp(-lean_max, lean_max)
+        Q[:, hz] = Q[:, hz].clamp(-lean_max, lean_max)
+        sc3, C3 = rank(Q, C2[tops].repeat_interleave(len(d), 0), near)
+        best3 = sc3.view(len(tops), len(d)).argmax(1)
+        rows = [n * len(d) + int(best3[n]) for n in range(len(tops))]
+        Js2, C2, sc2 = Q[rows], C3[rows], sc3[rows]
+        tops = list(range(len(tops)))
     if DEBUG:
         print('  bodies', [([round(float(x)) for x in Js[o, body]], round(float(sc[o]))) for o in picks])
         print('  tops', [([round(float(x)) for x in Js2[o, body + legs]], round(float(sc2[o]))) for o in tops])
@@ -2990,11 +3003,13 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
     cam_k = lambda: (fit.cams[0][[k]] * CAM_UNIT).detach()
     now = float(agreement(fit, 0, i, J0[None], c0[None])[0])
     results = [(now, J0, cam_now)]
-    for o in tops:
+    for n_, o in enumerate(tops):
+        if deadline is not None and n_ >= 2 and time.time() > deadline - 2.5:
+            break  # out of time: the poses ranked lower go unsearched
         with torch.no_grad():
             fit.J[k] = Js2[o]
             fit.cams[0][k] = C2[o] / CAM_UNIT
-        limb_sweep(fit, k, rounds=1, prev=prev, cont_w=cont_w, leg_w=0.0005)
+        limb_sweep(fit, k, rounds=limb_rounds, prev=prev, cont_w=cont_w, leg_w=0.0005)
         a, Cq = shifted_match(fit, i, fit.J.detach()[[k]], cam_k(), near, full=True)
         a = float(a[0])
         results.append((a, fit.J[k].detach().clone(), (Cq[0] / CAM_UNIT).clone()))
@@ -3007,7 +3022,7 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
     best = None
     done = []
     for a, Jq, Cq in results:
-        if len(done) >= polish:
+        if len(done) >= polish or (done and deadline is not None and time.time() > deadline - 0.8):
             break
         if any(float(_wrap(Jq - d).abs().max()) < 5 for d in done):
             continue  # the same pose found from two starts
@@ -3028,11 +3043,12 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
     return float(agreement(fit, 0, i, fit.J.detach()[[k]], cam_k())[0])
 
 
-def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85):
+def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, budget=7.5):
     """A still camera's next frame from the last one's params p (cam_lock: the camera's turn and tilt, found on the
     idle frame; light and fitter from that fit): re-centred onto the character, gradient steps from the last pose, and
-    when that fits below `good` the body and limbs searched near the last pose (body_sweep). Returns (params, agreement,
-    how)."""
+    when that fits below `good` the body, legs and limbs searched (pose_search), within `budget` seconds. Returns
+    (params, agreement, how)."""
+    t_start = time.time()
     v = View([rgb], {0: enc}, [0], 30, 112)
     v.lite = True
     fit = Fit([v], p[None, NC:], [p[None, :5]], [float(p[5])], [light])
@@ -3054,7 +3070,7 @@ def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85):
     ag = float(agreement(fit, 0, 0, fit.J.detach()[[0]], (fit.cams[0][[0]] * CAM_UNIT).detach())[0])
     how = 'tracked'
     if ag < good:
-        ag = pose_search(fit, 0, cam_lock, prev, cont_w=cont_w)
+        ag = pose_search(fit, 0, cam_lock, prev, cont_w=cont_w, deadline=t_start + budget)
         how = 'searched'
     return fit.params_of(0, 0), ag, how
 
