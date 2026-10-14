@@ -163,29 +163,36 @@ def rasterise(quads, depth, vis, shade, pix, sigma, classes, ncls, parts=False):
         sel = keep.nonzero()[:, 0]
         quads, depth, vis, shade = quads[:, sel], depth[:, sel], vis[:, sel], shade[:, sel]
         classes, face_part = classes[sel], face_part[sel]
+    # Faces sorted nearest first once (not every pixel's list of faces gathered).
+    order = torch.argsort(depth.detach(), dim=1, descending=True)  # (B, Fc)
+    quads = torch.gather(quads, 1, order[..., None, None].expand_as(quads))
+    vis = torch.gather(vis, 1, order)
+    shade_o = torch.gather(shade, 1, order)
+    cls = torch.gather(classes.expand(order.shape[0], -1), 1, order)  # (B, Fc)
     a = quads
     b = torch.roll(quads, -1, 2)
     e = b - a  # (B, Fc, 4, 2)
     elen = torch.clamp(e.norm(dim=-1), min=1e-3)
     area = (a[..., 0] * b[..., 1] - b[..., 0] * a[..., 1]).sum(-1)  # twice the signed area (B, Fc)
     orient = torch.where(area >= 0, 1.0, -1.0).detach()
-    rel = pix[:, :, None, None, :] - a[:, None]  # (B, N, Fc, 4, 2)
-    cross = (e[:, None, ..., 0] * rel[..., 1] - e[:, None, ..., 1] * rel[..., 0]) / elen[:, None]
-    inside = (cross * orient[:, None, :, None]).min(-1).values  # (B, N, Fc) signed distance to the face's outline
+    # Signed distance of pixel x to edge (a, e): (e_x (x_y - a_y) - e_y (x_x - a_x)) / |e|, linear in x: one matmul
+    # of the pixels with each edge's normal plus its offset, instead of (B, N, Fc, 4, 2) differences.
+    s_ = (orient[..., None] / elen)  # (B, Fc, 4)
+    nrm = torch.stack([-e[..., 1] * s_, e[..., 0] * s_], -1).reshape(e.shape[0], -1, 2)  # (B, Fc*4, 2)
+    off = ((e[..., 1] * a[..., 0] - e[..., 0] * a[..., 1]) * s_).reshape(e.shape[0], -1)  # (B, Fc*4)
+    cross = (pix @ nrm.transpose(1, 2) + off[:, None]).reshape(pix.shape[0], pix.shape[1], -1, 4)
+    inside = cross.min(-1).values  # (B, N, Fc) signed distance to the face's outline
     # A face seen nearly edge-on is a sliver whose short edges no longer bound it (it would smear into a line): fade
     # faces out below ~10 px of area.
     solid = torch.clamp(area.abs() / 20.0, 0, 1)
     alpha = torch.sigmoid(inside / sigma) * (vis * solid)[:, None]
-    order = torch.argsort(depth.detach(), dim=1, descending=True)  # nearest first
-    alpha = torch.gather(alpha, 2, order[:, None].expand_as(alpha))
     trans = torch.cumprod(torch.cat([torch.ones_like(alpha[..., :1]), 1 - alpha[..., :-1]], -1), -1)
     w = alpha * trans  # each face's share of the pixel
     floor = trans[..., -1] * (1 - alpha[..., -1])
-    cls = torch.gather(classes.expand(order.shape[0], -1), 1, order)  # (B, Fc)
     onehot = torch.nn.functional.one_hot(cls, ncls).to(DT)  # (B, Fc, C)
     prob = w @ onehot  # (B, N, C)
     prob = torch.cat([prob[..., :1] + floor.unsqueeze(-1), prob[..., 1:]], -1)
-    sh = (w * torch.gather(shade, 1, order)[:, None]).sum(-1) / (w.sum(-1) + 1e-6)
+    sh = (w * shade_o[:, None]).sum(-1) / (w.sum(-1) + 1e-6)
     if parts:
         pid = torch.gather(face_part.expand(order.shape[0], -1), 1, order)
         pprob = w @ torch.nn.functional.one_hot(pid, len(F.PARTS)).to(DT)  # (B, N, boxes): each box's share
