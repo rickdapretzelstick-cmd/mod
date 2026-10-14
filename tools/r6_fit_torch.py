@@ -3159,13 +3159,32 @@ class TrackWindow:
 SCALE_BAND, SCALE_STEP = 0.06, 0.01
 
 
-def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, budget=7.5):
+def part_agreement(fit, k=0):
+    """How well each part of frame k's pose is seen: per F.PARTS entry, its drawn pixels whose footage colour is
+    known, and how many of those agree. (matched, seen) arrays; weights when several views of one move are fused."""
+    view = fit.views[0]
+    i = view.idx[k]
+    J, C = fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach()
+    pid = (PART_OF_FACE + 1).to(torch.int64)
+    parts = hard_draw(view, i, J, C, fit.persp[0], fit.lights[0], pid)[0]
+    drawn = hard_draw(view, i, J, C, fit.persp[0], fit.lights[0], fit.classes)[0]
+    o, known, drawn = _hard_counts(view, i, drawn[None])
+    drawn = drawn[0]
+    seen = np.zeros(len(F.PARTS)), np.zeros(len(F.PARTS))
+    for n in range(len(F.PARTS)):
+        m = (parts == n + 1) & known
+        seen[1][n] = m.sum()
+        seen[0][n] = (m & (drawn == o)).sum()
+    return seen
+
+
+def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, budget=7.5, detail=False):
     """A still camera's next frame from the last one's params p (cam_lock: the camera's turn and tilt, found on the
     idle frame, and optionally its scale there; light and fitter from that fit): re-centred onto the character, gradient
     steps from the last pose, and when that fits below `good` the body, legs and limbs searched (pose_search), within
     `budget` seconds. The window follows the rig (TrackWindow), not the footage's colours, and the camera's scale stays
     near the idle frame's (without one in cam_lock: the first tracked frame's, remembered on the fitter). Returns
-    (params, agreement, how)."""
+    (params, agreement, how), and the Fit (its view windowed on the frame) after them when detail is set."""
     t_start = time.time()
     v = View([rgb], {0: enc}, [0], 30, 112)
     v.lite = True
@@ -3202,6 +3221,8 @@ def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, bud
     if ag < good:
         ag = pose_search(fit, 0, lock, prev, cont_w=cont_w, deadline=t_start + budget, window=win)
         how = 'searched'
+    if detail:
+        return fit.params_of(0, 0), ag, how, fit
     return fit.params_of(0, 0), ag, how
 
 
