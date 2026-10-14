@@ -1,0 +1,251 @@
+From 13eafd9a03254134a4394800658b8f21bde55cf6 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 14 Oct 2026 04:23:29 +0000
+Subject: [PATCH 1/2] r6_fuse_views: local time warp per view (DP on cross-view
+ fit) around the integer shift
+
+UNBUILT/untested python step; Python only, no mod code.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HQYiYmhRzcQpLCYMVVDQeZ
+---
+ tools/r6_fuse_views.py | 205 +++++++++++++++++++++++++++++++++--------
+ 1 file changed, 169 insertions(+), 36 deletions(-)
+
+diff --git a/tools/r6_fuse_views.py b/tools/r6_fuse_views.py
+index 24081fe..a04cb9c 100644
+--- a/tools/r6_fuse_views.py
++++ b/tools/r6_fuse_views.py
+@@ -121,46 +121,17 @@ for rep in REPS:
+     report['tracks'][rep]['time_shift_frames'] = best[1]
+     report['tracks'][rep]['aligned_error_deg'] = round(best[0], 1)
+ 
+-# Fusion on the reference timeline.
++# Fusion on the reference timeline: each repetition's frame for reference moment t (refined below by a local warp).
++kmap = {}
++
++
+ def src_frame(rep, t):
++    m = kmap.get(rep)
++    if m is not None and t in m:
++        return m[t]
+     return t - REPS[REF] + REPS[rep] + shift[rep]
+ 
+-SIG = float(os.environ.get('SIG', '0.5'))
+-WIN = int(os.environ.get('WIN', '2'))
+ first, last = ref_frames[0], ref_frames[-1]
+-fused, support = {}, {}
+-for t in range(first, last + 1):
+-    fused[t], support[t] = {}, {}
+-    for b in BONES:
+-        cands = []
+-        for rep in REPS:
+-            for d in DIRS:
+-                for dt in range(-WIN, WIN + 1):
+-                    x = data.get((rep, d, src_frame(rep, t) + dt, b))
+-                    if x and x[1] > 0:
+-                        cands.append((x[0], x[1] * math.exp(-0.5 * (dt / SIG) ** 2), rep, d, dt))
+-        if not cands:
+-            fused[t][b] = None
+-            continue
+-        ws = np.array([c[1] for c in cands])
+-        R = project(sum(w * c[0] for w, c in zip(ws, cands)))
+-        for _ in range(4):
+-            dev = np.array([angle(R, c[0]) for c in cands])
+-            rw = ws / (1 + (dev / 25.0) ** 2)
+-            R = project(sum(w * c[0] for w, c in zip(rw, cands)))
+-        fused[t][b] = R
+-        share = {}
+-        for w, c in zip(rw, cands):
+-            share[c[2]] = share.get(c[2], 0) + w
+-        tot = sum(share.values())
+-        support[t][b] = {r: round(v / tot, 2) for r, v in share.items()}
+-
+-# Fill bones no track saw at a moment from the nearest moment that has them.
+-for b in BONES:
+-    have = [t for t in fused if fused[t][b] is not None]
+-    for t in fused:
+-        if fused[t][b] is None:
+-            fused[t][b] = fused[min(have, key=lambda s: abs(s - t))][b]
+ 
+ 
+ def heading0(rep):
+@@ -243,6 +214,167 @@ def multi_score(t, poses):
+     return tot / max(wsum, 1e-9), per
+ 
+ 
++# Local time warp: per view a monotone frame mapping around its integer shift (each step 0..2 frames), chosen by
++# dynamic programming on cross-view fit -- how well the other views' tracked poses at moment t explain this view's
++# frame k and how well this view's pose at k explains theirs, each relative to the target view's own tracking there
++# (so the warp seeks agreeing moments, not easy frames). Repeated so every view sees the others' refined mapping.
++WARP = int(os.environ.get('WARP', '4'))  # half-width of the local window (0: integer shift only)
++WARP_ROUNDS = int(os.environ.get('WARP_ROUNDS', '2'))
++WARP_PEN = float(os.environ.get('WARP_PEN', '0.03'))  # cost per non-unit step (a stall or a skip)
++
++
++def poses_at(rep, k):
++    out = []
++    for d in DIRS:
++        pose = {}
++        for b in BONES:
++            x = data.get((rep, d, k, b))
++            if x:
++                pose[b] = x[0]
++        if len(pose) == len(BONES):
++            out.append(pose)
++    return out
++
++
++_cross = {}
++
++
++def cross_fill(pairs):
++    """pairs: (src_rep, src_k, dst_rep, dst_k) -> best agreement of the source frame's tracked poses drawn in the
++    destination view's frame, relative to that frame's own tracking (memoised; batched per destination)."""
++    need = {}
++    for q in pairs:
++        if q not in _cross:
++            need.setdefault((q[2], q[3]), set()).add((q[0], q[1]))
++    for (dr, dk), srcs in need.items():
++        vw = view_of(dr, dk)
++        srcs = sorted(srcs)
++        if vw is None:
++            for sr, sk in srcs:
++                _cross[(sr, sk, dr, dk)] = None
++            continue
++        _, fit, cp, _ = vw
++        own = own_ag(dr, dk)
++        P, owner = [], []
++        for i, (sr, sk) in enumerate(srcs):
++            for q in poses_at(sr, sk):
++                P.append(params_for(dr, q, cp))
++                owner.append(i)
++        res = [None] * len(srcs)
++        if P:
++            P = np.stack(P)
++            ag = T.agreement(fit, 0, 0, torch.tensor(P[:, NC:], dtype=T.DT), torch.tensor(P[:, :5], dtype=T.DT)).numpy()
++            for i, a in zip(owner, ag):
++                res[i] = max(res[i] or 0.0, float(a) / max(own, 0.05))
++        for i, (sr, sk) in enumerate(srcs):
++            _cross[(sr, sk, dr, dk)] = res[i]
++
++
++if WARP > 0:
++    import time as _time
++    _t0 = _time.time()
++    T_ALL = list(range(first, last + 1))
++    others_order = [r for r in REPS if r != REF]
++    report['warp'] = {}
++    for rnd in range(WARP_ROUNDS):
++        for v in others_order:
++            base = {t: t - REPS[REF] + REPS[v] + shift[v] for t in T_ALL}
++            ks = {t: [base[t] + o for o in range(-WARP, WARP + 1)] for t in T_ALL}
++            pairs = []
++            for t in T_ALL:
++                for u in REPS:
++                    if u == v:
++                        continue
++                    ku = src_frame(u, t)
++                    for k in ks[t]:
++                        pairs.append((u, ku, v, k))
++                        pairs.append((v, k, u, ku))
++            cross_fill(pairs)
++            S = np.zeros((len(T_ALL), 2 * WARP + 1))
++            for i, t in enumerate(T_ALL):
++                for j, k in enumerate(ks[t]):
++                    num = den = 0.0
++                    for u in REPS:
++                        if u == v:
++                            continue
++                        ku = src_frame(u, t)
++                        oa = own_ag(u, ku)
++                        if oa is None:
++                            continue
++                        w = oa ** 2
++                        for x in (_cross[(u, ku, v, k)], _cross[(v, k, u, ku)]):
++                            if x is not None:
++                                num += w * x
++                                den += w
++                    S[i, j] = num / den if den > 0 else 0.0
++            # DP: offset o_t = k - base(t); o_t - o_{t-1} in {-1, 0, +1} (frame steps 0, 1, 2).
++            n, m = S.shape
++            acc = np.full((n, m), -1e18)
++            back = np.zeros((n, m), int)
++            acc[0] = S[0]
++            for i in range(1, n):
++                for j in range(m):
++                    for dj in (-1, 0, 1):
++                        jj = j - dj
++                        if 0 <= jj < m:
++                            val = acc[i - 1, jj] - (WARP_PEN if dj else 0.0)
++                            if val > acc[i, j]:
++                                acc[i, j], back[i, j] = val, jj
++                acc[i] += S[i]
++            j = int(np.argmax(acc[-1]))
++            path = [0] * n
++            for i in range(n - 1, -1, -1):
++                path[i] = j
++                j = back[i, j]
++            kmap[v] = {t: ks[t][path[i]] for i, t in enumerate(T_ALL)}
++            offs = [path[i] - WARP for i in range(n)]
++            flat = float(np.mean(S[:, WARP]))
++            got = float(np.mean([S[i, path[i]] for i in range(n)]))
++            report['warp'][v] = {'offsets': offs, 'cross_fit_flat': round(flat, 3), 'cross_fit_warped': round(got, 3)}
++            print(f'warp round {rnd} {v}: cross-fit {flat:.3f} -> {got:.3f}, offsets {min(offs)}..{max(offs)} '
++                  f'({_time.time() - _t0:.0f} s)', flush=True)
++    print('WARP', json.dumps({v: ' '.join(str(o) for o in w['offsets'][::3]) for v, w in report['warp'].items()}), flush=True)
++
++SIG = float(os.environ.get('SIG', '0.5'))
++WIN = int(os.environ.get('WIN', '2'))
++first, last = ref_frames[0], ref_frames[-1]
++fused, support = {}, {}
++for t in range(first, last + 1):
++    fused[t], support[t] = {}, {}
++    for b in BONES:
++        cands = []
++        for rep in REPS:
++            for d in DIRS:
++                for dt in range(-WIN, WIN + 1):
++                    x = data.get((rep, d, src_frame(rep, t) + dt, b))
++                    if x and x[1] > 0:
++                        cands.append((x[0], x[1] * math.exp(-0.5 * (dt / SIG) ** 2), rep, d, dt))
++        if not cands:
++            fused[t][b] = None
++            continue
++        ws = np.array([c[1] for c in cands])
++        R = project(sum(w * c[0] for w, c in zip(ws, cands)))
++        for _ in range(4):
++            dev = np.array([angle(R, c[0]) for c in cands])
++            rw = ws / (1 + (dev / 25.0) ** 2)
++            R = project(sum(w * c[0] for w, c in zip(rw, cands)))
++        fused[t][b] = R
++        share = {}
++        for w, c in zip(rw, cands):
++            share[c[2]] = share.get(c[2], 0) + w
++        tot = sum(share.values())
++        support[t][b] = {r: round(v / tot, 2) for r, v in share.items()}
++
++# Fill bones no track saw at a moment from the nearest moment that has them.
++for b in BONES:
++    have = [t for t in fused if fused[t][b] is not None]
++    for t in fused:
++        if fused[t][b] is None:
++            fused[t][b] = fused[min(have, key=lambda s: abs(s - t))][b]
++
++
++
++
+ # Per moment: the pose that fits all views best -- every track's pose, the weighted average, then each bone swapped
+ # for any track's version of it while that helps, then each limb nudged.
+ sel, sel_score = {}, {}
+@@ -292,6 +424,7 @@ if EVAL:
+     out = {r: {'own': round(float(np.mean([a for a, _ in v])), 3), 'combined': round(float(np.mean([b for _, b in v])), 3),
+                'combined_below_0.80': sum(b < 0.8 for _, b in v), 'n': len(v)} for r, v in per_view.items()}
+     out['all_views_mean'] = round(float(np.mean([b for v in per_view.values() for _, b in v])), 3)
++    out['shift'] = {r: shift[r] for r in REPS}
+     print('EVAL', json.dumps(out), flush=True)
+     sys.exit(0)
+ 
+-- 
+2.43.0
+
