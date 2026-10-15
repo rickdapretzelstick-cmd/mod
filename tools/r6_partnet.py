@@ -16,7 +16,7 @@ def block(a, b):
 
 
 class PartNet(nn.Module):
-    def __init__(self, w=(24, 48, 96, 160)):
+    def __init__(self, w=(16, 32, 64, 96)):  # small enough to train on 4 CPUs in well under an hour
         super().__init__()
         self.e = nn.ModuleList([block(3, w[0]), block(w[0], w[1]), block(w[1], w[2]), block(w[2], w[3])])
         self.u = nn.ModuleList([nn.ConvTranspose2d(w[i + 1], w[i], 2, stride=2) for i in range(3)])
