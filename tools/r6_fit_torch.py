@@ -3243,7 +3243,6 @@ FRAME_CAP = float(os.environ.get('R6_FRAME_CAP', '9.0'))
 REFINE_DRIFT_PX = float(os.environ.get('R6_REFINE_DRIFT_PX', '3.0'))
 REFINE_DRIFT_DEG = float(os.environ.get('R6_REFINE_DRIFT_DEG', '10.0'))
 REFINE_MOVE_COST = float(os.environ.get('R6_REFINE_MOVE_COST', '0.002'))
-REFINE_KIND = os.environ.get('R6_REFINE_KIND', 'descent')
 
 
 def _bounded(J, C, J0, C0, lo_s, hi_s, drift_px, drift_deg):
@@ -3277,7 +3276,9 @@ def _refine_descent(fit, i, J, C, value, bound, deadline, free_cam, persp, degs=
                     pxs=(1.0, 0.5, 0.25), rounds=12):
     """Coordinate descent: each joint +-deg, the camera's x and y +-px footage px, its scale +-0.5 % (and with
     free_cam its turn +-deg and tilt +-deg/2), all tried as one batch; every move that helps taken together when that
-    is better still, else the best one; the step halves when nothing helps."""
+    is better still, else the best one; the step halves when nothing helps. (Measured against a random local search
+    from the same tracked starts at 224 px: the same frozen-scorer agreement, left/right/back means .769/.771/.778 vs
+    .769/.772/.776, in a third of the time, ~0.3 s a frame.)"""
     nj = J.shape[1]
     v0, a0 = value(J, C)
     best, best_a = float(v0[0]), float(a0[0])
@@ -3320,40 +3321,8 @@ def _refine_descent(fit, i, J, C, value, bound, deadline, free_cam, persp, degs=
     return J, C, best_a
 
 
-def _refine_random(fit, i, J, C, value, bound, deadline, free_cam, persp, iters=30, batch=96,
-                   cam_step=(1.5, 1.5, 0.05, 1.0, 1.0), joint_step=3.0, seed=0):
-    """Random local search: `iters` rounds of `batch` random nudges (a third of the joints each, the camera's entries
-    with cam_step's spread; turn and tilt only with free_cam), the best kept, the spread shrinking to 30 %."""
-    rng = np.random.default_rng(seed)
-    nj = J.shape[1]
-    v0, a0 = value(J, C)
-    best, best_a = float(v0[0]), float(a0[0])
-    step_c = np.array(cam_step, float)
-    if not free_cam:
-        step_c[:2] = 0.0
-    t_it = 0.0
-    for it in range(iters):
-        if deadline is not None and time.time() + t_it > deadline:
-            break
-        t = time.time()
-        f = 1.0 - 0.7 * it / iters
-        dC = torch.tensor(rng.normal(size=(batch, 5)) * step_c * f * (rng.random((batch, 5)) < 0.6), dtype=DT)
-        dJ = torch.tensor(rng.normal(size=(batch, nj)) * joint_step * f * (rng.random((batch, nj)) < 0.3), dtype=DT)
-        Js, Cs = bound(J + dJ, C + dC)
-        sv, sa = value(Js, Cs)
-        b = int(sv.argmax())
-        if float(sv[b]) > best:
-            best, best_a, J, C = float(sv[b]), float(sa[b]), Js[[b]], Cs[[b]]
-        if persp and it % 10 == 9:
-            got = _try_persp(fit, i, J, C, best, value)
-            if got is not None:
-                best, best_a = got
-        t_it = time.time() - t
-    return J, C, best_a
-
-
 def hard_refine(fit, k, cam_lock=None, deadline=None, drift_px=REFINE_DRIFT_PX, drift_deg=REFINE_DRIFT_DEG,
-                move_cost=REFINE_MOVE_COST, free_cam=False, persp=False, kind=None):
+                move_cost=REFINE_MOVE_COST, free_cam=False, persp=False):
     """Frame k's pose and camera nudged on the hard colour agreement itself (the rule frames are judged by; the soft
     loss's optimum sits a pixel or two off it along the outline). Cheap (hard_draw), so it runs at the fine resolution.
     With cam_lock its scale stays in cam_lock[2]'s band (and turn and tilt are held unless free_cam); the camera's place
@@ -3373,8 +3342,7 @@ def hard_refine(fit, k, cam_lock=None, deadline=None, drift_px=REFINE_DRIFT_PX, 
     def bound(Js, Cs):
         return _bounded(Js, Cs, J0, C0, lo_s, hi_s, drift_px, drift_deg)
 
-    run = _refine_random if (kind or REFINE_KIND) == 'random' else _refine_descent
-    J, C, best_a = run(fit, i, J0, C0, value, bound, deadline, free_cam or cam_lock is None, persp)
+    J, C, best_a = _refine_descent(fit, i, J0, C0, value, bound, deadline, free_cam or cam_lock is None, persp)
     with torch.no_grad():
         fit.J[k] = J[0]
         fit.cams[0][k] = C[0] / CAM_UNIT
