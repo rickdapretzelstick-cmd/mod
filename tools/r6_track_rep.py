@@ -16,10 +16,15 @@ def grab(n):
 order = list(range(a_, b_ + 1)) if dirn == 'fwd' else list(range(b_, a_ - 1, -1))
 args = argparse.Namespace(palette=PAL, res=112, at=None, flip=False, quick_start=False)
 t0 = time.time()
-fi, f0, _, agi = T.run_keyframes([grab(order[0])], [0], 30, args, log=lambda *x: None)
-p = fi.params_of(0, 0)
-cam_lock = [float(p[0]), float(p[1])]
-light = (fi.lights[0][0].numpy(), fi.lights[0][1])
+# The idle frame: keyframe fit, searched again from the standing pose when that is implausible (fit_idle).
+p, ag_idle, light, f0 = T.fit_idle(grab(order[0]), args)
+agi = [ag_idle]
+if os.environ.get('R6_CALIBRATE', '1') != '0':
+    # The still camera calibrated on the idle frame to the pixel (turn, tilt, scale, perspective): tracking locks it
+    # (calibrate_idle keeps the uncalibrated camera when the result is not a plausible standing fit).
+    rgb0 = grab(order[0])
+    p, agi[0] = T.calibrate_idle(rgb0, F.classify(rgb0, pal), p, light, f0, log=print)
+cam_lock = [float(p[0]), float(p[1]), float(p[2])]
 rows = {order[0]: {'params': [float(x) for x in p], 'agreement': float(agi[0]), 'how': 'idle', 'parts': None}}
 print(f'{name} {dirn} idle {order[0]}: {agi[0]:.3f} ({time.time()-t0:.0f} s)', flush=True)
 for n in order[1:]:

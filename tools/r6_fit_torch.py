@@ -223,6 +223,7 @@ class View:
         self.folds = {}  # frame -> [(segment, colour)]: straight lines inside one colour (where two faces meet)
         self.predicted_folds = {}  # frame -> [(segment, colour)]: folds implied by obtuse corners (predict_folds)
         self.targets = {}  # frame -> (boxes' target masks (boxes, N), which boxes have one (boxes,))
+        self.band_fp = None  # the colour-border band's width in footage px (None: one window px)
         self.lite = False  # fast mode: the colour map only (no rectangles, edges, corners or folds)
 
     def window(self, i, p, fitter):
@@ -249,11 +250,17 @@ class View:
             keep = F.ndimage.binary_dilation(character_mask(obs), iterations=2) & (obs > 0) | character_mask(obs)
             obs[~keep & (obs > 0)] = 0
         # The footage's colour borders are blended (blur, dithering): the 1-pixel band along them is left out of the score.
+        # band_fp sets the band's width in footage px instead (rounded to window px at this window's footage px per
+        # window px, at least one): a finer window must not count blended pixels the 112-px rule leaves out.
+        bw = 1 if self.band_fp is None else max(1, int(round(self.band_fp * k)))
         edge = np.zeros(obs.shape, bool)
-        edge[:, 1:] |= obs[:, 1:] != obs[:, :-1]
-        edge[:, :-1] |= obs[:, 1:] != obs[:, :-1]
-        edge[1:] |= obs[1:] != obs[:-1]
-        edge[:-1] |= obs[1:] != obs[:-1]
+        for s_ in range(1, bw + 1):
+            d_ = obs[:, s_:] != obs[:, :-s_]
+            edge[:, s_:] |= d_
+            edge[:, :-s_] |= d_
+            d_ = obs[s_:] != obs[:-s_]
+            edge[s_:] |= d_
+            edge[:-s_] |= d_
         self.border[i] = torch.tensor(edge.reshape(-1))
         gx, gy = np.meshgrid((np.arange(w) + 0.5) / k + x0, (np.arange(h) + 0.5) / k + y0)
         self.windows[i] = (torch.tensor(np.stack([gx, gy], -1).reshape(-1, 2), dtype=DT),
@@ -924,6 +931,46 @@ DEBUG = os.environ.get('R6_DEBUG', '0') == '1'
 HARD_SCORE = os.environ.get('R6_SOFT_SCORE', '0') != '1'
 
 
+# cv2.fillConvexPoly paints every pixel its outline touches: a polygon comes out ~half a pixel bigger all round than the
+# pixels whose centres it covers (what the soft rasteriser's argmax, and the footage sampled at pixel centres, show).
+# At 112 px per window that is one window pixel (~2 footage px) on every box's width and height. EXACT_EDGES insets
+# each face's edges on a box's outline (those whose neighbouring side of the same box is not drawn) by half a pixel, so
+# a box covers the pixel centres inside it; the edges between two drawn sides of one box stay where they are (no seam).
+# R6_LOOSE_EDGES=1 goes back to the loose drawing.
+EXACT_EDGES = os.environ.get('R6_LOOSE_EDGES', '0') != '1'
+_ADJ = np.zeros((6, 4), np.int64)  # the side of the same box across each edge of each side
+for _f in range(6):
+    for _j in range(4):
+        _e = {int(FACE_IDX[_f, _j]), int(FACE_IDX[_f, (_j + 1) % 4])}
+        _ADJ[_f, _j] = next(g for g in range(6) if g != _f and _e <= set(FACE_IDX[g].tolist()))
+_ADJ_ALL = (np.arange(len(F.PARTS))[:, None, None] * 6 + _ADJ[None]).reshape(-1, 4)  # (faces, 4) global side index
+
+
+def _inset_outline(qw, show, d=0.5):
+    """Faces (B, Fc, 4, 2) in window px with each edge on its box's outline moved in by d px; faces left with no
+    inside drop out of `show`."""
+    a = qw
+    b = np.roll(qw, -1, 2)
+    e = b - a
+    L = np.maximum(np.linalg.norm(e, axis=-1), 1e-6)
+    area = (a[..., 0] * b[..., 1] - b[..., 0] * a[..., 1]).sum(-1)
+    s = np.where(area >= 0, 1.0, -1.0)[..., None]
+    n = np.stack([-e[..., 1], e[..., 0]], -1) * (s / L)[..., None]  # inward unit normals (B, Fc, 4, 2)
+    dist = d * ~show[:, _ADJ_ALL]  # (B, Fc, 4): an edge whose neighbour side is not drawn is on the outline
+    npv, dpv = np.roll(n, 1, 2), np.roll(dist, 1, 2)  # the edge ending at each vertex
+    det = n[..., 0] * npv[..., 1] - n[..., 1] * npv[..., 0]
+    ok = np.abs(det) > 0.05
+    det = np.where(ok, det, 1.0)
+    x = (dist * npv[..., 1] - dpv * n[..., 1]) / det
+    y = (n[..., 0] * dpv - npv[..., 0] * dist) / det
+    mv = np.where(ok[..., None], np.stack([x, y], -1), n * np.maximum(dist, dpv)[..., None])
+    mv = np.clip(mv, -3 * d, 3 * d)
+    out = qw + mv
+    a2, b2 = out, np.roll(out, -1, 2)
+    area2 = (a2[..., 0] * b2[..., 1] - b2[..., 0] * a2[..., 1]).sum(-1)
+    return out, show & (area2 * area > 0)
+
+
 def hard_draw(view, i, J, cam, persp, light, classes, leave_out=()):
     """Each candidate's hard picture in frame i's window: (B, res, res) class labels (0 = floor), the nearest face on
     top (faces sorted by their centres' depth, as rasterise does), back faces and slivers under ~10 px left out."""
@@ -941,7 +988,13 @@ def hard_draw(view, i, J, cam, persp, light, classes, leave_out=()):
         keep = np.array([part not in leave_out for _, _, _, part in F.PARTS]).repeat(6)
         show &= keep[None]
     # Window pixel coordinates (pixel centres on integers), 4 bits of sub-pixel precision for OpenCV.
-    pts = np.round(((q - [x0, y0]) * k - 0.5) * 16).astype(np.int32)
+    qw = (q - [x0, y0]) * k - 0.5
+    if EXACT_EDGES:
+        # Twice: a side seen nearly edge-on (thinner than a pixel) has no inside once inset, so its neighbour's edge
+        # along it is on the outline after all.
+        show = _inset_outline(qw, show)[1]
+        qw, show = _inset_outline(qw, show)
+    pts = np.round(qw * 16).astype(np.int32)
     order = np.argsort(depth.numpy(), 1)  # farthest first (depth grows toward the camera)
     cls = classes.numpy()
     out = np.zeros((len(q), res, res), np.uint8)
@@ -3017,7 +3070,8 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
     Js2, C2 = torch.cat(poses), torch.cat(cams)
     sc2, C2 = rank(Js2, C2, near)
     tops = _distinct(Js2, torch.argsort(sc2, descending=True), body + legs, 10, keep)
-    if fine:  # 2b. each kept pose's body within +-fine deg (lean, turn, roll), its legs held
+    if fine and (deadline is None or time.time() < deadline - 4.0):  # 2b. each kept pose's body within +-fine deg
+        # (lean, turn, roll), its legs held; skipped on a machine too slow to leave time for the limbs after it
         d = torch.tensor([[a, b, c] for a in (-fine, 0, fine) for b in (-fine, 0, fine) for c in (-fine, 0, fine)],
                          dtype=DT)
         Q = Js2[tops].repeat_interleave(len(d), 0)
@@ -3038,8 +3092,8 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
     now = float(agreement(fit, 0, i, J0[None], c0[None])[0])
     results = [(now, J0, cam_now)]
     for n_, o in enumerate(tops):
-        if deadline is not None and n_ >= 2 and time.time() > deadline - 2.5:
-            break  # out of time: the poses ranked lower go unsearched
+        if deadline is not None and n_ >= 1 and time.time() > deadline - 2.5:
+            break  # out of time: the poses ranked lower go unsearched (the best-ranked one always is)
         with torch.no_grad():
             fit.J[k] = Js2[o]
             fit.cams[0][k] = C2[o] / CAM_UNIT
@@ -3056,8 +3110,8 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
     best = None
     done = []
     for a, Jq, Cq in results:
-        if len(done) >= polish or (done and deadline is not None and time.time() > deadline - 0.8):
-            break
+        if len(done) >= polish or (deadline is not None and time.time() > deadline - 0.8):
+            break  # out of time (a slow machine): the best limb-searched pose is kept unpolished below
         if any(float(_wrap(Jq - d).abs().max()) < 5 for d in done):
             continue  # the same pose found from two starts
         done.append(Jq)
@@ -3069,6 +3123,8 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
         a = float(agreement(fit, 0, i, fit.J.detach()[[k]], cam_k())[0])
         if best is None or a > best[0]:
             best = (a, fit.J[k].detach().clone(), fit.cams[0][k].detach().clone())
+    if best is None:
+        best = (results[0][0], results[0][1], results[0][2])
     with torch.no_grad():
         fit.J[k], fit.cams[0][k] = best[1], best[2]
     view.window(i, fit.params_of(0, k), f0)
@@ -3178,13 +3234,271 @@ def part_agreement(fit, k=0):
     return seen
 
 
-def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, budget=7.5, detail=False):
+# The fine stage: the frame's last word is had in a window of FINE_RES px (about one per footage px; the 112-px window
+# the search runs in samples every other footage px, so a box edge is only placed to ~2 footage px there).
+FINE_RES = int(os.environ.get('R6_FINE_RES', '224'))
+# A tracked frame's hard time cap (seconds from track_frame's start): the fine stage only runs on what pose_search left
+# of it, and stops before an iteration would run past it.
+FRAME_CAP = float(os.environ.get('R6_FRAME_CAP', '9.0'))
+# Continuity in the fine stage: the camera's place moves at most REFINE_DRIFT_PX footage px and each joint at most
+# REFINE_DRIFT_DEG from where the fine stage started, and every footage px the camera moves costs REFINE_MOVE_COST of
+# agreement (a slide must buy real agreement, not trade a pixel of outline for a body drifting across the frame).
+REFINE_DRIFT_PX = float(os.environ.get('R6_REFINE_DRIFT_PX', '3.0'))
+REFINE_DRIFT_DEG = float(os.environ.get('R6_REFINE_DRIFT_DEG', '10.0'))
+REFINE_MOVE_COST = float(os.environ.get('R6_REFINE_MOVE_COST', '0.002'))
+
+
+def _bounded(J, C, J0, C0, lo_s, hi_s, drift_px, drift_deg):
+    """Candidates held inside the joint limits, the scale band and the drift bounds around (J0, C0)."""
+    J = torch.maximum(torch.minimum(J, HI), LO)
+    if drift_deg is not None:
+        J = J0 + (J - J0).clamp(-drift_deg, drift_deg)
+    C = C.clone()
+    C[:, 2] = C[:, 2].clamp(lo_s, hi_s)
+    if drift_px is not None:
+        C[:, 3:5] = C0[:, 3:5] + (C[:, 3:5] - C0[:, 3:5]).clamp(-drift_px, drift_px)
+    return J, C
+
+
+def _try_persp(fit, i, J, C, best, value):
+    """The perspective nudged (idle-frame calibration); kept when the value goes up. Returns (value, agreement) or
+    None."""
+    out = None
+    for pp in (fit.persp[0] * 0.5, fit.persp[0] * 1.5, fit.persp[0] + 0.002, max(0.0, fit.persp[0] - 0.002)):
+        old = fit.persp[0]
+        fit.persp[0] = pp
+        v_, a_ = value(J, C)
+        if float(v_[0]) > best + 1e-6:
+            best, out = float(v_[0]), (float(v_[0]), float(a_[0]))
+        else:
+            fit.persp[0] = old
+    return out
+
+
+def _refine_descent(fit, i, J, C, value, bound, deadline, free_cam, persp, degs=(3.0, 1.5, 0.75),
+                    pxs=(1.0, 0.5, 0.25), rounds=12):
+    """Coordinate descent: each joint +-deg, the camera's x and y +-px footage px, its scale +-0.5 % (and with
+    free_cam its turn +-deg and tilt +-deg/2), all tried as one batch; every move that helps taken together when that
+    is better still, else the best one; the step halves when nothing helps. (Measured against a random local search
+    from the same tracked starts at 224 px: the same frozen-scorer agreement, left/right/back means .769/.771/.778 vs
+    .769/.772/.776, in a third of the time, ~0.3 s a frame.)"""
+    nj = J.shape[1]
+    v0, a0 = value(J, C)
+    best, best_a = float(v0[0]), float(a0[0])
+    t_it = 0.0
+    for d, s in zip(degs, pxs):
+        moves = [(3, s), (4, s), (2, 0.005 * float(C[0, 2]))] + ([(0, d), (1, 0.5 * d)] if free_cam else [])
+        for _ in range(rounds):
+            if deadline is not None and time.time() + t_it > deadline:
+                return J, C, best_a
+            t = time.time()
+            Js = J.repeat(2 * nj + 2 * len(moves), 1)
+            Cs = C.repeat(2 * nj + 2 * len(moves), 1)
+            for j in range(nj):
+                Js[2 * j, j] -= d
+                Js[2 * j + 1, j] += d
+            for n_, (a, st) in enumerate(moves):
+                Cs[2 * nj + 2 * n_, a] -= st
+                Cs[2 * nj + 2 * n_ + 1, a] += st
+            Js, Cs = bound(Js, Cs)
+            sv, sa = value(Js, Cs)
+            gain = sv - best
+            if float(gain.max()) <= 1e-6:
+                t_it = time.time() - t
+                if persp:
+                    got = _try_persp(fit, i, J, C, best, value)
+                    if got is not None:
+                        best, best_a = got
+                        continue
+                break
+            o = int(torch.argmax(sv))
+            ups = torch.nonzero(gain > 1e-6)[:, 0]
+            pick = (Js[[o]], Cs[[o]], float(sv[o]), float(sa[o]))
+            if len(ups) > 1:
+                Jc, Cc = bound(J + (Js[ups] - J).sum(0, keepdim=True), C + (Cs[ups] - C).sum(0, keepdim=True))
+                cv_, ca_ = value(Jc, Cc)
+                if float(cv_[0]) > pick[2]:
+                    pick = (Jc, Cc, float(cv_[0]), float(ca_[0]))
+            J, C, best, best_a = pick
+            t_it = time.time() - t
+    return J, C, best_a
+
+
+def hard_refine(fit, k, cam_lock=None, deadline=None, drift_px=REFINE_DRIFT_PX, drift_deg=REFINE_DRIFT_DEG,
+                move_cost=REFINE_MOVE_COST, free_cam=False, persp=False):
+    """Frame k's pose and camera nudged on the hard colour agreement itself (the rule frames are judged by; the soft
+    loss's optimum sits a pixel or two off it along the outline). Cheap (hard_draw), so it runs at the fine resolution.
+    With cam_lock its scale stays in cam_lock[2]'s band (and turn and tilt are held unless free_cam); the camera's place
+    stays within drift_px footage px and each joint within drift_deg of where it started (None: unbounded), and each
+    footage px the camera moves costs move_cost. persp also tries the perspective (idle-frame calibration). Stops
+    before an iteration would run past `deadline`. Returns the agreement (without the move cost)."""
+    view = fit.views[0]
+    i = view.idx[k]
+    J0 = fit.J.detach()[[k]].clone()
+    C0 = (fit.cams[0][[k]] * CAM_UNIT).detach().clone()
+    lo_s, hi_s = cam_lock[2] if cam_lock is not None and len(cam_lock) > 2 else (-np.inf, np.inf)
+
+    def value(Js, Cs):
+        a = agreement(fit, 0, i, Js, Cs)
+        return a - move_cost * (Cs[:, 3:5] - C0[:, 3:5]).norm(dim=1), a
+
+    def bound(Js, Cs):
+        return _bounded(Js, Cs, J0, C0, lo_s, hi_s, drift_px, drift_deg)
+
+    J, C, best_a = _refine_descent(fit, i, J0, C0, value, bound, deadline, free_cam or cam_lock is None, persp)
+    with torch.no_grad():
+        fit.J[k] = J[0]
+        fit.cams[0][k] = C[0] / CAM_UNIT
+    return best_a
+
+
+def fine_refine(rgb, enc, p, light, window, cam_lock=None, res=None, deadline=None, band_fp=None, **kw):
+    """Params p refined (hard_refine) in a res-px window (default FINE_RES) through `window` (a TrackWindow or a
+    Fitter); band_fp: the colour-border band's width in footage px (default one window px). Returns (params, agreement
+    at res, the Fit)."""
+    v = View([rgb], {0: enc}, [0], 30, res or FINE_RES)
+    v.lite = True
+    v.band_fp = band_fp
+    fit = Fit([v], np.asarray(p, float)[None, NC:], [np.asarray(p, float)[None, :5]], [float(p[5])], [light])
+    v.window(0, p, window)
+    ag = hard_refine(fit, 0, cam_lock, deadline=deadline, **kw)
+    return fit.params_of(0, 0), ag, fit
+
+
+# What a still camera calibrated on a standing idle frame may come out as (otherwise the calibration is a wrong local
+# minimum and the uncalibrated camera is kept): the turn and tilt within CALIB_TURN / CALIB_TILT deg of the idle fit's,
+# the tilt itself in CALIB_TILT_RANGE (these cameras look down at the character: ~14 deg on the side and back
+# views; ~47 on the front one, measured on its idle frame 790: at 32 px per stud an arm's top shows 23 px tall and
+# its front 42, sin 0.72 / cos 0.66), the scale within CALIB_SCALE
+# of the idle fit's, and the body upright (hips lean and roll within CALIB_LEAN, each thigh swung within CALIB_LEG).
+CALIB_TURN, CALIB_TILT, CALIB_TILT_RANGE, CALIB_SCALE, CALIB_LEAN, CALIB_LEG = 10.0, 8.0, (-5.0, 60.0), 0.06, 15.0, 20.0
+
+
+def idle_sane(p, ref=None):
+    """Whether params p are a plausible standing idle fit (and close enough to ref's camera). Returns (ok, why)."""
+    lean = [abs(_wrap(float(p[F.JI[('hips', a)]]))) for a in (0, 2)]
+    if not CALIB_TILT_RANGE[0] <= float(p[1]) <= CALIB_TILT_RANGE[1]:
+        return False, f'tilt {p[1]:.1f}'
+    if max(lean) > CALIB_LEAN:
+        return False, f'hips lean/roll {lean[0]:.0f}/{lean[1]:.0f}'
+    legs = [abs(_wrap(float(p[F.JI[(b, a)]]))) for b in THIGHS for a in (0, 2)]
+    if max(legs) > CALIB_LEG:
+        return False, f'a thigh swung {max(legs):.0f} deg'
+    if ref is not None:
+        if abs(_wrap(float(p[0] - ref[0]))) > CALIB_TURN:
+            return False, f'turn moved {_wrap(float(p[0] - ref[0])):.1f}'
+        if abs(float(p[1] - ref[1])) > CALIB_TILT:
+            return False, f'tilt moved {float(p[1] - ref[1]):.1f}'
+        if abs(float(p[2]) / float(ref[2]) - 1) > CALIB_SCALE:
+            return False, f'scale x{float(p[2]) / float(ref[2]):.3f}'
+    return True, ''
+
+
+def calibrate_idle(rgb, enc, p, light, fitter, seconds=20.0, log=None):
+    """A still camera from its idle frame (params p, a standing pose fitted by run_keyframes): the camera's turn, tilt,
+    scale, place and perspective and the pose refined on the hard agreement at the fine resolution (hard_refine), so
+    the camera that tracking locks draws the standing character's outline to the pixel. Kept only when the result is
+    a plausible standing fit (idle_sane) and agrees at least as well at 112 px; otherwise p is returned unchanged.
+    Returns (params, agreement at 112 px)."""
+    import copy
+    p = np.array(p, float)
+    fw = copy.copy(fitter)  # View.window sets the fitter's res: the caller's fitter stays at its own
+    v = View([rgb], {0: enc}, [0], 30, 112)
+    v.lite = True
+    fit = Fit([v], p[None, NC:], [p[None, :5]], [float(p[5])], [light])
+    v.window(0, p, fw)
+    a0 = float(agreement(fit, 0, 0, fit.J.detach()[[0]], (fit.cams[0][[0]] * CAM_UNIT).detach())[0])
+    band_fp = float(v.windows[0][3])
+    q, af, _ = fine_refine(rgb, enc, p, light, fw, None, deadline=time.time() + seconds, band_fp=band_fp,
+                           drift_px=None, drift_deg=None, move_cost=0.0, free_cam=True, persp=True)
+    with torch.no_grad():
+        fit.J[0] = torch.tensor(q[NC:], dtype=DT)
+        fit.cams[0][0] = torch.tensor(q[:5], dtype=DT) / CAM_UNIT
+    fit.persp[0] = float(q[5])
+    v.window(0, q, fw)
+    a1 = float(agreement(fit, 0, 0, fit.J.detach()[[0]], (fit.cams[0][[0]] * CAM_UNIT).detach())[0])
+    ok, why = idle_sane(q, p)
+    if ok and a1 < a0:
+        ok, why = False, f'112-px agreement {a0:.3f} -> {a1:.3f}'
+    if log:
+        log(f'calibrate_idle: {a0:.3f} -> {a1:.3f} (fine {af:.3f}); ' + ('kept' if ok else 'rejected: ' + why))
+    return (q, a1) if ok else (p, a0)
+
+
+# The idle frame's standing search when the keyframe fit is not a plausible standing fit (idle_sane): the plain
+# standing pose (its turn kept) under cameras all round at these tilts, each polished with its turn and tilt held.
+IDLE_PITCHES, IDLE_YAWS = tuple(range(0, 61, 6)), 48
+
+
+def fit_idle(rgb, args, log=print):
+    """A still camera's idle frame fitted (run_keyframes), and, when that comes out implausible for a character
+    standing still (tilted far over, leaning, a leg swung out: a wrong local minimum), searched again from the standing
+    pose under every turn and a plausible range of tilts (turn_sweep, the camera held while the pose is polished), the
+    light then fitted to that pose. The better plausible fit is kept (the keyframe fit when neither is plausible).
+    Returns (params, agreement at 112 px, light, the fitter)."""
+    fi, f0, _, agi = run_keyframes([rgb], [0], 30, args, log=lambda *x: None)
+    p = fi.params_of(0, 0)
+    ok, why = idle_sane(p)
+    if ok:
+        return p, float(agi[0]), (fi.lights[0][0].numpy(), fi.lights[0][1]), f0
+    log(f'fit_idle: keyframe fit {agi[0]:.3f} implausible ({why}); standing search')
+    view = fi.views[0]
+    i = view.idx[0]
+    enc = view.encs[i]
+    Jk = fi.J.detach()[0].clone()
+    rest = torch.zeros_like(Jk)
+    rest[F.JI[('hips', 1)] - NC] = Jk[F.JI[('hips', 1)] - NC]
+    with torch.no_grad():
+        fi.J[0] = rest
+        c = fi.cams[0][0].clone()
+        c[1] = 15.0 / float(CAM_UNIT[1])
+        fi.cams[0][0] = c
+    view.window(i, fi.params_of(0, 0), f0)
+    old, old_light = fi.persp[0], (f0.light, fi.lights[0])
+    turn_sweep(fi, 0, yaws=IDLE_YAWS, pitches=IDLE_PITCHES, hold=True, bodies=('rest',))
+    q = fi.params_of(0, 0)
+    f0.fit_light(q, enc)
+    light = (f0.light[0], f0.light[1])
+    fi.lights[0] = (torch.tensor(light[0], dtype=DT), float(light[1]))
+    view.window(i, q, f0)
+    a = float(agreement(fi, 0, i, fi.J.detach()[[0]], (fi.cams[0][[0]] * CAM_UNIT).detach())[0])
+    ok2, why2 = idle_sane(q)
+    log(f'fit_idle: standing search {a:.3f} (tilt {q[1]:.1f}, turn {q[0]:.1f})' + ('' if ok2 else f', implausible too ({why2})'))
+    if ok2:
+        return q, a, light, f0
+    fi.persp[0] = old
+    f0.light, fi.lights[0] = old_light
+    return p, float(agi[0]), (fi.lights[0][0].numpy(), fi.lights[0][1]), f0
+
+
+def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, budget=7.5, detail=False, fine=True,
+                fine_score=False):
     """A still camera's next frame from the last one's params p (cam_lock: the camera's turn and tilt, found on the
     idle frame, and optionally its scale there; light and fitter from that fit): re-centred onto the character, gradient
     steps from the last pose, and when that fits below `good` the body, legs and limbs searched (pose_search), within
-    `budget` seconds. The window follows the rig (TrackWindow), not the footage's colours, and the camera's scale stays
-    near the idle frame's (without one in cam_lock: the first tracked frame's, remembered on the fitter). Returns
-    (params, agreement, how), and the Fit (its view windowed on the frame) after them when detail is set."""
+    `budget` seconds; then (fine) the fine stage at FINE_RES px (fine_refine) on whatever is left of FRAME_CAP seconds,
+    kept unless it costs agreement at 112 px. The agreement returned is the 112-px one (what every consumer compares);
+    fine_score returns the fine window's instead; both are on the Fit (coarse_agreement, fine_agreement: None when the
+    fine stage did not run or was not kept). R6_FINE_RES=0 turns the fine stage off. The window follows the rig
+    (TrackWindow), not the footage's colours, and the camera's scale stays near the idle frame's (without one in
+    cam_lock: the first tracked frame's, remembered on the fitter). Returns (params, agreement, how), and the Fit (its
+    view windowed on the frame) after them when detail is set."""
+    threads = torch.get_num_threads()
+    if TRACK_THREADS > 0:
+        torch.set_num_threads(TRACK_THREADS)
+    try:
+        return _track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w, good, budget, detail, fine, fine_score)
+    finally:
+        torch.set_num_threads(threads)
+
+
+# Torch threads while a frame is tracked: its tensors are small, so one thread is as fast as four on an idle machine,
+# and on a busy one (other processes on the same CPUs) several threads wait on each other: 30 gradient steps measured
+# 9-15 s with 4 threads and three busy cores against 0.4-1.3 s with one (the 12-16 s frames). 0 leaves torch's default.
+TRACK_THREADS = int(os.environ.get('R6_TRACK_THREADS', '1'))
+
+
+def _track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w, good, budget, detail, fine, fine_score):
     t_start = time.time()
     v = View([rgb], {0: enc}, [0], 30, 112)
     v.lite = True
@@ -3218,12 +3532,44 @@ def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, bud
     v.window(0, fit.params_of(0, 0), win)
     ag = float(agreement(fit, 0, 0, fit.J.detach()[[0]], (fit.cams[0][[0]] * CAM_UNIT).detach())[0])
     how = 'tracked'
+    if DEBUG:
+        print(f'  track_frame: tracked in {time.time() - t_start:.2f} s, {ag:.3f}')
     if ag < good:
         ag = pose_search(fit, 0, lock, prev, cont_w=cont_w, deadline=t_start + budget, window=win)
         how = 'searched'
+    fit.coarse_agreement, fit.fine_agreement = ag, None
+    if DEBUG:
+        print(f'  track_frame: searched by {time.time() - t_start:.2f} s, {ag:.3f}')
+    end = t_start + FRAME_CAP - 0.3  # the 112-px check after the fine stage takes ~0.1 s
+    if fine and FINE_RES > 0 and time.time() < end - 0.5:
+        # The last word at the fine resolution: edges placed to about a footage px. The border band stays as wide in
+        # footage px as the 112-px window's one pixel (a finer window must not count blended pixels 112 leaves out).
+        p0 = fit.params_of(0, 0)
+        pf, af, _ = fine_refine(rgb, enc, p0, light, win, lock, deadline=end, band_fp=float(v.windows[0][3]))
+        with torch.no_grad():
+            fit.J[0] = torch.tensor(pf[NC:], dtype=DT)
+            fit.cams[0][0] = torch.tensor(pf[:5], dtype=DT) / CAM_UNIT
+        v.window(0, fit.params_of(0, 0), win)
+        a2 = float(agreement(fit, 0, 0, fit.J.detach()[[0]], (fit.cams[0][[0]] * CAM_UNIT).detach())[0])
+        if a2 >= ag - FINE_KEEP_TOL:
+            ag, fit.fine_agreement = a2, af
+        else:
+            with torch.no_grad():
+                fit.J[0] = torch.tensor(p0[NC:], dtype=DT)
+                fit.cams[0][0] = torch.tensor(p0[:5], dtype=DT) / CAM_UNIT
+            v.window(0, fit.params_of(0, 0), win)
+    fit.coarse_agreement = ag
+    if DEBUG:
+        print(f'  track_frame: done in {time.time() - t_start:.2f} s, {ag:.3f}')
+    out = fit.fine_agreement if fine_score and fit.fine_agreement is not None else ag
     if detail:
-        return fit.params_of(0, 0), ag, how, fit
-    return fit.params_of(0, 0), ag, how
+        return fit.params_of(0, 0), out, how, fit
+    return fit.params_of(0, 0), out, how
+
+
+# The fine stage is kept unless it costs more than this much agreement at 112 px (its window samples every footage
+# px; a hair lost on the coarse grid is noise, more is a sign it slid somewhere the coarse view disagrees with).
+FINE_KEEP_TOL = float(os.environ.get('R6_FINE_KEEP_TOL', '0.005'))
 
 
 ARM_PARTS = ('rightArm', 'leftArm')
@@ -3430,10 +3776,12 @@ def standing_start(enc):
     return p
 
 
-def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
+def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3, hold=False, bodies=None):
     """Side-coloured clothing: the camera tried all round the body (yaws x pitches; position, size and pose kept),
     every candidate scored by hard colour agreement (each side's colour makes the right turn stand out), the best
-    few polished by gradient (track_step); frame k keeps the best, or what it had when nothing beats it."""
+    few polished by gradient (track_step; with hold, the camera's turn and tilt held as the candidate has them);
+    bodies limits which body versions are tried ('as is', 'upright', 'rest'). Frame k keeps the best, or what it had
+    when nothing beats it."""
     view = fit.views[0]
     i = view.idx[k]
     J = fit.J.detach()[k].clone()
@@ -3449,7 +3797,8 @@ def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
     # And the plain standing pose (every joint straight): a still character is this under some camera.
     rest = torch.zeros_like(J)
     cams, poses = [], []
-    for body in (J, upright, rest):
+    versions = {'as is': J, 'upright': upright, 'rest': rest}
+    for body in [versions[b] for b in (bodies or versions)]:
         for y in range(yaws):
             for pt in pitches:
                 c = c0.clone()
@@ -3497,7 +3846,7 @@ def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
             fit.J[k] = Js[o]
             fit.cams[0][k] = C[o] / CAM_UNIT
         view.window(i, fit.params_of(0, k), F.Fitter(view.res))
-        track_step(fit, k, steps, sigma0=1.5)
+        track_step(fit, k, steps, sigma0=1.5, cam_lock=(float(C[o, 0]), float(C[o, 1])) if hold else None)
         a = float(agreement(fit, 0, i, fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
         if a > best[0]:
             best = (a, fit.J[k].detach().clone(), fit.cams[0][k].detach().clone())
