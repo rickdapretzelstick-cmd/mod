@@ -66,6 +66,15 @@ path: .887, 55 (small). Best candidate per frame averages .887-.892, so the pose
 remaining low frames (543-546, 555, 560-569, 582, 589) are trail / smoke / Dummy-occlusion frames where the ruler
 counts effect pixels as body -- next lever is the ruler (glow rejection, v2), then the other three views.
 
+## Ruler v2: Dummy guard in the palette (tools/palettes/side_colours.json)
+Class maps of the low frames: the strike trail is already mostly removed by glow_of; the leak was the training Dummy
+(skin read as the template's orange, S 45-73 vs 130-235 on real faces; hair read as red, H 1-7 vs 245-255). Orange now
+needs S >= 100 and red's hue stops at 0. Rescored + re-searched (r6_global candidates from the v2 path, merged):
+side view .886 mean, 54/98 >= .90 (v1 .883 / 53). Small: the error maps (red = body colour no box covers, blue = box
+on background) show the remaining low frames are real arm-pose errors on the arm reaching toward the Dummy (544,
+555, 562, 567) and a little Dummy left (its lit hand still orange). Recording without the Dummy touching the character
+is the big lever; in software, next is a Dummy mask from the frames before the move (it stands still).
+
 ## Motion scanner, the independent backup (tools/r6_motion.py)
 Rick asked for a second scanner that works separately. It never scores colours: points on the boxes (a 3 px grid on
 every visible face, lifted to each box's own 3-D coords) are followed by dense optical flow (DIS, forward-backward
