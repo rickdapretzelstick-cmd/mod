@@ -66,6 +66,20 @@ path: .887, 55 (small). Best candidate per frame averages .887-.892, so the pose
 remaining low frames (543-546, 555, 560-569, 582, 589) are trail / smoke / Dummy-occlusion frames where the ruler
 counts effect pixels as body -- next lever is the ruler (glow rejection, v2), then the other three views.
 
+## Letters as a hint (tools/r6_glyph.py) -- Rick's idea
+The template prints a letter on every face (shirt: white, pants: black); colour says which side faces the camera,
+the letter also says which way that side is turned (limb twist). `learn` unwarps each face's marks from trusted frames
+(colour >= .93, 42 frames) into a 32x32 texture per box face (oversee/left_glyphs.npz); `score` is the area-weighted
+correlation of a pose's warped letters with the marks seen. `check`: on clean frames the trusted pose beats its
+twisted-limb twins in 91% of decisive comparisons; on moving frames 69% (letters disagree with the colour pick).
+`select` adds each frame's top-4 candidates' twisted twins and runs Viterbi on colour + w x letters:
+w .05 / .1 / .2 -> colour .890 / .889 / .889, >= .90 56 / 55 / 55 (v2 colour-only .886 / 54); 5-7 frames get a
+twisted limb. Current clip uses w .1. Letters are ~15 px and blur on fast frames, so they help most on clean ones.
+```
+python3 tools/r6_glyph.py learn build/video.mp4 build/fit/v2/merged/left_global.json build/fit/v2/glyphs.npz 0.93
+python3 tools/r6_glyph.py select build/video.mp4 build/fit/v2/merged/left_cands.json build/fit/v2/glyphs.npz build/fit/v2/letters_0.1 0.1
+```
+
 ## Ruler v2: Dummy guard in the palette (tools/palettes/side_colours.json)
 Class maps of the low frames: the strike trail is already mostly removed by glow_of; the leak was the training Dummy
 (skin read as the template's orange, S 45-73 vs 130-235 on real faces; hair read as red, H 1-7 vs 245-255). Orange now
