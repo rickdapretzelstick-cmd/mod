@@ -63,7 +63,10 @@ until they rejoin the old track (2 frames within 12 deg) or one comes out .02 wo
 Round 1 results (fresh tracks committed in `oversee/`; same 112-px agreement as track_frame, all 98 moving frames):
 fresh forward track mean .872, min .579, 48/98 >= .90 -> after 12 corrections (11 kept) mean .881, min .631, 51/98.
 Picks of the backward track's pose (C) gave the big wins on trail frames (547 .63->.83, 550 .66->.77, 591 .78->.85);
-hand-written arm poses (555, 566) did not help. 62 of 99 frames flagged; most remaining low frames (543-545, 560-568,
+hand-written arm poses (555, 566) did not help. Frame 592 (Rick spotted it in the viewer): the right leg kicks out
+sideways toward the Dummy but the fit had it hidden behind the body (0 px seen: a hidden part has nothing pulling it
+out, and pose_search's leg cost keeps legs near standing); a hand-written kick (rightThigh.z 90) took it .77 -> .83.
+Sheets now also show four kick candidates (I/J each leg out sideways, K/L each leg forward). 62 of 99 frames flagged; most remaining low frames (543-545, 560-568,
 582, 589, 592-595) had no better candidate. Next: more candidate kinds (pose_search's own runners-up, per-arm
 swaps, legs swapped), a second round on the overseen track, then the other three views and fusion.
 

@@ -169,6 +169,15 @@ def candidates(fr, br, off, k):
     for b in ('rightArm', 'leftArm'):  # forward <-> back: the swing about the shoulder mirrored
         q[F.JI[(b, 0)]] = -q[F.JI[(b, 0)]]
     c['H'] = ('arms flipped fwd/back', clamp(q))
+    # Kicks: a leg hidden behind the body draws no pixels, so nothing pulls it out to where it really is, and the
+    # search's leg cost keeps legs near standing; each leg swung out sideways and forward.
+    for L, label, b, x, z in (('I', 'right leg out sideways', 'rightThigh', 0, 90),
+                              ('J', 'left leg out sideways', 'leftThigh', 0, -90),
+                              ('K', 'right leg kicked forward', 'rightThigh', -90, 0),
+                              ('L', 'left leg kicked forward', 'leftThigh', -90, 0)):
+        q = p.copy()
+        q[F.JI[(b, 0)]], q[F.JI[(b, 1)]], q[F.JI[(b, 2)]] = x, 0, z
+        c[L] = (label, clamp(q))
     return c
 
 

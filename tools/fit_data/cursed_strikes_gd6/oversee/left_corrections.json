@@ -1,15 +1,57 @@
 {
  "_note": "Round 1, side view (left 516-614, fresh forward track). Picked from build/fit/oversee/sheets/<frame>.png by Claude.",
- "526": {"pick": "C"},
- "531": {"pick": "C"},
- "546": {"pick": "C"},
- "547": {"pick": "C"},
- "550": {"pick": "C"},
- "555": {"pose": {"rightArm.x": 0, "rightArm.z": 90, "leftArm.x": 0, "leftArm.z": -90}},
- "561": {"pick": "C"},
- "566": {"pose": {"rightArm.x": -170, "rightArm.z": 20, "leftArm.x": 0, "leftArm.z": -80}},
- "578": {"pick": "C"},
- "591": {"pick": "C"},
- "610": {"pick": "C"},
- "611": {"pick": "C"}
+ "526": {
+  "pick": "C"
+ },
+ "531": {
+  "pick": "C"
+ },
+ "546": {
+  "pick": "C"
+ },
+ "547": {
+  "pick": "C"
+ },
+ "550": {
+  "pick": "C"
+ },
+ "555": {
+  "pose": {
+   "rightArm.x": 0,
+   "rightArm.z": 90,
+   "leftArm.x": 0,
+   "leftArm.z": -90
+  }
+ },
+ "561": {
+  "pick": "C"
+ },
+ "566": {
+  "pose": {
+   "rightArm.x": -170,
+   "rightArm.z": 20,
+   "leftArm.x": 0,
+   "leftArm.z": -80
+  }
+ },
+ "578": {
+  "pick": "C"
+ },
+ "591": {
+  "pick": "C"
+ },
+ "592": {
+  "pose": {
+   "rightThigh.x": 0,
+   "rightThigh.y": 0,
+   "rightThigh.z": 90
+  },
+  "_why": "right leg kicking sideways toward the Dummy; hidden in the fit (0 px seen)"
+ },
+ "610": {
+  "pick": "C"
+ },
+ "611": {
+  "pick": "C"
+ }
 }
