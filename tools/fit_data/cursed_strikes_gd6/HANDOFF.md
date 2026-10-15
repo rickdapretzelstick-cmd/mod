@@ -45,7 +45,29 @@ Effects (biggest), fast arms (90 deg between frames at 30 fps; search lands in w
 colours (red head/torso front/arm fronts; cyan shirt top/leg fronts), single-view depth ambiguity, motion blur,
 errors carrying forward frame to frame.
 
-## IN PROGRESS when the session ended: "AI overseer" mode (user approved: "Yep")
+## AI overseer: built and run on the side view (tools/r6_oversee.py)
+Stages (see the file's header): `flag` -> `sheets` -> Claude reads the PNGs and writes a corrections JSON -> `apply` ->
+`clip`. All Python; ~8 s per sheet (8 candidates locally refined), 4 jobs side by side (JOBS=4, OMP_NUM_THREADS=1).
+```
+python3 tools/r6_oversee.py flag   build/fit/oversee left
+python3 tools/r6_oversee.py sheets build/video.mp4 build/fit/oversee left build/fit/oversee      # all flagged frames
+python3 tools/r6_oversee.py apply  build/video.mp4 build/fit/oversee left build/fit/oversee tools/fit_data/cursed_strikes_gd6/oversee/left_corrections.json
+python3 tools/r6_oversee.py clip   build/video.mp4 build/fit/oversee left cursed_strikes_left_oversee
+```
+Candidates per sheet: A current fit, B previous frame's pose, C backward track's pose, D arms swapped L/R, E/F/G body
+turned +90/-90/180, H arms flipped forward/back; each shown over the footage with an inset from 90 deg round. Flags:
+agreement < .85, a bone's direction jumping > 60 deg between frames, or the backward track > 45 deg off (limb twist
+ignored). Apply refines the seed locally (no search), keeps it unless .03 worse, re-tracks the next frames from it
+until they rejoin the old track (2 frames within 12 deg) or one comes out .02 worse (old track kept from there).
+
+Round 1 results (fresh tracks committed in `oversee/`; same 112-px agreement as track_frame, all 98 moving frames):
+fresh forward track mean .872, min .579, 48/98 >= .90 -> after 12 corrections (11 kept) mean .881, min .631, 51/98.
+Picks of the backward track's pose (C) gave the big wins on trail frames (547 .63->.83, 550 .66->.77, 591 .78->.85);
+hand-written arm poses (555, 566) did not help. 62 of 99 frames flagged; most remaining low frames (543-545, 560-568,
+582, 589, 592-595) had no better candidate. Next: more candidate kinds (pose_search's own runners-up, per-arm
+swaps, legs swapped), a second round on the overseen track, then the other three views and fusion.
+
+## Earlier design notes for the AI overseer
 Idea: tracker flags suspect frames (score < .85, joint jump > ~60 deg, views disagree); renders review sheets
 (footage | current fit overlay | 3-4 alternative hypotheses: previous pose, arms swapped L/R, body turned +-90/180,
 arm flipped forward/back, the backward track's pose; plus each rig seen from 90 deg for depth); Claude looks at the
