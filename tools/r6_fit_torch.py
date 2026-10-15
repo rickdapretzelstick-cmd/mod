@@ -249,11 +249,16 @@ class View:
             keep = F.ndimage.binary_dilation(character_mask(obs), iterations=2) & (obs > 0) | character_mask(obs)
             obs[~keep & (obs > 0)] = 0
         # The footage's colour borders are blended (blur, dithering): the 1-pixel band along them is left out of the score.
+        # The band is as wide in footage px at every resolution (res // 112 window px: a finer window must not count
+        # blended pixels the 112 rule leaves out).
         edge = np.zeros(obs.shape, bool)
-        edge[:, 1:] |= obs[:, 1:] != obs[:, :-1]
-        edge[:, :-1] |= obs[:, 1:] != obs[:, :-1]
-        edge[1:] |= obs[1:] != obs[:-1]
-        edge[:-1] |= obs[1:] != obs[:-1]
+        for s_ in range(1, max(1, self.res // 112) + 1):
+            d_ = obs[:, s_:] != obs[:, :-s_]
+            edge[:, s_:] |= d_
+            edge[:, :-s_] |= d_
+            d_ = obs[s_:] != obs[:-s_]
+            edge[s_:] |= d_
+            edge[:-s_] |= d_
         self.border[i] = torch.tensor(edge.reshape(-1))
         gx, gy = np.meshgrid((np.arange(w) + 0.5) / k + x0, (np.arange(h) + 0.5) / k + y0)
         self.windows[i] = (torch.tensor(np.stack([gx, gy], -1).reshape(-1, 2), dtype=DT),
@@ -3178,11 +3183,75 @@ def part_agreement(fit, k=0):
     return seen
 
 
-def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, budget=7.5, detail=False):
+# The fine stage: the frame's last word is had in a window of FINE_RES px (about one per footage px; the 112-px window
+# the search runs in samples every other footage px, so a box edge is only placed to ~2 footage px there).
+FINE_RES = int(os.environ.get('R6_FINE_RES', '224'))
+
+
+def hard_refine(fit, k, cam_lock=None, degs=(3.0, 1.5, 0.75), pxs=(1.0, 0.5, 0.25), rounds=12, deadline=None):
+    """Coordinate descent on the hard agreement itself (the rule frames are judged by, not the soft loss): each joint
+    +-deg, the camera's x and y +-px footage px and its scale +-0.5% (inside cam_lock's band; its turn and tilt held),
+    all tried at once as one batch; every move that helps is taken together when that is better still, else the best
+    one; the step halves when nothing helps. Cheap (hard_draw), so it runs at the fine resolution. Returns agreement."""
+    view = fit.views[0]
+    i = view.idx[k]
+    J = fit.J.detach()[[k]].clone()
+    C = (fit.cams[0][[k]] * CAM_UNIT).detach().clone()
+    lo_s, hi_s = cam_lock[2] if cam_lock is not None and len(cam_lock) > 2 else (-np.inf, np.inf)
+    best = float(agreement(fit, 0, i, J, C)[0])
+    nj = J.shape[1]
+    for d, s in zip(degs, pxs):
+        for _ in range(rounds):
+            if deadline is not None and time.time() > deadline:
+                break
+            Js = J.repeat(2 * nj + 6, 1)
+            Cs = C.repeat(2 * nj + 6, 1)
+            for j in range(nj):
+                Js[2 * j, j] -= d
+                Js[2 * j + 1, j] += d
+            for n_, (a, st) in enumerate(((3, s), (4, s), (2, 0.005 * float(C[0, 2])))):
+                Cs[2 * nj + 2 * n_, a] -= st
+                Cs[2 * nj + 2 * n_ + 1, a] += st
+            Js = torch.maximum(torch.minimum(Js, HI), LO)
+            Cs[:, 2] = Cs[:, 2].clamp(lo_s, hi_s)
+            sc = agreement(fit, 0, i, Js, Cs)
+            gain = sc - best
+            if float(gain.max()) <= 1e-6:
+                break
+            o = int(torch.argmax(sc))
+            ups = torch.nonzero(gain > 1e-6)[:, 0]
+            Jc = J + (Js[ups] - J).sum(0, keepdim=True)
+            Cc = C + (Cs[ups] - C).sum(0, keepdim=True)
+            Jc = torch.maximum(torch.minimum(Jc, HI), LO)
+            both = float(agreement(fit, 0, i, Jc, Cc)[0]) if len(ups) > 1 else -1.0
+            if both > float(sc[o]):
+                J, C, best = Jc, Cc, both
+            else:
+                J, C, best = Js[[o]], Cs[[o]], float(sc[o])
+    with torch.no_grad():
+        fit.J[k] = J[0]
+        fit.cams[0][k] = C[0] / CAM_UNIT
+    return best
+
+
+def fine_refine(rgb, enc, p, light, window, cam_lock=None, res=None, deadline=None):
+    """Params p refined (hard_refine) in a res-px window (default FINE_RES) through `window` (a TrackWindow or a
+    Fitter). Returns (params, agreement at res, the Fit)."""
+    v = View([rgb], {0: enc}, [0], 30, res or FINE_RES)
+    v.lite = True
+    fit = Fit([v], np.asarray(p, float)[None, NC:], [np.asarray(p, float)[None, :5]], [float(p[5])], [light])
+    v.window(0, p, window)
+    ag = hard_refine(fit, 0, cam_lock, deadline=deadline)
+    return fit.params_of(0, 0), ag, fit
+
+
+def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, budget=7.5, detail=False, fine=True):
     """A still camera's next frame from the last one's params p (cam_lock: the camera's turn and tilt, found on the
     idle frame, and optionally its scale there; light and fitter from that fit): re-centred onto the character, gradient
     steps from the last pose, and when that fits below `good` the body, legs and limbs searched (pose_search), within
-    `budget` seconds. The window follows the rig (TrackWindow), not the footage's colours, and the camera's scale stays
+    `budget` seconds, then (fine) refined at FINE_RES px (fine_refine; its agreement is the one returned, the 112-px
+    one is kept as the Fit's coarse_agreement; R6_FINE_RES=0 turns it off). The window follows the rig
+    (TrackWindow), not the footage's colours, and the camera's scale stays
     near the idle frame's (without one in cam_lock: the first tracked frame's, remembered on the fitter). Returns
     (params, agreement, how), and the Fit (its view windowed on the frame) after them when detail is set."""
     t_start = time.time()
@@ -3221,6 +3290,15 @@ def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, bud
     if ag < good:
         ag = pose_search(fit, 0, lock, prev, cont_w=cont_w, deadline=t_start + budget, window=win)
         how = 'searched'
+    fit.coarse_agreement = ag  # at 112 px
+    if fine and FINE_RES > 0:
+        # The last word at the fine resolution: edges placed to about a footage px (hard_refine), and the agreement
+        # returned is the fine window's (every footage px counted, not every other one).
+        pf, ag, _ = fine_refine(rgb, enc, fit.params_of(0, 0), light, win, lock, deadline=t_start + budget + 1.5)
+        with torch.no_grad():
+            fit.J[0] = torch.tensor(pf[NC:], dtype=DT)
+            fit.cams[0][0] = torch.tensor(pf[:5], dtype=DT) / CAM_UNIT
+        v.window(0, fit.params_of(0, 0), win)
     if detail:
         return fit.params_of(0, 0), ag, how, fit
     return fit.params_of(0, 0), ag, how
