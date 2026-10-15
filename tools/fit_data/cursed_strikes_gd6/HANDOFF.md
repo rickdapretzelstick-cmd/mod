@@ -45,6 +45,27 @@ Effects (biggest), fast arms (90 deg between frames at 30 fps; search lands in w
 colours (red head/torso front/arm fronts; cyan shirt top/leg fronts), single-view depth ambiguity, motion blur,
 errors carrying forward frame to frame.
 
+## Whole-clip selection, the automatic method (tools/r6_global.py) -- use this before the overseer
+Rick: "we can't be doing patch fixes". Cause of misses like the frame-592 kick: the scorer already prefers the right
+pose (.83 vs .76), but track_frame pays a motion cost per frame (pose_search: cont_w per 90 deg, leg_cost past 30 deg,
+thigh grid only +-45 forward/back), so a sudden real move loses to the last frame's pose, and the error carries on.
+r6_global: per frame, candidates found on the footage alone (the track's pose, the backward track's, the neighbours'
+poses, each refined and then limb_sweep'd over every limb's full range with no motion or stance cost), all scored in
+one common window (union of their outlines, so a compact pose can't hide colour it misses); then Viterbi picks one
+candidate per frame maximising total agreement less motion beyond a free allowance (limbs 45-60 deg/frame, hips 25;
+.0008 per deg beyond). A move seen over several frames wins; a one-frame fluke loses to its neighbours. No AI or hand
+input. ~2 s/frame-candidate, 3 min for the side view with 4 jobs.
+```
+OMP_NUM_THREADS=1 python3 tools/r6_global.py candidates build/video.mp4 build/fit/oversee left build/fit/oversee
+python3 tools/r6_global.py select build/fit/oversee left 0.0008
+python3 tools/r6_oversee.py clip build/video.mp4 build/fit/oversee/left_global.json left cursed_strikes_left_global
+```
+Side view (98 moving frames, common-window scores): track .862 mean, 46 >= .90, min .525 -> global .883, 53 >= .90,
+min .588; 592 gets the kick by itself. Lambda .0003-.005 all land .877-.885. A second round seeded from the chosen
+path: .887, 55 (small). Best candidate per frame averages .887-.892, so the pose search is close to saturated: the
+remaining low frames (543-546, 555, 560-569, 582, 589) are trail / smoke / Dummy-occlusion frames where the ruler
+counts effect pixels as body -- next lever is the ruler (glow rejection, v2), then the other three views.
+
 ## AI overseer: built and run on the side view (tools/r6_oversee.py)
 Stages (see the file's header): `flag` -> `sheets` -> Claude reads the PNGs and writes a corrections JSON -> `apply` ->
 `clip`. All Python; ~8 s per sheet (8 candidates locally refined), 4 jobs side by side (JOBS=4, OMP_NUM_THREADS=1).

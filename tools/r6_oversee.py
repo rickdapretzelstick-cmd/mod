@@ -5,7 +5,7 @@
 #   flag   TRACKDIR NAME                          suspect frames and why (low agreement, joint jump, fwd/bwd disagree)
 #   sheets VIDEO TRACKDIR NAME OUTDIR [FRAMES]    review sheets OUTDIR/sheets/<n>.png + OUTDIR/sheets/<n>.json
 #   apply  VIDEO TRACKDIR NAME OUTDIR CORR.json   corrected track OUTDIR/<NAME>_oversee.json + report
-#   clip   VIDEO OUTDIR NAME CLIPNAME             preview clip and viewer conversion from the corrected track
+#   clip   VIDEO TRACK.json NAME CLIPNAME         preview clip + viewer conversion from a track (overseen or global)
 # FRAMES: comma list (e.g. 540,541,560-570); default every flagged frame. Several jobs side by side: OMP_NUM_THREADS=1.
 #
 # Corrections (CORR.json), per frame of the forward track:
@@ -381,8 +381,8 @@ def apply(video, trackdir, name, outdir, corr_path):
     return rep
 
 
-def write_clip(video, outdir, name, clipname):
-    tr = json.load(open(os.path.join(outdir, f'{name}_oversee.json')))
+def write_clip(video, track_path, name, clipname):
+    tr = json.load(open(track_path))
     fr = rows(tr)
     clip = Clip(video, tr)
     idx = sorted(fr)
@@ -398,7 +398,7 @@ def write_clip(video, outdir, name, clipname):
     f0 = F.Fitter(96)
     f0.light = clip.light
     F.write_conversion(frames, {k: np.array(fr[k]['params'], float) for k in idx}, idx, times, 'preview/' + clipname,
-                       f0, od, f'gd6 {name} view {idx[0]}-{idx[-1]} (AI overseen: {len(tr.get("ai_corrected", []))} frames corrected)')
+                       f0, od, f'gd6 {name} view {idx[0]}-{idx[-1]} ' + ('(whole-clip selection, r6_global)' if 'global' in tr else f'(AI overseen: {len(tr.get("ai_corrected", []))} frames corrected)'))
 
 
 def main():
