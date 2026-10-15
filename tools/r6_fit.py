@@ -397,16 +397,46 @@ def glow_of(rgb, h, s, v, out, pal):
     seed = core & (inside < g.get('inside', 0.5)) & (other >= g.get('thin', 0.15) * win * win)
     if not seed.any():
         return None
+    soft = None
     near = cv2.dilate(seed.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * reach + 1,) * 2)) > 0
     halo = near & hue & (s >= g.get('halo_s', 22)) & (v >= g.get('halo_v', 130)) & ((s < solid_s) | (v >= g.get('white_v', 245)))
+    img = np.ascontiguousarray(rgb[sl])
+    k5 = np.ones((5, 5), np.uint8)
+    spread = (cv2.dilate(img, k5).astype(np.int16) - cv2.erode(img, k5)).max(-1)
+    if g.get('soft'):
+        # The halo's inner part is as saturated as a face, but it is a soft ramp: saturation and brightness climb
+        # together toward the core over many pixels (the colour blended into what is behind), while a face is even
+        # (or, shaded, darker at the same saturation) and ends in a sharp edge. A pixel on such a ramp: its 3x3
+        # neighbourhood nearly even, but its saturation and brightness both rising by a lot across a wider window,
+        # within soft_reach of a streak.
+        sg = g['soft']
+        sr = max(2, int(sg.get('reach', 0.015) * H))
+        near_s = cv2.dilate(seed.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * sr + 1,) * 2)) > 0
+        s8, v8 = s.astype(np.uint8), v.astype(np.uint8)
+        kw = np.ones((sg.get('win', 9),) * 2, np.uint8)
+        k3 = np.ones((3, 3), np.uint8)
+        ds = cv2.dilate(s8, kw).astype(np.int16) - cv2.erode(s8, kw)
+        dv = cv2.dilate(v8, kw).astype(np.int16) - cv2.erode(v8, kw)
+        d3 = (cv2.dilate(img, k3).astype(np.int16) - cv2.erode(img, k3)).max(-1)
+        ramp = (ds >= sg.get('ds', 40)) & (dv >= sg.get('dv', 30)) & (d3 <= sg.get('d3', 30))
+        # (a face's own rim -- a rounded head's shading, its blurred edge -- lies against a wide even patch of the
+        # face: kept)
+        pk = sg.get('protect', 7)
+        even = ((s >= g.get('face_s', 140)) & (spread <= g.get('face_spread', 24))).astype(np.uint8)
+        body_core = cv2.erode(even, np.ones((pk, pk), np.uint8))
+        guard = cv2.dilate(body_core, np.ones((2 * pk + 1,) * 2, np.uint8)) > 0
+        # (and a ramp fades out: what lies a little further on is no longer the colour at body saturation -- a solid
+        # part with streaks crossing it stays the colour all round them)
+        br = max(2, int(sg.get('fade', 0.006) * H))
+        off = (~(hue & (s >= solid_s))).astype(np.uint8)
+        fades = cv2.dilate(off, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * br + 1,) * 2)) > 0
+        soft = near_s & hue & (s >= solid_s) & (v < g.get('white_v', 245)) & ramp & ~guard & fades
+        halo |= soft
     grown = _cv_propagate(seed, seed | halo)
     # The tint it casts round itself (what is behind turns pinkish, uneven, washed out), and its own soft edges:
     # every pixel close by but a solid face (saturated and even over a few pixels).
     tw = max(2, int(g.get('tint', 0.012) * H))
     band = cv2.dilate(grown.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * tw + 1,) * 2)) > 0
-    img = np.ascontiguousarray(rgb[sl])
-    k5 = np.ones((5, 5), np.uint8)
-    spread = (cv2.dilate(img, k5).astype(np.int16) - cv2.erode(img, k5)).max(-1)
     face = (s >= g.get('face_s', 140)) & (spread <= g.get('face_spread', 24)) & ~grown
     # (the colour itself at body saturation is the part or a face lit by the streak: kept)
     grown |= band & ~face & ~(hue & (s >= solid_s)) & ((out > 0) | (s >= g.get('halo_s', 22)))
@@ -416,7 +446,22 @@ def glow_of(rgb, h, s, v, out, pal):
     grown |= band & (rest > 0) & ~thick
     m = np.zeros(h.shape, bool)
     m[sl] = grown
+    if soft is not None:
+        glow_of.soft = np.zeros(h.shape, bool)
+        glow_of.soft[sl] = grown & soft
     return m
+
+
+glow_of.soft = None  # the last call's ramp pixels (body saturation, in the glow): see classify
+
+
+def _soft_near(soft, out, pal):
+    """The glow's ramp pixels (glow_of.soft) within the soft 'body' reach of colours still read as body (out, glow
+    already floor)."""
+    import cv2
+    r = max(1, int(pal['glow']['soft'].get('body', 0.012) * out.shape[0]))
+    body = ((out > 0) & (out != UNKNOWN)).astype(np.uint8)
+    return soft & (cv2.dilate(body, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1,) * 2)) > 0)
 
 
 def classify(rgb, pal):
@@ -445,9 +490,16 @@ def classify(rgb, pal):
                     lower = a_cls if np.mean(pal['classes'][a_cls - 1]['h']) < np.mean(pal['classes'][b_cls - 1]['h']) else b_cls
                     upper = b_cls if lower == a_cls else a_cls
                     out[m] = np.where(hi_[m] <= (c0 + c1) / 2, lower, upper)
+    glow_of.soft = None
     glow = glow_of(rgb, h.astype(int), s.astype(int), v.astype(int), out, pal) if pal.get('glow') else None
+    soft = glow_of.soft if glow is not None else None
     if glow is not None:
         out[glow] = BG
+        if soft is not None:
+            # The halo's ramp at body saturation: the glow, but beside other body colours it may lie over a part (a
+            # head lit through by it): unknown there, not floor (further off it is floor like the rest of the glow).
+            soft = _soft_near(soft, out, pal)
+            out[soft] = UNKNOWN
     if pal.get('marks'):
         body = (out > 0) & (out != FACE)
         closed = _cv_fill_holes(_cv_closing(body, 2))
@@ -455,6 +507,9 @@ def classify(rgb, pal):
     if pal.get('veil'):
         vc = pal['veil']
         body = (out > 0) & (out != FACE) & (out != UNKNOWN)
+        if soft is not None:
+            body = body | soft  # (it keeps the outline whole where it covers a part)
+        reach = max(2, int(vc.get('reach', 0.02) * out.shape[0]))
         grown3 = cv2.dilate(body.astype(np.uint8), _CROSS, iterations=3)
         n, lab, stats, _ = cv2.connectedComponentsWithStats(grown3, connectivity=4)
         hull = np.zeros(out.shape, np.uint8)
@@ -465,7 +520,6 @@ def classify(rgb, pal):
             ys, xs = np.nonzero(lab[y:y + hh, x:x + w] == c)
             pts = np.stack([xs + x, ys + y], 1).astype(np.int32)
             cv2.fillConvexPoly(hull, cv2.convexHull(pts), 1)
-        reach = max(2, int(vc.get('reach', 0.02) * out.shape[0]))
         near = cv2.dilate(hull, _CROSS, iterations=reach).astype(bool)
         free = near & (out == BG) & (v >= vc.get('v_min', 150))
         tinted = free & (s >= vc.get('s_min', 22))
@@ -524,9 +578,14 @@ def classify_ref(rgb, pal):
                 lower = a_cls if np.mean(pal['classes'][a_cls - 1]['h']) < np.mean(pal['classes'][b_cls - 1]['h']) else b_cls
                 upper = b_cls if lower == a_cls else a_cls
                 out[m] = np.where(h[m] <= (c0 + c1) / 2, lower, upper)
+    glow_of.soft = None
     glow = glow_of(rgb, h, s, v, out, pal) if pal.get('glow') else None
+    soft = glow_of.soft if glow is not None else None
     if glow is not None:
         out[glow] = BG
+        if soft is not None:
+            soft = _soft_near(soft, out, pal)
+            out[soft] = UNKNOWN  # the halo's ramp at body saturation beside the body: maybe over a part (classify)
     if pal.get('marks'):
         # Lettering and seams printed on clothing (white text, dark lines) inside the body: not floor, unknown.
         body = (out > 0) & (out != FACE)
@@ -539,6 +598,8 @@ def classify_ref(rgb, pal):
         vc = pal['veil']
         import cv2
         body = (out > 0) & (out != FACE) & (out != UNKNOWN)
+        if soft is not None:
+            body = body | soft
         # Only within each body patch's own outline (its convex hull, a little wider): smoke over a part lies inside
         # the body's shape; a pale wall or the sky beside it does not.
         lab, n = ndimage.label(ndimage.binary_dilation(body, iterations=3))
