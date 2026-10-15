@@ -304,8 +304,7 @@
   "hue_pad": 6,
   "tint": 0.012,
   "face_s": 140,
-  "face_spread": 24,
-  "soft": {"reach": 0.01, "protect": 7, "win": 9, "ds": 40, "dv": 30, "d3": 30}
+  "face_spread": 24
  },
  "veil": {
   "s_min": 22,
