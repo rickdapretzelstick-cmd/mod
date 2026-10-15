@@ -1,0 +1,38 @@
+From 9b9e8e4da7e528ee7c6f6df1929096950ea417b1 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 15 Oct 2026 00:54:52 +0000
+Subject: [PATCH 3/9] r6_track_rep: calibrate the still camera on the idle
+ frame (calibrate_idle) and lock its scale too
+
+Bench (21 frames each, left 526-546 / right 300-320 / back 106-126, exact-edge hard agreement):
+baseline .811/.812/.748 -> exact edges + hard_refine + idle calibration .830/.832/.781; frames >= .90: 10 -> 19 of 63;
+max 6.0 s per frame. Idle frames (camera + pose refined): left .891->.978, back .955->.984, right .886->.991.
+Measured with scratch scripts (calib/run_calib.py, score2.py); tools/ only, no Java build needed.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HQYiYmhRzcQpLCYMVVDQeZ
+---
+ tools/r6_track_rep.py | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/tools/r6_track_rep.py b/tools/r6_track_rep.py
+index 7741e76..750bc07 100644
+--- a/tools/r6_track_rep.py
++++ b/tools/r6_track_rep.py
+@@ -18,8 +18,12 @@ args = argparse.Namespace(palette=PAL, res=112, at=None, flip=False, quick_start
+ t0 = time.time()
+ fi, f0, _, agi = T.run_keyframes([grab(order[0])], [0], 30, args, log=lambda *x: None)
+ p = fi.params_of(0, 0)
+-cam_lock = [float(p[0]), float(p[1])]
+ light = (fi.lights[0][0].numpy(), fi.lights[0][1])
++if os.environ.get('R6_CALIBRATE', '1') != '0':
++    # The still camera calibrated on the idle frame to the pixel (turn, tilt, scale, perspective): tracking locks it.
++    rgb0 = grab(order[0])
++    p, agi[0] = T.calibrate_idle(rgb0, F.classify(rgb0, pal), p, light, f0)
++cam_lock = [float(p[0]), float(p[1]), float(p[2])]
+ rows = {order[0]: {'params': [float(x) for x in p], 'agreement': float(agi[0]), 'how': 'idle', 'parts': None}}
+ print(f'{name} {dirn} idle {order[0]}: {agi[0]:.3f} ({time.time()-t0:.0f} s)', flush=True)
+ for n in order[1:]:
+-- 
+2.43.0
+

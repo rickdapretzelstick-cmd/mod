@@ -1,0 +1,17 @@
+From 8ec73ff0fd56620f78e4a4d2cc50f1184c69dad9 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 15 Oct 2026 01:14:33 +0000
+Subject: [PATCH 5/9] r6 fit: fine stage measured on left/right/back hard
+ sequences
+
+Same cached starts, fine stage off vs on (R6_FINE_RES=0 / 224), scored by the frozen scorer
+at 112 (current rule) and at 224 with a 2-px band (same footage px excluded):
+mean 112: left .744->.760, right .752->.763, back .756->.779;
+mean 224: left .734->.752, right .743->.756, back .751->.777; max 6.7 s/frame (+0.3 s).
+Python tools only; no Gradle build needed.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HQYiYmhRzcQpLCYMVVDQeZ
+-- 
+2.43.0
+

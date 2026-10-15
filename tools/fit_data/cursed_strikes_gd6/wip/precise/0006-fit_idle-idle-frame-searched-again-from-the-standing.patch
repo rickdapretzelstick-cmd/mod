@@ -1,0 +1,155 @@
+From bd3fee75edf2787b2783899cda736ce7253ca034 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 15 Oct 2026 01:25:07 +0000
+Subject: [PATCH 6/9] fit_idle: idle frame searched again from the standing
+ pose (all turns, plausible tilts, camera held) when the keyframe fit is
+ implausible; idle_sane checks legs too; r6_track_rep uses fit_idle
+
+UNMEASURED: not yet run. Python tools only; no Java build involved.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HQYiYmhRzcQpLCYMVVDQeZ
+---
+ tools/r6_fit_torch.py | 64 +++++++++++++++++++++++++++++++++++++++----
+ tools/r6_track_rep.py | 11 ++++----
+ 2 files changed, 64 insertions(+), 11 deletions(-)
+
+diff --git a/tools/r6_fit_torch.py b/tools/r6_fit_torch.py
+index 1f0354f..9980a15 100644
+--- a/tools/r6_fit_torch.py
++++ b/tools/r6_fit_torch.py
+@@ -3397,8 +3397,8 @@ def fine_refine(rgb, enc, p, light, window, cam_lock=None, res=None, deadline=No
+ # What a still camera calibrated on a standing idle frame may come out as (otherwise the calibration is a wrong local
+ # minimum and the uncalibrated camera is kept): the turn and tilt within CALIB_TURN / CALIB_TILT deg of the idle fit's,
+ # the tilt itself in CALIB_TILT_RANGE (these cameras look a little down at the character), the scale within CALIB_SCALE
+-# of the idle fit's, and the body upright (hips lean and roll within CALIB_LEAN).
+-CALIB_TURN, CALIB_TILT, CALIB_TILT_RANGE, CALIB_SCALE, CALIB_LEAN = 10.0, 8.0, (-5.0, 40.0), 0.06, 15.0
++# of the idle fit's, and the body upright (hips lean and roll within CALIB_LEAN, each thigh swung within CALIB_LEG).
++CALIB_TURN, CALIB_TILT, CALIB_TILT_RANGE, CALIB_SCALE, CALIB_LEAN, CALIB_LEG = 10.0, 8.0, (-5.0, 40.0), 0.06, 15.0, 20.0
+ 
+ 
+ def idle_sane(p, ref=None):
+@@ -3408,6 +3408,9 @@ def idle_sane(p, ref=None):
+         return False, f'tilt {p[1]:.1f}'
+     if max(lean) > CALIB_LEAN:
+         return False, f'hips lean/roll {lean[0]:.0f}/{lean[1]:.0f}'
++    legs = [abs(_wrap(float(p[F.JI[(b, a)]]))) for b in THIGHS for a in (0, 2)]
++    if max(legs) > CALIB_LEG:
++        return False, f'a thigh swung {max(legs):.0f} deg'
+     if ref is not None:
+         if abs(_wrap(float(p[0] - ref[0]))) > CALIB_TURN:
+             return False, f'turn moved {_wrap(float(p[0] - ref[0])):.1f}'
+@@ -3449,6 +3452,52 @@ def calibrate_idle(rgb, enc, p, light, fitter, seconds=20.0, log=None):
+     return (q, a1) if ok else (p, a0)
+ 
+ 
++# The idle frame's standing search when the keyframe fit is not a plausible standing fit (idle_sane): the plain
++# standing pose (its turn kept) under cameras all round at these tilts, each polished with its turn and tilt held.
++IDLE_PITCHES, IDLE_YAWS = (0, 6, 12, 18, 24, 30, 36), 48
++
++
++def fit_idle(rgb, args, log=print):
++    """A still camera's idle frame fitted (run_keyframes), and, when that comes out implausible for a character
++    standing still (tilted far over, leaning, a leg swung out: a wrong local minimum), searched again from the standing
++    pose under every turn and a plausible range of tilts (turn_sweep, the camera held while the pose is polished), the
++    light then fitted to that pose. The better plausible fit is kept (the keyframe fit when neither is plausible).
++    Returns (params, agreement at 112 px, light, the fitter)."""
++    fi, f0, _, agi = run_keyframes([rgb], [0], 30, args, log=lambda *x: None)
++    p = fi.params_of(0, 0)
++    ok, why = idle_sane(p)
++    if ok:
++        return p, float(agi[0]), (fi.lights[0][0].numpy(), fi.lights[0][1]), f0
++    log(f'fit_idle: keyframe fit {agi[0]:.3f} implausible ({why}); standing search')
++    view = fi.views[0]
++    i = view.idx[0]
++    enc = view.encs[i]
++    Jk = fi.J.detach()[0].clone()
++    rest = torch.zeros_like(Jk)
++    rest[F.JI[('hips', 1)] - NC] = Jk[F.JI[('hips', 1)] - NC]
++    with torch.no_grad():
++        fi.J[0] = rest
++        c = fi.cams[0][0].clone()
++        c[1] = 15.0 / float(CAM_UNIT[1])
++        fi.cams[0][0] = c
++    view.window(i, fi.params_of(0, 0), f0)
++    old, old_light = fi.persp[0], (f0.light, fi.lights[0])
++    turn_sweep(fi, 0, yaws=IDLE_YAWS, pitches=IDLE_PITCHES, hold=True, bodies=('rest',))
++    q = fi.params_of(0, 0)
++    f0.fit_light(q, enc)
++    light = (f0.light[0], f0.light[1])
++    fi.lights[0] = (torch.tensor(light[0], dtype=DT), float(light[1]))
++    view.window(i, q, f0)
++    a = float(agreement(fi, 0, i, fi.J.detach()[[0]], (fi.cams[0][[0]] * CAM_UNIT).detach())[0])
++    ok2, why2 = idle_sane(q)
++    log(f'fit_idle: standing search {a:.3f} (tilt {q[1]:.1f}, turn {q[0]:.1f})' + ('' if ok2 else f', implausible too ({why2})'))
++    if ok2:
++        return q, a, light, f0
++    fi.persp[0] = old
++    f0.light, fi.lights[0] = old_light
++    return p, float(agi[0]), (fi.lights[0][0].numpy(), fi.lights[0][1]), f0
++
++
+ def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, budget=7.5, detail=False, fine=True,
+                 fine_score=False):
+     """A still camera's next frame from the last one's params p (cam_lock: the camera's turn and tilt, found on the
+@@ -3732,10 +3781,12 @@ def standing_start(enc):
+     return p
+ 
+ 
+-def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
++def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3, hold=False, bodies=None):
+     """Side-coloured clothing: the camera tried all round the body (yaws x pitches; position, size and pose kept),
+     every candidate scored by hard colour agreement (each side's colour makes the right turn stand out), the best
+-    few polished by gradient (track_step); frame k keeps the best, or what it had when nothing beats it."""
++    few polished by gradient (track_step; with hold, the camera's turn and tilt held as the candidate has them);
++    bodies limits which body versions are tried ('as is', 'upright', 'rest'). Frame k keeps the best, or what it had
++    when nothing beats it."""
+     view = fit.views[0]
+     i = view.idx[k]
+     J = fit.J.detach()[k].clone()
+@@ -3751,7 +3802,8 @@ def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
+     # And the plain standing pose (every joint straight): a still character is this under some camera.
+     rest = torch.zeros_like(J)
+     cams, poses = [], []
+-    for body in (J, upright, rest):
++    versions = {'as is': J, 'upright': upright, 'rest': rest}
++    for body in [versions[b] for b in (bodies or versions)]:
+         for y in range(yaws):
+             for pt in pitches:
+                 c = c0.clone()
+@@ -3799,7 +3851,7 @@ def turn_sweep(fit, k, steps=30, yaws=24, pitches=(0, 15, 30, 45, 70), top=3):
+             fit.J[k] = Js[o]
+             fit.cams[0][k] = C[o] / CAM_UNIT
+         view.window(i, fit.params_of(0, k), F.Fitter(view.res))
+-        track_step(fit, k, steps, sigma0=1.5)
++        track_step(fit, k, steps, sigma0=1.5, cam_lock=(float(C[o, 0]), float(C[o, 1])) if hold else None)
+         a = float(agreement(fit, 0, i, fit.J.detach()[[k]], (fit.cams[0][[k]] * CAM_UNIT).detach())[0])
+         if a > best[0]:
+             best = (a, fit.J[k].detach().clone(), fit.cams[0][k].detach().clone())
+diff --git a/tools/r6_track_rep.py b/tools/r6_track_rep.py
+index 750bc07..ae4abfa 100644
+--- a/tools/r6_track_rep.py
++++ b/tools/r6_track_rep.py
+@@ -16,13 +16,14 @@ def grab(n):
+ order = list(range(a_, b_ + 1)) if dirn == 'fwd' else list(range(b_, a_ - 1, -1))
+ args = argparse.Namespace(palette=PAL, res=112, at=None, flip=False, quick_start=False)
+ t0 = time.time()
+-fi, f0, _, agi = T.run_keyframes([grab(order[0])], [0], 30, args, log=lambda *x: None)
+-p = fi.params_of(0, 0)
+-light = (fi.lights[0][0].numpy(), fi.lights[0][1])
++# The idle frame: keyframe fit, searched again from the standing pose when that is implausible (fit_idle).
++p, ag_idle, light, f0 = T.fit_idle(grab(order[0]), args)
++agi = [ag_idle]
+ if os.environ.get('R6_CALIBRATE', '1') != '0':
+-    # The still camera calibrated on the idle frame to the pixel (turn, tilt, scale, perspective): tracking locks it.
++    # The still camera calibrated on the idle frame to the pixel (turn, tilt, scale, perspective): tracking locks it
++    # (calibrate_idle keeps the uncalibrated camera when the result is not a plausible standing fit).
+     rgb0 = grab(order[0])
+-    p, agi[0] = T.calibrate_idle(rgb0, F.classify(rgb0, pal), p, light, f0)
++    p, agi[0] = T.calibrate_idle(rgb0, F.classify(rgb0, pal), p, light, f0, log=print)
+ cam_lock = [float(p[0]), float(p[1]), float(p[2])]
+ rows = {order[0]: {'params': [float(x) for x in p], 'agreement': float(agi[0]), 'how': 'idle', 'parts': None}}
+ print(f'{name} {dirn} idle {order[0]}: {agi[0]:.3f} ({time.time()-t0:.0f} s)', flush=True)
+-- 
+2.43.0
+
