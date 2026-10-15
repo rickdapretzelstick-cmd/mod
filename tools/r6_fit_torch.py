@@ -3224,7 +3224,74 @@ def part_agreement(fit, k=0):
     return seen
 
 
-def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, budget=7.5, detail=False):
+def hard_refine(fit, k, cam_lock=None, deadline=None, iters=40, batch=96, cam_step=(1.5, 1.5, 0.05, 1.0, 1.0),
+                joint_step=3.0, persp=False, seed=0):
+    """Frame k's pose and camera nudged at sub-pixel and sub-degree steps on the hard colour agreement itself (the
+    score the fit is judged by; the soft loss's optimum sits a pixel or two off it along the outline): `iters` rounds
+    of `batch` random nudges (a third of the joints each, the camera's entries with cam_step's spread), the best kept,
+    the spread shrinking to 30 %. With cam_lock the camera's turn and tilt stay put (and its scale in cam_lock[2]'s
+    band). persp also tries the perspective every 10 rounds (idle-frame calibration). Stops at `deadline`. Returns the
+    agreement."""
+    view = fit.views[0]
+    i = view.idx[k]
+    rng = np.random.default_rng(seed)
+    J = fit.J.detach()[[k]].clone()
+    C = (fit.cams[0][[k]] * CAM_UNIT).detach().clone()
+    best = float(agreement(fit, 0, i, J, C)[0])
+    step_c = np.array(cam_step, float)
+    if cam_lock is not None:
+        step_c[:2] = 0.0
+    band = cam_lock[2] if cam_lock is not None and len(cam_lock) > 2 else None
+    nj = J.shape[1]
+    for it in range(iters):
+        if deadline is not None and time.time() > deadline:
+            break
+        f = 1.0 - 0.7 * it / iters
+        dC = torch.tensor(rng.normal(size=(batch, 5)) * step_c * f * (rng.random((batch, 5)) < 0.6), dtype=DT)
+        dJ = torch.tensor(rng.normal(size=(batch, nj)) * joint_step * f * (rng.random((batch, nj)) < 0.3), dtype=DT)
+        Cs, Js = C + dC, torch.minimum(torch.maximum(J + dJ, LO), HI)
+        if band is not None:
+            Cs[:, 2] = Cs[:, 2].clamp(band[0], band[1])
+        s = agreement(fit, 0, i, Js, Cs).numpy()
+        b = int(s.argmax())
+        if s[b] > best:
+            best, J, C = float(s[b]), Js[[b]], Cs[[b]]
+        if persp and it % 10 == 9:
+            for pp in (fit.persp[0] * 0.5, fit.persp[0] * 1.5, fit.persp[0] + 0.002, max(0.0, fit.persp[0] - 0.002)):
+                old = fit.persp[0]
+                fit.persp[0] = pp
+                a = float(agreement(fit, 0, i, J, C)[0])
+                if a > best:
+                    best = a
+                else:
+                    fit.persp[0] = old
+    with torch.no_grad():
+        fit.J[k] = J[0]
+        fit.cams[0][k] = C[0] / CAM_UNIT
+    return best
+
+
+def calibrate_idle(rgb, enc, p, light, fitter, iters=60):
+    """A still camera from its idle frame (params p, a standing pose fitted by run_keyframes): the camera's turn, tilt,
+    scale, place and perspective and the pose refined on the hard agreement (hard_refine), so the camera that tracking
+    locks is the one that draws the standing character's outline to the pixel. Returns (params, agreement)."""
+    p = np.array(p, float)
+    v = View([rgb], {0: enc}, [0], 30, fitter.res)
+    v.lite = True
+    fit = Fit([v], p[None, NC:], [p[None, :5]], [float(p[5])], [light])
+    v.window(0, p, fitter)
+    hard_refine(fit, 0, iters=iters, persp=True)
+    q = fit.params_of(0, 0)
+    v.window(0, q, fitter)
+    a = float(agreement(fit, 0, 0, fit.J.detach()[[0]], (fit.cams[0][[0]] * CAM_UNIT).detach())[0])
+    return q, a
+
+
+REFINE = os.environ.get('R6_REFINE', '1') != '0'
+
+
+def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, budget=7.5, detail=False,
+                refine_s=2.0):
     """A still camera's next frame from the last one's params p (cam_lock: the camera's turn and tilt, found on the
     idle frame, and optionally its scale there; light and fitter from that fit): re-centred onto the character, gradient
     steps from the last pose, and when that fits below `good` the body, legs and limbs searched (pose_search), within
@@ -3265,8 +3332,23 @@ def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, bud
     ag = float(agreement(fit, 0, 0, fit.J.detach()[[0]], (fit.cams[0][[0]] * CAM_UNIT).detach())[0])
     how = 'tracked'
     if ag < good:
-        ag = pose_search(fit, 0, lock, prev, cont_w=cont_w, deadline=t_start + budget, window=win)
+        ag = pose_search(fit, 0, lock, prev, cont_w=cont_w, deadline=t_start + budget - (refine_s if REFINE else 0),
+                         window=win)
         how = 'searched'
+    if REFINE:
+        # The outline to the pixel: sub-pixel / sub-degree nudges on the hard agreement, the window then re-centred
+        # (kept only if the re-centred window agrees at least as well).
+        J0, C0 = fit.J.detach().clone(), fit.cams[0].detach().clone()
+        hard_refine(fit, 0, lock, deadline=min(time.time() + refine_s, t_start + budget + 1.0), iters=30)
+        v.window(0, fit.params_of(0, 0), win)
+        a2 = float(agreement(fit, 0, 0, fit.J.detach()[[0]], (fit.cams[0][[0]] * CAM_UNIT).detach())[0])
+        if a2 >= ag:
+            ag = a2
+        else:
+            with torch.no_grad():
+                fit.J.copy_(J0)
+                fit.cams[0].copy_(C0)
+            v.window(0, fit.params_of(0, 0), win)
     if detail:
         return fit.params_of(0, 0), ag, how, fit
     return fit.params_of(0, 0), ag, how
