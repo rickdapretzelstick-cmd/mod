@@ -66,6 +66,18 @@ path: .887, 55 (small). Best candidate per frame averages .887-.892, so the pose
 remaining low frames (543-546, 555, 560-569, 582, 589) are trail / smoke / Dummy-occlusion frames where the ruler
 counts effect pixels as body -- next lever is the ruler (glow rejection, v2), then the other three views.
 
+## Motion scanner, the independent backup (tools/r6_motion.py)
+Rick asked for a second scanner that works separately. It never scores colours: points on the boxes (a 3 px grid on
+every visible face, lifted to each box's own 3-D coords) are followed by dense optical flow (DIS, forward-backward
+checked), and the pose is solved by least squares to carry them there (turn/tilt held).
+- Free-running from the idle frame (`VIDEO TRACKDIR left fwd OUTDIR`): holds idle (.93-.97) but drifts off at the
+  first fast move (526 -> .47, ~.05 by 550): the faces are flat colour, so flow only grips edges and letters.
+- One-step mode (`step VIDEO build/fit/oversee/left_global.json left OUTDIR`, 1 min): each frame's chosen pose
+  carried one frame forward/back by the flow alone, no drift. Agrees with the colour path within 25 deg on hips .92,
+  head .88, legs .84-.91, arms .59-.75. Frames where the two agree on every bone (52/95) average .933 colour
+  agreement; where they disagree (43) .831 -- a confidence signal that needs no colour score. As extra candidates
+  (`merge OUTDIR left`) they are picked 5 times and do not move the score (.882, 53). Use: trust map / what to flag.
+
 ## AI overseer: built and run on the side view (tools/r6_oversee.py)
 Stages (see the file's header): `flag` -> `sheets` -> Claude reads the PNGs and writes a corrections JSON -> `apply` ->
 `clip`. All Python; ~8 s per sheet (8 candidates locally refined), 4 jobs side by side (JOBS=4, OMP_NUM_THREADS=1).
