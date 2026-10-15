@@ -246,7 +246,23 @@ class View:
         obs[stray] = 0
         if self.lite:
             # Only the character's own patch (scenery of a body colour inside a wide window is not the body).
-            keep = F.ndimage.binary_dilation(character_mask(obs), iterations=2) & (obs > 0) | character_mask(obs)
+            # Unknown pixels (smoke, a glow's halo over it) join the pieces they lie between -- a limb seen past a veil
+            # is still the character's. (They themselves stay floor away from its colours, as before: the pale
+            # background between limbs is unknown in the class map too, and is real evidence that nothing is there.)
+            patch = character_patch(obs)
+            char = patch & (obs != F.UNKNOWN)
+            keep = F.ndimage.binary_dilation(char, iterations=2) & (obs > 0) | char
+            # But an effect over the body (a glow's tinted halo: unknown and coloured, where the pale background is
+            # grey) may hide a part: unknown within the character's patch, not floor.
+            unk = patch & (obs == F.UNKNOWN) & ~keep
+            if unk.any() and self.frames[i] is not None:
+                Hf, Wf = self.frames[i].shape[:2]
+                yy, xx = np.nonzero(unk)
+                px = self.frames[i][np.clip(((yy + 0.5) / k + y0).astype(int), 0, Hf - 1),
+                                    np.clip(((xx + 0.5) / k + x0).astype(int), 0, Wf - 1)].astype(int)
+                mx = px.max(1)
+                tinted = (mx - px.min(1)) * 255 >= TINTED_S * np.maximum(mx, 1)
+                keep[yy[tinted], xx[tinted]] = True
             obs[~keep & (obs > 0)] = 0
         # The footage's colour borders are blended (blur, dithering): the 1-pixel band along them is left out of the score.
         edge = np.zeros(obs.shape, bool)
@@ -2846,6 +2862,17 @@ def character_mask(obs):
     body = np.isin(obs, F.BODY_CLASSES)
     m = F.pick_character(obs, body, near=(obs.shape[1] / 2, obs.shape[0] / 2))
     return m & (obs != F.UNKNOWN)
+
+
+TINTED_S = 22  # HSV saturation above which an unknown pixel is an effect's tint, not the pale background (the veil's s_min)
+
+
+def character_patch(obs):
+    """The character's patch with the unknown pixels joining it (character_mask, but pieces of body colour linked
+    through unknown pixels -- smoke or a glow over the body between them -- count as one, and those unknown pixels are
+    in it)."""
+    fg = np.isin(obs, F.BODY_CLASSES) | (obs == F.UNKNOWN)
+    return F.pick_character(obs, fg, near=(obs.shape[1] / 2, obs.shape[0] / 2))
 
 
 def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 60), rolls=(-45, 0, 45), prev=None,
