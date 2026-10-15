@@ -3070,7 +3070,8 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
     Js2, C2 = torch.cat(poses), torch.cat(cams)
     sc2, C2 = rank(Js2, C2, near)
     tops = _distinct(Js2, torch.argsort(sc2, descending=True), body + legs, 10, keep)
-    if fine:  # 2b. each kept pose's body within +-fine deg (lean, turn, roll), its legs held
+    if fine and (deadline is None or time.time() < deadline - 4.0):  # 2b. each kept pose's body within +-fine deg
+        # (lean, turn, roll), its legs held; skipped on a machine too slow to leave time for the limbs after it
         d = torch.tensor([[a, b, c] for a in (-fine, 0, fine) for b in (-fine, 0, fine) for c in (-fine, 0, fine)],
                          dtype=DT)
         Q = Js2[tops].repeat_interleave(len(d), 0)
@@ -3091,8 +3092,8 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
     now = float(agreement(fit, 0, i, J0[None], c0[None])[0])
     results = [(now, J0, cam_now)]
     for n_, o in enumerate(tops):
-        if deadline is not None and n_ >= 2 and time.time() > deadline - 2.5:
-            break  # out of time: the poses ranked lower go unsearched
+        if deadline is not None and n_ >= 1 and time.time() > deadline - 2.5:
+            break  # out of time: the poses ranked lower go unsearched (the best-ranked one always is)
         with torch.no_grad():
             fit.J[k] = Js2[o]
             fit.cams[0][k] = C2[o] / CAM_UNIT
@@ -3109,8 +3110,8 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
     best = None
     done = []
     for a, Jq, Cq in results:
-        if len(done) >= polish or (done and deadline is not None and time.time() > deadline - 0.8):
-            break
+        if len(done) >= polish or (deadline is not None and time.time() > deadline - 0.8):
+            break  # out of time (a slow machine): the best limb-searched pose is kept unpolished below
         if any(float(_wrap(Jq - d).abs().max()) < 5 for d in done):
             continue  # the same pose found from two starts
         done.append(Jq)
@@ -3122,6 +3123,8 @@ def pose_search(fit, k, cam_lock, prev, cont_w=0.1, lean_max=45.0, bodies=12, ke
         a = float(agreement(fit, 0, i, fit.J.detach()[[k]], cam_k())[0])
         if best is None or a > best[0]:
             best = (a, fit.J[k].detach().clone(), fit.cams[0][k].detach().clone())
+    if best is None:
+        best = (results[0][0], results[0][1], results[0][2])
     with torch.no_grad():
         fit.J[k], fit.cams[0][k] = best[1], best[2]
     view.window(i, fit.params_of(0, k), f0)
@@ -3480,6 +3483,22 @@ def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, bud
     (TrackWindow), not the footage's colours, and the camera's scale stays near the idle frame's (without one in
     cam_lock: the first tracked frame's, remembered on the fitter). Returns (params, agreement, how), and the Fit (its
     view windowed on the frame) after them when detail is set."""
+    threads = torch.get_num_threads()
+    if TRACK_THREADS > 0:
+        torch.set_num_threads(TRACK_THREADS)
+    try:
+        return _track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w, good, budget, detail, fine, fine_score)
+    finally:
+        torch.set_num_threads(threads)
+
+
+# Torch threads while a frame is tracked: its tensors are small, so one thread is as fast as four on an idle machine,
+# and on a busy one (other processes on the same CPUs) several threads wait on each other: 30 gradient steps measured
+# 9-15 s with 4 threads and three busy cores against 0.4-1.3 s with one (the 12-16 s frames). 0 leaves torch's default.
+TRACK_THREADS = int(os.environ.get('R6_TRACK_THREADS', '1'))
+
+
+def _track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w, good, budget, detail, fine, fine_score):
     t_start = time.time()
     v = View([rgb], {0: enc}, [0], 30, 112)
     v.lite = True
@@ -3513,10 +3532,14 @@ def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, bud
     v.window(0, fit.params_of(0, 0), win)
     ag = float(agreement(fit, 0, 0, fit.J.detach()[[0]], (fit.cams[0][[0]] * CAM_UNIT).detach())[0])
     how = 'tracked'
+    if DEBUG:
+        print(f'  track_frame: tracked in {time.time() - t_start:.2f} s, {ag:.3f}')
     if ag < good:
         ag = pose_search(fit, 0, lock, prev, cont_w=cont_w, deadline=t_start + budget, window=win)
         how = 'searched'
     fit.coarse_agreement, fit.fine_agreement = ag, None
+    if DEBUG:
+        print(f'  track_frame: searched by {time.time() - t_start:.2f} s, {ag:.3f}')
     end = t_start + FRAME_CAP - 0.3  # the 112-px check after the fine stage takes ~0.1 s
     if fine and FINE_RES > 0 and time.time() < end - 0.5:
         # The last word at the fine resolution: edges placed to about a footage px. The border band stays as wide in
@@ -3536,6 +3559,8 @@ def track_frame(rgb, enc, p, cam_lock, light, fitter, cont_w=0.1, good=0.85, bud
                 fit.cams[0][0] = torch.tensor(p0[:5], dtype=DT) / CAM_UNIT
             v.window(0, fit.params_of(0, 0), win)
     fit.coarse_agreement = ag
+    if DEBUG:
+        print(f'  track_frame: done in {time.time() - t_start:.2f} s, {ag:.3f}')
     out = fit.fine_agreement if fine_score and fit.fine_agreement is not None else ag
     if detail:
         return fit.params_of(0, 0), out, how, fit
