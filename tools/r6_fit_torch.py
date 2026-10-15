@@ -3365,9 +3365,10 @@ def fine_refine(rgb, enc, p, light, window, cam_lock=None, res=None, deadline=No
 # What a still camera calibrated on a standing idle frame may come out as (otherwise the calibration is a wrong local
 # minimum and the uncalibrated camera is kept): the turn and tilt within CALIB_TURN / CALIB_TILT deg of the idle fit's,
 # the tilt itself in CALIB_TILT_RANGE (these cameras look down at the character: ~14 deg on the side and back
-# views, ~40 on the front one, where the arms' tops show half as tall as their fronts), the scale within CALIB_SCALE
+# views; ~47 on the front one, measured on its idle frame 790: at 32 px per stud an arm's top shows 23 px tall and
+# its front 42, sin 0.72 / cos 0.66), the scale within CALIB_SCALE
 # of the idle fit's, and the body upright (hips lean and roll within CALIB_LEAN, each thigh swung within CALIB_LEG).
-CALIB_TURN, CALIB_TILT, CALIB_TILT_RANGE, CALIB_SCALE, CALIB_LEAN, CALIB_LEG = 10.0, 8.0, (-5.0, 50.0), 0.06, 15.0, 20.0
+CALIB_TURN, CALIB_TILT, CALIB_TILT_RANGE, CALIB_SCALE, CALIB_LEAN, CALIB_LEG = 10.0, 8.0, (-5.0, 60.0), 0.06, 15.0, 20.0
 
 
 def idle_sane(p, ref=None):
@@ -3423,7 +3424,7 @@ def calibrate_idle(rgb, enc, p, light, fitter, seconds=20.0, log=None):
 
 # The idle frame's standing search when the keyframe fit is not a plausible standing fit (idle_sane): the plain
 # standing pose (its turn kept) under cameras all round at these tilts, each polished with its turn and tilt held.
-IDLE_PITCHES, IDLE_YAWS = (0, 6, 12, 18, 24, 30, 36, 42, 48), 48
+IDLE_PITCHES, IDLE_YAWS = tuple(range(0, 61, 6)), 48
 
 
 def fit_idle(rgb, args, log=print):
