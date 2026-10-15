@@ -32,7 +32,7 @@ Palette: `tools/palettes/side_colours.json` (Roblox default template clothing).
 `wip/` holds patches against commit e047e91 (`git am tools/fit_data/cursed_strikes_gd6/wip/<name>/*.patch`):
 
 - `align/` — local time warp per view (dynamic programming on the cross-view fit around the integer shift), frames
-  windowed in parallel. Its own runs reported all-view mean .618 then **.706** (from .582). Most promising.
+  windowed in parallel. Re-run of the saved code: all-view mean .582 -> **.618** (an earlier .706 did not reproduce).
 - `mvsearch/` — the pose searched directly with the four-view score (coordinate ascent over limb grids, multi-start).
   Reported .606-.613.
 - Not started: per-view camera re-placement for the combined pose and occlusion-aware view weights; four-view
@@ -42,6 +42,17 @@ Next steps: apply `align`, re-run EVAL, then layer `mvsearch` on it; have each c
 agreement() and classification must stay as they are; one pose per moment for all views); then write the clip
 (`DIRS=fwd,bwd python3 tools/r6_fuse_views.py`), rebuild the viewer (`python3 tools/build_anim_viewer.py`) and
 republish it.
+
+## Precision round (patches against d4c0e99, reviewed)
+
+- `calib/` — hard_draw drew every box ~0.5 px too big per side (a real bug: EXACT_EDGES), hard_refine (sub-pixel local
+  search), idle calibration. Clean idle frames reach .97-.99 (left/back/right). Needs: refine from spare time only,
+  calibration sanity guard, deadline cap.
+- `res/` — fine_refine in a 224 window (~1 window px per footage px); +1-2 frozen-scorer points, +2-8 on well-started
+  frames. Needs: return the 112 score by default, band width from footage px per window px, continuity cost.
+- `outline/` — the template's printed dark outlines -> UNKNOWN; mostly a measurement change (+2-6 on side-view idle
+  frames, no fit gain); keep out of headline numbers, or redo as a 'body, colour unknown' class.
+Remaining below .80: effect/occlusion frames (red strike trail, smoke dome, the Dummy in front) -- wrong poses.
 
 ## Benchmark harness (single-view tracker)
 

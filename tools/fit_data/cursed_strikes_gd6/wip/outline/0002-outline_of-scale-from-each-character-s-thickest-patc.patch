@@ -1,0 +1,92 @@
+From 866bca3a4f6a0c7b2ab36455169567c1da76c68b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 15 Oct 2026 00:29:54 +0000
+Subject: [PATCH 2/2] outline_of: scale from each character's thickest patch
+ (printed lines split it per side)
+
+A leg patch alone was too small a ruler, so the double outline between two legs
+(~0.3 stud) stayed floor. The half-thickness is now the largest over patches a few
+px apart; thin = band = 0.3 x it. Checked on idle, hard, smoke and red-trail frames:
+dark smoke, another avatar's black shirt and dark props stay floor.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HQYiYmhRzcQpLCYMVVDQeZ
+---
+ tools/palettes/side_colours.json |  2 +-
+ tools/r6_fit.py                  | 37 ++++++++++++++++++++++----------
+ 2 files changed, 27 insertions(+), 12 deletions(-)
+
+diff --git a/tools/palettes/side_colours.json b/tools/palettes/side_colours.json
+index 0e24736..f9c3444 100644
+--- a/tools/palettes/side_colours.json
++++ b/tools/palettes/side_colours.json
+@@ -265,7 +265,7 @@
+   ]
+  },
+  "marks": true,
+- "outline": {"comment": "the template's printed near-black part borders on the silhouette: body, colour unknown (see r6_fit.outline_of)", "v_max": 40, "thin": 0.25, "band": 0.4, "min_px": 200},
++ "outline": {"comment": "the template's printed near-black part borders on the silhouette: body, colour unknown (see r6_fit.outline_of)", "v_max": 40, "thin": 0.3, "band": 0.3, "min_px": 200},
+  "proportions": {
+   "torso": [
+    1.063,
+diff --git a/tools/r6_fit.py b/tools/r6_fit.py
+index 73344fb..cf0015f 100644
+--- a/tools/r6_fit.py
++++ b/tools/r6_fit.py
+@@ -431,9 +431,11 @@ def outline_of(out, v, pal):
+       - are near-black (v <= v_max: the print, not a shadow, which only darkens the floor),
+       - lie in a part of the dark that is thin (it vanishes under an opening of radius `thin` x the body's
+         half-thickness: a strip, not an area -- a dark wall or floor next to the body is wide and survives it),
+-      - lie within `band` x the half-thickness of that body's colour, joined to it through such pixels,
+-    are the outline. The scale comes from each body patch itself: its half-thickness (the largest distance from its
+-    pixels to its edge, i.e. half its thickest part: ~0.5-1.5 studs over all views), so the rule holds at any zoom."""
++      - lie within `band` x the half-thickness of a body patch, joined to it through such pixels,
++    are the outline. The scale comes from the body itself: the half-thickness of its thickest patch (the largest
++    distance from a body pixel to the patch's edge: ~0.5 stud for a leg or a torso seen from the side, ~1 stud for a
++    torso from the front), taken over each character's patches together (the printed lines split it into one patch
++    per side, a leg's alone would be too small a ruler), so the rule holds at any zoom."""
+     import cv2
+     oc = pal['outline']
+     body = (out > 0) & (out != FACE) & (out != UNKNOWN)
+@@ -444,17 +446,30 @@ def outline_of(out, v, pal):
+         return None
+     filled = _cv_fill_holes(_cv_closing(body | (out == UNKNOWN), 2))
+     n, lab, stats, _ = cv2.connectedComponentsWithStats(filled.astype(np.uint8), connectivity=4)
++    big = [c for c in range(1, n) if stats[c, cv2.CC_STAT_AREA] >= oc.get('min_px', 200)]
++    if not big:
++        return None
++    # Each patch's half-thickness (on its own bounding box: quick), then the largest over the patches of one
++    # character (patches a few pixels apart: split only by printed lines).
++    half_of = {}
++    for c in big:
++        x, y, w, hh = stats[c, :4]
++        own = (lab[y:y + hh, x:x + w] == c).astype(np.uint8)
++        half_of[c] = float(cv2.distanceTransform(np.pad(own, 1), cv2.DIST_L2, 3).max())
++    _, grp = cv2.connectedComponents(cv2.dilate(filled.astype(np.uint8), _CROSS, iterations=3), connectivity=4)
++    gmax = {}
++    for c in big:
++        x, y = stats[c, 0], stats[c, 1]
++        g = int(grp[y:y + stats[c, 3], x:x + stats[c, 2]][lab[y:y + stats[c, 3], x:x + stats[c, 2]] == c][0])
++        gmax[g] = max(gmax.get(g, 0.0), half_of[c])
++        half_of[c] = g
+     H, W = out.shape
+     m = np.zeros(out.shape, bool)
+-    for c in range(1, n):
+-        if stats[c, cv2.CC_STAT_AREA] < oc.get('min_px', 200):
+-            continue
++    for c in big:
+         x, y, w, hh = stats[c, :4]
+-        # Half-thickness of this patch (on its own bounding box: quick).
+-        own = (lab[y:y + hh, x:x + w] == c).astype(np.uint8)
+-        half = float(cv2.distanceTransform(np.pad(own, 1), cv2.DIST_L2, 3).max())
+-        r = max(1, int(round(oc.get('thin', 0.25) * half)))
+-        reach = max(1, int(round(oc.get('band', 0.4) * half)))
++        half = gmax[half_of[c]]
++        r = max(1, int(round(oc.get('thin', 0.3) * half)))
++        reach = max(1, int(round(oc.get('band', 0.3) * half)))
+         pad = reach + 2 * r + 2
+         ya, yb, xa, xb = max(0, y - pad), min(H, y + hh + pad), max(0, x - pad), min(W, x + w + pad)
+         sub_body = body[ya:yb, xa:xb] & (lab[ya:yb, xa:xb] == c)
+-- 
+2.43.0
+

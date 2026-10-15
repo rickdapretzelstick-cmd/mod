@@ -1,0 +1,123 @@
+From 5ceaa6f04847eed09fa7b489b9b39c4cfa4296cd Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 15 Oct 2026 00:16:38 +0000
+Subject: [PATCH 1/2] r6_fit: the clothing's printed outline on the silhouette
+ is body of unknown colour, not floor
+
+The Roblox template prints a near-black border round each side; where a side
+faces the camera at the silhouette (a leg seen from the side) that border is the
+body's outermost ~0.15 stud and was classified floor. outline_of marks dark
+pixels (v <= 40) that hug a body patch, lie in a thin part of the dark (gone under
+an opening scaled by the patch's half-thickness) and within a band of it, as
+UNKNOWN. Wide dark areas (a black shirt of another avatar, dark floor) stay floor.
+Enabled per palette ('outline' in side_colours.json). Measured on idle frames with
+the tracked params: left 518 .867 -> .925, right 292 .909 -> .923, back 102
+.947 -> .949, front 792 unchanged. Not built (python tool only).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HQYiYmhRzcQpLCYMVVDQeZ
+---
+ tools/palettes/side_colours.json |  1 +
+ tools/r6_fit.py                  | 60 ++++++++++++++++++++++++++++++++
+ 2 files changed, 61 insertions(+)
+
+diff --git a/tools/palettes/side_colours.json b/tools/palettes/side_colours.json
+index 0b48545..0e24736 100644
+--- a/tools/palettes/side_colours.json
++++ b/tools/palettes/side_colours.json
+@@ -265,6 +265,7 @@
+   ]
+  },
+  "marks": true,
++ "outline": {"comment": "the template's printed near-black part borders on the silhouette: body, colour unknown (see r6_fit.outline_of)", "v_max": 40, "thin": 0.25, "band": 0.4, "min_px": 200},
+  "proportions": {
+   "torso": [
+    1.063,
+diff --git a/tools/r6_fit.py b/tools/r6_fit.py
+index 73fe6d1..73344fb 100644
+--- a/tools/r6_fit.py
++++ b/tools/r6_fit.py
+@@ -419,6 +419,57 @@ def glow_of(rgb, h, s, v, out, pal):
+     return m
+ 
+ 
++def outline_of(out, v, pal):
++    """The clothing's printed outlines on the body's own silhouette -- not floor. Returns the mask (or None).
++
++    The Roblox clothing templates print a near-black border round every side of a part. Where that side faces the
++    camera at the silhouette, the border is the body's outermost band: a thin, near-black strip hugging the part's
++    colour on the outside (a leg seen from the side shows ~0.15 stud of black down both edges). Its colour names no
++    side, so it is unknown, like the marks enclosed by the body -- but it is body, not floor.
++
++    A real dark background, a dark object or a shadow beside the body stays floor: only dark pixels that
++      - are near-black (v <= v_max: the print, not a shadow, which only darkens the floor),
++      - lie in a part of the dark that is thin (it vanishes under an opening of radius `thin` x the body's
++        half-thickness: a strip, not an area -- a dark wall or floor next to the body is wide and survives it),
++      - lie within `band` x the half-thickness of that body's colour, joined to it through such pixels,
++    are the outline. The scale comes from each body patch itself: its half-thickness (the largest distance from its
++    pixels to its edge, i.e. half its thickest part: ~0.5-1.5 studs over all views), so the rule holds at any zoom."""
++    import cv2
++    oc = pal['outline']
++    body = (out > 0) & (out != FACE) & (out != UNKNOWN)
++    if not body.any():
++        return None
++    dark = (out == BG) & (v <= oc.get('v_max', 40))
++    if not dark.any():
++        return None
++    filled = _cv_fill_holes(_cv_closing(body | (out == UNKNOWN), 2))
++    n, lab, stats, _ = cv2.connectedComponentsWithStats(filled.astype(np.uint8), connectivity=4)
++    H, W = out.shape
++    m = np.zeros(out.shape, bool)
++    for c in range(1, n):
++        if stats[c, cv2.CC_STAT_AREA] < oc.get('min_px', 200):
++            continue
++        x, y, w, hh = stats[c, :4]
++        # Half-thickness of this patch (on its own bounding box: quick).
++        own = (lab[y:y + hh, x:x + w] == c).astype(np.uint8)
++        half = float(cv2.distanceTransform(np.pad(own, 1), cv2.DIST_L2, 3).max())
++        r = max(1, int(round(oc.get('thin', 0.25) * half)))
++        reach = max(1, int(round(oc.get('band', 0.4) * half)))
++        pad = reach + 2 * r + 2
++        ya, yb, xa, xb = max(0, y - pad), min(H, y + hh + pad), max(0, x - pad), min(W, x + w + pad)
++        sub_body = body[ya:yb, xa:xb] & (lab[ya:yb, xa:xb] == c)
++        sub_dark = dark[ya:yb, xa:xb].astype(np.uint8)
++        disk = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))
++        wide = cv2.dilate(cv2.erode(sub_dark, disk, borderType=cv2.BORDER_REPLICATE), disk) > 0
++        thin = (sub_dark > 0) & ~wide
++        near = cv2.dilate(sub_body.astype(np.uint8), cv2.getStructuringElement(
++            cv2.MORPH_ELLIPSE, (2 * reach + 1, 2 * reach + 1))) > 0
++        cand = thin & near
++        touch = cv2.dilate(sub_body.astype(np.uint8), _CROSS) > 0
++        m[ya:yb, xa:xb] |= _cv_propagate(cand & touch, cand)
++    return m
++
++
+ def classify(rgb, pal):
+     """The class map of a frame (classify_ref's rules, the same result), worked out with lookup tables and OpenCV
+     morphology instead of full-frame numpy/scipy passes (~10x faster at 1080p)."""
+@@ -452,6 +503,10 @@ def classify(rgb, pal):
+         body = (out > 0) & (out != FACE)
+         closed = _cv_fill_holes(_cv_closing(body, 2))
+         out[closed & ~body & (out == BG)] = UNKNOWN
++    if pal.get('outline'):
++        line = outline_of(out, v, pal)
++        if line is not None:
++            out[line] = UNKNOWN
+     if pal.get('veil'):
+         vc = pal['veil']
+         body = (out > 0) & (out != FACE) & (out != UNKNOWN)
+@@ -532,6 +587,11 @@ def classify_ref(rgb, pal):
+         body = (out > 0) & (out != FACE)
+         closed = ndimage.binary_fill_holes(ndimage.binary_closing(body, iterations=2))
+         out[closed & ~body & (out == BG)] = UNKNOWN
++    if pal.get('outline'):
++        # The clothing's printed outline on the silhouette: body, colour unknown (see outline_of).
++        line = outline_of(out, v, pal)
++        if line is not None:
++            out[line] = UNKNOWN
+     if pal.get('veil'):
+         # Smoke, dust and flashes over the body: white mixed over its colours. Mixing in white leaves a colour's hue
+         # as it was (it only turns paler and brighter), so near the body a pale, bright pixel still names its part by
+-- 
+2.43.0
+
