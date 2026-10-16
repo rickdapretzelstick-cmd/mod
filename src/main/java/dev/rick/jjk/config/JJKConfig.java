@@ -26,7 +26,7 @@ public final class JJKConfig {
      * The gameplay tuning this file was written for. When the mod's defaults change (the JJS wiki pass), older files have
      * their gameplay sections reset to the new defaults; the player's client settings are kept.
      */
-    public static final int CURRENT_VERSION = 12;
+    public static final int CURRENT_VERSION = 13;
     public int version;
 
     public General general = new General();
@@ -729,15 +729,18 @@ public final class JJKConfig {
         public int strikesCooldown = 280;
         public float strikesCost = 60f;
         public int strikesWindup = 9;
-        public int strikesSlideTicks = 12;
-        public double strikesSlideSpeed = 0.95;
+        /** The dash off the mark: quicker than a slide, about the same reach. */
+        public int strikesSlideTicks = 9;
+        public double strikesSlideSpeed = 1.3;
         public float strikesGrabDamage = 4f;
         public int strikesPunches = 6;
         public int strikesPunchInterval = 5;
         public float strikesPunchDamage = 1.75f;
+        /** The last punch of the rush (its red burst), and how long it leaves them stunned in place. */
         public float strikesKickDamage = 3f;
-        /** The calf kick leaves them stunned in place. */
         public int strikesKickStun = 22;
+        /** Ticks from the last punch's windup to its impact (the clip's drive frame). */
+        public int strikesFinalAt = 4;
         /** Front dash is disabled this long after it lands. */
         public int strikesFrontDashLock = 30;
         /** Airborne: a dropkick straight down at the ground that grounds whoever it lands on. */

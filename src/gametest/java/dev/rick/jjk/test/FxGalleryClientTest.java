@@ -59,7 +59,7 @@ public class FxGalleryClientTest implements FabricClientGameTest {
             "overwhelm_final", "surge_dash", "surge_hit", "surge_vanish", "surge_appear", "surge_kick", "rhythm_start", "rhythm_beat",
             "rhythm_streak", "combo_doors", "shutter_linger", "door_bounce", "shutter_shatter", "shutter_finisher", "door_counter_punch",
             "rough_stomp", "fever_suspend", "fever_crush", "lucky_finisher", "rushdown_finisher", "renewal_mark", "renewal_trail", "renewal",
-            "cursed_strikes_start", "cursed_strikes_slide", "cursed_strikes_punch", "cursed_strikes_kick", "cursed_strikes_floor",
+            "cursed_strikes_start", "cursed_strikes_slide", "cursed_strikes_punch", "cursed_strikes_kick", "cursed_strikes_final", "cursed_strikes_floor",
             "cursed_strikes_finisher", "cursed_strikes_spin", "cursed_strikes_dive", "cursed_strikes_impact", "crushing_charge",
             "crushing_dash", "crushing_grab", "crushing_slam", "crushing_impact", "crushing_suplex", "crushing_finisher", "divergent_charge",
             "divergent_flash", "divergent_punch", "divergent_impact", "divergent_hit", "divergent_shatter", "black_flash_ready", "black_flash",

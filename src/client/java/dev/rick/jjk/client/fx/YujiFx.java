@@ -54,7 +54,28 @@ final class YujiFx {
                     }
                     Flashes.ground(groundBelow(level, pos), 0.3f, 2f, CE_LIGHT, 0.5f, 7, now);
                     burst(level, pos.add(0, -0.8, 0), q(6), 0.12, Sprite.SMOKE, GREY, 0.45f, 12);
+                    // The burst off the mark (reference): a dark puff where he stood, white wind whirling behind him.
+                    burst(level, pos, q(10), 0.06, Sprite.SMOKE, DARK, 0.75f, 16);
+                    for (int i = 0; i < 3; i++) {
+                        Flashes.ripple(pos.subtract(dir.scale(0.8 + i * 1.1)), dir, 0.3f, 1.3f + i * 0.25f, WHITE, 0.55f - i * 0.12f, 9 + i * 2, now + i);
+                    }
+                    line(pos.add(0, -0.7, 0), pos.add(0, -0.7, 0).subtract(dir.scale(4.5)), 0.35f, WHITE, 0.45f, 9, now);
                 }
+            }
+            case "cursed_strikes_final" -> {
+                // The last punch of the rush (reference): a red starburst, red shards flying out on every side.
+                sound("cursed_strikes_hit", pos, 1.1f, 0.95f);
+                sound("hit_heavy", pos, 1f, 1.05f);
+                if (drawn) {
+                    Flashes.flash(pos, 1.9f, 0.35f, BF_RED, 1f, 6, now);
+                    impactStar(pos, dir, 14, 1.8f * s, 0.08f, BF_RED, now);
+                    impactStar(pos, dir, 6, 1.1f * s, 0.04f, WHITE, now);
+                    sparks(level, pos, dir, q(14), 0.75, BF_RED, 0.12f, 10);
+                    sparks(level, pos, up, q(10), 0.6, BF_RED, 0.1f, 12);
+                    sparks(level, pos, dir.scale(-1), q(6), 0.5, BLOOD, 0.09f, 12);
+                }
+                victimFeedback(p, 0.7f);
+                distanceShake(pos, 12, 0.4f);
             }
             case "cursed_strikes_punch" -> {
                 sound("hit_light", pos, 0.9f, 0.95f + RNG.nextFloat() * 0.2f);

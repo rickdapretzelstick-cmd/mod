@@ -1,0 +1,38 @@
+{
+  "name": "cursed_strikes_final",
+  "duration": 650,
+  "blendIn": 30, "blendOut": 150,
+  "priority": "SPECIAL",
+  "keys": [
+    {"t": 120, "ease": "EASE_OUT", "bones": {
+        "chest": {"rot": [0, 34, 0]},
+        "rightArm": {"rot": [-30, -20, 40]},
+        "leftArm": {"rot": [-90, 30, -6]},
+        "hips": {"rot": [8, 24, 0]},
+        "rightThigh": {"rot": [24, 0, 6]},
+        "leftThigh": {"rot": [-20, 0, -6]},
+        "root": {"pos": [0, -3, -0.5]}}},
+    {"t": 200, "ease": "EASE_IN", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [0, -38, 0]},
+        "rightArm": {"rot": [-96, -6, 0]},
+        "leftArm": {"rot": [-20, 20, -30]},
+        "hips": {"rot": [22, -24, 2]},
+        "rightThigh": {"rot": [30, 0, 6]},
+        "leftThigh": {"rot": [-34, 0, -6]},
+        "root": {"pos": [0.6, -3.5, 4]}}},
+    {"t": 380, "ease": "EASE_OUT", "bones": {
+        "chest": {"rot": [0, -32, 0]},
+        "rightArm": {"rot": [-92, -8, 4]},
+        "root": {"pos": [0.5, -3.2, 3.5]}}},
+    {"t": 650, "ease": "EASE_OUT", "bones": {
+        "head": {"rot": [4, 0, 0]},
+        "chest": {"rot": [0, 12, 0]},
+        "rightArm": {"rot": [-62, -22, 12]},
+        "leftArm": {"rot": [-78, 22, -10]},
+        "hips": {"rot": [4, 0, 0]},
+        "rightThigh": {"rot": [10, 0, 4]},
+        "leftThigh": {"rot": [-12, 0, -4]},
+        "root": {"pos": [0, -1, 0]}}}
+  ]
+}

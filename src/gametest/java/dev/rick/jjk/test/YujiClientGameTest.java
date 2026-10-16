@@ -56,11 +56,15 @@ public class YujiClientGameTest implements FabricClientGameTest {
             dummy(ctx, server, 5);
             ctx.takeScreenshot("y02_vessel_hud");
             in.pressKey(s1);
-            ctx.waitTicks(12);
+            ctx.waitTicks(5);
+            ctx.takeScreenshot("y03a_cursed_strikes_windup");
+            ctx.waitTicks(6);
             ctx.takeScreenshot("y03_cursed_strikes_slide");
-            ctx.waitTicks(14);
+            ctx.waitTicks(15);
             ctx.takeScreenshot("y04_cursed_strikes_flurry");
-            ctx.waitTicks(30);
+            ctx.waitTicks(20);
+            ctx.takeScreenshot("y04b_cursed_strikes_final");
+            ctx.waitTicks(10);
             dummy(ctx, server, 2.4);
             in.pressKey(s2);
             ctx.waitTicks(10);

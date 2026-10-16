@@ -24,8 +24,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * Cursed Strikes (JJS, 14s). Eyes glowing red, Vessel slides forward with his hands poised; whoever he meets eats a
- * flurry of punches (he has bullet i-frames through it) finished by a right calf kick that leaves them stunned in place.
+ * Cursed Strikes (JJS, 14s). Eyes glowing red, Vessel reaches out, drops low and bursts forward (a dark puff where he
+ * stood, wind whirling behind him); whoever he meets eats a rush of alternating punches (he has bullet i-frames through
+ * it) ended by a wound-up right that bursts red and leaves them stunned in place.
  * His M1 count is kept for after, and his front dash is shut off for a moment. A guard cuts the slide short. 360
  * blockable; can't bypass ragdoll. The finisher kicks again, strikes the floor to launch them and spin-kicks them away.
  *
@@ -163,13 +164,14 @@ public final class CursedStrikesAbility extends Ability {
                 return;
             }
             if (!finisher) {
-                if (t == punches) {
-                    // The right calf kick: stunned where they stand.
-                    Anim.play(user, "cursed_strikes_kick");
+                // The last punch: wound back, then driven through (a red burst); stunned where they stand.
+                if (t == punches) Anim.play(user, "cursed_strikes_final");
+                if (t == punches + cfg.strikesFinalAt) {
                     HakariCombat.hit(YujiCombat.strike(user, ID, cfg.strikesKickDamage, true).knockback(Knockback.NONE).hitstun(cfg.strikesKickStun)
-                            .fx("cursed_strikes_kick", 1.2f).build(), victim);
+                            .fx("cursed_strikes_final", 1.2f).build(), victim);
+                    Fx.shake(level, victim.position(), 8, 0.35f, 5);
                     landed(cfg);
-                    endAt = age + 6;
+                    endAt = age + 8;
                 }
                 return;
             }
