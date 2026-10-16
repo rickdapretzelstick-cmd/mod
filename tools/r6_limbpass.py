@@ -123,15 +123,34 @@ OFF_PRIOR_CAP = 0.04
 PRIOR_BONES = ('head', 'rightArm', 'leftArm', 'rightThigh', 'leftThigh')
 
 
-HIDDEN_SHARE = 0.1  # a part showing less than this share of the torso's judged px is hidden (the prior holds it)
+HIDDEN_SHARE = 0.3  # a part with less than this share of its own outline in front is (partly) hidden: the prior holds it
 
 
-def hidden_weights(judge, J):
-    """Per part, how hidden it is in this frame (1: the footage shows none of it, 0: it shows HIDDEN_SHARE of the
-    torso's px or more), judged at the frame's own pose."""
-    seen = OF.seen_parts(judge, torch.tensor(np.asarray(J, float), dtype=T.DT))
-    torso = max(seen['hips'][0], 120)
-    return {b: float(np.clip(1 - seen[b][0] / (HIDDEN_SHARE * torso), 0, 1)) for b in PRIOR_BONES}
+def hidden_weights(judge, J, cam):
+    """Per part, how hidden it is behind the rest of the body in this frame, at the frame's own pose: 1 when none of
+    its box is in front, falling to 0 when HIDDEN_SHARE of the box's own outline is. Behind the body, not unknown: a
+    leg kicked into a smoke cloud is not seen well, but it is in front of everything and the footage still places it."""
+    import cv2
+    v, fit = judge.v, judge.fit
+    J = np.asarray(J, float)
+    front = np.asarray(T.hard_draw(v, 0, torch.tensor(J, dtype=T.DT)[None], judge.cam, fit.persp[0], fit.lights[0],
+                                   judge.pid)[0])
+    polys = OF.sorted_boxes(np.concatenate([cam, J]))
+    union = np.zeros((1, 1), np.uint8)
+    pts = np.concatenate([np.array(poly) for _, poly, _ in polys])
+    lo = np.floor(pts.min(0)).astype(int) - 2
+    size = np.ceil(pts.max(0)).astype(int) - lo + 3
+    union = np.zeros((size[1], size[0]), np.uint8)
+    for _, poly, _ in polys:
+        cv2.fillPoly(union, [np.round(np.array(poly) - lo).astype(np.int32)], 1)
+    scale2 = float((front > 0).sum()) / max(float(union.sum()), 1.0)  # window px per picture px
+    out = {}
+    for b in PRIOR_BONES:
+        ids = [n for n, (bone, _, _, part) in enumerate(F.PARTS) if bone == b and part != 'face']
+        own = sum(cv2.contourArea(np.array(polys[n][1], np.float32)) for n in ids) * scale2
+        seen = float(np.isin(front, [n + 1 for n, (bone, _, _, _) in enumerate(F.PARTS) if bone == b]).sum())
+        out[b] = float(np.clip(1 - seen / max(HIDDEN_SHARE * own, 1.0), 0, 1))
+    return out
 
 
 def pose_prior(Js, hidden):
@@ -162,7 +181,7 @@ def score_job(job):
     ps = [p[:F.NP]] + [np.asarray(c, float)[:F.NP] for c in cps] + OF.widened(p)
     judge = PF.Judge(clip, net, k, ps, W)
     J0 = full_J(p)
-    hid = hidden_weights(judge, J0)
+    hid = hidden_weights(judge, J0, p[:NC])
     res = {}
     for b, cand in opts.items():
         Js = []
@@ -192,7 +211,7 @@ def polish_job(job):
     judge = PF.Judge(clip, net, k, ps, W)
     J0 = torch.tensor(full_J(p), dtype=T.DT)
     J = J0.clone()
-    hid = hidden_weights(judge, J0.numpy())
+    hid = hidden_weights(judge, J0.numpy(), p[:NC])
     # Offsets pay r6_offsets' tie-break cost: a limb hidden behind the body scores alike anywhere back there, and
     # must stay put rather than drift off (an arm pulled a stud out of a standing idle pose).
     value = lambda Js: judge(Js)[0] - OF.COST_PX * Js[:, NJ:].abs().sum(1).numpy() - pose_prior(Js.numpy(), hid)
@@ -279,7 +298,7 @@ def smooth_job(job):
     judge = PF.Judge(clip, net, k, ps, W)
     A = full_J(anchor)
     J = full_J(p)
-    hid = hidden_weights(judge, J)
+    hid = hidden_weights(judge, J, p[:NC])
     value = lambda Js: (judge(torch.tensor(Js, dtype=T.DT))[0] - OF.COST_PX * np.abs(Js[:, NJ:]).sum(1) - pose_prior(Js, hid)
                         - roughness(Js, nb))
     start = float(value(J[None])[0])
@@ -402,7 +421,7 @@ def rethrow_job(job):
     ps = [p[:F.NP]] + [np.asarray(c, float)[:F.NP] for c in cps] + OF.widened(p)
     judge = PF.Judge(clip, net, k, ps, W)
     J0 = full_J(p)
-    hid = hidden_weights(judge, J0)
+    hid = hidden_weights(judge, J0, p[:NC])
     value = lambda J: (float(judge(torch.tensor(J[None], dtype=T.DT))[0][0]) - OF.COST_PX * float(np.abs(J[NJ:]).sum())
                        - float(pose_prior(J, hid)[0]))
     best, bestJ, base_n = None, None, None
