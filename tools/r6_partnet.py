@@ -4,6 +4,9 @@
 # synthetic pictures carry strike trails, smoke, blur and Dummies, so the network learns to look through them.
 #   python3 tools/r6_partnet.py train OUT.pt DATA.npz [DATA2.npz ...]     (EPOCHS, BATCH env)
 #   python3 tools/r6_partnet.py show OUT.pt VIDEO PATH.json OUT.png       predictions on real frames of a path
+#   python3 tools/r6_partnet.py realset VIDEO OUT.npz TRACK.json...        real windows labelled by fits >= .9
+#   python3 tools/r6_partnet.py realcheck NET.pt REAL.npz                  part IoU / body pixel accuracy on them
+#   (train env: REAL=a.npz,b.npz mixes real windows in; REALVAL=c.npz checks on real ones each round; INIT=old.pt)
 import sys, os, json, time
 import numpy as np, torch, torch.nn as nn, torch.nn.functional as Fn, cv2
 
@@ -47,7 +50,13 @@ def train(out, paths):
     n = len(X)
     val = np.arange(n) >= n - 500
     Xt, Yt, Xv, Yv = X[~val], Y[~val], X[val], Y[val]
+    for rp in filter(None, os.environ.get('REAL', '').split(',')):  # real windows, repeated to ~10% of the data
+        z = np.load(rp)
+        rep = max(1, int(0.1 * len(Xt) / max(len(z['X']), 1)))
+        Xt, Yt = np.concatenate([Xt] + [z['X']] * rep), np.concatenate([Yt] + [z['Y']] * rep)
     net = PartNet()
+    if os.environ.get('INIT'):
+        net.load_state_dict(torch.load(os.environ['INIT'], map_location='cpu'))
     opt = torch.optim.AdamW(net.parameters(), 2e-3, weight_decay=1e-4)
     epochs, bs = int(os.environ.get('EPOCHS', '8')), int(os.environ.get('BATCH', '32'))
     steps = epochs * (len(Xt) // bs)
@@ -79,7 +88,43 @@ def train(out, paths):
             uni = ((pr == c) | (Yv == c)).sum()
             ious.append(inter / max(uni, 1))
         print(f'epoch {ep}: validation part IoU {np.round(ious, 2).tolist()} mean {np.mean(ious):.3f}', flush=True)
+        if os.environ.get('REALVAL'):
+            ri, acc = real_iou(net, os.environ['REALVAL'])
+            print(f'epoch {ep}: REAL part IoU {np.round(ri, 2).tolist()} mean {np.mean(ri):.3f} body pixel accuracy {acc:.3f}',
+                  flush=True)
         torch.save(net.state_dict(), out)
+
+
+def real_set(video, tracks, out, min_ag=0.9):
+    """Real footage windows with their part labels drawn from fits that agree >= min_ag (pseudo-labels: right to the
+    fit's few % of error). Used to fine-tune on the real look and, from a view kept out of training, to measure."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import r6_oversee as O, r6_global as G, r6_fit as F, r6_partscore as PS
+    X, Y, K = [], [], []
+    for t in tracks:
+        tr = json.load(open(t))
+        clip = O.Clip(video, tr)
+        for k, r in tr['frames'].items():
+            if r['agreement'] < min_ag:
+                continue
+            p = np.array(r['params'], float)
+            rgb = clip.rgb(int(k))
+            roi = G.UnionWindow(clip.f0, [p], clip.light, 112).roi(p, F.classify(rgb, O.pal))
+            X.append(window_rgb(rgb, roi))
+            Y.append(PS.frame_parts(clip, None, int(k), [p])[1][0].astype(np.uint8))
+            K.append(int(k))
+    np.savez(out, X=np.stack(X), Y=np.stack(Y), K=np.array(K))
+    print(out, len(X), 'frames')
+
+
+def real_iou(net, path):
+    z = np.load(path)
+    pr = np.concatenate([predict(net, list(z['X'][i:i + 50])).argmax(1) for i in range(0, len(z['X']), 50)])
+    Y = z['Y']
+    ious = [((pr == c) & (Y == c)).sum() / max(((pr == c) | (Y == c)).sum(), 1) for c in range(1, NPART)]
+    body = Y > 0
+    acc = float((pr[body] == Y[body]).mean())
+    return ious, acc
 
 
 def load(path):
@@ -126,6 +171,11 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if a and a[0] == 'train':
         train(a[1], a[2:])
+    elif a and a[0] == 'realset':
+        real_set(a[1], a[3:], a[2])
+    elif a and a[0] == 'realcheck':
+        ri, acc = real_iou(load(a[1]), a[2])
+        print('REAL part IoU', np.round(ri, 2).tolist(), f'mean {np.mean(ri):.3f} body pixel accuracy {acc:.3f}')
     elif a and a[0] == 'show':
         show(*a[1:5])
     else:

@@ -26,7 +26,7 @@ def frame_parts(clip, net, k, ps):
     fit = T.Fit([v], ps[0][None, NC:], [ps[0][None, :5]], [float(ps[0][5])], [clip.light])
     v.window(0, ps[0], win)
     roi = win.roi(ps[0], enc)
-    pred = P.predict(net, [P.window_rgb(rgb, roi)])[0].argmax(0)
+    pred = P.predict(net, [P.window_rgb(rgb, roi)])[0].argmax(0) if net is not None else None
     Pm = np.stack(ps)
     pid = (T.PART_OF_FACE + 1).to(torch.int64)
     drawn = T.hard_draw(v, 0, torch.tensor(Pm[:, NC:], dtype=T.DT), torch.tensor(Pm[:, :5], dtype=T.DT), fit.persp[0],

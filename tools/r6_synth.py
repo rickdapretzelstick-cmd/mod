@@ -5,6 +5,7 @@
 # red strike trails, smoke, motion blur, a second Dummy-coloured rig in front or behind, and colour/noise jitter.
 #   python3 tools/r6_synth.py sheet VIDEO OUT.png         a sheet of samples (picture | labels)
 #   python3 tools/r6_synth.py make VIDEO OUT.npz N         N samples for training (r6_partnet.py)
+#   python3 tools/r6_synth.py learn VIDEO [TRACK.json ...]  each box side's real look -> oversee/real_textures.npz
 import sys, os, json, glob
 import numpy as np, cv2
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -21,6 +22,75 @@ NPART = 7
 SHIRT = {'torso', 'rightArm', 'leftArm'}
 TRACKS = sorted(glob.glob(os.path.join(HERE, 'fit_data', 'cursed_strikes_gd6', 'tracks', '*.json')))
 GLYPHS = os.path.join(HERE, 'fit_data', 'cursed_strikes_gd6', 'oversee', 'left_glyphs.npz')
+REAL = os.path.join(HERE, 'fit_data', 'cursed_strikes_gd6', 'oversee', 'real_textures.npz')
+REAL_SHARE = 0.75  # of the pictures drawn with the footage's own side textures (the rest: template colours + letters)
+TEX = 32
+TSQ = np.float32([[0, 0], [TEX, 0], [TEX, TEX], [0, TEX]])
+
+
+def rig_faces(p, light):
+    """The rig's visible box sides under params p: [(depth, box n, face index, part, 4 footage-px corners, shade)]."""
+    world = F.pose_world(p)
+    view, proj = F.camera_of(p)
+    persp = p[5]
+    out = []
+    for n, (bone, lo, hi, part) in enumerate(F.PARTS):
+        if part == 'face' or n == 7:
+            continue
+        L = M.box_corners_local(part, lo, hi)
+        wc = F.MODEL_TO_WORLD @ (world[bone] @ np.c_[L, np.ones(8)].T)[:3]
+        v = view @ wc
+        uv = proj(v)
+        rotw = F.MODEL_TO_WORLD @ world[bone][:3, :3]
+        for fi, (idx, normal) in enumerate(F.FACES):
+            nw = rotw @ normal
+            nc = view @ nw
+            centre = v[:, idx].mean(1)
+            toward = -centre + np.array([0, 0, 1 / persp]) if persp > 1e-6 else np.array([0, 0, 1.0])
+            if nc @ toward <= 0:
+                continue
+            shade = light[1] + (1 - light[1]) * max(0.0, float(nw @ light[0]))
+            out.append((centre[2], n, fi, part, uv[idx].astype(np.float32), shade))
+    out.sort(key=lambda f: f[0])
+    return out
+
+
+def learn_real(video, tracks, out, min_ag=0.9, min_area=200):
+    """Each box side's look in the footage: the side unwarped to TEX x TEX from every well-fitted frame where it is
+    fully in view and big enough, the per-pixel median (trails and blur in a few frames drop out), divided by that
+    frame's shade so draw_rig can light it again."""
+    cap = cv2.VideoCapture(video)
+    got = {}
+    for t in tracks:
+        tr = json.load(open(t))
+        light = (np.array(tr['light'][0]), float(tr['light'][1]))
+        for k, r in tr['frames'].items():
+            if r['agreement'] < min_ag:
+                continue
+            cap.set(cv2.CAP_PROP_POS_FRAMES, int(k))
+            ok, f = cap.read()
+            rgb = f[..., ::-1].astype(np.float32)
+            p = np.array(r['params'], float)
+            faces = rig_faces(p, light)
+            lab = np.full(rgb.shape[:2], -1, np.int32)
+            for i, (_, _, _, _, q, _) in enumerate(faces):
+                cv2.fillConvexPoly(lab, np.round(q * 4).astype(np.int32), i, shift=2)
+            for i, (_, n, fi, part, q, shade) in enumerate(faces):
+                d1, d2 = q[2] - q[0], q[3] - q[1]
+                area = 0.5 * abs(d1[0] * d2[1] - d1[1] * d2[0])
+                if area < min_area or (lab == i).sum() < 0.9 * area:
+                    continue
+                Mq = cv2.getPerspectiveTransform(q, TSQ)
+                tex = cv2.warpPerspective(rgb, Mq, (TEX, TEX), flags=cv2.INTER_AREA)
+                got.setdefault((n, fi), []).append(tex / (0.75 + 0.5 * shade))
+    real = {f'{n}_{fi}': np.clip(np.median(np.stack(v), 0), 0, 255).astype(np.uint8) for (n, fi), v in got.items()}
+    np.savez_compressed(out, **real)
+    print(f'{out}: {len(real)} sides learnt; frames per side', sorted(len(v) for v in got.values()))
+
+
+def load_real(path):
+    z = np.load(path)
+    return {tuple(int(x) for x in k.split('_')): z[k] for k in z.files}
 
 
 def load_tracks():
@@ -38,6 +108,7 @@ class Synth:
         self.cap = cv2.VideoCapture(video)
         self.rows = load_tracks()
         self.tex = Gl.load(GLYPHS) if os.path.exists(GLYPHS) else {}
+        self.real = load_real(REAL) if os.path.exists(REAL) else {}
         self.frames = {}
 
     def frame(self, k):
@@ -80,30 +151,13 @@ class Synth:
 
     def draw_rig(self, img, lab, p, light, box, colours=None, label=True):
         """The rig drawn over img (and its parts into lab) far to near, with the template's letters and the pants'
-        dark outlines; colours: a part -> rgb override (a Dummy)."""
+        dark outlines -- or, when learnt, the footage's own look of each side (real_textures); colours: a part -> rgb
+        override (a Dummy)."""
         x0, y0, w = box
         k = S / w
-        world = F.pose_world(p)
-        view, proj = F.camera_of(p)
-        persp = p[5]
-        faces = []
-        for n, (bone, lo, hi, part) in enumerate(F.PARTS):
-            if part == 'face' or (n == 7):
-                continue
-            L = M.box_corners_local(part, lo, hi)
-            wc = F.MODEL_TO_WORLD @ (world[bone] @ np.c_[L, np.ones(8)].T)[:3]
-            v = view @ wc
-            uv = (proj(v) - [x0, y0]) * k
-            rotw = F.MODEL_TO_WORLD @ world[bone][:3, :3]
-            for fi, (idx, normal) in enumerate(F.FACES):
-                nw = rotw @ normal
-                nc = view @ nw
-                centre = v[:, idx].mean(1)
-                toward = -centre + np.array([0, 0, 1 / persp]) if persp > 1e-6 else np.array([0, 0, 1.0])
-                if nc @ toward <= 0:
-                    continue
-                shade = light[1] + (1 - light[1]) * max(0.0, float(nw @ light[0]))
-                faces.append((centre[2], n, fi, part, uv[idx].astype(np.float32), shade))
+        faces = [(z, n, fi, part, ((q - [x0, y0]) * k).astype(np.float32), shade) for z, n, fi, part, q, shade
+                 in rig_faces(p, light)]
+        real = not colours and self.real and self.rng.random() < REAL_SHARE
         faces.sort(key=lambda f: f[0])
         for _, n, fi, part, q, shade in faces:
             if colours:
@@ -117,14 +171,17 @@ class Synth:
             a = face.astype(np.float32)[..., None] / 255
             layer = np.empty_like(img, dtype=np.float32)
             layer[:] = col
-            if not colours and (n, fi) in self.tex:
+            if real and (n, fi) in self.real:
+                t = self.real[(n, fi)].astype(np.float32) * (0.75 + 0.5 * shade) * self.rng.uniform(0.9, 1.1)
+                layer = cv2.warpPerspective(t, cv2.getPerspectiveTransform(TSQ, q), (S, S), borderMode=cv2.BORDER_REPLICATE)
+            elif not colours and (n, fi) in self.tex:
                 t = self.tex[(n, fi)]
                 t = t / max(float(t.max()), 1e-3)
                 tw = cv2.warpPerspective(t.astype(np.float32), cv2.getPerspectiveTransform(Gl.SQ, q), (S, S))[..., None]
                 ink = np.array((250, 250, 250) if part in SHIRT else (15, 15, 20), float)
                 layer = layer * (1 - 0.85 * tw) + ink * 0.85 * tw
             img[:] = img * (1 - a) + layer * a
-            if not colours and part not in SHIRT:  # the pants' printed dark outline
+            if not colours and not real and part not in SHIRT:  # the pants' printed dark outline
                 cv2.polylines(img, [pts], True, (20, 20, 25), max(1, int(round(k * 0.6))), cv2.LINE_AA, shift=3)
             if label is not None:
                 lab[face > 127] = PART_ID[part] if label else 0
@@ -232,6 +289,8 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if a and a[0] == 'sheet':
         sheet(a[1], a[2])
+    elif a and a[0] == 'learn':
+        learn_real(a[1], TRACKS + a[2:], REAL)
     elif a and a[0] == 'make':
         make(a[1], a[2], int(a[3]), int(a[4]) if len(a) > 4 else 0)
     else:
