@@ -2951,7 +2951,17 @@ def character_patch(obs, prefer=None):
         ys, xs = np.nonzero(prefer & np.isin(obs, F.BODY_CLASSES))
         if len(xs) > 20:
             near = (float(np.median(xs)), float(np.median(ys)))
-    return F.pick_character(obs, fg, near=near)
+    patch = F.pick_character(obs, fg, near=near)
+    if prefer is not None and prefer.any():
+        # Pieces mostly under the rig's outline are the character's too: a limb thrown clear of the body (a kick into
+        # the dummy) is a patch of its own, and must be judged, not wiped to floor.
+        lab, n = F.ndimage.label(F.ndimage.binary_dilation(fg, iterations=2))
+        if n > 1:
+            inside = F.ndimage.sum(fg & prefer, lab, range(1, n + 1))
+            total = F.ndimage.sum(fg, lab, range(1, n + 1))
+            own = [i + 1 for i in range(n) if total[i] >= 8 and inside[i] >= 0.5 * total[i]]
+            patch = patch | (np.isin(lab, own) & fg)
+    return patch
 
 
 def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 60), rolls=(-45, 0, 45), prev=None,

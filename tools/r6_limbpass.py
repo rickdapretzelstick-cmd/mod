@@ -60,6 +60,9 @@ def bone_of(J, b):
     return rot, off
 
 
+PARTNER = {'rightArm': 'leftArm', 'leftArm': 'rightArm', 'rightThigh': 'leftThigh', 'leftThigh': 'rightThigh'}
+
+
 def box_mid(b):
     """The middle of bone b's box in its own frame (rig px, at the avatar's proportions)."""
     lo, hi, part = next((lo, hi, part) for bb, lo, hi, part in F.PARTS if bb == b and part != 'face')
@@ -95,6 +98,17 @@ def candidates(path, cands, ks, b):
                         continue
                     opts.append((R_to_euler(r, rot), np.array(o, float)))
                     quats.append(q)
+        mate = PARTNER.get(b)
+        if mate is not None:
+            # The same-sized partner limb thrown here (the hunt can't tell which leg kicked, so neighbouring frames
+            # may disagree): this bone in its place, so the thrown limb can be one bone through the whole throw.
+            m_rot, m_off = bone_of(path[k], mate)
+            if np.linalg.norm(m_off) > 1.5:
+                Rm = euler_to_R(m_rot)
+                there = np.array(F.REST[mate], float) + m_off + Rm.apply(box_mid(mate))
+                for tw in (0, 90, 180, 270):
+                    r = Rm * Rot.from_euler('y', tw, degrees=True) if tw else Rm
+                    opts.append((R_to_euler(r, own_rot), there - np.array(F.REST[b], float) - r.apply(mid)))
         out[k] = opts
     return out
 
@@ -136,7 +150,10 @@ def polish_job(job):
     judge = PF.Judge(clip, net, k, ps, W)
     J0 = torch.tensor(full_J(p), dtype=T.DT)
     J = J0.clone()
-    best = start = float(judge(J[None])[0][0])
+    # Offsets pay r6_offsets' tie-break cost: a limb hidden behind the body scores alike anywhere back there, and
+    # must stay put rather than drift off (an arm pulled a stud out of a standing idle pose).
+    value = lambda Js: judge(Js)[0] - OF.COST_PX * Js[:, NJ:].abs().sum(1).numpy()
+    best = start = float(value(J[None])[0])
     for step in POLISH_STEPS:
         for _ in range(10):
             cands = []
@@ -148,18 +165,18 @@ def polish_job(job):
                         continue
                     cands.append(q)
             Js = torch.stack(cands)
-            v = judge(Js)[0]
+            v = value(Js)
             o = int(np.argmax(v))
             if v[o] <= best + 1e-6:
                 break
             J, best = Js[o].clone(), float(v[o])
-    return k, np.concatenate([p[:NC], J.numpy()]), start, best
+    return k, np.concatenate([p[:NC], J.numpy()]), start, float(value(J[None])[0])
 
 
 def huber(d):
-    """Quadratic up to 1 (stud), linear past it: offset jitter pays, but a limb thrown far for real (a kick into the
-    dummy) is not priced out of the clip."""
-    return d * d if d <= 1 else 2 * d - 1
+    """Quadratic up to 1 (stud), linear past it, and no more than a 3-stud move: offset jitter pays, but a limb thrown
+    far for real (a kick into the dummy, out and back within two frames) is not priced out of the clip."""
+    return min(d * d if d <= 1 else 2 * d - 1, 5.0)
 
 
 def viterbi(ks, opts, scores, b):
@@ -187,6 +204,41 @@ def viterbi(ks, opts, scores, b):
     return pick
 
 
+THROWN = 12.0  # rig px (2 studs): a limb this far off its joint is thrown, not just loose
+
+
+def swap(J, b, mate):
+    """J with limbs b and mate trading places: each takes the other's turn and moves so its box lands where the
+    other's was. Same-sized limbs with the same side colours (R6 arms, R6 legs): the picture is the same."""
+    J = J.copy()
+    rb, ob = bone_of(J, b)
+    rm, om = bone_of(J, mate)
+    for x, (r, o, y) in ((b, (rm, om, mate)), (mate, (rb, ob, b))):
+        R = euler_to_R(r)
+        there = np.array(F.REST[y], float) + o + R.apply(box_mid(y))
+        J[COLS[x]] = r
+        J[OFFC[x]:OFFC[x] + 3] = there - np.array(F.REST[x], float) - R.apply(box_mid(x))
+    return J
+
+
+def consistent_throws(params, ks):
+    """The footage can't say which of two same-sized limbs was thrown (the hunt may pick the left leg in one frame
+    and the right in the next): through a throw, the same bone stays the thrown one, so the clip shows one leg kicking
+    out and back instead of two legs taking turns."""
+    n = 0
+    for b, mate in (('rightArm', 'leftArm'), ('rightThigh', 'leftThigh')):
+        prev = None
+        for k in ks:
+            J = full_J(params[k])
+            far = {x: np.linalg.norm(bone_of(J, x)[1]) > THROWN for x in (b, mate)}
+            now = b if far[b] and not far[mate] else mate if far[mate] and not far[b] else None
+            if now is not None and prev is not None and now != prev:
+                params[k] = np.concatenate([params[k][:NC], swap(J, b, mate)])
+                now, n = prev, n + 1
+            prev = now
+    return n
+
+
 def main(video, path_json, cands_json, net_path, out, rounds=2):
     tr = json.load(open(path_json))
     cd = json.load(open(cands_json))
@@ -194,6 +246,7 @@ def main(video, path_json, cands_json, net_path, out, rounds=2):
     ks = sorted(int(k) for k in tr['frames'])
     params = {k: np.array(tr['frames'][str(k)]['params'], float) for k in ks}
     cands = {int(k): v for k, v in cd['frames'].items()}
+    print(f'{consistent_throws(params, ks)} frames had the thrown limb swapped to its neighbours\'', flush=True)
     def flips():  # bone turns over 60 deg between consecutive frames
         n = 0
         for b in BONES:

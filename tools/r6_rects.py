@@ -94,9 +94,12 @@ def body_cluster(obs, counts, prefer=None):
     if not n:
         return np.ones_like(body)
     if prefer is not None and (body & prefer).any():
-        sizes = ndimage.sum(body & prefer, lab, range(1, n + 1))
-    else:
-        sizes = ndimage.sum(body, lab, range(1, n + 1))
+        inside = ndimage.sum(body & prefer, lab, range(1, n + 1))
+        total = ndimage.sum(body, lab, range(1, n + 1))
+        # ...and every other cluster mostly under the outline too (a limb thrown off the body is a piece of its own)
+        own = [1 + int(np.argmax(inside))] + [i + 1 for i in range(n) if inside[i] >= 0.5 * total[i]]
+        return np.isin(lab, own)
+    sizes = ndimage.sum(body, lab, range(1, n + 1))
     return lab == 1 + int(np.argmax(sizes))
 
 
