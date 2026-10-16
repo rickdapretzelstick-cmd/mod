@@ -111,6 +111,14 @@ Adding parts to the whole-clip pick (`r6_partscore.py select ... W`) changed not
 W 1 -> .8878, 56 (colour-only .889, 55). Parts agreement of the picks is only ~.55: the right pose is not among the
 candidates. Next: fit the rig to the network's part map directly (render-and-compare on parts, not colour) so the
 network proposes poses instead of only judging them.
+Done (r6_partfit.py): no gain with the first network -- measured on side-view frames fitted >= .9 it got only 58% of
+body pixels right (`r6_partnet.py realcheck`): the synthetic pictures did not look like the character. Fix:
+`r6_synth.py learn` copies each box side's real look (median over well-fitted frames) onto 75% of the pictures, and
+`r6_partnet.py realset` adds real windows labelled by fits >= .9 from the front/back/right tracks (REAL env).
+partnet2 (INIT=partnet.pt, 30k pictures + real, 6 rounds, ~36 min): side view (never trained on) 82% body pixels,
+97% on the views it saw; plateaued after round 1 -> needs more varied real frames. Part fitter with it, W .5:
+colour .890 / 56 >= .90, parts .55 -> .74. Rick's bar: train until 95% on real frames. Next: fit front/back/right
+with candidates + partfit (build/fit/v3), add frames passing colour .9 + parts .8 to the real set, retrain, repeat.
 
 ## AI overseer: built and run on the side view (tools/r6_oversee.py)
 Stages (see the file's header): `flag` -> `sheets` -> Claude reads the PNGs and writes a corrections JSON -> `apply` ->
