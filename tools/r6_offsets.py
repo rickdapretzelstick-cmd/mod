@@ -13,9 +13,9 @@ import r6_fit as F, r6_fit_torch as T
 import r6_oversee as O, r6_partnet as P, r6_partfit as PF
 
 NC, NJ = O.NC, len(F.JOINTS)
-MAX_PX = 8.0       # a joint moves at most this far (rig px; 6 px = 1 stud)
-COST_PX = 0.002    # score paid per px of offset (L1): a real gap pays for itself, noise does not
-STEPS = (3.0, 1.5, 0.75)
+MAX_PX = float(os.environ.get('MAX_PX', '8'))  # a joint moves at most this far (rig px; 6 px = 1 stud)
+COST_PX = float(os.environ.get('COST_PX', '0.002'))  # score per px of offset (L1): a real gap pays for itself, noise does not
+STEPS = (6.0, 3.0, 1.5, 0.75)
 
 
 def descend(judge, J):
