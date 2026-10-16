@@ -95,6 +95,7 @@ public final class Bootstrap {
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> JJKCommand.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> dev.rick.jjk.command.TestCommand.register(dispatcher));
+        dev.rick.jjk.core.move.MoveCommand.init();
         JJK.LOGGER.info("Jujutsu loaded: {} character(s)", Characters.ids().spliterator().getExactSizeIfKnown());
     }
 }

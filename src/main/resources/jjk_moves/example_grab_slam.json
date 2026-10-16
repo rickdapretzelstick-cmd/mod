@@ -1,0 +1,460 @@
+{
+  "format": "jjk_move",
+  "version": 1,
+  "id": "example_grab_slam",
+  "name": "Grab Slam (example)",
+  "duration": 1300,
+  "cost": 20,
+  "cooldown": 8,
+  "technique": false,
+  "uninterruptible": true,
+  "movement": 0.2,
+  "air": false,
+  "events": [
+    {
+      "type": "motion",
+      "t": 100,
+      "end": 250,
+      "mode": "set",
+      "velocity": [
+        0,
+        0,
+        0.6
+      ]
+    },
+    {
+      "type": "hitbox",
+      "id": "grab",
+      "start": 150,
+      "end": 300,
+      "shape": "box",
+      "offset": [
+        0,
+        1,
+        0.9
+      ],
+      "size": [
+        1.2,
+        1.6,
+        1.4
+      ],
+      "radius": 1,
+      "aim": false,
+      "damage": 2,
+      "knockback": {
+        "right": 0,
+        "up": 0,
+        "forward": 0
+      },
+      "hitstun": 30,
+      "status": "",
+      "statusTicks": 0,
+      "tags": [
+        "melee"
+      ],
+      "rehit": 0,
+      "impactFx": "hit_light",
+      "impactScale": 1,
+      "blockable": false,
+      "grab": true
+    },
+    {
+      "type": "status",
+      "start": 0,
+      "end": 300,
+      "status": "melee_armor"
+    },
+    {
+      "type": "logic",
+      "start": 350,
+      "end": 350,
+      "when": "notGrabbed",
+      "action": "end",
+      "from": "",
+      "move": ""
+    },
+    {
+      "type": "grab",
+      "start": 300,
+      "end": 850,
+      "from": "grab",
+      "hold": [
+        0,
+        1.7,
+        0.7
+      ],
+      "release": [
+        0,
+        -1.4,
+        0.6
+      ],
+      "releaseDamage": 10,
+      "releaseFx": "hit_slam"
+    },
+    {
+      "type": "effect",
+      "t": 850,
+      "fx": "ground_impact",
+      "offset": [
+        0,
+        0,
+        1.2
+      ],
+      "dir": [
+        0,
+        1,
+        0
+      ],
+      "scale": 1.4,
+      "onTarget": true
+    },
+    {
+      "type": "sound",
+      "t": 850,
+      "sound": "hit_slam",
+      "volume": 1.2,
+      "pitch": 0.9
+    },
+    {
+      "type": "camera",
+      "t": 850,
+      "kind": "shake",
+      "intensity": 0.9,
+      "duration": 10,
+      "radius": 20,
+      "color": "ffffffff"
+    }
+  ],
+  "animation": {
+    "priority": "SPECIAL",
+    "blendIn": 60,
+    "blendOut": 180,
+    "hold": false,
+    "keys": [
+      {
+        "t": 0,
+        "ease": "EASE_OUT",
+        "bones": {
+          "hips": {
+            "rot": [
+              6,
+              0,
+              0
+            ]
+          },
+          "chest": {
+            "rot": [
+              4,
+              0,
+              0
+            ]
+          },
+          "rightArm": {
+            "rot": [
+              -30,
+              0,
+              20
+            ]
+          },
+          "leftArm": {
+            "rot": [
+              -30,
+              0,
+              20
+            ]
+          },
+          "rightForearm": {
+            "rot": [
+              -40,
+              0,
+              0
+            ]
+          },
+          "leftForearm": {
+            "rot": [
+              -40,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "t": 200,
+        "ease": "OVERSHOOT",
+        "bones": {
+          "hips": {
+            "rot": [
+              18,
+              0,
+              0
+            ]
+          },
+          "chest": {
+            "rot": [
+              14,
+              0,
+              0
+            ]
+          },
+          "rightArm": {
+            "rot": [
+              -95,
+              0,
+              8
+            ]
+          },
+          "leftArm": {
+            "rot": [
+              -95,
+              0,
+              8
+            ]
+          },
+          "rightForearm": {
+            "rot": [
+              -10,
+              0,
+              0
+            ]
+          },
+          "leftForearm": {
+            "rot": [
+              -10,
+              0,
+              0
+            ]
+          },
+          "root": {
+            "pos": [
+              0,
+              -2,
+              2
+            ]
+          }
+        }
+      },
+      {
+        "t": 600,
+        "ease": "EASE_IN_OUT",
+        "bones": {
+          "hips": {
+            "rot": [
+              -10,
+              0,
+              0
+            ]
+          },
+          "chest": {
+            "rot": [
+              -18,
+              0,
+              0
+            ]
+          },
+          "rightArm": {
+            "rot": [
+              -170,
+              0,
+              10
+            ]
+          },
+          "leftArm": {
+            "rot": [
+              -170,
+              0,
+              10
+            ]
+          },
+          "rightForearm": {
+            "rot": [
+              -20,
+              0,
+              0
+            ]
+          },
+          "leftForearm": {
+            "rot": [
+              -20,
+              0,
+              0
+            ]
+          },
+          "root": {
+            "pos": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "t": 850,
+        "ease": "EASE_IN",
+        "bones": {
+          "hips": {
+            "rot": [
+              35,
+              0,
+              0
+            ]
+          },
+          "chest": {
+            "rot": [
+              30,
+              0,
+              0
+            ]
+          },
+          "rightArm": {
+            "rot": [
+              -60,
+              0,
+              10
+            ]
+          },
+          "leftArm": {
+            "rot": [
+              -60,
+              0,
+              10
+            ]
+          },
+          "rightForearm": {
+            "rot": [
+              -5,
+              0,
+              0
+            ]
+          },
+          "leftForearm": {
+            "rot": [
+              -5,
+              0,
+              0
+            ]
+          },
+          "root": {
+            "pos": [
+              0,
+              -5,
+              2
+            ]
+          },
+          "rightShin": {
+            "rot": [
+              50,
+              0,
+              0
+            ]
+          },
+          "leftShin": {
+            "rot": [
+              50,
+              0,
+              0
+            ]
+          },
+          "rightThigh": {
+            "rot": [
+              -40,
+              0,
+              0
+            ]
+          },
+          "leftThigh": {
+            "rot": [
+              -40,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "t": 1300,
+        "ease": "EASE_IN_OUT",
+        "bones": {
+          "hips": {
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "chest": {
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rightArm": {
+            "rot": [
+              -20,
+              0,
+              15
+            ]
+          },
+          "leftArm": {
+            "rot": [
+              -20,
+              0,
+              15
+            ]
+          },
+          "rightForearm": {
+            "rot": [
+              -30,
+              0,
+              0
+            ]
+          },
+          "leftForearm": {
+            "rot": [
+              -30,
+              0,
+              0
+            ]
+          },
+          "root": {
+            "pos": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rightShin": {
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "leftShin": {
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "rightThigh": {
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          },
+          "leftThigh": {
+            "rot": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

@@ -78,9 +78,28 @@ public final class AnimLibrary {
         JJK.LOGGER.info("[animations] {} clips, {} poses", r.clips.values().stream().distinct().count(), r.poses.values().stream().distinct().count());
     }
 
+    /** Clips the server sent (the move editor's moves, core.move): kept apart so a resource reload leaves them. */
+    private static final Map<String, Clip> RUNTIME = new java.util.concurrent.ConcurrentHashMap<>();
+
     @Nullable
     public static Clip get(String name) {
-        return current.clips.get(name);
+        Clip c = current.clips.get(name);
+        return c != null ? c : RUNTIME.get(name);
+    }
+
+    /** Replaces the server-sent clips; returns the problems (a clip that would not compile is left out). */
+    public static List<String> putRuntime(List<String> names, List<String> jsons) {
+        List<String> errors = new ArrayList<>();
+        RUNTIME.clear();
+        for (int i = 0; i < names.size(); i++) {
+            try {
+                RUNTIME.put(names.get(i), parse(names.get(i), "moves", jsons.get(i)));
+            } catch (Exception e) {
+                errors.add(names.get(i) + ": " + e.getMessage());
+            }
+        }
+        for (String e : errors) JJK.LOGGER.warn("[animations] move clip {}", e);
+        return errors;
     }
 
     @Nullable

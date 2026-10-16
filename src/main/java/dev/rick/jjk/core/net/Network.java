@@ -35,6 +35,7 @@ public final class Network {
         s2c.register(FxPayload.TYPE, FxPayload.CODEC);
         s2c.register(CameraPayload.TYPE, CameraPayload.CODEC);
         s2c.register(AnimPayload.TYPE, AnimPayload.CODEC);
+        s2c.register(MoveSyncPayload.TYPE, MoveSyncPayload.CODEC);
         s2c.register(StatusPayload.TYPE, StatusPayload.CODEC);
         s2c.register(CastPayload.TYPE, CastPayload.CODEC);
         s2c.register(ComboPayload.TYPE, ComboPayload.CODEC);
