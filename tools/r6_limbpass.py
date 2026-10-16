@@ -85,6 +85,7 @@ def candidates(path, cands, ks, b):
             if 0 <= i + d < len(ks):
                 src.append(path[ks[i + d]])
         src += [full_J(c['params']) for c in cands.get(k, [])]
+        src.append(np.zeros_like(path[k]))  # rest: where a part the footage can't see settles (see pose_prior)
         own_rot, own_off = bone_of(path[k], b)
         own_mid = own_off + euler_to_R(own_rot).apply(mid)
         thrown = OFFC[b] is not None and np.linalg.norm(own_off) > 1.5
@@ -116,6 +117,29 @@ def candidates(path, cands, ks, b):
     return out
 
 
+REST_PRIOR = float(os.environ.get('REST_PRIOR', '0.04'))  # agreement units per (90 deg of a limb or the head from rest)^2
+OFF_PRIOR = float(os.environ.get('OFF_PRIOR', '0.002'))   # ... per rig px of joint offset, up to OFF_PRIOR_CAP
+OFF_PRIOR_CAP = 0.04
+PRIOR_BONES = ('head', 'rightArm', 'leftArm', 'rightThigh', 'leftThigh')
+
+
+def pose_prior(Js):
+    """A small cost on each limb's (and the head's) turn from rest and on joint offsets: where the footage can't see
+    a part (a far leg behind the near one in a side view) many poses score alike, and the judge's own small biases (a
+    rig leg that peeks out from behind where the real one doesn't) push the hidden part anywhere it hides best -- a
+    leg sideways, a leg sunk into the body. The prior settles it on the natural pose. Seen parts are judged by many
+    pixels, far above this, so the footage still decides wherever it shows them; a thrown limb pays at most the cap."""
+    Js = np.atleast_2d(np.asarray(Js, float))
+    cost = np.zeros(len(Js))
+    for b in PRIOR_BONES:
+        deg = np.degrees(rot_batch(Js[:, COLS[b]]).magnitude())
+        cost += REST_PRIOR * np.minimum((deg / 90) ** 2, 2.0)
+        if OFFC[b] is not None:
+            px = np.linalg.norm(Js[:, OFFC[b]:OFFC[b] + 3], axis=1)
+            cost += np.minimum(OFF_PRIOR * px, OFF_PRIOR_CAP)
+    return cost
+
+
 def score_job(job):
     video, track, net_path, k, p, cps, opts = job
     clip = O.Clip(video, json.load(open(track)))
@@ -133,7 +157,7 @@ def score_job(job):
             if OFFC[b] is not None:
                 J[OFFC[b]:OFFC[b] + 3] = off
             Js.append(J)
-        res[b] = [float(x) for x in judge(torch.tensor(np.stack(Js), dtype=T.DT))[0]]
+        res[b] = [float(x) for x in judge(torch.tensor(np.stack(Js), dtype=T.DT))[0] - pose_prior(np.stack(Js))]
     return k, res
 
 
@@ -155,7 +179,7 @@ def polish_job(job):
     J = J0.clone()
     # Offsets pay r6_offsets' tie-break cost: a limb hidden behind the body scores alike anywhere back there, and
     # must stay put rather than drift off (an arm pulled a stud out of a standing idle pose).
-    value = lambda Js: judge(Js)[0] - OF.COST_PX * Js[:, NJ:].abs().sum(1).numpy()
+    value = lambda Js: judge(Js)[0] - OF.COST_PX * Js[:, NJ:].abs().sum(1).numpy() - pose_prior(Js.numpy())
     best = start = float(value(J[None])[0])
     for step in POLISH_STEPS:
         for _ in range(10):
@@ -239,7 +263,7 @@ def smooth_job(job):
     judge = PF.Judge(clip, net, k, ps, W)
     A = full_J(anchor)
     J = full_J(p)
-    value = lambda Js: (judge(torch.tensor(Js, dtype=T.DT))[0] - OF.COST_PX * np.abs(Js[:, NJ:]).sum(1)
+    value = lambda Js: (judge(torch.tensor(Js, dtype=T.DT))[0] - OF.COST_PX * np.abs(Js[:, NJ:]).sum(1) - pose_prior(Js)
                         - roughness(Js, nb))
     start = float(value(J[None])[0])
     best = start
@@ -347,6 +371,71 @@ def consistent_throws(params, ks):
     return n
 
 
+RETHROW_BONUS = 0.02  # agreement credited per neighbouring frame that throws the same limb (see rethrow)
+
+
+def rethrow_job(job):
+    """Frame k throws limb x where a neighbour throws limb b instead: b tried in x's place (turned every way to fit
+    there, offsets refined) with x back in the neighbour's pose for it. Returns the better by score plus
+    RETHROW_BONUS per neighbour that throws the same limb."""
+    video, track, net_path, k, p, cps, props = job
+    clip = O.Clip(video, json.load(open(track)))
+    net = P.load(net_path)
+    p = np.asarray(p, float)
+    ps = [p[:F.NP]] + [np.asarray(c, float)[:F.NP] for c in cps] + OF.widened(p)
+    judge = PF.Judge(clip, net, k, ps, W)
+    J0 = full_J(p)
+    value = lambda J: (float(judge(torch.tensor(J[None], dtype=T.DT))[0][0]) - OF.COST_PX * float(np.abs(J[NJ:]).sum())
+                       - float(pose_prior(J)[0]))
+    best, bestJ, base_n = None, None, None
+    for b, x, xpose, n_b, n_x in props:
+        if best is None:
+            best, bestJ, base_n = value(J0) + RETHROW_BONUS * n_x, J0, n_x
+        lo, hi, part = OF.box_of(x)
+        at = OF.box_centre(np.concatenate([p[:NC], J0]), x, lo, hi, part)
+        q = J0.copy()
+        q[COLS[x]] = xpose[0]
+        q[OFFC[x]:OFFC[x] + 3] = xpose[1]
+        Jt = OF.place_search(judge, torch.tensor(q, dtype=T.DT), np.concatenate([p[:NC], q]), b, at)
+        Jt, _ = OF.descend(judge, Jt)
+        Jn = Jt.numpy().astype(float)
+        v = value(Jn) + RETHROW_BONUS * n_b
+        if v > best + 1e-6:
+            best, bestJ = v, Jn
+    return k, np.concatenate([p[:NC], bestJ]), bestJ is not J0
+
+
+def rethrow(video, track, net_path, params, cands, ks):
+    """Arms and legs are boxes of one size whose colours smoke and light make alike, so a frame can pick the wrong one
+    to throw by a hair (an arm into the dummy between two frames that kick it with a leg). Here each frame whose
+    thrown limb differs from its neighbours' gets their choice tried, and keeps it unless the footage clearly says
+    otherwise: the clip throws one limb out and back, not three in turn."""
+    far = {k: {b for b in LIMBS if np.linalg.norm(bone_of(full_J(params[k]), b)[1]) > THROWN} for k in ks}
+    jobs = []
+    for i, k in enumerate(ks):
+        nbs = [ks[j] for j in (i - 1, i + 1) if 0 <= j < len(ks)]
+        props = []
+        for x in far[k]:
+            for b in LIMBS:
+                if b == x or b in far[k] or not any(b in far[m] for m in nbs):
+                    continue
+                m = next(m for m in nbs if b in far[m])
+                xpose = bone_of(full_J(params[m]), x)
+                if np.linalg.norm(xpose[1]) > THROWN:
+                    continue
+                props.append((b, x, xpose, sum(b in far[m] for m in nbs), sum(x in far[m] for m in nbs)))
+        if props:
+            jobs.append((video, track, net_path, k, params[k], [c['params'] for c in cands.get(k, [])], props))
+    n = 0
+    if jobs:
+        with Pool(int(os.environ.get('PROCS', '4'))) as pool:
+            for k, q, changed in pool.imap_unordered(rethrow_job, jobs):
+                params[k] = q
+                n += bool(changed)
+    print(f'{n} of {len(jobs)} frames threw their neighbours\' limb instead', flush=True)
+    return n
+
+
 def main(video, path_json, cands_json, net_path, out, rounds=2):
     tr = json.load(open(path_json))
     cd = json.load(open(cands_json))
@@ -355,6 +444,8 @@ def main(video, path_json, cands_json, net_path, out, rounds=2):
     params = {k: np.array(tr['frames'][str(k)]['params'], float) for k in ks}
     cands = {int(k): v for k, v in cd['frames'].items()}
     print(f'{consistent_throws(params, ks)} frames had the thrown limb swapped to its neighbours\'', flush=True)
+    if os.environ.get('R6_RETHROW', '1') != '0':
+        rethrow(video, track, net_path, params, cands, ks)
     def flips():  # bone turns over 60 deg between consecutive frames
         n = 0
         for b in BONES:

@@ -103,6 +103,9 @@ SEEN_MIN = 0.25   # a moved limb must show this share of the torso's judged px (
 KEEP_GAIN = 0.03  # ...or undoing it costs this much colour + W x parts
 ACC_MIN = 0.6     # ...of which this share agree in colour, or its offset is undone: a limb that only "fits" by
 # leaving the picture (into the window's unjudged border) or by hiding is not evidence of a gap
+KEEP_SURE = 0.06  # ...unless undoing it costs this much: a limb that only hides or leaves the picture gains next to
+# nothing, so a gain this big is the footage showing it there (a leg thrown into a dummy, its box not yet turned
+# to fit, matches only half its pixels)
 
 
 def seen_parts(judge, J):
@@ -132,13 +135,15 @@ def undo_unseen(judge, J):
             q = J.clone()
             q[c:c + 3] = 0
             # ...unless the footage plainly wants it there: a well-matched limb, partly hidden, that undoing costs a lot
-            if seen[b][1] >= ACC_MIN and float(judge(J[None])[0][0] - judge(q[None])[0][0]) >= KEEP_GAIN:
+            gain = float(judge(J[None])[0][0] - judge(q[None])[0][0])
+            if gain >= KEEP_SURE or (seen[b][1] >= ACC_MIN and gain >= KEEP_GAIN):
                 continue
             J = q
     return J
 
 
 HUNT_REACH = float(os.environ.get('HUNT_REACH', '1.5'))  # how far from the drawn rig to look, in body heights
+HUNT_BLOBS = 4  # the largest stray patches tried (scenery in the avatar's colours, a sign or a dummy, can take some)
 HUNT_MIN = 0.02     # a stray patch must be at least this share of the rig's drawn area
 
 
@@ -174,7 +179,7 @@ def hunt(clip, k, p):
     stray = cv2.morphologyEx(stray, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
     n, lab, stats, cents = cv2.connectedComponentsWithStats(stray)
     blobs = sorted((stats[i, cv2.CC_STAT_AREA], cents[i] + (x0, y0)) for i in range(1, n)
-                   if stats[i, cv2.CC_STAT_AREA] >= HUNT_MIN * area)[::-1][:2]
+                   if stats[i, cv2.CC_STAT_AREA] >= HUNT_MIN * area)[::-1][:HUNT_BLOBS]
     if not blobs:
         return []
     right, up = plane_dirs(p)
