@@ -257,14 +257,20 @@ class View:
             obs[(obs > 0) & ~gate(roi, obs)] = 0
         # Only the body's own cluster of colours is body (a lamp or an effect of the same colour further off is floor).
         body_cls = sorted(F.BODY_CLASSES)  # every body colour (a part may show several, one per side)
-        stray = np.isin(obs, body_cls) & ~RR.body_cluster(obs, {c: 1 for c in body_cls})
+        prefer = None
+        if getattr(fitter, 'hull', None) is not None:  # tracking: the cluster the rig's outline is on, not the biggest
+            prefer = np.zeros(obs.shape, np.uint8)
+            cv2.fillConvexPoly(prefer, np.round(((fitter.hull - [x0, y0]) * k - 0.5) * 16).astype(np.int32), 1,
+                               lineType=cv2.LINE_8, shift=4)
+            prefer = prefer.astype(bool)
+        stray = np.isin(obs, body_cls) & ~RR.body_cluster(obs, {c: 1 for c in body_cls}, prefer)
         obs[stray] = 0
         if self.lite:
             # Only the character's own patch (scenery of a body colour inside a wide window is not the body).
             # Unknown pixels (smoke, a glow's halo over it) join the pieces they lie between -- a limb seen past a veil
             # is still the character's. (They themselves stay floor away from its colours, as before: the pale
             # background between limbs is unknown in the class map too, and is real evidence that nothing is there.)
-            patch = character_patch(obs)
+            patch = character_patch(obs, None if prefer is None else prefer)
             char = patch & (obs != F.UNKNOWN)
             keep = F.ndimage.binary_dilation(char, iterations=2) & (obs > 0) | char
             # But an effect over the body (a glow's tinted halo: unknown and coloured, where the pale background is
@@ -2934,12 +2940,18 @@ def character_mask(obs):
 TINTED_S = 22  # HSV saturation above which an unknown pixel is an effect's tint, not the pale background (the veil's s_min)
 
 
-def character_patch(obs):
+def character_patch(obs, prefer=None):
     """The character's patch with the unknown pixels joining it (character_mask, but pieces of body colour linked
     through unknown pixels -- smoke or a glow over the body between them -- count as one, and those unknown pixels are
-    in it)."""
+    in it). Expected near the window's middle, or with `prefer` (the rig's outline in the window) the middle of that:
+    a window widened to one side must not hand the character to a scrap near its own centre."""
     fg = np.isin(obs, F.BODY_CLASSES) | (obs == F.UNKNOWN)
-    return F.pick_character(obs, fg, near=(obs.shape[1] / 2, obs.shape[0] / 2))
+    near = (obs.shape[1] / 2, obs.shape[0] / 2)
+    if prefer is not None and prefer.any():
+        ys, xs = np.nonzero(prefer & np.isin(obs, F.BODY_CLASSES))
+        if len(xs) > 20:
+            near = (float(np.median(xs)), float(np.median(ys)))
+    return F.pick_character(obs, fg, near=near)
 
 
 def body_sweep(fit, k, cam_lock, steps=40, top=3, leans=(-90, -60, -30, 0, 30, 60), rolls=(-45, 0, 45), prev=None,

@@ -84,14 +84,19 @@ def fit_rects(pts, n, seeds=6):
     return best[1] if best else [(_rect_of(pts), pts)]
 
 
-def body_cluster(obs, counts):
-    """The body's own cluster of colours (a lamp or an effect of the same colour further off is not a part)."""
+def body_cluster(obs, counts, prefer=None):
+    """The body's own cluster of colours (a lamp or an effect of the same colour further off is not a part): the
+    largest, or with `prefer` (a mask of where the body is expected, e.g. the rig's outline) the one most inside it --
+    a big patch of a body colour off to the side (a red sign in the scene) must not win the window over the body."""
     H = obs.shape[0]
     body = np.isin(obs, list(counts))
     lab, n = ndimage.label(ndimage.binary_dilation(body, iterations=max(3, H // 16)))
     if not n:
         return np.ones_like(body)
-    sizes = ndimage.sum(body, lab, range(1, n + 1))
+    if prefer is not None and (body & prefer).any():
+        sizes = ndimage.sum(body & prefer, lab, range(1, n + 1))
+    else:
+        sizes = ndimage.sum(body, lab, range(1, n + 1))
     return lab == 1 + int(np.argmax(sizes))
 
 
