@@ -11,7 +11,9 @@
 #   5 limbpass   r6_limbpass.py: per body part, whole-clip choice that stops 90-180 deg flips the footage doesn't ask for
 #      (--guide OTHER_DIR: first r6_align.py lines up another take's finished conversion with this one, and parts
 #      this camera hides follow that take's pose where its camera sees them: OUT/guide.json)
-#   6 clip       r6_oversee.py clip: every frame keyed, Euler angles continuous (no smoothing), viewer conversion
+#   6 neutral    r6_neutral.py: frames where the avatar stands still at the start and end get the rig's neutral pose
+#                (R6_NEUTRAL=0 skips it)
+#     clip       r6_oversee.py clip: every frame keyed, Euler angles continuous (no smoothing), viewer conversion
 #   7 viewer     (with --viewer) tools/build_anim_viewer.py
 # Logs: OUT/<step>.log. Summary: OUT/summary.json (agreement per stage).
 import sys, os, json, subprocess, argparse, time
@@ -124,8 +126,15 @@ def main():
         print('5/6 whole-clip limb pass', flush=True)
         print(f'  {run([py, T("r6_limbpass.py"), video, offs, os.path.join(pf, f"{name}_cands.json"), a.net, final, str(a.rounds)], os.path.join(out, "limbpass.log"), env):.0f} s')
 
+    posed = final
+    if os.environ.get('R6_NEUTRAL', '1') != '0':
+        # standing-still frames at the start and end: the rig's exact neutral pose (r6_neutral.py)
+        posed = os.path.join(out, f'{name}_neutral.json')
+        if not done(posed) or os.path.getmtime(posed) < os.path.getmtime(final):
+            print('6/6 standing frames to neutral', flush=True)
+            print(f'  {run([py, T("r6_neutral.py"), video, final, posed, os.path.join(pf, f"{name}_cands.json"), a.net], os.path.join(out, "neutral.log")):.0f} s')
     print('6/6 clip + viewer conversion', flush=True)
-    run([py, T('r6_oversee.py'), 'clip', video, final, name, a.clip], os.path.join(out, 'clip.log'))
+    run([py, T('r6_oversee.py'), 'clip', video, posed, name, a.clip], os.path.join(out, 'clip.log'))
     if a.viewer:
         run([py, T('build_anim_viewer.py')], os.path.join(out, 'viewer.log'))
 

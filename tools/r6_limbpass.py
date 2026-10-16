@@ -129,13 +129,42 @@ OFF_PRIOR_CAP = 0.04
 # the picture by a pixel or two, less than the judge's own biases; it is held near rest, seen part or not, unless the
 # footage clearly asks for it (a turn the picture shows pays nothing).
 DEPTH_PRIOR = float(os.environ.get('DEPTH_PRIOR', '1.5'))
+DEPTH_CAP = float(os.environ.get('DEPTH_CAP', '2.0'))  # the depth cost's ceiling, in (pi/2)^2 units
 PRIOR_BONES = ('head', 'rightArm', 'leftArm', 'rightThigh', 'leftThigh')
 
 
 # Other takes lined up in time (r6_align.py; R6_GUIDE=a.json,b.json): per frame, which way each part points as each
 # other camera saw it, across that camera's picture. Where this camera can't tell (a part it hides, a turn it sees
 # edge-on) the part is held near that, and near rest in what no camera saw.
-GUIDES = [json.load(open(f))['frames'] for f in os.environ.get('R6_GUIDE', '').split(',') if f]
+GUIDE_SMOOTH = int(os.environ.get('GUIDE_SMOOTH', '2'))
+
+
+def smooth_guide(frames, half=GUIDE_SMOOTH):
+    """A guide's length axes averaged over +-half frames (weights: how well the guide camera saw the part, a triangle
+    in time): the time warp lining two takes up steps unevenly and a guide take's own flips make its axes jump up to
+    150 deg a frame, which the depth prior would copy into this take's arms."""
+    if half <= 0:
+        return frames
+    out = {}
+    for k, row in frames.items():
+        k = int(k)
+        new = {}
+        for b, g in row.items():
+            if not isinstance(g, dict) or 'axis' not in g:
+                new[b] = g
+                continue
+            acc = np.zeros(3)
+            for d in range(-half, half + 1):
+                h = frames.get(str(k + d), {}).get(b)
+                if isinstance(h, dict) and 'axis' in h:
+                    acc += h.get('seen', 1.0) * (half + 1 - abs(d)) * np.array(h['axis'])
+            n = np.linalg.norm(acc)
+            new[b] = dict(g, axis=(acc / n).tolist()) if n > 1e-9 else g
+        out[str(k)] = new
+    return out
+
+
+GUIDES = [smooth_guide(json.load(open(f))['frames']) for f in os.environ.get('R6_GUIDE', '').split(',') if f]
 GUIDE = GUIDES[0] if GUIDES else {}
 GUIDE_PRIOR = float(os.environ.get('GUIDE_PRIOR', '0.12'))  # agreement units per (90 deg from the guides' pose)^2
 GUIDE_REST = 0.2  # where no guide's camera sees a direction, rest decides it (and settles a lone guide's own blind spot)
@@ -263,7 +292,7 @@ def pose_prior(Js, hidden):
         a, vv = length_axes(Js, b, v)
         t = target_axis(b, guides)
         t = np.array([0, 1.0, 0]) if t is None else t
-        cost += DEPTH_PRIOR * np.minimum(((a - t) * vv).sum(1) ** 2 / (np.pi / 2) ** 2, 2.0)
+        cost += DEPTH_PRIOR * np.minimum(((a - t) * vv).sum(1) ** 2 / (np.pi / 2) ** 2, DEPTH_CAP)
     return cost
 
 
