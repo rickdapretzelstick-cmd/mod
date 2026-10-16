@@ -135,6 +135,9 @@ works). write_clip writes them as the mod's 'pos' (right, up, forward) = -offset
 >= .90 -- the first time the mean passes .90. Clip cursed_strikes_left_offsets_clip.json (path oversee/left_offsets.json).
 Four-view judging (r6_multiview.py) is parked: cameras line up on the still frames, but mid-move the four recordings
 do not show the same pose at the same moment (oversee sheet four_views_same_moment).
+Reviewed by eye (sheet frames_under_90): the 34 frames under .90 are mostly fitted about right; the trail, the
+spike burst and the Dummy pull the colour score down. 541's "arm on the Dummy" is the arm's orange D face toward the
+camera (right). 544 (lowest, .67) matches the extended arm and torso. Waiting on Rick to flag frames in the viewer.
 
 ## AI overseer: built and run on the side view (tools/r6_oversee.py)
 Stages (see the file's header): `flag` -> `sheets` -> Claude reads the PNGs and writes a corrections JSON -> `apply` ->
