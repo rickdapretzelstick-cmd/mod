@@ -14,7 +14,7 @@ from scipy.optimize import least_squares
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import r6_fit as F
 
-PAL = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'palettes', 'side_colours.json')
+PAL = os.environ.get('R6_PALETTE', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'palettes', 'side_colours.json'))
 pal = json.load(open(PAL)); F.use_palette(pal)
 NC = len(F.CAM)
 LK = dict(winSize=(21, 21), maxLevel=4, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))

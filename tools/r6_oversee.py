@@ -20,7 +20,7 @@ torch.set_num_threads(1); cv2.setNumThreads(1)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import r6_fit as F, r6_fit_torch as T
 
-PAL = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'palettes', 'side_colours.json')
+PAL = os.environ.get('R6_PALETTE', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'palettes', 'side_colours.json'))
 pal = json.load(open(PAL)); F.use_palette(pal)
 NC = len(F.CAM)
 BONES = ['hips', 'head', 'rightArm', 'leftArm', 'rightThigh', 'leftThigh']

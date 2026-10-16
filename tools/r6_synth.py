@@ -14,7 +14,7 @@ import r6_motion as M
 import r6_glyph as Gl
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-pal = json.load(open(os.path.join(HERE, 'palettes', 'side_colours.json'))); F.use_palette(pal)
+pal = json.load(open(os.environ.get('R6_PALETTE', os.path.join(HERE, 'palettes', 'side_colours.json')))); F.use_palette(pal)
 NC = len(F.CAM)
 S = 112  # picture side (the tracker's window is 112 px too)
 PART_ID = {'torso': 1, 'head': 2, 'face': 2, 'rightArm': 3, 'leftArm': 4, 'rightLeg': 5, 'leftLeg': 6}
