@@ -1,7 +1,7 @@
 # One command from a recording to a mod clip: footage of the R6 avatar doing a move, from a still idle frame before it
 # to one after it, in; a player clip (build/fit/<CLIP>/clip.json) and its viewer conversion out. Nothing in it is tuned
 # to one recording: every step reads only the footage (and the avatar's palette, tools/palettes/side_colours.json).
-#   python3 tools/r6_convert.py VIDEO IDLE_START IDLE_END CLIP [--view NAME] [--out DIR] [--net NET.pt] [--viewer]
+#   python3 tools/r6_convert.py VIDEO IDLE_START IDLE_END CLIP [--view NAME] [--out DIR] [--net NET.pt] [--guide DIR] [--viewer]
 # IDLE_START / IDLE_END: frame numbers (or seconds, written 3.4s) where the avatar stands still before and after.
 # Steps, each skipped when its output is already there (re-run to resume; --fresh to redo):
 #   1 track      r6_track_rep.py forwards and backwards from the idle frames (side by side)
@@ -9,6 +9,8 @@
 #   3 partfit    r6_partfit.py: the part network's proposals, then the whole-clip pick (Viterbi)
 #   4 offsets    r6_offsets.py: joints may come away from the body (unlimited, as the footage shows)
 #   5 limbpass   r6_limbpass.py: per body part, whole-clip choice that stops 90-180 deg flips the footage doesn't ask for
+#      (--guide OTHER_DIR: first r6_align.py lines up another take's finished conversion with this one, and parts
+#      this camera hides follow that take's pose where its camera sees them: OUT/guide.json)
 #   6 clip       r6_oversee.py clip: every frame keyed, Euler angles continuous (no smoothing), viewer conversion
 #   7 viewer     (with --viewer) tools/build_anim_viewer.py
 # Logs: OUT/<step>.log. Summary: OUT/summary.json (agreement per stage).
@@ -53,6 +55,7 @@ def main():
     ap.add_argument('--out', default=None, help='work folder (default build/convert/<clip>)')
     ap.add_argument('--net', default=os.path.join(ROOT, 'build', 'synth', 'partnet2.pt'))
     ap.add_argument('--rounds', type=int, default=3, help='limb pass rounds')
+    ap.add_argument('--guide', default=None, help="another take's finished work folder: guides the parts this one hides")
     ap.add_argument('--viewer', action='store_true', help='rebuild build/anim_viewer.html at the end')
     ap.add_argument('--fresh', action='store_true', help='redo every step')
     a = ap.parse_args()
@@ -104,8 +107,19 @@ def main():
 
     final = os.path.join(out, f'{name}_final.json')
     if not done(final):
+        env = {}
+        if a.guide:
+            g = os.path.abspath(a.guide)
+            gfinal = next((os.path.join(g, f) for f in sorted(os.listdir(g)) if f.endswith('_final.json')), None)
+            if not gfinal:
+                sys.exit(f'--guide {g}: no finished conversion (*_final.json) there')
+            gcands = os.path.join(g, 'partfit', os.path.basename(gfinal)[:-len('_final.json')] + '_cands.json')
+            guide = os.path.join(out, 'guide.json')
+            print('5/6 lining up the guide take', flush=True)
+            print(f'  {run([py, T("r6_align.py"), video, offs, os.path.join(pf, f"{name}_cands.json"), gfinal, gcands, a.net, guide], os.path.join(out, "align.log")):.0f} s')
+            env['R6_GUIDE'] = guide
         print('5/6 whole-clip limb pass', flush=True)
-        print(f'  {run([py, T("r6_limbpass.py"), video, offs, os.path.join(pf, f"{name}_cands.json"), a.net, final, str(a.rounds)], os.path.join(out, "limbpass.log")):.0f} s')
+        print(f'  {run([py, T("r6_limbpass.py"), video, offs, os.path.join(pf, f"{name}_cands.json"), a.net, final, str(a.rounds)], os.path.join(out, "limbpass.log"), env):.0f} s')
 
     print('6/6 clip + viewer conversion', flush=True)
     run([py, T('r6_oversee.py'), 'clip', video, final, name, a.clip], os.path.join(out, 'clip.log'))
