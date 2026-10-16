@@ -138,6 +138,12 @@ do not show the same pose at the same moment (oversee sheet four_views_same_mome
 Reviewed by eye (sheet frames_under_90): the 34 frames under .90 are mostly fitted about right; the trail, the
 spike burst and the Dummy pull the colour score down. 541's "arm on the Dummy" is the arm's orange D face toward the
 camera (right). 544 (lowest, .67) matches the extended arm and torso. Waiting on Rick to flag frames in the viewer.
+Combined (Rick: "by part, by the numbers"): r6_offsets on front/back/right (colour .740->.792, .827->.860,
+.833->.889; oversee/*_offsets.json), then `r6_combine.py cursed_strikes_combined`: per moment each part (hips, head,
+arms, thighs; rotation + offset) from the view where that part's own drawn-pixel colour agreement is highest. Picks:
+left 337, right 214, front 23, back 20 (each side view wins its near leg). The combined pose fits each view's footage
+at only .30 (front) - .63 (right) (left .59 vs its own .91): the recordings are not in step, so parts from different
+reps do not line up in any one view. Clip cursed_strikes_combined_clip.json; viewer has cursed_strikes_combined_<view>.
 
 ## AI overseer: built and run on the side view (tools/r6_oversee.py)
 Stages (see the file's header): `flag` -> `sheets` -> Claude reads the PNGs and writes a corrections JSON -> `apply` ->

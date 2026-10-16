@@ -1,0 +1,2614 @@
+{
+ "time_shift": {
+  "left": 0.0,
+  "front": 0.3,
+  "back": 0.5,
+  "right": 1.2
+ },
+ "views": {
+  "left": {
+   "own_mean": 0.9086,
+   "own_ge_0.90": 65,
+   "combined_mean": 0.5916,
+   "combined_ge_0.90": 14,
+   "n": 99
+  },
+  "front": {
+   "own_mean": 0.7913,
+   "own_ge_0.90": 23,
+   "combined_mean": 0.2965,
+   "combined_ge_0.90": 0,
+   "n": 98
+  },
+  "back": {
+   "own_mean": 0.8607,
+   "own_ge_0.90": 45,
+   "combined_mean": 0.4868,
+   "combined_ge_0.90": 0,
+   "n": 95
+  },
+  "right": {
+   "own_mean": 0.8885,
+   "own_ge_0.90": 45,
+   "combined_mean": 0.6327,
+   "combined_ge_0.90": 0,
+   "n": 99
+  }
+ },
+ "support": {
+  "516": {
+   "hips": {
+    "view": "front",
+    "score": 0.688
+   },
+   "head": {
+    "view": "left",
+    "score": 0.959
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.983
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.915
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.867
+   }
+  },
+  "517": {
+   "hips": {
+    "view": "front",
+    "score": 0.688
+   },
+   "head": {
+    "view": "left",
+    "score": 0.99
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.97
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.915
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.82
+   }
+  },
+  "518": {
+   "hips": {
+    "view": "front",
+    "score": 0.651
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.947
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.956
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.93
+   }
+  },
+  "519": {
+   "hips": {
+    "view": "front",
+    "score": 0.668
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.962
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.933
+   }
+  },
+  "520": {
+   "hips": {
+    "view": "front",
+    "score": 0.688
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.948
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.992
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.933
+   }
+  },
+  "521": {
+   "hips": {
+    "view": "back",
+    "score": 0.964
+   },
+   "head": {
+    "view": "left",
+    "score": 0.969
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.961
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.901
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.94
+   }
+  },
+  "522": {
+   "hips": {
+    "view": "back",
+    "score": 0.982
+   },
+   "head": {
+    "view": "left",
+    "score": 0.974
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.975
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.972
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.948
+   }
+  },
+  "523": {
+   "hips": {
+    "view": "back",
+    "score": 0.982
+   },
+   "head": {
+    "view": "left",
+    "score": 0.964
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.966
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.948
+   }
+  },
+  "524": {
+   "hips": {
+    "view": "back",
+    "score": 0.981
+   },
+   "head": {
+    "view": "left",
+    "score": 0.964
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.967
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.981
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.94
+   }
+  },
+  "525": {
+   "hips": {
+    "view": "back",
+    "score": 0.993
+   },
+   "head": {
+    "view": "left",
+    "score": 0.995
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.992
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.946
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.971
+   }
+  },
+  "526": {
+   "hips": {
+    "view": "left",
+    "score": 0.952
+   },
+   "head": {
+    "view": "left",
+    "score": 0.927
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.944
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.892
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.951
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.973
+   }
+  },
+  "527": {
+   "hips": {
+    "view": "left",
+    "score": 0.948
+   },
+   "head": {
+    "view": "left",
+    "score": 0.934
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.933
+   },
+   "leftArm": {
+    "view": "front",
+    "score": 0.884
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.994
+   }
+  },
+  "528": {
+   "hips": {
+    "view": "left",
+    "score": 0.997
+   },
+   "head": {
+    "view": "left",
+    "score": 0.966
+   },
+   "rightArm": {
+    "view": "front",
+    "score": 0.785
+   },
+   "leftArm": {
+    "view": "right",
+    "score": 0.565
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 1.0
+   }
+  },
+  "529": {
+   "hips": {
+    "view": "left",
+    "score": 0.971
+   },
+   "head": {
+    "view": "left",
+    "score": 0.98
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.62
+   },
+   "leftArm": {
+    "view": "right",
+    "score": 0.663
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.982
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.982
+   }
+  },
+  "530": {
+   "hips": {
+    "view": "left",
+    "score": 0.822
+   },
+   "head": {
+    "view": "left",
+    "score": 0.988
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.957
+   },
+   "leftArm": {
+    "view": "right",
+    "score": 0.511
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.982
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.965
+   }
+  },
+  "531": {
+   "hips": {
+    "view": "right",
+    "score": 0.997
+   },
+   "head": {
+    "view": "left",
+    "score": 0.828
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.732
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.868
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.994
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.86
+   }
+  },
+  "532": {
+   "hips": {
+    "view": "right",
+    "score": 0.952
+   },
+   "head": {
+    "view": "left",
+    "score": 0.917
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.941
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.993
+   }
+  },
+  "533": {
+   "hips": {
+    "view": "right",
+    "score": 0.983
+   },
+   "head": {
+    "view": "left",
+    "score": 0.983
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.853
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.955
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.963
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.935
+   }
+  },
+  "534": {
+   "hips": {
+    "view": "right",
+    "score": 0.938
+   },
+   "head": {
+    "view": "left",
+    "score": 0.977
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.959
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.923
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.989
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.986
+   }
+  },
+  "535": {
+   "hips": {
+    "view": "right",
+    "score": 0.911
+   },
+   "head": {
+    "view": "left",
+    "score": 0.988
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.968
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.757
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.944
+   }
+  },
+  "536": {
+   "hips": {
+    "view": "left",
+    "score": 0.819
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.81
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.9
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.974
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.988
+   }
+  },
+  "537": {
+   "hips": {
+    "view": "left",
+    "score": 0.85
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.709
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.898
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.981
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.994
+   }
+  },
+  "538": {
+   "hips": {
+    "view": "right",
+    "score": 0.893
+   },
+   "head": {
+    "view": "left",
+    "score": 0.995
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.969
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.802
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.993
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.987
+   }
+  },
+  "539": {
+   "hips": {
+    "view": "right",
+    "score": 0.986
+   },
+   "head": {
+    "view": "left",
+    "score": 0.97
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.968
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.688
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.818
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.952
+   }
+  },
+  "540": {
+   "hips": {
+    "view": "right",
+    "score": 0.745
+   },
+   "head": {
+    "view": "left",
+    "score": 0.767
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.829
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.699
+   },
+   "rightThigh": {
+    "view": "back",
+    "score": 0.986
+   },
+   "leftThigh": {
+    "view": "back",
+    "score": 0.984
+   }
+  },
+  "541": {
+   "hips": {
+    "view": "left",
+    "score": 0.595
+   },
+   "head": {
+    "view": "left",
+    "score": 0.84
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.704
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.912
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.685
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.776
+   }
+  },
+  "542": {
+   "hips": {
+    "view": "right",
+    "score": 0.629
+   },
+   "head": {
+    "view": "left",
+    "score": 0.936
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.888
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.745
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.859
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.756
+   }
+  },
+  "543": {
+   "hips": {
+    "view": "right",
+    "score": 0.845
+   },
+   "head": {
+    "view": "left",
+    "score": 0.988
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.824
+   },
+   "leftArm": {
+    "view": "front",
+    "score": 0.962
+   },
+   "rightThigh": {
+    "view": "left",
+    "score": 0.937
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.77
+   }
+  },
+  "544": {
+   "hips": {
+    "view": "right",
+    "score": 0.956
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.95
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.565
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.908
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.52
+   }
+  },
+  "545": {
+   "hips": {
+    "view": "right",
+    "score": 0.868
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.905
+   },
+   "leftArm": {
+    "view": "right",
+    "score": 0.675
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.808
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.316
+   }
+  },
+  "546": {
+   "hips": {
+    "view": "right",
+    "score": 1.0
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.975
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.437
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.554
+   },
+   "leftThigh": {
+    "view": "back",
+    "score": 0.976
+   }
+  },
+  "547": {
+   "hips": {
+    "view": "right",
+    "score": 0.996
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.807
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.765
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.425
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.893
+   }
+  },
+  "548": {
+   "hips": {
+    "view": "right",
+    "score": 0.977
+   },
+   "head": {
+    "view": "right",
+    "score": 0.985
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.685
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.899
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.862
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.866
+   }
+  },
+  "549": {
+   "hips": {
+    "view": "right",
+    "score": 0.92
+   },
+   "head": {
+    "view": "left",
+    "score": 0.814
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.662
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.798
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.956
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 1.0
+   }
+  },
+  "550": {
+   "hips": {
+    "view": "left",
+    "score": 0.892
+   },
+   "head": {
+    "view": "left",
+    "score": 0.978
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.816
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.781
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.974
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.916
+   }
+  },
+  "551": {
+   "hips": {
+    "view": "left",
+    "score": 0.991
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "front",
+    "score": 0.962
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.914
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.987
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 1.0
+   }
+  },
+  "552": {
+   "hips": {
+    "view": "left",
+    "score": 1.0
+   },
+   "head": {
+    "view": "left",
+    "score": 0.883
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.847
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.849
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.985
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.924
+   }
+  },
+  "553": {
+   "hips": {
+    "view": "left",
+    "score": 0.988
+   },
+   "head": {
+    "view": "left",
+    "score": 0.978
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.731
+   },
+   "leftArm": {
+    "view": "right",
+    "score": 0.688
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.994
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.88
+   }
+  },
+  "554": {
+   "hips": {
+    "view": "left",
+    "score": 0.98
+   },
+   "head": {
+    "view": "left",
+    "score": 0.908
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.704
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.551
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.946
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.996
+   }
+  },
+  "555": {
+   "hips": {
+    "view": "right",
+    "score": 0.758
+   },
+   "head": {
+    "view": "right",
+    "score": 0.984
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.725
+   },
+   "leftArm": {
+    "view": "front",
+    "score": 0.585
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.616
+   }
+  },
+  "556": {
+   "hips": {
+    "view": "left",
+    "score": 0.757
+   },
+   "head": {
+    "view": "left",
+    "score": 0.858
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.786
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.626
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.701
+   }
+  },
+  "557": {
+   "hips": {
+    "view": "right",
+    "score": 0.933
+   },
+   "head": {
+    "view": "left",
+    "score": 0.91
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.805
+   },
+   "leftArm": {
+    "view": "right",
+    "score": 0.857
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.994
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.769
+   }
+  },
+  "558": {
+   "hips": {
+    "view": "right",
+    "score": 1.0
+   },
+   "head": {
+    "view": "left",
+    "score": 0.944
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.953
+   },
+   "leftArm": {
+    "view": "right",
+    "score": 0.961
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.672
+   }
+  },
+  "559": {
+   "hips": {
+    "view": "left",
+    "score": 1.0
+   },
+   "head": {
+    "view": "left",
+    "score": 0.994
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.967
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.756
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.66
+   }
+  },
+  "560": {
+   "hips": {
+    "view": "left",
+    "score": 0.977
+   },
+   "head": {
+    "view": "left",
+    "score": 0.844
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.768
+   },
+   "leftArm": {
+    "view": "right",
+    "score": 0.558
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.941
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.993
+   }
+  },
+  "561": {
+   "hips": {
+    "view": "right",
+    "score": 0.787
+   },
+   "head": {
+    "view": "left",
+    "score": 0.902
+   },
+   "rightArm": {
+    "view": "front",
+    "score": 0.938
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.684
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.994
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.959
+   }
+  },
+  "562": {
+   "hips": {
+    "view": "left",
+    "score": 0.96
+   },
+   "head": {
+    "view": "left",
+    "score": 0.916
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.53
+   },
+   "leftArm": {
+    "view": "front",
+    "score": 0.908
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.988
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.994
+   }
+  },
+  "563": {
+   "hips": {
+    "view": "left",
+    "score": 0.968
+   },
+   "head": {
+    "view": "left",
+    "score": 0.891
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.657
+   },
+   "leftArm": {
+    "view": "front",
+    "score": 0.747
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.994
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 1.0
+   }
+  },
+  "564": {
+   "hips": {
+    "view": "left",
+    "score": 0.865
+   },
+   "head": {
+    "view": "left",
+    "score": 0.984
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.439
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.435
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.958
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.994
+   }
+  },
+  "565": {
+   "hips": {
+    "view": "left",
+    "score": 0.941
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.466
+   },
+   "leftArm": {
+    "view": "front",
+    "score": 0.805
+   },
+   "rightThigh": {
+    "view": "left",
+    "score": 0.837
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.954
+   }
+  },
+  "566": {
+   "hips": {
+    "view": "left",
+    "score": 0.986
+   },
+   "head": {
+    "view": "left",
+    "score": 0.932
+   },
+   "rightArm": {
+    "view": "front",
+    "score": 0.841
+   },
+   "leftArm": {
+    "view": "front",
+    "score": 0.758
+   },
+   "rightThigh": {
+    "view": "left",
+    "score": 0.972
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.992
+   }
+  },
+  "567": {
+   "hips": {
+    "view": "left",
+    "score": 0.982
+   },
+   "head": {
+    "view": "right",
+    "score": 0.976
+   },
+   "rightArm": {
+    "view": "front",
+    "score": 0.843
+   },
+   "leftArm": {
+    "view": "front",
+    "score": 0.494
+   },
+   "rightThigh": {
+    "view": "left",
+    "score": 0.933
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.832
+   }
+  },
+  "568": {
+   "hips": {
+    "view": "right",
+    "score": 0.794
+   },
+   "head": {
+    "view": "left",
+    "score": 0.921
+   },
+   "rightArm": {
+    "view": "front",
+    "score": 0.849
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.43
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.975
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.515
+   }
+  },
+  "569": {
+   "hips": {
+    "view": "right",
+    "score": 1.0
+   },
+   "head": {
+    "view": "left",
+    "score": 0.932
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.83
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.681
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "back",
+    "score": 0.939
+   }
+  },
+  "570": {
+   "hips": {
+    "view": "left",
+    "score": 0.837
+   },
+   "head": {
+    "view": "left",
+    "score": 0.949
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.945
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.682
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.995
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.572
+   }
+  },
+  "571": {
+   "hips": {
+    "view": "right",
+    "score": 0.985
+   },
+   "head": {
+    "view": "left",
+    "score": 0.959
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.987
+   },
+   "leftArm": {
+    "view": "right",
+    "score": 0.934
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.995
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.757
+   }
+  },
+  "572": {
+   "hips": {
+    "view": "right",
+    "score": 1.0
+   },
+   "head": {
+    "view": "left",
+    "score": 0.96
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.97
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.621
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.799
+   }
+  },
+  "573": {
+   "hips": {
+    "view": "left",
+    "score": 0.976
+   },
+   "head": {
+    "view": "left",
+    "score": 0.935
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.995
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.729
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.981
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.857
+   }
+  },
+  "574": {
+   "hips": {
+    "view": "left",
+    "score": 1.0
+   },
+   "head": {
+    "view": "left",
+    "score": 0.938
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.972
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.78
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 1.0
+   }
+  },
+  "575": {
+   "hips": {
+    "view": "left",
+    "score": 0.916
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.952
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.902
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.837
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.828
+   }
+  },
+  "576": {
+   "hips": {
+    "view": "left",
+    "score": 0.99
+   },
+   "head": {
+    "view": "left",
+    "score": 0.88
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.841
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.731
+   },
+   "rightThigh": {
+    "view": "left",
+    "score": 0.92
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 1.0
+   }
+  },
+  "577": {
+   "hips": {
+    "view": "left",
+    "score": 0.802
+   },
+   "head": {
+    "view": "left",
+    "score": 0.979
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.919
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.976
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.992
+   }
+  },
+  "578": {
+   "hips": {
+    "view": "left",
+    "score": 0.926
+   },
+   "head": {
+    "view": "left",
+    "score": 0.972
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.96
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.971
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.84
+   }
+  },
+  "579": {
+   "hips": {
+    "view": "left",
+    "score": 0.952
+   },
+   "head": {
+    "view": "front",
+    "score": 0.882
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.899
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.931
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "right",
+    "score": 0.824
+   }
+  },
+  "580": {
+   "hips": {
+    "view": "left",
+    "score": 0.919
+   },
+   "head": {
+    "view": "right",
+    "score": 0.978
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.939
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.957
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.948
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.757
+   }
+  },
+  "581": {
+   "hips": {
+    "view": "left",
+    "score": 0.872
+   },
+   "head": {
+    "view": "right",
+    "score": 0.96
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.843
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.899
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.96
+   }
+  },
+  "582": {
+   "hips": {
+    "view": "left",
+    "score": 0.948
+   },
+   "head": {
+    "view": "right",
+    "score": 0.89
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.509
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.751
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.889
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 1.0
+   }
+  },
+  "583": {
+   "hips": {
+    "view": "left",
+    "score": 0.894
+   },
+   "head": {
+    "view": "right",
+    "score": 0.83
+   },
+   "rightArm": {
+    "view": "front",
+    "score": 0.805
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.93
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.672
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.994
+   }
+  },
+  "584": {
+   "hips": {
+    "view": "left",
+    "score": 0.92
+   },
+   "head": {
+    "view": "right",
+    "score": 0.929
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.595
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.892
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.855
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 1.0
+   }
+  },
+  "585": {
+   "hips": {
+    "view": "right",
+    "score": 0.996
+   },
+   "head": {
+    "view": "left",
+    "score": 0.976
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.754
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.803
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.945
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.927
+   }
+  },
+  "586": {
+   "hips": {
+    "view": "right",
+    "score": 0.966
+   },
+   "head": {
+    "view": "left",
+    "score": 0.853
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.893
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.899
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.992
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.992
+   }
+  },
+  "587": {
+   "hips": {
+    "view": "right",
+    "score": 0.92
+   },
+   "head": {
+    "view": "left",
+    "score": 0.864
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.902
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.931
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.861
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.513
+   }
+  },
+  "588": {
+   "hips": {
+    "view": "right",
+    "score": 0.982
+   },
+   "head": {
+    "view": "left",
+    "score": 0.912
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.933
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.869
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.743
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 1.0
+   }
+  },
+  "589": {
+   "hips": {
+    "view": "right",
+    "score": 0.979
+   },
+   "head": {
+    "view": "left",
+    "score": 0.945
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.92
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.565
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.208
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.973
+   }
+  },
+  "590": {
+   "hips": {
+    "view": "right",
+    "score": 0.979
+   },
+   "head": {
+    "view": "left",
+    "score": 0.858
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.693
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.759
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.913
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.912
+   }
+  },
+  "591": {
+   "hips": {
+    "view": "left",
+    "score": 0.978
+   },
+   "head": {
+    "view": "right",
+    "score": 0.864
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 0.715
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.859
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.913
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.656
+   }
+  },
+  "592": {
+   "hips": {
+    "view": "left",
+    "score": 0.853
+   },
+   "head": {
+    "view": "left",
+    "score": 0.877
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.592
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.733
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.908
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.744
+   }
+  },
+  "593": {
+   "hips": {
+    "view": "right",
+    "score": 0.887
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.953
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.924
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.868
+   }
+  },
+  "594": {
+   "hips": {
+    "view": "front",
+    "score": 0.951
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.913
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.77
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.937
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.586
+   }
+  },
+  "595": {
+   "hips": {
+    "view": "right",
+    "score": 0.912
+   },
+   "head": {
+    "view": "left",
+    "score": 0.887
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.85
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.725
+   },
+   "rightThigh": {
+    "view": "left",
+    "score": 0.295
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.809
+   }
+  },
+  "596": {
+   "hips": {
+    "view": "right",
+    "score": 0.906
+   },
+   "head": {
+    "view": "left",
+    "score": 0.871
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.768
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.822
+   },
+   "rightThigh": {
+    "view": "left",
+    "score": 0.55
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.947
+   }
+  },
+  "597": {
+   "hips": {
+    "view": "right",
+    "score": 0.905
+   },
+   "head": {
+    "view": "left",
+    "score": 0.89
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.949
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.969
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.987
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.964
+   }
+  },
+  "598": {
+   "hips": {
+    "view": "right",
+    "score": 0.903
+   },
+   "head": {
+    "view": "left",
+    "score": 0.898
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.952
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.843
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.911
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.9
+   }
+  },
+  "599": {
+   "hips": {
+    "view": "right",
+    "score": 0.857
+   },
+   "head": {
+    "view": "left",
+    "score": 0.944
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.976
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.903
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.857
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.972
+   }
+  },
+  "600": {
+   "hips": {
+    "view": "right",
+    "score": 0.775
+   },
+   "head": {
+    "view": "left",
+    "score": 0.934
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.979
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.961
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.836
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 1.0
+   }
+  },
+  "601": {
+   "hips": {
+    "view": "right",
+    "score": 0.763
+   },
+   "head": {
+    "view": "left",
+    "score": 0.967
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.991
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.99
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.954
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 1.0
+   }
+  },
+  "602": {
+   "hips": {
+    "view": "right",
+    "score": 0.98
+   },
+   "head": {
+    "view": "left",
+    "score": 0.975
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.982
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.982
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 1.0
+   }
+  },
+  "603": {
+   "hips": {
+    "view": "back",
+    "score": 0.996
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 0.979
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.992
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.879
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 1.0
+   }
+  },
+  "604": {
+   "hips": {
+    "view": "back",
+    "score": 0.996
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.996
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.966
+   }
+  },
+  "605": {
+   "hips": {
+    "view": "back",
+    "score": 0.987
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.996
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.98
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.916
+   }
+  },
+  "606": {
+   "hips": {
+    "view": "back",
+    "score": 0.983
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.986
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.952
+   }
+  },
+  "607": {
+   "hips": {
+    "view": "front",
+    "score": 0.711
+   },
+   "head": {
+    "view": "left",
+    "score": 0.952
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.941
+   }
+  },
+  "608": {
+   "hips": {
+    "view": "back",
+    "score": 0.993
+   },
+   "head": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.978
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.929
+   }
+  },
+  "609": {
+   "hips": {
+    "view": "back",
+    "score": 0.987
+   },
+   "head": {
+    "view": "left",
+    "score": 0.923
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.871
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.902
+   }
+  },
+  "610": {
+   "hips": {
+    "view": "back",
+    "score": 0.987
+   },
+   "head": {
+    "view": "left",
+    "score": 0.961
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.986
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.992
+   }
+  },
+  "611": {
+   "hips": {
+    "view": "back",
+    "score": 0.979
+   },
+   "head": {
+    "view": "left",
+    "score": 0.954
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 0.986
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.992
+   }
+  },
+  "612": {
+   "hips": {
+    "view": "back",
+    "score": 0.983
+   },
+   "head": {
+    "view": "left",
+    "score": 0.994
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 0.987
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.962
+   }
+  },
+  "613": {
+   "hips": {
+    "view": "back",
+    "score": 0.983
+   },
+   "head": {
+    "view": "left",
+    "score": 0.984
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.79
+   }
+  },
+  "614": {
+   "hips": {
+    "view": "back",
+    "score": 0.981
+   },
+   "head": {
+    "view": "left",
+    "score": 0.989
+   },
+   "rightArm": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftArm": {
+    "view": "left",
+    "score": 1.0
+   },
+   "rightThigh": {
+    "view": "right",
+    "score": 1.0
+   },
+   "leftThigh": {
+    "view": "left",
+    "score": 0.861
+   }
+  }
+ }
+}
