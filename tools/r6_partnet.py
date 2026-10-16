@@ -105,7 +105,7 @@ def real_set(video, tracks, out, min_ag=0.9):
         tr = json.load(open(t))
         clip = O.Clip(video, tr)
         for k, r in tr['frames'].items():
-            if r['agreement'] < min_ag:
+            if r['agreement'] < min_ag or r.get('parts_agreement', 1.0) < float(os.environ.get('MIN_PARTS', '0')):
                 continue
             p = np.array(r['params'], float)
             rgb = clip.rgb(int(k))
