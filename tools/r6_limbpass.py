@@ -154,7 +154,7 @@ def hidden_weights(judge, J, cam):
 
 
 def pose_prior(Js, hidden):
-    """A small cost on each hidden part's turn from rest and on its joint offset: where the footage can't see a part
+    """A small cost on each hidden part's turn from rest and on every joint offset: where the footage can't see a part
     (a far leg behind the near one in a side view) many poses score alike, and the judge's own small biases (a rig
     leg that peeks out from behind where the real one doesn't) push it anywhere it hides best -- a leg sideways, a
     leg sunk into the body. The prior settles it on the natural pose (standing: limbs down, head forward). A part
@@ -162,14 +162,14 @@ def pose_prior(Js, hidden):
     Js = np.atleast_2d(np.asarray(Js, float))
     cost = np.zeros(len(Js))
     for b in PRIOR_BONES:
-        if hidden.get(b, 0) <= 0:
-            continue
-        deg = np.degrees(rot_batch(Js[:, COLS[b]]).magnitude())
-        c = REST_PRIOR * np.minimum((deg / 90) ** 2, 2.0)
+        if hidden.get(b, 0) > 0:
+            deg = np.degrees(rot_batch(Js[:, COLS[b]]).magnitude())
+            cost += hidden[b] * REST_PRIOR * np.minimum((deg / 90) ** 2, 2.0)
         if OFFC[b] is not None:
+            # Offsets pay seen or not: one along the line of sight (a head slid sideways in a side view) changes
+            # nothing in the picture, so without this the smoothing drifts it off (a ramp costs no acceleration).
             px = np.linalg.norm(Js[:, OFFC[b]:OFFC[b] + 3], axis=1)
-            c += np.minimum(OFF_PRIOR * px, OFF_PRIOR_CAP)
-        cost += hidden[b] * c
+            cost += np.minimum(OFF_PRIOR * px, OFF_PRIOR_CAP)
     return cost
 
 
