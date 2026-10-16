@@ -86,6 +86,10 @@ def candidates(path, cands, ks, b):
                 src.append(path[ks[i + d]])
         src += [full_J(c['params']) for c in cands.get(k, [])]
         src.append(np.zeros_like(path[k]))  # rest: where a part the footage can't see settles (see pose_prior)
+        if b in GUIDE.get(str(k), {}):  # ... or the pose the second take's camera saw it in
+            g = np.zeros_like(path[k])
+            g[COLS[b]] = GUIDE[str(k)][b]['rot']
+            src.append(g)
         own_rot, own_off = bone_of(path[k], b)
         own_mid = own_off + euler_to_R(own_rot).apply(mid)
         thrown = OFFC[b] is not None and np.linalg.norm(own_off) > 1.5
@@ -123,10 +127,16 @@ OFF_PRIOR_CAP = 0.04
 PRIOR_BONES = ('head', 'rightArm', 'leftArm', 'rightThigh', 'leftThigh')
 
 
+# A second take lined up in time (r6_align.py): per frame, the pose of each part its camera sees well. A part this take
+# hides is then held near that pose instead of near rest.
+GUIDE = json.load(open(os.environ['R6_GUIDE']))['frames'] if os.environ.get('R6_GUIDE') else {}
+GUIDE_PRIOR = float(os.environ.get('GUIDE_PRIOR', '0.12'))  # agreement units per (90 deg from the guide's pose)^2
+
+
 HIDDEN_SHARE = 0.3  # a part with less than this share of its own outline in front is (partly) hidden: the prior holds it
 
 
-def hidden_weights(judge, J, cam):
+def hidden_weights(judge, J, cam, k=None):
     """Per part, how hidden it is behind the rest of the body in this frame, at the frame's own pose: 1 when none of
     its box is in front, falling to 0 when HIDDEN_SHARE of the box's own outline is. Behind the body, not unknown: a
     leg kicked into a smoke cloud is not seen well, but it is in front of everything and the footage still places it."""
@@ -150,6 +160,7 @@ def hidden_weights(judge, J, cam):
         own = sum(cv2.contourArea(np.array(polys[n][1], np.float32)) for n in ids) * scale2
         seen = float(np.isin(front, [n + 1 for n, (bone, _, _, _) in enumerate(F.PARTS) if bone == b]).sum())
         out[b] = float(np.clip(1 - seen / max(HIDDEN_SHARE * own, 1.0), 0, 1))
+    out['_guide'] = GUIDE.get(str(k), {}) if k is not None else {}
     return out
 
 
@@ -158,14 +169,21 @@ def pose_prior(Js, hidden):
     (a far leg behind the near one in a side view) many poses score alike, and the judge's own small biases (a rig
     leg that peeks out from behind where the real one doesn't) push it anywhere it hides best -- a leg sideways, a
     leg sunk into the body. The prior settles it on the natural pose (standing: limbs down, head forward). A part
-    the footage shows (`hidden` 0) pays nothing: a punch or a kick into the dummy is the footage's alone."""
+    the footage shows (`hidden` 0) pays nothing: a punch or a kick into the dummy is the footage's alone.
+    With a second take (R6_GUIDE), a hidden part the other camera saw is held near the pose it had there instead."""
     Js = np.atleast_2d(np.asarray(Js, float))
     cost = np.zeros(len(Js))
+    guide = hidden.get('_guide', {})
     for b in PRIOR_BONES:
         if hidden.get(b, 0) <= 0:
             continue
-        deg = np.degrees(rot_batch(Js[:, COLS[b]]).magnitude())
-        c = REST_PRIOR * np.minimum((deg / 90) ** 2, 2.0)
+        R = rot_batch(Js[:, COLS[b]])
+        if b in guide:
+            deg = np.degrees((rot_batch(np.array([guide[b]['rot']])).inv() * R).magnitude())
+            c = GUIDE_PRIOR * guide[b]['seen'] * np.minimum((deg / 90) ** 2, 2.0)
+        else:
+            deg = np.degrees(R.magnitude())
+            c = REST_PRIOR * np.minimum((deg / 90) ** 2, 2.0)
         if OFFC[b] is not None:
             px = np.linalg.norm(Js[:, OFFC[b]:OFFC[b] + 3], axis=1)
             c += np.minimum(OFF_PRIOR * px, OFF_PRIOR_CAP)
@@ -200,7 +218,7 @@ def score_job(job):
     ps = [p[:F.NP]] + [np.asarray(c, float)[:F.NP] for c in cps] + OF.widened(p)
     judge = PF.Judge(clip, net, k, ps, W)
     J0 = full_J(p)
-    hid = hidden_weights(judge, J0, p[:NC])
+    hid = hidden_weights(judge, J0, p[:NC], k)
     res = {}
     for b, cand in opts.items():
         Js = []
@@ -230,7 +248,7 @@ def polish_job(job):
     judge = PF.Judge(clip, net, k, ps, W)
     J0 = torch.tensor(full_J(p), dtype=T.DT)
     J = J0.clone()
-    hid = hidden_weights(judge, J0.numpy(), p[:NC])
+    hid = hidden_weights(judge, J0.numpy(), p[:NC], k)
     dirs = [torch.tensor(e, dtype=T.DT) for e in moves(J0.numpy(), p)]
     # Offsets pay r6_offsets' tie-break cost: a limb hidden behind the body scores alike anywhere back there, and
     # must stay put rather than drift off (an arm pulled a stud out of a standing idle pose).
@@ -317,7 +335,7 @@ def smooth_job(job):
     judge = PF.Judge(clip, net, k, ps, W)
     A = full_J(anchor)
     J = full_J(p)
-    hid = hidden_weights(judge, J, p[:NC])
+    hid = hidden_weights(judge, J, p[:NC], k)
     dirs = moves(J, p)
     value = lambda Js: (judge(torch.tensor(Js, dtype=T.DT))[0] - OF.COST_PX * np.abs(Js[:, NJ:]).sum(1) - pose_prior(Js, hid)
                         - roughness(Js, nb))
@@ -440,7 +458,7 @@ def rethrow_job(job):
     ps = [p[:F.NP]] + [np.asarray(c, float)[:F.NP] for c in cps] + OF.widened(p)
     judge = PF.Judge(clip, net, k, ps, W)
     J0 = full_J(p)
-    hid = hidden_weights(judge, J0, p[:NC])
+    hid = hidden_weights(judge, J0, p[:NC], k)
     value = lambda J: (float(judge(torch.tensor(J[None], dtype=T.DT))[0][0]) - OF.COST_PX * float(np.abs(J[NJ:]).sum())
                        - float(pose_prior(J, hid)[0]))
     best, bestJ, base_n = None, None, None
