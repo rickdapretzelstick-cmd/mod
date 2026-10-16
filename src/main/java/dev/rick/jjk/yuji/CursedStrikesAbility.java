@@ -164,8 +164,8 @@ public final class CursedStrikesAbility extends Ability {
             }
             if (!finisher) {
                 if (t == punches) {
-                    // The right calf kick: stunned where they stand.
-                    Anim.play(user, "cursed_strikes_kick");
+                    // The right calf kick: stunned where they stand. The flurry's clip (converted from the recording)
+                    // runs on into the kick itself, landing on this tick.
                     HakariCombat.hit(YujiCombat.strike(user, ID, cfg.strikesKickDamage, true).knockback(Knockback.NONE).hitstun(cfg.strikesKickStun)
                             .fx("cursed_strikes_kick", 1.2f).build(), victim);
                     landed(cfg);

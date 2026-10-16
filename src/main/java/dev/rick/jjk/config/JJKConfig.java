@@ -26,7 +26,7 @@ public final class JJKConfig {
      * The gameplay tuning this file was written for. When the mod's defaults change (the JJS wiki pass), older files have
      * their gameplay sections reset to the new defaults; the player's client settings are kept.
      */
-    public static final int CURRENT_VERSION = 12;
+    public static final int CURRENT_VERSION = 13;
     public int version;
 
     public General general = new General();
@@ -752,7 +752,8 @@ public final class JJKConfig {
         public double strikesSlideSpeed = 0.95;
         public float strikesGrabDamage = 4f;
         public int strikesPunches = 6;
-        public int strikesPunchInterval = 5;
+        /** 7: the flurry runs as long as in the recording its animation is converted from (6 x 7 ticks to the kick). */
+        public int strikesPunchInterval = 7;
         public float strikesPunchDamage = 1.75f;
         public float strikesKickDamage = 3f;
         /** The calf kick leaves them stunned in place. */
