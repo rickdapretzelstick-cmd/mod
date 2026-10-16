@@ -5,9 +5,9 @@
 #   python3 tools/r6_partfit.py VIDEO CANDS.json NET.pt OUTDIR [W=1.0] [FRAMES a-b]
 import sys, os, json, time
 import numpy as np, torch
-from multiprocessing import Pool
 torch.set_num_threads(1)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from r6_mp import Pool
 import r6_fit as F, r6_fit_torch as T
 import r6_oversee as O, r6_global as G, r6_partnet as P, r6_partscore as S
 

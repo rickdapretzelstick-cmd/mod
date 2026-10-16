@@ -8,29 +8,35 @@ ROOT = os.path.dirname(TOOLS)
 SCRIPTS = ['r6_batch.py', 'r6_convert.py', 'r6_takes.py', 'r6_track_rep.py', 'r6_global.py', 'r6_partfit.py',
            'r6_offsets.py', 'r6_align.py', 'r6_limbpass.py', 'r6_neutral.py', 'r6_oversee.py', 'r6_game_clip.py',
            'r6_fit.py', 'r6_fit_torch.py', 'r6_fit_selftest.py', 'r6_glyph.py', 'r6_partnet.py', 'r6_partscore.py',
-           'r6_synth.py', 'r6_rects.py', 'r6_motion.py', 'r6_fuse_views.py', 'build_anim_viewer.py']
+           'r6_synth.py', 'r6_rects.py', 'r6_motion.py', 'r6_fuse_views.py', 'r6_mp.py', 'build_anim_viewer.py', 'app_selftest.py']
 DIRS = [('tools/palettes', lambda f: f.endswith('.json') and '.tmp.' not in f), ('tools/anim_viewer', None),
         ('src/main/resources/assets/jjk/animations', None)]
 FILES = ['build/synth/partnet2.pt']
 REQUIREMENTS = 'numpy>=2.0\nscipy>=1.13\nopencv-python>=4.10\ntorch>=2.5\npillow>=10.0\n'
 
 
+def entries():
+    """(source path, path inside the package) of every script and data file the converter needs."""
+    for s in SCRIPTS:
+        yield os.path.join(TOOLS, s), f'tools/{s}'
+    for d, keep in DIRS:
+        for base, _, files in os.walk(os.path.join(ROOT, d)):
+            if '__pycache__' in base:
+                continue
+            for f in files:
+                if keep is None or keep(f):
+                    p = os.path.join(base, f)
+                    yield p, os.path.relpath(p, ROOT).replace(os.sep, '/')
+    for f in FILES:
+        yield os.path.join(ROOT, f), f
+
+
 def main():
     out = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'build', 'jjk_converter.zip'))
     top = 'jjk_converter'
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
-        for s in SCRIPTS:
-            z.write(os.path.join(TOOLS, s), f'{top}/tools/{s}')
-        for d, keep in DIRS:
-            for base, _, files in os.walk(os.path.join(ROOT, d)):
-                if '__pycache__' in base:
-                    continue
-                for f in files:
-                    if keep is None or keep(f):
-                        p = os.path.join(base, f)
-                        z.write(p, f'{top}/{os.path.relpath(p, ROOT)}')
-        for f in FILES:
-            z.write(os.path.join(ROOT, f), f'{top}/{f}')
+        for src, rel in entries():
+            z.write(src, f'{top}/{rel}')
         pkg = os.path.join(TOOLS, 'pc_package')
         for f in os.listdir(pkg):
             info = zipfile.ZipInfo(f'{top}/{f}')

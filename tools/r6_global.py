@@ -92,8 +92,8 @@ def candidates(video, trackdir, name, outdir):
     fr = O.rows(fw)
     ks = [k for k in sorted(fr) if fr[k]['how'] != 'idle']
     res = {}
-    import multiprocessing as mp
-    with mp.get_context('fork').Pool(int(os.environ.get('JOBS', '4'))) as pool:
+    import r6_mp as R6MP
+    with R6MP.Pool(int(os.environ.get('JOBS', '4'))) as pool:
         for k, c, sec in pool.imap_unordered(frame_candidates, [(video, trackdir, name, k) for k in ks]):
             res[k] = c
             best = max(c, key=lambda x: x['agreement'])

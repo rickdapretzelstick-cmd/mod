@@ -9,8 +9,8 @@
 #   python3 tools/r6_align.py VIDEO MAIN_FINAL.json MAIN_CANDS.json OTHER_FINAL.json OTHER_CANDS.json NET.pt OUT.json
 import sys, os, json
 import numpy as np, torch
-from multiprocessing import Pool
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from r6_mp import Pool
 import r6_fit as F, r6_oversee as O, r6_partnet as P, r6_partfit as PF, r6_offsets as OF
 import r6_limbpass as L
 

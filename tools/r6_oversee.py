@@ -419,7 +419,7 @@ def main():
         ks = frame_list(a[5]) if len(a) > 5 else sorted(fl)
         jobs = [(video, trackdir, name, outdir, k, fl.get(k, ['asked for'])) for k in ks]
         import multiprocessing as mp
-        with mp.get_context('fork').Pool(int(os.environ.get('JOBS', '4'))) as pool:
+        with R6MP.Pool(int(os.environ.get('JOBS', '4'))) as pool:
             for k, best, bag, cur, sec in pool.imap_unordered(make_sheet, jobs):
                 print(f'sheet {k}: current {cur:.3f}, best candidate {best} {bag:.3f} ({sec:.0f} s)', flush=True)
     elif a[0] == 'apply':

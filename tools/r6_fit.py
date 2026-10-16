@@ -1322,7 +1322,7 @@ def write_conversion(frames, params, idx, times, clip, fit, out, source, size=24
 
 def compare(frames, params, idx, times, clip, fit, out):
     import subprocess
-    subprocess.run(['python3', os.path.join(ROOT, 'tools', 'build_anim_viewer.py')], check=True, stdout=subprocess.DEVNULL)
+    subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'build_anim_viewer.py')], check=True, stdout=subprocess.DEVNULL)
     pick = idx[::max(1, len(idx) // 12)]
     # The fit's camera (world turned by yaw, then pitch) is the viewer's orbit camera at yaw + 180 degrees; the clip starts
     # the body facing forward, so the camera turns with it by the first frame's body yaw (mirrored by the model flip).

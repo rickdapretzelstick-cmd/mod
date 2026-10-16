@@ -13,12 +13,12 @@
 #   python3 tools/r6_limbpass.py VIDEO PATH.json CANDS.json NET.pt OUT.json [ROUNDS=2]   (ROUNDS 0: polish only)
 import sys, os, json, time
 import numpy as np, torch
-from multiprocessing import Pool
 from scipy.spatial.transform import Rotation as Rot
 import warnings
 warnings.filterwarnings('ignore', message='Gimbal lock')
 torch.set_num_threads(1)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from r6_mp import Pool
 import r6_fit as F, r6_fit_torch as T
 import r6_oversee as O, r6_partnet as P, r6_partfit as PF, r6_offsets as OF
 

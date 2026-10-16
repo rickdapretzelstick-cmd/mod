@@ -4100,7 +4100,7 @@ def run_fast(frames, idx, fps, args, log=print):
     log(f'{len(idx)} frames in {len(chunks)} stretches on {workers} processes')
     _FAST['frames'], _FAST['fps'] = frames, fps
     jobs = [(c, pal, args.res, args.flip, args.fast_steps, args.redo) for c in chunks]
-    if workers > 1:
+    if workers > 1 and 'fork' in mp.get_all_start_methods():  # the workers read the frames from _FAST: fork only
         with mp.get_context('fork').Pool(workers) as pool:
             results = pool.map(_fast_chunk, jobs, chunksize=1)
     else:
