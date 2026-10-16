@@ -50,7 +50,18 @@ public class JJKSettingsScreen extends Screen {
             JJKConfig.save();
             b.setMessage(toggleText("Impact frames", JJKConfig.get().client.impactFrames));
         }).bounds(x, y + 124, bw, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose()).bounds(x, y + 158, bw, 20).build());
+        int half = (bw - 4) / 2;
+        addRenderableWidget(Button.builder(toggleText("Reduced flashes", JJKConfig.get().client.reducedFlashes), b -> {
+            JJKConfig.get().client.reducedFlashes = !JJKConfig.get().client.reducedFlashes;
+            JJKConfig.save();
+            b.setMessage(toggleText("Reduced flashes", JJKConfig.get().client.reducedFlashes));
+        }).bounds(x, y + 148, half, 20).build());
+        addRenderableWidget(Button.builder(toggleText("Reduced shake", JJKConfig.get().client.reducedShake), b -> {
+            JJKConfig.get().client.reducedShake = !JJKConfig.get().client.reducedShake;
+            JJKConfig.save();
+            b.setMessage(toggleText("Reduced shake", JJKConfig.get().client.reducedShake));
+        }).bounds(x + bw - half, y + 148, half, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose()).bounds(x, y + 182, bw, 20).build());
     }
 
     private static Component modeText() {
@@ -71,7 +82,7 @@ public class JJKSettingsScreen extends Screen {
         String hint = CombatMode.enabled()
                 ? "The JJK HUD and ability keys are active."
                 : "Vanilla mode: JJK HUD hidden and ability keys disabled.";
-        g.centeredText(font, hint, width / 2, height / 4 + 146 + 40, 0xFFA0A8B8);
+        g.centeredText(font, hint, width / 2, height / 4 + 170 + 40, 0xFFA0A8B8);
     }
 
     @Override

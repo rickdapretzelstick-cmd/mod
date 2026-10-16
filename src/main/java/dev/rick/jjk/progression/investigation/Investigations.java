@@ -105,7 +105,7 @@ public final class Investigations {
             if (!(player instanceof ServerPlayer sp) || !(player.getItemInHand(hand).getItem() instanceof net.minecraft.world.item.BlockItem)) return net.minecraft.world.InteractionResult.PASS;
             if (!CursedRealms.inRealm(sp)) return net.minecraft.world.InteractionResult.PASS;
             InvestigationState.Arena a = CursedRealms.arenaAtPos(sp.level().getServer(), sp.position());
-            if (a != null && GuardianArena.ID.equals(a.layout)) {
+            if (a != null && GuardianArena.is(a.layout)) {
                 sp.sendOverlayMessage(Component.literal("Nothing you build here would hold.").withStyle(net.minecraft.ChatFormatting.GRAY));
                 return net.minecraft.world.InteractionResult.FAIL;
             }
@@ -315,6 +315,15 @@ public final class Investigations {
      * for one, a board in the open by the bell.
      */
     @Nullable
+    /** Admin/test hook: a guardian contract that isn't set off yet fights this body (false if it isn't one). */
+    public static boolean chooseGuardian(Incident in, String body) {
+        if (in.def() == null || in.def().objective() != IncidentTemplate.Objective.GUARDIAN || in.state != Incident.State.OPEN) return false;
+        if (!body.startsWith("guardian_")) return false;
+        in.guardian = body;
+        in.variant = 0;
+        return true;
+    }
+
     public static BlockPos placeNews(ServerLevel level, BlockPos bell) {
         BlockPos inHouse = NewsHouse.placeNear(level, bell);
         return inHouse != null ? inHouse : placeBoard(level, bell);

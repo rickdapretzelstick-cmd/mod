@@ -73,6 +73,10 @@ public final class JJKConfig {
         public boolean playerVsPlayer = true;
         /** Whether techniques can hit tamed pets owned by the caster. */
         public boolean hitOwnPets = false;
+        /** A Black Flash's local hit-stop (ticks both fighters hang in the contact); longer when it kills. 0 turns it off. */
+        public int blackFlashHitStop = 3, blackFlashLethalHitStop = 6;
+        /** A lethal Black Flash's cinematic build-up (ticks the body is held, sparking, before it is launched). */
+        public int blackFlashFinisherTicks = 30;
         /** Global damage multiplier for everything this mod deals. */
         public float damageMultiplier = 1.0f;
         /** Global multiplier on knockback dealt by this mod. */
@@ -90,6 +94,11 @@ public final class JJKConfig {
         public int wakeupInvulnerability = 10;
         /** Allow techniques to break blocks at all (also requires the mobGriefing gamerule). */
         public boolean allowBlockDestruction = true;
+        /**
+         * The places the mod builds (cursed realm arenas and training rooms, incident sites while they stand, news houses,
+         * battle rooms) can't be broken by techniques, players (outside creative), explosions or pistons. Cleanup still works.
+         */
+        public boolean protectModStructures = true;
         /** Blocks with hardness above this are never destroyed by techniques (obsidian is 50). */
         public float maxDestructibleHardness = 20f;
         /** Hard cap on blocks destroyed per server tick across all techniques, to protect TPS. */
@@ -452,6 +461,16 @@ public final class JJKConfig {
         public boolean reducedCameraMotion = false;
         /** Anime impact frames (inked silhouettes, inverted frames) and the slowed-time look on big moments. */
         public boolean impactFrames = true;
+        /**
+         * Reduced Flashes (photosensitivity): no full-screen impact frames, inverted or strobing frames, and screen
+         * flashes and colour washes kept faint and slow; in-world effects (a Black Flash's lightning) dimmed. Effects still
+         * read through shape, sound and particles.
+         */
+        public boolean reducedFlashes = false;
+        /** Reduced Shake: camera shake and FOV kicks cut to a gentle fraction (on top of {@code screenShakeScale}). */
+        public boolean reducedShake = false;
+        /** Each character's JJS track during their relic trial. */
+        public boolean trialMusic = true;
     }
 
     /**
@@ -1368,6 +1387,22 @@ public final class JJKConfig {
         public float contestChancePerSecond = 0.15f;
         /** Its intro; after any contest you can't be grabbed again for a while (by any curse); a curse waits too. */
         public int contestIntroMs = 900, contestProtectSeconds = 12, contestCurseCooldownSeconds = 20;
+        /** The least grace after any contest, from every curse (the longer {@code contestProtectSeconds} wins). */
+        public int contestGraceSeconds = 3;
+        /**
+         * A blow from a curse that can grab, caught on your guard (a real block, at arm's length: never a parry, a ranged
+         * or unblockable attack), turns into a defensive contest: it presses in on your guard.
+         */
+        public boolean contestOnBlock = true;
+        /**
+         * The counter: pressing attack while guarding opens a window ({@code counterWindowTicks}, 7 = 0.35 s) in which a
+         * blow from a curse that can grab is intercepted and you take the struggle, starting at {@code counterStartMeter}
+         * (50 is even). One try per {@code counterCooldownTicks} (from the press); a miss leaves you
+         * {@code counterMissRecoveryTicks} of recovery, in which a block doesn't turn into a contest either.
+         */
+        public boolean counters = true;
+        public int counterWindowTicks = 7, counterCooldownTicks = 25, counterMissRecoveryTicks = 5;
+        public double counterStartMeter = 58;
         /**
          * No time limit: after {@code contestTightenAfterMs} the curse's grip tightens (its pressure grows by this share of
          * itself every second), so it always ends. A wrong key locks the keys for {@code contestLockoutMs}; presses

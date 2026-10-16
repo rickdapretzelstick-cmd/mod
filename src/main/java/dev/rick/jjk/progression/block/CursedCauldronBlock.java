@@ -219,7 +219,9 @@ public class CursedCauldronBlock extends AbstractCauldronBlock {
             level.scheduleTick(pos, this, stageTicks());
             return;
         }
-        // Collapse: the energy is spent into what it held, and that rises out awakened.
+        // Collapse: the energy is spent into what it held, and that rises out awakened. The ritual is over first (it holds
+        // nothing any more), so turning back into a plain cauldron doesn't also hand back what went in.
+        level.setBlock(pos, state.setValue(INFUSION, 0), Block.UPDATE_CLIENTS);
         level.setBlock(pos, Blocks.CAULDRON.defaultBlockState(), Block.UPDATE_ALL);
         ItemStack result = CauldronInfusions.get(state.getValue(HELD)).result().make(level, pos);
         if (result.is(ProgressionItems.PRISON_REALM)) Fx.sound(level, core, SoundEvents.ENDER_DRAGON_GROWL, 0.5f, 1.6f);

@@ -26,10 +26,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A character's scene, set in the shared {@link TrainingRoom}: the props it adds, the fixed camera, and its hooks (the
- * intro, each check's cue and verdict, the failure and the victory). The session drives it; the scene only shows.
+ * A character's scene, set in its own {@link TrainingRoom} (the room's blocks are already standing when it begins): the
+ * props it raises (the room's {@link TrialPropEntity} models and its own working parts), the fixed camera, and its hooks
+ * (the intro, each check's cue and verdict, the failure and the victory). The session drives it; the scene only shows.
  * Everything it raises is owned by the session and removed when it ends (and the realm clears the room after).
- * Coordinates are relative to where the participant stands, facing south (+Z).
+ *
+ * <p>Two frames: {@link #rel} is relative to where the participant stands or sits (feet), facing south (+Z);
+ * {@link #room}/{@link #block}/{@link #light} are room-local, from the arena origin's corner, as the room plan and its
+ * markers are.
  */
 public abstract class TrainingScene {
     protected final TrainingSessions.Session session;
@@ -37,6 +41,8 @@ public abstract class TrainingScene {
     protected BlockPos origin;
     /** Where the participant stands (feet). */
     protected Vec3 at;
+    /** The room's plan (null: it failed to load, and the scene stands on the bare fallback floor). */
+    @Nullable protected TrialRooms.Plan plan;
     protected final List<Entity> owned = new ArrayList<>();
     private final List<BlockPos> lights = new ArrayList<>();
 
@@ -44,12 +50,39 @@ public abstract class TrainingScene {
         this.session = session;
     }
 
-    /** Dresses the room (once per session). */
+    /** Dresses the room (once per session): the room's own prop models first, then the scene's parts. */
     final void setup(ServerLevel realm, BlockPos origin) {
         this.realm = realm;
         this.origin = origin;
-        this.at = Vec3.atBottomCenterOf(origin);
+        this.plan = TrialRooms.plan(session.story.kit());
+        Vec3 spot = plan != null ? plan.marker("player") : null;
+        this.at = spot != null ? room(spot) : Vec3.atBottomCenterOf(origin);
+        if (plan != null) {
+            for (TrialPropEntity e : TrialRooms.spawnProps(realm, origin, plan)) {
+                owned.add(e);
+                props.put(e.model(), e);
+            }
+        }
         build();
+    }
+
+    private final java.util.Map<String, TrialPropEntity> props = new java.util.HashMap<>();
+
+    /** The room's prop drawn from {@code model} (e.g. "trial_yuji_crt"), or null. */
+    @Nullable
+    protected TrialPropEntity prop(String model) {
+        return props.get(model);
+    }
+
+    /** A room-local point (blocks from the arena origin's corner), in the world. */
+    protected Vec3 room(Vec3 local) {
+        return new Vec3(origin.getX() + local.x, origin.getY() + local.y, origin.getZ() + local.z);
+    }
+
+    /** A marker of the room, in the world, or {@code fallback} relative to the participant. */
+    protected Vec3 marker(String name, Vec3 fallback) {
+        Vec3 m = plan != null ? plan.marker(name) : null;
+        return m != null ? room(m) : at.add(fallback);
     }
 
     protected abstract void build();
@@ -96,6 +129,7 @@ public abstract class TrainingScene {
     void cleanup(@Nullable ServerPlayer p) {
         for (Entity e : owned) if (!e.isRemoved()) e.discard();
         owned.clear();
+        props.clear();
     }
 
     // --- Helpers ---
@@ -104,6 +138,7 @@ public abstract class TrainingScene {
         return at.add(x, y, z);
     }
 
+    /** A room-local block position. */
     protected BlockPos bp(int x, int y, int z) {
         return origin.offset(x, y, z);
     }
@@ -112,11 +147,18 @@ public abstract class TrainingScene {
         TrainingRoom.set(realm, bp(x, y, z), s);
     }
 
-    /** An invisible light the scene can turn up and down (phase by phase). */
+    /** An invisible light the scene can turn up and down (phase by phase), room-local; never over a solid block. */
     protected void light(int x, int y, int z, int level) {
         BlockPos p = bp(x, y, z);
+        if (!realm.getBlockState(p).isAir() && !realm.getBlockState(p).is(Blocks.LIGHT)) return;
         if (!lights.contains(p)) lights.add(p);
         TrainingRoom.set(realm, p, level <= 0 ? Blocks.AIR.defaultBlockState() : Blocks.LIGHT.defaultBlockState().setValue(LightBlock.LEVEL, Mth.clamp(level, 0, 15)));
+    }
+
+    /** As {@link #light(int, int, int, int)}, at the block a world point lies in. */
+    protected void lightAt(Vec3 world, int level) {
+        BlockPos b = BlockPos.containing(world);
+        light(b.getX() - origin.getX(), b.getY() - origin.getY(), b.getZ() - origin.getZ(), level);
     }
 
     protected void lighting(int level) {

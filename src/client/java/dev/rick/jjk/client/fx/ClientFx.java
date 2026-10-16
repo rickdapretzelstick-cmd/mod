@@ -182,6 +182,7 @@ public final class ClientFx {
                 }
             }
             case "block" -> {
+                dev.rick.jjk.client.rifle.RifleClient.guardHit(p.entityId(), now, false);
                 sound("block", pos, 0.9f, 1f + RNG.nextFloat() * 0.1f);
                 if (drawn) {
                     Flashes.ripple(pos, dir, 0.2f, 1.1f, BLUE_LIGHT, 0.7f, 6, now);
@@ -189,6 +190,7 @@ public final class ClientFx {
                 }
             }
             case "parry" -> {
+                dev.rick.jjk.client.rifle.RifleClient.guardHit(p.entityId(), now, true);
                 sound("parry", pos, 1f, 1f);
                 Flashes.flash(pos, 2.2f, 0.4f, GOLD, 1f, 6, now);
                 impactStar(pos, dir, 8, 2.2f, 0.07f, GOLD, now);
@@ -202,6 +204,19 @@ public final class ClientFx {
                 Flashes.ripple(pos, dir, 0.3f, 2.4f, BLUE_LIGHT, 0.9f, 8, now);
                 if (drawn) burst(level, pos, q(18), 0.45, Sprite.SHARD, BLUE_LIGHT, 0.14f, 16).forEach(x -> x.gravity(0.6f).physics());
                 if (mine) ScreenEffects.shake(0.6f, 10);
+            }
+            case "counter_ready" -> {
+                // The counter window opening off the guard: a quick crimson glint and a tight ring (readable, brief).
+                sound("parry", pos, 0.45f, 1.7f);
+                Flashes.flash(pos, 1.1f, 0.25f, RED, 0.9f, 4, now);
+                Flashes.ring(pos, 0.15f, 1.4f, RED, 0.7f, 5, now);
+                if (drawn) sparks(level, pos, dir, q(4), 0.25, GOLD, 0.07f, 4);
+                if (mine) ScreenEffects.flash(0x22FF3030, 3);
+            }
+            case "counter_miss" -> {
+                // Nothing to catch: the reach whiffs and the guard settles back (the short recovery).
+                sound("side_dash", pos, 0.6f, 0.7f);
+                if (drawn) burst(level, pos, q(5), 0.06, Sprite.SMOKE, GREY, 0.35f, 8);
             }
             case "evade" -> {
                 sound("side_dash", pos, 0.8f, 1f);

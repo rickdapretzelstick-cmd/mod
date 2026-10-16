@@ -1,0 +1,179 @@
+{
+  "units_per_block": 16,
+  "realms": [
+    {
+      "realm_id": "mine_realm",
+      "title": "THE MINE",
+      "cuboids": 1820,
+      "groups": [
+        "ground",
+        "floating_foundation",
+        "cavern_walls",
+        "ceiling",
+        "rail_sleepers",
+        "rail_line",
+        "mine_supports",
+        "cobwebs",
+        "soul_lanterns",
+        "chains",
+        "wet_patches"
+      ],
+      "bounds_blocks": [
+        [
+          -13,
+          -6,
+          -13
+        ],
+        [
+          13,
+          6.05,
+          13
+        ]
+      ],
+      "description": "26-block cavern / dead-end track / hanging soul light"
+    },
+    {
+      "realm_id": "house_realm",
+      "title": "THE EMPTY HOUSE",
+      "cuboids": 1391,
+      "groups": [
+        "ground",
+        "ceiling",
+        "exterior_walls",
+        "windows",
+        "end_walls",
+        "partitions",
+        "door_frames",
+        "soul_lanterns",
+        "chains",
+        "overturned_furniture",
+        "barrels",
+        "cobwebs",
+        "cold_hearth",
+        "red_bed"
+      ],
+      "bounds_blocks": [
+        [
+          -6.53,
+          -1,
+          -22
+        ],
+        [
+          6.54,
+          4.85,
+          23
+        ]
+      ],
+      "description": "Impossible hall / staggered doorways / the red bed"
+    },
+    {
+      "realm_id": "pasture_realm",
+      "title": "THE DEAD PASTURE",
+      "cuboids": 2342,
+      "groups": [
+        "ground",
+        "floating_foundation",
+        "fences",
+        "dead_brush",
+        "blackened_hay",
+        "bones",
+        "dead_tree",
+        "posts",
+        "soul_lanterns"
+      ],
+      "bounds_blocks": [
+        [
+          -18,
+          -6,
+          -18
+        ],
+        [
+          18,
+          6.2,
+          17
+        ]
+      ],
+      "description": "35-block field / broken corrals / crooked dead tree"
+    },
+    {
+      "realm_id": "cliff_realm",
+      "title": "THE FALLEN CLIFF",
+      "cuboids": 1684,
+      "groups": [
+        "ground",
+        "floating_foundation",
+        "north_cliff",
+        "lantern_posts",
+        "soul_lanterns",
+        "dead_brush"
+      ],
+      "bounds_blocks": [
+        [
+          -16,
+          -6,
+          -16
+        ],
+        [
+          16,
+          7.994261794745727,
+          15
+        ]
+      ],
+      "description": "31-block fragment / north escarpment / open drop"
+    },
+    {
+      "realm_id": "finger_bearer_realm",
+      "title": "THE SEALED HALL",
+      "cuboids": 2279,
+      "groups": [
+        "ground",
+        "floating_foundation",
+        "ring_wall",
+        "wall_coping",
+        "basalt_pillars",
+        "soul_lanterns",
+        "chains",
+        "central_seal",
+        "seal_glyphs"
+      ],
+      "bounds_blocks": [
+        [
+          -17.04,
+          -6,
+          -17.04
+        ],
+        [
+          17.04,
+          10.14,
+          17.04
+        ]
+      ],
+      "description": "Round battle hall / eight basalt pillars / central seal"
+    },
+    {
+      "realm_id": "hollow_realm",
+      "title": "THE HOLLOW",
+      "cuboids": 1171,
+      "groups": [
+        "ground",
+        "floating_foundation",
+        "broken_pillars",
+        "soul_lanterns",
+        "fallen_fragments"
+      ],
+      "bounds_blocks": [
+        [
+          -14,
+          -6,
+          -14
+        ],
+        [
+          14,
+          5.949999999999999,
+          13
+        ]
+      ],
+      "description": "27-block fallback island / six fractured pillars"
+    }
+  ]
+}

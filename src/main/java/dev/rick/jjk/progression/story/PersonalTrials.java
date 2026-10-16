@@ -224,8 +224,13 @@ public final class PersonalTrials {
 
     /** Called by the realm every tick for a trial arena: 0 running, -1 close it. */
     public static int tickArena(MinecraftServer server, dev.rick.jjk.progression.investigation.InvestigationState.Arena a, String key, ServerLevel realm) {
+        // A room opened just to look round (the test menu): it stays until it's left or abandoned.
+        if (key.startsWith(VIEW)) return 0;
         return TrainingSessions.tickArena(key);
     }
+
+    /** Rooms opened only to walk round ({@code /jjk test room}): no trial runs in them. */
+    public static final String VIEW = "view_";
 
     /** The arena is gone (finished, abandoned, a restart). */
     public static void arenaClosed(MinecraftServer server, String key, boolean won) {

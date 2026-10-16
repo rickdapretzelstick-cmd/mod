@@ -253,9 +253,9 @@ public final class CursedStrikesAbility extends Ability {
             if (!hits.isEmpty()) {
                 LivingEntity t = hits.getFirst();
                 if (YujiCombat.finishable(t)) {
-                    // A Black Flash surges as it lands, confirming the kill.
-                    Fx.play(level, "black_flash", t.getBoundingBox().getCenter(), dir, 1.3f, user.getId());
-                    YujiCombat.execute(user, t, ID, "black_flash_finisher");
+                    // A Black Flash surges as it lands, confirming the kill (shown from what the blow actually did).
+                    var kill = YujiCombat.execute(user, t, ID, "black_flash_finisher");
+                    dev.rick.jjk.core.fx.BlackFlash.land(level, user, t, kill, t.getBoundingBox().getCenter(), dir, 1.6f);
                 } else {
                     HakariCombat.hit(YujiCombat.strike(user, ID, cfg.strikesAirDamage, true)
                             .knockback(Knockback.set(new Vec3(dir.x * 0.2, -1.3, dir.z * 0.2))).hitstun(34)

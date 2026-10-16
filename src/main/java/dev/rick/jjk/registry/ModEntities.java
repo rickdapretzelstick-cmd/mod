@@ -111,6 +111,11 @@ public final class ModEntities {
             EntityType.Builder.<dev.rick.jjk.progression.guardian.GuardianRemnantEntity>of(dev.rick.jjk.progression.guardian.GuardianRemnantEntity::new,
                     MobCategory.MISC).sized(1.2f, 1.6f).clientTrackingRange(10).fireImmune());
 
+    /** A piece of a relic-trial room (its furnishings, or a working part), drawn from the room's prop model; never saved. */
+    public static final EntityType<dev.rick.jjk.progression.training.TrialPropEntity> TRIAL_PROP = register("trial_prop",
+            EntityType.Builder.<dev.rick.jjk.progression.training.TrialPropEntity>of(dev.rick.jjk.progression.training.TrialPropEntity::new,
+                    MobCategory.MISC).sized(0.5f, 0.5f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(20).noLootTable());
+
     private ModEntities() {}
 
     private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {

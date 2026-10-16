@@ -59,7 +59,7 @@ public final class CursedRealms {
     static final int SPACING = 512;
     static final int BASE_Y = 80;
     /** Half-width and height of the box an arena may use (and that is cleared). */
-    static final int RADIUS = 26, HEIGHT = 40;
+    public static final int RADIUS = 26, HEIGHT = 40;
     static final int WIN_DELAY = 60, ABANDON_AFTER = 1200;
     /**
      * Half-width of the ground kept loaded round an open arena: wider than the arena itself, so a curse knocked or
@@ -87,6 +87,11 @@ public final class CursedRealms {
             return false;
         }
 
+        /** The centre of the fight, relative to the origin's bottom centre (a guardian's phase beats change the room round it). */
+        default Vec3 center() {
+            return Vec3.ZERO;
+        }
+
         /** Arena radius for leashing its curses. */
         default int radius() {
             return 14;
@@ -95,15 +100,35 @@ public final class CursedRealms {
         String entryLine();
     }
 
-    private static final Map<String, Layout> LAYOUTS = Map.ofEntries(Map.entry("cliff_realm", new CliffRealm()), Map.entry("mine_realm", new MineRealm()),
-            Map.entry("forest_realm", new ForestRealm()), Map.entry("pasture_realm", new PastureRealm()), Map.entry("house_realm", new HouseRealm()),
-            Map.entry("hollow_realm", new HollowRealm()), Map.entry("finger_bearer_realm", new BattleRealm()),
-            // The character storylines' realms (StoryRealms): their village events and their personal trials.
-            Map.entry("distance_realm", new StoryRealms.Distance()), Map.entry("theater_realm", new StoryRealms.Theater()),
-            Map.entry("crater_realm", new StoryRealms.Crater()), Map.entry("fight_club_realm", new StoryRealms.FightClub()),
-            Map.entry("chapel_realm", new StoryRealms.Chapel()),
-            // The one reusable room every character's training is held in (each scene dresses it).
-            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.ID, new dev.rick.jjk.progression.training.TrainingRoom()),
+    private static final Map<String, Layout> LAYOUTS = Map.ofEntries(
+            // The Cursed Realms pack's last six (tools/install_realm_rooms_b.py), each over its own procedural layout as the
+            // last resort (if its plan and the hollow's both fail to load).
+            Map.entry("cliff_realm", new RealmRooms.Layout("cliff_realm", new CliffRealm())),
+            Map.entry("mine_realm", new RealmRooms.Layout("mine_realm", new MineRealm())),
+            Map.entry("pasture_realm", new RealmRooms.Layout("pasture_realm", new PastureRealm())),
+            Map.entry("house_realm", new RealmRooms.Layout("house_realm", new HouseRealm())),
+            Map.entry("hollow_realm", new RealmRooms.Layout("hollow_realm", new HollowRealm())),
+            Map.entry("finger_bearer_realm", new RealmRooms.Layout("finger_bearer_realm", new BattleRealm())),
+            // The Cursed Realm pack's environments (RealmRooms): the rifle's watching woods, the ordinary chapel and crater
+            // incidents, and the realms the character storylines' events use (only while those are switched on).
+            Map.entry("forest_realm", new RealmRooms.Layout("forest_realm", new HollowRealm())),
+            Map.entry("chapel_realm", new RealmRooms.Layout("chapel_realm", new HollowRealm())),
+            Map.entry("crater_realm", new RealmRooms.Layout("crater_realm", new HollowRealm())),
+            Map.entry("distance_realm", new RealmRooms.Layout("distance_realm", new HollowRealm())),
+            Map.entry("theater_realm", new RealmRooms.Layout("theater_realm", new HollowRealm())),
+            Map.entry("fight_club_realm", new RealmRooms.Layout("fight_club_realm", new HollowRealm())),
+            // One arena per Grade 1 guardian body (the contract's own guardian picks it), each from the pack.
+            Map.entry(GuardianArena.idFor("guardian_claw_hunter"), new RealmRooms.Layout("guardian_claw_hunter", new GuardianArena())),
+            Map.entry(GuardianArena.idFor("guardian_pale_stalker"), new RealmRooms.Layout("guardian_pale_stalker", new GuardianArena())),
+            Map.entry(GuardianArena.idFor("guardian_cyclops_bruiser"), new RealmRooms.Layout("guardian_cyclops_bruiser", new GuardianArena())),
+            Map.entry(GuardianArena.idFor("guardian_veiled_reacher"), new RealmRooms.Layout("guardian_veiled_reacher", new GuardianArena())),
+            // Each character's training room (the relic trials), and the old shared room's id (an arena saved under it closes cleanly).
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.ID, new dev.rick.jjk.progression.training.TrainingRoom("yuji")),
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.idFor("yuji"), new dev.rick.jjk.progression.training.TrainingRoom("yuji")),
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.idFor("gojo"), new dev.rick.jjk.progression.training.TrainingRoom("gojo")),
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.idFor("yuta"), new dev.rick.jjk.progression.training.TrainingRoom("yuta")),
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.idFor("ryu"), new dev.rick.jjk.progression.training.TrainingRoom("ryu")),
+            Map.entry(dev.rick.jjk.progression.training.TrainingRoom.idFor("hakari"), new dev.rick.jjk.progression.training.TrainingRoom("hakari")),
             // The compact arena every Grade 1 guardian contract uses.
             Map.entry(GuardianArena.ID, new GuardianArena()));
     /** Arenas that belong to a cursed battle room (the Finger Bearer's), not an incident: their key starts with this. */
@@ -112,7 +137,7 @@ public final class CursedRealms {
     public static final String TRIAL = "trial:";
 
     /** The layout for an id, or the plain hollow realm (an incident always has somewhere to fight). */
-    static Layout layout(String id) {
+    public static Layout layout(String id) {
         Layout l = LAYOUTS.get(id);
         return l != null ? l : LAYOUTS.get("hollow_realm");
     }
@@ -302,8 +327,11 @@ public final class CursedRealms {
         ServerLevel realm = level(server);
         if (t == null) return false;
         String layoutId = LAYOUTS.containsKey(t.realm()) ? t.realm() : "hollow_realm";
-        Layout layout = layout(layoutId);
+        // A guardian contract is fought in its own guardian's arena.
+        if (GuardianArena.ID.equals(layoutId) && LAYOUTS.containsKey(GuardianArena.idFor(guardianBody(in)))) layoutId = GuardianArena.idFor(guardianBody(in));
         InvestigationState.Arena a = arenaOf(st, in.id);
+        if (a != null) layoutId = a.layout;
+        Layout layout = layout(layoutId);
         if (a == null) {
             int slot = 0;
             while (st.arenas.containsKey(slot)) slot++;
@@ -397,6 +425,30 @@ public final class CursedRealms {
         return a;
     }
 
+    /** The guardian body of a contract ({@code "<body>"} or {@code "<body>:<variant>"}), or "". */
+    static String guardianBody(Incident in) {
+        String g = in.guardian();
+        int c = g.indexOf(':');
+        return c < 0 ? g : g.substring(0, c);
+    }
+
+    /** The centre of an arena's fight, in the world (where a guardian's phase beats change the room). */
+    public static BlockPos centerOf(InvestigationState.Arena a) {
+        return BlockPos.containing(Vec3.atBottomCenterOf(a.origin).add(layout(a.layout).center()));
+    }
+
+    /** Where a guardian arena's first phase beat raises its pillars (the room's own open floor), or empty for the usual. */
+    public static List<BlockPos> pillarsOf(InvestigationState.Arena a) {
+        List<BlockPos> out = new ArrayList<>();
+        if (layout(a.layout) instanceof RealmRooms.Layout rl && rl.plan() != null) {
+            for (int i = 0; i < 4; i++) {
+                Vec3 m = rl.plan().marker("pillar_" + i);
+                if (m != null) out.add(a.origin.offset((int) Math.floor(m.x), (int) Math.floor(m.y), (int) Math.floor(m.z)));
+            }
+        }
+        return out;
+    }
+
     /** Where players arrive in an arena (its layout's arrival, in the world). */
     public static Vec3 arrivalOf(InvestigationState.Arena a) {
         return Vec3.atBottomCenterOf(a.origin).add(layout(a.layout).arrival());
@@ -431,6 +483,12 @@ public final class CursedRealms {
         return arenaAt(InvestigationState.get(s), e.position());
     }
 
+    /** Where an arena's first curse appears (the Finger Bearer: at its hall's seal), in the world. */
+    public static Vec3 firstSpotOf(InvestigationState.Arena a) {
+        List<Vec3> spots = layout(a.layout).curseSpots();
+        return Vec3.atBottomCenterOf(a.origin).add(spots.isEmpty() ? new Vec3(0, 1, 0) : spots.getFirst());
+    }
+
     /** The arena's origin (its centre on the ground), for leashing what lives in it. */
     public static int arenaRadius(InvestigationState.Arena a) {
         return layout(a.layout).radius();
@@ -451,6 +509,8 @@ public final class CursedRealms {
                 close(server, st, a, false);
                 continue;
             }
+            // A room's props are never saved: after a restart the room gets them back.
+            if (layout instanceof RealmRooms.Layout rl && realm.getGameTime() % 40 == 0 && entitiesLoaded(realm, a.origin)) rl.ensureProps(realm, a);
             // Who is actually inside (alive, in the realm, within this arena).
             a.inside.removeIf(id -> {
                 ServerPlayer p = server.getPlayerList().getPlayer(id);
@@ -685,6 +745,12 @@ public final class CursedRealms {
         }
         for (Entity e : realm.getEntities((Entity) null, box, e -> !(e instanceof ServerPlayer))) e.discard();
         dev.rick.jjk.core.world.WorldRestoration.forget(realm, box);
+        // A training room's own biome (its light colours) goes back to the realm's void.
+        if (realm.dimension() == DIMENSION) {
+            realm.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME).get(net.minecraft.world.level.biome.Biomes.THE_VOID)
+                    .ifPresent(v -> dev.rick.jjk.progression.training.TrialRooms.fillBiome(realm, origin.offset(-RADIUS, -20, -RADIUS),
+                            origin.offset(RADIUS, HEIGHT - 1, RADIUS), v, dev.rick.jjk.progression.training.TrialRooms::isTrialBiome));
+        }
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();
         for (int y = origin.getY() - 20; y < origin.getY() + HEIGHT; y++) {
@@ -811,114 +877,6 @@ public final class CursedRealms {
         }
     }
 
-    /**
-     * The woods through the lodge's scope, as the curse keeps them: a dark glade ringed by trunks that lean and kink the
-     * wrong way, the same hunting stand standing in it again and again, a coarse path that doubles back on itself, a few
-     * cold lanterns. Plenty of trunks to break line of sight (the curse uses them; so can you), and open ground between.
-     */
-    static final class ForestRealm implements Layout {
-        static final int R = 22;
-
-        @Override
-        public void build(ServerLevel l, BlockPos o, RandomSource r) {
-            BlockState[] floor = {Blocks.PODZOL.defaultBlockState(), Blocks.COARSE_DIRT.defaultBlockState(), Blocks.MOSS_BLOCK.defaultBlockState(),
-                    Blocks.PODZOL.defaultBlockState(), Blocks.ROOTED_DIRT.defaultBlockState()};
-            for (int x = -R; x <= R; x++) {
-                for (int z = -R; z <= R; z++) {
-                    double d = Math.sqrt(x * x + z * z) + r.nextDouble() * 1.5;
-                    if (d > R + 0.5) continue;
-                    set(l, o.offset(x, 0, z), floor[r.nextInt(floor.length)]);
-                    for (int y = 1; y <= 3; y++) set(l, o.offset(x, -y, z), Blocks.DIRT.defaultBlockState());
-                    if (r.nextInt(9) == 0) set(l, o.offset(x, 1, z), r.nextBoolean() ? Blocks.FERN.defaultBlockState() : Blocks.SHORT_DRY_GRASS.defaultBlockState());
-                }
-            }
-            // The crooked path: from where you arrive, kinking back and forth across the glade.
-            int px = 0, pz = 16;
-            for (int step = 0; step < 60 && pz > -18; step++) {
-                set(l, o.offset(px, 0, pz), Blocks.DIRT_PATH.defaultBlockState());
-                set(l, o.offset(px + 1, 0, pz), Blocks.COARSE_DIRT.defaultBlockState());
-                if (step % 5 == 4) px += (step / 5) % 2 == 0 ? 3 : -4;
-                else pz--;
-                px = Mth.clamp(px, -12, 12);
-            }
-            // The hunter's stand, again and again, always facing the path.
-            LodgeSite.stand(l, o.offset(-8, 1, 6), net.minecraft.core.Direction.EAST);
-            LodgeSite.stand(l, o.offset(7, 1, -3), net.minecraft.core.Direction.WEST);
-            LodgeSite.stand(l, o.offset(-6, 1, -12), net.minecraft.core.Direction.EAST);
-            // Trunks: a wall of them round the edge, and enough inside to hide behind.
-            List<int[]> trunks = new ArrayList<>();
-            for (int i = 0; i < 40; i++) {
-                double a = Mth.TWO_PI * i / 40 + r.nextDouble() * 0.1;
-                trunks.add(new int[] {(int) Math.round(Math.cos(a) * (R - 1)), (int) Math.round(Math.sin(a) * (R - 1))});
-            }
-            for (int tries = 0; tries < 400 && trunks.size() < 40 + 26; tries++) {
-                int x = r.nextInt(2 * R - 7) - R + 3, z = r.nextInt(2 * R - 7) - R + 3;
-                if (x * x + z * z > (R - 4) * (R - 4)) continue;
-                if (Math.abs(x) < 4 && z > 10) continue; // the arrival stays clear
-                if (Math.abs(x) < 3 && Math.abs(z + 12) < 3) continue; // and where it waits
-                boolean close = false;
-                for (int[] t : trunks) if ((t[0] - x) * (t[0] - x) + (t[1] - z) * (t[1] - z) < 16) close = true;
-                if (!close) trunks.add(new int[] {x, z});
-            }
-            for (int[] t : trunks) crooked(l, o, r, t[0], t[1], r.nextInt(5) == 0);
-            // Cold light along the path.
-            for (int[] c : new int[][] {{3, 12}, {-4, 4}, {5, -6}, {-3, -14}, {9, 8}, {-11, -3}}) {
-                set(l, o.offset(c[0], 1, c[1]), Blocks.DARK_OAK_FENCE.defaultBlockState());
-                set(l, o.offset(c[0], 2, c[1]), Blocks.SOUL_LANTERN.defaultBlockState());
-            }
-        }
-
-        /** A trunk that leans and kinks as it rises (thick ones are 2x2), with a dark crown. */
-        private void crooked(ServerLevel l, BlockPos o, RandomSource r, int x, int z, boolean thick) {
-            BlockState log = r.nextInt(3) == 0 ? Blocks.SPRUCE_LOG.defaultBlockState() : Blocks.DARK_OAK_LOG.defaultBlockState();
-            int h = 10 + r.nextInt(8);
-            int cx = x, cz = z;
-            int lx = r.nextInt(3) - 1, lz = r.nextInt(3) - 1;
-            for (int y = 1; y <= h; y++) {
-                if (y > 3 && y % 3 == 0) {
-                    cx += lx;
-                    cz += lz;
-                    if (r.nextInt(3) == 0) {
-                        lx = -lx;
-                        lz = r.nextInt(3) - 1;
-                    }
-                }
-                if (cx * cx + cz * cz > R * R) break;
-                set(l, o.offset(cx, y, cz), log);
-                if (thick) {
-                    set(l, o.offset(cx + 1, y, cz), log);
-                    set(l, o.offset(cx, y, cz + 1), log);
-                    set(l, o.offset(cx + 1, y, cz + 1), log);
-                }
-            }
-            BlockState leaves = Blocks.DARK_OAK_LEAVES.defaultBlockState().setValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, true);
-            for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) for (int dy = -1; dy <= 1; dy++) {
-                if (Math.abs(dx) + Math.abs(dz) + Math.abs(dy) > 3 || r.nextInt(4) == 0) continue;
-                BlockPos p = o.offset(cx + dx, h + dy, cz + dz);
-                if (l.getBlockState(p).isAir()) set(l, p, leaves);
-            }
-        }
-
-        @Override
-        public Vec3 arrival() {
-            return new Vec3(0, 1, 16);
-        }
-
-        @Override
-        public List<Vec3> curseSpots() {
-            return List.of(new Vec3(0, 1, -12), new Vec3(-6, 1, -8), new Vec3(6, 1, -10));
-        }
-
-        @Override
-        public int radius() {
-            return 21;
-        }
-
-        @Override
-        public String entryLine() {
-            return "The view through the scope, from the inside. The trees lean wrong, and something is moving between them.";
-        }
-    }
 
     /**
      * The pasture after dark, as the curse keeps it: a field of dead grass under no sky, broken fencing in rings that

@@ -174,7 +174,7 @@ public class InvestigationTests {
         h.assertTrue(in.curses().size() >= expected, "its curses wait there: " + in.curses().size());
         BlockPos origin = arena.origin;
         ServerLevel realm = CursedRealms.level(level.getServer());
-        h.assertTrue(!realm.getBlockState(origin).isAir(), "the arena was built");
+        h.assertTrue(!realm.getBlockState(origin.below()).isAir(), "the arena was built (its floor under the origin)");
         h.succeedWhen(() -> {
             Incident now = InvestigationState.get(level.getServer()).incident(in.id);
             if (now != null && now.state() != Incident.State.COMPLETE) {

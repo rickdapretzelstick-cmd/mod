@@ -240,9 +240,34 @@ final class YujiFx {
                 }
             }
             // --- Black Flash ---
-            case "black_flash_ready" -> sound("black_flash_windup", pos, 0.8f, 1.2f);
-            case "black_flash", "black_flash_kokusen" -> {
-                boolean fourth = p.id().equals("black_flash_kokusen");
+            case "black_flash_ready" -> {
+                // Anticipation: the timing caught, crimson crackling gathering in the fist.
+                sound("black_flash_windup", pos, 0.8f, 1.2f);
+                Vec3 fist = pos.add(dir.scale(0.7)).add(0, -0.35, 0);
+                Flashes.flash(fist, 0.2f, 0.7f, BF_RED, BlackFlashFx.reducedFlashes() ? 0.3f : 0.9f, 6, now);
+                Flashes.bolt(fist.add(randomUnit().scale(0.5)), fist, 0.04f, BF_RED, 0.9f, 6, now);
+                if (drawn) for (int i = 0; i < q(10); i++) {
+                    Vec3 from = fist.add(randomUnit().scale(1.2));
+                    add(level, from, Vec3.ZERO, Sprite.SPARK, i % 2 == 0 ? INK : BF_RED, 0.9f, 0.08f, 0.02f, 8).attract(fist, 0.06);
+                }
+            }
+            case "bf_impact", "bf_lethal", "bf_fizzle", "bf_amp", "bf_launch" -> BlackFlashFx.play(p.id(), mc, level, pos, dir, s, mine, now);
+            case "bf_cam" -> {
+                // The lethal cinematic's camera: on the striker's screen (and the struck player's). dir: body, build-up ms, striker.
+                if (mine) BlackFlashCamera.start(pos, (int) Math.round(dir.x), (int) Math.round(dir.z), dir.y);
+            }
+            case "black_flash_kokusen" -> {
+                // The fourth's own layer on top of the shared Black Flash: "KOKUSEN", rainbow rays and a blue shock.
+                sound("kokusen", pos, 2f, 1f);
+                if (drawn) {
+                    float[][] rainbow = {{1f, 0.2f, 0.2f}, {1f, 0.7f, 0.2f}, {1f, 1f, 0.3f}, {0.3f, 1f, 0.4f}, {0.3f, 0.7f, 1f}, {0.7f, 0.3f, 1f}};
+                    for (float[] c : rainbow) line(pos, pos.add(randomUnit().scale(5 * s)), 0.12f * s, c, BlackFlashFx.reducedFlashes() ? 0.35f : 0.9f, 10, now);
+                    Vec3 side = dir.lengthSqr() > 1e-4 ? new Vec3(-dir.z, 0, dir.x).normalize() : new Vec3(1, 0, 0);
+                    line(pos.subtract(side.scale(8)), pos.add(side.scale(8)), 0.25f, CE_LIGHT, 1f, 8, now);
+                }
+            }
+            case "black_flash" -> {
+                boolean fourth = false;
                 sound(fourth ? "black_flash_heavy" : "black_flash", pos, fourth ? 2f : 1.4f, 1f);
                 if (fourth) sound("kokusen", pos, 2f, 1f);
                 else if (s <= 1f) sound("black_flash_chain", pos, 1f, 1f);
@@ -253,10 +278,8 @@ final class YujiFx {
                 }
                 if (fourth && mine) ScreenEffects.fovPunch(0.15f);
             }
-            case "black_flash_finisher" -> {
-                sound("black_flash_heavy", pos, 2f, 0.9f);
-                if (drawn) blackFlash(level, pos, dir, 2.2f, now, true);
-            }
+            // The execute's own hit effect: the Black Flash itself is drawn from the resolved kill (bf_lethal).
+            case "black_flash_finisher" -> sound("black_flash_heavy", pos, 1.2f, 0.8f);
             // --- Manji Kick ---
             case "manji_startup" -> {
                 sound("manji_startup", pos, 1f, 1f);

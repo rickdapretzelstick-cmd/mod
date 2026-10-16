@@ -15,6 +15,12 @@ import dev.rick.jjk.progression.training.TrainingEvaluator;
 import dev.rick.jjk.progression.training.TrainingNet;
 import dev.rick.jjk.progression.training.TrainingSchedule;
 import dev.rick.jjk.progression.training.TrainingSessions;
+import dev.rick.jjk.progression.training.TrialPropEntity;
+import dev.rick.jjk.progression.training.TrialRooms;
+import dev.rick.jjk.yuta.RikaEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.phys.AABB;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.MinecraftServer;
@@ -364,6 +370,135 @@ public class TrainingTests {
             h.assertTrue(!p.isPassenger(), story.kit() + ": not left sitting on anything");
             h.assertTrue(!KitOwnership.get(server(h)).isClaimed(story.kit()) || KitOwnership.get(server(h)).owner(story.kit()).uuid() != p.getUUID(),
                     story.kit() + ": a test session claims nothing");
+        }
+        p.discard();
+        h.succeed();
+    }
+
+    // --- The rooms ---
+
+    @GameTest(environment = ENV)
+    public void everyRoomPlanLoadsFitsItsArenaAndLeavesOutTheRelief(GameTestHelper h) {
+        for (String kit : KITS) {
+            TrialRooms.Plan plan = TrialRooms.plan(kit);
+            h.assertTrue(plan != null, kit + ": its room plan loads");
+            int[] b = plan.bounds();
+            // Everything the room places or draws lies in the box the realm clears when the arena closes.
+            h.assertTrue(b[0] >= -CursedRealms.RADIUS && b[3] <= CursedRealms.RADIUS + 1 && b[2] >= -CursedRealms.RADIUS && b[5] <= CursedRealms.RADIUS + 1
+                    && b[1] >= -20 && b[4] <= CursedRealms.HEIGHT, kit + ": the room fits its arena " + java.util.Arrays.toString(b));
+            var blocks = plan.blocks();
+            Vec3 at = plan.marker("player");
+            BlockPos feet = BlockPos.containing(at.x, at.y + 0.01, at.z);
+            // Ground under the spot (a full block, or the firing platform's slab under Ryu), and headroom above it.
+            BlockPos ground = at.y - Math.floor(at.y) >= 0.49 ? feet : feet.below();
+            if (!kit.equals("yuji")) h.assertTrue(blocks.containsKey(ground), kit + ": the participant stands on the room's floor");
+            for (int dy = 1; dy <= 2; dy++) h.assertTrue(!blocks.containsKey(ground.above(dy)), kit + ": headroom at the participant's spot");
+            h.assertTrue(!plan.props().isEmpty(), kit + ": the room has its props");
+            // Closed: a ceiling over the participant and a wall on every side (no void anywhere in view).
+            boolean roofed = false;
+            for (int y = feet.getY() + 2; y < b[4]; y++) roofed |= blocks.containsKey(new BlockPos(feet.getX(), y, feet.getZ()));
+            h.assertTrue(roofed, kit + ": a ceiling over the participant");
+            int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+            for (int[] d : dirs) {
+                boolean wall = false;
+                for (int k = 1; k < 45 && !wall; k++) wall = blocks.containsKey(new BlockPos(feet.getX() + d[0] * k, feet.getY() + 2, feet.getZ() + d[1] * k));
+                h.assertTrue(wall, kit + ": walled in toward " + d[0] + "," + d[1]);
+            }
+            for (TrialRooms.Prop pr : plan.props()) {
+                h.assertTrue(TrainingTests.class.getClassLoader().getResource("assets/jjk/models/bb/" + pr.model() + ".bbmodel") != null,
+                        kit + ": prop model " + pr.model() + " is shipped");
+            }
+        }
+        // The pack's crude Rika sculpture is never imported: the shrine shows the mod's own Rika.
+        String yuta = read("assets/jjk/models/bb/trial_yuta.bbmodel");
+        h.assertTrue(!yuta.contains("relief") && !yuta.contains("guardian"), "no Rika guardian relief in the shrine");
+        // A clear shot down the gallery: nothing the plan places between the firing platform and the target.
+        TrialRooms.Plan ryu = TrialRooms.plan("ryu");
+        Vec3 from = ryu.marker("player").add(0, 1.62, 0), to = ryu.marker("target");
+        var rb = ryu.blocks();
+        for (int i = 1; i < 60; i++) {
+            BlockPos q = BlockPos.containing(from.lerp(to, i / 60.0));
+            h.assertTrue(!rb.containsKey(q) || q.getZ() >= (int) Math.floor(to.z) - 1, "ryu: the line to the target is clear at " + q);
+        }
+        h.succeed();
+    }
+
+    private static String read(String path) {
+        try (var in = TrainingTests.class.getClassLoader().getResourceAsStream(path)) {
+            return in == null ? "" : new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (java.io.IOException e) {
+            return "";
+        }
+    }
+
+    @GameTest(maxTicks = 200, environment = ENV)
+    public void everyRoomIsBuiltDressedOnceAndClearedAfter(GameTestHelper h) {
+        TrainingSessions.setManualClockForTest(true);
+        ServerPlayer p = survivor(h, 2, 2);
+        for (CharacterStory story : CharacterStories.all()) {
+            String kit = story.kit();
+            TrialRooms.Plan plan = TrialRooms.plan(kit);
+            for (int visit = 0; visit < 2; visit++) {
+                PersonalTrials.startNow(p, story, true);
+                CursedRealms.finishPullForTest(p);
+                var arena = CursedRealms.arenaHere(p);
+                h.assertTrue(arena != null, kit + ": in its room");
+                ServerLevel realm = (ServerLevel) p.level();
+                BlockPos o = arena.origin;
+                // Its blocks are standing.
+                var blocks = plan.blocks();
+                int standing = 0;
+                for (var e : blocks.entrySet()) if (realm.getBlockState(o.offset(e.getKey())).getBlock() == e.getValue().getBlock()) standing++;
+                h.assertTrue(standing >= blocks.size() * 0.95, kit + ": its blocks are placed (" + standing + "/" + blocks.size() + ")");
+                // It is where the room puts it, with room to stand.
+                Vec3 spot = new Vec3(o.getX(), o.getY(), o.getZ()).add(plan.marker("player"));
+                h.assertTrue(p.position().distanceTo(spot) < 1.2, kit + ": at its spot (" + p.position() + " vs " + spot + ")");
+                h.assertTrue(realm.noCollision(p, p.getBoundingBox()), kit + ": not inside anything");
+                // The room can't be broken down: not by a technique, a player breaking it, or an explosion.
+                BlockPos wall = null;
+                for (var e : blocks.entrySet()) {
+                    if (e.getKey().getY() == 2 && (wall == null || e.getKey().getZ() > wall.getZ())) wall = e.getKey();
+                }
+                BlockPos w = o.offset(wall);
+                var before = realm.getBlockState(w);
+                h.assertTrue(dev.rick.jjk.progression.investigation.ProtectedPlaces.isProtected(realm, w), kit + ": its walls are protected");
+                h.assertTrue(!dev.rick.jjk.util.Destruction.destroy(realm, w, 100f, p), kit + ": a technique can't break its wall");
+                boolean broke = p.gameMode.destroyBlock(w);
+                h.assertTrue(!broke && realm.getBlockState(w) == before, kit + ": a player can't break its wall (mode " + p.gameMode.getGameModeForPlayer()
+                        + ", broke " + broke + ", now " + realm.getBlockState(w) + ")");
+                realm.explode(null, w.getX() + 0.5, w.getY() + 0.5, w.getZ() - 1.5, 4f, net.minecraft.world.level.Level.ExplosionInteraction.TNT);
+                h.assertTrue(realm.getBlockState(w) == before, kit + ": its wall still stands");
+                // A retry rebuilds nothing twice: the same props, one Rika at most.
+                send(p, TrainingNet.READY, -1, -1, 0);
+                for (int i = 0; i < 30; i++) TrainingSessions.advanceForTest(p, 100);
+                TrainingSessions.failNow(p);
+                for (int i = 0; i < 10; i++) TrainingSessions.advanceForTest(p, 50);
+                send(p, TrainingNet.RETRY, -1, -1, 0);
+                for (int i = 0; i < 10; i++) TrainingSessions.advanceForTest(p, 100);
+                AABB box = new AABB(o).inflate(CursedRealms.RADIUS, CursedRealms.HEIGHT, CursedRealms.RADIUS);
+                var props = realm.getEntitiesOfClass(TrialPropEntity.class, box, e -> true);
+                h.assertTrue(props.size() == plan.props().size(), kit + ": its props once each (" + props.size() + ")");
+                for (TrialRooms.Prop pr : plan.props()) {
+                    h.assertTrue(props.stream().filter(e -> e.model().equals(pr.model())).count() == 1, kit + ": prop " + pr.model());
+                }
+                var rikas = realm.getEntitiesOfClass(RikaEntity.class, box, e -> true);
+                if (kit.equals("yuta")) {
+                    h.assertTrue(rikas.size() == 1, "yuta: exactly one Rika (" + rikas.size() + ")");
+                    RikaEntity r = rikas.get(0);
+                    Vec3 dais = new Vec3(o.getX(), o.getY(), o.getZ()).add(plan.marker("rika"));
+                    h.assertTrue(r.position().distanceTo(dais) < 2.5 && r.has(RikaEntity.FULL), "yuta: Rika on her dais at the shrine's rear");
+                    h.assertTrue(r.owner() == p, "yuta: she is the participant's, for the trial only");
+                } else {
+                    h.assertTrue(rikas.isEmpty(), kit + ": no Rika");
+                }
+                TrainingSessions.leaveNow(p);
+                h.assertTrue(!CursedRealms.inRealm(p), kit + ": back home");
+                h.assertTrue(realm.getEntitiesOfClass(TrialPropEntity.class, box, e -> true).isEmpty(), kit + ": no props left behind");
+                h.assertTrue(realm.getEntitiesOfClass(RikaEntity.class, box, e -> true).isEmpty(), kit + ": no Rika left behind");
+                int left = 0;
+                for (var e : blocks.keySet()) if (!realm.getBlockState(o.offset(e)).isAir()) left++;
+                h.assertTrue(left == 0, kit + ": the room is cleared (" + left + " blocks left)");
+            }
         }
         p.discard();
         h.succeed();

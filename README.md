@@ -395,7 +395,8 @@ The path so far:
    head. They show nothing that isn't there.
 5. **The cauldron**: pour four Cursed Energy bottles into a cauldron (1/4 … 4/4; the surface rises and glows). Throw
    the Glasses into the full cauldron: the energy reacts, spirals into them and collapses with a flash, all four
-   units are spent, and **Cursed Glasses** rise out.
+   units are spent, and **Cursed Glasses** rise out. Only the result rises out; what went in is given back only if the
+   cauldron is broken before the ritual finishes. The same holds for every infusion, relics included.
 6. **Cursed Glasses** let their wearer perceive curses (a curse user, anyone who is one of the characters, sees them
    without).
 7. **Battle rooms**: Woodland Mansions and Igloos hide a cursed chamber far below them, reached by a trapdoor set
@@ -527,7 +528,24 @@ the hands, under it as it bears down, over your shoulder into it, or from above 
 moment, back to the wide after a lull. Breaking free gets a low reversal shot, being thrown a shot that follows you. It
 stays out of walls, the HUD stays fixed, and **Reduced Camera Motion** (pause menu → JJK Settings, or
 `client.reducedCameraMotion`) holds one still wide shot at FOV 62 (no cuts).
-Tuning: `training.contest*` in the config.
+
+**Two more ways in, through the same contest.** A grab isn't the only way to lock up with a curse:
+- **Defensive: block its blow.** When a grabbing curse's own direct melee strike, at arm's length, lands on your guard
+  as a real block (the server's call, not a parry), the struggle starts, every time the rules allow it (not by chance):
+  it's pressing in on your guard. Never from a projectile, an area or explosion, a technique, an unblockable or
+  sure-hit attack, or a fly head. If it can't start (you're protected, either side is busy, the curse is cooling down),
+  the block simply stands.
+- **Offensive: counter.** While guarding, press attack: a short **counter window** opens (0.35 s, 7 ticks; a crimson
+  glint marks it). Attack presses from a guard never swing, fire or spend anything. A grapple-able blow that lands in
+  the window is **caught** (no damage, consumed exactly once, ahead of the guard) and you start the struggle with the
+  initiative (the meter at 58 instead of 50). The counter wins over the defensive trigger for that blow. The attempt has
+  a 1.25 s cooldown from when it opens; a window that catches nothing is a miss, with a short 0.25 s recovery in which a
+  block stays a block. A counter never grabs a curse that isn't attacking you, and winning gives the usual stagger (no
+  automatic Black Flash).
+
+Every contest, whichever way it began, leaves at least 3 s of grace (`training.contestGraceSeconds`; the 12 s protection
+above is the longer of the two and still applies), uses the same presets by grade, and cleans up the same way.
+Tuning: `training.contest*` and `training.counter*` in the config.
 
 **Perfect dodge, counter, finishers.** Fighting curses has two payoffs of its own. Dash through a curse's blow at the
 last moment (it lands inside the dash's invulnerable frames) and it's a **perfect dodge**: time slows for a beat and,
@@ -568,6 +586,9 @@ over the world (the HUD stays on top) and are off with **Impact frames** in JJK 
 (the VHS played on a jukebox, the Blindfold worn for five seconds, the Ring, the Comb or the Scratch-Off used), it offers
 **Begin Training**. The server checks you may (the world's live relic, the kit unclaimed or already yours, nobody else
 in a claiming session of it), takes you to a private training room in the cursed realm and saves where you stood.
+Each trial has its character's JJS track playing from the attempt's start until the trial ends (Gojo: Unlimited Void,
+Yuji: "Entrusted", Yuta: Authentic Mutual Love, Ryu: Decadence, Hakari: Idle Death Gamble), coming round again if the
+trial outlasts it; the background music steps aside. Off with `client.trialMusic`.
 
 Every character trains with the same shared skill check, dressed differently:
 
@@ -587,16 +608,38 @@ Every character trains with the same shared skill check, dressed differently:
   Every check is telegraphed at least 600 ms before its window. Early, late or no press is a **miss**; five misses fail.
   A press while the needle is only travelling between checks does nothing; spamming, holding a key or repeating
   packets can't pass a check, and each check costs at most one mistake. Timing is elapsed time, never frames.
-- **The scenes**: **Yuji** sits facing a television (calm, suspense, action and sadness patterns announce faster or
-  slower checks) with a cursed corpse doll on his lap: successes pulse energy into it, misses wake it (a twitch, its
-  head, an arm), the fifth miss is a harmless punch, victory quiets it. **Gojo** holds three stones in orbit round a
-  small Blue (one stone per gauge; misses make them wobble outward); failure drops them, victory spaces them evenly and
-  collapses Blue. This is his *base* training: the Prison Realm stays a separate, later requirement for his ultimate.
-  **Yuta** holds a practice katana (shown in the hand only; nothing touches the inventory) with Rika behind him: holds
-  and releases steady the blade, misses make it flicker and fracture harmlessly and Rika restless. **Ryu** gathers a
-  charge round his head facing a stone target down a short lane; victory fires one scripted beam that destroys only the
-  session's target. **Hakari** stands among three huge slot reels; successes lock 7s, misses slip, the music builds by
-  phase, the finale is an announced triple input, and victory plays the jackpot dance (no real jackpot, buffs or domain).
+- **The rooms**: each character trains in a room of its own (the "Relic Trial Rooms V2" Blockbench pack, installed by
+  `tools/install_trial_rooms.py`), built in the trial's private realm arena and cleared with it:
+  - **Yuji, the Cursed Screening Room** (26x26): a timber room with broken rafters, warm hanging lanterns, ivy, VHS
+    shelves, sofas on a patterned rug and a low table. He sits on the centre sofa with a cursed corpse doll on his lap,
+    facing the CRT across the room. Its screen is animated static and scanlines, coloured by the mood: calm, suspense,
+    action and sadness announce faster or slower checks. Successes pulse energy into the doll; misses wake it (a twitch,
+    its head, an arm) and the static gets restless. The fifth miss is a harmless punch; victory quiets it.
+  - **Gojo, the Hall of Impossible Precision** (28x28): a quartz colonnade with cyan inlays, the stepped calibration
+    dais, floor channels, four precision stations, and fragments and rings turning round the Blue over the dais. He
+    draws three stones (one per gauge) into orbit round that Blue: misses make them wobble outward, failure drops them,
+    victory spaces them evenly and collapses the Blue. This is his *base* training: the Prison Realm stays a separate,
+    later requirement for his ultimate.
+  - **Yuta, the Shrine of the Bound Promise** (28x28): dark columns and arch, the purple oath circle, the sword altar,
+    amethyst, hanging wisteria and candles. He holds a practice katana (shown in the hand only; nothing touches the
+    inventory). The mod's own Rika, fully manifested, waits on a dais at the shrine's rear, facing him; the pack's Rika
+    sculpture is not used. Holds and releases steady the blade, and the altar's blade glows with his control. Misses
+    make both flicker and Rika restless.
+  - **Ryu, the Granite Output Crucible** (24x40): a long reinforced firing gallery with columns, lanterns, range
+    markings, blast baffles, scorch marks and a concentric target wall. He stands on the firing platform and gathers a
+    charge round his head; victory fires one scripted beam down the gallery that shatters the target's face (the wall
+    behind it stays, and nothing else is touched). A retry restores it.
+  - **Hakari, the Restless Jackpot Palace** (28x28): a red-and-gold pavilion, a carpet up to a stepped stage, three
+    giant reel towers, slot cabinets with stools, and floating luck symbols. The reels are one per gauge, left to
+    right. Each spins while its check is live, locks on a 7 for a hit with a green or gold flash, and slips onto the
+    bust bar with a red flash for a miss. The symbols are the server's; clients only animate the spin and the settle.
+    The music builds by phase, the finale is an announced triple input, and victory plays the jackpot dance (no real
+    jackpot, buffs or domain).
+
+  Architecture that lines up with the block grid is placed as blocks: floors, walls, column shafts, beams, piers,
+  parapets and the target wall. Everything finer is drawn from the pack's geometry as a few prop entities per room.
+  Lanterns, neon and energy glow, the rooms are lit by real light blocks, and rings, symbols and flames move. Plans:
+  `data/jjk/trial_rooms/<kit>.json`; props: `models/bb/trial_<kit>*.bbmodel`.
 
 The first success **claims the base kit**: the world records you as its Yuji (or Gojo...), through the same atomic
 one-owner registry as every path (`kit_ownership.dat`). **The base kit only**: every move and R variant, never the
@@ -741,6 +784,71 @@ editing the outputs. Seen only through Cursed Glasses, like the Finger Bearer, a
   wall. Right after a stagger it can't be staggered again for 2.5 s (no stagger-locking), and pounces, lunges, leaps
   and flickers are never back to back (a cooldown between gap closers, shortened only a little by aggression). In a
   realm fight its health scales with the players in it: +30% for each one after the first, at most x1.9.
+
+### The cursed realm environments
+
+Breaches lead into environments from the Cursed Realm Blockbench pack (`tools/install_realm_rooms.py`, plans in
+`data/jjk/realm_rooms/`). Each is matched to the realm destination it was made for:
+
+| Environment | Destination | Reached by |
+|---|---|---|
+| Fractured Infinity (Gojo) | `distance_realm` | Gojo's storyline events (only with `progression.villageStorylines` on) |
+| The Last Screening (Yuji) | `theater_realm` | Yuji's storyline events (storylines on) |
+| Courtyard of the Unbroken Promise (Yuta) | `chapel_realm` | the chapel incidents (Drowned Chapel, Jilted Bride) and Yuta's storyline events |
+| The Shattered Impact Basin (Ryu) | `crater_realm` | Stalker Crater and Ryu's storyline events |
+| The House Always Fights (Hakari) | `fight_club_realm` | Hakari's storyline events (storylines on) |
+| The Watching Woods (cursed rifle) | `forest_realm` | the Hunting Lodge incident (the rifle's own entry and reward, unchanged) |
+| The Ribbed Hollow | a claw hunter contract's arena | Grade 1 contracts: the contract's one guardian picks its arena |
+| The Silent Courtyard | a pale stalker contract's arena | 〃 |
+| The Sunken Quarry | a cyclops bruiser contract's arena | 〃 |
+| The Hanging Sanctuary | a veiled reacher contract's arena | 〃 |
+
+No storyline is switched on by this; the character environments are used wherever their destination is reached.
+
+The last six come from the second pack, the Cursed Realms Blockbench Pack (`tools/install_realm_rooms_b.py`,
+sources in `tools/blockbench/cursed_realms_b/`):
+
+| Environment | Destination | Reached by |
+|---|---|---|
+| The Mine | `mine_realm` | Old Mine, Deep Mine Maw, Crawler Culvert, Yuji chain 3, Ryu chain 3, Hakari chain 3 |
+| The Empty House | `house_realm` | Empty House, Brood Nest, Brood Anchor, Gojo chain 3, Yuji chain 2, Yuta chain 1 |
+| The Dead Pasture | `pasture_realm` | Livestock, Hound Kennel, Kennel Master, Shrine Anchor |
+| The Fallen Cliff | `cliff_realm` | Cliff Fall, Millpond Toad, Yuta chain 2 (you still fall in from above, onto a clear landing) |
+| The Sealed Hall | `finger_bearer_realm` | the Finger Bearer's battle room (it takes shape at the hall's central seal) |
+| The Hollow | `hollow_realm` | any unknown realm id, and the fallback for every other room |
+
+In these six, the pack's building cuboids (floors, foundations, cavern walls, ceilings, ring walls, the cliff face) are
+real blocks, so the arena is physical: footing, walls, mob navigation, protection. Everything else is drawn exactly as the
+pack made it (rails, chains, webs, lanterns, timber supports, thin walls and partitions, furniture, fences, the tree, the
+seal). Under the parts that look solid there's invisible collision: supports, partitions and doorframes' walls, the
+house's ceiling, pillars, fences, hay and furniture. Chains, webs, rails and brush stay walk-through. Every one is closed
+in, like the earlier rooms. The mine and the house close themselves: where the pack's ragged mine walls stopped short of
+the ceiling, or the floor short of a wall, the stone was carried across. The pasture, the cliff, the hall and the hollow
+get walls all round at their bounds, the floor carried out to them, and a ceiling hung with soul lanterns (the cliff's
+high enough that you still fall in from above onto its landing). The house's staggered doorways all walk through to the
+red bed at the far end. Every soul lantern in the pack gives real light, with an even fill so a fight reads, under the
+realm's red atmosphere.
+
+**Fallback.** A room loads its own plan; if that's missing or broken, the model-backed hollow stands in; if that fails
+too, the room's original procedural layout is built (so no one is ever dropped into an empty void, and an encounter can
+always finish). Each failure is logged once.
+
+Each environment is closed in and lit evenly, with its own light colour over the realm's crimson. Walkable terraces,
+tiers, stairs and platforms are real ground for curses and players. Curses wait on open ground round the encounter's
+centre. A guardian stands at its arena's spawn, and its phase beats raise their pillars on open floor round the fight's
+centre. In the courtyard, the mod's own Rika stands on the rear terrace the pack left empty for her. She is drawn from
+her own model and idle clip at 1.8 times her size, which fits the space the pack reserved; she is not a Rika of anyone's
+and has no AI. Room props are never saved: an arena that outlives a restart gets them back, and closing it clears
+everything.
+
+### The places the mod builds don't break
+
+Every cursed realm arena (incident realms, guardian arenas, battle-room realms and the training rooms), an incident's
+overworld site while it stands, a village's news house and a cursed battle room's shell can't be broken down for their
+blocks. Techniques can't break them. Survival and adventure players can't either (creative still can, for admins). Nor
+can explosions or pistons. Only the site's own blocks are protected: anything a player has built there since stays
+theirs. The game's own cleanup still clears everything: an arena when it closes, a site when its incident is over.
+Switch: `general.protectModStructures` in the config.
 
 ### Realm fights can't trap anyone
 
@@ -1187,6 +1295,52 @@ shot by shot, for comparing them.
 Effects fade when the camera is inside them, spawn fewer particles past 48 blocks, and small ones are sound-only past
 96 blocks. `particleQuality` (0–3) in the client config scales every particle count.
 
+### Black Flash
+
+Every Black Flash in the game looks the same way and is decided the same way: by what the blow **actually did**, as
+resolved by the server (never by what was hoped for). It is modelled on JJS's Cursed Partners → Finishers → Resolute
+Black Flash ("the user amps the power up, creating intense sparks before the target is launched away").
+
+- **Anticipation**: the timing caught (Yuji's press in Divergent Fist, Yuta reappearing for Resolute Black Flash):
+  crimson crackling gathers in the fist or round the blade, black and crimson motes drawn in.
+- **Contact**: a white-hot core at the point of impact inside a crimson bloom, the black pressure behind it.
+- **Impact frame**: the crimson inked frame (bodies as black silhouettes on crimson, focus lines rushing in, an
+  inverted beat), only for the striker and anyone close, plus a **local hit-stop**: both fighters hang in the contact
+  for 3 ticks (the target's launch is held, then given back).
+- **Lightning**: a branching tree of black bolts with crimson edges thrown along the blow, re-crackling on the contact.
+- **Shockwaves**: a ripple across the blow and rings rolling out along the ground, one a beat after the other.
+- **Streaks**: black, crimson and white-hot speed lines driven through along the blow.
+- **Follow-through**: smaller arcs snapping on for a few ticks after, then black and crimson embers falling and scorch
+  lines on the ground that fade. Drawn only: **no block is ever changed**.
+- **Audio and camera**: the layered Black Flash sounds; a restrained shake and FOV kick, near it only.
+
+**Lethal**: when the blow kills (the target is dead after the resolved hit), every layer escalates: a longer inked
+sequence (crimson, inverted, crimson, the hard negative, crimson), a brief slowed-time look, the world washed crimson,
+a bigger tree of bolts, three shockwaves, a 6-tick hit-stop. It is shown **once per body**; an execute that is refused
+(the target can't be hit, or the blow is negated) never shows a kill; a blow that's blocked or negated only **fizzles** (a spark,
+no frame). Damage, kills and rewards stay with the move and the combat pipeline, so the presentation can't execute
+anyone or hand anything out twice.
+
+**Accessibility** (pause menu → JJK Settings, or the client config): **Reduced flashes** (`client.reducedFlashes`)
+drops the impact frames, inverted and strobing frames and the screen wash, and dims every flash, while the shapes,
+sounds and particles still read; **Reduced shake** (`client.reducedShake`) cuts shake and FOV kicks to a gentle
+fraction. None of it needs shaders. Hit-stop length: `general.blackFlashHitStop` / `blackFlashLethalHitStop`.
+
+| Black Flash | Who | Trigger | Presented from |
+|---|---|---|---|
+| Divergent Fist Black Flash | Yuji | Press again in the timing window | its resolved hit (lone flash, chain link, or the fourth "KOKUSEN" with its own layer) |
+| Divergent Fist finisher | Yuji | Black Flash on a finishable target | the execute's result: lethal only if it kills |
+| Cursed Strikes air finisher | Yuji | Air dive onto a finishable target | the execute's result |
+| Finisher cinematic | Yuji | Finishing a reeling curse | the kill itself |
+| Resolute Black Flash | Yuta | Use again as he reappears | its resolved hit (or the execute on a finishable target) |
+| Rika Throw finisher | Yuta | A long throw into a finishable target | the execute's result |
+| Max Red rebound | Gojo | Max Red's return pulls a caught target in | its resolved hit |
+| Rapid Punches finisher | Gojo | The final punch on a finishable target | the execute's result |
+
+![Black Flash impact frame](docs/screenshots/black_flash_frame.png)
+
+![Black Flash lightning](docs/screenshots/black_flash_impact.png)
+
 ## Opening a domain
 
 A domain physically builds itself out of blocks, starting at the caster's feet: the ground spreads outward to the
@@ -1321,6 +1475,17 @@ Player changes made in the meantime are kept (`restoration.conflictPolicy`). Pen
 Domain structures are separate and restore as soon as the domain ends. `/jjk restore status|now|forget`.
 
 ## Commands (op)
+
+**Playtesting: `/jjk test`.** One clickable menu in chat for testing everything: click a category, then click an
+action (hover one to see the command it runs). Categories: **Setup** (heal and reset, no cooldowns, full energy and
+awakening, game mode, dummies), **Characters** (become any of the five), **Relic trials** (start any character's trial,
+pass, fail or leave it, issue a relic), **Cursed realms** (straight into any of the ten realms, and out again),
+**Guardians** (a Grade 1 contract against a chosen body, in its own arena), **Curses** (spawn any curse, hostile, a few
+blocks ahead), **Strength contests** (get grabbed at once, or a sparring curse to block and counter), **Black Flash**
+(Yuji or Yuta, a target, a finishable target for the lethal one), **Cursed tools & items**, **Domains & Prison Realm**,
+and **Cleanup** (clear curses, leave the realm, restore terrain). Its shortcuts work typed too:
+`/jjk test realm <incident>` · `/jjk test guardian <body>` · `/jjk test leave` · `/jjk test spawn <curse>` ·
+`/jjk test weak <curse>` · `/jjk test grab` · `/jjk test clear` · `/jjk test heal`.
 
 `/jjk arena` test arena with dummies · `/jjk dummy [stand|jump|fight] [n]` · `/jjk dummy domain <void|idg|shrine> [skill]` (solo clash practice: the nearest dummy opens that domain; press Awakening in the counter window to clash it; skill 0–1 is how well it plays) · `/jjk nocooldown true|false` ·
 `/jjk awakening <amount>|end` · `/jjk reset` · `/jjk character gojo|hakari|yuji|yuta|none` · `/jjk domain cancel [all]` ·

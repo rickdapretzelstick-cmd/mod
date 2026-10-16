@@ -508,4 +508,132 @@ public class RifleTests {
                     "out, charge, fire, in: once, never folding early: " + seen);
         });
     }
+
+    // --- Blocking with the rifle ---
+
+    /** A plain melee blow from {@code from} at the shooter (through the whole defence pipeline). */
+    private static dev.rick.jjk.core.combat.HitResult blow(LivingEntity from, ServerPlayer p, dev.rick.jjk.core.combat.AttackTag... tags) {
+        var b = dev.rick.jjk.core.combat.Hit.builder(from, "t").damage(4).origin(from.getEyePosition()).hitstun(10);
+        b.tag(dev.rick.jjk.core.combat.AttackTag.MELEE);
+        for (var t : tags) b.tag(t);
+        return dev.rick.jjk.core.combat.HitResolver.resolve(b.build(), p);
+    }
+
+    @GameTest(maxTicks = 60, environment = ENV)
+    public void theRifleGuardsByTheOrdinaryRules(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 3.5, 3.5, GameType.SURVIVAL);
+        TrainingDummy front = dummy(h, 3.5, 5.5), back = dummy(h, 3.5, 1.5);
+        face(p, front.getEyePosition());
+        var c = Casters.get(p);
+        c.input(AbilitySlot.GUARD, true, 0, 0, null);
+        h.assertTrue(dev.rick.jjk.core.combat.Combat.isGuarding(p), "the rifle's guard comes up (F)");
+        h.runAfterDelay(10, () -> {
+            float hp = p.getHealth();
+            var r = blow(front, p);
+            h.assertValueEqual(r.outcome(), dev.rick.jjk.core.combat.HitResult.Outcome.BLOCKED, "a blow from the front is caught on the rifle");
+            h.assertTrue(p.getHealth() == hp, "and does nothing");
+            var st = dev.rick.jjk.core.combat.Combat.state(p);
+            var r2 = blow(back, p);
+            h.assertTrue(r2.outcome() != dev.rick.jjk.core.combat.HitResult.Outcome.BLOCKED, "from behind it is not");
+            // (Each check with the guard freshly up again, past its parry window.)
+            st.clearAll();
+            st.startGuard(h.getLevel().getGameTime() - 40);
+            var r3 = blow(front, p, dev.rick.jjk.core.combat.AttackTag.UNBLOCKABLE);
+            h.assertTrue(r3.outcome() != dev.rick.jjk.core.combat.HitResult.Outcome.BLOCKED, "nor an unblockable one");
+            st.clearAll();
+            st.startGuard(h.getLevel().getGameTime() - 40);
+            var r4 = blow(front, p, dev.rick.jjk.core.combat.AttackTag.GUARD_BREAK);
+            h.assertValueEqual(r4.outcome(), dev.rick.jjk.core.combat.HitResult.Outcome.GUARD_BROKEN, "a guard break breaks it");
+            h.assertTrue(!dev.rick.jjk.core.combat.Combat.isGuarding(p), "and it is down");
+            c.input(AbilitySlot.GUARD, false, 0, 0, null);
+            // Raised just now, the first moments are a parry.
+            st.clearAll();
+            st.startGuard(h.getLevel().getGameTime());
+            var r5 = blow(front, p);
+            h.assertValueEqual(r5.outcome(), dev.rick.jjk.core.combat.HitResult.Outcome.PARRIED, "caught at once, it parries");
+            front.discard();
+            back.discard();
+            h.succeed();
+        });
+    }
+
+    @GameTest(maxTicks = 60, environment = ENV)
+    public void guardingNeverFiresOrSpends(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
+        TrainingDummy d = dummy(h, 1.5, 6.5);
+        face(p, d.getBoundingBox().getCenter());
+        var c = Casters.get(p);
+        float full = RifleServer.energy(p), hp = d.getHealth();
+        c.input(AbilitySlot.GUARD, true, 0, 0, null);
+        h.assertTrue(dev.rick.jjk.core.combat.Combat.isGuarding(p), "guarding");
+        // Every rifle key, and the attack key (the counter's), while the guard is up: nothing fires, nothing is spent.
+        for (AbilitySlot slot : new AbilitySlot[] {AbilitySlot.SKILL_1, AbilitySlot.SKILL_2, AbilitySlot.SKILL_3, AbilitySlot.SKILL_4}) {
+            c.input(slot, true, 0, 0, null);
+            c.input(slot, false, 0, 0, null);
+        }
+        dev.rick.jjk.core.combat.melee.MeleeSystem.handleInput(p, c, dev.rick.jjk.core.net.MeleeInputPayload.LIGHT, 0, -1);
+        h.runAfterDelay(12, () -> {
+            h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.IDLE, "the rifle stayed at rest");
+            h.assertTrue(Math.abs(RifleServer.energy(p) - full) < 0.01f, "no round was paid for");
+            h.assertTrue(d.getHealth() == hp, "and nothing was hit");
+            h.assertTrue(dev.rick.jjk.core.combat.Combat.isGuarding(p), "still guarding");
+            c.input(AbilitySlot.GUARD, false, 0, 0, null);
+            // (A mock player's caster is ticked by hand.)
+            for (int i = 0; i < 3; i++) c.tick();
+            h.runAfterDelay(2, () -> {
+                var cast = c.cast();
+                h.assertTrue(!dev.rick.jjk.core.combat.Combat.isGuarding(p), "the guard comes down when let go (casting "
+                        + (cast == null ? "nothing" : cast.ability.id + (cast.isFinished() ? " finished" : "")) + ", rifle " + RifleServer.phase(p) + ")");
+                d.discard();
+                h.succeed();
+            });
+        });
+    }
+
+    @GameTest(maxTicks = 300, padding = 16, environment = ENV)
+    public void theGuardLowersTheScopeButNeverCutsTheArray(GameTestHelper h) {
+        floor(h);
+        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
+        TrainingDummy d = dummy(h, 1.5, 6.5);
+        face(p, d.getBoundingBox().getCenter());
+        var c = Casters.get(p);
+        float full = RifleServer.energy(p), hp = d.getHealth();
+        h.assertTrue(press(p) && RifleServer.phase(p) == RifleServer.Phase.AIM, "the scope is up");
+        c.input(AbilitySlot.GUARD, true, 0, 0, null);
+        h.assertTrue(dev.rick.jjk.core.combat.Combat.isGuarding(p), "the guard comes up over it");
+        h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.IDLE, "the scope comes down");
+        letGo(p);
+        h.assertTrue(Math.abs(RifleServer.energy(p) - full) < 0.01f && d.getHealth() == hp, "and no shot left it");
+        c.input(AbilitySlot.GUARD, false, 0, 0, null);
+        for (int i = 0; i < 3; i++) c.tick();
+        h.runAfterDelay(JJKConfig.get().rifle.shotInterval + 4, () -> {
+            // Down again, the rifle fires as ever (its key's short cooldown run down: the caster is ticked by hand).
+            for (int i = 0; i < 8; i++) c.tick();
+            boolean up = press(p);
+            h.assertTrue(up, "the scope comes up again (refused: " + c.lastRefusal + ", casting " + (c.cast() == null ? "nothing" : c.cast().ability.id
+                    + (c.cast().isFinished() ? " finished" : "")) + ", guarding " + dev.rick.jjk.core.combat.Combat.isGuarding(p) + ", rifle " + RifleServer.phase(p) + ")");
+            h.runAfterDelay(JJKConfig.get().rifle.settleTicks + 6, () -> {
+                face(p, d.getBoundingBox().getCenter());
+                letGo(p);
+                h.assertTrue(full - RifleServer.energy(p) > 0.5f, "and fires");
+                // The array out: the guard can't come up.
+                learn(p, TO_BEAM);
+                p.setShiftKeyDown(true);
+                h.runAfterDelay(JJKConfig.get().rifle.shotInterval + 2, () -> {
+                    h.assertTrue(press(p) && RifleServer.phase(p) == RifleServer.Phase.DEPLOY, "the arms deploy");
+                    for (int i = 0; i < 3; i++) c.tick();
+                    c.input(AbilitySlot.GUARD, true, 0, 0, null);
+                    h.assertTrue(!dev.rick.jjk.core.combat.Combat.isGuarding(p) && RifleServer.phase(p) == RifleServer.Phase.DEPLOY,
+                            "the guard waits for the array");
+                    c.input(AbilitySlot.GUARD, false, 0, 0, null);
+                    p.setShiftKeyDown(false);
+                    letGo(p);
+                    d.discard();
+                    h.succeed();
+                });
+            });
+        });
+    }
 }

@@ -1,0 +1,131 @@
+{
+  "units": "16 units = 1 Minecraft block",
+  "models": [
+    {
+      "name": "Yuji \u2022 The Cursed Screening Room",
+      "file": "yuji_trial_v2.bbmodel",
+      "cubes": 777,
+      "groups": [
+        "architecture",
+        "timber shell and broken rafters",
+        "rug and seating",
+        "CRT television and media clutter",
+        "ivy and set dressing"
+      ],
+      "markers_blocks": {
+        "player": [
+          0,
+          0.3,
+          6
+        ],
+        "television": [
+          0,
+          3,
+          -9.5
+        ]
+      }
+    },
+    {
+      "name": "Gojo \u2022 Hall of Impossible Precision",
+      "file": "gojo_trial_v2.bbmodel",
+      "cubes": 1318,
+      "groups": [
+        "architecture",
+        "quartz colonnade",
+        "layered calibration dais",
+        "Blue core and orbit geometry",
+        "precision stations"
+      ],
+      "markers_blocks": {
+        "player": [
+          0,
+          0.2,
+          9
+        ],
+        "Blue_core": [
+          0,
+          5,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Yuta \u2022 Shrine of the Bound Promise",
+      "file": "yuta_trial_v2.bbmodel",
+      "cubes": 989,
+      "groups": [
+        "architecture",
+        "ritual architecture",
+        "oath circle and blade altar",
+        "Rika guardian relief",
+        "amethyst garden and hanging wisteria"
+      ],
+      "markers_blocks": {
+        "player": [
+          0,
+          0.2,
+          7
+        ],
+        "sword": [
+          0,
+          2,
+          -0.5
+        ],
+        "guardian": [
+          0,
+          6,
+          -9
+        ]
+      }
+    },
+    {
+      "name": "Ryu \u2022 Granite Output Crucible",
+      "file": "ryu_trial_v2.bbmodel",
+      "cubes": 1043,
+      "groups": [
+        "architecture",
+        "reinforced long gallery",
+        "range lanes and blast baffles",
+        "concentric target wall",
+        "output control station"
+      ],
+      "markers_blocks": {
+        "player": [
+          0,
+          0.7,
+          14
+        ],
+        "target": [
+          0,
+          6,
+          -18.3
+        ]
+      }
+    },
+    {
+      "name": "Hakari \u2022 The Restless Jackpot Palace",
+      "file": "hakari_trial_v2.bbmodel",
+      "cubes": 629,
+      "groups": [
+        "architecture",
+        "casino pavilion",
+        "carpet and jackpot dais",
+        "three oversized reel towers",
+        "side gaming machines",
+        "floating luck symbols"
+      ],
+      "markers_blocks": {
+        "player": [
+          0,
+          0.3,
+          8
+        ],
+        "reels": [
+          0,
+          6,
+          -10
+        ]
+      }
+    }
+  ]
+}

@@ -83,6 +83,9 @@ public final class RifleStance {
         public boolean stowing;
         // Smoothed blends (0..1).
         public float ads, brace, sprintW, air, land, weight, charge;
+        /** Braced to guard (0..1, eased), the ticks since a blow was last caught on the rifle, and whether that was a parry. */
+        public float guard, guardHitAge = 99;
+        public boolean guarding, parried;
         /** The rifle's own clip pose (its arms, iris). */
         @Nullable public PoseFrame model;
         /** Rifle model pixels to model space pixels, once placed this frame. */
@@ -93,6 +96,7 @@ public final class RifleStance {
     }
 
     private static final class Smooth {
+        float guard;
         float ads, brace, sprint, air, land, weight, fall;
         float lastNow = Float.NaN;
         boolean wasGround = true;
@@ -196,6 +200,9 @@ public final class RifleStance {
         v.flare = ClientAnimations.elapsed(id, "rf_flare", now);
         v.bash = ClientAnimations.elapsed(id, "rf_bash", now);
         v.leftHanded = p.getMainArm() == net.minecraft.world.entity.HumanoidArm.LEFT;
+        v.guarding = dev.rick.jjk.core.combat.Combat.state(p).isGuarding();
+        v.guardHitAge = now - rs.guardHitAt;
+        v.parried = rs.parried;
         v.model = RifleClient.pose(p, now);
         smooth(v);
         return v;
@@ -211,11 +218,11 @@ public final class RifleStance {
         m.lastNow = v.now;
         boolean snapping = v.snap >= 0 && v.snap < 11;
         boolean volley = v.volley >= 0;
-        boolean aiming = v.phase == RifleServer.Phase.AIM || snapping || volley;
+        boolean aiming = !v.guarding && (v.phase == RifleServer.Phase.AIM || snapping || volley);
         boolean array = array(v.phase);
         float adsT = aiming ? 1f : array ? 0.85f : 0f;
         float braceT = array ? 1f : v.phase == RifleServer.Phase.COOLDOWN ? 0.7f : volley ? 0.55f : v.phase == RifleServer.Phase.AIM ? 0.25f : 0f;
-        float sprintT = v.sprint && !aiming && !array && v.flare < 0 && v.bash < 0 ? 1f : 0f;
+        float sprintT = v.sprint && !aiming && !array && !v.guarding && v.flare < 0 && v.bash < 0 ? 1f : 0f;
         float airT = v.ground ? 0f : 1f;
         // A snap shot raises the scope in its first three ticks, faster than a held aim settles.
         m.ads = approach(m.ads, adsT, snapping ? 0.6f : 0.42f, dt);
@@ -229,6 +236,9 @@ public final class RifleStance {
         m.land *= (float) Math.pow(0.72, dt);
         // Drawn, the stance takes over from the draw; stowing, it lets go quickly, the hands following the holster.
         m.weight = v.stowing ? approach(m.weight, 0f, 0.45f, dt) : approach(m.weight, 1f, 0.25f, dt);
+        // The guard comes up fast (it has to catch something) and goes down a little slower.
+        m.guard = approach(m.guard, v.guarding ? 1f : 0f, v.guarding ? 0.55f : 0.3f, dt);
+        v.guard = m.guard;
         v.ads = m.ads;
         v.brace = m.brace;
         v.sprintW = m.sprint;
@@ -388,6 +398,23 @@ public final class RifleStance {
             b.r(Bone.RIGHT_FOOT, -20, 0, 0, 1);
             b.r(Bone.CHEST, 12, 0, 0, 1);
         }
+        // Braced to guard: feet planted wide, sunk into the knees, the chest hunched behind the rifle, the chin tucked; a
+        // blow caught on it rocks the body back (a parry drives it forward instead).
+        if (v.guard > 0.01f) {
+            float g = v.guard;
+            b.r(Bone.LEFT_THIGH, -12, 0, -6, g);
+            b.r(Bone.LEFT_SHIN, 18, 0, 0, g);
+            b.r(Bone.RIGHT_THIGH, 14, 0, 8, g);
+            b.r(Bone.RIGHT_SHIN, 10, 0, 0, g);
+            b.r(Bone.RIGHT_FOOT, -8, 0, 0, g);
+            b.r(Bone.HIPS, 0, -14, 0, g);
+            b.r(Bone.CHEST, 12, -10, 0, g);
+            b.r(Bone.NECK, 10, 0, 0, g);
+            b.p(Bone.ROOT, 0, -1.4f, 0, g);
+            float jolt = guardJolt(v);
+            b.r(Bone.CHEST, v.parried ? 6 * jolt : -9 * jolt, 0, 0, 1);
+            b.p(Bone.ROOT, 0, 0, v.parried ? 0.6f * jolt : -0.9f * jolt, 1);
+        }
         // Stock Bash: the hips drive the stroke.
         if (v.bash >= 0) {
             float t = v.bash;
@@ -444,6 +471,16 @@ public final class RifleStance {
             rp = Mth.lerp(bashStrike, rp, -100);
             ry = Mth.lerp(bashStrike, ry, -20);
         }
+        // Braced to guard: the rifle comes up level across the chest at face height, the muzzle out over the support
+        // side, both hands on it; a caught blow jolts it back and twists it, a parry snaps it out.
+        float jolt = guardJolt(v);
+        if (v.guard > 0.001f) {
+            float g = v.guard;
+            float side = v.leftHanded ? -1 : 1;
+            rp = Mth.lerp(g, rp, -10 + (v.parried ? -14 : 6) * jolt);
+            ry = Mth.lerp(g, ry, -84 * side);
+            rr = Mth.lerp(g, rr, (8 + (v.parried ? 0 : 10) * jolt) * side);
+        }
         Matrix3f rot = new Matrix3f().rotationYXZ(ry * Mth.DEG_TO_RAD, rp * Mth.DEG_TO_RAD, rr * Mth.DEG_TO_RAD).mul(BASE);
         Vector3f fwd = rot.transform(new Vector3f(0, 0, -1));
 
@@ -466,11 +503,25 @@ public final class RifleStance {
         Vector3f ahead = chest.transformDirection(new Vector3f(0, 0, -1)).normalize();
         butt.add(new Vector3f(ahead).mul(-1.5f * bashWind + 5f * bashStrike));
         butt.add(0, 3.5f * bashStrike - 1f * bashWind, 0);
+        if (v.guard > 0.001f) {
+            // The butt out by the trigger-side shoulder, in front of the chest, so the rifle spans the body.
+            Vector3f guardPocket = new Vector3f(v.leftHanded ? 5.6f : -5.6f, -3.6f, -6.4f);
+            Vector3f guardButt = chest.transformPosition(guardPocket.sub(restChest));
+            guardButt.add(new Vector3f(ahead).mul(v.parried ? 1.4f * jolt : -2.0f * jolt));
+            butt.lerp(guardButt, v.guard);
+        }
         out.identity().translate(butt).mul(new Matrix4f().set(rot)).scale(SCALE).translate(-BUTT.x, -BUTT.y, -BUTT.z);
     }
 
     /** Blockbench axes (x right, y up, z back) to model space (right -x, up -y, forward -z). */
     private static final Matrix3f BASE = new Matrix3f().rotationZ((float) Math.PI);
+
+    /** 0..1 jolt of a blow caught on the braced rifle (or a parry) {@code guardHitAge} ticks ago, while it is braced. */
+    static float guardJolt(View v) {
+        if (v.guard < 0.05f || v.guardHitAge < 0 || v.guardHitAge > 10) return 0;
+        float a = v.guardHitAge;
+        return (a < 0.6f ? a / 0.6f : (float) Math.exp(-(a - 0.6f) * 0.55f)) * v.guard;
+    }
 
     /** 0..1 kick of a shot {@code age} ticks ago: sharp, then settling. */
     static float recoil(float age) {

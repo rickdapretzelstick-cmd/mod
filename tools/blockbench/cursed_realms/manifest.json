@@ -1,0 +1,351 @@
+{
+  "units": "16 model units = 1 Minecraft block",
+  "scope": "static editable portal-destination environment assets",
+  "models": [
+    {
+      "name": "Gojo / Fractured Infinity",
+      "file": "gojo_realm.bbmodel",
+      "cubes": 1201,
+      "groups": [
+        "architecture",
+        "fractured central plaza",
+        "impossible stair flights",
+        "tilted gates and spatial fragments",
+        "infinity anomaly focal point",
+        "breach threshold"
+      ],
+      "markers_blocks": {
+        "arrival": [
+          0,
+          0.4,
+          16
+        ],
+        "return_breach": [
+          0,
+          2,
+          18
+        ],
+        "encounter_center": [
+          0,
+          1.6,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Yuji / The Last Screening",
+      "file": "yuji_realm.bbmodel",
+      "cubes": 1426,
+      "groups": [
+        "architecture",
+        "cinema shell",
+        "giant screen and distorted stage",
+        "tiered audience seating",
+        "projection booth and uncanny details",
+        "breach threshold"
+      ],
+      "markers_blocks": {
+        "arrival": [
+          0,
+          0.4,
+          17
+        ],
+        "return_breach": [
+          0,
+          2,
+          19
+        ],
+        "encounter_center": [
+          0,
+          0.3,
+          -9
+        ],
+        "screen": [
+          0,
+          8,
+          -19.2
+        ]
+      }
+    },
+    {
+      "name": "Yuta / Courtyard of the Unbroken Promise",
+      "file": "yuta_realm.bbmodel",
+      "cubes": 1307,
+      "groups": [
+        "architecture",
+        "enclosed sanctuary backdrop",
+        "garden terraces and paths",
+        "protective circle and Rika staging area",
+        "votive offerings and blossom trees",
+        "breach threshold"
+      ],
+      "markers_blocks": {
+        "existing_Rika_anchor": [
+          0,
+          0.97,
+          -12
+        ],
+        "existing_Rika_clearance_min": [
+          -6,
+          0.97,
+          -15
+        ],
+        "existing_Rika_clearance_max": [
+          6,
+          11,
+          -9
+        ],
+        "arrival": [
+          0,
+          0.4,
+          16
+        ],
+        "return_breach": [
+          0,
+          2,
+          18
+        ],
+        "encounter_center": [
+          0,
+          0.4,
+          1
+        ]
+      }
+    },
+    {
+      "name": "Ryu / The Shattered Impact Basin",
+      "file": "ryu_realm.bbmodel",
+      "cubes": 1443,
+      "groups": [
+        "architecture",
+        "stepped impact crater",
+        "ruined perimeter buildings",
+        "ruptured road and destroyed bridge",
+        "impact obelisks",
+        "breach threshold"
+      ],
+      "markers_blocks": {
+        "arrival": [
+          0,
+          3.1,
+          18
+        ],
+        "return_breach": [
+          0,
+          4.7,
+          20
+        ],
+        "encounter_center": [
+          0,
+          0.25,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Hakari / The House Always Fights",
+      "file": "hakari_realm.bbmodel",
+      "cubes": 1306,
+      "groups": [
+        "architecture",
+        "underground club shell",
+        "central underground fight ring",
+        "spectator bleachers",
+        "gambling floor and house balcony",
+        "house marquee",
+        "breach threshold"
+      ],
+      "markers_blocks": {
+        "arrival": [
+          0,
+          0.4,
+          16
+        ],
+        "return_breach": [
+          0,
+          2,
+          18
+        ],
+        "encounter_center": [
+          0,
+          1.2,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Cursed Rifle / The Watching Woods",
+      "file": "rifle_forest.bbmodel",
+      "cubes": 1112,
+      "groups": [
+        "architecture",
+        "crooked forest boundary",
+        "twisted hunting trail",
+        "raised hunting stands",
+        "fallen trunks and cursed thickets",
+        "stalking clearing",
+        "breach threshold"
+      ],
+      "markers_blocks": {
+        "arrival": [
+          0,
+          0.4,
+          18
+        ],
+        "return_breach": [
+          0,
+          2,
+          20
+        ],
+        "encounter_center": [
+          0,
+          0.25,
+          -7
+        ],
+        "stalker_spawn": [
+          0,
+          0.25,
+          -15
+        ]
+      }
+    },
+    {
+      "name": "Claw Hunter / The Ribbed Hollow",
+      "file": "guardian_claw.bbmodel",
+      "cubes": 672,
+      "groups": [
+        "architecture",
+        "skeletal grove",
+        "fossil spine backdrop",
+        "hunting ground",
+        "breach threshold"
+      ],
+      "markers_blocks": {
+        "arrival": [
+          0,
+          0.4,
+          15
+        ],
+        "return_breach": [
+          0,
+          2,
+          17
+        ],
+        "guardian_spawn": [
+          0,
+          0.25,
+          -9
+        ],
+        "combat_center": [
+          0,
+          0.25,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Pale Stalker / The Silent Courtyard",
+      "file": "guardian_stalker.bbmodel",
+      "cubes": 923,
+      "groups": [
+        "architecture",
+        "abandoned courtyard walls",
+        "sealed windows",
+        "dry fountain and wet paving",
+        "abandoned courtyard furniture",
+        "breach threshold"
+      ],
+      "markers_blocks": {
+        "arrival": [
+          0,
+          0.4,
+          15
+        ],
+        "return_breach": [
+          0,
+          2,
+          17
+        ],
+        "guardian_spawn": [
+          0,
+          0.25,
+          -12
+        ],
+        "combat_center": [
+          0,
+          0.25,
+          7
+        ]
+      }
+    },
+    {
+      "name": "Cyclops / The Sunken Quarry",
+      "file": "guardian_cyclops.bbmodel",
+      "cubes": 783,
+      "groups": [
+        "architecture",
+        "quarry terrace walls",
+        "abandoned hoist",
+        "heavy impact floor",
+        "breach threshold"
+      ],
+      "markers_blocks": {
+        "arrival": [
+          0,
+          0.4,
+          17
+        ],
+        "return_breach": [
+          0,
+          2,
+          19
+        ],
+        "guardian_spawn": [
+          0,
+          0.25,
+          -8
+        ],
+        "combat_center": [
+          0,
+          0.25,
+          0
+        ]
+      }
+    },
+    {
+      "name": "Veiled Curse / The Hanging Sanctuary",
+      "file": "guardian_veiled.bbmodel",
+      "cubes": 889,
+      "groups": [
+        "architecture",
+        "processional shrine gates",
+        "hanging veils and paper seals",
+        "rear altar and offerings",
+        "ritual paving and outer thicket",
+        "breach threshold"
+      ],
+      "markers_blocks": {
+        "arrival": [
+          0,
+          0.4,
+          16
+        ],
+        "return_breach": [
+          0,
+          2,
+          18
+        ],
+        "guardian_spawn": [
+          0,
+          0.3,
+          -10
+        ],
+        "combat_center": [
+          0,
+          0.3,
+          0
+        ]
+      }
+    }
+  ]
+}

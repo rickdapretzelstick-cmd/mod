@@ -56,14 +56,17 @@ public final class GuardianPhases {
         final List<UUID> players;
         final int phase;
         @Nullable final BlockPos arena;
+        /** Where the first act's pillars rise (each a 2x2's corner), in the world. */
+        final List<BlockPos> pillars;
         int ticks;
 
-        Beat(ServerLevel level, UUID curse, List<UUID> players, int phase, @Nullable BlockPos arena) {
+        Beat(ServerLevel level, UUID curse, List<UUID> players, int phase, @Nullable BlockPos arena, List<BlockPos> pillars) {
             this.level = level;
             this.curse = curse;
             this.players = players;
             this.phase = phase;
             this.arena = arena;
+            this.pillars = pillars;
         }
     }
 
@@ -144,8 +147,15 @@ public final class GuardianPhases {
             Impact.frame(p, phase == 1 ? Impact.INK : Impact.NEGATIVE, 0.9f);
         }
         var arena = CursedRealms.arenaHere(c);
-        BlockPos origin = arena != null && GuardianArena.ID.equals(arena.layout) ? arena.origin : null;
-        BEATS.put(c.getUUID(), new Beat(level, c.getUUID(), watching, phase, origin));
+        BlockPos origin = arena != null && GuardianArena.is(arena.layout) ? CursedRealms.centerOf(arena) : null;
+        List<BlockPos> pillars = new java.util.ArrayList<>();
+        if (origin != null) {
+            // The arena's own open floor for them (each guardian's room picks its spots), else the usual offsets.
+            List<BlockPos> own = CursedRealms.pillarsOf(arena);
+            if (own.size() == PILLARS.length) pillars.addAll(own);
+            else for (int[] q : PILLARS) pillars.add(origin.offset(q[0], 0, q[1]));
+        }
+        BEATS.put(c.getUUID(), new Beat(level, c.getUUID(), watching, phase, origin, pillars));
         Vec3 at = c.position().add(0, c.getBbHeight() * 0.6, 0);
         Fx.sound(level, at, SoundEvents.WARDEN_ROAR, 1.2f, phase == 1 ? 0.8f : 0.6f);
         Fx.shake(level, at, 24, 0.9f, 20);
@@ -176,16 +186,16 @@ public final class GuardianPhases {
             if (b.ticks % 5 != 0) return;
             int layer = b.ticks / 5 - 1;
             if (layer < 0 || layer > PILLAR_HEIGHT) return;
-            for (int[] p : PILLARS) {
+            for (BlockPos p : b.pillars) {
                 for (int dx = 0; dx <= 1; dx++)
                     for (int dz = 0; dz <= 1; dz++) {
-                        BlockPos at = o.offset(p[0] + dx, layer, p[1] + dz);
+                        BlockPos at = p.offset(dx, layer, dz);
                         BlockState s = layer == PILLAR_HEIGHT ? Blocks.CHISELED_POLISHED_BLACKSTONE.defaultBlockState()
                                 : (layer + dx + dz) % 3 == 0 ? Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS.defaultBlockState() : Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState();
                         set(level, at, s);
                     }
-                if (layer == PILLAR_HEIGHT) set(level, o.offset(p[0], PILLAR_HEIGHT + 1, p[1]), Blocks.SOUL_CAMPFIRE.defaultBlockState().setValue(BlockStateProperties.LIT, true));
-                Vec3 base = Vec3.atBottomCenterOf(o.offset(p[0] + 1, 0, p[1] + 1));
+                if (layer == PILLAR_HEIGHT) set(level, p.above(PILLAR_HEIGHT + 1), Blocks.SOUL_CAMPFIRE.defaultBlockState().setValue(BlockStateProperties.LIT, true));
+                Vec3 base = Vec3.atBottomCenterOf(p.offset(1, 0, 1));
                 if (layer == 0) Impact.crack(level, base, Vec3.ZERO, 1.2f);
                 Impact.dust(level, base, 0.8f);
             }
@@ -228,7 +238,9 @@ public final class GuardianPhases {
     /** Runs a beat in an arena centred on {@code origin} (as if the guardian stood in its guardian arena). */
     public static void beatInArenaForTest(ServerLevel level, CommonCurseEntity c, int phase, BlockPos origin) {
         c.holdForBeat(BEAT_TICKS);
-        BEATS.put(c.getUUID(), new Beat(level, c.getUUID(), List.of(), phase, origin));
+        List<BlockPos> pillars = new java.util.ArrayList<>();
+        for (int[] q : PILLARS) pillars.add(origin.offset(q[0], 0, q[1]));
+        BEATS.put(c.getUUID(), new Beat(level, c.getUUID(), List.of(), phase, origin, pillars));
     }
 
     public static void stepForTest(MinecraftServer server) {

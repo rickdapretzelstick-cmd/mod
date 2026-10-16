@@ -24,6 +24,8 @@ public final class Anim {
             // Cursed Partners
             "yuta_guard_katana", "yuta_heavy_charge", "yuta_steel_heavy_charge", "yuta_outburst_grip", "yuta_domain_sign",
             "yuta_jacobs_ladder",
+            // The Cursed Rifle braced to guard (its stance draws the pose)
+            "rf_guard",
             // Strength contests (the grip and its beats, each ending in the grip)
             "grapple_hold", "grapple_push", "grapple_brace", "grapple_heave", "grapple_strain");
     /** Entities currently showing a held pose. */

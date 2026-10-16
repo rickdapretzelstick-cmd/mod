@@ -201,16 +201,18 @@ public final class ResoluteSlashAbility extends Ability {
             endAt = age + 14;
             if (t == null) return;
             YutaCombat.setTarget(user, t);
+            Vec3 at = t.getBoundingBox().getCenter();
             if (YutaCombat.finishable(t)) {
-                // Amped up: sparks, and they are launched away.
-                YutaCombat.execute(user, t, ID, "resolute_flash_finisher");
+                // Amped up: sparks, and they are launched away (the lethal look only if it really kills).
+                HitResult kill = YutaCombat.execute(user, t, ID, "resolute_flash_finisher");
                 Motion.set(t, HakariCombat.flat(user).scale(3.0).add(0, 1.0, 0));
+                dev.rick.jjk.core.fx.BlackFlash.land(level, user, t, kill, at, HakariCombat.flat(user), 1.8f);
                 return;
             }
             HitResult r = HakariCombat.hit(YutaCombat.strike(user, ID, cfg.resoluteBlackFlashDamage, true).tag(AttackTag.OTG, AttackTag.HEAVY)
                     .knockback(Knockback.set(HakariCombat.flat(user).scale(2.2).add(0, 0.55, 0))).hitstun(30)
                     .status(CombatStatus.LAUNCHED, 30).noComboScaling().fx("yuta_impact", 1.3f).build(), t);
-            if (r.connected()) Fx.flash(level, t.position(), 20, 0xA0000000, 6);
+            dev.rick.jjk.core.fx.BlackFlash.land(level, user, t, r, at, HakariCombat.flat(user), 1.3f);
         }
 
         @Override

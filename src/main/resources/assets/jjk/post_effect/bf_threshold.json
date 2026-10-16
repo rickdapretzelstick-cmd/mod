@@ -1,0 +1,77 @@
+{
+  "targets": {
+    "swap": {}
+  },
+  "passes": [
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "jjk:post/bf_shards",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "minecraft:main"
+        }
+      ],
+      "output": "swap",
+      "uniforms": {
+        "ShardConfig": [
+          {
+            "name": "Seed",
+            "type": "vec4",
+            "value": [
+              5.3,
+              5.0,
+              0.5,
+              1.0
+            ]
+          },
+          {
+            "name": "Hot",
+            "type": "vec4",
+            "value": [
+              1.0,
+              1.0,
+              1.0,
+              0.0
+            ]
+          },
+          {
+            "name": "Cold",
+            "type": "vec4",
+            "value": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "minecraft:post/blit",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "swap"
+        }
+      ],
+      "uniforms": {
+        "BlitConfig": [
+          {
+            "name": "ColorModulate",
+            "type": "vec4",
+            "value": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        ]
+      },
+      "output": "minecraft:main"
+    }
+  ]
+}

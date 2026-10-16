@@ -24,7 +24,7 @@ public final class ScreenEffects {
     public static void shake(float intensity, int duration) {
         JJKConfig.Client c = JJKConfig.get().client;
         if (!c.screenShake) return;
-        float t = Mth.clamp(intensity * c.screenShakeScale, 0, 1.5f);
+        float t = Mth.clamp(intensity * c.screenShakeScale * (c.reducedShake ? 0.3f : 1f), 0, c.reducedShake ? 0.35f : 1.5f);
         if (t > trauma) {
             trauma = t;
             traumaDecay = t / Math.max(4, duration);
@@ -36,6 +36,11 @@ public final class ScreenEffects {
     public static void flash(int argb, int duration) {
         if (!JJKConfig.get().client.screenFlashes) return;
         float a = ((argb >>> 24) & 0xFF) / 255f;
+        if (JJKConfig.get().client.reducedFlashes) {
+            // Faint and slow: never a hard full-screen pop.
+            a = Math.min(a, 0.18f);
+            duration = Math.max(duration, 10);
+        }
         if (a < flashAlpha * 0.5f) return;
         flashColor = argb & 0xFFFFFF;
         flashAlpha = a;
@@ -49,6 +54,7 @@ public final class ScreenEffects {
     public static void tint(int argb, int hold) {
         if (!JJKConfig.get().client.screenFlashes) return;
         float a = ((argb >>> 24) & 0xFF) / 255f;
+        if (JJKConfig.get().client.reducedFlashes) a = Math.min(a, 0.2f);
         if (tintHold > 0 && a < tintTarget && (argb & 0xFFFFFF) != tintColor) return;
         tintColor = argb & 0xFFFFFF;
         tintTarget = a;
@@ -63,7 +69,7 @@ public final class ScreenEffects {
     /** Positive widens the view (impacts), negative narrows it (charging). */
     public static void fovPunch(float amount) {
         if (!JJKConfig.get().client.fovEffects) return;
-        fovKick += amount;
+        fovKick += JJKConfig.get().client.reducedShake ? amount * 0.3f : amount;
     }
 
     /** Sustained FOV change while something is held (e.g. charging Purple); reset to 0 when done. */
@@ -83,7 +89,8 @@ public final class ScreenEffects {
     private static int impactStyle;
 
     public static void impact(int duration, int style) {
-        if (!JJKConfig.get().client.screenFlashes) return;
+        // Hard full-screen frames: none under Reduced Flashes.
+        if (!JJKConfig.get().client.screenFlashes || JJKConfig.get().client.reducedFlashes) return;
         impactStyle = style;
         impactLength = Math.max(3, duration);
         impactTicks = impactLength;

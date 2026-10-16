@@ -37,13 +37,19 @@
       "dev.rick.jjk.test.ClearanceTests",
       "dev.rick.jjk.test.EssenceTests",
       "dev.rick.jjk.test.ContestTests",
+      "dev.rick.jjk.test.ContestTriggerTests",
+      "dev.rick.jjk.test.BlackFlashTests",
+      "dev.rick.jjk.test.TestMenuTests",
+      "dev.rick.jjk.test.CauldronTests",
       "dev.rick.jjk.test.FinisherTests",
       "dev.rick.jjk.test.NewsHouseTests",
       "dev.rick.jjk.test.SiteTests",
       "dev.rick.jjk.test.BladeTests",
       "dev.rick.jjk.test.EncounterTests",
       "dev.rick.jjk.test.Phase4Tests",
-      "dev.rick.jjk.test.GuardianBodyTests"
+      "dev.rick.jjk.test.GuardianBodyTests",
+      "dev.rick.jjk.test.RealmRoomTests",
+      "dev.rick.jjk.test.RealmRoomBTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.Phase4ClientTest",
@@ -72,7 +78,9 @@
       "dev.rick.jjk.test.CameraShotsClientTest",
       "dev.rick.jjk.test.ImpactKitClientTest",
       "dev.rick.jjk.test.GrappleClientTest",
-      "dev.rick.jjk.test.FinisherClientTest"
+      "dev.rick.jjk.test.FinisherClientTest",
+      "dev.rick.jjk.test.RealmRoomClientTest",
+      "dev.rick.jjk.test.BlackFlashClientTest"
     ]
   },
   "depends": {

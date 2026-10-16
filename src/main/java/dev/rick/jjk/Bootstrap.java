@@ -58,6 +58,7 @@ public final class Bootstrap {
         CharacterService.init();
         dev.rick.jjk.core.domain.structure.DomainStructures.init();
         dev.rick.jjk.core.world.WorldRestoration.init();
+        dev.rick.jjk.core.fx.BlackFlash.init();
 
         // Anything that locks casting interrupts whatever the entity was doing.
         CombatEvents.STATUS_APPLIED.add((entity, status, ticks) -> {
@@ -93,6 +94,7 @@ public final class Bootstrap {
             dev.rick.jjk.util.Crater.clearAll();
         });
         CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> JJKCommand.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, ctx, selection) -> dev.rick.jjk.command.TestCommand.register(dispatcher));
         JJK.LOGGER.info("Jujutsu loaded: {} character(s)", Characters.ids().spliterator().getExactSizeIfKnown());
     }
 }

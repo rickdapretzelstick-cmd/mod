@@ -32,6 +32,18 @@ public class RifleFpClientTest implements FabricClientGameTest {
             });
             ctx.waitTicks(60);
             shot(ctx, "ready");
+            // Braced to guard (raised on the server, as the key does), a blow caught on it, and down again.
+            server.runOnServer(srv -> dev.rick.jjk.core.ability.Casters.get(srv.getPlayerList().getPlayers().getFirst())
+                    .input(dev.rick.jjk.core.ability.AbilitySlot.GUARD, true, 0, 0, null));
+            ctx.waitTicks(10);
+            shot(ctx, "guard");
+            ctx.runOnClient(mc -> RifleClient.guardHit(mc.player.getId(), mc.level.getGameTime(), false));
+            ctx.waitTicks(1);
+            shot(ctx, "guard_hit");
+            server.runOnServer(srv -> dev.rick.jjk.core.ability.Casters.get(srv.getPlayerList().getPlayers().getFirst())
+                    .input(dev.rick.jjk.core.ability.AbilitySlot.GUARD, false, 0, 0, null));
+            ctx.waitTicks(14);
+            shot(ctx, "guard_down");
             phase(ctx, RifleServer.Phase.AIM, 0);
             ctx.waitTicks(1);
             shot(ctx, "ads_1");

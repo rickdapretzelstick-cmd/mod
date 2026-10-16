@@ -35,6 +35,29 @@ public class TrainingClientTest implements FabricClientGameTest {
                 // The pull, then the intro's push-in.
                 ctx.waitTicks(50);
                 ctx.takeScreenshot("training_" + kit + "_intro");
+                // The room itself: from high over its entrance toward its feature wall, then the participant's own view.
+                net.minecraft.world.phys.Vec3[] views = server.computeOnServer(srv -> {
+                    ServerPlayer p = srv.getPlayerList().getPlayers().get(0);
+                    var a = dev.rick.jjk.progression.investigation.CursedRealms.arenaHere(p);
+                    var plan = dev.rick.jjk.progression.training.TrialRooms.plan(kit);
+                    if (a == null || plan == null) return null;
+                    var o = new net.minecraft.world.phys.Vec3(a.origin.getX(), a.origin.getY(), a.origin.getZ());
+                    int[] b = plan.bounds();
+                    double cx = (b[0] + b[3]) / 2.0, cz = (b[2] + b[5]) / 2.0;
+                    var eye = o.add(plan.marker("player")).add(0, 1.62, 0);
+                    // Inside the closed room: high in the entrance corner, high in the far corner, and just ahead of the eyes.
+                    return new net.minecraft.world.phys.Vec3[] {o.add(b[3] - 2.5, b[4] - 3, b[2] + 2.5), o.add(cx, 1.5, cz + 3),
+                            o.add(b[0] + 2.5, b[4] - 3, b[5] - 2.5), o.add(cx, 1.5, cz - 3), eye.add(0, 0.2, 0.7), eye.add(0, 0.4, 10)};
+                });
+                if (views != null) {
+                    for (int v = 0; v < 3; v++) {
+                        final int k = v;
+                        ctx.runOnClient(mc -> dev.rick.jjk.client.training.TrainingCamera.viewForTest(views[k * 2], views[k * 2 + 1]));
+                        ctx.waitTicks(6);
+                        ctx.takeScreenshot("training_" + kit + "_room" + (v == 0 ? "" : v == 1 ? "_back" : "_eyes"));
+                    }
+                    ctx.runOnClient(mc -> dev.rick.jjk.client.training.TrainingCamera.viewForTest(null, null));
+                }
                 ctx.waitTicks(60);
                 ctx.takeScreenshot("training_" + kit + "_active");
                 ctx.waitTicks(50);

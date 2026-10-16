@@ -134,7 +134,8 @@ public final class RapidPunchesAbility extends Ability {
                     if (GojoCombat.finishable(victim)) {
                         // The finisher: the final punch lands as a Black Flash.
                         gs.punchesKilled = true;
-                        GojoCombat.execute(user, victim, ID, "finisher");
+                        var kill = GojoCombat.execute(user, victim, ID, "finisher");
+                        dev.rick.jjk.core.fx.BlackFlash.land(level, user, victim, kill, victim.getBoundingBox().getCenter(), HakariCombat.flat(user), 1.6f);
                     } else {
                         double kb = cfg.punchesFinalKnockback * (wokeUp ? 1.9 : 1);
                         HitResolver.resolve(GojoCombat.strike(user, ID, cfg.punchesFinalDamage, true)

@@ -62,6 +62,11 @@ public final class MeleeSystem {
 
     public static void light(LivingEntity user, AbilityCaster caster, int flags, int targetHint) {
         MeleeState m = caster.melee;
+        // An attack press from a guard is a counter attempt (never a swing): the guard stays up and nothing is spent.
+        if (user instanceof net.minecraft.server.level.ServerPlayer sp && Combat.state(user).isGuarding() && !Combat.state(user).actionsLocked()) {
+            dev.rick.jjk.progression.contest.ContestCounters.attempt(sp);
+            return;
+        }
         if (blocked(user, caster) || m.heavyCharging) return;
         if (!m.canChain()) {
             // Pressed a little early: remember it and fire as soon as the chain window opens.
