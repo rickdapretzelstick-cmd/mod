@@ -9,6 +9,7 @@ import sys, os, json, subprocess, argparse, shutil
 from concurrent.futures import ThreadPoolExecutor
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
+PROCS = os.cpu_count() or 4
 ROOT = os.path.dirname(TOOLS)
 sys.path.insert(0, TOOLS)
 import r6_takes
@@ -25,7 +26,7 @@ def convert(video, s, e, clip, out, guide=None, viewer=False, fresh=False):
         cmd.append('--fresh')
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, 'convert.log'), 'w') as f:
-        r = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=ROOT)
+        r = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=ROOT, env=dict(os.environ, PROCS=str(PROCS)))
     return r.returncode
 
 
@@ -44,9 +45,13 @@ def main():
     ap.add_argument('--main', type=int, default=None, help='take number the clip is made from (default: best fit)')
     ap.add_argument('--jobs', type=int, default=max(1, (os.cpu_count() or 2) // 4),
                     help='takes converted side by side (each uses about 2-4 cores)')
+    ap.add_argument('--hint', default=None, help='pose hints for the main take (frame numbers of the video), e.g. '
+                    '"364-367:rightThigh:forward"; see r6_limbpass.py')
     ap.add_argument('--viewer', action='store_true', help='rebuild build/anim_viewer.html at the end')
     ap.add_argument('--fresh', action='store_true', help='redo every step')
     a = ap.parse_args()
+    global PROCS
+    PROCS = max(1, (os.cpu_count() or 4) // max(1, a.jobs))  # the cores shared between the takes converted at once
     video = os.path.abspath(a.video)
     takes = r6_takes.find_takes(video)
     if not takes:
@@ -90,6 +95,8 @@ def main():
            '--view', f'{a.clip}_take{main_n}']
     if guides:
         cmd += ['--guide', ','.join(guides)]
+    if a.hint:
+        cmd += ['--hint', a.hint]
     if a.viewer:
         cmd.append('--viewer')
     r = subprocess.run(cmd, cwd=ROOT)

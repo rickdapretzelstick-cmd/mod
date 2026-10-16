@@ -29,6 +29,7 @@ def frame_of(s, fps):
 
 def run(cmd, log, env=None):
     e = dict(os.environ, OMP_NUM_THREADS='1')
+    e.setdefault('PROCS', str(os.cpu_count() or 4))  # worker processes per step: every core by default
     e.update(env or {})
     t = time.time()
     print('  $', ' '.join(cmd), flush=True)
