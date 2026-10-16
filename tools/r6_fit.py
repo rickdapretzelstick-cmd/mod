@@ -376,6 +376,32 @@ def _cv_propagate(core, mask):
     return hit[lab]
 
 
+def _veil_join(core, hue, val):
+    """The pale pixels of `hue` that a veil over the part `core` explains, per 4-connected patch of them touching it.
+    Smoke over a part covers some of it and leaves the rest clear, so the veiled patch and the clear part meet along
+    the smoke's edge, and the smoke, thin here and thick there, shades it unevenly. A pale thing of the part's hue
+    that only touches it (a dummy's skin beside a kicking leg) meets it at a corner and is evenly lit, opaque: that
+    is not the part seen through smoke. A patch is kept when it shares a long border with the part, or a fair one
+    and the uneven shading of smoke."""
+    import cv2
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(hue.astype(np.uint8), connectivity=4)
+    if n <= 1:
+        return np.zeros(hue.shape, bool)
+    near = cv2.dilate(core.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+    border = np.bincount(lab[near & (lab > 0)].ravel(), minlength=n) / np.sqrt(np.maximum(stats[:, cv2.CC_STAT_AREA], 1))
+    vf = val.astype(float).ravel()
+    cnt = np.bincount(lab.ravel(), minlength=n).astype(float)
+    mean = np.bincount(lab.ravel(), vf, minlength=n) / np.maximum(cnt, 1)
+    std = np.sqrt(np.maximum(np.bincount(lab.ravel(), vf * vf, minlength=n) / np.maximum(cnt, 1) - mean ** 2, 0))
+    keep = (border >= VEIL_BORDER_SURE) | ((border > 0) & (std >= VEIL_UNEVEN))
+    keep[0] = False
+    return keep[lab]
+
+
+VEIL_BORDER_SURE = 3.0  # shared border with the clear part (per sqrt of the patch's area) that is surely a veil
+VEIL_UNEVEN = 9.0       # brightness spread (std of V) of smoke's uneven shading; opaque things are flatter
+
+
 def glow_of(rgb, h, s, v, out, pal):
     """Light effects in a part's colour (an energy trail: a streak of pure, over-bright colour with a white-hot core and
     a soft halo fading into whatever is behind it) -- not body. Returns the mask (or None).
@@ -504,8 +530,7 @@ def classify(rgb, pal):
                     hue &= ~glow[ya:yb, xa:xb]
                 if not hue.any():
                     continue
-                grown = _cv_propagate(core, core | hue)
-                sub_out[grown & hue] = cls
+                sub_out[_veil_join(core, hue, v[ya:yb, xa:xb])] = cls
         out[free & hull.astype(bool) & (s < vc.get('s_min', 22))] = UNKNOWN
         if glow is not None:
             # Glow over the body may hide a part (unknown); glow beside it is floor.
@@ -580,8 +605,7 @@ def classify_ref(rgb, pal):
             hue = tinted & in_range(h, c['h']) & (out == BG)
             if glow is not None:
                 hue &= ~glow
-            grown = ndimage.binary_propagation(core, mask=core | hue)
-            out[grown & hue] = cls
+            out[_veil_join(core, hue, v)] = cls
         # Washed out past any hue: unknown, but only inside the body's outline itself (no halo round a clean body).
         out[free & hull.astype(bool) & (s < vc.get('s_min', 22))] = UNKNOWN
         if glow is not None:
