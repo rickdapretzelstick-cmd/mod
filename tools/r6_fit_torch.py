@@ -112,19 +112,33 @@ def sides_mode():
     return any(len(set(v)) > 1 for v in F.SIDE_CLASS.values())
 
 
+def joint_offsets(J):
+    """J's optional joint-offset columns (after the NJ angles, F.OFF_BONES order) as (B, bones, 3), or None."""
+    if J.shape[1] <= NJ:
+        return None
+    off = torch.zeros(J.shape[0], len(BONES), 3, dtype=J.dtype)
+    for i, b in enumerate(F.OFF_BONES):
+        c = NJ + 3 * i
+        if J.shape[1] >= c + 3:
+            off[:, BONES.index(b)] = J[:, c:c + 3]
+    return off
+
+
 def geometry(J, cam, persp, light, corners=False):
     """Faces of a batch of poses: 2D quads (B, faces, 4, 2) in footage px, depth (B, faces), visible (B, faces),
     shade (B, faces). J (B, joints) degrees, cam (B, 5) = yaw, pitch, scale, x, y."""
     B = J.shape[0]
-    ang = (J @ JMAP).reshape(B, len(BONES), 3)
+    ang = (J[:, :NJ] @ JMAP).reshape(B, len(BONES), 3)
     R = rotm(ang)
+    off = joint_offsets(J)
     wr, wt = [None] * len(BONES), [None] * len(BONES)
     for b, par in enumerate(PARENT_IDX):
         if par < 0:
             wr[b], wt[b] = R[:, b], OFFSET[b].expand(B, 3)
         else:
             wr[b] = wr[par] @ R[:, b]
-            wt[b] = wt[par] + (wr[par] @ OFFSET[b].unsqueeze(-1)).squeeze(-1)
+            o = OFFSET[b] if off is None else OFFSET[b] + off[:, b]
+            wt[b] = wt[par] + (wr[par] @ o.unsqueeze(-1)).squeeze(-1)
     WR = torch.stack([wr[i] for i in PART_BONE], 1)  # (B, P, 3, 3)
     WT = torch.stack([wt[i] for i in PART_BONE], 1)  # (B, P, 3)
     box = CORNERS * box_scale()[:, None, :]

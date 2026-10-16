@@ -156,19 +156,36 @@ def rot(x, y, z):
 
 def angles(p):
     a = {b: [0.0, 0.0, 0.0] for b in REST}
-    for (b, ax), v in zip(JOINTS, p[len(CAM):]):
+    for (b, ax), v in zip(JOINTS, p[len(CAM):len(CAM) + len(JOINTS)]):
         a[b][ax] = v
     return a
 
 
+# Joint offsets: Roblox animations move a limb's joint as well as turning it (a Motor6D's position), so a limb can
+# come away from the body. Optional: params longer than NP carry, after the joint angles, each OFF_BONES bone's
+# offset (x, y, z, rig px in its parent's frame: y down, -z forward); shorter params mean no offsets.
+OFF_BONES = ['head', 'rightArm', 'leftArm', 'rightThigh', 'leftThigh']
+NOFF = 3 * len(OFF_BONES)
+
+
+def offsets(p):
+    o = {b: np.zeros(3) for b in REST}
+    extra = np.asarray(p[NP:NP + NOFF], float) if len(p) > NP else ()
+    for i, b in enumerate(OFF_BONES):
+        if len(extra) >= 3 * i + 3:
+            o[b] = extra[3 * i:3 * i + 3]
+    return o
+
+
 def pose_world(p):
     a = angles(p)
+    off = offsets(p)
     world = {}
     for b in REST:
         r, par = np.array(REST[b], float), PARENT[b]
         m = np.eye(4)
         m[:3, :3] = rot(*a[b])
-        m[:3, 3] = r - (np.array(REST[par], float) if par else 0)
+        m[:3, 3] = r - (np.array(REST[par], float) if par else 0) + off[b]
         world[b] = world[par] @ m if par else m
     return world
 
@@ -1080,11 +1097,22 @@ def sheet(frames, params, costs, idx, roi_of, path):
     out.save(path)
 
 
+MOD_PX_PER_RIG_PX = 8.0 / 12.0  # the mod's player is 8 px across the torso where the R6 fit rig is 12 (2 studs)
+POS_TOL_W = 10.0  # key reduction: 1 rig px of joint offset counts as 10 degrees
+
+
 def write_clip(target, times_ms, P, tol, merge, src, path=None):
     curves = np.stack([unwrap(P[:, len(CAM) + i]) for i in range(len(JOINTS))], 1)
     curves[:, 1] -= curves[0, 1]  # the body turns from facing forward at the move's first frame
     curves = ndimage.gaussian_filter1d(curves, 0.8, axis=0, mode='nearest')
-    keep = reduce_keys(times_ms, curves, tol)
+    # Joint offsets (params past NP, OFF_BONES): the mod's 'pos' is (right, up, forward) in its own px, and its model
+    # space has right at -x, up at -y, forward at -z -- the fit rig's axes -- so pos = -offset, rescaled.
+    offs = None
+    if P.shape[1] > NP:
+        offs = np.zeros((len(P), NOFF))
+        offs[:, :P.shape[1] - NP] = P[:, NP:NP + NOFF]
+        offs = ndimage.gaussian_filter1d(offs, 0.8, axis=0, mode='nearest')
+    keep = reduce_keys(times_ms, curves if offs is None else np.hstack([curves, POS_TOL_W * offs]), tol)
     base = os.path.join(ANIMS, target + '.json')
     path = path or base
     clip = json.load(open(base)) if merge and os.path.exists(base) else {}
@@ -1094,6 +1122,11 @@ def write_clip(target, times_ms, P, tol, merge, src, path=None):
         bones = {}
         for (b, ax), v in zip(JOINTS, curves[k]):
             bones.setdefault(b, {'rot': [0, 0, 0]})['rot'][ax] = round(float(v), 1)
+        if offs is not None:
+            for i, b in enumerate(OFF_BONES):
+                o = offs[k, 3 * i:3 * i + 3]
+                if np.abs(offs[:, 3 * i:3 * i + 3]).max() > 0.05:
+                    bones[b]['pos'] = [round(float(-x * MOD_PX_PER_RIG_PX), 2) for x in o]
         keys.append({'t': round(float(times_ms[k] - times_ms[0])), 'ease': 'LINEAR', 'bones': bones})
     if merge and clip.get('keys'):
         # The old clip's other bones keep their own keys, rescaled onto the new length.

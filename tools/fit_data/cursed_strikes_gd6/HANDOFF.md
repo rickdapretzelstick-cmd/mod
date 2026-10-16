@@ -125,6 +125,17 @@ miss: side-on frames (600-614) where the arm covers the torso -- the clothing co
 the arm's outer side and the torso's side are both yellow and the network calls the arm torso. Use partnet2.pt (82%).
 Clip from the part fitter: cursed_strikes_left_partfit_clip.json (path oversee/left_global_partfit.json), in the viewer.
 
+## Joint offsets: limbs can come away from the body (r6_offsets.py) -- Rick's point
+Roblox animations move joints as well as turning them (Motor6D positions); the footage shows arm cubes apart from the
+torso. Params may now carry, after the joint angles, an (x, y, z) offset per OFF_BONES bone (head, arms, thighs; rig
+px in the parent's frame), read by F.pose_world and T.geometry (shorter params = no offsets, so every old file still
+works). write_clip writes them as the mod's 'pos' (right, up, forward) = -offset x 8/12 (mod px per rig px).
+`r6_offsets.py VIDEO PATH CANDS NET OUT [W]`: per frame offsets by descent on colour + .5 parts (0.002 per px, max
+8 px), limbs re-swept, offsets again; ~2 s/frame. Side view (partfit path): colour .889 -> .908, 56 -> 64 frames
+>= .90 -- the first time the mean passes .90. Clip cursed_strikes_left_offsets_clip.json (path oversee/left_offsets.json).
+Four-view judging (r6_multiview.py) is parked: cameras line up on the still frames, but mid-move the four recordings
+do not show the same pose at the same moment (oversee sheet four_views_same_moment).
+
 ## AI overseer: built and run on the side view (tools/r6_oversee.py)
 Stages (see the file's header): `flag` -> `sheets` -> Claude reads the PNGs and writes a corrections JSON -> `apply` ->
 `clip`. All Python; ~8 s per sheet (8 candidates locally refined), 4 jobs side by side (JOBS=4, OMP_NUM_THREADS=1).

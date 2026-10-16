@@ -387,7 +387,8 @@ def write_clip(video, track_path, name, clipname):
     clip = Clip(video, tr)
     idx = sorted(fr)
     fps = 30.057875412284524
-    P = np.stack([np.array(fr[k]['params'], float) for k in idx])
+    n = max(len(fr[k]['params']) for k in idx)  # frames with joint offsets are longer: the rest get zero offsets
+    P = np.stack([np.pad(np.array(fr[k]['params'], float), (0, n - len(fr[k]['params']))) for k in idx])
     times = np.array([(k - idx[0]) * 1000.0 / fps for k in idx])
     od = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'build', 'fit', clipname)  # where the viewer looks
     os.makedirs(od, exist_ok=True)
