@@ -58,6 +58,8 @@ def main():
     ap.add_argument('--net', default=os.path.join(ROOT, 'build', 'synth', 'partnet2.pt'))
     ap.add_argument('--rounds', type=int, default=3, help='limb pass rounds')
     ap.add_argument('--guide', default=None, help="other takes' finished work folders (comma-separated): guide what this camera can't see")
+    ap.add_argument('--hint', default=None, help='pose hints for limbs the camera sees badly, e.g. "364-367:rightThigh:forward" '
+                    '(comma-separated; or a JSON file; see r6_limbpass.py)')
     ap.add_argument('--viewer', action='store_true', help='rebuild build/anim_viewer.html at the end')
     ap.add_argument('--fresh', action='store_true', help='redo every step')
     a = ap.parse_args()
@@ -123,6 +125,8 @@ def main():
                 print(f'  {run([py, T("r6_align.py"), video, offs, os.path.join(pf, f"{name}_cands.json"), gfinal, gcands, a.net, guide], os.path.join(out, f"align{n}.log")):.0f} s')
                 guides.append(guide)
             env['R6_GUIDE'] = ','.join(guides)
+        if a.hint:
+            env['R6_HINTS'] = os.path.abspath(a.hint) if os.path.exists(a.hint) else a.hint
         print('5/6 whole-clip limb pass', flush=True)
         print(f'  {run([py, T("r6_limbpass.py"), video, offs, os.path.join(pf, f"{name}_cands.json"), a.net, final, str(a.rounds)], os.path.join(out, "limbpass.log"), env):.0f} s')
 

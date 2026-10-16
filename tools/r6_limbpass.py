@@ -86,6 +86,10 @@ def candidates(path, cands, ks, b):
                 src.append(path[ks[i + d]])
         src += [full_J(c['params']) for c in cands.get(k, [])]
         src.append(np.zeros_like(path[k]))  # rest: where a part the footage can't see settles (see pose_prior)
+        for e in SCAN.get(b, {}).get(k, []):  # ... or a way the footage itself fits best (scan_job)
+            g = path[k].copy()
+            g[COLS[b]] = e
+            src.append(g)
         for G in GUIDES:  # ... or the pose another take's camera saw it in
             if b in G.get(str(k), {}) and 'rot' in G[str(k)][b]:
                 g = np.zeros_like(path[k])
@@ -118,6 +122,10 @@ def candidates(path, cands, ks, b):
                 for tw in (0, 90, 180, 270):
                     r = Rm * Rot.from_euler('y', tw, degrees=True) if tw else Rm
                     opts.append((R_to_euler(r, own_rot), there - np.array(F.REST[b], float) - r.apply(mid)))
+        rule = HINTS.get(k, {}).get(b)
+        if rule is not None:
+            far = [o for o in opts if hint_short(rule, euler_to_R(o[0]).as_matrix()[:, 1])[0] <= 0]
+            opts = far or opts
         out[k] = opts
     return out
 
@@ -129,7 +137,10 @@ OFF_PRIOR_CAP = 0.04
 # the picture by a pixel or two, less than the judge's own biases; it is held near rest, seen part or not, unless the
 # footage clearly asks for it (a turn the picture shows pays nothing).
 DEPTH_PRIOR = float(os.environ.get('DEPTH_PRIOR', '1.5'))
-DEPTH_CAP = float(os.environ.get('DEPTH_CAP', '2.0'))  # the depth cost's ceiling, in (pi/2)^2 units
+# The depth cost's ceiling, in (pi/2)^2 units (DEPTH_PRIOR x DEPTH_CAP = .05 agreement, reached ~16 deg off): small
+# edge-on turns stay held, but a kick or punch along the line of sight that the footage clearly fits better (+.08 for
+# the Cursed Strikes kick) is not.
+DEPTH_CAP = float(os.environ.get('DEPTH_CAP', '0.033'))
 PRIOR_BONES = ('head', 'rightArm', 'leftArm', 'rightThigh', 'leftThigh')
 
 
@@ -199,6 +210,7 @@ def hidden_weights(judge, J, cam, k=None):
         out[b] = float(np.clip(1 - seen / max(HIDDEN_SHARE * own, 1.0), 0, 1))
     out['_guide'] = [g.get(str(k), {}) for g in GUIDES] if k is not None else []
     out['_view'] = view_dirs(np.concatenate([cam, J]))
+    out['_hint'] = HINTS.get(k, {}) if k is not None else {}
     return out
 
 
@@ -268,7 +280,7 @@ def pose_prior(Js, hidden):
     cost = np.zeros(len(Js))
     guides = hidden.get('_guide', [])
     for b in PRIOR_BONES:
-        if hidden.get(b, 0) <= 0:
+        if hidden.get(b, 0) <= 0 or b in hidden.get('_hint', {}):
             continue
         R = rot_batch(Js[:, COLS[b]])
         t = target_axis(b, guides)
@@ -288,6 +300,10 @@ def pose_prior(Js, hidden):
             c += np.minimum(OFF_PRIOR * px, OFF_PRIOR_CAP)
         cost += hidden[b] * c
     for b, v in hidden.get('_view', {}).items():
+        if b in hidden.get('_hint', {}):
+            # a hinted limb goes where the person said, however edge-on; held at least that far out
+            cost += hint_short(hidden['_hint'][b], rot_batch(Js[:, COLS[b]]).as_matrix()[:, :, 1]) / 90.0
+            continue
         # seen part or not: how far it tips along this camera's line of sight, against where the guides (or rest) say
         a, vv = length_axes(Js, b, v)
         t = target_axis(b, guides)
@@ -338,6 +354,111 @@ def moves(J, p):
             e[c:c + 3] = d / np.linalg.norm(d)
             out.append(e)
     return out
+
+
+# Each limb swung to every direction (a sphere grid, SCAN_STEP deg) with the rest of the frame's pose kept, judged on
+# the footage alone: the best few distinct directions join the limb's candidates. A fast kick the fit started from a
+# hanging leg can't walk out to (one joint at a time, each step judged with the leg still mostly down) is often the
+# judge's clear best once the leg is simply put there. R6_SCAN=0 skips it.
+SCAN_STEP = float(os.environ.get('SCAN_STEP', '15'))
+SCAN_TOP, SCAN_APART = 2, 30.0
+SCAN = {}
+
+# Pose hints (R6_HINTS=hints.json, or "FIRST-LAST:BONE:DIR[,...]"): where a camera sees a limb badly (a kick
+# straight at the lens, motion-blurred), the person names the frames, the limb and which way it points: DIR is
+# forward, back, out (to its own side), in, up or down (in the parent's frame: forward is the rig's -z), or a number,
+# the least degrees from hanging down. A direction is held within HINT_CONE deg. The limb's candidates there keep only
+# such directions, the depth and rest priors let it go, and the footage still picks the best one frame by frame
+# (attached: no offset is added).
+HINT_CONE = float(os.environ.get('HINT_CONE', '30'))
+HINT_DIRS = {'forward': [0, 0, -1.0], 'back': [0, 0, 1.0], 'up': [0, -1.0, 0], 'down': [0, 1.0, 0]}
+
+
+def hint_dir(b, word):
+    if word in ('out', 'in'):
+        side = -1.0 if b.startswith('right') else 1.0  # a right limb's own side is the rig's -x
+        return np.array([side if word == 'out' else -side, 0, 0])
+    return np.array(HINT_DIRS[word])
+
+
+def load_hints(spec):
+    out = {}
+    if not spec:
+        return out
+    items = json.load(open(spec)) if os.path.exists(spec) else [
+        dict(zip(('frames', 'bone', 'dir'), x.split(':'))) for x in spec.split(',')]
+    for h in items:
+        fr = h['frames']
+        a, b = (int(x) for x in (fr.split('-') if isinstance(fr, str) else fr))
+        d = str(h.get('dir', h.get('min_deg', 70)))
+        rule = ('min', float(d)) if d.replace('.', '', 1).isdigit() else ('dir', hint_dir(h['bone'], d))
+        for k in range(a, b + 1):
+            out.setdefault(k, {})[h['bone']] = rule
+    return out
+
+
+HINTS = load_hints(os.environ.get('R6_HINTS', ''))
+
+
+def hint_short(rule, axes):
+    """Degrees each length axis (rows, parent frame) falls short of the hint: 0 inside it."""
+    axes = np.atleast_2d(axes)
+    if rule[0] == 'min':
+        return np.maximum(rule[1] - np.degrees(np.arccos(np.clip(axes[:, 1], -1, 1))), 0)
+    return np.maximum(np.degrees(np.arccos(np.clip(axes @ rule[1], -1, 1))) - HINT_CONE, 0)
+
+
+def down_deg(R):
+    """Degrees each rotation's length axis (column 1) is from hanging straight down its parent."""
+    return np.degrees(np.arccos(np.clip(R.as_matrix()[..., 1, 1], -1, 1)))
+
+
+def scan_dirs(step=SCAN_STEP):
+    out = []
+    for el in np.arange(0, 180 + 1e-6, step):
+        n = 1 if el in (0, 180) else max(1, int(round(360 * np.sin(np.radians(el)) / step)))
+        for az in np.arange(n) * 360.0 / n:
+            e, a = np.radians(el), np.radians(az)
+            out.append([np.sin(e) * np.cos(a), np.cos(e), np.sin(e) * np.sin(a)])
+    return np.array(out)
+
+
+def scan_job(job):
+    video, track, net_path, k, p, cps = job
+    clip = O.Clip(video, json.load(open(track)))
+    p = np.asarray(p, float)
+    judge = PF.Judge(clip, P.load(net_path), k, [p[:F.NP]] + [np.asarray(c, float)[:F.NP] for c in cps] + OF.widened(p), W)
+    J0 = full_J(p)
+    dirs = scan_dirs()
+    res = {}
+    for b in LIMBS:
+        R0 = euler_to_R(J0[COLS[b]])
+        a0 = R0.as_matrix()[:, 1]
+        Js, es = [], []
+        for d in dirs:
+            ax = np.cross(a0, d)
+            s, c = np.linalg.norm(ax), float(a0 @ d)
+            if s < 1e-9:
+                R = R0 if c > 0 else Rot.from_rotvec(np.pi * np.array([1.0, 0, 0])) * R0
+            else:
+                R = Rot.from_rotvec(ax / s * np.arctan2(s, c)) * R0
+            e = R_to_euler(R, J0[COLS[b]])
+            J = J0.copy()
+            J[COLS[b]] = e
+            Js.append(J)
+            es.append(e)
+        v = np.asarray(judge(torch.tensor(np.stack(Js), dtype=T.DT))[0])
+        rule = HINTS.get(k, {}).get(b)
+        if rule is not None:  # a hinted limb: only directions the hint allows
+            v = np.where(hint_short(rule, dirs) <= 0, v, -np.inf)
+        keep = []
+        for i in np.argsort(-v):
+            if all(np.degrees(np.arccos(np.clip(dirs[i] @ dirs[j], -1, 1))) >= SCAN_APART for j in keep):
+                keep.append(i)
+            if len(keep) == SCAN_TOP:
+                break
+        res[b] = [es[i].tolist() for i in keep if np.isfinite(v[i])]
+    return k, res
 
 
 def score_job(job):
@@ -669,6 +790,15 @@ def main(video, path_json, cands_json, net_path, out, rounds=2):
     flips0, mean = flips(), None
     for rnd in range(rounds):
         t0 = time.time()
+        if os.environ.get('R6_SCAN', '1') != '0':
+            ts = time.time()
+            jobs = [(video, track, net_path, k, params[k], [c['params'] for c in cands.get(k, [])]) for k in ks]
+            with Pool(int(os.environ.get('PROCS', '4'))) as pool:
+                SCAN.clear()  # each round from the poses as they now are
+                for k, res in pool.imap_unordered(scan_job, jobs):
+                    for b, es in res.items():
+                        SCAN.setdefault(b, {})[k] = [np.array(e) for e in es]
+            print(f'scan: {len(scan_dirs())} directions per limb, {time.time() - ts:.0f} s', flush=True)
         path = {k: full_J(params[k]) for k in ks}
         opts = {b: candidates(path, cands, ks, b) for b in BONES}
         jobs = [(video, track, net_path, k, params[k], [c['params'] for c in cands.get(k, [])], {b: opts[b][k] for b in BONES}) for k in ks]
