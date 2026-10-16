@@ -193,3 +193,15 @@ write the clip (`F.write_clip` / `F.write_conversion`, see r6_fuse_views.py's ta
 ## Unmerged patches in `wip/` (against noted base commits)
 `align` (fusion time warp, .582 -> .618), `mvsearch` (four-view pose search, ~.61), `outline` (printed dark outlines
 -> UNKNOWN; mostly a ruler change, keep out of headline numbers). `calib`, `res`, `precise`, `effects` are merged.
+
+## One command: recording in, clip out (tools/r6_convert.py)
+`python3 tools/r6_convert.py VIDEO IDLE_START IDLE_END CLIP [--view NAME] [--viewer]` (frames, or seconds as `3.4s`):
+track fwd+bwd -> r6_global candidates -> r6_partfit -> r6_offsets (with the stray-limb hunt) -> r6_limbpass (+polish)
+-> r6_oversee clip. Resumable (delete a step's output to redo it); logs and summary.json in build/convert/CLIP/.
+Nothing in it is tuned to one take. Clip vs footage (roundtrip, common window), all from scratch:
+right .907 (old .866), back .869 (.830), front .824 (.791), side .899 (.893). Fixed along the way:
+- write_clip smoothing cut agreement .897 -> .762: no smoothing now; Euler forms kept continuous between keys.
+- limb flips (twist ambiguity of square limbs): r6_limbpass per-bone Viterbi; flips >60 deg/frame cut by ~2/3
+  (most left are real fast turns: the move spins 180 deg in a frame).
+- thrown limbs (kick into the dummy): r6_offsets hunt places limbs on avatar-coloured patches the rig misses.
+Known limit: the front (far, overhead) view is occluded by the dummy, which reads as background to the judge.
