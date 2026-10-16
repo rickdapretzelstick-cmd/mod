@@ -267,6 +267,31 @@ def pose_prior(Js, hidden):
     return cost
 
 
+def straighten(J, p):
+    """J with every part's tip along the camera's line of sight taken out (parents first: the hips', in their own
+    heading's frame, then each limb's and the head's), toward where the guides say or rest: only what the picture
+    shows is kept. Its heading and its twist are left as they were."""
+    J = np.array(J, float)
+    for b in DEPTH_BONES:
+        v = view_dirs(np.concatenate([np.asarray(p, float)[:NC], J]))[b]
+        R = rot_batch(J[COLS[b]])[0]
+        M = R.as_matrix()
+        a, t = M[:, 1], np.array([0, 1.0, 0])
+        if b == 'hips':
+            H = heading(M[None])[0]
+            ah, vh = H.T @ a, H.T @ v
+            ah = ah - ((ah - t) @ vh) * vh
+            a2 = H @ (ah / np.linalg.norm(ah))
+        else:
+            a2 = a - ((a - t) @ v) * v
+            a2 /= np.linalg.norm(a2)
+        ax = np.cross(a, a2)
+        s = np.linalg.norm(ax)
+        if s > 1e-9:
+            J[COLS[b]] = R_to_euler(Rot.from_rotvec(ax / s * np.arcsin(min(s, 1.0))) * R, J[COLS[b]])
+    return J
+
+
 def moves(J, p):
     """Single moves polish and smoothing try, as unit vectors over J: each joint angle, and each joint offset across
     the picture (right, up). Never toward or away from the camera: the footage can't see that (r6_offsets.in_plane),
@@ -322,30 +347,40 @@ def polish_job(job):
     p = np.asarray(p, float)
     ps = [p[:F.NP]] + [np.asarray(c, float)[:F.NP] for c in cps] + OF.widened(p)
     judge = PF.Judge(clip, net, k, ps, W)
-    J0 = torch.tensor(full_J(p), dtype=T.DT)
-    J = J0.clone()
-    hid = hidden_weights(judge, J0.numpy(), p[:NC], k)
-    dirs = [torch.tensor(e, dtype=T.DT) for e in moves(J0.numpy(), p)]
+    hid = hidden_weights(judge, full_J(p), p[:NC], k)
     # Offsets pay r6_offsets' tie-break cost: a limb hidden behind the body scores alike anywhere back there, and
     # must stay put rather than drift off (an arm pulled a stud out of a standing idle pose).
     value = lambda Js: judge(Js)[0] - OF.COST_PX * Js[:, NJ:].abs().sum(1).numpy() - pose_prior(Js.numpy(), hid)
-    best = start = float(value(J[None])[0])
-    for step in POLISH_STEPS:
-        for _ in range(10):
-            cands = []
-            for e in dirs:
-                for d in (-step, step):
-                    q = J + d * e
-                    if float((q - J0).abs().max()) > POLISH_MAX:
-                        continue
-                    cands.append(q)
-            Js = torch.stack(cands)
-            v = value(Js)
-            o = int(np.argmax(v))
-            if v[o] <= best + 1e-6:
-                break
-            J, best = Js[o].clone(), float(v[o])
-    return k, np.concatenate([p[:NC], J.numpy()]), start, float(value(J[None])[0])
+
+    def descend(J0):
+        J = J0.clone()
+        dirs = [torch.tensor(e, dtype=T.DT) for e in moves(J0.numpy(), p)]
+        best = float(value(J[None])[0])
+        for step in POLISH_STEPS:
+            for _ in range(10):
+                cands = []
+                for e in dirs:
+                    for d in (-step, step):
+                        q = J + d * e
+                        if float((q - J0).abs().max()) > POLISH_MAX:
+                            continue
+                        cands.append(q)
+                Js = torch.stack(cands)
+                v = value(Js)
+                o = int(np.argmax(v))
+                if v[o] <= best + 1e-6:
+                    break
+                J, best = Js[o].clone(), float(v[o])
+        return J, best
+
+    J0 = torch.tensor(full_J(p), dtype=T.DT)
+    start = float(value(J0[None])[0])
+    # Also from the pose straightened along the line of sight (straighten): one joint at a time can't walk out of a
+    # lean the fit settled into early (the hips over, an arm out to hide it), but the footage often fits the upright
+    # pose better once its limbs settle again. The better of the two is kept.
+    starts = [J0] + ([torch.tensor(straighten(full_J(p), p), dtype=T.DT)] if os.environ.get('R6_STRAIGHT', '1') != '0' else [])
+    J, best = max((descend(s) for s in starts), key=lambda r: r[1])
+    return k, np.concatenate([p[:NC], J.numpy()]), start, best
 
 
 SMOOTH_SWEEPS = int(os.environ.get('R6_SMOOTH', '5'))   # whole-clip smoothing sweeps (0: none)
