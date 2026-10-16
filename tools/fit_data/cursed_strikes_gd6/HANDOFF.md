@@ -207,4 +207,12 @@ right .907 (old .866), back .869 (.830), front .824 (.791), side .899 (.893). Fi
 - frame-to-frame shake (look-alike poses picked per frame): r6_limbpass smoothing sweeps (acceleration of each bone's
   turn and offset, capped so real snaps stay) cut mean angular acceleration 30-39 -> 16-27 deg/frame^2 per view with
   agreement unchanged (right .910, back .873, front .822, side .900). Measure: mean |change of rotation vector rate|.
+- kick leg lost at the dummy (right 365-367): (1) the veil rule read the dummy's pale skin as the leg colour
+  (r6_fit._veil_join: smoke must share a long border with the part, or shade it unevenly); (2) r6_offsets undid a
+  half-matching thrown leg (KEEP_SURE .06); (3) an arm won by a hair (r6_limbpass rethrow: neighbours' thrown limb
+  tried, +.02 each). The converter now keeps the kick itself; game clips cut from it (right roundtrip .912).
+- hidden far leg (side view, behind the near one) went sideways: r6_limbpass pose_prior (REST_PRIOR .12, offsets
+  .002/px capped) weighted by how much of the part is behind the body (rig depth, not smoke). Verified in game
+  (PoseGalleryClientTest filmstrip): legs down at the end, kick kept. Only the right view was re-run (Rick: use the
+  best angle); back/front/side conversions predate these fixes.
 Known limit: the front (far, overhead) view is occluded by the dummy, which reads as background to the judge.

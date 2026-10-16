@@ -117,7 +117,7 @@ def candidates(path, cands, ks, b):
     return out
 
 
-REST_PRIOR = float(os.environ.get('REST_PRIOR', '0.04'))  # agreement units per (90 deg of a limb or the head from rest)^2
+REST_PRIOR = float(os.environ.get('REST_PRIOR', '0.12'))  # agreement units per (90 deg of a limb or the head from rest)^2
 OFF_PRIOR = float(os.environ.get('OFF_PRIOR', '0.002'))   # ... per rig px of joint offset, up to OFF_PRIOR_CAP
 OFF_PRIOR_CAP = 0.04
 PRIOR_BONES = ('head', 'rightArm', 'leftArm', 'rightThigh', 'leftThigh')
