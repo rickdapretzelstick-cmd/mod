@@ -225,13 +225,31 @@ def place_search(judge, J, p, bone, at):
     for base in bases:
         for x in range(-180, 180, 30):
             for z in range(-90, 91, 30):
-                for tw in (0, 90):
+                for tw in (0, 90, 180, 270):  # all four: a limb's sides are coloured differently
                     q = base.clone()
                     q[cols(bone)] = torch.tensor([float(x), float(tw), float(z)], dtype=T.DT)
                     cands.append(centre_on(q, cam, bone, at, right, up))
     Js = torch.stack(cands)
     sc = judge(Js)[0]
-    return Js[int(np.argmax(sc))].clone()
+    o = int(np.argmax(sc))
+    J, best = Js[o].clone(), float(sc[o])
+    # Then finer turns in place (the box kept where it is), so the grid's 30 deg doesn't decide what fits.
+    for step in (15.0, 8.0, 4.0):
+        for _ in range(6):
+            here = box_centre(np.concatenate([cam, J.numpy()]), bone, *box_of(bone))
+            cands = []
+            for c in cols(bone):
+                for d in (-step, step):
+                    q = J.clone()
+                    q[c] += d
+                    cands.append(centre_on(q, cam, bone, here, right, up))
+            Js = torch.stack(cands)
+            sc = judge(Js)[0]
+            o = int(np.argmax(sc))
+            if sc[o] <= best + 1e-6:
+                break
+            J, best = Js[o].clone(), float(sc[o])
+    return J
 
 
 def sorted_boxes(p):
