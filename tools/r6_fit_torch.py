@@ -42,6 +42,11 @@ NC, NJ = len(F.CAM), len(F.JOINTS)
 BONES = list(F.REST)
 PARENT_IDX = [BONES.index(F.PARENT[b]) if F.PARENT[b] else -1 for b in BONES]
 OFFSET = torch.tensor(np.array([np.array(F.REST[b], float) - (np.array(F.REST[F.PARENT[b]], float) if F.PARENT[b] else 0) for b in BONES]), dtype=DT)
+
+
+def refresh_offsets():
+    """OFFSET again from F.REST (in place: every importer holds this tensor), after F.fit_rest moved the pivots."""
+    OFFSET.copy_(torch.tensor(np.array([np.array(F.REST[b], float) - (np.array(F.REST[F.PARENT[b]], float) if F.PARENT[b] else 0) for b in BONES]), dtype=DT))
 JMAP = torch.zeros(NJ, len(BONES) * 3, dtype=DT)  # joint vector -> per-bone (x, y, z) degrees
 for _i, (_b, _ax) in enumerate(F.JOINTS):
     JMAP[_i, BONES.index(_b) * 3 + _ax] = 1
@@ -3490,7 +3495,7 @@ def calibrate_idle(rgb, enc, p, light, fitter, seconds=20.0, log=None):
 
 # The idle frame's standing search when the keyframe fit is not a plausible standing fit (idle_sane): the plain
 # standing pose (its turn kept) under cameras all round at these tilts, each polished with its turn and tilt held.
-IDLE_PITCHES, IDLE_YAWS = tuple(range(0, 61, 6)), 48
+IDLE_PITCHES, IDLE_YAWS = tuple(range(0, 61, 3)), 48
 
 
 def fit_idle(rgb, args, log=print):

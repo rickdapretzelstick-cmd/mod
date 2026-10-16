@@ -39,6 +39,7 @@ import argparse
 import json
 import math
 import os
+import sys
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageSequence
@@ -85,6 +86,7 @@ def use_palette(pal):
     HEAD = CLASS_OF['head']
     PROPORTION.clear()
     PROPORTION.update({g: list(v) for g, v in pal.get('proportions', {}).items()})
+    fit_rest()
     SIDE_CLASS.clear()
     names = {c['name']: i for i, c in enumerate(pal['classes'], 1)}
     for part, cls in CLASS_OF.items():
@@ -106,6 +108,26 @@ def use_palette(pal):
 # The fit rig: this mod's bone math with Roblox R6 pivots and boxes (px, y down, -z forward; 1 stud = 6 px).
 REST = {'root': (0, 24, 0), 'hips': (0, 12, 0), 'head': (0, 0, 0), 'rightArm': (-6, 3, 0), 'leftArm': (6, 3, 0),
         'rightThigh': (-6, 12, 0), 'leftThigh': (6, 12, 0)}
+STD_REST = dict(REST)
+
+
+def fit_rest():
+    """The pivots moved to the avatar's proportions, so the boxes still meet as an R6 body's do: the neck and the
+    shoulders' tops on the torso's top, the arms and legs flush with its sides, the feet on the ground. A box scales
+    about its own pivot; without this a taller torso would swallow the neck and longer arms would poke up past the
+    shoulders, and the fit would tip parts to hide the step (R6_JOINTS_FOLLOW=1; off by default until measured)."""
+    REST.clear()
+    REST.update(STD_REST)
+    if os.environ.get('R6_JOINTS_FOLLOW', '0') == '0' or not PROPORTION:
+        return
+    t, a, l = (PROPORTION.get(g, (1.0, 1.0, 1.0)) for g in ('torso', 'arms', 'legs'))
+    top = 12 - 12 * t[1]
+    REST.update({'root': (0, 12 + 12 * l[1], 0), 'head': (0, top, 0),
+                 'rightArm': (-6 * t[0], top + 3 * a[1], 0), 'leftArm': (6 * t[0], top + 3 * a[1], 0),
+                 'rightThigh': (-6 * t[0], 12, 0), 'leftThigh': (6 * t[0], 12, 0)})
+    T = sys.modules.get('r6_fit_torch')
+    if T is not None:
+        T.refresh_offsets()
 PARENT = {'root': None, 'hips': 'root', 'head': 'hips', 'rightArm': 'hips', 'leftArm': 'hips', 'rightThigh': 'hips',
           'leftThigh': 'hips'}
 # The head is rounded, not a box: two crossed boxes (a plus seen from above) cut its corners, so a box's corners sticking

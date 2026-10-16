@@ -55,7 +55,7 @@ def main():
     ap.add_argument('--out', default=None, help='work folder (default build/convert/<clip>)')
     ap.add_argument('--net', default=os.path.join(ROOT, 'build', 'synth', 'partnet2.pt'))
     ap.add_argument('--rounds', type=int, default=3, help='limb pass rounds')
-    ap.add_argument('--guide', default=None, help="another take's finished work folder: guides the parts this one hides")
+    ap.add_argument('--guide', default=None, help="other takes' finished work folders (comma-separated): guide what this camera can't see")
     ap.add_argument('--viewer', action='store_true', help='rebuild build/anim_viewer.html at the end')
     ap.add_argument('--fresh', action='store_true', help='redo every step')
     a = ap.parse_args()
@@ -109,15 +109,18 @@ def main():
     if not done(final):
         env = {}
         if a.guide:
-            g = os.path.abspath(a.guide)
-            gfinal = next((os.path.join(g, f) for f in sorted(os.listdir(g)) if f.endswith('_final.json')), None)
-            if not gfinal:
-                sys.exit(f'--guide {g}: no finished conversion (*_final.json) there')
-            gcands = os.path.join(g, 'partfit', os.path.basename(gfinal)[:-len('_final.json')] + '_cands.json')
-            guide = os.path.join(out, 'guide.json')
-            print('5/6 lining up the guide take', flush=True)
-            print(f'  {run([py, T("r6_align.py"), video, offs, os.path.join(pf, f"{name}_cands.json"), gfinal, gcands, a.net, guide], os.path.join(out, "align.log")):.0f} s')
-            env['R6_GUIDE'] = guide
+            guides = []
+            for n, gdir in enumerate(a.guide.split(',')):
+                g = os.path.abspath(gdir)
+                gfinal = next((os.path.join(g, f) for f in sorted(os.listdir(g)) if f.endswith('_final.json')), None)
+                if not gfinal:
+                    sys.exit(f'--guide {g}: no finished conversion (*_final.json) there')
+                gcands = os.path.join(g, 'partfit', os.path.basename(gfinal)[:-len('_final.json')] + '_cands.json')
+                guide = os.path.join(out, f'guide{n}.json')
+                print(f'5/6 lining up guide take {os.path.basename(g)}', flush=True)
+                print(f'  {run([py, T("r6_align.py"), video, offs, os.path.join(pf, f"{name}_cands.json"), gfinal, gcands, a.net, guide], os.path.join(out, f"align{n}.log")):.0f} s')
+                guides.append(guide)
+            env['R6_GUIDE'] = ','.join(guides)
         print('5/6 whole-clip limb pass', flush=True)
         print(f'  {run([py, T("r6_limbpass.py"), video, offs, os.path.join(pf, f"{name}_cands.json"), a.net, final, str(a.rounds)], os.path.join(out, "limbpass.log"), env):.0f} s')
 

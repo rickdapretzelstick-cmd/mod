@@ -128,7 +128,7 @@ OFF_PRIOR_CAP = 0.04
 # A turn the camera only sees edge-on (along its line of sight: a side camera and a sideways lean or head tilt) changes
 # the picture by a pixel or two, less than the judge's own biases; it is held near rest, seen part or not, unless the
 # footage clearly asks for it (a turn the picture shows pays nothing).
-DEPTH_PRIOR = float(os.environ.get('DEPTH_PRIOR', '0.12'))
+DEPTH_PRIOR = float(os.environ.get('DEPTH_PRIOR', '1.5'))
 PRIOR_BONES = ('head', 'rightArm', 'leftArm', 'rightThigh', 'leftThigh')
 
 

@@ -265,28 +265,7 @@
   ]
  },
  "marks": true,
- "proportions": {
-  "torso": [
-   1.063,
-   1.108,
-   1.003
-  ],
-  "head": [
-   1.007,
-   1.225,
-   0.948
-  ],
-  "arms": [
-   1.116,
-   1.091,
-   0.997
-  ],
-  "legs": [
-   1.026,
-   1.019,
-   0.972
-  ]
- },
+ "proportions": {"torso": [1.0, 1.0, 1.0], "head": [1.0, 1.0, 1.0], "arms": [1.0, 1.0, 1.0], "legs": [1.0, 1.0, 1.0]},
  "glow": {
   "comment": "energy trails in the head/torso red (see r6_fit.glow_of): cores brighter and purer than any lit face",
   "classes": ["red"],
