@@ -7,6 +7,9 @@
 # by dynamic programming: total score less a cost on the bone's real turn between frames (geodesic, twist included:
 # LAMBDA x (deg / 90)^2) and on its joint offset's change. A flip the footage does not clearly ask for loses.
 # Then each frame is polished in place (small steps only, within 15 deg: R6_POLISH=0 skips it).
+# Last, the clip is smoothed: each frame moved (within 20 deg) to trade its score against the acceleration of every
+# bone's turn and offset across its neighbours, so poses the footage can't tell apart stop shaking frame to frame
+# (R6_SMOOTH sweeps, 0 skips it; SMOOTH_MU its strength).
 #   python3 tools/r6_limbpass.py VIDEO PATH.json CANDS.json NET.pt OUT.json [ROUNDS=2]   (ROUNDS 0: polish only)
 import sys, os, json, time
 import numpy as np, torch
@@ -173,6 +176,111 @@ def polish_job(job):
     return k, np.concatenate([p[:NC], J.numpy()]), start, float(value(J[None])[0])
 
 
+SMOOTH_SWEEPS = int(os.environ.get('R6_SMOOTH', '5'))   # whole-clip smoothing sweeps (0: none)
+SMOOTH_MU = float(os.environ.get('SMOOTH_MU', '0.015'))   # agreement units per (SMOOTH_DEG of turn acceleration)^2 ...
+SMOOTH_DEG = 30.0                                        # deg/frame^2: quadratic below, linear above, capped
+SMOOTH_PX = 3.0                                          # rig px/frame^2, the same for joint offsets
+SMOOTH_CAP = 4.0                                         # a sudden real snap (a punch, a kick out) costs no more than this
+SMOOTH_MAX = 20.0                                        # deg (rig px) a joint may move from the pose the pass chose
+
+
+def rough(x, unit):
+    """Cost of an acceleration x (deg or px per frame^2): quadratic to `unit`, linear past it, capped at SMOOTH_CAP."""
+    x = np.asarray(x) / unit
+    return np.minimum(np.where(x <= 1, x * x, 2 * x - 1), SMOOTH_CAP)
+
+
+def rot_batch(E):
+    E = np.atleast_2d(E)
+    return Rot.from_euler('ZYX', E[:, ::-1], degrees=True)
+
+
+def roughness(Js, nb):
+    """Per candidate pose Js[i] for frame k, the acceleration cost of the clip's curves at k-1, k and k+1 with the
+    neighbouring frames nb[d] (d = -2..2, those that exist) held: each bone's turn rate (rotation vector between
+    frames, so no Euler form or gimbal lock enters) and each joint offset's velocity, changed from frame to frame."""
+    n = len(Js)
+    cost = np.zeros(n)
+    for b in BONES:
+        Rc = rot_batch(Js[:, COLS[b]])
+        R = {d: rot_batch(nb[d][COLS[b]]) for d in nb}
+        w = {}  # angular velocity between frames k+d and k+d+1
+        if -1 in R:
+            w[-1] = (R[-1].inv() * Rc).as_rotvec(degrees=True)
+            if -2 in R:
+                w[-2] = np.repeat((R[-2].inv() * R[-1]).as_rotvec(degrees=True), n, 0)
+        if 1 in R:
+            w[0] = (Rc.inv() * R[1]).as_rotvec(degrees=True)
+            if 2 in R:
+                w[1] = np.repeat((R[1].inv() * R[2]).as_rotvec(degrees=True), n, 0)
+        for d in (-2, -1, 0):
+            if d in w and d + 1 in w:
+                cost += rough(np.linalg.norm(w[d + 1] - w[d], axis=1), SMOOTH_DEG)
+        if OFFC[b] is not None:
+            c = slice(OFFC[b], OFFC[b] + 3)
+            x = {d: np.repeat(nb[d][c][None], n, 0) for d in nb}
+            x[0] = Js[:, c]
+            for d in (-1, 0, 1):
+                if d - 1 in x and d in x and d + 1 in x:
+                    cost += rough(np.linalg.norm(x[d + 1] - 2 * x[d] + x[d - 1], axis=1), SMOOTH_PX)
+    return SMOOTH_MU * cost
+
+
+def smooth_job(job):
+    """One frame moved, its neighbours held, to the pose that best trades the footage's score against a smooth clip.
+    The judge cannot tell many poses apart (a square limb a few degrees either way, a joint hidden in the body), and
+    a frame-by-frame pick lands on any of them, so the clip shakes; here the smooth one of those wins. A big real
+    change between frames pays at most a fixed cost, so the footage still decides it."""
+    video, track, net_path, k, p, cps, anchor, nb = job
+    clip = O.Clip(video, json.load(open(track)))
+    net = P.load(net_path)
+    p = np.asarray(p, float)
+    ps = [p[:F.NP]] + [np.asarray(c, float)[:F.NP] for c in cps] + OF.widened(p)
+    judge = PF.Judge(clip, net, k, ps, W)
+    A = full_J(anchor)
+    J = full_J(p)
+    value = lambda Js: (judge(torch.tensor(Js, dtype=T.DT))[0] - OF.COST_PX * np.abs(Js[:, NJ:]).sum(1)
+                        - roughness(Js, nb))
+    start = float(value(J[None])[0])
+    best = start
+    for step in POLISH_STEPS:
+        for _ in range(10):
+            cands = []
+            for c in range(len(J)):
+                for d in (-step, step):
+                    q = J.copy()
+                    q[c] += d
+                    if abs(q[c] - A[c]) <= SMOOTH_MAX:
+                        cands.append(q)
+            Js = np.stack(cands)
+            v = value(Js)
+            o = int(np.argmax(v))
+            if v[o] <= best + 1e-6:
+                break
+            J, best = Js[o], float(v[o])
+    return k, np.concatenate([p[:NC], J]), start, best
+
+
+def smooth_clip(video, track, net_path, params, cands, ks):
+    """Gauss-Seidel over the clip: every other frame moved at once (each with its neighbours held), then the rest."""
+    anchor = {k: params[k].copy() for k in ks}
+    for sweep in range(SMOOTH_SWEEPS):
+        t0, gain = time.time(), []
+        for parity in (0, 1):
+            jobs = []
+            for i, k in enumerate(ks):
+                if i % 2 != parity:
+                    continue
+                nb = {d: full_J(params[ks[i + d]]) for d in (-2, -1, 1, 2) if 0 <= i + d < len(ks)}
+                jobs.append((video, track, net_path, k, params[k], [c['params'] for c in cands.get(k, [])],
+                             anchor[k], nb))
+            with Pool(int(os.environ.get('PROCS', '4'))) as pool:
+                for k, q, a, b in pool.imap_unordered(smooth_job, jobs):
+                    params[k] = q
+                    gain.append(b - a)
+        print(f'smooth sweep {sweep + 1}: value +{np.mean(gain):.4f} per frame, {time.time() - t0:.0f} s', flush=True)
+
+
 def huber(d):
     """Quadratic up to 1 (stud), linear past it, and no more than a 3-stud move: offset jitter pays, but a limb thrown
     far for real (a kick into the dummy, out and back within two frames) is not priced out of the clip."""
@@ -292,6 +400,8 @@ def main(video, path_json, cands_json, net_path, out, rounds=2):
                 gain.append(b - a)
         mean = (mean or 0) + float(np.mean(gain))
         print(f'polish: score +{np.mean(gain):.4f} per frame, {time.time() - t0:.0f} s', flush=True)
+    if SMOOTH_SWEEPS > 0:
+        smooth_clip(video, track, net_path, params, cands, ks)
     for k in ks:
         r = tr['frames'][str(k)]
         r['params'] = params[k].tolist()

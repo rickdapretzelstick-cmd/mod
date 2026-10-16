@@ -204,4 +204,7 @@ right .907 (old .866), back .869 (.830), front .824 (.791), side .899 (.893). Fi
 - limb flips (twist ambiguity of square limbs): r6_limbpass per-bone Viterbi; flips >60 deg/frame cut by ~2/3
   (most left are real fast turns: the move spins 180 deg in a frame).
 - thrown limbs (kick into the dummy): r6_offsets hunt places limbs on avatar-coloured patches the rig misses.
+- frame-to-frame shake (look-alike poses picked per frame): r6_limbpass smoothing sweeps (acceleration of each bone's
+  turn and offset, capped so real snaps stay) cut mean angular acceleration 30-39 -> 16-27 deg/frame^2 per view with
+  agreement unchanged (right .910, back .873, front .822, side .900). Measure: mean |change of rotation vector rate|.
 Known limit: the front (far, overhead) view is occluded by the dummy, which reads as background to the judge.
