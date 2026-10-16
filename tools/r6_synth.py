@@ -112,13 +112,18 @@ class Synth:
         self.frames = {}
 
     def frame(self, k):
-        if k not in self.frames:
-            if len(self.frames) > 60:
-                self.frames.pop(next(iter(self.frames)))
-            self.cap.set(cv2.CAP_PROP_POS_FRAMES, k)
-            ok, f = self.cap.read()
-            self.frames[k] = f[..., ::-1].copy()
-        return self.frames[k]
+        """Footage frame k; every frame the poses come from is read once in order and kept JPEG-encoded (seeking an
+        mp4 per picture cost ~0.35 s, most of the time)."""
+        if not self.frames:
+            want = {kk for kk, _, _ in self.rows}
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, min(want))
+            for i in range(min(want), max(want) + 1):
+                ok, f = self.cap.read()
+                if not ok:
+                    break
+                if i in want:
+                    self.frames[i] = cv2.imencode('.jpg', f, [cv2.IMWRITE_JPEG_QUALITY, 95])[1]
+        return cv2.imdecode(self.frames[k], 1)[..., ::-1].copy()
 
     def pose(self):
         r = self.rng
