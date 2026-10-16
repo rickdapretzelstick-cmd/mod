@@ -3470,6 +3470,8 @@ def calibrate_idle(rgb, enc, p, light, fitter, seconds=20.0, log=None):
     Returns (params, agreement at 112 px)."""
     import copy
     p = np.array(p, float)
+    if STAND_TILT:
+        p = stand_tilt(rgb, enc, p, light, fitter, log=log)
     fw = copy.copy(fitter)  # View.window sets the fitter's res: the caller's fitter stays at its own
     v = View([rgb], {0: enc}, [0], 30, 112)
     v.lite = True
@@ -3477,8 +3479,9 @@ def calibrate_idle(rgb, enc, p, light, fitter, seconds=20.0, log=None):
     v.window(0, p, fw)
     a0 = float(agreement(fit, 0, 0, fit.J.detach()[[0]], (fit.cams[0][[0]] * CAM_UNIT).detach())[0])
     band_fp = float(v.windows[0][3])
-    q, af, _ = fine_refine(rgb, enc, p, light, fw, None, deadline=time.time() + seconds, band_fp=band_fp,
-                           drift_px=None, drift_deg=None, move_cost=0.0, free_cam=True, persp=True)
+    lock = [float(p[0]), float(p[1]), (0.0, np.inf)] if STAND_TILT else None  # turn and tilt as stand_tilt set them
+    q, af, _ = fine_refine(rgb, enc, p, light, fw, lock, deadline=time.time() + seconds, band_fp=band_fp,
+                           drift_px=None, drift_deg=None, move_cost=0.0, free_cam=not STAND_TILT, persp=True)
     with torch.no_grad():
         fit.J[0] = torch.tensor(q[NC:], dtype=DT)
         fit.cams[0][0] = torch.tensor(q[:5], dtype=DT) / CAM_UNIT
@@ -3491,6 +3494,48 @@ def calibrate_idle(rgb, enc, p, light, fitter, seconds=20.0, log=None):
     if log:
         log(f'calibrate_idle: {a0:.3f} -> {a1:.3f} (fine {af:.3f}); ' + ('kept' if ok else 'rejected: ' + why))
     return (q, a1) if ok else (p, a0)
+
+
+# The still camera's tilt and turn chosen on the idle frame with the body held standing (rest, the hips' heading kept):
+# with the pose free, limbs and hips bend to suit a wrong tilt (a side take's 14 deg fitted with a lean, where the
+# standing body agrees best at 6-9 deg). Tilts STAND_TILT_SPAN deg either side of the idle fit's, in STAND_TILT_STEP
+# steps then halved round the best; each with turn, scale and place refined on the hard agreement, joints frozen.
+STAND_TILT = os.environ.get('R6_STAND_TILT', '1') != '0'
+STAND_TILT_SPAN, STAND_TILT_STEP = 12.0, 3.0
+
+
+def stand_tilt(rgb, enc, p, light, fitter, seconds=8.0, log=None):
+    """Params p with the camera's tilt, turn, scale and place those that best draw the standing body (hard agreement
+    at the fine resolution), the pose kept as p has it. Returns params."""
+    import copy
+    r = np.array(p, float)
+    h = r[F.JI[('hips', 1)]]
+    r[NC:] = 0.0
+    r[F.JI[('hips', 1)]] = h
+    tried = {}
+
+    def at(tilt):
+        tilt = round(max(float(tilt), 0.0), 2)
+        if tilt not in tried:
+            s = r.copy()
+            s[1] = tilt
+            q, a, _ = fine_refine(rgb, enc, s, light, copy.copy(fitter), [s[0], tilt, (0.0, np.inf)], drift_px=None,
+                                  drift_deg=0.0, move_cost=0.0, deadline=time.time() + seconds)
+            q[1] = tilt
+            tried[tilt] = (a, q)
+        return tried[tilt]
+    for t in np.arange(p[1] - STAND_TILT_SPAN, p[1] + STAND_TILT_SPAN + 1e-6, STAND_TILT_STEP):
+        at(t)
+    best = max(tried, key=lambda t: tried[t][0])
+    for t in (best - STAND_TILT_STEP / 2, best + STAND_TILT_STEP / 2):
+        at(t)
+    best = max(tried, key=lambda t: tried[t][0])
+    out = np.array(p, float)
+    out[:5] = tried[best][1][:5]
+    if log:
+        log(f'stand_tilt: tilt {p[1]:.1f} -> {best:.1f} (standing agreement {tried[best][0]:.3f}; '
+            + ', '.join(f'{t:g}:{tried[t][0]:.3f}' for t in sorted(tried)) + ')')
+    return out
 
 
 # The idle frame's standing search when the keyframe fit is not a plausible standing fit (idle_sane): the plain
