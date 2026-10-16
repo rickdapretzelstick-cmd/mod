@@ -216,3 +216,13 @@ right .907 (old .866), back .869 (.830), front .824 (.791), side .899 (.893). Fi
   (PoseGalleryClientTest filmstrip): legs down at the end, kick kept. Only the right view was re-run (Rick: use the
   best angle); back/front/side conversions predate these fixes.
 Known limit: the front (far, overhead) view is occluded by the dummy, which reads as background to the judge.
+
+## A second take guides the parts the main take hides (r6_align.py, r6_convert --guide)
+The four views are separate performances, so they can't be merged frame by frame. Instead the left-side take is lined
+up in time with the right take (DTW on head and limb poses relative to the hips, over parts both cameras see; mean gap
+34 -> 16 deg) and, for each right-view frame, a part the right camera hides is held near the left take's pose at the
+lined-up moment -- but only across the left camera's picture (a side camera sees a leg swing forward, not out to the
+side); along its line of sight the part stays near rest as before. Right view guided by left
+(`r6_convert.py build/video.mp4 290 390 convert_test_right --view right --guide build/convert/convert_side`):
+round trip .907 -> .911, mean shake 18.6 -> 18.4, hidden left arm's worst jolt 85 -> 38 deg/frame^2.
+Files: oversee/right_final.json (guided), oversee/right_guide.json, oversee/left_final.json (the guide take).
