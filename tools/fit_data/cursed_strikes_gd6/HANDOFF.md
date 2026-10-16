@@ -119,6 +119,11 @@ partnet2 (INIT=partnet.pt, 30k pictures + real, 6 rounds, ~36 min): side view (n
 97% on the views it saw; plateaued after round 1 -> needs more varied real frames. Part fitter with it, W .5:
 colour .890 / 56 >= .90, parts .55 -> .74. Rick's bar: train until 95% on real frames. Next: fit front/back/right
 with candidates + partfit (build/fit/v3), add frames passing colour .9 + parts .8 to the real set, retrain, repeat.
+Did that (61 frames from front/back/right, partnet3, Rick lowered the bar to 90% and said skip the last round): side
+view stays 81-84%. 83% of its errors sit within 2 px of a part edge; away from edges it is 93% right. The real whole-part
+miss: side-on frames (600-614) where the arm covers the torso -- the clothing colours each SIDE of the body alike, so
+the arm's outer side and the torso's side are both yellow and the network calls the arm torso. Use partnet2.pt (82%).
+Clip from the part fitter: cursed_strikes_left_partfit_clip.json (path oversee/left_global_partfit.json), in the viewer.
 
 ## AI overseer: built and run on the side view (tools/r6_oversee.py)
 Stages (see the file's header): `flag` -> `sheets` -> Claude reads the PNGs and writes a corrections JSON -> `apply` ->
