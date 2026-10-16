@@ -60,15 +60,28 @@ def bone_of(J, b):
     return rot, off
 
 
+def box_mid(b):
+    """The middle of bone b's box in its own frame (rig px, at the avatar's proportions)."""
+    lo, hi, part = next((lo, hi, part) for bb, lo, hi, part in F.PARTS if bb == b and part != 'face')
+    lo, hi = F.scaled_box(part, lo, hi)
+    return (np.array(lo) + np.array(hi)) / 2
+
+
 def candidates(path, cands, ks, b):
-    """Per frame, candidate (rotation euler, offset) for bone b, the frame's own first."""
+    """Per frame, candidate (rotation euler, offset) for bone b, the frame's own first. A limb this frame has thrown
+    away from the body (offset > 1.5 px) also gets every other rotation with the offset re-set so its box stays where
+    this frame's own pose put it: the place is the footage's, the way it points can then follow its neighbours."""
     out = {}
+    mid = box_mid(b)
     for i, k in enumerate(ks):
         src = [path[k]]
         for d in (-2, -1, 1, 2):
             if 0 <= i + d < len(ks):
                 src.append(path[ks[i + d]])
         src += [full_J(c['params']) for c in cands.get(k, [])]
+        own_rot, own_off = bone_of(path[k], b)
+        own_mid = own_off + euler_to_R(own_rot).apply(mid)
+        thrown = OFFC[b] is not None and np.linalg.norm(own_off) > 1.5
         opts, quats = [], []
         for J in src:
             rot, off = bone_of(J, b)
@@ -76,11 +89,12 @@ def candidates(path, cands, ks, b):
             for tw in ((0, 90, 180, 270) if b in LIMBS else (0,)):
                 r = base * Rot.from_euler('y', tw, degrees=True) if tw else base
                 q = r.as_quat()
-                # Already there (within 3 degrees and half a px of offset)?
-                if any(abs(float(q @ q2)) > np.cos(np.radians(1.5)) and np.abs(o[1] - off).max() <= 0.5 for q2, o in zip(quats, opts)):
-                    continue
-                opts.append((R_to_euler(r, rot), off.copy()))
-                quats.append(q)
+                for o in ((off, own_mid - r.apply(mid)) if thrown else (off,)):
+                    # Already there (within 3 degrees and half a px of offset)?
+                    if any(abs(float(q @ q2)) > np.cos(np.radians(1.5)) and np.abs(o2[1] - o).max() <= 0.5 for q2, o2 in zip(quats, opts)):
+                        continue
+                    opts.append((R_to_euler(r, rot), np.array(o, float)))
+                    quats.append(q)
         out[k] = opts
     return out
 
