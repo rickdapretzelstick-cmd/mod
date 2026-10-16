@@ -110,7 +110,17 @@ def main(video, main_final, main_cands, other_final, other_cands, net_path, out)
             v = np.cross(r, u)
             g[b] = {'rot': [float(x) for x in L.full_J(pb[kb[j]])[L.COLS[b]]], 'seen': float(w.max()),
                     'view': [float(x) for x in v / np.linalg.norm(v)],
+                    'axis': [float(x) for x in L.rot_batch(L.full_J(pb[kb[j]])[L.COLS[b]]).as_matrix()[0][:, 1]],
                     'main_seen': float(va[i, n]), 'other_frame': kb[j]}
+        # the whole body's lean (its length axis, in its own heading's frame: which way it faces is each take's own)
+        j = js[0]
+        Rh = L.rot_batch(L.full_J(pb[kb[j]])[L.COLS['hips']]).as_matrix()[0]
+        world = F.pose_world(pb[kb[j]][:F.NP])
+        view, _ = F.camera_of(pb[kb[j]])
+        v = world['root'][:3, :3].T @ F.MODEL_TO_WORLD @ view.T @ np.array([0, 0, 1.0])
+        H = L.heading(Rh[None])[0]
+        g['hips'] = {'axis': [float(x) for x in H.T @ Rh[:, 1]], 'view': [float(x) for x in H.T @ v / np.linalg.norm(v)],
+                     'seen': 1.0, 'other_frame': kb[j]}
         frames[str(k)] = g
     json.dump({'main': main_final, 'other': other_final, 'mean_deg': mean, 'in_step_deg': diag,
                'path': [[ka[i], kb[j]] for i, j in path], 'frames': frames}, open(out, 'w'))

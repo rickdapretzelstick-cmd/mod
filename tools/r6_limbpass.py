@@ -86,10 +86,11 @@ def candidates(path, cands, ks, b):
                 src.append(path[ks[i + d]])
         src += [full_J(c['params']) for c in cands.get(k, [])]
         src.append(np.zeros_like(path[k]))  # rest: where a part the footage can't see settles (see pose_prior)
-        if b in GUIDE.get(str(k), {}):  # ... or the pose the second take's camera saw it in
-            g = np.zeros_like(path[k])
-            g[COLS[b]] = GUIDE[str(k)][b]['rot']
-            src.append(g)
+        for G in GUIDES:  # ... or the pose another take's camera saw it in
+            if b in G.get(str(k), {}) and 'rot' in G[str(k)][b]:
+                g = np.zeros_like(path[k])
+                g[COLS[b]] = G[str(k)][b]['rot']
+                src.append(g)
         own_rot, own_off = bone_of(path[k], b)
         own_mid = own_off + euler_to_R(own_rot).apply(mid)
         thrown = OFFC[b] is not None and np.linalg.norm(own_off) > 1.5
@@ -124,13 +125,20 @@ def candidates(path, cands, ks, b):
 REST_PRIOR = float(os.environ.get('REST_PRIOR', '0.12'))  # agreement units per (90 deg of a limb or the head from rest)^2
 OFF_PRIOR = float(os.environ.get('OFF_PRIOR', '0.002'))   # ... per rig px of joint offset, up to OFF_PRIOR_CAP
 OFF_PRIOR_CAP = 0.04
+# A turn the camera only sees edge-on (along its line of sight: a side camera and a sideways lean or head tilt) changes
+# the picture by a pixel or two, less than the judge's own biases; it is held near rest, seen part or not, unless the
+# footage clearly asks for it (a turn the picture shows pays nothing).
+DEPTH_PRIOR = float(os.environ.get('DEPTH_PRIOR', '0.12'))
 PRIOR_BONES = ('head', 'rightArm', 'leftArm', 'rightThigh', 'leftThigh')
 
 
-# A second take lined up in time (r6_align.py): per frame, the pose of each part its camera sees well. A part this take
-# hides is then held near that pose instead of near rest.
-GUIDE = json.load(open(os.environ['R6_GUIDE']))['frames'] if os.environ.get('R6_GUIDE') else {}
-GUIDE_PRIOR = float(os.environ.get('GUIDE_PRIOR', '0.12'))  # agreement units per (90 deg from the guide's pose)^2
+# Other takes lined up in time (r6_align.py; R6_GUIDE=a.json,b.json): per frame, which way each part points as each
+# other camera saw it, across that camera's picture. Where this camera can't tell (a part it hides, a turn it sees
+# edge-on) the part is held near that, and near rest in what no camera saw.
+GUIDES = [json.load(open(f))['frames'] for f in os.environ.get('R6_GUIDE', '').split(',') if f]
+GUIDE = GUIDES[0] if GUIDES else {}
+GUIDE_PRIOR = float(os.environ.get('GUIDE_PRIOR', '0.12'))  # agreement units per (90 deg from the guides' pose)^2
+GUIDE_REST = 0.2  # where no guide's camera sees a direction, rest decides it (and settles a lone guide's own blind spot)
 
 
 HIDDEN_SHARE = 0.3  # a part with less than this share of its own outline in front is (partly) hidden: the prior holds it
@@ -160,8 +168,64 @@ def hidden_weights(judge, J, cam, k=None):
         own = sum(cv2.contourArea(np.array(polys[n][1], np.float32)) for n in ids) * scale2
         seen = float(np.isin(front, [n + 1 for n, (bone, _, _, _) in enumerate(F.PARTS) if bone == b]).sum())
         out[b] = float(np.clip(1 - seen / max(HIDDEN_SHARE * own, 1.0), 0, 1))
-    out['_guide'] = GUIDE.get(str(k), {}) if k is not None else {}
+    out['_guide'] = [g.get(str(k), {}) for g in GUIDES] if k is not None else []
+    out['_view'] = view_dirs(np.concatenate([cam, J]))
     return out
+
+
+DEPTH_BONES = ('hips',) + PRIOR_BONES
+
+
+def view_dirs(p):
+    """Per bone, the camera's line of sight in the bone's parent frame (unit): a turn that only moves the part along
+    it (a lean toward or away from a side camera, a head tilted toward it) barely changes the picture."""
+    world = F.pose_world(np.asarray(p, float)[:F.NP])
+    view, _ = F.camera_of(p)
+    z = F.MODEL_TO_WORLD @ view.T @ np.array([0, 0, 1.0])
+    out = {}
+    for b in DEPTH_BONES:
+        Rp = world[F.PARENT[b]][:3, :3]
+        v = Rp.T @ z
+        out[b] = v / np.linalg.norm(v)
+    return out
+
+
+def heading(M):
+    """Per rotation (n, 3, 3) of the whole body: the turn about the vertical alone that faces it the same way. Which
+    way the body faces is each take's own (its camera's yaw trades against it); how it leans is not."""
+    f = M[:, :, 2]
+    psi = np.arctan2(f[:, 0], f[:, 2])
+    c, s = np.cos(psi), np.sin(psi)
+    H = np.zeros((len(M), 3, 3))
+    H[:, 0, 0], H[:, 0, 2], H[:, 1, 1], H[:, 2, 0], H[:, 2, 2] = c, s, 1, -s, c
+    return H
+
+
+def target_axis(b, guides):
+    """Which way part b points (its length axis, unit; the hips' in their heading's frame): per guide, across that
+    guide camera's picture as it saw it; least squares over the guides, rest (straight down the parent) where none
+    sees. None without guides for b."""
+    gs = [g[b] for g in guides if b in g and 'axis' in g[b]]
+    if not gs:
+        return None
+    A, r = GUIDE_REST * np.eye(3), GUIDE_REST * np.array([0, 1.0, 0])
+    for g in gs:
+        v = np.array(g['view'])
+        P = np.eye(3) - np.outer(v, v)
+        A += g['seen'] * P
+        r += g['seen'] * P @ np.array(g['axis'])
+    t = np.linalg.solve(A, r)
+    return t / np.linalg.norm(t)
+
+
+def length_axes(Js, b, v):
+    """Part b's length axis per candidate and this camera's line of sight, both in the frame the guides use."""
+    M = rot_batch(Js[:, COLS[b]]).as_matrix()
+    a = M[:, :, 1]
+    if b == 'hips':
+        H = heading(M)
+        return np.einsum('nji,nj->ni', H, a), np.einsum('nji,j->ni', H, v)
+    return a, np.broadcast_to(v, a.shape)
 
 
 def pose_prior(Js, hidden):
@@ -173,23 +237,20 @@ def pose_prior(Js, hidden):
     With a second take (R6_GUIDE), a hidden part the other camera saw is held near the pose it had there instead."""
     Js = np.atleast_2d(np.asarray(Js, float))
     cost = np.zeros(len(Js))
-    guide = hidden.get('_guide', {})
+    guides = hidden.get('_guide', [])
     for b in PRIOR_BONES:
         if hidden.get(b, 0) <= 0:
             continue
         R = rot_batch(Js[:, COLS[b]])
-        if b in guide:
-            # the other camera saw the part's turn across its picture only: there it is held near the guide's pose,
-            # along that camera's line of sight near rest, as with no guide
-            M = R.as_matrix()                                    # (n, 3, 3), columns: the part's own axes
-            G = rot_batch(np.array([guide[b]['rot']])).as_matrix()
-            v = np.array(guide[b]['view'])
-            dg = M - G
-            along_g = np.einsum('i,nij->nj', v, dg)
-            across = np.maximum((dg ** 2).sum((1, 2)) - (along_g ** 2).sum(1), 0) / 2
-            along = (np.einsum('i,nij->nj', v, M - np.eye(3)) ** 2).sum(1) / 2
-            c = (GUIDE_PRIOR * guide[b]['seen'] * np.minimum(across / (np.pi / 2) ** 2, 2.0)
-                 + REST_PRIOR * np.minimum(along / (np.pi / 2) ** 2, 2.0))
+        t = target_axis(b, guides)
+        if t is not None:
+            # where the other cameras saw it point (which way a limb points is what a picture shows; its twist about
+            # its own length, from these cameras, barely), its twist near rest
+            a = R.as_matrix()[:, :, 1]
+            swing = np.arccos(np.clip(a[:, 1], -1, 1))
+            twist = np.maximum(R.magnitude() ** 2 - swing ** 2, 0)
+            c = (GUIDE_PRIOR * np.minimum(((a - t) ** 2).sum(1) / (np.pi / 2) ** 2, 2.0)
+                 + REST_PRIOR * np.minimum(twist / (np.pi / 2) ** 2, 2.0))
         else:
             deg = np.degrees(R.magnitude())
             c = REST_PRIOR * np.minimum((deg / 90) ** 2, 2.0)
@@ -197,6 +258,12 @@ def pose_prior(Js, hidden):
             px = np.linalg.norm(Js[:, OFFC[b]:OFFC[b] + 3], axis=1)
             c += np.minimum(OFF_PRIOR * px, OFF_PRIOR_CAP)
         cost += hidden[b] * c
+    for b, v in hidden.get('_view', {}).items():
+        # seen part or not: how far it tips along this camera's line of sight, against where the guides (or rest) say
+        a, vv = length_axes(Js, b, v)
+        t = target_axis(b, guides)
+        t = np.array([0, 1.0, 0]) if t is None else t
+        cost += DEPTH_PRIOR * np.minimum(((a - t) * vv).sum(1) ** 2 / (np.pi / 2) ** 2, 2.0)
     return cost
 
 
