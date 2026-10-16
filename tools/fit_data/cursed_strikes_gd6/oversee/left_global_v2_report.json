@@ -1,0 +1,25 @@
+{
+ "frames": 98,
+ "lambda": 0.0008,
+ "track_mean": 0.8632,
+ "global_mean": 0.8863,
+ "best_candidate_mean": 0.8919,
+ "track_min": 0.5346,
+ "global_min": 0.5799,
+ "track_ge_0.90": 47,
+ "global_ge_0.90": 54,
+ "picked_from": {
+  "track": 20,
+  "r2:fwd-1+sweep": 11,
+  "r2:bwd+sweep": 10,
+  "r2:fwd+1+sweep": 11,
+  "bwd+sweep": 16,
+  "fwd+1+sweep": 6,
+  "fwd-1+sweep": 4,
+  "fwd+sweep": 13,
+  "r2:fwd+sweep": 4,
+  "r2:fwd": 1,
+  "bwd": 1,
+  "r2:fwd-1": 1
+ }
+}

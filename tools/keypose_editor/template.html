@@ -1,0 +1,490 @@
+<title>Key Pose Fixer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a footage stage (the key pose with its boxes over it) beside a control column; key strip on top. */
+:root {
+  --bg: #eef0f3; --panel: #ffffff; --ink: #1b1e24; --muted: #5d6573; --line: #d5d9e0;
+  --accent: #3355ff; --accent-ink: #ffffff; --good: #138a4b; --warn: #b26a00; --bad: #c22f2f;
+  --stage: #20232a; --chip: #f4f5f8;
+  --ui: "Barlow", "Segoe UI", system-ui, sans-serif; --num: "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121419; --panel: #1b1e25; --ink: #e8eaef; --muted: #9aa2b1; --line: #2d323c;
+  --accent: #7d93ff; --accent-ink: #0d1020; --good: #4cc98a; --warn: #f0b04a; --bad: #ff7676;
+  --stage: #0b0c0f; --chip: #232731; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121419; --panel: #1b1e25; --ink: #e8eaef; --muted: #9aa2b1; --line: #2d323c;
+  --accent: #7d93ff; --accent-ink: #0d1020; --good: #4cc98a; --warn: #f0b04a; --bad: #ff7676;
+  --stage: #0b0c0f; --chip: #232731; color-scheme: dark }
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--ui); font-size: 15px; padding: 16px; padding-block: 16px 32px; }
+.wrap { max-width: 1060px; margin: 0 auto; display: grid; gap: 14px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: 0.01em; }
+.sub { color: var(--muted); font-size: 14px; }
+.keys { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.key { flex: 0 0 auto; display: grid; gap: 2px; text-align: left; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--chip); color: var(--ink); font-family: var(--ui); cursor: pointer; min-width: 84px; }
+.key[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.key .t { font-family: var(--num); font-size: 12px; color: var(--muted); }
+.key .m { font-family: var(--num); font-size: 14px; font-weight: 600; }
+.key .s { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); min-height: 1em; }
+.good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px; align-items: start; }
+@media (max-width: 820px) { main { grid-template-columns: minmax(0, 1fr); } }
+.stage { background: var(--stage); border-radius: 10px; overflow: hidden; position: relative; }
+canvas#view { display: block; width: 100%; aspect-ratio: 1; max-width: 100%; touch-action: none; cursor: crosshair; }
+.hud { position: absolute; left: 10px; top: 8px; right: 10px; display: flex; justify-content: space-between; gap: 8px;
+  font-family: var(--num); font-size: 12px; color: #f2f3f6; text-shadow: 0 1px 2px #000; pointer-events: none; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 14px; }
+.panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0; font-weight: 600; }
+.score { display: flex; align-items: baseline; gap: 10px; font-family: var(--num); }
+.score .big { font-size: 30px; font-weight: 600; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+button.btn { font-family: var(--ui); font-size: 14px; font-weight: 600; padding: 8px 12px; border-radius: 7px; border: 1px solid var(--line);
+  background: var(--chip); color: var(--ink); cursor: pointer; }
+button.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+button.btn:disabled { opacity: 0.45; cursor: default; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.parts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.parts button { padding: 6px 4px; font-size: 13px; display: flex; align-items: center; gap: 6px; justify-content: center; }
+.sw { width: 10px; height: 10px; border-radius: 2px; flex: 0 0 auto; }
+.sl { display: grid; grid-template-columns: 74px minmax(0, 1fr) 46px; align-items: center; gap: 8px; font-size: 13px; }
+.sl output { font-family: var(--num); font-size: 12px; text-align: right; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.help { color: var(--muted); font-size: 13px; line-height: 1.45; margin: 0; }
+.status { font-size: 13px; color: var(--muted); min-height: 1.2em; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1 id="title">Key Pose Fixer</h1>
+    <span class="sub" id="subtitle"></span>
+  </header>
+  <div class="keys" id="keys" role="group" aria-label="Key poses"></div>
+  <main>
+    <div class="stage">
+      <canvas id="view" width="840" height="840" aria-label="Footage with the fitted boxes"></canvas>
+      <div class="hud"><span id="hudL"></span><span id="hudR"></span></div>
+    </div>
+    <div class="panel">
+      <div>
+        <h2>Match</h2>
+        <div class="score"><span class="big" id="now">–</span><span class="sub" id="was"></span></div>
+      </div>
+      <div class="row">
+        <button class="btn" id="modePose" aria-pressed="true">Pose</button>
+        <button class="btn" id="modeMove" aria-pressed="false">Move body</button>
+        <button class="btn" id="showBoxes" aria-pressed="true">Boxes</button>
+        <button class="btn" id="play">Play move</button>
+      </div>
+      <div style="display:grid;gap:8px">
+        <h2>Part</h2>
+        <div class="parts" id="parts"></div>
+        <div id="sliders" style="display:grid;gap:6px"></div>
+        <div class="row">
+          <button class="btn" id="flip">Flip toward / away</button>
+          <button class="btn" id="snapPart">Snap part</button>
+          <button class="btn" id="snapAll">Snap all</button>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="save">Save this pose</button>
+        <button class="btn" id="reset">Back to fitted</button>
+      </div>
+      <div class="status" id="status" role="status"></div>
+      <p class="help">Click a part to pick it. Drag an arm, leg or the head by its end to point it; drag the torso to turn the body.
+        Letting go snaps the part onto its colour. <b>Flip</b> swaps a limb pointing toward you for one pointing away (side views).
+        Save each pose you fix; then tell Claude to apply the fixes.</p>
+    </div>
+  </main>
+</div>
+
+<script>
+const D = /*DATA*/null;
+// --- The fit rig (tools/r6_fit.py): R6 boxes on this mod's bones, px, y down; 1 stud = 6 px. ---
+const NC = 6;
+const REST = { root: [0, 24, 0], hips: [0, 12, 0], head: [0, 0, 0], rightArm: [-6, 3, 0], leftArm: [6, 3, 0], rightThigh: [-6, 12, 0], leftThigh: [6, 12, 0] };
+const PARENT = { root: null, hips: 'root', head: 'hips', rightArm: 'hips', leftArm: 'hips', rightThigh: 'hips', leftThigh: 'hips' };
+const BONES = Object.keys(REST);
+const PARTS = [['hips', [-6, -12, -3], [6, 0, 3], 'torso'], ['head', [-3.6, -7, -3.6], [3.6, 0, 3.6], 'head'],
+  ['head', [-2.4, -5.4, -3.9], [2.4, -1.6, -3.5], 'face'], ['rightArm', [-6, -3, -3], [0, 9, 3], 'rightArm'],
+  ['leftArm', [0, -3, -3], [6, 9, 3], 'leftArm'], ['rightThigh', [0, 0, -3], [6, 12, 3], 'rightLeg'], ['leftThigh', [-6, 0, -3], [0, 12, 3], 'leftLeg']];
+const BONE_OF = { torso: 'hips', head: 'head', rightArm: 'rightArm', leftArm: 'leftArm', rightLeg: 'rightThigh', leftLeg: 'leftThigh' };
+const LABEL = { torso: 'Torso', head: 'Head', rightArm: 'Right arm', leftArm: 'Left arm', rightLeg: 'Right leg', leftLeg: 'Left leg' };
+// The end a person drags (bone space): hand, foot, top of the head.
+const TIP = { rightArm: [-3, 9, 0], leftArm: [3, 9, 0], rightLeg: [3, 12, 0], leftLeg: [-3, 12, 0], head: [0, -7, 0] };
+const LIGHT = (() => { const v = [0.35, 0.8, 0.48], n = Math.hypot(...v); return [v.map(x => x / n), 0.5]; })();
+const FACES = [];
+for (let ax = 0; ax < 3; ax++) {
+  const [b, c] = [0, 1, 2].filter(k => k !== ax);
+  for (const side of [0, 1]) {
+    const idx = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([u, v]) => { const pk = [0, 0, 0]; pk[ax] = side; pk[b] = u; pk[c] = v; return pk[0] * 4 + pk[1] * 2 + pk[2]; });
+    const n = [0, 0, 0]; n[ax] = side ? 1 : -1;
+    FACES.push([idx, n]);
+  }
+}
+const JI = {}; D.joints.forEach(([b, ax], k) => { JI[b + ':' + ax] = NC + k; });
+const mul = (A, B) => { const C = new Array(9).fill(0); for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) C[i * 3 + j] += A[i * 3 + k] * B[k * 3 + j]; return C; };
+const app = (A, v) => [A[0] * v[0] + A[1] * v[1] + A[2] * v[2], A[3] * v[0] + A[4] * v[1] + A[5] * v[2], A[6] * v[0] + A[7] * v[1] + A[8] * v[2]];
+function rot(x, y, z) {
+  const r = Math.PI / 180, cx = Math.cos(x * r), sx = Math.sin(x * r), cy = Math.cos(y * r), sy = Math.sin(y * r), cz = Math.cos(z * r), sz = Math.sin(z * r);
+  const rx = [1, 0, 0, 0, cx, -sx, 0, sx, cx], ry = [cy, 0, sy, 0, 1, 0, -sy, 0, cy], rz = [cz, -sz, 0, sz, cz, 0, 0, 0, 1];
+  return mul(rz, mul(ry, rx));
+}
+function angles(p) {
+  const a = {}; for (const b of BONES) a[b] = [0, 0, 0];
+  D.joints.forEach(([b, ax], k) => { a[b][ax] = p[NC + k]; });
+  return a;
+}
+function poseWorld(p) {
+  const a = angles(p), w = {};
+  for (const b of BONES) {
+    const par = PARENT[b], r = REST[b], pr = par ? REST[par] : [0, 0, 0];
+    const m = { R: rot(...a[b]), t: [r[0] - pr[0], r[1] - pr[1], r[2] - pr[2]] };
+    if (!par) { w[b] = m; continue; }
+    const P = w[par], t = app(P.R, m.t);
+    w[b] = { R: mul(P.R, m.R), t: [t[0] + P.t[0], t[1] + P.t[1], t[2] + P.t[2]] };
+  }
+  return w;
+}
+function cameraOf(p) {
+  const [yaw, pitch, s, tx, ty, persp] = p;
+  const view = mul(rot(pitch, 0, 0), rot(0, yaw, 0));
+  const project = v => { const f = s / Math.max(0.2, 1 - v[2] * persp); return [tx + f * v[0], ty - f * v[1]]; };
+  return { view, project, persp };
+}
+const toWorld = (W, q) => { const v = app(W.R, q); return [-(v[0] + W.t[0]), -(v[1] + W.t[1]), v[2] + W.t[2]]; };
+// The visible faces, far to near: [{poly, part, shade}] in footage px (as r6_fit.faces).
+function faces(p, only) {
+  const w = poseWorld(p), { view, project, persp } = cameraOf(p), out = [];
+  for (const [bone, lo, hi, part] of PARTS) {
+    if (only && part !== only && !(only === 'head' && part === 'face')) continue;
+    const W = w[bone], cs = [];
+    for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) for (const z of [lo[2], hi[2]]) cs.push(app(view, toWorld(W, [x, y, z])));
+    const uv = cs.map(project);
+    for (const [idx, n] of FACES) {
+      const nwr = app(W.R, n), nw = [-nwr[0], -nwr[1], nwr[2]], nc = app(view, nw);
+      const c = [0, 1, 2].map(k => idx.reduce((s, i) => s + cs[i][k], 0) / 4);
+      const tw = persp > 1e-6 ? [-c[0], -c[1], -c[2] + 1 / persp] : [0, 0, 1];
+      if (nc[0] * tw[0] + nc[1] * tw[1] + nc[2] * tw[2] <= 0) continue;
+      const shade = LIGHT[1] + (1 - LIGHT[1]) * Math.max(0, nw[0] * LIGHT[0][0] + nw[1] * LIGHT[0][1] + nw[2] * LIGHT[0][2]);
+      out.push({ z: c[2] + (part === 'face' ? 0.01 : 0), poly: idx.map(i => uv[i]), part, shade });
+    }
+  }
+  return out.sort((a, b) => a.z - b.z);
+}
+function tipOf(p, part) {
+  const w = poseWorld(p), { view, project } = cameraOf(p);
+  return project(app(view, toWorld(w[BONE_OF[part]], TIP[part])));
+}
+function axisCam(p, part) {
+  const w = poseWorld(p), { view } = cameraOf(p), W = w[BONE_OF[part]];
+  const a = app(view, toWorld(W, [0, 0, 0])), b = app(view, toWorld(W, TIP[part]));
+  const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], n = Math.hypot(...d) || 1;
+  return d.map(x => x / n);
+}
+
+// --- State ---
+const keys = D.keys.map(k => ({ ...k, fitted: k.params.slice(), params: k.params.slice(), saved: null, dirty: false,
+  cmap: Uint8Array.from(atob(k.cmap), c => c.charCodeAt(0)), image: Object.assign(new Image(), { src: k.img }) }));
+const playImgs = D.play.map(f => Object.assign(new Image(), { src: f.img }));
+let cur = 0, sel = null, mode = 'pose', showBoxes = true, playing = null, drag = null;
+const $ = id => document.getElementById(id);
+const cv = $('view'), g = cv.getContext('2d');
+const MS = D.mapSize;
+const off = document.createElement('canvas'); off.width = off.height = MS;
+const og = off.getContext('2d', { willReadFrequently: true });
+const PART_NAMES = Object.keys(LABEL);
+const clsOf = part => D.classes[part === 'face' ? 'head' : part];
+
+// Footage px -> canvas px for a crop [x0, y0, side].
+const toCanvas = (crop, size) => ([u, v]) => [(u - crop[0]) * size / crop[2], (v - crop[1]) * size / crop[2]];
+const toFoot = (crop, size) => ([x, y]) => [crop[0] + x * crop[2] / size, crop[1] + y * crop[2] / size];
+
+// Hard agreement on the key's colour map (as r6_fit_torch.agreement): agreeing body pixels over all body pixels of either.
+function drawClasses(p, only) {
+  og.setTransform(1, 0, 0, 1, 0, 0); og.clearRect(0, 0, MS, MS);
+  const k = keys[cur], T = toCanvas(k.crop, MS);
+  for (const f of faces(p, only)) {
+    og.fillStyle = `rgb(${clsOf(f.part) * 20},0,0)`;
+    og.beginPath(); f.poly.map(T).forEach(([x, y], i) => i ? og.lineTo(x, y) : og.moveTo(x, y)); og.closePath(); og.fill();
+  }
+  return og.getImageData(0, 0, MS, MS).data;
+}
+function agreement(p) {
+  const px = drawClasses(p), o = keys[cur].cmap;
+  let agree = 0, body = 0;
+  for (let i = 0; i < MS * MS; i++) {
+    if (o[i] === D.unknown) continue;
+    const dr = px[i * 4 + 3] > 127 ? Math.round(px[i * 4] / 20) : 0;
+    if (o[i] > 0 || dr > 0) body++;
+    if (dr === o[i] && o[i] > 0) agree++;
+  }
+  return body ? agree / body : 0;
+}
+// One part's fit to its own colour: its own pixels covered, less background covered (other parts may hide it: free).
+function partScore(p, part) {
+  const px = drawClasses(p, part), o = keys[cur].cmap, c = clsOf(part);
+  let s = 0;
+  for (let i = 0; i < MS * MS; i++) {
+    if (px[i * 4 + 3] < 128) continue;
+    if (o[i] === c) s += 1; else if (o[i] === 0) s -= 0.6;
+  }
+  return s;
+}
+function clampJoint(p, j) { const lim = D.limits[j - NC]; p[j] = Math.max(lim[0], Math.min(lim[1], p[j])); }
+// Coordinate search over some parameters, steps halving; keeps the best score.
+function search(p, idxs, steps, score, rounds = 3) {
+  let best = score(p);
+  for (const st of steps) {
+    for (let r = 0; r < rounds; r++) {
+      let moved = false;
+      for (const [j, scale] of idxs) for (const sg of [1, -1]) {
+        const q = p.slice(); q[j] += sg * st * scale; if (j >= NC) clampJoint(q, j);
+        const s = score(q);
+        if (s > best + 1e-9) { best = s; p = q; moved = true; }
+      }
+      if (!moved) break;
+    }
+  }
+  return p;
+}
+const boneIdx = (bone, axes = [0, 1, 2]) => axes.map(ax => JI[bone + ':' + ax]).filter(j => j !== undefined).map(j => [j, 1]);
+function snapPart(part) {
+  const k = keys[cur];
+  if (part === 'torso') {
+    const f = k.params[2] / 6;  // footage px per rig px x 1/6
+    k.params = search(k.params, [...boneIdx('hips'), [3, f * 0.5], [4, f * 0.5]], [8, 4, 2, 1], q => partScore(q, 'torso'));
+  } else {
+    k.params = search(k.params, boneIdx(BONE_OF[part]), [12, 6, 3, 1.5], q => partScore(q, part));
+  }
+}
+function pointAt(part, target) {
+  const k = keys[cur], bone = BONE_OF[part];
+  const d2 = q => { const t = tipOf(q, part); return -((t[0] - target[0]) ** 2 + (t[1] - target[1]) ** 2); };
+  k.params = search(k.params, boneIdx(bone, part === 'head' ? [0, 1] : [0, 2]), [16, 8, 4, 2, 1], d2, 4);
+}
+function flip(part) {
+  const k = keys[cur], d = axisCam(k.params, part), want = [d[0], d[1], -d[2]];
+  const fit = q => { const e = axisCam(q, part); return e[0] * want[0] + e[1] * want[1] + e[2] * want[2]; };
+  const idxs = boneIdx(BONE_OF[part], [0, 2]);
+  let best = null;
+  for (const start of [0, 90, -90, 180]) {
+    const q0 = k.params.slice(); q0[idxs[0][0]] += start; clampJoint(q0, idxs[0][0]);
+    const q = search(q0, idxs, [32, 16, 8, 4, 2, 1], fit, 6);
+    if (!best || fit(q) > fit(best)) best = q;
+  }
+  k.params = best;
+}
+
+// --- Drawing ---
+function poly(T, pts) { g.beginPath(); pts.map(T).forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); }
+function drawPose(p, crop, img) {
+  const S = cv.width, T = toCanvas(crop, S);
+  g.fillStyle = '#000'; g.fillRect(0, 0, S, S);
+  if (img.complete) g.drawImage(img, 0, 0, S, S);
+  if (!showBoxes) return;
+  for (const f of faces(p)) {
+    const col = D.show[clsOf(f.part)] || '#ffffff', on = sel && (f.part === sel || (sel === 'head' && f.part === 'face'));
+    poly(T, f.poly);
+    g.globalAlpha = f.part === 'face' ? 0.55 : 0.28 * f.shade + 0.12; g.fillStyle = f.part === 'face' ? '#111' : col; g.fill();
+    g.globalAlpha = 1; g.lineWidth = on ? 4 : 2; g.strokeStyle = on ? '#ffffff' : 'rgba(0,0,0,0.85)'; g.stroke();
+  }
+  if (sel && TIP[sel] && mode === 'pose') {
+    const [x, y] = T(tipOf(p, sel));
+    g.beginPath(); g.arc(x, y, 9, 0, Math.PI * 2); g.fillStyle = 'rgba(255,255,255,0.9)'; g.fill();
+    g.lineWidth = 2; g.strokeStyle = '#000'; g.stroke();
+  }
+}
+function pct(x) { return Math.round(x * 100) + '%'; }
+function cls(x) { return x >= 0.8 ? 'good' : x >= 0.6 ? 'warn' : 'bad'; }
+function render() {
+  if (playing) return;
+  const k = keys[cur];
+  drawPose(k.params, k.crop, k.image);
+  const a = agreement(k.params);
+  k.now = a;
+  $('now').textContent = pct(a); $('now').className = 'big ' + cls(a);
+  $('was').textContent = `fitted ${pct(k.match)}`;
+  $('hudL').textContent = `${k.time.toFixed(2)} s · frame ${k.frame}`;
+  $('hudR').textContent = sel ? LABEL[sel] : 'click a part';
+  renderKeys(); renderSliders();
+}
+function renderKeys() {
+  const box = $('keys');
+  if (!box.children.length) keys.forEach((k, n) => {
+    const b = document.createElement('button'); b.className = 'key';
+    b.innerHTML = '<span class="t"></span><span class="m"></span><span class="s"></span>';
+    b.addEventListener('click', () => { stopPlay(); cur = n; render(); });
+    box.appendChild(b);
+  });
+  keys.forEach((k, n) => {
+    const b = box.children[n], m = k.now ?? k.match;
+    b.setAttribute('aria-pressed', String(n === cur));
+    b.querySelector('.t').textContent = k.time.toFixed(2) + ' s';
+    const mm = b.querySelector('.m'); mm.textContent = pct(m); mm.className = 'm ' + cls(m);
+    b.querySelector('.s').textContent = k.dirty ? 'unsaved' : k.saved ? 'fixed' : '';
+  });
+}
+function renderSliders() {
+  const box = $('sliders'); box.innerHTML = '';
+  if (!sel) return;
+  const bone = BONE_OF[sel], k = keys[cur];
+  const names = ['Tilt', 'Twist', 'Swing'];
+  for (const ax of [0, 1, 2]) {
+    const j = JI[bone + ':' + ax]; if (j === undefined) continue;
+    const lim = D.limits[j - NC], id = 'sl' + ax;
+    const row = document.createElement('label'); row.className = 'sl';
+    row.innerHTML = `<span>${names[ax]}</span><input type="range" id="${id}" min="${lim[0]}" max="${lim[1]}" step="1" value="${k.params[j]}"><output>${Math.round(k.params[j])}°</output>`;
+    const inp = row.querySelector('input'), out = row.querySelector('output');
+    inp.addEventListener('input', () => { k.params[j] = +inp.value; k.dirty = true; out.textContent = inp.value + '°'; drawPose(k.params, k.crop, k.image); });
+    inp.addEventListener('change', render);
+    box.appendChild(row);
+  }
+  if (sel === 'torso') {
+    const row = document.createElement('label'); row.className = 'sl';
+    const base = k.fitted[2];
+    row.innerHTML = `<span>Size</span><input type="range" id="slSize" min="${base * 0.7}" max="${base * 1.3}" step="${base / 200}" value="${k.params[2]}"><output>${Math.round(k.params[2] / base * 100)}%</output>`;
+    const inp = row.querySelector('input'), out = row.querySelector('output');
+    inp.addEventListener('input', () => { k.params[2] = +inp.value; k.dirty = true; out.textContent = Math.round(k.params[2] / base * 100) + '%'; drawPose(k.params, k.crop, k.image); });
+    inp.addEventListener('change', render);
+    box.appendChild(row);
+  }
+  $('flip').disabled = !TIP[sel] || sel === 'head';
+}
+function renderParts() {
+  const box = $('parts');
+  for (const part of PART_NAMES) {
+    const b = document.createElement('button'); b.className = 'btn'; b.dataset.part = part;
+    b.innerHTML = `<span class="sw" style="background:${D.show[clsOf(part)]}"></span>${LABEL[part]}`;
+    b.addEventListener('click', () => { sel = part; syncParts(); render(); });
+    box.appendChild(b);
+  }
+}
+function syncParts() { for (const b of $('parts').children) b.setAttribute('aria-pressed', String(b.dataset.part === sel)); }
+
+// --- Pointer ---
+function canvasPt(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; }
+function inside(pt, pts) { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi) c = !c; } return c; }
+function hit(pt) {
+  const k = keys[cur], T = toCanvas(k.crop, cv.width), fs = faces(k.params);
+  for (let i = fs.length - 1; i >= 0; i--) if (inside(pt, fs[i].poly.map(T))) return fs[i].part === 'face' ? 'head' : fs[i].part;
+  return null;
+}
+cv.addEventListener('pointerdown', e => {
+  if (playing) return;
+  const pt = canvasPt(e), k = keys[cur], T = toCanvas(k.crop, cv.width);
+  let part = null;
+  if (sel && TIP[sel]) { const [x, y] = T(tipOf(k.params, sel)); if (Math.hypot(pt[0] - x, pt[1] - y) < 26) part = sel; }
+  part = part || hit(pt);
+  if (mode === 'move') part = part || 'torso';
+  if (!part) return;
+  sel = part; syncParts();
+  drag = { part, last: pt, start: k.params.slice() };
+  cv.setPointerCapture(e.pointerId);
+  render();
+});
+cv.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const k = keys[cur], pt = canvasPt(e), F = toFoot(k.crop, cv.width);
+  const dx = pt[0] - drag.last[0], dy = pt[1] - drag.last[1];
+  drag.last = pt;
+  if (mode === 'move') { const s = k.crop[2] / cv.width; k.params[3] += dx * s; k.params[4] += dy * s; }
+  else if (drag.part === 'torso') {
+    k.params[JI['hips:1']] += dx * 0.5; k.params[JI['hips:0']] += dy * 0.5;
+    clampJoint(k.params, JI['hips:0']);
+  } else pointAt(drag.part, F(pt));
+  k.dirty = true;
+  drawPose(k.params, k.crop, k.image);
+});
+function endDrag() {
+  if (!drag) return;
+  const part = drag.part; drag = null;
+  if (mode === 'pose' && part !== 'torso') snapPart(part);
+  render();
+}
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', endDrag);
+
+// --- Buttons ---
+function setMode(m) { mode = m; $('modePose').setAttribute('aria-pressed', String(m === 'pose')); $('modeMove').setAttribute('aria-pressed', String(m === 'move')); render(); }
+$('modePose').addEventListener('click', () => setMode('pose'));
+$('modeMove').addEventListener('click', () => setMode('move'));
+$('showBoxes').addEventListener('click', () => { showBoxes = !showBoxes; $('showBoxes').setAttribute('aria-pressed', String(showBoxes)); render(); });
+$('flip').addEventListener('click', () => { if (!sel || !TIP[sel]) return; flip(sel); snapPart(sel); keys[cur].dirty = true; render(); });
+$('snapPart').addEventListener('click', () => { if (!sel) return; snapPart(sel); keys[cur].dirty = true; render(); });
+$('snapAll').addEventListener('click', () => {
+  for (let r = 0; r < 2; r++) for (const part of ['torso', 'head', 'rightArm', 'leftArm', 'rightLeg', 'leftLeg']) snapPart(part);
+  keys[cur].dirty = true; render();
+});
+$('reset').addEventListener('click', () => { const k = keys[cur]; k.params = k.fitted.slice(); k.dirty = !!k.saved; render(); status('Back to the fitted pose (not saved yet).'); });
+function status(t) { $('status').textContent = t; }
+
+// --- Saving (the page's database: moves/<name>/fixes/f<frame>) ---
+let db = null;
+const fixRef = k => db.collection('moves/' + D.name + '/fixes').doc('f' + k.frame);
+$('save').addEventListener('click', async () => {
+  const k = keys[cur];
+  if (!db) { status('Saving is not available in this view. Open the page on claude.ai, signed in.'); return; }
+  $('save').disabled = true;
+  try {
+    const params = k.params.map(x => Math.round(x * 1000) / 1000);
+    await fixRef(k).set({ frame: k.frame, params, match: Math.round((k.now ?? 0) * 1000) / 1000, fitted: k.match });
+    k.saved = params; k.dirty = false; status(`Saved the pose at ${k.time.toFixed(2)} s.`);
+  } catch (e) {
+    status(e && e.code === 'invalid_argument' ? 'You can view this page but not save to it.' : 'Saving failed. Try again in a moment.');
+  } finally { $('save').disabled = false; render(); }
+});
+(async () => {
+  try { db = await window.claude?.use?.('db'); } catch (e) { db = null; }
+  if (!db) { status('Saving is off in this view; fixes stay on this screen only.'); return; }
+  try {
+    const snap = await db.collection('moves/' + D.name + '/fixes').get();
+    for (const d of snap.docs) {
+      const v = d.data(), k = keys.find(k => k.frame === v.frame);
+      if (k && Array.isArray(v.params)) { k.params = v.params.slice(); k.saved = v.params.slice(); }
+    }
+    if (snap.size) status(`Loaded ${snap.size} saved fix${snap.size > 1 ? 'es' : ''}.`);
+    render();
+  } catch (e) { status('Could not load saved fixes.'); }
+})();
+
+// --- Playback: every frame, its pose eased between the (current) key poses, over its footage ---
+function eased(i) {
+  const ks = keys.map(k => k.frame);
+  let b = ks.findIndex(f => f >= i); if (b < 0) b = ks.length - 1;
+  if (ks[b] === i) return keys[b].params;
+  const a = Math.max(0, b - 1), A = keys[a].params, B = keys[b].params;
+  let f = ks[b] === ks[a] ? 0 : (i - ks[a]) / (ks[b] - ks[a]); f = f * f * (3 - 2 * f);
+  return A.map((x, j) => { let d = B[j] - x; if (j >= NC) d = ((d + 180) % 360 + 360) % 360 - 180; return x + f * d; });
+}
+function stopPlay() { if (playing) { cancelAnimationFrame(playing.raf); playing = null; $('play').textContent = 'Play move'; render(); } }
+$('play').addEventListener('click', () => {
+  if (playing) return stopPlay();
+  $('play').textContent = 'Stop';
+  const t0 = performance.now();
+  playing = { raf: 0 };
+  const step = now => {
+    if (!playing) return;
+    const n = Math.floor((now - t0) / 1000 * D.fps) % D.play.length, f = D.play[n];
+    drawPose(eased(f.frame), f.crop, playImgs[n]);
+    $('hudL').textContent = `${(f.frame / D.fps).toFixed(2)} s · frame ${f.frame}`; $('hudR').textContent = 'playing';
+    playing.raf = requestAnimationFrame(step);
+  };
+  playing.raf = requestAnimationFrame(step);
+});
+
+// --- Start ---
+$('title').textContent = 'Key Pose Fixer';
+$('subtitle').textContent = `${D.name} · ${keys.length} key poses · ${D.frames.length} frames`;
+renderParts();
+sel = null;
+keys.forEach(k => { k.image.onload = () => { if (keys[cur] === k) render(); }; });
+const worst = keys.reduce((b, k, n) => k.match < keys[b].match ? n : b, 0);
+cur = worst;
+render();
+</script>

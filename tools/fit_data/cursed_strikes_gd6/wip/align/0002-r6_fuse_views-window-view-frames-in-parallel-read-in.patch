@@ -1,0 +1,122 @@
+From 73d1b519346070a2e060c3692f1e1f9e989783ae Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 14 Oct 2026 04:36:49 +0000
+Subject: [PATCH 2/2] r6_fuse_views: window view frames in parallel, read in
+ sequence (no per-frame seeks); EVAL drops footage
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HQYiYmhRzcQpLCYMVVDQeZ
+---
+ tools/r6_fuse_views.py | 72 ++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 59 insertions(+), 13 deletions(-)
+
+diff --git a/tools/r6_fuse_views.py b/tools/r6_fuse_views.py
+index a04cb9c..61f62fd 100644
+--- a/tools/r6_fuse_views.py
++++ b/tools/r6_fuse_views.py
+@@ -169,28 +169,69 @@ def own_ag(rep, k):
+ # Every view's frame, windowed once (its own tracked camera), for scoring poses in all views at once.
+ cap = cv2.VideoCapture(tracks[(REF, 'fwd')]['video'])
+ _views = {}
++KEEP_RGB = not int(os.environ.get('EVAL', '0'))  # only the written conversions need the footage itself
++
++
++def _build_view(rep, k, f):
++    cp = best_cam(rep, k)
++    if cp is None:
++        return None
++    tr = tracks[(rep, 'fwd')]
++    light = (np.array(tr['light'][0]), tr['light'][1])
++    rgb = f[..., ::-1].copy()
++    enc = F.classify(rgb, pal)
++    v = T.View([rgb], {0: enc}, [0], 30, 112); v.lite = True
++    cpa = np.array(cp, float)
++    fit = T.Fit([v], cpa[None, NC:], [cpa[None, :5]], [float(cpa[5])], [(torch.tensor(light[0], dtype=T.DT), light[1])])
++    fb = F.Fitter(112); fb.light = light
++    v.window(0, cpa, fb)
++    if not KEEP_RGB:
++        v.frames, v.encs, rgb = [None], {}, None  # scoring needs only the window
++    return (rgb, fit, cpa, light)
+ 
+ 
+ def view_of(rep, k):
+     if (rep, k) not in _views:
+-        cp = best_cam(rep, k)
+-        if cp is None:
++        if best_cam(rep, k) is None:
+             _views[(rep, k)] = None
+             return None
+-        tr = tracks[(rep, 'fwd')]
+-        light = (np.array(tr['light'][0]), tr['light'][1])
+         cap.set(cv2.CAP_PROP_POS_FRAMES, k); ok, f = cap.read()
+-        rgb = f[..., ::-1].copy()
+-        enc = F.classify(rgb, pal)
+-        v = T.View([rgb], {0: enc}, [0], 30, 112); v.lite = True
+-        cpa = np.array(cp, float)
+-        fit = T.Fit([v], cpa[None, NC:], [cpa[None, :5]], [float(cpa[5])], [(torch.tensor(light[0], dtype=T.DT), light[1])])
+-        fb = F.Fitter(112); fb.light = light
+-        v.window(0, cpa, fb)
+-        _views[(rep, k)] = (rgb, fit, cpa, light)
++        _views[(rep, k)] = _build_view(rep, k, f)
+     return _views[(rep, k)]
+ 
+ 
++def _prefetch_chunk(keys):
++    torch.set_num_threads(1)
++    c = cv2.VideoCapture(tracks[(REF, 'fwd')]['video'])
++    frames = sorted({k for _, k in keys})
++    c.set(cv2.CAP_PROP_POS_FRAMES, frames[0])
++    pos, img, out = frames[0], {}, {}
++    for k in frames:
++        while pos <= k:
++            ok, f = c.read()
++            pos += 1
++        img[k] = f
++    for rep, k in keys:
++        out[(rep, k)] = _build_view(rep, k, img[k])
++    return out
++
++
++def prefetch(keys, workers=int(os.environ.get('PREFETCH_WORKERS', '4'))):
++    """Windows many view frames at once: contiguous runs of frames read in sequence (no seeking), on several processes."""
++    keys = sorted({(r, k) for r, k in keys if (r, k) not in _views and best_cam(r, k) is not None}, key=lambda x: (x[1], x[0]))
++    if not keys:
++        return
++    if workers <= 1 or len(keys) < 8:
++        _views.update(_prefetch_chunk(keys))
++        return
++    import multiprocessing as mp
++    n = -(-len(keys) // workers)
++    chunks = [keys[i:i + n] for i in range(0, len(keys), n)]
++    with mp.get_context('fork').Pool(len(chunks)) as pool:
++        for d in pool.map(_prefetch_chunk, chunks):
++            _views.update(d)
++
++
+ def multi_score(t, poses):
+     """Each pose scored in every view at moment t: the views' agreements, weighted by how well each view's own
+     tracking fits there (a view lost in smoke counts less). Returns (totals (B,), per-view agreements {rep: (B,)})."""
+@@ -276,6 +317,9 @@ if WARP > 0:
+     T_ALL = list(range(first, last + 1))
+     others_order = [r for r in REPS if r != REF]
+     report['warp'] = {}
++    prefetch([(r, t - REPS[REF] + REPS[r] + shift[r] + o) for r in REPS for t in T_ALL
++              for o in (range(-WARP, WARP + 1) if r != REF else (0,))])
++    print(f'prefetched {len(_views)} view frames ({_time.time() - _t0:.0f} s)', flush=True)
+     for rnd in range(WARP_ROUNDS):
+         for v in others_order:
+             base = {t: t - REPS[REF] + REPS[v] + shift[v] for t in T_ALL}
+@@ -380,7 +424,9 @@ for b in BONES:
+ sel, sel_score = {}, {}
+ # EVAL=n: every n-th moment only, scored per view, nothing written (for comparing methods).
+ EVAL = int(os.environ.get('EVAL', '0'))
+-for t in [t for t in fused if not EVAL or (t - first) % EVAL == 0]:
++MOMENTS = [t for t in fused if not EVAL or (t - first) % EVAL == 0]
++prefetch([(r, src_frame(r, t)) for r in REPS for t in MOMENTS])
++for t in MOMENTS:
+     cands = [dict(fused[t])]
+     opts = {b: [fused[t][b]] for b in BONES}
+     for rep in REPS:
+-- 
+2.43.0
+

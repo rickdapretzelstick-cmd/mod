@@ -1,0 +1,19 @@
+{
+ "frames": 98,
+ "lambda": 0.0008,
+ "track_mean": 0.8619,
+ "global_mean": 0.8825,
+ "best_candidate_mean": 0.8871,
+ "track_min": 0.5251,
+ "global_min": 0.5884,
+ "track_ge_0.90": 46,
+ "global_ge_0.90": 53,
+ "picked_from": {
+  "track": 25,
+  "fwd-1+sweep": 12,
+  "fwd+1+sweep": 14,
+  "bwd+sweep": 26,
+  "fwd+sweep": 19,
+  "bwd": 2
+ }
+}

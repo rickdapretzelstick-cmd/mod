@@ -1,0 +1,86 @@
+From d640d80ad7083f02aa7532742110b0489655212c Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 15 Oct 2026 00:14:45 +0000
+Subject: [PATCH 1/3] hard_draw: boxes cover the pixel centres inside them
+ (outline edges inset half a pixel)
+
+cv2.fillConvexPoly paints every pixel the outline touches, so each box came out ~0.5 window px bigger all round than
+the soft rasteriser's (and the footage's, sampled at pixel centres) picture. Mismatching pixels against the soft
+render drop from ~170-300 to ~50-130 per frame. R6_LOOSE_EDGES=1 restores the old drawing. Not a build change (tools/
+only); measured with a scratch script on tracked frames.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HQYiYmhRzcQpLCYMVVDQeZ
+---
+ tools/r6_fit_torch.py | 48 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 47 insertions(+), 1 deletion(-)
+
+diff --git a/tools/r6_fit_torch.py b/tools/r6_fit_torch.py
+index 780b2a9..5fc6206 100644
+--- a/tools/r6_fit_torch.py
++++ b/tools/r6_fit_torch.py
+@@ -924,6 +924,46 @@ DEBUG = os.environ.get('R6_DEBUG', '0') == '1'
+ HARD_SCORE = os.environ.get('R6_SOFT_SCORE', '0') != '1'
+ 
+ 
++# cv2.fillConvexPoly paints every pixel its outline touches: a polygon comes out ~half a pixel bigger all round than the
++# pixels whose centres it covers (what the soft rasteriser's argmax, and the footage sampled at pixel centres, show).
++# At 112 px per window that is one window pixel (~2 footage px) on every box's width and height. EXACT_EDGES insets
++# each face's edges on a box's outline (those whose neighbouring side of the same box is not drawn) by half a pixel, so
++# a box covers the pixel centres inside it; the edges between two drawn sides of one box stay where they are (no seam).
++# R6_LOOSE_EDGES=1 goes back to the loose drawing.
++EXACT_EDGES = os.environ.get('R6_LOOSE_EDGES', '0') != '1'
++_ADJ = np.zeros((6, 4), np.int64)  # the side of the same box across each edge of each side
++for _f in range(6):
++    for _j in range(4):
++        _e = {int(FACE_IDX[_f, _j]), int(FACE_IDX[_f, (_j + 1) % 4])}
++        _ADJ[_f, _j] = next(g for g in range(6) if g != _f and _e <= set(FACE_IDX[g].tolist()))
++_ADJ_ALL = (np.arange(len(F.PARTS))[:, None, None] * 6 + _ADJ[None]).reshape(-1, 4)  # (faces, 4) global side index
++
++
++def _inset_outline(qw, show, d=0.5):
++    """Faces (B, Fc, 4, 2) in window px with each edge on its box's outline moved in by d px; faces left with no
++    inside drop out of `show`."""
++    a = qw
++    b = np.roll(qw, -1, 2)
++    e = b - a
++    L = np.maximum(np.linalg.norm(e, axis=-1), 1e-6)
++    area = (a[..., 0] * b[..., 1] - b[..., 0] * a[..., 1]).sum(-1)
++    s = np.where(area >= 0, 1.0, -1.0)[..., None]
++    n = np.stack([-e[..., 1], e[..., 0]], -1) * (s / L)[..., None]  # inward unit normals (B, Fc, 4, 2)
++    dist = d * ~show[:, _ADJ_ALL]  # (B, Fc, 4): an edge whose neighbour side is not drawn is on the outline
++    npv, dpv = np.roll(n, 1, 2), np.roll(dist, 1, 2)  # the edge ending at each vertex
++    det = n[..., 0] * npv[..., 1] - n[..., 1] * npv[..., 0]
++    ok = np.abs(det) > 0.05
++    det = np.where(ok, det, 1.0)
++    x = (dist * npv[..., 1] - dpv * n[..., 1]) / det
++    y = (n[..., 0] * dpv - npv[..., 0] * dist) / det
++    mv = np.where(ok[..., None], np.stack([x, y], -1), n * np.maximum(dist, dpv)[..., None])
++    mv = np.clip(mv, -3 * d, 3 * d)
++    out = qw + mv
++    a2, b2 = out, np.roll(out, -1, 2)
++    area2 = (a2[..., 0] * b2[..., 1] - b2[..., 0] * a2[..., 1]).sum(-1)
++    return out, show & (area2 * area > 0)
++
++
+ def hard_draw(view, i, J, cam, persp, light, classes, leave_out=()):
+     """Each candidate's hard picture in frame i's window: (B, res, res) class labels (0 = floor), the nearest face on
+     top (faces sorted by their centres' depth, as rasterise does), back faces and slivers under ~10 px left out."""
+@@ -941,7 +981,13 @@ def hard_draw(view, i, J, cam, persp, light, classes, leave_out=()):
+         keep = np.array([part not in leave_out for _, _, _, part in F.PARTS]).repeat(6)
+         show &= keep[None]
+     # Window pixel coordinates (pixel centres on integers), 4 bits of sub-pixel precision for OpenCV.
+-    pts = np.round(((q - [x0, y0]) * k - 0.5) * 16).astype(np.int32)
++    qw = (q - [x0, y0]) * k - 0.5
++    if EXACT_EDGES:
++        # Twice: a side seen nearly edge-on (thinner than a pixel) has no inside once inset, so its neighbour's edge
++        # along it is on the outline after all.
++        show = _inset_outline(qw, show)[1]
++        qw, show = _inset_outline(qw, show)
++    pts = np.round(qw * 16).astype(np.int32)
+     order = np.argsort(depth.numpy(), 1)  # farthest first (depth grows toward the camera)
+     cls = classes.numpy()
+     out = np.zeros((len(q), res, res), np.uint8)
+-- 
+2.43.0
+

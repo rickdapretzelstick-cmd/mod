@@ -1,0 +1,415 @@
+<title>JJK Animation Viewer</title>
+<style>
+/* Layout: a clip shelf on the left, the stage filling the rest, a transport bar under it (stacks on phones). */
+:root {
+  --bg: #eef0f3; --panel: #ffffff; --ink: #1c2027; --muted: #5d6573; --line: #d8dce3;
+  --accent: #c8102e; --accent-ink: #ffffff; --stage: #dfe3ea; --grid: #b9c0cc; --chip: #f3e3e6;
+  --f-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif; --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12141a; --panel: #1a1d25; --ink: #e8eaf0; --muted: #9aa2b1; --line: #2b303b;
+  --accent: #ff4d63; --accent-ink: #12141a; --stage: #171a21; --grid: #343a47; --chip: #3a1f26; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12141a; --panel: #1a1d25; --ink: #e8eaf0; --muted: #9aa2b1; --line: #2b303b;
+  --accent: #ff4d63; --accent-ink: #12141a; --stage: #171a21; --grid: #343a47; --chip: #3a1f26; color-scheme: dark }
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); }
+.app { display: grid; grid-template-columns: 270px 1fr; gap: 12px; height: 100%; box-sizing: border-box; padding-block: 12px; padding-inline: 16px; }
+.shelf { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; min-height: 0; }
+.shelf header { padding: 12px 12px 8px; display: grid; gap: 8px; border-bottom: 1px solid var(--line); }
+h1 { font-family: var(--f-display); font-size: 1.15rem; margin: 0; letter-spacing: .02em; text-wrap: balance; }
+h1 span { color: var(--accent); }
+#search { width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); color: var(--ink); font: inherit; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; font-size: .78rem; color: var(--muted); }
+.filters label { display: flex; gap: 4px; align-items: center; }
+.list { overflow-y: auto; padding: 6px; min-height: 0; flex: 1; }
+.group { font-family: var(--f-mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 10px 6px 4px; }
+.clip { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; border: 0; background: none; color: var(--ink);
+  font: inherit; font-size: .86rem; padding: 5px 8px; border-radius: 6px; cursor: pointer; }
+.clip:hover { background: var(--bg); }
+.clip[aria-current="true"] { background: var(--accent); color: var(--accent-ink); }
+.clip small { font-family: var(--f-mono); opacity: .75; }
+.clip .new { font-size: .62rem; padding: 1px 5px; border-radius: 9px; background: var(--chip); color: var(--accent); font-family: var(--f-mono); align-self: center; }
+.clip[aria-current="true"] .new { background: var(--accent-ink); }
+.main { display: grid; grid-template-rows: auto 1fr auto; gap: 10px; min-width: 0; min-height: 0; }
+.titlebar { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+.titlebar h2 { font-family: var(--f-display); margin: 0; font-size: 1.4rem; }
+.meta { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); }
+.stage { position: relative; background: var(--stage); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-height: 260px; }
+#view { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+.cams { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+.hint { position: absolute; left: 10px; bottom: 8px; font-size: .74rem; color: var(--muted); }
+.transport { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+button.ctl { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 7px; padding: 6px 10px; font: inherit; font-size: .85rem; cursor: pointer; }
+button.ctl[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.ctl:focus-visible, .clip:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#play { min-width: 74px; font-weight: 600; }
+.time { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: .85rem; min-width: 9.5em; }
+.scrub { position: relative; flex: 1; min-width: 160px; }
+#scrub { width: 100%; accent-color: var(--accent); }
+.ticks { position: relative; height: 8px; margin: 0 8px; }
+.ticks i { position: absolute; top: 0; width: 2px; height: 8px; background: var(--accent); opacity: .7; transform: translateX(-1px); }
+.tabs { display: flex; gap: 4px; }
+.tabs button { flex: 1; border: 1px solid var(--line); background: var(--bg); color: var(--muted); border-radius: 7px; padding: 5px 8px; font: inherit; font-size: .82rem; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.rigpane { position: relative; min-width: 0; min-height: 0; height: 100%; }
+.stage.split { display: grid; grid-template-columns: 1fr 1fr; }
+.ref { position: relative; background: #0b0c0f; border-right: 1px solid var(--line); min-height: 0; }
+.ref img, .ref canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
+.pane-label { position: absolute; top: 8px; left: 10px; font-family: var(--f-mono); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase;
+  color: #fff; background: rgba(0, 0, 0, .55); padding: 2px 6px; border-radius: 4px; }
+.rigpane .pane-label { color: var(--ink); background: var(--panel); }
+.empty { padding: 12px 10px; font-size: .84rem; color: var(--muted); line-height: 1.45; }
+.empty code { font-family: var(--f-mono); font-size: .76rem; }
+@media (max-width: 760px) { .stage.split { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } .ref { border-right: 0; border-bottom: 1px solid var(--line); } }
+@media (max-width: 760px) { .app { grid-template-columns: 1fr; grid-template-rows: 220px minmax(320px, 1fr); height: auto; } .main { min-height: 520px; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600&family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<div class="app">
+  <aside class="shelf">
+    <header>
+      <h1>JJK <span>Animation</span> Viewer</h1>
+      <div class="tabs" role="tablist" aria-label="Library">
+        <button role="tab" id="tabClips" aria-selected="true">Clips</button><button role="tab" id="tabConv" aria-selected="false">Conversions</button>
+      </div>
+      <input id="search" type="search" placeholder="Find a clip (e.g. manji, light_)" aria-label="Find a clip">
+      <div class="filters" id="filters"><label><input id="onlyNew" type="checkbox"> Reworked only</label></div>
+    </header>
+    <nav class="list" id="list" aria-label="Clips"></nav>
+  </aside>
+  <section class="main">
+    <div class="titlebar"><h2 id="name">—</h2><span class="meta" id="meta"></span></div>
+    <div class="stage" id="stage">
+      <div class="ref" id="ref" hidden>
+        <img id="refImg" alt="Reference footage frame"><canvas id="refFit" aria-hidden="true"></canvas>
+        <span class="pane-label">Roblox footage</span>
+      </div>
+      <div class="rigpane">
+        <canvas id="view" aria-label="The animated rig"></canvas>
+        <span class="pane-label" id="rigLabel" hidden>Converted · mod rig</span>
+        <div class="cams" role="group" aria-label="Camera">
+          <button class="ctl" data-cam="34">¾</button><button class="ctl" data-cam="front">Front</button>
+          <button class="ctl" data-cam="side">Side</button><button class="ctl" data-cam="back">Back</button><button class="ctl" data-cam="top">Top</button>
+        </div>
+        <div class="hint">Drag to orbit · scroll to zoom · Space play/pause · ←/→ one tick</div>
+      </div>
+    </div>
+    <div class="transport">
+      <div class="row">
+        <button class="ctl" id="play">Pause</button>
+        <button class="ctl" id="back" aria-label="Back one tick">◀ 50 ms</button>
+        <button class="ctl" id="fwd" aria-label="Forward one tick">50 ms ▶</button>
+        <div class="scrub"><input id="scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Time in the clip"><div class="ticks" id="ticks"></div></div>
+        <span class="time" id="time">0 / 0 ms</span>
+      </div>
+      <div class="row" role="group" aria-label="Speed">
+        <span class="meta">Speed</span>
+        <button class="ctl" data-speed="0.1">0.1×</button><button class="ctl" data-speed="0.25">0.25×</button>
+        <button class="ctl" data-speed="0.5">0.5×</button><button class="ctl" data-speed="1" aria-pressed="true">1×</button>
+        <span class="meta" style="margin-left:8px">Loop</span><button class="ctl" id="loop" aria-pressed="true">On</button>
+        <span class="meta" style="margin-left:8px">Ghosts</span><button class="ctl" id="ghost" aria-pressed="false">Key poses</button>
+      </div>
+      <div class="row" id="convRow" role="group" aria-label="Conversion" hidden>
+        <span class="meta">Footage</span><button class="ctl" id="fitBtn" aria-pressed="true">Fit overlay</button>
+        <button class="ctl" id="followBtn" aria-pressed="true">Match footage camera</button>
+        <span class="meta" id="convInfo"></span>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// The mod's clips (tools/build_anim_viewer.py) and its player rig (client.anim.rig.Rig): pixels, y down, model space.
+const CLIPS = /*CLIPS*/[];
+// Footage-to-clip conversions (tools/r6_fit.py --clip): per footage frame its picture, the fitted R6 boxes over it and
+// the fitted camera (viewer yaw/pitch, radians); the converted clip plays on the rig beside it.
+const CONVERSIONS = /*CONVERSIONS*/[];
+const REST = { root: [0, 24, 0], hips: [0, 12, 0], chest: [0, 8, 0], neck: [0, 0, 0], head: [0, 0, 0],
+  rightArm: [-5, 2, 0], rightForearm: [-6, 6, 0], rightHand: [-6, 10, 0], leftArm: [5, 2, 0], leftForearm: [6, 6, 0], leftHand: [6, 10, 0],
+  rightThigh: [-1.9, 12, 0], rightShin: [-1.9, 18, 0], rightFoot: [-1.9, 22, 0], leftThigh: [1.9, 12, 0], leftShin: [1.9, 18, 0], leftFoot: [1.9, 22, 0] };
+const PARENT = { root: null, hips: 'root', chest: 'hips', neck: 'chest', head: 'neck', rightArm: 'chest', rightForearm: 'rightArm', rightHand: 'rightForearm',
+  leftArm: 'chest', leftForearm: 'leftArm', leftHand: 'leftForearm', rightThigh: 'hips', rightShin: 'rightThigh', rightFoot: 'rightShin',
+  leftThigh: 'hips', leftShin: 'leftThigh', leftFoot: 'leftShin' };
+const ORDER = Object.keys(REST);
+// Each piece: its bone, its box (from, to) in that bone's space, its colour.
+const SKIN = 0xd9a07a, SHIRT = 0x1f6f8b, PANTS = 0x2b3a67, SHOE = 0x3b3b40, HAIR = 0x2a1d17;
+const PIECES = [
+  ['head', [-4, -8, -4], [4, 0, 4], SKIN], ['head', [-4.2, -8.4, -4.2], [4.2, -6, 4.2], HAIR],
+  ['chest', [-4, -8, -2], [4, 0, 2], SHIRT], ['hips', [-4, -4, -2], [4, 0, 2], PANTS],
+  ['rightArm', [-3, -2, -2], [1, 4, 2], SHIRT], ['rightForearm', [-2, 0, -2], [2, 4, 2], SKIN], ['rightHand', [-2, 0, -2], [2, 2, 2], SKIN],
+  ['leftArm', [-1, -2, -2], [3, 4, 2], SHIRT], ['leftForearm', [-2, 0, -2], [2, 4, 2], SKIN], ['leftHand', [-2, 0, -2], [2, 2, 2], SKIN],
+  ['rightThigh', [-2, 0, -2], [2, 6, 2], PANTS], ['rightShin', [-2, 0, -2], [2, 4, 2], PANTS], ['rightFoot', [-2, 0, -2], [2, 2, 2], SHOE],
+  ['leftThigh', [-2, 0, -2], [2, 6, 2], PANTS], ['leftShin', [-2, 0, -2], [2, 4, 2], PANTS], ['leftFoot', [-2, 0, -2], [2, 2, 2], SHOE],
+];
+const EASE = {
+  LINEAR: f => f, EASE_IN: f => f * f * f, EASE_OUT: f => 1 - (1 - f) ** 3,
+  EASE_IN_OUT: f => f < 0.5 ? 4 * f * f * f : 1 - Math.pow(-2 * f + 2, 3) / 2, STEP: f => 0,
+  OVERSHOOT: f => { const c = 1.9, g = f - 1; return 1 + (c + 1) * g * g * g + c * g * g; },
+  SPRING: f => 1 - Math.exp(-6 * f) * Math.cos(f * Math.PI * 4.5),
+};
+function sample(keys, t) {
+  if (!keys || !keys.length) return null;
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const a = keys[i], b = keys[i + 1];
+    if (t < b[0]) {
+      const span = b[0] - a[0], f = span <= 0 ? 1 : (t - a[0]) / span;
+      const e = (EASE[b[2]] || EASE.EASE_IN_OUT)(Math.min(1, Math.max(0, f)));
+      return a[1].map((v, k) => v + (b[1][k] - v) * e);
+    }
+  }
+  return keys[keys.length - 1][1];
+}
+
+// --- Scene ---
+const canvas = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 100);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x666677, 0.85));
+const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(2, 4, -3); scene.add(sun);
+let grid;
+function themeColors() {
+  const cs = getComputedStyle(document.documentElement);
+  scene.background = new THREE.Color(cs.getPropertyValue('--stage').trim() || '#dfe3ea');
+  if (grid) scene.remove(grid);
+  const g = cs.getPropertyValue('--grid').trim() || '#b9c0cc';
+  grid = new THREE.GridHelper(8, 32, g, g); scene.add(grid);
+}
+themeColors();
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeColors); } catch (e) {}
+new MutationObserver(themeColors).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+// The rig: model space (pixels, y down) scaled to blocks and flipped the way the game's renderer flips it.
+function makeRig(opacity) {
+  const model = new THREE.Group();
+  model.scale.set(-1 / 16, -1 / 16, 1 / 16);
+  model.position.y = 24 / 16;
+  const pieces = PIECES.map(([bone, a, b, color]) => {
+    const geo = new THREE.BoxGeometry(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+    geo.translate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
+    const mat = new THREE.MeshLambertMaterial({ color, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.matrixAutoUpdate = false;
+    if (bone === 'chest') mesh.userData.offset = [0, 0, 0];
+    model.add(mesh);
+    return { bone, mesh };
+  });
+  // The body's two segments sit off their bones as in Rig (chest: its top 8 px; hips: the lower 4).
+  scene.add(model);
+  return { model, pieces };
+}
+const rig = makeRig(1);
+let ghosts = [];
+
+const M = THREE.Matrix4, E = THREE.Euler;
+function solve(clip, t) {
+  const world = {};
+  for (const b of ORDER) {
+    const tr = clip ? clip.tracks[b] : null;
+    const rot = (tr && sample(tr.rot, t)) || [0, 0, 0];
+    const pos = (tr && sample(tr.pos, t)) || [0, 0, 0];
+    const r = REST[b], p = PARENT[b] ? REST[PARENT[b]] : [0, 0, 0];
+    const local = new M().makeTranslation(r[0] - p[0] - pos[0], r[1] - p[1] - pos[1], r[2] - p[2] - pos[2]);
+    local.multiply(new M().makeRotationFromEuler(new E(rot[0] * Math.PI / 180, rot[1] * Math.PI / 180, rot[2] * Math.PI / 180, 'ZYX')));
+    world[b] = PARENT[b] ? world[PARENT[b]].clone().multiply(local) : local;
+  }
+  return world;
+}
+function pose(r, clip, t) {
+  const world = solve(clip, t);
+  for (const { bone, mesh } of r.pieces) { mesh.matrix.copy(world[bone]); mesh.matrixWorldNeedsUpdate = true; }
+}
+
+// --- Camera (orbit) ---
+const cam = { yaw: -0.6, pitch: 0.18, dist: 4.2, target: new THREE.Vector3(0, 1.0, 0) };
+const PRESETS = { '34': [-0.6, 0.18], front: [0, 0.08], side: [-Math.PI / 2, 0.05], back: [Math.PI, 0.1], top: [-0.4, 1.25] };
+function placeCamera() {
+  const c = Math.cos(cam.pitch);
+  camera.position.set(cam.target.x + Math.sin(cam.yaw) * c * cam.dist, cam.target.y + Math.sin(cam.pitch) * cam.dist,
+    cam.target.z - Math.cos(cam.yaw) * c * cam.dist);
+  camera.lookAt(cam.target);
+}
+let drag = null;
+canvas.addEventListener('pointerdown', e => {
+  if (state.conv && state.follow) document.getElementById('followBtn').click(); drag = [e.clientX, e.clientY]; canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; });
+canvas.addEventListener('pointermove', e => { if (!drag) return; cam.yaw -= (e.clientX - drag[0]) * 0.008; cam.pitch = Math.max(-0.3, Math.min(1.45, cam.pitch + (e.clientY - drag[1]) * 0.006)); drag = [e.clientX, e.clientY]; });
+canvas.addEventListener('pointerup', () => { drag = null; canvas.style.cursor = 'grab'; });
+canvas.addEventListener('wheel', e => { e.preventDefault(); cam.dist = Math.max(1.6, Math.min(10, cam.dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: false });
+document.querySelectorAll('[data-cam]').forEach(b => b.addEventListener('click', () => { [cam.yaw, cam.pitch] = PRESETS[b.dataset.cam]; }));
+
+// --- Clips and transport ---
+const state = { clip: null, t: 0, playing: true, speed: 1, loop: true, ghosts: false, tab: 'clips', conv: null, fit: true, follow: true };
+const list = document.getElementById('list'), search = document.getElementById('search'), onlyNew = document.getElementById('onlyNew');
+function renderList() {
+  const q = search.value.trim().toLowerCase();
+  list.textContent = '';
+  if (state.tab === 'conv') return renderConversions(q);
+  let group = null;
+  for (const c of CLIPS) {
+    if (q && !(c.name.toLowerCase().includes(q) || c.group.includes(q))) continue;
+    if (onlyNew.checked && !c.authored) continue;
+    if (c.group !== group) { group = c.group; const g = document.createElement('div'); g.className = 'group'; g.textContent = group; list.append(g); }
+    const b = document.createElement('button');
+    b.className = 'clip'; b.setAttribute('aria-current', String(c === state.clip && !state.conv));
+    b.innerHTML = `<span>${c.name}</span>${c.authored ? '<span class="new">reworked</span>' : ''}<small>${c.duration}</small>`;
+    b.addEventListener('click', () => { state.conv = null; showSplit(false); select(c); });
+    list.append(b);
+  }
+}
+function renderConversions(q) {
+  const shown = CONVERSIONS.filter(v => !q || v.name.toLowerCase().includes(q) || v.clip.toLowerCase().includes(q));
+  if (!shown.length) {
+    list.innerHTML = '<div class="empty">No conversions yet. Fit footage with<br><code>python3 tools/r6_fit.py &lt;video&gt; --range a:b --clip group/name</code><br>then rebuild with <code>tools/build_anim_viewer.py</code>.</div>';
+    return;
+  }
+  const g = document.createElement('div'); g.className = 'group'; g.textContent = 'footage → clip'; list.append(g);
+  for (const v of shown) {
+    const b = document.createElement('button');
+    b.className = 'clip'; b.setAttribute('aria-current', String(v === state.conv));
+    b.innerHTML = `<span>${v.name}</span><small>${v.frames.length} fr</small>`;
+    b.addEventListener('click', () => selectConv(v));
+    list.append(b);
+  }
+}
+function setTab(tab) {
+  state.tab = tab;
+  document.getElementById('tabClips').setAttribute('aria-selected', String(tab === 'clips'));
+  document.getElementById('tabConv').setAttribute('aria-selected', String(tab === 'conv'));
+  search.placeholder = tab === 'conv' ? 'Find a conversion' : 'Find a clip (e.g. manji, light_)';
+  document.getElementById('filters').hidden = tab === 'conv';
+  renderList();
+  if (tab === 'conv' && !state.conv && CONVERSIONS.length) selectConv(CONVERSIONS[0]);
+}
+document.getElementById('tabClips').addEventListener('click', () => setTab('clips'));
+document.getElementById('tabConv').addEventListener('click', () => setTab('conv'));
+const refEl = document.getElementById('ref'), refImg = document.getElementById('refImg'), refFit = document.getElementById('refFit');
+function showSplit(on) {
+  if (!on && !refEl.hidden) cam.dist = 4.2;
+  refEl.hidden = !on;
+  document.getElementById('stage').classList.toggle('split', on);
+  document.getElementById('rigLabel').hidden = !on;
+  document.getElementById('convRow').hidden = !on;
+}
+function selectConv(v) {
+  const c = CLIPS.find(c => c.group + '/' + c.name === v.clip);
+  if (!c) return;
+  select(c);
+  state.conv = v; state.shownFrame = -1;
+  refFit.width = v.size; refFit.height = v.size;
+  showSplit(true);
+  cam.dist = 5.4;  // the rig shares the stage with the footage
+  document.getElementById('name').textContent = v.name;
+  document.getElementById('meta').textContent = `${v.source} → ${v.clip} · ${c.duration} ms`;
+  document.getElementById('convInfo').textContent = `${v.frames.length} frames · ${Math.round(1000 / v.frameMs)} fps`;
+  renderList();
+}
+function drawConv(v, t) {
+  const i = Math.max(0, Math.min(v.frames.length - 1, Math.round(t / v.frameMs)));
+  if (state.follow) { [cam.yaw, cam.pitch] = v.cams[i]; }
+  if (i === state.shownFrame && state.fitShown === state.fit) return;
+  state.shownFrame = i; state.fitShown = state.fit;
+  refImg.src = v.frames[i];
+  const g = refFit.getContext('2d');
+  g.clearRect(0, 0, refFit.width, refFit.height);
+  if (!state.fit) return;
+  g.lineWidth = 1.5;
+  for (const [color, pts] of v.boxes[i]) {
+    g.strokeStyle = color; g.beginPath();
+    pts.forEach(([x, y], k) => k ? g.lineTo(x, y) : g.moveTo(x, y));
+    g.closePath(); g.stroke();
+  }
+}
+for (const [id, key] of [['fitBtn', 'fit'], ['followBtn', 'follow']]) {
+  const b = document.getElementById(id);
+  b.addEventListener('click', () => { state[key] = !state[key]; b.setAttribute('aria-pressed', String(state[key])); });
+}
+function keyTimes(c) {
+  const s = new Set();
+  for (const b of Object.values(c.tracks)) for (const ch of Object.values(b)) for (const k of ch) s.add(k[0]);
+  return [...s].sort((a, b) => a - b);
+}
+function select(c) {
+  state.clip = c; state.t = 0;
+  document.getElementById('name').textContent = c.name;
+  document.getElementById('meta').textContent = `${c.group} · ${c.duration} ms · ${c.priority}${c.hold ? ' · holds its last pose' : ''}`;
+  const scrub = document.getElementById('scrub'); scrub.max = c.duration;
+  const ticks = document.getElementById('ticks'); ticks.textContent = '';
+  for (const k of keyTimes(c)) { const i = document.createElement('i'); i.style.left = (100 * k / Math.max(1, c.duration)) + '%'; i.title = k + ' ms'; ticks.append(i); }
+  for (const g of ghosts) scene.remove(g.model);
+  ghosts = [];
+  if (state.ghosts) for (const k of keyTimes(c)) { const g = makeRig(0.18); pose(g, c, k); ghosts.push(g); }
+  try { localStorage.setItem('jjk-anim-clip', c.group + '/' + c.name); } catch (e) {}
+  renderList();
+}
+search.addEventListener('input', renderList);
+onlyNew.addEventListener('change', renderList);
+const playBtn = document.getElementById('play');
+function setPlaying(p) { state.playing = p; playBtn.textContent = p ? 'Pause' : 'Play'; }
+playBtn.addEventListener('click', () => setPlaying(!state.playing));
+document.getElementById('back').addEventListener('click', () => { setPlaying(false); state.t = Math.max(0, state.t - 50); });
+document.getElementById('fwd').addEventListener('click', () => { setPlaying(false); state.t = Math.min(state.clip.duration, state.t + 50); });
+document.getElementById('scrub').addEventListener('input', e => { setPlaying(false); state.t = +e.target.value; });
+document.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => {
+  state.speed = +b.dataset.speed; document.querySelectorAll('[data-speed]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+}));
+const loopBtn = document.getElementById('loop');
+loopBtn.addEventListener('click', () => { state.loop = !state.loop; loopBtn.setAttribute('aria-pressed', String(state.loop)); loopBtn.textContent = state.loop ? 'On' : 'Off'; });
+const ghostBtn = document.getElementById('ghost');
+ghostBtn.addEventListener('click', () => { state.ghosts = !state.ghosts; ghostBtn.setAttribute('aria-pressed', String(state.ghosts)); select(state.clip); });
+window.addEventListener('keydown', e => {
+  if (e.target === search) return;
+  if (e.code === 'Space') { e.preventDefault(); setPlaying(!state.playing); }
+  if (e.code === 'ArrowLeft') { setPlaying(false); state.t = Math.max(0, state.t - 50); }
+  if (e.code === 'ArrowRight') { setPlaying(false); state.t = Math.min(state.clip.duration, state.t + 50); }
+});
+
+function resize() {
+  const r = canvas.getBoundingClientRect();
+  renderer.setSize(Math.max(1, r.width), Math.max(1, r.height), false);
+  camera.aspect = Math.max(1, r.width) / Math.max(1, r.height); camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+let last = performance.now();
+const PAUSE_AT_END = 350;
+let endWait = 0;
+function frame(now) {
+  const dt = Math.min(100, now - last); last = now;
+  const c = state.clip;
+  if (c && state.playing) {
+    if (state.t >= c.duration) {
+      endWait += dt;
+      if (state.loop && endWait > PAUSE_AT_END) { state.t = 0; endWait = 0; }
+    } else state.t = Math.min(c.duration, state.t + dt * state.speed);
+  }
+  if (c) {
+    if (state.conv) drawConv(state.conv, state.t);
+    pose(rig, c, state.t);
+    document.getElementById('scrub').value = state.t;
+    document.getElementById('time').textContent = `${Math.round(state.t)} / ${c.duration} ms`;
+  }
+  placeCamera();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+// Scripted control (tools/anim_viewer/snap.js): show one clip, paused at a time, from a camera yaw/pitch (radians).
+window.jjkShow = (id, t, yaw, pitch) => {
+  const c = CLIPS.find(c => c.group + '/' + c.name === id);
+  if (!c) return false;
+  select(c); setPlaying(false); state.t = t;
+  if (yaw !== undefined) { cam.yaw = yaw; cam.pitch = pitch; }
+  pose(rig, c, t); placeCamera(); renderer.render(scene, camera);
+  return true;
+};
+let start = CLIPS[0];
+try { const saved = localStorage.getItem('jjk-anim-clip'); start = CLIPS.find(c => c.group + '/' + c.name === saved) || CLIPS.find(c => c.name === 'light_1') || start; } catch (e) {}
+renderList();
+if (start) select(start);
+resize();
+requestAnimationFrame(frame);
+</script>

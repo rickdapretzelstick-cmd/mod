@@ -224,6 +224,8 @@ public class JJKClient implements ClientModInitializer {
                 default -> {}
             }
         });
+        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.MoveSyncPayload.TYPE,
+                (p, ctx) -> dev.rick.jjk.client.anim.AnimLibrary.putRuntime(p.names(), p.clips()));
         ClientPlayNetworking.registerGlobalReceiver(AnimPayload.TYPE, (p, ctx) -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.level != null) ClientAnimations.play(p.entityId(), p.anim(), p.speed(), mc.level.getGameTime());

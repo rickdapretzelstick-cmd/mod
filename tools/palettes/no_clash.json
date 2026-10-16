@@ -1,0 +1,424 @@
+{
+ "comment": "tools/make_clothing_templates.py: no colour on two parts; per part a hue, per side a tone (front pure, back pale, the others dark). Bands to be re-measured from footage.",
+ "classes": [
+  {
+   "name": "torso_pure",
+   "parts": [
+    "torso"
+   ],
+   "h": [
+    235,
+    21
+   ],
+   "s": [
+    165,
+    255
+   ],
+   "v": [
+    150,
+    255
+   ],
+   "show": [
+    255,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "torso_pale",
+   "parts": [],
+   "h": [
+    235,
+    21
+   ],
+   "s": [
+    45,
+    164
+   ],
+   "v": [
+    150,
+    255
+   ],
+   "show": [
+    255,
+    153,
+    153
+   ]
+  },
+  {
+   "name": "torso_dark",
+   "parts": [],
+   "h": [
+    235,
+    21
+   ],
+   "s": [
+    128,
+    255
+   ],
+   "v": [
+    30,
+    149
+   ],
+   "show": [
+    115,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "rightArm_pure",
+   "parts": [
+    "rightArm"
+   ],
+   "h": [
+    22,
+    64
+   ],
+   "s": [
+    165,
+    255
+   ],
+   "v": [
+    150,
+    255
+   ],
+   "show": [
+    255,
+    255,
+    0
+   ]
+  },
+  {
+   "name": "rightArm_pale",
+   "parts": [],
+   "h": [
+    22,
+    64
+   ],
+   "s": [
+    45,
+    164
+   ],
+   "v": [
+    150,
+    255
+   ],
+   "show": [
+    255,
+    255,
+    153
+   ]
+  },
+  {
+   "name": "rightArm_dark",
+   "parts": [],
+   "h": [
+    22,
+    64
+   ],
+   "s": [
+    128,
+    255
+   ],
+   "v": [
+    30,
+    149
+   ],
+   "show": [
+    115,
+    115,
+    0
+   ]
+  },
+  {
+   "name": "leftArm_pure",
+   "parts": [
+    "leftArm"
+   ],
+   "h": [
+    64,
+    106
+   ],
+   "s": [
+    165,
+    255
+   ],
+   "v": [
+    150,
+    255
+   ],
+   "show": [
+    0,
+    255,
+    0
+   ]
+  },
+  {
+   "name": "leftArm_pale",
+   "parts": [],
+   "h": [
+    64,
+    106
+   ],
+   "s": [
+    45,
+    164
+   ],
+   "v": [
+    150,
+    255
+   ],
+   "show": [
+    153,
+    255,
+    153
+   ]
+  },
+  {
+   "name": "leftArm_dark",
+   "parts": [],
+   "h": [
+    64,
+    106
+   ],
+   "s": [
+    128,
+    255
+   ],
+   "v": [
+    30,
+    149
+   ],
+   "show": [
+    0,
+    115,
+    0
+   ]
+  },
+  {
+   "name": "rightLeg_pure",
+   "parts": [
+    "rightLeg"
+   ],
+   "h": [
+    106,
+    148
+   ],
+   "s": [
+    165,
+    255
+   ],
+   "v": [
+    150,
+    255
+   ],
+   "show": [
+    0,
+    255,
+    255
+   ]
+  },
+  {
+   "name": "rightLeg_pale",
+   "parts": [],
+   "h": [
+    106,
+    148
+   ],
+   "s": [
+    45,
+    164
+   ],
+   "v": [
+    150,
+    255
+   ],
+   "show": [
+    153,
+    255,
+    255
+   ]
+  },
+  {
+   "name": "rightLeg_dark",
+   "parts": [],
+   "h": [
+    106,
+    148
+   ],
+   "s": [
+    128,
+    255
+   ],
+   "v": [
+    30,
+    149
+   ],
+   "show": [
+    0,
+    115,
+    115
+   ]
+  },
+  {
+   "name": "leftLeg_pure",
+   "parts": [
+    "leftLeg"
+   ],
+   "h": [
+    149,
+    191
+   ],
+   "s": [
+    165,
+    255
+   ],
+   "v": [
+    150,
+    255
+   ],
+   "show": [
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "name": "leftLeg_pale",
+   "parts": [],
+   "h": [
+    149,
+    191
+   ],
+   "s": [
+    45,
+    164
+   ],
+   "v": [
+    150,
+    255
+   ],
+   "show": [
+    153,
+    153,
+    255
+   ]
+  },
+  {
+   "name": "leftLeg_dark",
+   "parts": [],
+   "h": [
+    149,
+    191
+   ],
+   "s": [
+    128,
+    255
+   ],
+   "v": [
+    30,
+    149
+   ],
+   "show": [
+    0,
+    0,
+    115
+   ]
+  },
+  {
+   "name": "head",
+   "parts": [
+    "head"
+   ],
+   "h": [
+    192,
+    234
+   ],
+   "s": [
+    128,
+    255
+   ],
+   "v": [
+    60,
+    255
+   ],
+   "show": [
+    255,
+    0,
+    255
+   ]
+  },
+  {
+   "name": "face",
+   "parts": [
+    "face"
+   ],
+   "v": [
+    0,
+    70
+   ],
+   "show": [
+    40,
+    40,
+    255
+   ]
+  }
+ ],
+ "sides": {
+  "torso": [
+   "torso_dark",
+   "torso_dark",
+   "torso_dark",
+   "torso_dark",
+   "torso_pure",
+   "torso_pale"
+  ],
+  "rightArm": [
+   "rightArm_dark",
+   "rightArm_dark",
+   "rightArm_dark",
+   "rightArm_dark",
+   "rightArm_pure",
+   "rightArm_pale"
+  ],
+  "leftArm": [
+   "leftArm_dark",
+   "leftArm_dark",
+   "leftArm_dark",
+   "leftArm_dark",
+   "leftArm_pure",
+   "leftArm_pale"
+  ],
+  "rightLeg": [
+   "rightLeg_dark",
+   "rightLeg_dark",
+   "rightLeg_dark",
+   "rightLeg_dark",
+   "rightLeg_pure",
+   "rightLeg_pale"
+  ],
+  "leftLeg": [
+   "leftLeg_dark",
+   "leftLeg_dark",
+   "leftLeg_dark",
+   "leftLeg_dark",
+   "leftLeg_pure",
+   "leftLeg_pale"
+  ],
+  "head": [
+   "head",
+   "head",
+   "head",
+   "head",
+   "head",
+   "head"
+  ]
+ },
+ "marks": true,
+ "veil": {
+  "s_min": 22,
+  "v_min": 150,
+  "reach": 0.02
+ }
+}

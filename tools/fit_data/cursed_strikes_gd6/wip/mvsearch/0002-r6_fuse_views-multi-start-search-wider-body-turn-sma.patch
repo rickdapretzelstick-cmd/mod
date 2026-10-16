@@ -1,0 +1,105 @@
+From 62af3ea94550496650d7c5267366df7161abed14 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 14 Oct 2026 04:31:30 +0000
+Subject: [PATCH 2/3] r6_fuse_views: multi-start search, wider body turn,
+ small-step polish; MV_ONLY diagnostic
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HQYiYmhRzcQpLCYMVVDQeZ
+---
+ tools/r6_fuse_views.py | 27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
+
+diff --git a/tools/r6_fuse_views.py b/tools/r6_fuse_views.py
+index d4f67a9..7280ed1 100644
+--- a/tools/r6_fuse_views.py
++++ b/tools/r6_fuse_views.py
+@@ -281,6 +281,7 @@ def vec_pose(e):
+ 
+ 
+ _mv = {}
++_mv_start = [0.0]
+ 
+ 
+ def mv_views(t):
+@@ -288,6 +289,8 @@ def mv_views(t):
+     if t not in _mv:
+         out = []
+         for rep in REPS:
++            if os.environ.get('MV_ONLY') and rep != os.environ['MV_ONLY']:
++                continue
+             k = src_frame(rep, t)
+             vw = view_of(rep, k)
+             if vw is None:
+@@ -312,12 +315,13 @@ def mv_score(t, E):
+     return tot / max(wsum, 1e-9)
+ 
+ 
+-def mv_search(t, pose, rounds=int(os.environ.get('MV_ROUNDS', '2'))):
++def mv_search(t, pose, rounds=int(os.environ.get('MV_ROUNDS', '2')), polish=True):
+     """Coordinate ascent over the pose with the multi-view score: each limb over its whole range (30 deg grid of its
+     two swings x turns about its length, then +-20 deg at 10 deg), the body's lean / turn / roll near where it is,
+     the head lightly. A step is kept only when it raises the score."""
+     e = pose_vec(pose)
+     best = float(mv_score(t, e)[0])
++    _mv_start[0] = best
+ 
+     def take(cands):
+         nonlocal e, best
+@@ -341,7 +345,7 @@ def mv_search(t, pose, rounds=int(os.environ.get('MV_ROUNDS', '2'))):
+             c = np.repeat(e[None], len(d), 0)
+             c[:, [jx, jy, jz]] += d
+             take(c)
+-        d = np.array([(dx, dy, dz) for dx in (-10, -5, 0, 5, 10) for dy in (-16, -8, 0, 8, 16) for dz in (-10, -5, 0, 5, 10)], float)
++        d = np.array([(dx, dy, dz) for dx in (-16, -8, 0, 8, 16) for dy in (-30, -15, 0, 15, 30) for dz in (-16, -8, 0, 8, 16)], float)
+         c = np.repeat(e[None], len(d), 0)
+         c[:, HIPS] += d
+         take(c)
+@@ -350,10 +354,19 @@ def mv_search(t, pose, rounds=int(os.environ.get('MV_ROUNDS', '2'))):
+         c = np.repeat(e[None], len(d), 0)
+         c[:, hd] += d
+         take(c)
++    if polish:
++        # Small steps: each limb and the body within +-5 deg.
++        d = np.array([(dx, dy, dz) for dx in (-5, 0, 5) for dy in (-10, 0, 10) for dz in (-5, 0, 5)], float)
++        for bone in ('rightArm', 'leftArm', 'rightThigh', 'leftThigh', 'hips'):
++            cols = [JC[(bone, a)] for a in range(3)]
++            c = np.repeat(e[None], len(d), 0)
++            c[:, cols] += d
++            take(c)
+     return vec_pose(e), best
+ 
+ 
+ MVSEARCH = os.environ.get('MVSEARCH', '1') == '1'
++MV_STARTS = int(os.environ.get('MV_STARTS', '2'))
+ 
+ 
+ # Per moment: the pose that fits all views best -- every track's pose, the weighted average, then each bone swapped
+@@ -376,6 +389,7 @@ for t in [t for t in fused if not EVAL or (t - first) % EVAL == 0]:
+                 cands.append(pose)
+     sc, _ = multi_score(t, cands)
+     best, bs = cands[int(np.argmax(sc))], float(sc.max())
++    alts = [cands[i] for i in np.argsort(-sc)[1:1 + MV_STARTS]]  # the next-best starting poses, searched too
+     for _ in range(2):
+         for b in BONES:
+             trial = [dict(best, **{b: R}) for R in opts[b]]
+@@ -390,9 +404,14 @@ for t in [t for t in fused if not EVAL or (t - first) % EVAL == 0]:
+             best, bs = trial[int(np.argmax(sc))], float(sc.max())
+     if MVSEARCH:
+         b0 = bs
+-        best, bs = mv_search(t, best)
++        best, bs = mv_search(t, best, rounds=1, polish=False)
++        for a in alts:
++            ap, a_s = mv_search(t, a, rounds=1, polish=False)
++            if a_s > bs:
++                best, bs = ap, a_s
++        best, bs = mv_search(t, best, rounds=1)
+         if os.environ.get('MV_LOG'):
+-            print('mv', t, round(b0, 4), round(float(mv_score(t, pose_vec(sel_score and best or best))[0]), 4), round(bs, 4), flush=True)
++            print('mv', t, round(b0, 4), round(_mv_start[0], 4), round(bs, 4), flush=True)
+     sel[t], sel_score[t] = best, bs
+ print('selected poses for', len(sel), 'moments', flush=True)
+ if EVAL:
+-- 
+2.43.0
+

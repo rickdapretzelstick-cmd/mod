@@ -1,0 +1,151 @@
+From fffcc90971b337d1c522c1454b3a9e90116db9e7 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 14 Oct 2026 04:22:42 +0000
+Subject: [PATCH 1/3] r6_fuse_views: multi-view pose search (coordinate ascent,
+ all views scored per candidate)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HQYiYmhRzcQpLCYMVVDQeZ
+---
+ tools/r6_fuse_views.py | 118 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 118 insertions(+)
+
+diff --git a/tools/r6_fuse_views.py b/tools/r6_fuse_views.py
+index 24081fe..d4f67a9 100644
+--- a/tools/r6_fuse_views.py
++++ b/tools/r6_fuse_views.py
+@@ -243,6 +243,119 @@ def multi_score(t, poses):
+     return tot / max(wsum, 1e-9), per
+ 
+ 
++# Multi-view pose search: the pose as one Euler vector (the 18 joint angles; the hips' relative to the move's starting
++# heading), every candidate drawn in every view at once (one batched agreement() per view).
++JC = {j: F.JI[j] - NC for j in F.JOINTS}  # joint -> column in the 18 joint angles
++
++
++def rotm_np(a):
++    r = np.radians(a)
++    c, s = np.cos(r), np.sin(r)
++    cx, cy, cz = c[..., 0], c[..., 1], c[..., 2]
++    sx, sy, sz = s[..., 0], s[..., 1], s[..., 2]
++    return np.stack([cz * cy, cz * sy * sx - sz * cx, cz * sy * cx + sz * sx,
++                     sz * cy, sz * sy * sx + cz * cx, sz * sy * cx - cz * sx,
++                     -sy, cy * sx, cy * cx], -1).reshape(a.shape[:-1] + (3, 3))
++
++
++def euler_np(M):
++    y = np.arcsin(np.clip(-M[..., 2, 0], -1, 1))
++    x = np.arctan2(M[..., 2, 1], M[..., 2, 2])
++    z = np.arctan2(M[..., 1, 0], M[..., 0, 0])
++    return np.degrees(np.stack([x, y, z], -1))
++
++
++HIPS = [JC[('hips', a)] for a in range(3)]
++
++
++def pose_vec(pose):
++    e = np.zeros(len(F.JOINTS))
++    for b in BONES:
++        for a, v in enumerate(T._euler_zyx(torch.tensor(pose[b]))):
++            e[JC[(b, a)]] = v
++    return e
++
++
++def vec_pose(e):
++    return {b: R_of([float(e[JC[(b, a)]]) for a in range(3)]) for b in BONES}
++
++
++_mv = {}
++
++
++def mv_views(t):
++    """Per view at moment t: (fit, its camera (5,), the heading turn (3, 3), the view's weight)."""
++    if t not in _mv:
++        out = []
++        for rep in REPS:
++            k = src_frame(rep, t)
++            vw = view_of(rep, k)
++            if vw is None:
++                continue
++            _, fit, cp, _ = vw
++            out.append((fit, torch.tensor(cp[:5], dtype=T.DT), R_of([0, heading0(rep), 0]), own_ag(rep, k) ** 2))
++        _mv[t] = out
++    return _mv[t]
++
++
++def mv_score(t, E):
++    """Candidates E (B, 18) scored as multi_score does: the views' agreements weighted by their own tracking."""
++    E = np.atleast_2d(E)
++    tot, wsum = np.zeros(len(E)), 0.0
++    hr = rotm_np(E[:, HIPS])
++    for fit, cam, H, q in mv_views(t):
++        J = E.copy()
++        J[:, HIPS] = euler_np(H[None] @ hr)
++        ag = T.agreement(fit, 0, 0, torch.tensor(J, dtype=T.DT), cam.expand(len(E), 5)).numpy()
++        tot += q * ag
++        wsum += q
++    return tot / max(wsum, 1e-9)
++
++
++def mv_search(t, pose, rounds=int(os.environ.get('MV_ROUNDS', '2'))):
++    """Coordinate ascent over the pose with the multi-view score: each limb over its whole range (30 deg grid of its
++    two swings x turns about its length, then +-20 deg at 10 deg), the body's lean / turn / roll near where it is,
++    the head lightly. A step is kept only when it raises the score."""
++    e = pose_vec(pose)
++    best = float(mv_score(t, e)[0])
++
++    def take(cands):
++        nonlocal e, best
++        sc = mv_score(t, cands)
++        o = int(np.argmax(sc))
++        if sc[o] > best + 1e-6:
++            e, best = cands[o].copy(), float(sc[o])
++
++    for _ in range(rounds):
++        for bone in ('rightArm', 'leftArm', 'rightThigh', 'leftThigh'):
++            jx, jy, jz = (JC[(bone, a)] for a in range(3))
++            lx, lz = F.LIMITS[(bone, 0)], F.LIMITS[(bone, 2)]
++            turns = (-90, -45, 0, 45, 90) if 'Arm' in bone else (-45, 0, 45)
++            g = np.array([(ax, ay, az) for ax in np.arange(lx[0], lx[1] + 1, 30) for az in np.arange(lz[0], lz[1] + 1, 30)
++                          for ay in turns], float)
++            c = np.repeat(e[None], len(g), 0)
++            c[:, [jx, jy, jz]] = g
++            take(c)
++            d = np.array([(dx, dy, dz) for dx in (-20, -10, 0, 10, 20) for dy in (-30, -15, 0, 15, 30)
++                          for dz in (-20, -10, 0, 10, 20)], float)
++            c = np.repeat(e[None], len(d), 0)
++            c[:, [jx, jy, jz]] += d
++            take(c)
++        d = np.array([(dx, dy, dz) for dx in (-10, -5, 0, 5, 10) for dy in (-16, -8, 0, 8, 16) for dz in (-10, -5, 0, 5, 10)], float)
++        c = np.repeat(e[None], len(d), 0)
++        c[:, HIPS] += d
++        take(c)
++        hd = [JC[('head', a)] for a in range(3)]
++        d = np.array([(dx, dy, dz) for dx in (-10, 0, 10) for dy in (-20, -10, 0, 10, 20) for dz in (-8, 0, 8)], float)
++        c = np.repeat(e[None], len(d), 0)
++        c[:, hd] += d
++        take(c)
++    return vec_pose(e), best
++
++
++MVSEARCH = os.environ.get('MVSEARCH', '1') == '1'
++
++
+ # Per moment: the pose that fits all views best -- every track's pose, the weighted average, then each bone swapped
+ # for any track's version of it while that helps, then each limb nudged.
+ sel, sel_score = {}, {}
+@@ -275,6 +388,11 @@ for t in [t for t in fused if not EVAL or (t - first) % EVAL == 0]:
+         sc, _ = multi_score(t, trial)
+         if sc.max() > bs + 1e-6:
+             best, bs = trial[int(np.argmax(sc))], float(sc.max())
++    if MVSEARCH:
++        b0 = bs
++        best, bs = mv_search(t, best)
++        if os.environ.get('MV_LOG'):
++            print('mv', t, round(b0, 4), round(float(mv_score(t, pose_vec(sel_score and best or best))[0]), 4), round(bs, 4), flush=True)
+     sel[t], sel_score[t] = best, bs
+ print('selected poses for', len(sel), 'moments', flush=True)
+ if EVAL:
+-- 
+2.43.0
+

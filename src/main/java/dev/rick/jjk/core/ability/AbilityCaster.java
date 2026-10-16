@@ -112,8 +112,18 @@ public final class AbilityCaster {
         dirty = true;
     }
 
+    /** Moves from the move editor bound to keys (core.move.MoveLibrary): they take the key over from the kit. */
+    private java.util.Map<AbilitySlot, ? extends Ability> customMoves = java.util.Map.of();
+
+    public void setCustomMoves(java.util.Map<AbilitySlot, ? extends Ability> moves) {
+        customMoves = moves;
+        dirty = true;
+    }
+
     @Nullable
     public Ability ability(AbilitySlot slot) {
+        Ability custom = customMoves.get(slot);
+        if (custom != null) return custom;
         if (usingTool()) return toolKit.ability(slot, JJKCharacter.BASE);
         return character == null ? null : character.ability(slot, mode());
     }
@@ -563,6 +573,12 @@ public final class AbilityCaster {
         JJKCharacter kit = activeKit();
         // The character can take the press itself (a combination during another move's wind-up, a follow-up).
         if (kit.interceptInput(this, slot, ability, targetHint)) {
+            lastRefusal = null;
+            dirty = true;
+            return true;
+        }
+        // An editor-made move running takes a second press of its key (its "press" logic: a follow-up).
+        if (cast instanceof dev.rick.jjk.core.move.MoveAbility.Instance mi && !cast.isFinished() && mi.press(slot)) {
             lastRefusal = null;
             dirty = true;
             return true;

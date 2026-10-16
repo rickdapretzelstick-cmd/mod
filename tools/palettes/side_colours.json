@@ -1,0 +1,293 @@
+{
+ "comment": "Roblox default template shirt and pants: a colour per side (measured from the user's calibration recording). sides: per part, the class of each box side in the order right, left, top, bottom, front, back (the character's own right/left).",
+ "classes": [
+  {
+   "name": "red",
+   "parts": [
+    "head",
+    "torso",
+    "rightArm",
+    "leftArm"
+   ],
+   "h": [
+    240,
+    0
+   ],
+   "s": [
+    150,
+    255
+   ],
+   "v": [
+    115,
+    255
+   ],
+   "show": [
+    225,
+    25,
+    35
+   ]
+  },
+  {
+   "name": "cyan",
+   "parts": [
+    "rightLeg",
+    "leftLeg"
+   ],
+   "h": [
+    112,
+    131
+   ],
+   "s": [
+    110,
+    255
+   ],
+   "v": [
+    90,
+    255
+   ],
+   "show": [
+    40,
+    245,
+    236
+   ]
+  },
+  {
+   "name": "skyblue",
+   "parts": [],
+   "h": [
+    132,
+    146
+   ],
+   "s": [
+    110,
+    255
+   ],
+   "v": [
+    90,
+    255
+   ],
+   "show": [
+    40,
+    190,
+    221
+   ]
+  },
+  {
+   "name": "yellow",
+   "parts": [],
+   "h": [
+    38,
+    56
+   ],
+   "s": [
+    165,
+    255
+   ],
+   "v": [
+    90,
+    255
+   ],
+   "show": [
+    246,
+    249,
+    37
+   ]
+  },
+  {
+   "name": "orange",
+   "parts": [],
+   "h": [
+    18,
+    37
+   ],
+   "s": [
+    100,
+    200
+   ],
+   "v": [
+    110,
+    255
+   ],
+   "show": [
+    246,
+    218,
+    112
+   ]
+  },
+  {
+   "name": "green",
+   "parts": [],
+   "h": [
+    85,
+    112
+   ],
+   "s": [
+    110,
+    255
+   ],
+   "v": [
+    90,
+    255
+   ],
+   "show": [
+    32,
+    245,
+    114
+   ]
+  },
+  {
+   "name": "magenta",
+   "parts": [],
+   "h": [
+    198,
+    236
+   ],
+   "s": [
+    110,
+    255
+   ],
+   "v": [
+    90,
+    255
+   ],
+   "show": [
+    223,
+    42,
+    179
+   ]
+  },
+  {
+   "name": "blue",
+   "parts": [],
+   "h": [
+    147,
+    176
+   ],
+   "s": [
+    110,
+    255
+   ],
+   "v": [
+    80,
+    255
+   ],
+   "show": [
+    32,
+    97,
+    234
+   ]
+  },
+  {
+   "name": "unseen",
+   "parts": [],
+   "h": [
+    0,
+    0
+   ],
+   "s": [
+    256,
+    256
+   ],
+   "v": [
+    256,
+    256
+   ],
+   "show": [
+    90,
+    90,
+    90
+   ]
+  },
+  {
+   "name": "face",
+   "parts": [
+    "face"
+   ],
+   "v": [
+    0,
+    70
+   ],
+   "show": [
+    40,
+    40,
+    255
+   ]
+  }
+ ],
+ "sides": {
+  "head": [
+   "red",
+   "red",
+   "red",
+   "red",
+   "red",
+   "red"
+  ],
+  "torso": [
+   "green",
+   "yellow",
+   "cyan",
+   "unseen",
+   "red",
+   "skyblue"
+  ],
+  "rightArm": [
+   "green",
+   "yellow",
+   "cyan",
+   "orange",
+   "red",
+   "skyblue"
+  ],
+  "leftArm": [
+   "green",
+   "yellow",
+   "cyan",
+   "orange",
+   "red",
+   "skyblue"
+  ],
+  "rightLeg": [
+   "magenta",
+   "blue",
+   "unseen",
+   "unseen",
+   "cyan",
+   "orange"
+  ],
+  "leftLeg": [
+   "magenta",
+   "blue",
+   "unseen",
+   "unseen",
+   "cyan",
+   "orange"
+  ]
+ },
+ "marks": true,
+ "proportions": {"torso": [1.0, 1.0, 1.0], "head": [1.0, 1.0, 1.0], "arms": [1.0, 1.0, 1.0], "legs": [1.0, 1.0, 1.0]},
+ "glow": {
+  "comment": "energy trails in the head/torso red (see r6_fit.glow_of): cores brighter and purer than any lit face",
+  "classes": ["red"],
+  "core_s": 240,
+  "core_v": 222,
+  "min_px": 20,
+  "reach": 0.03,
+  "rim": 0.007,
+  "inside": 0.5,
+  "thin": 0.15,
+  "solid_s": 150,
+  "white_v": 245,
+  "halo_s": 22,
+  "halo_v": 130,
+  "hue_pad": 6,
+  "tint": 0.012,
+  "face_s": 140,
+  "face_spread": 24
+ },
+ "veil": {
+  "s_min": 22,
+  "v_min": 150,
+  "reach": 0.02
+ }
+}

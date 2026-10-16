@@ -1,0 +1,406 @@
+{
+ "summary": {
+  "frames": 98,
+  "mean_before": 0.8716,
+  "mean_after": 0.8813,
+  "min_before": 0.5786,
+  "min_after": 0.6307,
+  "at_least_0.90_before": 48,
+  "at_least_0.90_after": 51,
+  "ai_corrected": [
+   526,
+   531,
+   546,
+   547,
+   550,
+   561,
+   566,
+   578,
+   591,
+   592,
+   610,
+   611
+  ],
+  "rejected": [
+   555
+  ],
+  "minutes": 2.6
+ },
+ "log": [
+  {
+   "frame": 526,
+   "correction": {
+    "pick": "C"
+   },
+   "before": 0.9392,
+   "after": 0.9514,
+   "kept": true,
+   "carried": [
+    [
+     527,
+     0.912,
+     0.927,
+     73.1
+    ],
+    [
+     528,
+     0.911,
+     0.898,
+     135.4
+    ],
+    [
+     529,
+     0.873,
+     0.876,
+     130.1
+    ],
+    [
+     530,
+     0.9,
+     0.824,
+     "stop: worse, old track kept"
+    ]
+   ]
+  },
+  {
+   "frame": 531,
+   "correction": {
+    "pick": "C"
+   },
+   "before": 0.8604,
+   "after": 0.8971,
+   "kept": true,
+   "carried": [
+    [
+     532,
+     0.884,
+     0.914,
+     21.5
+    ],
+    [
+     533,
+     0.913,
+     0.92,
+     29.7
+    ],
+    [
+     534,
+     0.908,
+     0.935,
+     25.3
+    ],
+    [
+     535,
+     0.899,
+     0.93,
+     19.7
+    ],
+    [
+     536,
+     0.922,
+     0.928,
+     8.7
+    ],
+    [
+     537,
+     0.943,
+     0.934,
+     8.2
+    ]
+   ]
+  },
+  {
+   "frame": 546,
+   "correction": {
+    "pick": "C"
+   },
+   "before": 0.5786,
+   "after": 0.676,
+   "kept": true,
+   "carried": []
+  },
+  {
+   "frame": 547,
+   "correction": {
+    "pick": "C"
+   },
+   "before": 0.6336,
+   "after": 0.8341,
+   "kept": true,
+   "carried": [
+    [
+     548,
+     0.862,
+     0.878,
+     8.8
+    ],
+    [
+     549,
+     0.839,
+     0.841,
+     23.6
+    ]
+   ]
+  },
+  {
+   "frame": 550,
+   "correction": {
+    "pick": "C"
+   },
+   "before": 0.6577,
+   "after": 0.7671,
+   "kept": true,
+   "carried": [
+    [
+     551,
+     0.856,
+     0.87,
+     8.4
+    ],
+    [
+     552,
+     0.909,
+     0.888,
+     "stop: worse, old track kept"
+    ]
+   ]
+  },
+  {
+   "frame": 555,
+   "correction": {
+    "pose": {
+     "rightArm.x": 0,
+     "rightArm.z": 90,
+     "leftArm.x": 0,
+     "leftArm.z": -90
+    }
+   },
+   "before": 0.6534,
+   "after": 0.6118,
+   "kept": false
+  },
+  {
+   "frame": 561,
+   "correction": {
+    "pick": "C"
+   },
+   "before": 0.7724,
+   "after": 0.8212,
+   "kept": true,
+   "carried": [
+    [
+     562,
+     0.793,
+     0.837,
+     170.4
+    ],
+    [
+     563,
+     0.769,
+     0.735,
+     "stop: worse, old track kept"
+    ]
+   ]
+  },
+  {
+   "frame": 566,
+   "correction": {
+    "pose": {
+     "rightArm.x": -170,
+     "rightArm.z": 20,
+     "leftArm.x": 0,
+     "leftArm.z": -80
+    }
+   },
+   "before": 0.7189,
+   "after": 0.6974,
+   "kept": true,
+   "carried": [
+    [
+     567,
+     0.682,
+     0.668,
+     7.7
+    ],
+    [
+     568,
+     0.711,
+     0.726,
+     12.9
+    ],
+    [
+     569,
+     0.929,
+     0.914,
+     17.7
+    ],
+    [
+     570,
+     0.895,
+     0.888,
+     24.7
+    ],
+    [
+     571,
+     0.885,
+     0.891,
+     10.5
+    ],
+    [
+     572,
+     0.912,
+     0.922,
+     7.8
+    ]
+   ]
+  },
+  {
+   "frame": 578,
+   "correction": {
+    "pick": "C"
+   },
+   "before": 0.855,
+   "after": 0.9079,
+   "kept": true,
+   "carried": [
+    [
+     579,
+     0.945,
+     0.946,
+     20.8
+    ],
+    [
+     580,
+     0.941,
+     0.985,
+     17.8
+    ],
+    [
+     581,
+     0.935,
+     0.924,
+     9.6
+    ],
+    [
+     582,
+     0.728,
+     0.735,
+     31.2
+    ],
+    [
+     583,
+     0.834,
+     0.819,
+     23.4
+    ],
+    [
+     584,
+     0.876,
+     0.878,
+     49.3
+    ],
+    [
+     585,
+     0.884,
+     0.884,
+     8.3
+    ],
+    [
+     586,
+     0.872,
+     0.929,
+     21.7
+    ],
+    [
+     587,
+     0.935,
+     0.935,
+     11.7
+    ],
+    [
+     588,
+     0.847,
+     0.852,
+     21.3
+    ],
+    [
+     589,
+     0.723,
+     0.674,
+     "stop: worse, old track kept"
+    ]
+   ]
+  },
+  {
+   "frame": 591,
+   "correction": {
+    "pick": "C"
+   },
+   "before": 0.7754,
+   "after": 0.8467,
+   "kept": true,
+   "carried": []
+  },
+  {
+   "frame": 592,
+   "correction": {
+    "pose": {
+     "rightThigh.x": 0,
+     "rightThigh.y": 0,
+     "rightThigh.z": 90
+    },
+    "_why": "right leg kicking sideways toward the Dummy; hidden in the fit (0 px seen)"
+   },
+   "before": 0.7581,
+   "after": 0.8268,
+   "kept": true,
+   "carried": [
+    [
+     593,
+     0.777,
+     0.757,
+     "stop: worse, old track kept"
+    ]
+   ]
+  },
+  {
+   "frame": 610,
+   "correction": {
+    "pick": "C"
+   },
+   "before": 0.9601,
+   "after": 0.9814,
+   "kept": true,
+   "carried": []
+  },
+  {
+   "frame": 611,
+   "correction": {
+    "pick": "C"
+   },
+   "before": 0.9582,
+   "after": 0.9554,
+   "kept": true,
+   "carried": [
+    [
+     612,
+     0.961,
+     0.962,
+     75.4
+    ],
+    [
+     613,
+     0.968,
+     0.971,
+     75.4
+    ],
+    [
+     614,
+     0.963,
+     0.957,
+     77.0
+    ]
+   ]
+  }
+ ]
+}

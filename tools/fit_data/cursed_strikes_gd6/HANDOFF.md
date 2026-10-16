@@ -1,0 +1,228 @@
+# Handoff: footage -> animation fitting (Cursed Strikes), for the next Claude session
+
+Branch: `claude/affectionate-bell-8rq1m2` (everything below is pushed there). Read `CLAUDE.md` (repo rules) and
+`README.md` in this folder (footage link, repetition ranges, earlier numbers) first.
+
+## Goal (the user's)
+Turn JJS (Roblox) move footage into animation clips for the mod rig. Target: **every frame >= 90% colour agreement,
+< 10 s per frame**. The user is fine with slower methods if they work; dislikes long silent runs; wants plain progress.
+
+## Setup in a fresh container
+1. Footage gd6: `curl -L "https://drive.usercontent.google.com/download?id=1iMwe8u8qDOYuudO9Mfn435WrQbF2y85e&export=download&confirm=t" -o video.mp4`
+   (Cursed Strikes from 4 still cameras; template clothing; palette `tools/palettes/side_colours.json`).
+2. `pip install torch opencv-python scipy pillow numpy` if missing. CPU only; 4 CPUs.
+3. Several fitting jobs side by side: ALWAYS `OMP_NUM_THREADS=1` (else ~30x slower). One job alone: default threads ok
+   (track_frame itself now pins torch to 1 thread).
+4. Tracks already made (old tracker): `tools/fit_data/cursed_strikes_gd6/tracks/*.json` -> copy to `build/fit/tracks/`.
+
+## Repetitions (frames in gd6)
+back idle 100, move 104-186, end idle 194 | right 290, 299-384, 390 | left (side) 516, 525-608, 614 |
+front (far overhead) 790, 798-881, 888.
+
+## Tools (all Python, no Java; no gradle build needed for these)
+- `tools/r6_fit_torch.py`: `track_frame` (per frame: window that follows the rig, re-centre, gradient steps,
+  `pose_search` below 0.85, sub-pixel `hard_refine`, fine stage at 224 px on leftover time, hard cap ~9 s),
+  `fit_idle` / `calibrate_idle` (start pose + still camera from an idle frame), `hard_draw` (fast OpenCV scorer, exact
+  edges), `part_agreement`.
+- `tools/r6_track_rep.py VIDEO NAME IDLE_S IDLE_E fwd|bwd OUTDIR`: one repetition tracked forwards/backwards.
+- `tools/r6_fuse_views.py`: four views -> one pose per moment (EVAL=3 mode for quick scoring). FUSE_DIR, DIRS, NAME env.
+- `tools/build_anim_viewer.py`: rebuilds `build/anim_viewer.html` from clips + `build/fit/*/conversion.json`; published
+  as artifact https://claude.ai/artifact/JK8NYCyfE9kRSoXrzX5zCY (republish with the Artifact tool, url=that).
+- Bench harness: `bench/` here (make_cache, bench.sh, run_candidate, score.py; frozen scorer = copy of the tools at a
+  fixed commit). Its paths point at the old scratch dir; edit `B`.
+
+## Current numbers (frozen scorer, 21-frame hard stretches)
+- Per view tracking: side mean .76 (min .41, 7/21 >= .90), right .77 (min .47, 4/21), back .79 (min .46-.61, 6/21),
+  front .70 (min .10, 3/21). Worst frame time 7.0 s (all views < 10 s).
+- Standing frames: .97-.99 after the exact-edge fix + sub-pixel refine -> 90% is reachable when the pose is right.
+- Clean moving frames .80-.92. Effect frames (red strike trail, smoke dome, the Dummy in front) .40-.77.
+- The frozen scorer counts trail pixels as body (23-50% of body pixels on trail frames) -> those frames are capped at
+  ~.5-.77 by the ruler. Next session should freeze a v2 ruler = current tools (glow rejection) and report both.
+- Four-view combined pose (r6_fuse_views): all-view mean .582 -> .618 with the time-warp patch (`wip/align`, not merged).
+
+## Why moving frames lag
+Effects (biggest), fast arms (90 deg between frames at 30 fps; search lands in wrong local optima), repeated template
+colours (red head/torso front/arm fronts; cyan shirt top/leg fronts), single-view depth ambiguity, motion blur,
+errors carrying forward frame to frame.
+
+## Whole-clip selection, the automatic method (tools/r6_global.py) -- use this before the overseer
+Rick: "we can't be doing patch fixes". Cause of misses like the frame-592 kick: the scorer already prefers the right
+pose (.83 vs .76), but track_frame pays a motion cost per frame (pose_search: cont_w per 90 deg, leg_cost past 30 deg,
+thigh grid only +-45 forward/back), so a sudden real move loses to the last frame's pose, and the error carries on.
+r6_global: per frame, candidates found on the footage alone (the track's pose, the backward track's, the neighbours'
+poses, each refined and then limb_sweep'd over every limb's full range with no motion or stance cost), all scored in
+one common window (union of their outlines, so a compact pose can't hide colour it misses); then Viterbi picks one
+candidate per frame maximising total agreement less motion beyond a free allowance (limbs 45-60 deg/frame, hips 25;
+.0008 per deg beyond). A move seen over several frames wins; a one-frame fluke loses to its neighbours. No AI or hand
+input. ~2 s/frame-candidate, 3 min for the side view with 4 jobs.
+```
+OMP_NUM_THREADS=1 python3 tools/r6_global.py candidates build/video.mp4 build/fit/oversee left build/fit/oversee
+python3 tools/r6_global.py select build/fit/oversee left 0.0008
+python3 tools/r6_oversee.py clip build/video.mp4 build/fit/oversee/left_global.json left cursed_strikes_left_global
+```
+Side view (98 moving frames, common-window scores): track .862 mean, 46 >= .90, min .525 -> global .883, 53 >= .90,
+min .588; 592 gets the kick by itself. Lambda .0003-.005 all land .877-.885. A second round seeded from the chosen
+path: .887, 55 (small). Best candidate per frame averages .887-.892, so the pose search is close to saturated: the
+remaining low frames (543-546, 555, 560-569, 582, 589) are trail / smoke / Dummy-occlusion frames where the ruler
+counts effect pixels as body -- next lever is the ruler (glow rejection, v2), then the other three views.
+
+## Letters as a hint (tools/r6_glyph.py) -- Rick's idea
+The template prints a letter on every face (shirt: white, pants: black); colour says which side faces the camera,
+the letter also says which way that side is turned (limb twist). `learn` unwarps each face's marks from trusted frames
+(colour >= .93, 42 frames) into a 32x32 texture per box face (oversee/left_glyphs.npz); `score` is the area-weighted
+correlation of a pose's warped letters with the marks seen. `check`: on clean frames the trusted pose beats its
+twisted-limb twins in 91% of decisive comparisons; on moving frames 69% (letters disagree with the colour pick).
+`select` adds each frame's top-4 candidates' twisted twins and runs Viterbi on colour + w x letters:
+w .05 / .1 / .2 -> colour .890 / .889 / .889, >= .90 56 / 55 / 55 (v2 colour-only .886 / 54); 5-7 frames get a
+twisted limb. Current clip uses w .1. Letters are ~15 px and blur on fast frames, so they help most on clean ones.
+```
+python3 tools/r6_glyph.py learn build/video.mp4 build/fit/v2/merged/left_global.json build/fit/v2/glyphs.npz 0.93
+python3 tools/r6_glyph.py select build/video.mp4 build/fit/v2/merged/left_cands.json build/fit/v2/glyphs.npz build/fit/v2/letters_0.1 0.1
+```
+
+## Ruler v2: Dummy guard in the palette (tools/palettes/side_colours.json)
+Class maps of the low frames: the strike trail is already mostly removed by glow_of; the leak was the training Dummy
+(skin read as the template's orange, S 45-73 vs 130-235 on real faces; hair read as red, H 1-7 vs 245-255). Orange now
+needs S >= 100 and red's hue stops at 0. Rescored + re-searched (r6_global candidates from the v2 path, merged):
+side view .886 mean, 54/98 >= .90 (v1 .883 / 53). Small: the error maps (red = body colour no box covers, blue = box
+on background) show the remaining low frames are real arm-pose errors on the arm reaching toward the Dummy (544,
+555, 562, 567) and a little Dummy left (its lit hand still orange). Recording without the Dummy touching the character
+is the big lever; in software, next is a Dummy mask from the frames before the move (it stands still).
+
+## Motion scanner, the independent backup (tools/r6_motion.py)
+Rick asked for a second scanner that works separately. It never scores colours: points on the boxes (a 3 px grid on
+every visible face, lifted to each box's own 3-D coords) are followed by dense optical flow (DIS, forward-backward
+checked), and the pose is solved by least squares to carry them there (turn/tilt held).
+- Free-running from the idle frame (`VIDEO TRACKDIR left fwd OUTDIR`): holds idle (.93-.97) but drifts off at the
+  first fast move (526 -> .47, ~.05 by 550): the faces are flat colour, so flow only grips edges and letters.
+- One-step mode (`step VIDEO build/fit/oversee/left_global.json left OUTDIR`, 1 min): each frame's chosen pose
+  carried one frame forward/back by the flow alone, no drift. Agrees with the colour path within 25 deg on hips .92,
+  head .88, legs .84-.91, arms .59-.75. Frames where the two agree on every bone (52/95) average .933 colour
+  agreement; where they disagree (43) .831 -- a confidence signal that needs no colour score. As extra candidates
+  (`merge OUTDIR left`) they are picked 5 times and do not move the score (.882, 53). Use: trust map / what to flag.
+
+## Synthetic-trained part network (tools/r6_synth.py, r6_partnet.py, r6_partscore.py)
+`r6_synth.py make build/video.mp4 build/synth/partN.npz 5000 SEED` draws the template rig (side colours, shading,
+learnt letters) in random poses over real inpainted backgrounds with fake trails, smoke, blur and Dummies, with a
+per-pixel part label. `r6_partnet.py train build/synth/partnet.pt build/synth/part0-3.npz` (EPOCHS=5, 20k pictures,
+~17 min on 4 CPUs): small U-Net, held-out part IoU .796. On real side-view frames it finds the body, ignores the Dummy
+and trails, and separates arms/torso/legs and right/left well (sheet: `r6_partscore.py sheet`).
+Adding parts to the whole-clip pick (`r6_partscore.py select ... W`) changed nothing: W .5 -> colour .888, 56 >= .90;
+W 1 -> .8878, 56 (colour-only .889, 55). Parts agreement of the picks is only ~.55: the right pose is not among the
+candidates. Next: fit the rig to the network's part map directly (render-and-compare on parts, not colour) so the
+network proposes poses instead of only judging them.
+Done (r6_partfit.py): no gain with the first network -- measured on side-view frames fitted >= .9 it got only 58% of
+body pixels right (`r6_partnet.py realcheck`): the synthetic pictures did not look like the character. Fix:
+`r6_synth.py learn` copies each box side's real look (median over well-fitted frames) onto 75% of the pictures, and
+`r6_partnet.py realset` adds real windows labelled by fits >= .9 from the front/back/right tracks (REAL env).
+partnet2 (INIT=partnet.pt, 30k pictures + real, 6 rounds, ~36 min): side view (never trained on) 82% body pixels,
+97% on the views it saw; plateaued after round 1 -> needs more varied real frames. Part fitter with it, W .5:
+colour .890 / 56 >= .90, parts .55 -> .74. Rick's bar: train until 95% on real frames. Next: fit front/back/right
+with candidates + partfit (build/fit/v3), add frames passing colour .9 + parts .8 to the real set, retrain, repeat.
+Did that (61 frames from front/back/right, partnet3, Rick lowered the bar to 90% and said skip the last round): side
+view stays 81-84%. 83% of its errors sit within 2 px of a part edge; away from edges it is 93% right. The real whole-part
+miss: side-on frames (600-614) where the arm covers the torso -- the clothing colours each SIDE of the body alike, so
+the arm's outer side and the torso's side are both yellow and the network calls the arm torso. Use partnet2.pt (82%).
+Clip from the part fitter: cursed_strikes_left_partfit_clip.json (path oversee/left_global_partfit.json), in the viewer.
+
+## Joint offsets: limbs can come away from the body (r6_offsets.py) -- Rick's point
+Roblox animations move joints as well as turning them (Motor6D positions); the footage shows arm cubes apart from the
+torso. Params may now carry, after the joint angles, an (x, y, z) offset per OFF_BONES bone (head, arms, thighs; rig
+px in the parent's frame), read by F.pose_world and T.geometry (shorter params = no offsets, so every old file still
+works). write_clip writes them as the mod's 'pos' (right, up, forward) = -offset x 8/12 (mod px per rig px).
+`r6_offsets.py VIDEO PATH CANDS NET OUT [W]`: per frame offsets by descent on colour + .5 parts (0.002 per px, max
+8 px), limbs re-swept, offsets again; ~2 s/frame. Side view (partfit path): colour .889 -> .908, 56 -> 64 frames
+>= .90 -- the first time the mean passes .90. Clip cursed_strikes_left_offsets_clip.json (path oversee/left_offsets.json).
+Four-view judging (r6_multiview.py) is parked: cameras line up on the still frames, but mid-move the four recordings
+do not show the same pose at the same moment (oversee sheet four_views_same_moment).
+Reviewed by eye (sheet frames_under_90): the 34 frames under .90 are mostly fitted about right; the trail, the
+spike burst and the Dummy pull the colour score down. 541's "arm on the Dummy" is the arm's orange D face toward the
+camera (right). 544 (lowest, .67) matches the extended arm and torso. Waiting on Rick to flag frames in the viewer.
+Combined (Rick: "by part, by the numbers"): r6_offsets on front/back/right (colour .740->.792, .827->.860,
+.833->.889; oversee/*_offsets.json), then `r6_combine.py cursed_strikes_combined`: per moment each part (hips, head,
+arms, thighs; rotation + offset) from the view where that part's own drawn-pixel colour agreement is highest. Picks:
+left 337, right 214, front 23, back 20 (each side view wins its near leg). The combined pose fits each view's footage
+at only .30 (front) - .63 (right) (left .59 vs its own .91): the recordings are not in step, so parts from different
+reps do not line up in any one view. Clip cursed_strikes_combined_clip.json; viewer has cursed_strikes_combined_<view>.
+
+## AI overseer: built and run on the side view (tools/r6_oversee.py)
+Stages (see the file's header): `flag` -> `sheets` -> Claude reads the PNGs and writes a corrections JSON -> `apply` ->
+`clip`. All Python; ~8 s per sheet (8 candidates locally refined), 4 jobs side by side (JOBS=4, OMP_NUM_THREADS=1).
+```
+python3 tools/r6_oversee.py flag   build/fit/oversee left
+python3 tools/r6_oversee.py sheets build/video.mp4 build/fit/oversee left build/fit/oversee      # all flagged frames
+python3 tools/r6_oversee.py apply  build/video.mp4 build/fit/oversee left build/fit/oversee tools/fit_data/cursed_strikes_gd6/oversee/left_corrections.json
+python3 tools/r6_oversee.py clip   build/video.mp4 build/fit/oversee left cursed_strikes_left_oversee
+```
+Candidates per sheet: A current fit, B previous frame's pose, C backward track's pose, D arms swapped L/R, E/F/G body
+turned +90/-90/180, H arms flipped forward/back; each shown over the footage with an inset from 90 deg round. Flags:
+agreement < .85, a bone's direction jumping > 60 deg between frames, or the backward track > 45 deg off (limb twist
+ignored). Apply refines the seed locally (no search), keeps it unless .03 worse, re-tracks the next frames from it
+until they rejoin the old track (2 frames within 12 deg) or one comes out .02 worse (old track kept from there).
+
+Round 1 results (fresh tracks committed in `oversee/`; same 112-px agreement as track_frame, all 98 moving frames):
+fresh forward track mean .872, min .579, 48/98 >= .90 -> after 12 corrections (11 kept) mean .881, min .631, 51/98.
+Picks of the backward track's pose (C) gave the big wins on trail frames (547 .63->.83, 550 .66->.77, 591 .78->.85);
+hand-written arm poses (555, 566) did not help. Frame 592 (Rick spotted it in the viewer): the right leg kicks out
+sideways toward the Dummy but the fit had it hidden behind the body (0 px seen: a hidden part has nothing pulling it
+out, and pose_search's leg cost keeps legs near standing); a hand-written kick (rightThigh.z 90) took it .77 -> .83.
+Sheets now also show four kick candidates (I/J each leg out sideways, K/L each leg forward). 62 of 99 frames flagged; most remaining low frames (543-545, 560-568,
+582, 589, 592-595) had no better candidate. Next: more candidate kinds (pose_search's own runners-up, per-arm
+swaps, legs swapped), a second round on the overseen track, then the other three views and fusion.
+
+## Earlier design notes for the AI overseer
+Idea: tracker flags suspect frames (score < .85, joint jump > ~60 deg, views disagree); renders review sheets
+(footage | current fit overlay | 3-4 alternative hypotheses: previous pose, arms swapped L/R, body turned +-90/180,
+arm flipped forward/back, the backward track's pose; plus each rig seen from 90 deg for depth); Claude looks at the
+sheet and picks a candidate or writes a correction JSON, e.g. `{"542": {"pick": "B"}}` or
+`{"542": {"pose": {"rightArm.x": -90, "rightArm.z": 0}, "turn": 90}}`; the tool seeds from it, refines locally
+(track_step + hard_refine, camera turn/tilt locked), keeps it if the score is not worse than ~.02-.03, re-tracks the
+following frames from it, logs every AI-corrected frame. Start with the side view (516-614), then all four views.
+Suggested file: `tools/r6_oversee.py` (stages: track -> sheets -> apply). Was just started: a fresh side-view track with
+the merged tracker: `OMP_NUM_THREADS=1 python3 tools/r6_track_rep.py video.mp4 left 516 614 fwd build/fit/oversee`
+(re-run it; ~8 min). Then build the sheet/apply stages, run it on Cursed Strikes, compare with the numbers above,
+write the clip (`F.write_clip` / `F.write_conversion`, see r6_fuse_views.py's tail), rebuild + republish the viewer.
+
+## Other options discussed with the user
+- Fallbacks: pose by hand in Roblox Studio over the video and convert the saved KeyframeSequence (.rbxmx) to a clip
+  (converter not written yet); the drag-to-fix page `tools/keypose_editor/` (built, not published).
+- Recording advice: Body Colors per part with no red (red = the strike trail), zoom in, 60 fps, Dummy behind the
+  character, lowest graphics quality (may thin effects); a friend filming a second angle simultaneously.
+- Do NOT rip JJS animation assets (only the game owner can load them; exploit tools break Roblox rules).
+
+## Unmerged patches in `wip/` (against noted base commits)
+`align` (fusion time warp, .582 -> .618), `mvsearch` (four-view pose search, ~.61), `outline` (printed dark outlines
+-> UNKNOWN; mostly a ruler change, keep out of headline numbers). `calib`, `res`, `precise`, `effects` are merged.
+
+## One command: recording in, clip out (tools/r6_convert.py)
+`python3 tools/r6_convert.py VIDEO IDLE_START IDLE_END CLIP [--view NAME] [--viewer]` (frames, or seconds as `3.4s`):
+track fwd+bwd -> r6_global candidates -> r6_partfit -> r6_offsets (with the stray-limb hunt) -> r6_limbpass (+polish)
+-> r6_oversee clip. Resumable (delete a step's output to redo it); logs and summary.json in build/convert/CLIP/.
+Nothing in it is tuned to one take. Clip vs footage (roundtrip, common window), all from scratch:
+right .907 (old .866), back .869 (.830), front .824 (.791), side .899 (.893). Fixed along the way:
+- write_clip smoothing cut agreement .897 -> .762: no smoothing now; Euler forms kept continuous between keys.
+- limb flips (twist ambiguity of square limbs): r6_limbpass per-bone Viterbi; flips >60 deg/frame cut by ~2/3
+  (most left are real fast turns: the move spins 180 deg in a frame).
+- thrown limbs (kick into the dummy): r6_offsets hunt places limbs on avatar-coloured patches the rig misses.
+- frame-to-frame shake (look-alike poses picked per frame): r6_limbpass smoothing sweeps (acceleration of each bone's
+  turn and offset, capped so real snaps stay) cut mean angular acceleration 30-39 -> 16-27 deg/frame^2 per view with
+  agreement unchanged (right .910, back .873, front .822, side .900). Measure: mean |change of rotation vector rate|.
+- kick leg lost at the dummy (right 365-367): (1) the veil rule read the dummy's pale skin as the leg colour
+  (r6_fit._veil_join: smoke must share a long border with the part, or shade it unevenly); (2) r6_offsets undid a
+  half-matching thrown leg (KEEP_SURE .06); (3) an arm won by a hair (r6_limbpass rethrow: neighbours' thrown limb
+  tried, +.02 each). The converter now keeps the kick itself; game clips cut from it (right roundtrip .912).
+- hidden far leg (side view, behind the near one) went sideways: r6_limbpass pose_prior (REST_PRIOR .12, offsets
+  .002/px capped) weighted by how much of the part is behind the body (rig depth, not smoke). Verified in game
+  (PoseGalleryClientTest filmstrip): legs down at the end, kick kept. Only the right view was re-run (Rick: use the
+  best angle); back/front/side conversions predate these fixes.
+Known limit: the front (far, overhead) view is occluded by the dummy, which reads as background to the judge.
+
+## A second take guides the parts the main take hides (r6_align.py, r6_convert --guide)
+The four views are separate performances, so they can't be merged frame by frame. Instead the left-side take is lined
+up in time with the right take (DTW on head and limb poses relative to the hips, over parts both cameras see; mean gap
+34 -> 16 deg) and, for each right-view frame, a part the right camera hides is held near the left take's pose at the
+lined-up moment -- but only across the left camera's picture (a side camera sees a leg swing forward, not out to the
+side); along its line of sight the part stays near rest as before. Right view guided by left
+(`r6_convert.py build/video.mp4 290 390 convert_test_right --view right --guide build/convert/convert_side`):
+round trip .907 -> .911, mean shake 18.6 -> 18.4, hidden left arm's worst jolt 85 -> 38 deg/frame^2.
+Files: oversee/right_final.json (guided), oversee/right_guide.json, oversee/left_final.json (the guide take).

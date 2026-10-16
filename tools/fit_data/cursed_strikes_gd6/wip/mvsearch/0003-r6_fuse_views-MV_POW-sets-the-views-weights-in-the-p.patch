@@ -1,0 +1,36 @@
+From 98c549c36e5ea7d35f14df6342855a6a9fb26648 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 14 Oct 2026 04:39:53 +0000
+Subject: [PATCH 3/3] r6_fuse_views: MV_POW sets the views' weights in the pose
+ search
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01HQYiYmhRzcQpLCYMVVDQeZ
+---
+ tools/r6_fuse_views.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tools/r6_fuse_views.py b/tools/r6_fuse_views.py
+index 7280ed1..47442c1 100644
+--- a/tools/r6_fuse_views.py
++++ b/tools/r6_fuse_views.py
+@@ -296,7 +296,7 @@ def mv_views(t):
+             if vw is None:
+                 continue
+             _, fit, cp, _ = vw
+-            out.append((fit, torch.tensor(cp[:5], dtype=T.DT), R_of([0, heading0(rep), 0]), own_ag(rep, k) ** 2))
++            out.append((fit, torch.tensor(cp[:5], dtype=T.DT), R_of([0, heading0(rep), 0]), own_ag(rep, k) ** MV_POW))
+         _mv[t] = out
+     return _mv[t]
+ 
+@@ -366,6 +366,7 @@ def mv_search(t, pose, rounds=int(os.environ.get('MV_ROUNDS', '2')), polish=True
+ 
+ 
+ MVSEARCH = os.environ.get('MVSEARCH', '1') == '1'
++MV_POW = float(os.environ.get('MV_POW', '2'))  # views weighted by their own tracking's agreement to this power
+ MV_STARTS = int(os.environ.get('MV_STARTS', '2'))
+ 
+ 
+-- 
+2.43.0
+
