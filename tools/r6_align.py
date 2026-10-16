@@ -3,7 +3,8 @@
 # pose (each limb and the head relative to the hips) is the same move in both, so the takes are lined up in time by
 # dynamic time warping on the parts BOTH cameras see in front (each frame's hidden share, r6_limbpass.hidden_weights),
 # and then, for each frame of the main take, every part the OTHER camera sees well gets that take's pose at the lined-up
-# moment. r6_limbpass (R6_GUIDE=this file) then holds a part the main take hides near that pose instead of near rest;
+# moment, with the direction that camera looked along (it sees a part turn across its picture, not along its line of
+# sight: a side camera sees a leg swing forward, not out to the side). r6_limbpass (R6_GUIDE=this file) then holds a part the main take hides near that pose instead of near rest;
 # a part the main take shows is still the main footage's alone, so the timing drift can't touch it.
 #   python3 tools/r6_align.py VIDEO MAIN_FINAL.json MAIN_CANDS.json OTHER_FINAL.json OTHER_CANDS.json NET.pt OUT.json
 import sys, os, json
@@ -105,7 +106,10 @@ def main(video, main_final, main_cands, other_final, other_cands, net_path, out)
             if w.max() < 1 - SEEN_MIN:
                 continue
             j = js[int(np.argmax(w))]
+            r, u = OF.plane_dirs(pb[kb[j]])  # the other camera's picture plane, in the hips' frame
+            v = np.cross(r, u)
             g[b] = {'rot': [float(x) for x in L.full_J(pb[kb[j]])[L.COLS[b]]], 'seen': float(w.max()),
+                    'view': [float(x) for x in v / np.linalg.norm(v)],
                     'main_seen': float(va[i, n]), 'other_frame': kb[j]}
         frames[str(k)] = g
     json.dump({'main': main_final, 'other': other_final, 'mean_deg': mean, 'in_step_deg': diag,

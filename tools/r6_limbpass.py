@@ -179,8 +179,17 @@ def pose_prior(Js, hidden):
             continue
         R = rot_batch(Js[:, COLS[b]])
         if b in guide:
-            deg = np.degrees((rot_batch(np.array([guide[b]['rot']])).inv() * R).magnitude())
-            c = GUIDE_PRIOR * guide[b]['seen'] * np.minimum((deg / 90) ** 2, 2.0)
+            # the other camera saw the part's turn across its picture only: there it is held near the guide's pose,
+            # along that camera's line of sight near rest, as with no guide
+            M = R.as_matrix()                                    # (n, 3, 3), columns: the part's own axes
+            G = rot_batch(np.array([guide[b]['rot']])).as_matrix()
+            v = np.array(guide[b]['view'])
+            dg = M - G
+            along_g = np.einsum('i,nij->nj', v, dg)
+            across = np.maximum((dg ** 2).sum((1, 2)) - (along_g ** 2).sum(1), 0) / 2
+            along = (np.einsum('i,nij->nj', v, M - np.eye(3)) ** 2).sum(1) / 2
+            c = (GUIDE_PRIOR * guide[b]['seen'] * np.minimum(across / (np.pi / 2) ** 2, 2.0)
+                 + REST_PRIOR * np.minimum(along / (np.pi / 2) ** 2, 2.0))
         else:
             deg = np.degrees(R.magnitude())
             c = REST_PRIOR * np.minimum((deg / 90) ** 2, 2.0)
