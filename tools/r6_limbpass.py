@@ -173,15 +173,23 @@ def pose_prior(Js, hidden):
     return cost
 
 
-def free_columns(J):
-    """The columns polish and smoothing may move: every joint angle, and the offset of a joint the footage has shown
-    off its socket (r6_offsets.attach); an attached joint stays attached."""
-    cols = list(range(NJ))
+def moves(J, p):
+    """Single moves polish and smoothing try, as unit vectors over J: each joint angle, and each joint offset across
+    the picture (right, up). Never toward or away from the camera: the footage can't see that (r6_offsets.in_plane),
+    so a move there would only let a joint drift off with nothing in the picture to stop it."""
+    out = []
+    for c in range(NJ):
+        e = np.zeros(len(J))
+        e[c] = 1
+        out.append(e)
+    right, up = OF.plane_dirs(np.concatenate([p[:NC], J]))
     for i in range(len(F.OFF_BONES)):
         c = NJ + 3 * i
-        if np.linalg.norm(J[c:c + 3]) > 0.5:
-            cols += [c, c + 1, c + 2]
-    return cols
+        for d in (right, up):
+            e = np.zeros(len(J))
+            e[c:c + 3] = d / np.linalg.norm(d)
+            out.append(e)
+    return out
 
 
 def score_job(job):
@@ -223,7 +231,7 @@ def polish_job(job):
     J0 = torch.tensor(full_J(p), dtype=T.DT)
     J = J0.clone()
     hid = hidden_weights(judge, J0.numpy(), p[:NC])
-    movable = free_columns(J0.numpy())
+    dirs = [torch.tensor(e, dtype=T.DT) for e in moves(J0.numpy(), p)]
     # Offsets pay r6_offsets' tie-break cost: a limb hidden behind the body scores alike anywhere back there, and
     # must stay put rather than drift off (an arm pulled a stud out of a standing idle pose).
     value = lambda Js: judge(Js)[0] - OF.COST_PX * Js[:, NJ:].abs().sum(1).numpy() - pose_prior(Js.numpy(), hid)
@@ -231,11 +239,10 @@ def polish_job(job):
     for step in POLISH_STEPS:
         for _ in range(10):
             cands = []
-            for c in movable:
+            for e in dirs:
                 for d in (-step, step):
-                    q = J.clone()
-                    q[c] = float(q[c]) + d
-                    if abs(float(q[c] - J0[c])) > POLISH_MAX:
+                    q = J + d * e
+                    if float((q - J0).abs().max()) > POLISH_MAX:
                         continue
                     cands.append(q)
             Js = torch.stack(cands)
@@ -311,7 +318,7 @@ def smooth_job(job):
     A = full_J(anchor)
     J = full_J(p)
     hid = hidden_weights(judge, J, p[:NC])
-    movable = free_columns(J)
+    dirs = moves(J, p)
     value = lambda Js: (judge(torch.tensor(Js, dtype=T.DT))[0] - OF.COST_PX * np.abs(Js[:, NJ:]).sum(1) - pose_prior(Js, hid)
                         - roughness(Js, nb))
     start = float(value(J[None])[0])
@@ -319,11 +326,10 @@ def smooth_job(job):
     for step in POLISH_STEPS:
         for _ in range(10):
             cands = []
-            for c in movable:
+            for e in dirs:
                 for d in (-step, step):
-                    q = J.copy()
-                    q[c] += d
-                    if abs(q[c] - A[c]) <= SMOOTH_MAX:
+                    q = J + d * e
+                    if np.abs(q - A).max() <= SMOOTH_MAX:
                         cands.append(q)
             Js = np.stack(cands)
             v = value(Js)
@@ -543,6 +549,9 @@ def main(video, path_json, cands_json, net_path, out, rounds=2):
         print(f'polish: score +{np.mean(gain):.4f} per frame, {time.time() - t0:.0f} s', flush=True)
     if SMOOTH_SWEEPS > 0:
         smooth_clip(video, track, net_path, params, cands, ks)
+    for k in ks:  # offsets across the picture only (see r6_offsets.in_plane)
+        J = OF.in_plane(torch.tensor(full_J(params[k]), dtype=T.DT), params[k]).numpy()
+        params[k] = np.concatenate([params[k][:NC], J])
     for k in ks:
         r = tr['frames'][str(k)]
         r['params'] = params[k].tolist()

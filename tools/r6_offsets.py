@@ -277,22 +277,17 @@ def box_centre(p, bone, lo, hi, part):
     return project(v).mean(0)
 
 
-GAP_PX = 6.0  # rig px (1 stud): a joint comes off its socket only when the footage shows a gap this wide
-
-
-def attach(judge, J):
-    """An R6 body is jointed: the head sits on the neck, arms and legs on their sockets. A joint stays attached
-    unless the footage shows it off -- a gap of at least GAP_PX that the judge loses KEEP_GAIN without (a kick thrown
-    into the dummy). Anything less (a px or two that only soaks up fit error, a slide along the line of sight that
-    changes nothing in the picture) is put back on the socket here, so the clip never has a joint drifting off."""
-    for i, b in enumerate(F.OFF_BONES):
+def in_plane(J, p):
+    """J with every joint offset moved into the picture plane: the footage shows a joint's slide across the picture,
+    never its slide toward or away from the camera, so that part of an offset is nothing the footage said (left in,
+    a head drifts off the neck along the line of sight with no change in the picture). Attached otherwise."""
+    right, up = plane_dirs(p)
+    depth = np.cross(right, up)
+    depth = torch.tensor(depth / np.linalg.norm(depth), dtype=T.DT)
+    J = J.clone()
+    for i in range(len(F.OFF_BONES)):
         c = NJ + 3 * i
-        if float(J[c:c + 3].norm()) == 0:
-            continue
-        q = J.clone()
-        q[c:c + 3] = 0
-        if float(J[c:c + 3].norm()) < GAP_PX or float(judge(J[None])[0][0] - judge(q[None])[0][0]) < KEEP_GAIN:
-            J = q
+        J[c:c + 3] = J[c:c + 3] - (J[c:c + 3] @ depth) * depth
     return J
 
 
@@ -321,8 +316,7 @@ def frame_job(job):
     J, _ = PF.sweep(judge, J, rounds=1)
     J, _ = descend(judge, J)
     J = undo_unseen(judge, J)
-    J = attach(judge, J)
-    J, _ = PF.sweep(judge, J, rounds=1)  # the joints re-fitted around the limbs put back
+    J = in_plane(J, np.concatenate([p[:NC], J.numpy()]))
     _, c1, p1 = judge(J[None])
     if c1[0] + w * p1[0] - COST_PX * float(J[NJ:].abs().sum()) < c0[0] + w * p0[0]:
         J, c1, p1 = J0, c0, p0  # no better: keep the frame as it was
