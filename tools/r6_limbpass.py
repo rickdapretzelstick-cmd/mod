@@ -6,7 +6,8 @@
 # frame's own window with the rest of the pose kept (colour + W x parts, r6_partfit's Judge); then one choice per frame
 # by dynamic programming: total score less a cost on the bone's real turn between frames (geodesic, twist included:
 # LAMBDA x (deg / 90)^2) and on its joint offset's change. A flip the footage does not clearly ask for loses.
-#   python3 tools/r6_limbpass.py VIDEO PATH.json CANDS.json NET.pt OUT.json [ROUNDS=2]
+# Then each frame is polished in place (small steps only, within 15 deg: R6_POLISH=0 skips it).
+#   python3 tools/r6_limbpass.py VIDEO PATH.json CANDS.json NET.pt OUT.json [ROUNDS=2]   (ROUNDS 0: polish only)
 import sys, os, json, time
 import numpy as np, torch
 from multiprocessing import Pool
@@ -24,7 +25,7 @@ LIMBS = ('rightArm', 'leftArm', 'rightThigh', 'leftThigh')
 COLS = {b: [F.JI[(b, a)] - NC for a in range(3)] for b in BONES}
 OFFC = {b: (NJ + 3 * F.OFF_BONES.index(b) if b in F.OFF_BONES else None) for b in BONES}
 LAMBDA = float(os.environ.get('LAMBDA', '0.03'))      # agreement units per (90 deg of turn between frames)^2
-LAMBDA_OFF = float(os.environ.get('LAMBDA_OFF', '0.01'))  # ... per (6 rig px = 1 stud of offset change)^2
+LAMBDA_OFF = float(os.environ.get('LAMBDA_OFF', '0.01'))  # ... per huber(studs of offset change; 6 rig px = 1 stud)
 W = float(os.environ.get('W', '0.5'))
 
 
@@ -105,6 +106,48 @@ def score_job(job):
     return k, res
 
 
+POLISH_STEPS = (4.0, 2.0, 1.0)   # deg (and rig px for offsets) per coordinate-descent step
+POLISH_MAX = 15.0                 # a joint may drift this far from its chosen pose: small enough that no flip comes back
+
+
+def polish_job(job):
+    """The chosen pose of one frame refined in place: every joint angle and offset nudged by small steps (all single
+    moves tried at once, the best taken, until none helps), each kept within POLISH_MAX of where the limb pass put it.
+    Discrete candidates land near the footage's pose, not on it; this closes the gap without any frame-to-frame jump."""
+    video, track, net_path, k, p, cps = job
+    clip = O.Clip(video, json.load(open(track)))
+    net = P.load(net_path)
+    p = np.asarray(p, float)
+    ps = [p[:F.NP]] + [np.asarray(c, float)[:F.NP] for c in cps] + OF.widened(p)
+    judge = PF.Judge(clip, net, k, ps, W)
+    J0 = torch.tensor(full_J(p), dtype=T.DT)
+    J = J0.clone()
+    best = start = float(judge(J[None])[0][0])
+    for step in POLISH_STEPS:
+        for _ in range(10):
+            cands = []
+            for c in range(len(J)):
+                for d in (-step, step):
+                    q = J.clone()
+                    q[c] = float(q[c]) + d
+                    if abs(float(q[c] - J0[c])) > POLISH_MAX:
+                        continue
+                    cands.append(q)
+            Js = torch.stack(cands)
+            v = judge(Js)[0]
+            o = int(np.argmax(v))
+            if v[o] <= best + 1e-6:
+                break
+            J, best = Js[o].clone(), float(v[o])
+    return k, np.concatenate([p[:NC], J.numpy()]), start, best
+
+
+def huber(d):
+    """Quadratic up to 1 (stud), linear past it: offset jitter pays, but a limb thrown far for real (a kick into the
+    dummy) is not priced out of the clip."""
+    return d * d if d <= 1 else 2 * d - 1
+
+
 def viterbi(ks, opts, scores, b):
     R = {k: [euler_to_R(e) for e, _ in opts[k]] for k in ks}
     total = [scores[ks[0]][j] for j in range(len(opts[ks[0]]))]
@@ -115,7 +158,7 @@ def viterbi(ks, opts, scores, b):
             best, bi = -1e9, 0
             for i, (e0, off0) in enumerate(opts[a]):
                 deg = np.degrees((R[a][i].inv() * R[c][j]).magnitude())
-                v = total[i] - LAMBDA * (deg / 90) ** 2 - LAMBDA_OFF * (np.linalg.norm(off - off0) / 6) ** 2
+                v = total[i] - LAMBDA * (deg / 90) ** 2 - LAMBDA_OFF * huber(np.linalg.norm(off - off0) / 6)
                 if v > best:
                     best, bi = v, i
             new.append(best + scores[c][j])
@@ -137,7 +180,7 @@ def main(video, path_json, cands_json, net_path, out, rounds=2):
     ks = sorted(int(k) for k in tr['frames'])
     params = {k: np.array(tr['frames'][str(k)]['params'], float) for k in ks}
     cands = {int(k): v for k, v in cd['frames'].items()}
-    def flips():
+    def flips():  # bone turns over 60 deg between consecutive frames
         n = 0
         for b in BONES:
             Rs = [euler_to_R(bone_of(full_J(params[k]), b)[0]) for k in ks]
@@ -172,7 +215,16 @@ def main(video, path_json, cands_json, net_path, out, rounds=2):
         print(f'round {rnd + 1}: {changed} bone choices changed, score {mean:.4f}, {time.time() - t0:.0f} s', flush=True)
         if changed == 0:
             break
-    # Final scores of the result, each frame in its own window.
+    if os.environ.get('R6_POLISH', '1') != '0':
+        t0 = time.time()
+        jobs = [(video, track, net_path, k, params[k], [c['params'] for c in cands.get(k, [])]) for k in ks]
+        gain = []
+        with Pool(int(os.environ.get('PROCS', '4'))) as pool:
+            for k, q, a, b in pool.imap_unordered(polish_job, jobs):
+                params[k] = q
+                gain.append(b - a)
+        mean = (mean or 0) + float(np.mean(gain))
+        print(f'polish: score +{np.mean(gain):.4f} per frame, {time.time() - t0:.0f} s', flush=True)
     for k in ks:
         r = tr['frames'][str(k)]
         r['params'] = params[k].tolist()

@@ -98,7 +98,9 @@ def descend(judge, J):
     return J, best
 
 
-SEEN_MIN = 120    # a moved limb must show this many judged px...
+SEEN_MIN = 0.25   # a moved limb must show this share of the torso's judged px (the window shrinks the picture when
+# it widens to take in a limb thrown far, so a fixed px count would undo exactly those)...
+KEEP_GAIN = 0.03  # ...or undoing it costs this much colour + W x parts
 ACC_MIN = 0.6     # ...of which this share agree in colour, or its offset is undone: a limb that only "fits" by
 # leaving the picture (into the window's unjudged border) or by hiding is not evidence of a gap
 
@@ -112,7 +114,7 @@ def seen_parts(judge, J):
     o, known, drawn = T._hard_counts(v, 0, drawn)
     drawn = drawn[0]
     out = {}
-    for b in F.OFF_BONES:
+    for b in F.OFF_BONES + ['hips']:
         boxes = [n + 1 for n, (bone, _, _, _) in enumerate(F.PARTS) if bone == b]
         m = np.isin(parts, boxes) & known
         n = int(m.sum())
@@ -123,12 +125,133 @@ def seen_parts(judge, J):
 def undo_unseen(judge, J):
     """Offsets of bones that moved but are not seen well where they went: back to zero."""
     seen = seen_parts(judge, J)
+    need = SEEN_MIN * max(seen['hips'][0], 120)
     for i, b in enumerate(F.OFF_BONES):
         c = NJ + 3 * i
-        if float(J[c:c + 3].norm()) > 1.5 and (seen[b][0] < SEEN_MIN or seen[b][1] < ACC_MIN):
-            J = J.clone()
-            J[c:c + 3] = 0
+        if float(J[c:c + 3].norm()) > 1.5 and (seen[b][0] < need or seen[b][1] < ACC_MIN):
+            q = J.clone()
+            q[c:c + 3] = 0
+            # ...unless the footage plainly wants it there: a well-matched limb, partly hidden, that undoing costs a lot
+            if seen[b][1] >= ACC_MIN and float(judge(J[None])[0][0] - judge(q[None])[0][0]) >= KEEP_GAIN:
+                continue
+            J = q
     return J
+
+
+HUNT_REACH = float(os.environ.get('HUNT_REACH', '1.5'))  # how far from the drawn rig to look, in body heights
+HUNT_MIN = 0.02     # a stray patch must be at least this share of the rig's drawn area
+
+
+def hunt(clip, k, p):
+    """A limb thrown far from the body (a kick into the dummy, a limb flung off by the animation) is past any grid
+    around the joint. Here the footage itself says where to look: patches of the avatar's colours that the fitted rig
+    does not cover, within HUNT_REACH body heights of it. Each patch gives, for every offset bone, the pose with that
+    bone moved onto it (in the picture plane): starting points the judge then turns and refines."""
+    import cv2
+    rgb = clip.rgb(k)
+    enc = np.asarray(F.classify(rgb, O.pal)) // 1000  # class * 1000 + brightness
+    names = [c['name'] for c in O.pal['classes']]
+    ids = [i for i, n in enumerate(names, 1) if n not in ('unseen', 'face')]
+    avatar = np.isin(enc, ids).astype(np.uint8)
+    cover = np.zeros(enc.shape, np.uint8)
+    centre = {}
+    for (bone, lo, hi, part), (_, poly, _) in zip(F.PARTS, sorted_boxes(p)):
+        cv2.fillPoly(cover, [np.round(np.array(poly)).astype(np.int32)], 1)
+    for bone, lo, hi, part in F.PARTS:
+        if bone in F.OFF_BONES and part != 'face':
+            centre.setdefault(bone, box_centre(p, bone, lo, hi, part))
+    area = int(cover.sum())
+    if area < 50:
+        return []
+    ys, xs = np.nonzero(cover)
+    h = ys.max() - ys.min() + 1
+    pad = int(HUNT_REACH * h)
+    y0, y1 = max(0, ys.min() - pad), min(enc.shape[0], ys.max() + pad)
+    x0, x1 = max(0, xs.min() - pad), min(enc.shape[1], xs.max() + pad)
+    r = max(2, int(0.03 * h))
+    near = cv2.dilate(cover, np.ones((2 * r + 1, 2 * r + 1), np.uint8))
+    stray = (avatar & (1 - near))[y0:y1, x0:x1]
+    stray = cv2.morphologyEx(stray, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    n, lab, stats, cents = cv2.connectedComponentsWithStats(stray)
+    blobs = sorted((stats[i, cv2.CC_STAT_AREA], cents[i] + (x0, y0)) for i in range(1, n)
+                   if stats[i, cv2.CC_STAT_AREA] >= HUNT_MIN * area)[::-1][:2]
+    if not blobs:
+        return []
+    right, up = plane_dirs(p)
+    s = float(p[2])
+    out = []
+    for _, (u, v) in blobs:
+        for i, b in enumerate(F.OFF_BONES):
+            du, dv = u - centre[b][0], v - centre[b][1]
+            q = np.concatenate([p[:F.NP], np.zeros(F.NOFF)])
+            q[F.NP:F.NP + len(p) - F.NP] = p[F.NP:]
+            q[F.NP + 3 * i:F.NP + 3 * i + 3] += (du / s) * right - (dv / s) * up
+            out.append((q, b, (float(u), float(v))))
+    return out
+
+
+PARTNER = {'rightArm': 'leftArm', 'leftArm': 'rightArm', 'rightThigh': 'leftThigh', 'leftThigh': 'rightThigh'}
+
+
+def box_of(bone):
+    return next((lo, hi, part) for b, lo, hi, part in F.PARTS if b == bone and part != 'face')
+
+
+def centre_on(q, cam, bone, at, right, up):
+    """q (joints) with bone's offset shifted so its box's middle projects onto picture point at."""
+    c = NJ + 3 * F.OFF_BONES.index(bone)
+    u, v = box_centre(np.concatenate([cam, q.numpy()]), bone, *box_of(bone))
+    q = q.clone()
+    q[c:c + 3] += torch.tensor((at[0] - u) / float(cam[2]) * right - (at[1] - v) / float(cam[2]) * up, dtype=T.DT)
+    return q
+
+
+def place_search(judge, J, p, bone, at):
+    """Bone `bone` turned through a grid of directions (30 deg, two twists), its offset each time set so the box's
+    middle lands on picture point `at`: a thrown limb is found whatever way it points (turning about the joint alone
+    would swing it off the patch). Each also with the partner limb (other arm / other leg) taking the bone's old
+    place: the footage cannot say which of two same-sized limbs was thrown, only the judge can."""
+    cam = p[:NC]
+    cols = lambda b: [F.JI[(b, a)] - NC for a in range(3)]
+    right, up = plane_dirs(p)
+    bases = [J]
+    if bone in PARTNER:
+        mate = PARTNER[bone]
+        q = J.clone()
+        q[cols(mate)] = J[cols(bone)]
+        was = box_centre(np.concatenate([cam, J.numpy()]), bone, *box_of(bone))
+        bases.append(centre_on(q, cam, mate, was, right, up))
+    cands = []
+    for base in bases:
+        for x in range(-180, 180, 30):
+            for z in range(-90, 91, 30):
+                for tw in (0, 90):
+                    q = base.clone()
+                    q[cols(bone)] = torch.tensor([float(x), float(tw), float(z)], dtype=T.DT)
+                    cands.append(centre_on(q, cam, bone, at, right, up))
+    Js = torch.stack(cands)
+    sc = judge(Js)[0]
+    return Js[int(np.argmax(sc))].clone()
+
+
+def sorted_boxes(p):
+    """F.boxes' projected outlines, in F.PARTS order (F.boxes sorts them far to near)."""
+    world = F.pose_world(p)
+    view, project = F.camera_of(p)
+    out = []
+    for bone, lo, hi, part in F.PARTS:
+        lo, hi = F.scaled_box(part, lo, hi)
+        v = view @ F.corners_of(world, bone, lo, hi)
+        out.append((0, F.hull(project(v)), part))
+    return out
+
+
+def box_centre(p, bone, lo, hi, part):
+    world = F.pose_world(p)
+    view, project = F.camera_of(p)
+    lo, hi = F.scaled_box(part, lo, hi)
+    v = view @ F.corners_of(world, bone, lo, hi)
+    return project(v).mean(0)
 
 
 def frame_job(job):
@@ -137,11 +260,20 @@ def frame_job(job):
     clip = O.Clip(video, json.load(open(track)))
     net = P.load(net_path)
     p = np.array(p, float)
-    ps = [p[:F.NP]] + [np.array(c['params'], float)[:F.NP] for c in cands] + widened(p)
+    found = hunt(clip, k, p) if os.environ.get('R6_HUNT', '1') != '0' else []
+    ps = [p[:F.NP]] + [np.array(c['params'], float)[:F.NP] for c in cands] + widened(p) + [q for q, _, _ in found]
     judge = PF.Judge(clip, net, k, ps, w)
     J0 = torch.tensor(np.concatenate([p[NC:F.NP], np.zeros(F.NOFF)]), dtype=T.DT)
     _, c0, p0 = judge(J0[None])
     J = plane_search(judge, J0, p)
+    if found:
+        # The stray patches' poses: the best few turned (limbs re-swept) and refined, kept when they beat the grid's.
+        best = float(judge(J[None])[0][0])
+        for (q, bone, at), base in [(f, b) for f in found for b in (J0, J)]:
+            Ji = place_search(judge, base, np.concatenate([p[:NC], base.numpy()]), bone, at)
+            Ji, v = descend(judge, Ji)
+            if v > best + 0.003:
+                J, best = Ji, v
     J, _ = descend(judge, J)
     J = undo_unseen(judge, J)
     J, _ = PF.sweep(judge, J, rounds=1)
