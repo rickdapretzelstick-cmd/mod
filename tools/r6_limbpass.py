@@ -154,7 +154,7 @@ def hidden_weights(judge, J, cam):
 
 
 def pose_prior(Js, hidden):
-    """A small cost on each hidden part's turn from rest and on every joint offset: where the footage can't see a part
+    """A small cost on each hidden part's turn from rest and on its joint offset: where the footage can't see a part
     (a far leg behind the near one in a side view) many poses score alike, and the judge's own small biases (a rig
     leg that peeks out from behind where the real one doesn't) push it anywhere it hides best -- a leg sideways, a
     leg sunk into the body. The prior settles it on the natural pose (standing: limbs down, head forward). A part
@@ -162,15 +162,26 @@ def pose_prior(Js, hidden):
     Js = np.atleast_2d(np.asarray(Js, float))
     cost = np.zeros(len(Js))
     for b in PRIOR_BONES:
-        if hidden.get(b, 0) > 0:
-            deg = np.degrees(rot_batch(Js[:, COLS[b]]).magnitude())
-            cost += hidden[b] * REST_PRIOR * np.minimum((deg / 90) ** 2, 2.0)
+        if hidden.get(b, 0) <= 0:
+            continue
+        deg = np.degrees(rot_batch(Js[:, COLS[b]]).magnitude())
+        c = REST_PRIOR * np.minimum((deg / 90) ** 2, 2.0)
         if OFFC[b] is not None:
-            # Offsets pay seen or not: one along the line of sight (a head slid sideways in a side view) changes
-            # nothing in the picture, so without this the smoothing drifts it off (a ramp costs no acceleration).
             px = np.linalg.norm(Js[:, OFFC[b]:OFFC[b] + 3], axis=1)
-            cost += np.minimum(OFF_PRIOR * px, OFF_PRIOR_CAP)
+            c += np.minimum(OFF_PRIOR * px, OFF_PRIOR_CAP)
+        cost += hidden[b] * c
     return cost
+
+
+def free_columns(J):
+    """The columns polish and smoothing may move: every joint angle, and the offset of a joint the footage has shown
+    off its socket (r6_offsets.attach); an attached joint stays attached."""
+    cols = list(range(NJ))
+    for i in range(len(F.OFF_BONES)):
+        c = NJ + 3 * i
+        if np.linalg.norm(J[c:c + 3]) > 0.5:
+            cols += [c, c + 1, c + 2]
+    return cols
 
 
 def score_job(job):
@@ -212,6 +223,7 @@ def polish_job(job):
     J0 = torch.tensor(full_J(p), dtype=T.DT)
     J = J0.clone()
     hid = hidden_weights(judge, J0.numpy(), p[:NC])
+    movable = free_columns(J0.numpy())
     # Offsets pay r6_offsets' tie-break cost: a limb hidden behind the body scores alike anywhere back there, and
     # must stay put rather than drift off (an arm pulled a stud out of a standing idle pose).
     value = lambda Js: judge(Js)[0] - OF.COST_PX * Js[:, NJ:].abs().sum(1).numpy() - pose_prior(Js.numpy(), hid)
@@ -219,7 +231,7 @@ def polish_job(job):
     for step in POLISH_STEPS:
         for _ in range(10):
             cands = []
-            for c in range(len(J)):
+            for c in movable:
                 for d in (-step, step):
                     q = J.clone()
                     q[c] = float(q[c]) + d
@@ -299,6 +311,7 @@ def smooth_job(job):
     A = full_J(anchor)
     J = full_J(p)
     hid = hidden_weights(judge, J, p[:NC])
+    movable = free_columns(J)
     value = lambda Js: (judge(torch.tensor(Js, dtype=T.DT))[0] - OF.COST_PX * np.abs(Js[:, NJ:]).sum(1) - pose_prior(Js, hid)
                         - roughness(Js, nb))
     start = float(value(J[None])[0])
@@ -306,7 +319,7 @@ def smooth_job(job):
     for step in POLISH_STEPS:
         for _ in range(10):
             cands = []
-            for c in range(len(J)):
+            for c in movable:
                 for d in (-step, step):
                     q = J.copy()
                     q[c] += d
