@@ -123,20 +123,34 @@ OFF_PRIOR_CAP = 0.04
 PRIOR_BONES = ('head', 'rightArm', 'leftArm', 'rightThigh', 'leftThigh')
 
 
-def pose_prior(Js):
-    """A small cost on each limb's (and the head's) turn from rest and on joint offsets: where the footage can't see
-    a part (a far leg behind the near one in a side view) many poses score alike, and the judge's own small biases (a
-    rig leg that peeks out from behind where the real one doesn't) push the hidden part anywhere it hides best -- a
-    leg sideways, a leg sunk into the body. The prior settles it on the natural pose. Seen parts are judged by many
-    pixels, far above this, so the footage still decides wherever it shows them; a thrown limb pays at most the cap."""
+HIDDEN_SHARE = 0.1  # a part showing less than this share of the torso's judged px is hidden (the prior holds it)
+
+
+def hidden_weights(judge, J):
+    """Per part, how hidden it is in this frame (1: the footage shows none of it, 0: it shows HIDDEN_SHARE of the
+    torso's px or more), judged at the frame's own pose."""
+    seen = OF.seen_parts(judge, torch.tensor(np.asarray(J, float), dtype=T.DT))
+    torso = max(seen['hips'][0], 120)
+    return {b: float(np.clip(1 - seen[b][0] / (HIDDEN_SHARE * torso), 0, 1)) for b in PRIOR_BONES}
+
+
+def pose_prior(Js, hidden):
+    """A small cost on each hidden part's turn from rest and on its joint offset: where the footage can't see a part
+    (a far leg behind the near one in a side view) many poses score alike, and the judge's own small biases (a rig
+    leg that peeks out from behind where the real one doesn't) push it anywhere it hides best -- a leg sideways, a
+    leg sunk into the body. The prior settles it on the natural pose (standing: limbs down, head forward). A part
+    the footage shows (`hidden` 0) pays nothing: a punch or a kick into the dummy is the footage's alone."""
     Js = np.atleast_2d(np.asarray(Js, float))
     cost = np.zeros(len(Js))
     for b in PRIOR_BONES:
+        if hidden.get(b, 0) <= 0:
+            continue
         deg = np.degrees(rot_batch(Js[:, COLS[b]]).magnitude())
-        cost += REST_PRIOR * np.minimum((deg / 90) ** 2, 2.0)
+        c = REST_PRIOR * np.minimum((deg / 90) ** 2, 2.0)
         if OFFC[b] is not None:
             px = np.linalg.norm(Js[:, OFFC[b]:OFFC[b] + 3], axis=1)
-            cost += np.minimum(OFF_PRIOR * px, OFF_PRIOR_CAP)
+            c += np.minimum(OFF_PRIOR * px, OFF_PRIOR_CAP)
+        cost += hidden[b] * c
     return cost
 
 
@@ -148,6 +162,7 @@ def score_job(job):
     ps = [p[:F.NP]] + [np.asarray(c, float)[:F.NP] for c in cps] + OF.widened(p)
     judge = PF.Judge(clip, net, k, ps, W)
     J0 = full_J(p)
+    hid = hidden_weights(judge, J0)
     res = {}
     for b, cand in opts.items():
         Js = []
@@ -157,7 +172,7 @@ def score_job(job):
             if OFFC[b] is not None:
                 J[OFFC[b]:OFFC[b] + 3] = off
             Js.append(J)
-        res[b] = [float(x) for x in judge(torch.tensor(np.stack(Js), dtype=T.DT))[0] - pose_prior(np.stack(Js))]
+        res[b] = [float(x) for x in judge(torch.tensor(np.stack(Js), dtype=T.DT))[0] - pose_prior(np.stack(Js), hid)]
     return k, res
 
 
@@ -177,9 +192,10 @@ def polish_job(job):
     judge = PF.Judge(clip, net, k, ps, W)
     J0 = torch.tensor(full_J(p), dtype=T.DT)
     J = J0.clone()
+    hid = hidden_weights(judge, J0.numpy())
     # Offsets pay r6_offsets' tie-break cost: a limb hidden behind the body scores alike anywhere back there, and
     # must stay put rather than drift off (an arm pulled a stud out of a standing idle pose).
-    value = lambda Js: judge(Js)[0] - OF.COST_PX * Js[:, NJ:].abs().sum(1).numpy() - pose_prior(Js.numpy())
+    value = lambda Js: judge(Js)[0] - OF.COST_PX * Js[:, NJ:].abs().sum(1).numpy() - pose_prior(Js.numpy(), hid)
     best = start = float(value(J[None])[0])
     for step in POLISH_STEPS:
         for _ in range(10):
@@ -263,7 +279,8 @@ def smooth_job(job):
     judge = PF.Judge(clip, net, k, ps, W)
     A = full_J(anchor)
     J = full_J(p)
-    value = lambda Js: (judge(torch.tensor(Js, dtype=T.DT))[0] - OF.COST_PX * np.abs(Js[:, NJ:]).sum(1) - pose_prior(Js)
+    hid = hidden_weights(judge, J)
+    value = lambda Js: (judge(torch.tensor(Js, dtype=T.DT))[0] - OF.COST_PX * np.abs(Js[:, NJ:]).sum(1) - pose_prior(Js, hid)
                         - roughness(Js, nb))
     start = float(value(J[None])[0])
     best = start
@@ -385,8 +402,9 @@ def rethrow_job(job):
     ps = [p[:F.NP]] + [np.asarray(c, float)[:F.NP] for c in cps] + OF.widened(p)
     judge = PF.Judge(clip, net, k, ps, W)
     J0 = full_J(p)
+    hid = hidden_weights(judge, J0)
     value = lambda J: (float(judge(torch.tensor(J[None], dtype=T.DT))[0][0]) - OF.COST_PX * float(np.abs(J[NJ:]).sum())
-                       - float(pose_prior(J)[0]))
+                       - float(pose_prior(J, hid)[0]))
     best, bestJ, base_n = None, None, None
     for b, x, xpose, n_b, n_x in props:
         if best is None:
