@@ -101,6 +101,17 @@ checked), and the pose is solved by least squares to carry them there (turn/tilt
   agreement; where they disagree (43) .831 -- a confidence signal that needs no colour score. As extra candidates
   (`merge OUTDIR left`) they are picked 5 times and do not move the score (.882, 53). Use: trust map / what to flag.
 
+## Synthetic-trained part network (tools/r6_synth.py, r6_partnet.py, r6_partscore.py)
+`r6_synth.py make build/video.mp4 build/synth/partN.npz 5000 SEED` draws the template rig (side colours, shading,
+learnt letters) in random poses over real inpainted backgrounds with fake trails, smoke, blur and Dummies, with a
+per-pixel part label. `r6_partnet.py train build/synth/partnet.pt build/synth/part0-3.npz` (EPOCHS=5, 20k pictures,
+~17 min on 4 CPUs): small U-Net, held-out part IoU .796. On real side-view frames it finds the body, ignores the Dummy
+and trails, and separates arms/torso/legs and right/left well (sheet: `r6_partscore.py sheet`).
+Adding parts to the whole-clip pick (`r6_partscore.py select ... W`) changed nothing: W .5 -> colour .888, 56 >= .90;
+W 1 -> .8878, 56 (colour-only .889, 55). Parts agreement of the picks is only ~.55: the right pose is not among the
+candidates. Next: fit the rig to the network's part map directly (render-and-compare on parts, not colour) so the
+network proposes poses instead of only judging them.
+
 ## AI overseer: built and run on the side view (tools/r6_oversee.py)
 Stages (see the file's header): `flag` -> `sheets` -> Claude reads the PNGs and writes a corrections JSON -> `apply` ->
 `clip`. All Python; ~8 s per sheet (8 candidates locally refined), 4 jobs side by side (JOBS=4, OMP_NUM_THREADS=1).
