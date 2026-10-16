@@ -1101,17 +1101,50 @@ MOD_PX_PER_RIG_PX = 8.0 / 12.0  # the mod's player is 8 px across the torso wher
 POS_TOL_W = 10.0  # key reduction: 1 rig px of joint offset counts as 10 degrees
 
 
+def continuous_angles(P):
+    """The joint-angle curves (frames x JOINTS) with each bone's rotation, frame by frame, written in whichever of its
+    two equivalent (x, y, z) forms, each wrapped by 360, lies nearest the frame before. The game and the viewer blend
+    keys linearly in these angles, so a bone written in the other form (or 360 off) between two keys would spin the long
+    way round between them; written this way it takes the short way, and the pose at every key is unchanged."""
+    from scipy.spatial.transform import Rotation as Rot
+    curves = np.array(P[:, len(CAM):len(CAM) + len(JOINTS)], float)
+    for b in REST:
+        cols = [JOINTS.index((b, ax)) if (b, ax) in JOINTS else None for ax in range(3)]
+        if all(c is None for c in cols):
+            continue
+        E = np.stack([curves[:, c] if c is not None else np.zeros(len(curves)) for c in cols], 1)
+        for i in range(1, len(E)):
+            near = E[i - 1]
+            z, y, x = Rot.from_euler('ZYX', [E[i, 2], E[i, 1], E[i, 0]], degrees=True).as_euler('ZYX', degrees=True)
+            forms = [np.array([x, y, z]), np.array([x + 180, 180 - y, z + 180])]
+            forms = [near + (f - near + 180) % 360 - 180 for f in forms]
+            if any(c is None for c in cols):  # a bone fitted on fewer axes keeps its own form, wrapped only
+                forms = [near + (E[i] - near + 180) % 360 - 180]
+            E[i] = min(forms, key=lambda f: float(np.abs(f - near).sum()))
+        for ax, c in enumerate(cols):
+            if c is not None:
+                curves[:, c] = E[:, ax]
+    return curves
+
+
+SMOOTH_FRAMES = float(os.environ.get('R6_CLIP_SMOOTH', '0'))  # gaussian sigma in frames on the written curves (0: none)
+
+
 def write_clip(target, times_ms, P, tol, merge, src, path=None):
-    curves = np.stack([unwrap(P[:, len(CAM) + i]) for i in range(len(JOINTS))], 1)
+    import warnings
+    warnings.filterwarnings('ignore', message='Gimbal lock')
+    curves = continuous_angles(P)
     curves[:, 1] -= curves[0, 1]  # the body turns from facing forward at the move's first frame
-    curves = ndimage.gaussian_filter1d(curves, 0.8, axis=0, mode='nearest')
+    if SMOOTH_FRAMES > 0:
+        curves = ndimage.gaussian_filter1d(curves, SMOOTH_FRAMES, axis=0, mode='nearest')
     # Joint offsets (params past NP, OFF_BONES): the mod's 'pos' is (right, up, forward) in its own px, and its model
     # space has right at -x, up at -y, forward at -z -- the fit rig's axes -- so pos = -offset, rescaled.
     offs = None
     if P.shape[1] > NP:
         offs = np.zeros((len(P), NOFF))
         offs[:, :P.shape[1] - NP] = P[:, NP:NP + NOFF]
-        offs = ndimage.gaussian_filter1d(offs, 0.8, axis=0, mode='nearest')
+        if SMOOTH_FRAMES > 0:
+            offs = ndimage.gaussian_filter1d(offs, SMOOTH_FRAMES, axis=0, mode='nearest')
     keep = reduce_keys(times_ms, curves if offs is None else np.hstack([curves, POS_TOL_W * offs]), tol)
     base = os.path.join(ANIMS, target + '.json')
     path = path or base

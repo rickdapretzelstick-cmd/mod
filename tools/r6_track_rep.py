@@ -5,10 +5,10 @@
 import sys, os, json, time, argparse
 import numpy as np, torch, cv2
 torch.set_num_threads(1); cv2.setNumThreads(1)
-sys.path.insert(0, '/home/user/mod/tools')
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import r6_fit as F, r6_fit_torch as T
 vid, name, a_, b_, dirn, out = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5], sys.argv[6]
-PAL = '/home/user/mod/tools/palettes/side_colours.json'
+PAL = os.environ.get('R6_PALETTE', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'palettes', 'side_colours.json'))
 pal = json.load(open(PAL)); F.use_palette(pal)
 cap = cv2.VideoCapture(vid)
 def grab(n):
