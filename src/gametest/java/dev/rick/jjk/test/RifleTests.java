@@ -155,26 +155,6 @@ public class RifleTests {
         });
     }
 
-    @GameTest(maxTicks = 40, environment = ENV)
-    public void theBeamHasToBeLearned(GameTestHelper h) {
-        floor(h);
-        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
-        p.setShiftKeyDown(true);
-        press(p);
-        h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.AIM, "without Unfolding Array, only the scope");
-        letGo(p);
-        learn(p, TO_BEAM);
-        h.assertTrue(RifleRules.beamUnlocked(p) && !RifleRules.maximumOutput(p), "learned the array (not Maximum Output)");
-        h.runAfterDelay(JJKConfig.get().rifle.shotInterval + 2, () -> {
-            press(p);
-            h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.DEPLOY, "now the arms deploy");
-            h.assertTrue(RifleServer.beam(p) != null && Math.abs(RifleServer.beam(p).output() - JJKConfig.get().rifle.baseOutput) < 1e-3, "at the base output");
-            letGo(p);
-            h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.DEPLOY && RifleServer.beam(p) != null, "let go early: it carries on (it fires when ready)");
-            h.succeed();
-        });
-    }
-
     @GameTest(maxTicks = 300, padding = 16, environment = ENV)
     public void theBeamRunsItsWholeSequenceOnTheServersClock(GameTestHelper h) {
         floor(h);
@@ -257,24 +237,6 @@ public class RifleTests {
         h.assertTrue(!p.isAlive(), "dead");
         h.assertTrue(RifleServer.phase(p) == RifleServer.Phase.IDLE && RifleServer.beam(p) == null, "nothing of the beam runs on");
         h.assertTrue(b != null && !dev.rick.jjk.core.clash.BeamClashManager.threatening(b), "and nothing is threatened any more");
-        h.succeed();
-    }
-
-    @GameTest(maxTicks = 20, environment = ENV)
-    public void upgradesMoveTheirNumbersWithinTheirCaps(GameTestHelper h) {
-        floor(h);
-        JJKConfig.Rifle cfg = JJKConfig.get().rifle;
-        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
-        float sway = RifleRules.sway(p), cost = RifleRules.shotCost(p), dmg = RifleRules.shotDamage(p);
-        int interval = RifleRules.shotInterval(p);
-        h.assertTrue(Math.abs(sway - cfg.swayDegrees) < 1e-3 && interval == cfg.shotInterval, "untouched at first");
-        learn(p, TO_MAX);
-        h.assertTrue(RifleRules.sway(p) < sway && RifleRules.shotCost(p) < cost && RifleRules.shotDamage(p) > dmg && RifleRules.shotInterval(p) < interval,
-                "every small upgrade did something");
-        h.assertTrue(RifleRules.shotInterval(p) >= cfg.minShotInterval && RifleRules.shotCost(p) >= cfg.shotCost * cfg.minCostShare - 1e-3, "within the caps");
-        h.assertTrue(RifleRules.maximumOutput(p) && RifleRules.output(p) == 1f, "Maximum Output: full output");
-        h.assertTrue(Math.abs(RifleRules.half(1f) - JJKConfig.get().yuta.beamRadius) < 1e-6, "as wide as True Love Beam");
-        h.assertTrue(RifleRules.half(cfg.baseOutput) < RifleRules.half(1f), "the first unlock is narrower");
         h.succeed();
     }
 

@@ -73,7 +73,7 @@ public class BladeTests {
     }
 
     @GameTest(environment = "jjk-test:blade_a")
-    public void madeInTheCauldronItsMovesetOnlyFromTheSlot(GameTestHelper h) {
+    public void itsMovesetComesOnlyFromTheSlot(GameTestHelper h) {
         JJKConfig.get().general.autoAssignGojo = false;
         JJKConfig.get().mastery.enabled = true;
         ServerPlayer p = h.makeMockServerPlayerInLevel();
@@ -92,9 +92,6 @@ public class BladeTests {
                 && "cb_thorn_lunge".equals(c.ability(AbilitySlot.SKILL_3).id) && "cb_thorn_guard".equals(c.ability(AbilitySlot.SKILL_4).id)
                 && "cb_rising_cut".equals(c.ability(AbilitySlot.SKILL_5).id) && "cb_black_thorn".equals(c.ability(AbilitySlot.ULTIMATE).id), "its six moves");
         h.assertTrue(!CursedTools.CURSED_BLADE.unique() && CursedKits.credited(p) == CursedTools.CURSED_BLADE, "rare, not unique; its hits are its own");
-        // Its learned moves wait on its own tree.
-        press(c, AbilitySlot.SKILL_2);
-        h.assertTrue(!c.isCasting("cb_cursed_wave") && "mastery".equals(c.lastRefusal), "Cursed Wave waits on its node: " + c.lastRefusal);
         CursedSlot.set(p, ItemStack.EMPTY);
         CursedKits.update(p);
         h.assertTrue(c.toolKit() == null, "taken off, it's gone");

@@ -22,6 +22,10 @@ is a move (`git mv archive/survival/<path> <path>`).
   `ProgressionCommand`, `CurseAggro`, `CursePerception`, `CursedEncounters`.
 - **Client**: `client/progression`, `client/investigation`, `client/training`, `client/prison`, `client/finish`,
   `client/mastery`, the curse, anchor, breach, prison and trial renderers, the encounter and story overlays.
+- **Assets and data**: the curse, guardian, Prison Realm, realm and trial models, textures and animation clips
+  (`src/main/resources/assets/jjk/{models/bb,textures/entity,animations}`), the item models and blockstates of the
+  archived items, and the data packs (incidents, realm and trial rooms, worldgen, dimensions, mastery, loot, tags and
+  recipes). The lang file and sounds were left alone (unused entries are harmless).
 - **Tests**: every gametest that exercised any of it (`src/gametest/java/.../test`).
 - **Mixins**: the protected-places mixins, the mob-target mixin, and the below-world mixin for the Prison Realm.
 
@@ -44,5 +48,5 @@ is a move (`git mv archive/survival/<path> <path>`).
    registrations in `JJKClient`, the mixin entries in `jjk.mixins.json` and `fabric.mod.json`, and the character-select
    and `CharacterService` calls into `TechniqueProgression`. `git log -p` on the commit that created this folder shows
    every one of them.
-4. The curse models, textures, animations and sounds were left in `src/main/resources/assets` (they are still shipped,
-   unused), so nothing needs restoring there.
+4. The assets and data move back the same way (`git mv archive/survival/src/main/resources/... src/main/resources/...`).
+   Lang entries and sounds never left.

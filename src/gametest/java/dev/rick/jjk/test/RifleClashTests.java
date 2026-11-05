@@ -142,11 +142,6 @@ public class RifleClashTests {
         rifleDuel(h, RifleTests.TO_MAX, RifleTests.TO_MAX, false);
     }
 
-    @GameTest(maxTicks = 400, padding = 16, environment = ENV)
-    public void aFirstUnlockRifleIsOverpoweredByMaximumOutput(GameTestHelper h) {
-        rifleDuel(h, RifleTests.TO_BEAM, RifleTests.TO_MAX, true);
-    }
-
     @GameTest(maxTicks = 600, padding = 16, environment = ENV)
     public void maximumOutputAnswersEveryLastDropOnEvenTerms(GameTestHelper h) {
         floor(h);
