@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": ["minecraft:crossbow", "minecraft:spyglass", "minecraft:ghast_tear"],
+  "result": {"id": "jjk:cursed_rifle", "count": 1}
+}

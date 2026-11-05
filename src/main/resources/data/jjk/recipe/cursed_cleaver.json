@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": ["minecraft:iron_axe", "minecraft:ghast_tear"],
+  "result": {"id": "jjk:cursed_cleaver", "count": 1}
+}

@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": ["minecraft:iron_sword", "minecraft:ghast_tear"],
+  "result": {"id": "jjk:slaughter_demon", "count": 1}
+}
