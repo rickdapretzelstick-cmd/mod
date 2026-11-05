@@ -7,13 +7,11 @@ import dev.rick.jjk.core.ability.Casters;
 import dev.rick.jjk.core.character.CharacterService;
 import dev.rick.jjk.core.character.Characters;
 import dev.rick.jjk.progression.ProgressionItems;
-import dev.rick.jjk.progression.investigation.InvestigationState;
 import dev.rick.jjk.progression.tool.CursedToolDefinition;
 import dev.rick.jjk.progression.tool.CursedTools;
 import dev.rick.jjk.progression.tool.kit.CursedKits;
 import dev.rick.jjk.progression.tool.kit.CursedSlot;
 import dev.rick.jjk.progression.tool.kit.SlaughterDemonKit;
-import dev.rick.jjk.progression.tool.rifle.RifleClaims;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,7 +42,7 @@ public class CursedKitTests {
     public void theSlotTakesOnlyCursedToolsAndGivesTheirKit(GameTestHelper h) {
         ServerPlayer p = survivor(h);
         AbilityCaster c = Casters.get(p);
-        h.assertTrue(!CursedSlot.fits(new ItemStack(Items.IRON_SWORD)) && !CursedSlot.fits(new ItemStack(ProgressionItems.CURSED_COMPASS)),
+        h.assertTrue(!CursedSlot.fits(new ItemStack(Items.IRON_SWORD)),
                 "ordinary items don't fit");
         h.assertTrue(CursedSlot.fits(new ItemStack(ProgressionItems.SLAUGHTER_DEMON)), "a cursed tool does");
         CursedSlot.set(p, new ItemStack(ProgressionItems.SLAUGHTER_DEMON));
@@ -89,28 +87,6 @@ public class CursedKitTests {
         h.succeed();
     }
 
-    @GameTest(environment = "jjk-test:kit_c")
-    public void learnedMovesWaitOnTheToolsOwnMastery(GameTestHelper h) {
-        ServerPlayer p = survivor(h);
-        AbilityCaster c = Casters.get(p);
-        c.setNoCost(true);
-        CursedSlot.set(p, new ItemStack(ProgressionItems.SLAUGHTER_DEMON));
-        CursedKits.update(p);
-        c.input(AbilitySlot.SKILL_2, true, 0, 0, null);
-        c.input(AbilitySlot.SKILL_2, false, 0, 0, null);
-        h.assertTrue(!c.isCasting("sd_flurry") && c.cooldown(AbilitySlot.SKILL_2) == 0, "Flurry isn't learned yet");
-        dev.rick.jjk.progression.mastery.Mastery.award(p, "tool/slaughter_demon", 200);
-        dev.rick.jjk.progression.mastery.Mastery.purchase(p, "tool/slaughter_demon", "keen_edge");
-        var r = dev.rick.jjk.progression.mastery.Mastery.purchase(p, "tool/slaughter_demon", "flurry");
-        h.assertTrue(r == dev.rick.jjk.progression.mastery.Mastery.Result.OK, "bought Flurry in the tool's tree: " + r);
-        c.input(AbilitySlot.SKILL_2, true, 0, 0, null);
-        c.input(AbilitySlot.SKILL_2, false, 0, 0, null);
-        h.assertTrue(c.isCasting("sd_flurry") || c.cooldown(AbilitySlot.SKILL_2) > 0, "once learned, it works");
-        h.assertTrue(dev.rick.jjk.progression.mastery.Mastery.data(p).points(dev.rick.jjk.progression.mastery.MasteryTree.techniqueId("gojo")) == 0,
-                "and the technique's tree is untouched");
-        h.succeed();
-    }
-
     @GameTest(environment = "jjk-test:kit_d")
     public void toolMovesCreditTheTool(GameTestHelper h) {
         ServerPlayer p = survivor(h);
@@ -127,19 +103,4 @@ public class CursedKitTests {
         h.succeed();
     }
 
-    @GameTest(environment = "jjk-test:kit_e")
-    public void onlyTheRifleIsOnePerWorld(GameTestHelper h) {
-        h.assertTrue(CursedTools.CURSED_RIFLE.unique(), "the rifle is unique");
-        h.assertTrue(!CursedTools.SLAUGHTER_DEMON.unique() && !CursedTools.CURSED_CLEAVER.unique(), "the starter tools are common");
-        ServerPlayer a = survivor(h), b = survivor(h);
-        InvestigationState st = InvestigationState.get(h.getLevel().getServer());
-        InvestigationState.Claims.clearForTest(st);
-        h.assertTrue(RifleClaims.bearer(h.getLevel().getServer()) == null, "nobody bears it yet");
-        ItemStack first = RifleClaims.issue(a);
-        h.assertTrue(a.getUUID().equals(RifleClaims.bearer(h.getLevel().getServer())), "A bears it");
-        ItemStack second = RifleClaims.issue(b);
-        h.assertTrue(RifleClaims.inertReason(a, first) != null && RifleClaims.inertReason(b, second) == null, "issuing it again retires the first: never two live");
-        InvestigationState.Claims.clearForTest(st);
-        h.succeed();
-    }
 }

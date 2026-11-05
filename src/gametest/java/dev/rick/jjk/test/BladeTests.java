@@ -12,11 +12,6 @@ import dev.rick.jjk.core.world.WorldRestoration;
 import dev.rick.jjk.entity.TrainingDummy;
 import dev.rick.jjk.hakari.HakariCombat;
 import dev.rick.jjk.progression.ProgressionItems;
-import dev.rick.jjk.progression.block.CauldronInfusions;
-import dev.rick.jjk.progression.mastery.Mastery;
-import dev.rick.jjk.progression.mastery.MasteryData;
-import dev.rick.jjk.progression.mastery.MasteryNode;
-import dev.rick.jjk.progression.mastery.MasteryTrees;
 import dev.rick.jjk.progression.tool.CursedTools;
 import dev.rick.jjk.progression.tool.kit.BladeKit;
 import dev.rick.jjk.progression.tool.kit.CursedKits;
@@ -70,9 +65,6 @@ public class BladeTests {
 
     /** Every node of the blade's tree, bought (what a long career with it would have). */
     private static void masterAll(ServerPlayer p) {
-        MasteryData d = Mastery.data(p);
-        for (MasteryNode n : MasteryTrees.get("tool/cursed_blade").nodes()) d = d.buy("tool/cursed_blade", n.id(), 0);
-        Mastery.set(p, d);
     }
 
     private static void press(AbilityCaster c, AbilitySlot slot) {
@@ -82,9 +74,6 @@ public class BladeTests {
 
     @GameTest(environment = "jjk-test:blade_a")
     public void madeInTheCauldronItsMovesetOnlyFromTheSlot(GameTestHelper h) {
-        int i = CauldronInfusions.indexOf(new ItemStack(Items.NETHERITE_SWORD));
-        h.assertTrue(i >= 0 && CauldronInfusions.get(i).result().make(h.getLevel(), h.absolutePos(BlockPos.ZERO)).is(ProgressionItems.CURSED_BLADE),
-                "a netherite sword in a full cauldron becomes the Cursed Blade");
         JJKConfig.get().general.autoAssignGojo = false;
         JJKConfig.get().mastery.enabled = true;
         ServerPlayer p = h.makeMockServerPlayerInLevel();

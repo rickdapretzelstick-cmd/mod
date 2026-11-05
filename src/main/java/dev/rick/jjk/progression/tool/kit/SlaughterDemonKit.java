@@ -18,8 +18,6 @@ import dev.rick.jjk.core.fx.Fx;
 import dev.rick.jjk.core.hitbox.HitShape;
 import dev.rick.jjk.core.hitbox.HitboxQuery;
 import dev.rick.jjk.hakari.HakariCombat;
-import dev.rick.jjk.progression.grade.CurseGrade;
-import dev.rick.jjk.progression.grade.GradedCurse;
 import dev.rick.jjk.progression.tool.CursedTools;
 import dev.rick.jjk.util.Motion;
 import net.minecraft.sounds.SoundEvents;
@@ -291,8 +289,8 @@ public final class SlaughterDemonKit extends CursedToolKit {
                     HakariCombat.drive(user, dir, 0.9);
                     for (LivingEntity t : HakariCombat.front(user, 1.8, 1.6, 2.0)) {
                         landed = true;
-                        boolean execute = t instanceof GradedCurse g && g.curseGrade().rank() <= CurseGrade.GRADE_3.rank()
-                                && t.getHealth() <= t.getMaxHealth() * 0.25f * param(user, "threshold");
+                        // (The execute on a nearly dead low-grade curse went with the curses: archived.)
+                        boolean execute = false;
                         if (execute) {
                             HakariCombat.hit(strike(user, t.getHealth() + 1f).tag(AttackTag.UNBLOCKABLE).noComboScaling().origin(user.getEyePosition())
                                     .knockback(Knockback.directional(dir, 0.8, 0.3)).fx("tool_sever", 1.4f).build(), t);

@@ -10,7 +10,6 @@ import dev.rick.jjk.core.combat.Knockback;
 import dev.rick.jjk.core.combat.Targeting;
 import dev.rick.jjk.core.fx.Fx;
 import dev.rick.jjk.core.net.RifleStatePayload;
-import dev.rick.jjk.progression.grade.GradedCurse;
 import dev.rick.jjk.progression.tool.CursedToolItem;
 import dev.rick.jjk.progression.tool.CursedTools;
 import dev.rick.jjk.registry.ModAttachments;
@@ -123,7 +122,6 @@ public final class RifleServer {
     public static boolean kitShot(ServerPlayer p) {
         ItemStack w = weapon(p);
         if (w.isEmpty() || !(p.level() instanceof ServerLevel level)) return false;
-        if (RifleClaims.inertReason(p, w) != null) return false;
         State s = state(p);
         if (s.phase != Phase.IDLE && s.phase != Phase.AIM) return false;
         int aim = s.aimTicks;
@@ -137,11 +135,6 @@ public final class RifleServer {
     public static boolean kitAim(ServerPlayer p) {
         ItemStack w = weapon(p);
         if (w.isEmpty() || !(p.level() instanceof ServerLevel)) return false;
-        String inert = RifleClaims.inertReason(p, w);
-        if (inert != null) {
-            p.sendOverlayMessage(Component.literal(inert).withStyle(ChatFormatting.GRAY));
-            return false;
-        }
         State s = state(p);
         if (s.phase != Phase.IDLE) return false;
         s.kitHold = true;
@@ -154,7 +147,6 @@ public final class RifleServer {
     public static boolean kitBeam(ServerPlayer p) {
         ItemStack w = weapon(p);
         if (w.isEmpty() || !(p.level() instanceof ServerLevel level)) return false;
-        if (RifleClaims.inertReason(p, w) != null) return false;
         State s = state(p);
         if (s.phase != Phase.IDLE && s.phase != Phase.AIM) return false;
         if (!RifleRules.beamUnlocked(p)) return false;
@@ -290,8 +282,7 @@ public final class RifleServer {
         Fx.sound(level, muzzle, SoundEvents.FIREWORK_ROCKET_BLAST, 1.6f, 0.55f);
         Fx.sound(level, muzzle, SoundEvents.GENERIC_EXPLODE, 0.35f, 1.9f);
         if (target != null) {
-            // A curse's grade has its own say on tool damage (CursedDamage): the Mastery bonus is applied there, once.
-            float dmg = target instanceof GradedCurse ? cfg().shotDamage : RifleRules.shotDamage(p);
+            float dmg = RifleRules.shotDamage(p);
             HitResolver.resolve(Hit.builder(p, "rifle_shot").damage(dmg).tag(AttackTag.PROJECTILE).knockback(Knockback.directional(dir, 0.35, 0.08))
                     .hitstun(6).origin(muzzle).noComboScaling().fx("curse_bite", 0.7f).build(), target);
         } else if (aim.struck()) {

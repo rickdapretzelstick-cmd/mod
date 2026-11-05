@@ -70,26 +70,15 @@ public final class CharacterService {
     public static String select(ServerPlayer player, String id) {
         JJKCharacter next = id.isEmpty() ? null : Characters.get(id);
         if (!id.isEmpty() && next == null) return "Unknown character.";
-        // Survival progression: the screen only switches between kits the player has earned (Creative picks anything).
-        String gated = dev.rick.jjk.progression.TechniqueProgression.selectionBlocked(player, id);
-        if (gated != null) return gated;
         AbilityCaster c = Casters.get(player);
         if (c.character() == next) return null;
         String blocked = switchBlocked(player);
         if (blocked != null) return blocked;
         assign(player, next);
-        dev.rick.jjk.progression.TechniqueProgression.onSelected(player, id);
         return null;
     }
 
     private static void restore(ServerPlayer player) {
-        // In Survival the kit is whatever the player legitimately earned (a saved Creative pick doesn't carry over).
-        if (dev.rick.jjk.progression.TechniqueProgression.governs(player)) {
-            dev.rick.jjk.progression.TechniqueProgression.restore(player);
-            return;
-        }
-        dev.rick.jjk.progression.TechniqueProgression.validate(player);
-        dev.rick.jjk.progression.TechniqueProgression.sync(player, true);
         String id = player.getAttached(ModAttachments.CHARACTER);
         if (id == null && JJKConfig.get().general.autoAssignGojo) id = GojoCharacter.ID;
         if (id != null && !id.isEmpty()) assign(player, Characters.get(id));

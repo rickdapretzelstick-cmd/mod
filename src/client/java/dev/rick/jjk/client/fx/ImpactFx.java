@@ -36,7 +36,7 @@ final class ImpactFx {
             }
             case "impact_finisher_cam" -> {
                 // A finisher's cinematic: dir.x the curse, dir.y its length (ms).
-                if (mine) dev.rick.jjk.client.finish.FinisherCamera.start((int) Math.round(dir.x), dir.y);
+                // (The finisher camera went with the survival system: archived.)
             }
             case "impact_slowmo" -> {
                 if (mine) ImpactFrames.slowMotion(Math.round(s * 100));
@@ -69,19 +69,16 @@ final class ImpactFx {
             }
             case "impact_bind" -> {
                 // Two heavies meet: a flash where they lock, a spray of sparks, and the bind on the player's screen.
-                if (mine) dev.rick.jjk.client.finish.BindClient.start((int) Math.round(dir.x), dir.y);
                 Flashes.flash(pos, 0.2f, 1.4f, SPARK_HOT, 0.9f, 5, now);
                 Flashes.ring(pos, 0.3f, 2.2f, AIR, 0.5f, 7, now);
                 sparks(level, pos, 20, 0.35, drawn);
             }
             case "impact_bind_spark" -> {
                 // The blows grinding: sparks thrown off the contact (a tap's are brighter), the meter for the bind's HUD.
-                if (mine) dev.rick.jjk.client.finish.BindClient.meter((float) dir.x);
                 Flashes.flash(pos, 0.1f, 0.5f * s + 0.2f, SPARK_HOT, 0.8f, 3, now);
                 sparks(level, pos, Math.round(10 * s), 0.25 * s + 0.1, drawn);
             }
             case "impact_bind_end" -> {
-                if (mine) dev.rick.jjk.client.finish.BindClient.end(dir.x > 0.5);
                 Flashes.flash(pos, 0.3f, 1.8f, SPARK_HOT, 0.8f, 6, now);
                 sparks(level, pos, 26, 0.45, drawn);
             }
@@ -89,7 +86,6 @@ final class ImpactFx {
             case "impact_shatter" -> shatter(level, pos, dir, s, now, drawn);
             case "impact_eyecatch" -> {
                 // A guardian's phase beat: dir.x the guardian, dir.y the beat's length (ms), dir.z the act.
-                if (mine) dev.rick.jjk.client.finish.EyecatchCamera.start((int) Math.round(dir.x), dir.y, (int) Math.round(dir.z));
             }
             case "impact_rescue" -> {
                 // A slash straight through the curse that was reaching for someone.

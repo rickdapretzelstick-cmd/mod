@@ -20,17 +20,13 @@ public final class Network {
         c2s.register(AbilityInputPayload.TYPE, AbilityInputPayload.CODEC);
         c2s.register(ClashInputPayload.TYPE, ClashInputPayload.CODEC);
         c2s.register(CharacterSelectPayload.TYPE, CharacterSelectPayload.CODEC);
-        c2s.register(MasteryPurchasePayload.TYPE, MasteryPurchasePayload.CODEC);
         c2s.register(MovesetSwitchPayload.TYPE, MovesetSwitchPayload.CODEC);
         c2s.register(CombatModePayload.TYPE, CombatModePayload.CODEC);
-        c2s.register(InvestigatePayload.TYPE, InvestigatePayload.CODEC);
         c2s.register(RhythmInputPayload.TYPE, RhythmInputPayload.CODEC);
         c2s.register(BeamClashInputPayload.TYPE, BeamClashInputPayload.CODEC);
 
         var s2c = PayloadTypeRegistry.clientboundPlay();
-        s2c.register(NewsBoardPayload.TYPE, NewsBoardPayload.CODEC);
         s2c.register(ScopeViewPayload.TYPE, ScopeViewPayload.CODEC);
-        s2c.register(CompassPayload.TYPE, CompassPayload.CODEC);
         s2c.register(RifleStatePayload.TYPE, RifleStatePayload.CODEC);
         s2c.register(FxPayload.TYPE, FxPayload.CODEC);
         s2c.register(CameraPayload.TYPE, CameraPayload.CODEC);
@@ -52,41 +48,15 @@ public final class Network {
         s2c.register(BeamClashStatePayload.TYPE, BeamClashStatePayload.CODEC);
         s2c.register(BeamClashCheckPayload.TYPE, BeamClashCheckPayload.CODEC);
         s2c.register(BeamClashJudgePayload.TYPE, BeamClashJudgePayload.CODEC);
-        s2c.register(ProgressionPayload.TYPE, ProgressionPayload.CODEC);
-        s2c.register(PrisonPayload.TYPE, PrisonPayload.CODEC);
-        s2c.register(MasterySyncPayload.TYPE, MasterySyncPayload.CODEC);
-        s2c.register(StoryPayload.TYPE, StoryPayload.CODEC);
-        dev.rick.jjk.progression.training.TrainingNet.register();
-        s2c.register(EncounterPayload.TYPE, EncounterPayload.CODEC);
 
-        ServerPlayNetworking.registerGlobalReceiver(MasteryPurchasePayload.TYPE, (p, ctx) -> {
-            var r = dev.rick.jjk.progression.mastery.Mastery.purchase(ctx.player(), p.tree(), p.node());
-            if (r != dev.rick.jjk.progression.mastery.Mastery.Result.OK) {
-                String why = switch (r) {
-                    case NOT_YOURS -> "That technique isn't yours to develop.";
-                    case OWNED -> "Already learned.";
-                    case NEEDS -> "Learn what it builds on first.";
-                    case POINTS -> "Not enough Mastery.";
-                    case DISABLED -> "Mastery is off: every cursed tool comes whole.";
-                    default -> "That can't be learned.";
-                };
-                ctx.player().sendOverlayMessage(net.minecraft.network.chat.Component.literal(why).withStyle(net.minecraft.ChatFormatting.GRAY));
-                // The screen waits for an answer either way.
-                dev.rick.jjk.progression.mastery.Mastery.sync(ctx.player());
-            }
-        });
-        ServerPlayNetworking.registerGlobalReceiver(InvestigatePayload.TYPE, (p, ctx) ->
-                dev.rick.jjk.progression.investigation.CursedCompass.investigate(ctx.player(), p.incident()));
         ServerPlayNetworking.registerGlobalReceiver(MovesetSwitchPayload.TYPE, (p, ctx) ->
                 dev.rick.jjk.progression.tool.kit.CursedKits.switchMoveset(ctx.player()));
         ServerPlayNetworking.registerGlobalReceiver(CombatModePayload.TYPE, (p, ctx) ->
                 dev.rick.jjk.progression.tool.kit.CursedKits.setCombatMode(ctx.player(), p.on()));
         ServerPlayNetworking.registerGlobalReceiver(MeleeInputPayload.TYPE, (p, ctx) -> {
             ServerPlayer player = ctx.player();
-            if (p.kind() == MeleeInputPayload.TAP) {
-                dev.rick.jjk.progression.finish.Binds.tap(player);
-                return;
-            }
+            // (TAP was the survival system's bind tap: archived, nothing answers it.)
+            if (p.kind() == MeleeInputPayload.TAP) return;
             AbilityCaster caster = Casters.armed(player);
             if (caster == null) return;
             MeleeSystem.handleInput(player, caster, p.kind(), p.flags(), p.targetHint());
@@ -102,11 +72,6 @@ public final class Network {
         });
         ServerPlayNetworking.registerGlobalReceiver(CharacterSelectPayload.TYPE, (p, ctx) -> {
             String why = dev.rick.jjk.core.character.CharacterService.select(ctx.player(), p.character());
-            // Survival with nothing earned: the quiet answer, not an error.
-            if (dev.rick.jjk.progression.TechniqueProgression.NOT_AWAKENED.equals(why)) {
-                ctx.player().sendOverlayMessage(net.minecraft.network.chat.Component.literal(why).withStyle(net.minecraft.ChatFormatting.GRAY));
-                return;
-            }
             var c = dev.rick.jjk.core.character.Characters.get(p.character());
             ctx.player().sendOverlayMessage(why != null
                     ? net.minecraft.network.chat.Component.literal(why).withStyle(net.minecraft.ChatFormatting.RED)

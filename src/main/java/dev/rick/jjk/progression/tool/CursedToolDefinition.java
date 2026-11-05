@@ -1,6 +1,5 @@
 package dev.rick.jjk.progression.tool;
 
-import dev.rick.jjk.progression.mastery.MasteryTree;
 
 /**
  * One cursed tool: a weapon carrying cursed energy, the first way an ordinary person can exorcise a curse. Its
@@ -30,7 +29,7 @@ public record CursedToolDefinition(String id, String displayName, Style style, f
     }
 
     public String treeId() {
-        return MasteryTree.toolId(id);
+        return "tool/" + id;
     }
 
     /** "tool.slaughter_demon.damage" */

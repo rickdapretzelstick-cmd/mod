@@ -1,6 +1,5 @@
 package dev.rick.jjk.client.fx;
 
-import dev.rick.jjk.client.ClientProgression;
 import dev.rick.jjk.client.particle.EnergyParticle.Sprite;
 import dev.rick.jjk.client.render.ClientBeam;
 import dev.rick.jjk.client.render.Flashes;
@@ -211,8 +210,6 @@ final class RifleFx {
                 implode(level, pos, 1.0, q(12), VIOLET, 0.06f, 10);
             }
             case "stalker_eyes" -> {
-                Entity src = id >= 0 ? level.getEntity(id) : null;
-                if (src != null && !ClientProgression.canSee(src)) return;
                 Vec3 side = d.cross(new Vec3(0, 1, 0));
                 side = side.lengthSqr() < 1e-6 ? new Vec3(1, 0, 0) : side.normalize().scale(0.16);
                 Vec3 f = pos.add(d.scale(0.45));

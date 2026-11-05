@@ -9,7 +9,7 @@ import dev.rick.jjk.core.combat.HitResult;
 import dev.rick.jjk.core.combat.Knockback;
 import dev.rick.jjk.core.fx.BlackFlash;
 import dev.rick.jjk.hakari.HakariCombat;
-import dev.rick.jjk.progression.curse.CommonCurseEntity;
+import net.minecraft.world.entity.LivingEntity;
 import dev.rick.jjk.registry.ModEntities;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -38,16 +38,16 @@ public class BlackFlashTests {
         return p;
     }
 
-    private static CommonCurseEntity hound(GameTestHelper h, ServerPlayer p) {
+    private static dev.rick.jjk.entity.TrainingDummy hound(GameTestHelper h, ServerPlayer p) {
         ServerLevel level = h.getLevel();
-        CommonCurseEntity c = ModEntities.GRAVE_HOUND.create(level, EntitySpawnReason.EVENT);
+        dev.rick.jjk.entity.TrainingDummy c = ModEntities.TRAINING_DUMMY.create(level, EntitySpawnReason.EVENT);
         c.setPos(p.getX() + 1.4, p.getY(), p.getZ());
         c.setNoAi(true);
         level.addFreshEntity(c);
         return c;
     }
 
-    private static HitResult blow(ServerPlayer p, CommonCurseEntity c, float damage, AttackTag... tags) {
+    private static HitResult blow(ServerPlayer p, LivingEntity c, float damage, AttackTag... tags) {
         Hit.Builder b = Hit.builder(p, "test_black_flash").damage(damage).tag(AttackTag.MELEE).origin(p.getEyePosition()).noComboScaling()
                 .knockback(Knockback.directional(HakariCombat.flat(p), 2.0, 0.5));
         if (tags.length > 0) b.tag(tags);
@@ -58,7 +58,7 @@ public class BlackFlashTests {
     public void itShowsWhatTheBlowActuallyDid(GameTestHelper h) {
         ServerLevel level = h.getLevel();
         ServerPlayer p = fighter(h);
-        CommonCurseEntity c = hound(h, p);
+        LivingEntity c = hound(h, p);
         Vec3 at = c.getBoundingBox().getCenter();
         // Nothing there: a fizzle.
         h.assertTrue(BlackFlash.land(level, p, null, null, at, p.getLookAngle(), 1f) == BlackFlash.Shown.FIZZLE, "nothing hit: it fizzles");
@@ -93,15 +93,8 @@ public class BlackFlashTests {
     public void theLethalOneIsDecidedByTheKillAndShownOnce(GameTestHelper h) {
         ServerLevel level = h.getLevel();
         ServerPlayer p = fighter(h);
-        CommonCurseEntity c = hound(h, p);
+        LivingEntity c = hound(h, p);
         Vec3 at = c.getBoundingBox().getCenter();
-        // A refused execute (a curse not there yet can't be targeted): no kill, so no lethal look.
-        c.setDormant(true);
-        HitResult refused = HakariCombat.execute(p, c, "test_black_flash", "hit_heavy");
-        h.assertTrue(c.isAlive(), "it survived (" + refused.outcome() + ")");
-        h.assertTrue(BlackFlash.land(level, p, c, refused, at, p.getLookAngle(), 1.8f) != BlackFlash.Shown.LETHAL, "no false execution");
-        h.assertTrue(!BlackFlash.lethalShown(c), "nothing recorded");
-        c.setDormant(false);
         // A blow that leaves them standing is not lethal, however big.
         HitResult big = blow(p, c, 1, AttackTag.UNBLOCKABLE);
         h.assertTrue(c.isAlive() && BlackFlash.land(level, p, c, big, at, p.getLookAngle(), 2.2f) == BlackFlash.Shown.IMPACT, "alive: the impact, not lethal");

@@ -35,7 +35,6 @@ public final class InputHandler {
     private static KeyMapping modeKey;
     /** Opens the character select screen. */
     private static KeyMapping characterKey;
-    private static KeyMapping masteryKey;
     /** Switches between the innate technique's moveset and the equipped cursed tool's. */
     private static KeyMapping switchKey;
 
@@ -65,7 +64,6 @@ public final class InputHandler {
         bind(AbilitySlot.GUARD, "guard", InputConstants.KEY_F);
         bind(AbilitySlot.DASH, "dash", InputConstants.KEY_Q);
         characterKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.character_menu", InputConstants.Type.KEYBOARD, InputConstants.KEY_K, CATEGORY));
-        masteryKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.mastery", InputConstants.Type.KEYBOARD, InputConstants.KEY_J, CATEGORY));
         switchKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.switch_moveset", InputConstants.Type.KEYBOARD, InputConstants.KEY_X, CATEGORY));
         modeKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.jjk.combat_mode", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY));
     }
@@ -131,17 +129,7 @@ public final class InputHandler {
         if (player == null) return;
         while (modeKey.consumeClick()) dev.rick.jjk.client.CombatMode.toggle();
         while (characterKey.consumeClick()) {
-            // Survival progression decides what the screen may offer (Creative: everything).
-            if (mc.gui.screen() == null) dev.rick.jjk.client.ClientProgression.openCharacterSelect(null);
-        }
-        while (masteryKey.consumeClick()) {
-            if (mc.gui.screen() != null) continue;
-            if (!dev.rick.jjk.client.mastery.ClientMastery.enabled()) {
-                player.sendOverlayMessage(net.minecraft.network.chat.Component.literal("Mastery is off: every cursed tool comes whole.")
-                        .withStyle(net.minecraft.ChatFormatting.GRAY));
-                continue;
-            }
-            mc.gui.setScreen(new dev.rick.jjk.client.mastery.MasteryScreen());
+            if (mc.gui.screen() == null) mc.gui.setScreen(new dev.rick.jjk.client.hud.CharacterSelectScreen(null));
         }
         if (!dev.rick.jjk.client.CombatMode.enabled()) {
             // Vanilla Minecraft mode: none of this mod's keys do anything. Swallow their presses so nothing fires later.
@@ -201,12 +189,6 @@ public final class InputHandler {
     public static void onAttackPressed() {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer p = mc.player;
-        if (p != null && dev.rick.jjk.client.finish.BindClient.active()) {
-            // In a bind every press is a tap, counted by the server (never a swing).
-            ClientPlayNetworking.send(new MeleeInputPayload(MeleeInputPayload.TAP, 0, -1));
-            dev.rick.jjk.client.finish.BindClient.tapped();
-            return;
-        }
         if (p == null || Combat.actionsLocked(p)) return;
         ClientPlayNetworking.send(new MeleeInputPayload(MeleeInputPayload.LIGHT, flags(mc, p), targetHint(p, 5)));
         attackHeld = true;

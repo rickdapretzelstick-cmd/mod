@@ -25,13 +25,8 @@
   },
   "mixins": [
     "jjk.mixins.json",
-    "jjk.progression.mixins.json",
     {
       "config": "jjk.client.mixins.json",
-      "environment": "client"
-    },
-    {
-      "config": "jjk.progression.client.mixins.json",
       "environment": "client"
     }
   ]

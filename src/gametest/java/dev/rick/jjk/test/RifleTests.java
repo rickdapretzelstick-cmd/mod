@@ -10,7 +10,6 @@ import dev.rick.jjk.core.ability.Casters;
 import dev.rick.jjk.progression.tool.kit.CursedKits;
 import dev.rick.jjk.progression.tool.kit.CursedSlot;
 import dev.rick.jjk.progression.tool.rifle.RifleBeam;
-import dev.rick.jjk.progression.tool.rifle.RifleClaims;
 import dev.rick.jjk.progression.tool.rifle.RifleRules;
 import dev.rick.jjk.progression.tool.rifle.RifleServer;
 import dev.rick.jjk.registry.ModEntities;
@@ -100,9 +99,7 @@ public class RifleTests {
 
     /** Buys the rifle's nodes up to (and including) {@code last} along the beam's path. */
     static void learn(ServerPlayer p, String... nodes) {
-        String tree = CursedTools.CURSED_RIFLE.treeId();
-        Mastery.award(p, tree, 5000);
-        for (String n : nodes) Mastery.purchase(p, tree, n);
+        // (Mastery is archived: every node is open from the start.)
     }
 
     static final String[] TO_BEAM = {"steady_hands", "quick_bolt", "settle", "frugal_rounds", "heavy_rounds", "oiled_action", "unfolding_array"};
@@ -281,22 +278,6 @@ public class RifleTests {
         h.succeed();
     }
 
-    @GameTest(maxTicks = 20, environment = ENV)
-    public void aReissuedRifleRetiresTheOldOne(GameTestHelper h) {
-        floor(h);
-        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
-        ItemStack first = RifleClaims.issue(p);
-        p.getInventory().add(first.copy());
-        h.assertTrue(RifleClaims.carriesLive(p) && RifleClaims.inertReason(p, first) == null, "the issued rifle is live");
-        ItemStack second = RifleClaims.issue(p);
-        h.assertTrue(RifleClaims.inertReason(p, first) != null, "the old one goes cold");
-        h.assertTrue(RifleClaims.inertReason(p, second) == null, "the new one works");
-        h.assertTrue(RifleClaims.inertReason(p, new ItemStack(ProgressionItems.CURSED_RIFLE)) == null, "an unclaimed rifle (Creative, a give) always works");
-        equip(p, first);
-        h.assertTrue(!press(p), "and the cold one won't raise its scope");
-        h.succeed();
-    }
-
     @GameTest(maxTicks = 40, environment = ENV)
     public void aRifleInTheHandDoesNothing(GameTestHelper h) {
         floor(h);
@@ -359,26 +340,6 @@ public class RifleTests {
         equip(p, rifle);
         RifleServer.setEnergy(p, JJKConfig.get().rifle.capacity);
         h.assertTrue(!RifleServer.kitBeam(p), "no fresh beam for dying");
-        h.succeed();
-    }
-
-    @GameTest(maxTicks = 20, environment = ENV)
-    public void withMasteryOffTheRifleComesWhole(GameTestHelper h) {
-        floor(h);
-        ServerPlayer p = shooter(h, 1.5, 1.5, GameType.SURVIVAL);
-        JJKConfig.get().mastery.enabled = false;
-        try {
-            h.assertTrue(RifleRules.beamUnlocked(p) && RifleRules.maximumOutput(p), "the beam, at Maximum Output, with nothing bought");
-            h.assertTrue(RifleRules.output(p) == 1f, "full output");
-            h.assertTrue(Mastery.unlocked(p, CursedTools.CURSED_RIFLE.unlockKey("volley")) && Mastery.unlocked(p, CursedTools.CURSED_RIFLE.unlockKey("lens_flare")),
-                    "Volley and Lens Flare too");
-            h.assertTrue(Mastery.purchase(p, CursedTools.CURSED_RIFLE.treeId(), "steady_hands") == Mastery.Result.DISABLED, "nothing to buy");
-            p.setShiftKeyDown(true);
-            h.assertTrue(press(p) && RifleServer.phase(p) == RifleServer.Phase.DEPLOY, "G opens the array");
-            letGo(p);
-        } finally {
-            JJKConfig.get().mastery.enabled = true;
-        }
         h.succeed();
     }
 

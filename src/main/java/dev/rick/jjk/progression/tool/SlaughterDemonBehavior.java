@@ -5,8 +5,6 @@ import dev.rick.jjk.core.combat.Statuses;
 import dev.rick.jjk.core.fx.Fx;
 import dev.rick.jjk.core.hitbox.HitShape;
 import dev.rick.jjk.core.hitbox.HitboxQuery;
-import dev.rick.jjk.progression.grade.CurseGrade;
-import dev.rick.jjk.progression.grade.GradedCurse;
 import dev.rick.jjk.progression.mastery.Mastery;
 import dev.rick.jjk.util.Motion;
 import net.minecraft.server.level.ServerLevel;
@@ -59,11 +57,7 @@ public final class SlaughterDemonBehavior implements ToolBehavior {
             bonus += base * 0.5f;
             Fx.sound(level, target.position(), SoundEvents.PLAYER_ATTACK_CRIT, 0.8f, 1.4f);
         }
-        if (target instanceof GradedCurse g && g.curseGrade().rank() <= CurseGrade.GRADE_3.rank() && target.getHealth() <= target.getMaxHealth() * 0.25f
-                && Mastery.unlocked(player, def.unlockKey("severing_point"))) {
-            bonus = Math.max(bonus, target.getHealth() + 1f);
-            Fx.play(level, "tool_sever", target.getBoundingBox().getCenter(), player.getLookAngle(), 1.2f, target.getId());
-        }
+        // (The severing point, a finishing cut on a nearly dead low-grade curse, went with the curses: archived.)
         if (bonus > 0 && target.isAlive()) {
             target.setInvulnerableTime(0);
             target.hurtServer(level, level.damageSources().playerAttack(player), bonus);

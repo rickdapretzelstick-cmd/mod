@@ -20,7 +20,6 @@ public abstract class LevelSetBlockMixin {
     private void jjk$recordOriginal(BlockPos pos, BlockState state, int flags, int limit, CallbackInfoReturnable<Boolean> cir) {
         if ((Object) this instanceof ServerLevel level) {
             WorldRestoration.beforeSetBlock(level, pos, state);
-            dev.rick.jjk.progression.investigation.SiteFootprint.before(level, pos, state);
         }
     }
 }

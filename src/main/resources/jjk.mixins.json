@@ -4,7 +4,6 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "BlockDropMixin",
-    "EntityBelowWorldMixin",
     "LevelSetBlockMixin",
     "LivingEntityMixin",
     "MobMixin",
@@ -13,10 +12,7 @@
     "ServerLevelSpawnMixin",
     "AbstractContainerMenuAccessor",
     "InventoryMenuMixin",
-    "CreativeCursedSlotSyncMixin",
-    "ExplosionProtectMixin",
-    "PistonProtectMixin",
-    "PlayerBreakProtectMixin"
+    "CreativeCursedSlotSyncMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -526,7 +526,6 @@ public final class AbilityCaster {
             return true;
         }
         // Sealed in the Prison Realm: no technique works in there.
-        if (pressed && dev.rick.jjk.progression.prison.PrisonRealm.techniquesSealed(owner)) return refuse("sealed");
         Ability ability = ability(slot);
         // The Awakening key is always the domain counter, even when the current kit has nothing bound to it.
         if (ability == null && pressed && slot == AbilitySlot.ULTIMATE && dev.rick.jjk.core.domain.DomainCounter.tryCounter(this)) return true;

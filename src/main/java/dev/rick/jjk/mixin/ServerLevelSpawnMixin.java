@@ -17,10 +17,5 @@ public abstract class ServerLevelSpawnMixin {
     @Inject(method = "addFreshEntity", at = @At("HEAD"), cancellable = true)
     private void jjk$cancelDamageSpill(Entity entity, CallbackInfoReturnable<Boolean> cir) {
         if (WorldRestoration.cancelSpawn((ServerLevel) (Object) this, entity)) cir.setReturnValue(false);
-        // No loose block drops in a cursed realm arena (items someone threw or dropped have a thrower and still come in).
-        if (entity instanceof net.minecraft.world.entity.item.ItemEntity item && item.getOwner() == null
-                && dev.rick.jjk.progression.investigation.CursedRealms.inArena((ServerLevel) (Object) this, item.blockPosition())) {
-            cir.setReturnValue(false);
-        }
     }
 }

@@ -43,7 +43,6 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.RED, TechniqueRenderer.red());
         EntityRendererRegistry.register(ModEntities.HOLLOW_PURPLE, TechniqueRenderer.purple());
         EntityRendererRegistry.register(ModEntities.TRAINING_DUMMY, DummyRenderer::new);
-        EntityRendererRegistry.register(ModEntities.TRIAL_PROP, dev.rick.jjk.client.render.TrialPropRenderer::new);
         EntityRendererRegistry.register(ModEntities.RIKA, dev.rick.jjk.client.render.RikaRenderer::new);
         EntityRendererRegistry.register(ModEntities.DOMAIN_BLADE, dev.rick.jjk.client.render.DomainBladeRenderer::new);
         EntityRendererRegistry.register(ModEntities.PACHINKO_BALL, dev.rick.jjk.client.render.HakariRenderers.ball());
@@ -52,32 +51,8 @@ public class JJKClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.FIRE_ARROW, dev.rick.jjk.client.render.YujiRenderers.arrow());
         // The Cursed Rifle's held model (posed by its clips).
         net.minecraft.client.renderer.special.SpecialModelRenderers.ID_MAPPER.put(JJK.id("cursed_rifle"), dev.rick.jjk.client.rifle.RifleItemRenderer.Unbaked.MAP_CODEC);
-        EntityRendererRegistry.register(ModEntities.FINGER_BEARER, dev.rick.jjk.client.render.FingerBearerRenderer::new);
-        EntityRendererRegistry.register(ModEntities.FLY_HEAD, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "fly_head", 0.35f));
-        EntityRendererRegistry.register(ModEntities.SCHOOL_CRAWLER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_crawler", 0.6f));
-        // Placeholder: the forest stalker borrows the crawler's model, darkened and a little larger.
-        EntityRendererRegistry.register(ModEntities.FOREST_STALKER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "forest_stalker", 0.7f));
-        EntityRendererRegistry.register(ModEntities.SCHOOL_MAW, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "school_maw", 0.6f));
-        EntityRendererRegistry.register(ModEntities.GRAVE_HOUND, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "grave_hound", 0.5f));
-        EntityRendererRegistry.register(ModEntities.VEILED_BRIDE, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "veiled_bride", 0.5f));
-        // The Grade 1 guardians: three looks each (their model pack's head variants), drawn a touch larger than their models.
-        EntityRendererRegistry.register(ModEntities.GUARDIAN_CLAW_HUNTER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "guardian_claw_hunter", 0.8f, 1.1f, 0xFFFFFFFF, 3));
-        EntityRendererRegistry.register(ModEntities.GUARDIAN_PALE_STALKER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "guardian_pale_stalker", 0.8f, 1.1f, 0xFFFFFFFF, 3));
-        EntityRendererRegistry.register(ModEntities.GUARDIAN_CYCLOPS_BRUISER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "guardian_cyclops_bruiser", 1.0f, 1.1f, 0xFFFFFFFF, 3));
-        EntityRendererRegistry.register(ModEntities.GUARDIAN_VEILED_REACHER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "guardian_veiled_reacher", 0.8f, 1.1f, 0xFFFFFFFF, 3));
-        EntityRendererRegistry.register(ModEntities.BLOAT_TOAD, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "bloat_toad", 0.9f));
-        EntityRendererRegistry.register(ModEntities.BROOD_MOTHER, c -> new dev.rick.jjk.client.render.CommonCurseRenderer<>(c, "brood_mother", 0.7f));
-        EntityRendererRegistry.register(ModEntities.PRISON_REALM, dev.rick.jjk.client.render.PrisonRealmRenderer::new);
-        EntityRendererRegistry.register(ModEntities.CURSED_BREACH, dev.rick.jjk.client.render.CursedBreachRenderer::new);
-        EntityRendererRegistry.register(ModEntities.CURSED_ANCHOR, dev.rick.jjk.client.render.CursedAnchorRenderer::new);
-        // Drawn by its particles alone (the server sends them).
-        EntityRendererRegistry.register(ModEntities.GUARDIAN_REMNANT, net.minecraft.client.renderer.entity.NoopRenderer::new);
-        dev.rick.jjk.progression.investigation.CursedBreachEntity.clientTick = dev.rick.jjk.client.render.CursedBreachRenderer::clientTick;
-        EntityRendererRegistry.register(ModEntities.CURSED_ENERGY_SHOT, dev.rick.jjk.client.render.FingerBearerRenderer.Shot::new);
 
         InputHandler.init();
-        dev.rick.jjk.client.training.TrainingClient.init();
-        dev.rick.jjk.client.prison.PrisonClient.init();
         dev.rick.jjk.client.anim.AnimLibrary.init();
         dev.rick.jjk.client.model.BbModels.init();
         dev.rick.jjk.client.anim.AnimDebug.init();
@@ -91,19 +66,11 @@ public class JJKClient implements ClientModInitializer {
         });
         // The animation debugger works in either mode (it only shows once turned on).
         HudElementRegistry.addLast(JJK.id("anim_debug"), (g, delta) -> dev.rick.jjk.client.anim.AnimDebug.renderHud(g));
-        HudElementRegistry.addLast(JJK.id("story_overlay"), (g, delta) -> dev.rick.jjk.client.hud.StoryOverlay.render(g, delta));
-        HudElementRegistry.addLast(JJK.id("encounter_hud"), (g, delta) -> dev.rick.jjk.client.hud.EncounterHud.render(g, delta));
-        HudElementRegistry.addLast(JJK.id("realm_transition"), (g, delta) -> dev.rick.jjk.client.hud.RealmTransitionOverlay.render(g, delta));
         HudElementRegistry.addLast(JJK.id("rifle_hud"), (g, delta) -> dev.rick.jjk.client.rifle.RifleHud.render(g));
         // Under the rifle's scope its own reticle is the aim: the vanilla crosshair stands down.
         HudElementRegistry.replaceElement(net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CROSSHAIR, vanilla -> (g, delta) -> {
-            if (!dev.rick.jjk.client.rifle.RifleHud.hidesCrosshair() && !dev.rick.jjk.client.training.TrainingClient.active()) vanilla.extractRenderState(g, delta);
+            if (!dev.rick.jjk.client.rifle.RifleHud.hidesCrosshair()) vanilla.extractRenderState(g, delta);
         });
-        HudElementRegistry.addLast(JJK.id("prison_view"), (g, delta) -> dev.rick.jjk.client.prison.PrisonClient.renderHud(g));
-        // Every custom HUD layer is skipped in Vanilla Minecraft mode.
-        // Character training: its own gauges in the lower middle; the HUD it doesn't need stands down meanwhile.
-        HudElementRegistry.addLast(JJK.id("training_hud"), (g, delta) -> dev.rick.jjk.client.training.TrainingHud.render(g));
-        HudElementRegistry.addLast(JJK.id("bind_hud"), (g, delta) -> dev.rick.jjk.client.finish.BindClient.render(g));
         registerCameras();
         for (var id : java.util.List.of(net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HOTBAR,
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HEALTH_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.FOOD_BAR,
@@ -113,12 +80,10 @@ public class JJKClient implements ClientModInitializer {
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MOB_EFFECTS, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.OVERLAY_MESSAGE,
                 // The chat would sit over the gauges (it comes back, unread lines and all, when the check is over).
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CHAT)) {
-            HudElementRegistry.replaceElement(id, vanilla -> (g, delta) -> {
-                if (!dev.rick.jjk.client.training.TrainingClient.active()) vanilla.extractRenderState(g, delta);
-            });
+            HudElementRegistry.replaceElement(id, vanilla -> (g, delta) -> vanilla.extractRenderState(g, delta));
         }
         HudElementRegistry.addLast(JJK.id("combat_hud"), (g, delta) -> {
-            if (dev.rick.jjk.client.CombatMode.enabled() && !dev.rick.jjk.client.training.TrainingClient.active()) CombatHud.render(g, delta);
+            if (dev.rick.jjk.client.CombatMode.enabled()) CombatHud.render(g, delta);
         });
         HudElementRegistry.addLast(JJK.id("gamble_hud"), (g, delta) -> {
             if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.hud.GambleHud.render(g);
@@ -144,14 +109,6 @@ public class JJKClient implements ClientModInitializer {
         });
         // "JJK Settings" on the pause menu (Combat Mode ON / VANILLA and HUD options).
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, sw, sh) -> {
-            if (screen instanceof net.minecraft.client.gui.screens.PauseScreen && dev.rick.jjk.client.training.TrainingClient.active()) {
-                // A clear way out of training (no reward; the relic waits).
-                net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(screen).add(net.minecraft.client.gui.components.Button.builder(
-                        net.minecraft.network.chat.Component.literal("Leave Training"), b -> {
-                            dev.rick.jjk.client.training.TrainingClient.cancel();
-                            client.gui.setScreen(null);
-                        }).bounds(sw - 116, 6, 110, 20).build());
-            }
             if (screen instanceof net.minecraft.client.gui.screens.PauseScreen) {
                 net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(screen).add(net.minecraft.client.gui.components.Button.builder(
                         net.minecraft.network.chat.Component.literal("JJK Settings"),
@@ -162,15 +119,12 @@ public class JJKClient implements ClientModInitializer {
         registerReceivers();
 
         ClientTickEvents.END_CLIENT_TICK.register(JJKClient::tick);
-        ClientTickEvents.END_CLIENT_TICK.register(mc -> dev.rick.jjk.client.training.TrialMusic.tick());
         ClientTickEvents.START_CLIENT_TICK.register(InputHandler::beforeVanillaKeys);
-        ClientTickEvents.START_CLIENT_TICK.register(dev.rick.jjk.client.prison.PrisonClient::beforeInput);
         // The server holsters a drawn cursed tool while Combat Mode is off: tell it where this client stands.
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> CombatMode.sync());
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             InputHandler.releaseAll(null);
             ClientState.reset();
-            ClientProgression.reset();
             dev.rick.jjk.client.hud.YutaHud.reset();
             ClientAnimations.clear();
             ScreenEffects.reset();
@@ -181,8 +135,6 @@ public class JJKClient implements ClientModInitializer {
             dev.rick.jjk.client.clash.ClashCamera.reset();
             dev.rick.jjk.client.clash.BeamClashClient.reset();
             dev.rick.jjk.client.clash.BeamClashCamera.reset();
-            dev.rick.jjk.client.training.TrainingClient.reset();
-            dev.rick.jjk.client.prison.PrisonClient.reset();
             dev.rick.jjk.client.rifle.RifleClient.clear();
             dev.rick.jjk.client.hud.RyuHud.reset();
         });
@@ -193,21 +145,8 @@ public class JJKClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(CasterSyncPayload.TYPE, (p, ctx) -> ClientState.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.YutaPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.YutaHud.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.RyuPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.RyuHud.apply(p));
-        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ProgressionPayload.TYPE, (p, ctx) -> ClientProgression.apply(p));
-        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.MasterySyncPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.mastery.ClientMastery.apply(p));
-        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.CompassPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.investigation.CursedCompassClient.apply(p));
-        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.Offer.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.offer(p));
-        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.Start.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.start(p));
-        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.State.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.state(p));
-        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.Judge.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.judge(p));
-        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.progression.training.TrainingNet.Meter.TYPE, (p, ctx) -> dev.rick.jjk.client.training.TrainingClient.meter(p));
-        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.StoryPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.StoryOverlay.apply(p));
-        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.EncounterPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.hud.EncounterHud.apply(p));
-        dev.rick.jjk.client.investigation.CursedCompassClient.init();
-        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.NewsBoardPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.investigation.NewsBoardScreen.show(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.RifleStatePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.rifle.RifleClient.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.ScopeViewPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.rifle.RifleClient.scope(p));
-        ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.PrisonPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.prison.PrisonClient.apply(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.BeamClashStatePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.BeamClashClient.state(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.BeamClashCheckPayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.BeamClashClient.check(p));
         ClientPlayNetworking.registerGlobalReceiver(dev.rick.jjk.core.net.BeamClashJudgePayload.TYPE, (p, ctx) -> dev.rick.jjk.client.clash.BeamClashClient.judge(p));
@@ -344,15 +283,8 @@ public class JJKClient implements ClientModInitializer {
         dev.rick.jjk.client.clash.ClashCamera.tick(mc);
         dev.rick.jjk.client.clash.BeamClashClient.tick(mc);
         dev.rick.jjk.client.clash.BeamClashCamera.tick(mc);
-        dev.rick.jjk.client.training.TrainingClient.tick(mc);
-        dev.rick.jjk.client.training.TrainingCamera.tick(mc);
-        dev.rick.jjk.client.training.ContestCamera.tick(mc);
-        dev.rick.jjk.client.finish.FinisherCamera.tick(mc);
         dev.rick.jjk.client.fx.BlackFlashCamera.tick(mc);
-        dev.rick.jjk.client.finish.BindClient.tick(mc);
-        dev.rick.jjk.client.finish.EyecatchCamera.tick(mc);
         dev.rick.jjk.client.camera.CameraDirector.tick(mc);
-        dev.rick.jjk.client.prison.PrisonClient.tick(mc);
         InputHandler.tick(mc);
         ambientTicks++;
         ambient(mc);
@@ -420,7 +352,7 @@ public class JJKClient implements ClientModInitializer {
     /**
      * The cinematic cameras, in the order they apply (see {@link dev.rick.jjk.client.camera.CameraDirector}): a domain
      * clash frames the battle; the lodge scope's lens; a beam clash's side-on shot; then the shots that own the view
-     * outright: a strength contest, character training, the Prison Realm's outside view.
+     * outright (Black Flash's finisher).
      */
     private static void registerCameras() {
         dev.rick.jjk.client.camera.CameraDirector.register("domain_clash", 100, dev.rick.jjk.client.clash.ClashCamera::apply);
@@ -429,34 +361,8 @@ public class JJKClient implements ClientModInitializer {
             return eye == null ? null : new double[] {eye.x, eye.y, eye.z, yaw, pitch};
         });
         dev.rick.jjk.client.camera.CameraDirector.register("beam_clash", 300, dev.rick.jjk.client.clash.BeamClashCamera::apply);
-        dev.rick.jjk.client.camera.CameraDirector.register("contest", 400, new dev.rick.jjk.client.camera.CameraDirector.Stage() {
-            @Override
-            public double[] apply(net.minecraft.world.phys.Vec3 pos, float yaw, float pitch) {
-                return dev.rick.jjk.client.training.ContestCamera.apply(pos, yaw, pitch);
-            }
-
-            @Override
-            public boolean last() {
-                return true;
-            }
-
-            @Override
-            public float fov() {
-                return dev.rick.jjk.client.training.ContestCamera.fov();
-            }
-        });
-        dev.rick.jjk.client.camera.CameraDirector.register("bind", 440, last(dev.rick.jjk.client.finish.BindClient::apply));
-        dev.rick.jjk.client.camera.CameraDirector.register("finisher", 450, last(dev.rick.jjk.client.finish.FinisherCamera::apply));
-        dev.rick.jjk.client.camera.CameraDirector.register("eyecatch", 455, last(dev.rick.jjk.client.finish.EyecatchCamera::apply));
         dev.rick.jjk.client.camera.CameraDirector.register("black_flash", 452, last(dev.rick.jjk.client.fx.BlackFlashCamera::apply));
         dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.fx.BlackFlashCamera::active);
-        dev.rick.jjk.client.camera.CameraDirector.register("training", 500, last(dev.rick.jjk.client.training.TrainingCamera::apply));
-        dev.rick.jjk.client.camera.CameraDirector.register("prison_view", 600, last((pos, yaw, pitch) -> dev.rick.jjk.client.prison.PrisonClient.apply(yaw, pitch)));
-        dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.training.ContestCamera::active);
-        dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.training.TrainingCamera::active);
-        dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.finish.FinisherCamera::active);
-        dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.finish.BindClient::camera);
-        dev.rick.jjk.client.camera.CameraDirector.wantsThirdPerson(dev.rick.jjk.client.finish.EyecatchCamera::active);
     }
 
     /** A stage that owns the view outright while it is in use. */

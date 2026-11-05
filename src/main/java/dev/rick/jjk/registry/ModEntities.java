@@ -44,77 +44,8 @@ public final class ModEntities {
     public static final EntityType<dev.rick.jjk.yuta.DomainBladeEntity> DOMAIN_BLADE = register("domain_blade",
             EntityType.Builder.<dev.rick.jjk.yuta.DomainBladeEntity>of(dev.rick.jjk.yuta.DomainBladeEntity::new, MobCategory.MISC).sized(0.4f, 1.4f).noSave().noSummon().fireImmune()
                     .clientTrackingRange(10).updateInterval(1).noLootTable());
-    /** The Finger Bearer (battle-room curse) and its cursed energy shots. */
-    public static final EntityType<dev.rick.jjk.progression.curse.FingerBearerEntity> FINGER_BEARER = register("finger_bearer",
-            EntityType.Builder.<dev.rick.jjk.progression.curse.FingerBearerEntity>of(dev.rick.jjk.progression.curse.FingerBearerEntity::new, MobCategory.MONSTER)
-                    .sized(1.4f, 3.3f).eyeHeight(2.75f).fireImmune().clientTrackingRange(10).noLootTable());
-    public static final EntityType<dev.rick.jjk.progression.curse.CursedEnergyShotEntity> CURSED_ENERGY_SHOT = register("cursed_energy_shot",
-            EntityType.Builder.<dev.rick.jjk.progression.curse.CursedEnergyShotEntity>of(dev.rick.jjk.progression.curse.CursedEnergyShotEntity::new, MobCategory.MISC).sized(0.5f, 0.5f).noSave().noSummon().fireImmune()
-                    .clientTrackingRange(10).updateInterval(1).noLootTable());
-    /** The Prison Realm in the world (saved: it lies where it sealed someone). */
-    public static final EntityType<dev.rick.jjk.progression.prison.PrisonRealmEntity> PRISON_REALM = register("prison_realm",
-            EntityType.Builder.<dev.rick.jjk.progression.prison.PrisonRealmEntity>of(dev.rick.jjk.progression.prison.PrisonRealmEntity::new, MobCategory.MISC)
-                    .sized(0.3f, 0.3f).noSummon().fireImmune().clientTrackingRange(16).updateInterval(2).noLootTable());
-    /** A Cursed Breach: the way into a cursed realm, where an incident is anchored (never saved: the site raises it). */
-    public static final EntityType<dev.rick.jjk.progression.investigation.CursedBreachEntity> CURSED_BREACH = register("cursed_breach",
-            EntityType.Builder.<dev.rick.jjk.progression.investigation.CursedBreachEntity>of(dev.rick.jjk.progression.investigation.CursedBreachEntity::new, MobCategory.MISC)
-                    .sized(1.1f, 1.9f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(10).noLootTable());
-    /** The common curses: graded cursed spirits found through investigations. */
-    public static final EntityType<dev.rick.jjk.progression.curse.FlyHeadEntity> FLY_HEAD = register("fly_head",
-            EntityType.Builder.<dev.rick.jjk.progression.curse.FlyHeadEntity>of(dev.rick.jjk.progression.curse.FlyHeadEntity::new, MobCategory.MONSTER)
-                    .sized(0.65f, 0.85f).eyeHeight(0.5f).clientTrackingRange(10).noLootTable());
-    public static final EntityType<dev.rick.jjk.progression.curse.SchoolCrawlerEntity> SCHOOL_CRAWLER = register("school_crawler",
-            EntityType.Builder.<dev.rick.jjk.progression.curse.SchoolCrawlerEntity>of(dev.rick.jjk.progression.curse.SchoolCrawlerEntity::new, MobCategory.MONSTER)
-                    .sized(1.2f, 1.2f).eyeHeight(0.8f).clientTrackingRange(10).noLootTable());
-    public static final EntityType<dev.rick.jjk.progression.curse.SchoolMawEntity> SCHOOL_MAW = register("school_maw",
-            EntityType.Builder.<dev.rick.jjk.progression.curse.SchoolMawEntity>of(dev.rick.jjk.progression.curse.SchoolMawEntity::new, MobCategory.MONSTER)
-                    .sized(1.15f, 1.55f).eyeHeight(1.2f).clientTrackingRange(10).noLootTable());
-    /** The hunting lodge's curse. */
-    public static final EntityType<dev.rick.jjk.progression.curse.ForestStalkerEntity> FOREST_STALKER = register("forest_stalker",
-            EntityType.Builder.<dev.rick.jjk.progression.curse.ForestStalkerEntity>of(dev.rick.jjk.progression.curse.ForestStalkerEntity::new, MobCategory.MONSTER)
-                    .sized(1.2f, 1.2f).eyeHeight(0.8f).clientTrackingRange(10).noLootTable());
-    public static final EntityType<dev.rick.jjk.progression.curse.GraveHoundEntity> GRAVE_HOUND = register("grave_hound",
-            EntityType.Builder.<dev.rick.jjk.progression.curse.GraveHoundEntity>of(dev.rick.jjk.progression.curse.GraveHoundEntity::new, MobCategory.MONSTER)
-                    .sized(0.9f, 0.85f).eyeHeight(0.6f).clientTrackingRange(10).noLootTable());
-    public static final EntityType<dev.rick.jjk.progression.curse.VeiledBrideEntity> VEILED_BRIDE = register("veiled_bride",
-            EntityType.Builder.<dev.rick.jjk.progression.curse.VeiledBrideEntity>of(dev.rick.jjk.progression.curse.VeiledBrideEntity::new, MobCategory.MONSTER)
-                    .sized(0.7f, 2.3f).eyeHeight(2.0f).clientTrackingRange(10).noLootTable());
-    public static final EntityType<dev.rick.jjk.progression.curse.BloatToadEntity> BLOAT_TOAD = register("bloat_toad",
-            EntityType.Builder.<dev.rick.jjk.progression.curse.BloatToadEntity>of(dev.rick.jjk.progression.curse.BloatToadEntity::new, MobCategory.MONSTER)
-                    .sized(1.4f, 1.2f).eyeHeight(0.9f).clientTrackingRange(10).noLootTable());
-    public static final EntityType<dev.rick.jjk.progression.curse.BroodMotherEntity> BROOD_MOTHER = register("brood_mother",
-            EntityType.Builder.<dev.rick.jjk.progression.curse.BroodMotherEntity>of(dev.rick.jjk.progression.curse.BroodMotherEntity::new, MobCategory.MONSTER)
-                    .sized(1.2f, 1.7f).eyeHeight(1.4f).clientTrackingRange(10).noLootTable());
-    /** The Grade 1 contract guardians' own bodies (progression.guardian.Guardians): each fights as the curse it replaced. */
-    public static final EntityType<dev.rick.jjk.progression.guardian.ClawHunterGuardian> GUARDIAN_CLAW_HUNTER = register("guardian_claw_hunter",
-            EntityType.Builder.<dev.rick.jjk.progression.guardian.ClawHunterGuardian>of(dev.rick.jjk.progression.guardian.ClawHunterGuardian::new, MobCategory.MONSTER)
-                    .sized(1.1f, 2.6f).eyeHeight(2.2f).clientTrackingRange(10).noLootTable());
-    public static final EntityType<dev.rick.jjk.progression.guardian.PaleStalkerGuardian> GUARDIAN_PALE_STALKER = register("guardian_pale_stalker",
-            EntityType.Builder.<dev.rick.jjk.progression.guardian.PaleStalkerGuardian>of(dev.rick.jjk.progression.guardian.PaleStalkerGuardian::new, MobCategory.MONSTER)
-                    .sized(1.1f, 2.65f).eyeHeight(2.3f).clientTrackingRange(10).noLootTable());
-    public static final EntityType<dev.rick.jjk.progression.guardian.CyclopsBruiserGuardian> GUARDIAN_CYCLOPS_BRUISER = register("guardian_cyclops_bruiser",
-            EntityType.Builder.<dev.rick.jjk.progression.guardian.CyclopsBruiserGuardian>of(dev.rick.jjk.progression.guardian.CyclopsBruiserGuardian::new, MobCategory.MONSTER)
-                    .sized(1.4f, 2.6f).eyeHeight(2.1f).clientTrackingRange(10).noLootTable());
-    public static final EntityType<dev.rick.jjk.progression.guardian.VeiledReacherGuardian> GUARDIAN_VEILED_REACHER = register("guardian_veiled_reacher",
-            EntityType.Builder.<dev.rick.jjk.progression.guardian.VeiledReacherGuardian>of(dev.rick.jjk.progression.guardian.VeiledReacherGuardian::new, MobCategory.MONSTER)
-                    .sized(1.1f, 2.7f).eyeHeight(2.4f).clientTrackingRange(10).noLootTable());
     public static final EntityType<TrainingDummy> TRAINING_DUMMY = register("training_dummy",
             EntityType.Builder.<TrainingDummy>of(TrainingDummy::new, MobCategory.MISC).sized(0.6f, 1.95f).clientTrackingRange(10));
-
-    /** A "destroy a guarded cursed anchor" contract's objective. */
-    public static final EntityType<dev.rick.jjk.progression.investigation.CursedAnchorEntity> CURSED_ANCHOR = register("cursed_anchor",
-            EntityType.Builder.<dev.rick.jjk.progression.investigation.CursedAnchorEntity>of(dev.rick.jjk.progression.investigation.CursedAnchorEntity::new,
-                    MobCategory.MISC).sized(1.1f, 2.6f).clientTrackingRange(10).fireImmune());
-
-    /** What a defeated Grade 1 guardian leaves: contained with an Exorcism Seal. */
-    public static final EntityType<dev.rick.jjk.progression.guardian.GuardianRemnantEntity> GUARDIAN_REMNANT = register("guardian_remnant",
-            EntityType.Builder.<dev.rick.jjk.progression.guardian.GuardianRemnantEntity>of(dev.rick.jjk.progression.guardian.GuardianRemnantEntity::new,
-                    MobCategory.MISC).sized(1.2f, 1.6f).clientTrackingRange(10).fireImmune());
-
-    /** A piece of a relic-trial room (its furnishings, or a working part), drawn from the room's prop model; never saved. */
-    public static final EntityType<dev.rick.jjk.progression.training.TrialPropEntity> TRIAL_PROP = register("trial_prop",
-            EntityType.Builder.<dev.rick.jjk.progression.training.TrialPropEntity>of(dev.rick.jjk.progression.training.TrialPropEntity::new,
-                    MobCategory.MISC).sized(0.5f, 0.5f).noSave().noSummon().fireImmune().clientTrackingRange(10).updateInterval(20).noLootTable());
 
     private ModEntities() {}
 
@@ -125,19 +56,5 @@ public final class ModEntities {
 
     public static void init() {
         FabricDefaultAttributeRegistry.register(TRAINING_DUMMY, TrainingDummy.createAttributes());
-        FabricDefaultAttributeRegistry.register(CURSED_ANCHOR, dev.rick.jjk.progression.investigation.CursedAnchorEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(FINGER_BEARER, dev.rick.jjk.progression.curse.FingerBearerEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(FLY_HEAD, dev.rick.jjk.progression.curse.FlyHeadEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(SCHOOL_CRAWLER, dev.rick.jjk.progression.curse.SchoolCrawlerEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(SCHOOL_MAW, dev.rick.jjk.progression.curse.SchoolMawEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(FOREST_STALKER, dev.rick.jjk.progression.curse.ForestStalkerEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(GRAVE_HOUND, dev.rick.jjk.progression.curse.GraveHoundEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(VEILED_BRIDE, dev.rick.jjk.progression.curse.VeiledBrideEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(BLOAT_TOAD, dev.rick.jjk.progression.curse.BloatToadEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(BROOD_MOTHER, dev.rick.jjk.progression.curse.BroodMotherEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(GUARDIAN_CLAW_HUNTER, dev.rick.jjk.progression.curse.GraveHoundEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(GUARDIAN_PALE_STALKER, dev.rick.jjk.progression.curse.ForestStalkerEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(GUARDIAN_CYCLOPS_BRUISER, dev.rick.jjk.progression.curse.SchoolMawEntity.createAttributes());
-        FabricDefaultAttributeRegistry.register(GUARDIAN_VEILED_REACHER, dev.rick.jjk.progression.curse.VeiledBrideEntity.createAttributes());
     }
 }

@@ -43,8 +43,8 @@ public final class RifleCommand {
                         })))
                 .then(Commands.literal("issue").executes(c -> {
                     ServerPlayer p = c.getSource().getPlayerOrException();
-                    p.getInventory().add(RifleClaims.issue(p));
-                    c.getSource().sendSuccess(() -> Component.literal("Issued a claimed Cursed Rifle (any earlier one of yours is retired)."), true);
+                    p.getInventory().add(new net.minecraft.world.item.ItemStack(dev.rick.jjk.progression.ProgressionItems.CURSED_RIFLE));
+                    c.getSource().sendSuccess(() -> Component.literal("Gave a Cursed Rifle."), true);
                     return 1;
                 }));
     }
@@ -55,7 +55,7 @@ public final class RifleCommand {
                 + ", output " + String.format(Locale.ROOT, "%.2f", RifleRules.output(p)) + " (half-width " + String.format(Locale.ROOT, "%.2f", RifleRules.half(RifleRules.output(p)))
                 + "), beam " + (RifleRules.beamUnlocked(p) ? "learned" : "not learned") + ", Maximum Output " + (RifleRules.maximumOutput(p) ? "yes" : "no")
                 + ", shot " + String.format(Locale.ROOT, "%.1f", RifleRules.shotDamage(p)) + " dmg / " + RifleRules.shotInterval(p) + "t / " + String.format(Locale.ROOT, "%.1f", RifleRules.shotCost(p))
-                + " cost, live claim " + (RifleClaims.carriesLive(p) ? "carried" : RifleClaims.everIssued(p) ? "not carried" : "none");
+                + " cost";
         c.getSource().sendSuccess(() -> Component.literal(s), false);
         return 1;
     }
