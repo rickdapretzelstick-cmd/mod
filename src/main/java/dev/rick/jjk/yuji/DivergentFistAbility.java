@@ -127,7 +127,7 @@ public final class DivergentFistAbility extends Ability {
             LivingEntity t = HakariCombat.firstInFront(user, cfg.divergentReach, 1.6, 2.2);
             if (t != null && !YujiCombat.ragdolled(t)) {
                 HitResult r = HakariCombat.hit(YujiCombat.strike(user, ID, cfg.divergentPunchDamage, false).knockback(Knockback.HOLD)
-                        .hitstun(cfg.divergentImpactDelay + 6).fx("divergent_punch", 1f).wave("yuji.divergent").build(), t);
+                        .hitstun(cfg.divergentImpactDelay + 6).fx("divergent_punch", 1f).wave("yuji.divergent").sparing().build(), t);
                 if (r.outcome().contacted()) punched = t;
             }
             impactAt = age + cfg.divergentImpactDelay;

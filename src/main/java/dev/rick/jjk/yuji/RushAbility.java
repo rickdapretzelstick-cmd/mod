@@ -71,7 +71,7 @@ public final class RushAbility extends Ability {
                     if (!met.isEmpty()) {
                         LivingEntity t = met.getFirst();
                         HitResult r = HakariCombat.hit(YujiCombat.strike(user, ID, cfg.rushImpactDamage, true)
-                                .knockback(Knockback.directional(dir, 1.6, 0.25)).hitstun(40).fx("rush_hit", 1.2f).build(), t);
+                                .knockback(Knockback.directional(dir, 1.6, 0.25)).hitstun(40).fx("rush_hit", 1.2f).sparing().build(), t);
                         if (r.connected()) {
                             victim = t;
                             hitAt = age;
@@ -102,7 +102,7 @@ public final class RushAbility extends Ability {
                     kneeAt = age;
                     Anim.play(user, "rush_knee");
                     HakariCombat.hit(YujiCombat.strike(user, ID, cfg.rushKneeDamage, true).knockback(Knockback.set(new Vec3(dir.x * 0.1, 1.25, dir.z * 0.1)))
-                            .hitstun(44).status(CombatStatus.LAUNCHED, 44).fx("rush_knee", 1.4f).build(), victim);
+                            .hitstun(44).status(CombatStatus.LAUNCHED, 44).fx("rush_knee", 1.4f).sparing().build(), victim);
                     Fx.shake(level, victim.position(), 18, 0.7f, 8);
                     return;
                 }

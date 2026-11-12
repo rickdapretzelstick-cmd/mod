@@ -276,6 +276,19 @@ def _near(a, ref):
     return [x + 360.0 * round((r - x) / 360.0) for x, r in zip(a, ref)]
 
 
+def _continuous(v, ref):
+    """
+    v, or its twin (x+180, 180-y, z+180: the same rotation, the other Euler solution), whichever sits nearest ref once
+    each is shifted by whole turns. An IK answer that lands on the far solution would otherwise turn the joint the
+    long way round on its way to the next key (an arm spinning through its own shoulder at the end of a move).
+    """
+    a = _near(v, ref)
+    b = _near([v[0] + 180.0, 180.0 - v[1], v[2] + 180.0], ref)
+    da = max(abs(x - r) for x, r in zip(a, ref))
+    db = max(abs(x - r) for x, r in zip(b, ref))
+    return b if db + 1e-6 < da else a
+
+
 def lerp(p, q, f):
     """p toward q by f (f < 0 or > 1 extrapolates: an overshoot past q, or a deeper version of p)."""
     out = {'_ik': set(p.get('_ik', ())) | set(q.get('_ik', ()))}
@@ -379,7 +392,7 @@ class Clip:
                 if c == 'rot':
                     v = list(v)
                     if b in self.last and (b in pose.get('_ik', ()) or b not in ('root', 'hips')):
-                        v = _near(v, self.last[b])
+                        v = _continuous(v, self.last[b])
                     self.last[b] = v
                     d['rot'] = [round(x, 1) + 0.0 for x in v]
                 elif c == 'pos':

@@ -112,7 +112,7 @@ public final class BlueAbility extends Ability {
                         .damage(cfg.bluePullDamage).tag(dev.rick.jjk.core.combat.AttackTag.TECHNIQUE, dev.rick.jjk.core.combat.AttackTag.LIMITLESS,
                                 dev.rick.jjk.core.combat.AttackTag.PROJECTILE)
                         .origin(user.getEyePosition()).knockback(dev.rick.jjk.core.combat.Knockback.HOLD)
-                        .hitstun(cfg.bluePullTicks + cfg.blueSuspendTicks + 12).fx("blue_hit", 1f).build();
+                        .hitstun(cfg.bluePullTicks + cfg.blueSuspendTicks + 12).fx("blue_hit", 1f).sparing().build();
                 if (!dev.rick.jjk.core.combat.HitResolver.resolve(pull, target).connected()) {
                     target = null;
                     endAt = age + 12;

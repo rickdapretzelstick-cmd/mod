@@ -97,7 +97,7 @@ public final class NoIdeaAbility extends Ability {
                     return;
                 }
                 HitResult r = HakariCombat.hit(RyuCombat.strike(user, ID, cfg.noIdeaGrab, true).knockback(Knockback.HOLD).hitstun(40)
-                        .fx(RyuCombat.hitFx("ryu_noidea_hit", true), 1f).wave("ryu.noidea_grab").build(), t);
+                        .fx(RyuCombat.hitFx("ryu_noidea_hit", true), 1f).wave("ryu.noidea_grab").sparing().build(), t);
                 if (!r.connected()) {
                     endAt = age + 12;
                     return;
@@ -122,7 +122,7 @@ public final class NoIdeaAbility extends Ability {
                 // Fist against fist: he gives as good as he gets, and his output wins.
                 punches++;
                 HakariCombat.hit(RyuCombat.strike(user, ID, cfg.noIdeaPunch, true).knockback(Knockback.HOLD).hitstun(12)
-                        .fx(RyuCombat.hitFx("ryu_noidea_second", false), 0.8f).wave("ryu.noidea_blow").noComboScaling().build(), victim);
+                        .fx(RyuCombat.hitFx("ryu_noidea_second", false), 0.8f).wave("ryu.noidea_blow").sparing().noComboScaling().build(), victim);
                 RyuCombat.selfDamage(user, cfg.noIdeaSelfPunch);
                 Fx.play(level, "ryu_fist_clash", user.getEyePosition().add(HakariCombat.flat(user).scale(0.8)), HakariCombat.flat(user), 1f, user.getId());
             }

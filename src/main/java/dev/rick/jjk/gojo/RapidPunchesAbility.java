@@ -90,7 +90,7 @@ public final class RapidPunchesAbility extends Ability {
                         return;
                     }
                     wokeUp = Combat.state(t).has(CombatStatus.WAKEUP);
-                    var grab = GojoCombat.strike(user, ID, cfg.punchesGrabDamage, true).knockback(Knockback.HOLD).hitstun(20).fx("hit_light", 0.8f).build();
+                    var grab = GojoCombat.strike(user, ID, cfg.punchesGrabDamage, true).knockback(Knockback.HOLD).hitstun(20).fx("hit_light", 0.8f).sparing().build();
                     if (!HitResolver.resolve(grab, t).connected()) {
                         endAt = age + 10;
                         return;
@@ -113,7 +113,7 @@ public final class RapidPunchesAbility extends Ability {
                 int since = age - caughtAt;
                 if (age <= barrageEnd()) {
                     if (since > 0 && since % 2 == 0) {
-                        HitResolver.resolve(GojoCombat.strike(user, ID, cfg.punchesBarrageDamage, true).knockback(Knockback.HOLD).hitstun(10)
+                        HitResolver.resolve(GojoCombat.strike(user, ID, cfg.punchesBarrageDamage, true).knockback(Knockback.HOLD).hitstun(10).sparing()
                                 .noComboScaling().fx("hit_light", 0.6f).build(), victim);
                     }
                     return;
@@ -121,7 +121,7 @@ public final class RapidPunchesAbility extends Ability {
                 if (age <= heavyEnd()) {
                     if (age == barrageEnd() + 1) Anim.play(user, "rapid_heavy");
                     if ((age - barrageEnd()) % 5 == 0) {
-                        HitResolver.resolve(GojoCombat.strike(user, ID, cfg.punchesHeavyDamage, true).knockback(Knockback.HOLD).hitstun(12)
+                        HitResolver.resolve(GojoCombat.strike(user, ID, cfg.punchesHeavyDamage, true).knockback(Knockback.HOLD).hitstun(12).sparing()
                                 .noComboScaling().fx("hit_heavy", 0.9f).wave("gojo.rapid_heavy").build(), victim);
                         Fx.shake(level, victim.position(), 10, 0.3f, 4);
                     }

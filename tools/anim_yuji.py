@@ -450,15 +450,17 @@ def sukuna():
     c = Clip(g, 'rush_knee', NOTE)
     c.key(0, kw).key(100, kn, 'EASE_IN', marker='impact').key(250, tweak(kn, root_pos=(0, 0.8, 0), rightThigh=(-6, 0, 0)), 'EASE_OUT').key(500, S(root=(0, 0.4, 1.0), **SAIR), 'EASE_IN_OUT').write()
     # rush_leap: up after them, one arm cocked high.
-    lp = S(root=(0, 2.4, 0), hips=(-10, 20, 0), chest=(-10, 20, 0), ra=HC(6.0, 6.0, -2.0, pole=(1, 0.2, -0.3)), la=A(-60, 0, 30, -30), rl=L(-60, 100, 6, 30), ll=L(-10, 40, 6, 40), head=(-20, 0, 0))
+    lp = S(root=(0, 2.4, 0), hips=(-10, 20, 0), chest=(-10, 20, 0), ra=A(-150, 10, 24, -46, -10), la=A(-60, 0, 30, -30), rl=L(-60, 100, 6, 30), ll=L(-10, 40, 6, 40), head=(-20, 0, 0))
     c = Clip(g, 'rush_leap', NOTE)
     c.key(0, lerp(SREST, lp, 0.5)).key(300, lp, 'OVERSHOOT').write()
     # rush_slam: and the hand comes down on top of them like closing a book.
     sl = S(root=(0, 0.4, 1.2), hips=(20, -24, 0), chest=(20, -26, 0), ra=H(0.0, 9.0, 11.0, wrist=30), la=A(40, 0, 30, -30), rl=L(-50, 80, 6, 30), ll=L(-20, 50, 6, 30), head=(20, 0, 0))
+    # He comes down with them: the hand lifts off, the feet find the floor, and he is standing over it.
+    land = S(root=(0, -2.4, 1.0), hips=(14, -6, 0), chest=(10, -8, 0), ra=A(-24, 0, 20, -30), la=A(-10, 0, 24, -30), rl=F(2.8, 0, -1.6, toe=10), ll=F(-2.6, 0, 2.2), head=(14, 0, 0))
     c = Clip(g, 'rush_slam', NOTE)
     c.key(0, lp)
     c.hit(100, lp, sl, lag=20, k=0.12, carry=90)
-    c.key(600, S(root=(0, 0.6, 0), **SAIR), 'EASE_IN_OUT').write()
+    c.key(420, land, 'EASE_IN', marker='land').key(600, lerp(land, SREST, 0.7), 'EASE_IN_OUT').write()
 
 
 if __name__ == '__main__':

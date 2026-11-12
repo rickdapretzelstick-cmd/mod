@@ -118,7 +118,7 @@ public final class FeverBreakerAbility extends Ability {
             victim = HakariCombat.firstInFront(user, 3.2, 1.8, 2.2);
             Hit kick = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.feverKickDamage)
                     .tag(AttackTag.MELEE, AttackTag.TECHNIQUE).origin(user.getEyePosition())
-                    .knockback(Knockback.HOLD).hitstun(cfg.feverSuspendTicks + 12).guardDamage(2).fx("fever_kick", 1f).wave("hakari.fever_kick").build();
+                    .knockback(Knockback.HOLD).hitstun(cfg.feverSuspendTicks + 12).guardDamage(2).fx("fever_kick", 1f).wave("hakari.fever_kick").sparing().build();
             if (victim == null || !HakariCombat.hit(kick, victim).connected()) {
                 victim = null;
                 endAt = age + 8;

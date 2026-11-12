@@ -89,7 +89,7 @@ public final class DessertAbility extends Ability {
                     Anim.play(user, "ryu_dessert_kick");
                     boolean acting = dev.rick.jjk.gojo.GojoCombat.acting(t);
                     HitResult r = HakariCombat.hit(RyuCombat.strike(user, ID, cfg.dessertKick, false)
-                            .knockback(Knockback.directional(HakariCombat.flat(user), 0.55, 0)).hitstun(acting ? 22 : 14).fx(RyuCombat.hitFx("ryu_dessert_hit", true), 1f).wave("ryu.dessert_kick").build(), t);
+                            .knockback(Knockback.directional(HakariCombat.flat(user), 0.55, 0)).hitstun(acting ? 22 : 14).fx(RyuCombat.hitFx("ryu_dessert_hit", true), 1f).wave("ryu.dessert_kick").sparing().build(), t);
                     if (r.connected()) victim = t;
                 } else if (age > 22) {
                     endAt = age + 8;
@@ -108,7 +108,7 @@ public final class DessertAbility extends Ability {
                     return;
                 }
                 HitResult r = HakariCombat.hit(RyuCombat.strike(user, ID, cfg.dessertSwing, true).knockback(Knockback.HOLD).hitstun(30)
-                        .fx(RyuCombat.hitFx("ryu_dessert_slide", true), 1f).wave("ryu.dessert_swing").build(), t);
+                        .fx(RyuCombat.hitFx("ryu_dessert_slide", true), 1f).wave("ryu.dessert_swing").sparing().build(), t);
                 if (!r.connected()) {
                     endAt = age + 12;
                     return;
@@ -133,7 +133,7 @@ public final class DessertAbility extends Ability {
             if (k > 0 && k % 6 == 0 && blows < 4) {
                 blows++;
                 HakariCombat.hit(RyuCombat.strike(user, ID, cfg.dessertBlow, true).knockback(Knockback.HOLD).hitstun(14).noComboScaling()
-                        .fx(RyuCombat.hitFx("ryu_hit_" + (1 + blows % 3), false), 1f).wave("ryu.dessert_blow").build(), victim);
+                        .fx(RyuCombat.hitFx("ryu_hit_" + (1 + blows % 3), false), 1f).wave("ryu.dessert_blow").sparing().build(), victim);
                 if (blows % 2 == 0) RyuCombat.sfx(user, "ryu_dodge", 0.8f);
                 RyuCombat.selfDamage(user, cfg.dessertSelf);
                 Fx.play(level, "ryu_fist_clash", victim.getBoundingBox().getCenter(), HakariCombat.flat(user), 1.2f, user.getId());

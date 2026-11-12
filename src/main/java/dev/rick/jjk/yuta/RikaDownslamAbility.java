@@ -83,7 +83,7 @@ public final class RikaDownslamAbility extends RikaMove {
                     if (air) {
                         b.knockback(Knockback.set(new Vec3(0, -1.6, 0))).hitstun(36).status(CombatStatus.SPIKED, 50).fx("yuta_impact", 1.4f).wave("rika.downslam");
                     } else {
-                        b.knockback(Knockback.set(new Vec3(0, -0.5, 0))).hitstun(30).fx("yuta_impact", 1.2f).wave("rika.downslam");
+                        b.knockback(Knockback.set(new Vec3(0, -0.5, 0))).hitstun(30).fx("yuta_impact", 1.2f).wave("rika.downslam").sparing();
                     }
                     HitResult r = HakariCombat.hit(b.build(), t);
                     copyOnHit(r);

@@ -77,6 +77,11 @@ public final class HitResolver {
         var tc = dev.rick.jjk.core.ability.Casters.getOrNull(target);
         if (tc != null && damage > 0) damage = dev.rick.jjk.ryu.RyuCharacter.absorb(tc, damage);
 
+        if (hit.sparing && damage > 0) {
+            // An earlier hit of a multi-hit move: the kill is the final hit's. Nothing is skipped, only the last point.
+            float left = target.getHealth() + target.getAbsorptionAmount();
+            damage = Math.min(damage, Math.max(0f, left - 1f));
+        }
         float dealt = 0;
         if (damage > 0) {
             DamageSource src = ModDamageTypes.source(level, hit.damageType, hit.direct != null ? hit.direct : hit.attacker, hit.attacker);

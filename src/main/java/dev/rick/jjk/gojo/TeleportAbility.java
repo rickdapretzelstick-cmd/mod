@@ -182,7 +182,7 @@ public final class TeleportAbility extends Ability {
                 }
                 arrive(level, user, dest, victim);
                 HitResult r = HitResolver.resolve(GojoCombat.strike(user, "face_grater", 0.5f, false).knockback(Knockback.HOLD)
-                        .hitstun(cfg.faceGraterDragTicks + 10).fx("hit_heavy", 0.8f).build(), victim);
+                        .hitstun(cfg.faceGraterDragTicks + 10).fx("hit_heavy", 0.8f).sparing().build(), victim);
                 if (!r.connected() || r.outcome() == HitResult.Outcome.BLOCKED) {
                     endAt = age + 30; // blocked: significant endlag
                     return;

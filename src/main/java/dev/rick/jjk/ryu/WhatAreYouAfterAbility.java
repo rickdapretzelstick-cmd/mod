@@ -111,7 +111,7 @@ public final class WhatAreYouAfterAbility extends Ability {
                     victim = t;
                     connectAt = age;
                     Anim.play(user, "ryu_after_trade");
-                    HakariCombat.hit(RyuCombat.strike(user, ID, cfg.afterPunch, true).knockback(Knockback.HOLD).hitstun(18).fx(RyuCombat.hitFx("ryu_after_hit", true), 1.3f).wave("ryu.after_hit").build(), t);
+                    HakariCombat.hit(RyuCombat.strike(user, ID, cfg.afterPunch, true).knockback(Knockback.HOLD).hitstun(18).fx(RyuCombat.hitFx("ryu_after_hit", true), 1.3f).wave("ryu.after_hit").sparing().build(), t);
                     Fx.play(level, "ryu_trade", t.getBoundingBox().getCenter(), user.getLookAngle(), 1f, user.getId());
                 } else if (age > lungeAt + 14 || !Combat.isAirborne(user) && age > lungeAt + 2) {
                     Anim.play(user, "ryu_after_miss");

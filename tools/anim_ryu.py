@@ -213,9 +213,16 @@ def cannon_moves():
     c = Clip(g, 'ryu_appetizer', NOTE)
     c.key(0, REST).key(300, AIM, 'EASE_OUT', marker='aim').key(400, cannon(1.0), 'EASE_IN', lag=14, marker='blast 1').key(470, cannon(1.15), 'EASE_OUT')
     c.key(620, cannon(-0.5), 'EASE_IN_OUT', marker='aim').key(850, cannon(1.0), 'EASE_IN', lag=14, marker='blast 2').key(920, cannon(1.15), 'EASE_OUT')
-    c.key(1100, cannon(0.3), 'EASE_IN_OUT').key(1320, raise_, 'EASE_OUT', lag=30, marker='anticipation')
-    c.key(1600, floor, 'EASE_IN', lag=30, marker='impact: the ray').key(1680, tweak(floor, root_pos=(0, 0.8, 0), chest=(-5, 0, 0)), 'EASE_OUT')
-    c.key(1800, floor, 'EASE_IN_OUT').key(2200, REST, 'EASE_IN_OUT', marker='recovery').write()
+    # Then the beam: the head hauled right back as the cannon fills, the feet set wide, both fists clenched low; at
+    # tick 32 the head is snapped down at the floor in front of him and the beam swept up with it, the chest arching
+    # back as the head climbs past vertical, until he is firing straight up; then he comes down out of it.
+    load = R(root=(0, -2.6, -1.2), hips=(-6, 4, 0), chest=(-10, 2, 0), head=(-34, 0, 0), follow=1.0, ra=A(-10, 0, 34, -70), la=A(-10, 0, 34, -70), rl=BRACE_R, ll=BRACE_L)
+    down = R(root=(0, -3.0, 0.6), hips=(10, 4, 0), chest=(14, 2, 0), head=(44, 0, 0), follow=1.0, ra=A(-20, 0, 40, -60), la=A(-20, 0, 40, -60), rl=BRACE_R, ll=BRACE_L)
+    level_ = R(root=(0, -2.6, -0.6), hips=(-4, 4, 0), chest=(-6, 2, 0), head=(0, 0, 0), follow=1.0, ra=A(-30, 0, 44, -50), la=A(-30, 0, 44, -50), rl=BRACE_R, ll=BRACE_L)
+    sky = R(root=(0, -2.0, -2.4), hips=(-22, 4, 0), chest=(-26, 2, 0), head=(-56, 0, 0), follow=1.0, ra=A(-50, 0, 56, -40), la=A(-50, 0, 56, -40), rl=BRACE_R, ll=BRACE_L)
+    c.key(1100, cannon(0.3), 'EASE_IN_OUT').key(1350, load, 'EASE_OUT', lag=30, marker='load')
+    c.key(1600, down, 'EASE_IN', lag=14, marker='fire: at the floor').key(1800, level_, 'LINEAR', marker='sweep').key(2050, sky, 'EASE_OUT', marker='sweep: the sky')
+    c.key(2200, lerp(sky, REST, 0.6), 'EASE_IN_OUT', marker='recovery').write()
 
     # Restyle. ryu_restyle_pose: a comb through the pompadour, chin up, and the hand flicked away.
     comb = R(root=(0, -0.4, 0), hips=(-2, 6, 0), chest=(-4, 2, 0), ra=HC(2.2, 7.2, 2.4, pole=(1, 0.6, 0), wrist=-30), la=A(-6, 0, 10, -30), head=(-18, 4, 0), follow=1.0)

@@ -156,6 +156,9 @@ public final class ImpactWaves {
         w("gojo.rapid_final", SPECIAL, t, ALONG).signature(SPIRAL).clean().radius(3.0f).thickness(0.1f).rings(3).lens(2.8f).lift(5.0f).shake(0.6f, 18).fov(0.035f).delay(3).register();
         w("gojo.air_kick", HEAVY, t, DOWN).ground(Ground.ALWAYS).radius(2.8f).thickness(0.1f).lens(1.8f).dust(0.6f).debris(0.5f).shake(0.5f, 14).once(true).register();
         w("gojo.teleport_strike", SPECIAL, t, ALONG).signature(SPIRAL).clean().radius(2.4f).thickness(0.09f).rings(2).lens(2.0f).lift(3.4f).shake(0.4f, 14).fov(0.025f).register();
+        // Reversal Red loosed point-blank into their back: its burst, driven on through them.
+        w("gojo.red_pointblank", SPECIAL, new Theme("red", Theme.WHITE, new float[] {1f, 0.55f, 0.2f}, new float[] {1f, 0.18f, 0.12f}, new float[] {0.3f, 0.12f, 0.1f}), ALONG)
+                .signature(Signature.SPIKES).radius(3.2f).rings(2).lens(2.4f).ink(0.5f).lift(5.0f).dust(1.0f).debris(0.6f).shake(0.7f, 20).fov(0.035f).delay(3).register();
         w("gojo.face_grater", HEAVY, t, ALONG).radius(2.4f).thickness(0.1f).lens(1.4f).dust(0.8f).debris(0.4f).lift(3.6f).shake(0.45f, 14).register();
     }
 

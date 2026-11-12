@@ -79,7 +79,7 @@ public final class LuckyRushdownAbility extends Ability {
                     LivingEntity hit = HakariCombat.firstInFront(user, 1.8, 1.6, 2.2);
                     if (hit != null) {
                         Hit grab = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.rushdownGrabDamage).tag(AttackTag.MELEE, AttackTag.UNBLOCKABLE)
-                                .origin(user.getEyePosition()).knockback(Knockback.HOLD).hitstun(cfg.rushdownDragTicks + 6).fx("rushdown_grab", 1f).build();
+                                .origin(user.getEyePosition()).knockback(Knockback.HOLD).hitstun(cfg.rushdownDragTicks + 6).fx("rushdown_grab", 1f).sparing().build();
                         if (HakariCombat.hit(grab, hit).connected()) {
                             victim = hit;
                             grabbedAt = age;

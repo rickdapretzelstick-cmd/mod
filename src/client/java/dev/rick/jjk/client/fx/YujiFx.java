@@ -467,22 +467,67 @@ final class YujiFx {
                 if (drawn) burst(level, pos.add(0, -0.6, 0), q(8), 0.08, Sprite.SMOKE, AURA, 0.6f, 20);
             }
             case "world_slash" -> {
-                // The world cut: a black band across everything, white streaks tearing out of it (GIF frame 10).
-                sound("dismantle_finish", pos, 3f, 0.6f);
-                sound("dismantle_slash", pos, 3f, 0.5f);
+                // The World Cutting Slash: not a swing but a seam opened in space itself. A black cut the whole width of
+                // the field (s is its length; its half-width follows the server's box), with a white-hot edge, driven
+                // forward from the hand to its far end over a few ticks; above and below the seam the air is shoved
+                // apart (two shells leaving it), the ground on either side answers, shards of the picture and white
+                // tearing streaks fly out of the gap, and a lattice of fine fractures spreads from it before the seam
+                // closes dark. Everyone near it feels the frame skip.
+                sound("dismantle_finish", pos, 3f, 0.55f);
+                sound("dismantle_slash", pos, 3f, 0.45f);
+                sound("black_flash_chain", pos, 1.4f, 0.6f);
                 Vec3 f = dir.normalize();
                 Vec3 side = new Vec3(-f.z, 0, f.x).normalize();
-                Vec3 mid = pos.add(f.scale(s * 0.5));
-                float half = s * 0.6f;
-                line(mid.subtract(side.scale(half)), mid.add(side.scale(half)), 0.9f, INK, 1f, 16, now);
-                line(mid.subtract(side.scale(half)), mid.add(side.scale(half)), 0.25f, WHITE, 1f, 10, now);
-                for (int i = 0; i < 12; i++) {
-                    Vec3 a = mid.add(side.scale((RNG.nextDouble() - 0.5) * half * 2)).add(0, gauss(0.3), 0);
-                    line(a, a.add(f.scale(-2 - RNG.nextDouble() * 4)), 0.08f, WHITE, 0.9f, 8, now + RNG.nextInt(4));
+                float half = s * 0.3f;
+                int reach = Math.max(4, Math.round(s / 5f));
+                for (int k = 0; k < reach; k++) {
+                    // The seam advancing: each tick a further stretch of it opens.
+                    double a0 = s * k / reach, a1 = s * (k + 1) / reach;
+                    Vec3 m0 = pos.add(f.scale(a0)), m1 = pos.add(f.scale(a1));
+                    long at = now + k;
+                    for (double u = -1; u <= 1; u += 0.5) {
+                        Vec3 o = side.scale(u * half);
+                        Flashes.darkBeam(m0.add(o), m1.add(o), 1.4f, INK, 1f, 22 - k, at);
+                    }
+                    Flashes.darkBeam(m0.subtract(side.scale(half)), m0.add(side.scale(half)), 1.3f, INK, 1f, 24 - k, at);
+                    Flashes.beam(m0.subtract(side.scale(half)).add(0, 0.75, 0), m0.add(side.scale(half)).add(0, 0.75, 0), 0.18f, WHITE, 1f, 12, at);
+                    Flashes.beam(m0.subtract(side.scale(half)).add(0, -0.75, 0), m0.add(side.scale(half)).add(0, -0.75, 0), 0.18f, WHITE, 1f, 12, at);
+                    // The air shoved apart above and below it.
+                    Flashes.lens(m1.add(0, 1.6, 0), 0.3f, 4.5f, WHITE, 0.5f, 7, at);
+                    Flashes.lens(m1.add(0, -1.6, 0), 0.3f, 4.5f, BF_RED, 0.35f, 7, at);
+                    // The ground on both sides.
+                    Vec3 g = groundBelow(level, m1.add(0, 1, 0));
+                    Flashes.ground(g.add(0, 0.06, 0), 0.4f, half * 0.9f, WHITE, 0.6f, 10, at + 1);
+                    Flashes.ground(g.add(0, 0.05, 0), 0.4f, half * 1.4f, INK, 0.6f, 14, at + 2);
+                    if (drawn) {
+                        // Shards of the picture and white streaks tearing out of the gap, both ways.
+                        for (int i = 0; i < 4; i++) {
+                            Vec3 a = m1.add(side.scale((RNG.nextDouble() - 0.5) * half * 2)).add(0, gauss(0.3), 0);
+                            Vec3 out = new Vec3(0, RNG.nextBoolean() ? 1 : -1, 0).add(randomUnit().scale(0.4)).normalize();
+                            line(a, a.add(out.scale(2 + RNG.nextDouble() * 5)), 0.09f, WHITE, 0.95f, 7, at + RNG.nextInt(3));
+                            line(a, a.add(f.scale(-(2 + RNG.nextDouble() * 4))), 0.07f, i % 2 == 0 ? WHITE : BF_RED, 0.8f, 6, at + RNG.nextInt(3));
+                        }
+                        // Fractures: fine jagged cracks spreading off the seam, black with a white edge.
+                        for (int i = 0; i < 3; i++) {
+                            Vec3 a = m1.add(side.scale((RNG.nextDouble() - 0.5) * half * 2));
+                            Vec3 b = a.add(randomUnit().multiply(1, 2.2, 1).normalize().scale(1.5 + RNG.nextDouble() * 2.5));
+                            Flashes.bolt(a, b, 0.05f, WHITE, 0.9f, 8, at + 1);
+                            Flashes.darkBeam(a, b, 0.07f, INK, 0.9f, 10, at + 1);
+                        }
+                        burst(level, m1, q(10), 0.22, Sprite.SHARD, i_shard(), 0.16f, 18);
+                        burst(level, m1, q(6), 0.1, Sprite.SMOKE, INK, 0.9f, 22);
+                    }
                 }
-                if (mc.player != null && mc.player.position().distanceTo(pos) < s * 1.5) {
-                    ScreenEffects.impact(8, 2);
-                    ScreenEffects.shake(1.4f, 20);
+                // The cut's wake at the hand: the swing's own flash.
+                Flashes.flash(pos, 2.6f, 0.4f, WHITE, 1f, 5, now);
+                Flashes.flash(pos, 1.8f, 0.3f, INK, 1f, 8, now + 1);
+                if (mc.player != null) {
+                    double dist = mc.player.position().distanceTo(pos.add(f.scale(s * 0.5)));
+                    if (dist < s * 1.2) {
+                        ScreenEffects.impact(8, 2);
+                        ScreenEffects.shake((float) Math.max(0.6, 1.5 - dist / s), 22);
+                        ScreenEffects.fovPunch(0.06f);
+                    }
                 }
             }
             case "world_slash_hit" -> victimFeedback(p, 1f);
@@ -676,6 +721,10 @@ final class YujiFx {
             line(pos.subtract(side.scale(8)), pos.add(side.scale(8)), 0.25f, CE_LIGHT, 1f, 8, now);
             impactStar(pos, dir, 16, 3f * s, 0.1f, CE, now);
         }
+    }
+
+    private static float[] i_shard() {
+        return RNG.nextInt(3) == 0 ? BF_RED : WHITE;
     }
 
     static void blood(ClientLevel level, Vec3 pos, Vec3 dir, int n) {

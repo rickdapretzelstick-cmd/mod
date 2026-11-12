@@ -196,7 +196,7 @@ public final class CrushingBlowAbility extends Ability {
 
         private void slam(JJKConfig.Yuji cfg, Vec3 at) {
             HakariCombat.hit(YujiCombat.strike(user, ID, cfg.crushingSlamDamage, true).knockback(Knockback.set(new Vec3(0, -0.6, 0))).hitstun(30)
-                    .fx("crushing_slam", 1.2f).wave("yuji.crushing_slam").noComboScaling().build(), victim);
+                    .fx("crushing_slam", 1.2f).wave("yuji.crushing_slam").noComboScaling().sparing().build(), victim);
             Fx.play(level, "crushing_impact", at, new Vec3(0, 1, 0), 1f, user.getId());
             Fx.shake(level, at, 18, 0.7f, 8);
             crater(at, 1.6);

@@ -25,7 +25,8 @@
       "dev.rick.jjk.test.BlackFlashTests",
       "dev.rick.jjk.test.TestMenuTests",
       "dev.rick.jjk.test.BladeTests",
-      "dev.rick.jjk.test.ImpactWaveTests"
+      "dev.rick.jjk.test.ImpactWaveTests",
+      "dev.rick.jjk.test.ComboLethalityTests"
     ],
     "fabric-client-gametest": [
       "dev.rick.jjk.test.AnimFrameworkClientTest",

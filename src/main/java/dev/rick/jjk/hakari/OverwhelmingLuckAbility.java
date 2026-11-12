@@ -67,7 +67,7 @@ public final class OverwhelmingLuckAbility extends Ability {
                     Motion.set(user, f.scale(0.9).add(0, Math.min(0, user.getDeltaMovement().y), 0));
                     Hit open = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.overwhelmOpenerDamage)
                             .tag(AttackTag.MELEE, AttackTag.HEAVY, AttackTag.UNBLOCKABLE).origin(user.getEyePosition())
-                            .knockback(Knockback.directional(f, 0.95, 0.3)).hitstun(30).fx("overwhelm_hit", 1.3f).build();
+                            .knockback(Knockback.directional(f, 0.95, 0.3)).hitstun(30).fx("overwhelm_hit", 1.3f).sparing().build();
                     for (var t : HakariCombat.front(user, 3.0, 2.4, 2.4)) if (HakariCombat.hit(open, t).connected()) caught.add(t);
                     Fx.play(level, "overwhelm_punch", user.getEyePosition().add(f.scale(1.2)).add(0, -0.3, 0), f, 1.3f, user.getId());
                     if (caught.isEmpty()) {
@@ -97,7 +97,7 @@ public final class OverwhelmingLuckAbility extends Ability {
                         Anim.play(user, punches % 2 == 0 ? "overwhelm_right" : "overwhelm_left");
                         float esc = 1f + punches * 0.1f;
                         Hit punch = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.overwhelmPunchDamage).tag(AttackTag.MELEE, AttackTag.UNBLOCKABLE)
-                                .origin(user.getEyePosition()).knockback(Knockback.HOLD).hitstun(cfg.overwhelmInterval + 8)
+                                .origin(user.getEyePosition()).knockback(Knockback.HOLD).hitstun(cfg.overwhelmInterval + 8).sparing()
                                 .noComboScaling().fx("overwhelm_hit", esc).build();
                         HakariCombat.hitAll(punch, caught);
                         Fx.play(level, "overwhelm_punch", user.getEyePosition().add(f.scale(1.2)).add(0, -0.3, 0), f, esc, user.getId());

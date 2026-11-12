@@ -127,7 +127,7 @@ public final class SecondWindAbility extends Ability {
                 if (YutaCombat.ragdolled(t)) continue;
                 // 360-blockable: the grab is stopped by a guard from any side.
                 HitResult r = HakariCombat.hit(YutaCombat.strike(user, ID, 0, false).tag(AttackTag.BLOCKABLE_360)
-                        .knockback(Knockback.HOLD).hitstun(8).fx("second_wind_grab", 0.6f).build(), t);
+                        .knockback(Knockback.HOLD).hitstun(8).fx("second_wind_grab", 0.6f).sparing().build(), t);
                 if (r.outcome() == HitResult.Outcome.BLOCKED) {
                     Motion.set(user, dir.scale(-0.4).add(0, 0.15, 0));
                     Anim.play(user, "yuta_second_wind_blocked");
@@ -166,7 +166,7 @@ public final class SecondWindAbility extends Ability {
             }
             if (t == 5) {
                 Anim.play(user, "yuta_second_wind_slam");
-                HakariCombat.hit(YutaCombat.strike(user, ID, cfg.secondWindGrabDamage, true).knockback(Knockback.HOLD).hitstun(20).fx("yuta_impact_light", 0.8f).build(), victim);
+                HakariCombat.hit(YutaCombat.strike(user, ID, cfg.secondWindGrabDamage, true).knockback(Knockback.HOLD).hitstun(20).fx("yuta_impact_light", 0.8f).sparing().build(), victim);
             }
             if (t < 12) {
                 Vec3 at = user.position().add(dir.scale(1.2)).add(0, t < 9 ? 1.0 : 0.1, 0);
@@ -201,10 +201,10 @@ public final class SecondWindAbility extends Ability {
             if (last) Statuses.remove(victim, CombatStatus.GRABBED);
             var b = YutaCombat.strike(user, ID, cfg.secondWindPummelDamage, false).tag(AttackTag.OTG).noComboScaling();
             if (!last) {
-                b.knockback(Knockback.HOLD).hitstun(14).fx(katana ? "pummel_slash" : "pummel_hit", 0.9f);
+                b.knockback(Knockback.HOLD).hitstun(14).fx(katana ? "pummel_slash" : "pummel_hit", 0.9f).sparing();
             } else if (katana) {
                 // The spinning axe kick: knocked down.
-                b.knockback(Knockback.set(dir.scale(0.2).add(0, -0.7, 0))).hitstun(30).status(CombatStatus.KNOCKDOWN, 34).fx("pummel_kick", 1.2f);
+                b.knockback(Knockback.set(dir.scale(0.2).add(0, -0.7, 0))).hitstun(30).status(CombatStatus.KNOCKDOWN, 34).fx("pummel_kick", 1.2f).sparing();
             } else {
                 b.knockback(Knockback.directional(dir, 1.4, 0.45)).hitstun(26).status(CombatStatus.LAUNCHED, 22).fx("pummel_final", 1.2f).wave("yuta.pummel_final");
             }

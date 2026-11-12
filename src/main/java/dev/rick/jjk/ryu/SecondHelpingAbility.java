@@ -48,6 +48,13 @@ public final class SecondHelpingAbility extends Ability {
         return RyuCombat.cfg().secondHelpingCooldown;
     }
 
+    /** Target-only: it is a homing dash onto someone. With nobody under the crosshair in range it refuses (no cost, no cooldown). */
+    @Override
+    public @Nullable String checkActivation(AbilityContext ctx) {
+        LivingEntity t = HakariCombat.aim(ctx.user(), RyuCombat.cfg().secondHelpingRange, ctx.targetHint());
+        return t == null || !t.isAlive() ? "no_target" : null;
+    }
+
     @Override
     public @Nullable AbilityInstance activate(AbilityContext ctx) {
         LivingEntity target = HakariCombat.aim(ctx.user(), RyuCombat.cfg().secondHelpingRange, ctx.targetHint());
@@ -106,7 +113,7 @@ public final class SecondHelpingAbility extends Ability {
                     } else if (air) {
                         // The punch, its impact delayed: they go down to the floor.
                         r = HakariCombat.hit(RyuCombat.strike(user, ID, cfg.secondHelpingAirPunch, true).tag(AttackTag.OTG)
-                                .knockback(Knockback.HOLD).hitstun(14).fx(RyuCombat.hitFx("ryu_helping_air", true), 1f).build(), target);
+                                .knockback(Knockback.HOLD).hitstun(14).fx(RyuCombat.hitFx("ryu_helping_air", true), 1f).sparing().build(), target);
                     } else {
                         r = HakariCombat.hit(RyuCombat.strike(user, ID, cfg.secondHelpingDamage, true).tag(AttackTag.OTG)
                                 .knockback(Knockback.set(new Vec3(0, 1.15, 0))).hitstun(30).status(CombatStatus.LAUNCHED, 30)

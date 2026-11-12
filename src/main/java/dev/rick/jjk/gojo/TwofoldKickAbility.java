@@ -75,7 +75,7 @@ public final class TwofoldKickAbility extends Ability {
                     }
                     HitResult r = HitResolver.resolve(GojoCombat.strike(user, ID, cfg.twofoldFirstDamage, false)
                             .knockback(Knockback.set(new Vec3(0, 0.75, 0))).hitstun(cfg.twofoldAnchorTicks + 14)
-                            .status(CombatStatus.LAUNCHED, 20).fx("hit_launch", 1f).wave("gojo.twofold_1").build(), t);
+                            .status(CombatStatus.LAUNCHED, 20).fx("hit_launch", 1f).wave("gojo.twofold_1").sparing().build(), t);
                     if (!r.connected() || r.outcome() == HitResult.Outcome.BLOCKED) {
                         endAt = age + 12; // blocked: no second kick
                         return;

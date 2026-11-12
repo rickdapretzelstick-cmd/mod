@@ -9,6 +9,12 @@ Branch: `claude/jjk-minecraft-animation-overhaul-0eod07`. Not merged into the sh
 
 - `./gradlew build` on JDK 25 is green: compiles, **all 227 server gametests pass** (two new: `ImpactWaveTests`).
 - `python3 tools/anim_preview.py --check`: 372 clips, 0 errors.
+- Polish pass (second commit): animkit now picks the Euler twin nearest the previous key for every IK-solved bone, so no
+  joint turns the long way round at the end of a move (93 clips changed by it); Sukuna's Rush leap and landing rebuilt;
+  Rika's secondary motion deepened (neck whip, jaw, weight sink, tail crack-through); Appetizer's last stage is a beam
+  from the cannon swept from the floor to the sky (`ryu_appetizer` keyed to it); the Black Flash is lightning-first;
+  the World Cutting Slash is a seam opened in space; Red's point-blank variant shows the whole Red; multi-hit specials
+  keep their kill for the final hit (`Hit.Builder.sparing`); Second Helping is target-only. 229 gametests.
 - Done since the first save point: Ryu's whole set (`tools/anim_ryu.py`, 48 clips including his own M1 set), Gojo's three
   GIF kicks rebuilt on animkit, the Java wiring below, and the impact-wave VFX system (`core/fx/ImpactWave`,
   `core/fx/ImpactWaves`, `client/fx/ImpactWaveFx`; see the README's "Impact waves").

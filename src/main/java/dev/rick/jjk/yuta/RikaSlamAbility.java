@@ -93,7 +93,7 @@ public final class RikaSlamAbility extends RikaMove {
 
             private void grab(JJKConfig.Yuta cfg) {
                 HitResult r = HakariCombat.hit(YutaCombat.rika(user, rika, ID, cfg.rikaSlamGrabDamage, false)
-                        .tag(AttackTag.UNBLOCKABLE, AttackTag.OTG).knockback(Knockback.HOLD).hitstun(20).fx("rika_grab", 0.8f).build(), target);
+                        .tag(AttackTag.UNBLOCKABLE, AttackTag.OTG).knockback(Knockback.HOLD).hitstun(20).fx("rika_grab", 0.8f).sparing().build(), target);
                 copyOnHit(r);
                 if (!r.connected()) {
                     endAt = age + 6;
@@ -117,7 +117,7 @@ public final class RikaSlamAbility extends RikaMove {
                     Statuses.remove(held, CombatStatus.GRABBED);
                     b.knockback(Knockback.set(facing().scale(0.6).add(0, 0.3, 0))).hitstun(30).status(CombatStatus.KNOCKDOWN, 30);
                 } else {
-                    b.knockback(Knockback.set(new Vec3(0, -0.4, 0))).hitstun(20);
+                    b.knockback(Knockback.set(new Vec3(0, -0.4, 0))).hitstun(20).sparing();
                 }
                 HakariCombat.hit(b.build(), held);
                 if (last) {

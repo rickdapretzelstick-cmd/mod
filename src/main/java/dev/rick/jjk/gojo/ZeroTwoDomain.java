@@ -83,6 +83,7 @@ final class ZeroTwoDomain {
                 .tag(AttackTag.MELEE, AttackTag.UNBLOCKABLE, AttackTag.OTG, AttackTag.ULTIMATE).origin(user.getEyePosition())
                 .knockback(last ? Knockback.directional(HakariCombat.flat(user), 2.2, 0.8) : Knockback.HOLD).hitstun(last ? 30 : 12)
                 .noComboScaling().fx(last ? "finisher" : "hit_heavy", last ? 1f : 0.8f).build();
+        if (!last) hit = hit.toBuilder().sparing().build();
         if (last) hit = hit.toBuilder().status(CombatStatus.LAUNCHED, 30).build();
         HitResolver.resolve(hit, t);
     }
