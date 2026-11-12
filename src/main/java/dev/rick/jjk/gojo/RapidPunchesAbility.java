@@ -122,7 +122,7 @@ public final class RapidPunchesAbility extends Ability {
                     if (age == barrageEnd() + 1) Anim.play(user, "rapid_heavy");
                     if ((age - barrageEnd()) % 5 == 0) {
                         HitResolver.resolve(GojoCombat.strike(user, ID, cfg.punchesHeavyDamage, true).knockback(Knockback.HOLD).hitstun(12)
-                                .noComboScaling().fx("hit_heavy", 0.9f).build(), victim);
+                                .noComboScaling().fx("hit_heavy", 0.9f).wave("gojo.rapid_heavy").build(), victim);
                         Fx.shake(level, victim.position(), 10, 0.3f, 4);
                     }
                     return;
@@ -140,7 +140,7 @@ public final class RapidPunchesAbility extends Ability {
                         double kb = cfg.punchesFinalKnockback * (wokeUp ? 1.9 : 1);
                         HitResolver.resolve(GojoCombat.strike(user, ID, cfg.punchesFinalDamage, true)
                                 .knockback(Knockback.directional(HakariCombat.flat(user), kb, 0.5)).hitstun(26)
-                                .status(CombatStatus.LAUNCHED, 24).fx("hit_launch", 1.2f).build(), victim);
+                                .status(CombatStatus.LAUNCHED, 24).fx("hit_launch", 1.2f).wave("gojo.rapid_final").build(), victim);
                         gs.punchesKilled = false;
                         gs.punched = victim;
                         gs.faceGraterUntil = level.getGameTime() + cfg.faceGraterWindow;

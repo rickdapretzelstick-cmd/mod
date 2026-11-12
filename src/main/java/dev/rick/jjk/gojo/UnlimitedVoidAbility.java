@@ -70,7 +70,7 @@ public final class UnlimitedVoidAbility extends Ability implements dev.rick.jjk.
                 Motion.set(user, new Vec3(0, Math.min(0, user.getDeltaMovement().y) * 0.3, 0));
                 if (age >= JJKConfig.get().domain.startup) {
                     expanded = DomainManager.expand(user, UnlimitedVoid.INSTANCE) != null;
-                    Anim.play(user, "domain_release");
+                    Anim.play(user, "gojo_domain_release");
                     finish();
                 }
             }

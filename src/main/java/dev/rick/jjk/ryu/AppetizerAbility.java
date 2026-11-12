@@ -97,7 +97,7 @@ public final class AppetizerAbility extends Ability {
                         toward = new Vec3(toward.x, 0, toward.z).normalize();
                         Vec3 kb = cut ? flat.scale(0.9).add(0, 0.7, 0) : toward.scale(0.45).add(0, 1.0, 0);
                         HakariCombat.hit(RyuCombat.blast(user, ID, cfg.appetizerRay, base).tag(AttackTag.OTG).knockback(Knockback.set(kb)).hitstun(26)
-                                .status(CombatStatus.LAUNCHED, 26).fx("ryu_ray_hit", 1.2f).build(), t);
+                                .status(CombatStatus.LAUNCHED, 26).fx("ryu_ray_hit", 1.2f).wave("ryu.appetizer_ray").build(), t);
                     }
                 }
                 if (age >= END) finish();

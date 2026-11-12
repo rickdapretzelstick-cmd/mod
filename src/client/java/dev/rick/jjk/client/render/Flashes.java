@@ -62,6 +62,19 @@ public final class Flashes {
         add(new Effect(Type.RING, pos, Vec3.ZERO, c, from, to, alpha, life, now, 0));
     }
 
+    /** A ring of a chosen band width (0: in proportion to its size). */
+    public static void ring(Vec3 pos, float from, float to, float[] c, float alpha, int life, long now, float width) {
+        add(new Effect(Type.RING, pos, Vec3.ZERO, c, from, to, alpha, life, now, width));
+    }
+
+    public static void ripple(Vec3 pos, Vec3 normal, float from, float to, float[] c, float alpha, int life, long start, float width) {
+        add(new Effect(Type.RIPPLE, pos, normal, c, from, to, alpha, life, start, width));
+    }
+
+    public static void ground(Vec3 pos, float from, float to, float[] c, float alpha, int life, long start, float width) {
+        add(new Effect(Type.GROUND, pos, new Vec3(0, 1, 0), c, from, to, alpha, life, start, width));
+    }
+
     public static void ripple(Vec3 pos, Vec3 normal, float from, float to, float[] c, float alpha, int life, long start) {
         add(new Effect(Type.RIPPLE, pos, normal, c, from, to, alpha, life, start, 0));
     }
@@ -161,11 +174,11 @@ public final class Flashes {
                 case RING -> {
                     ps.rotate(camRot);
                     ps.rotate(Axis.XP.rotationDegrees(90));
-                    Glow.ring(c, ps, size, Math.max(0.12f, size * 0.16f), col[0], col[1], col[2], a);
+                    Glow.ring(c, ps, size, f.width > 0 ? f.width : Math.max(0.12f, size * 0.16f), col[0], col[1], col[2], a);
                 }
                 case RIPPLE, GROUND -> {
                     orientY(ps, f.dir);
-                    Glow.ring(c, ps, size, Math.max(0.08f, size * (f.type == Type.GROUND ? 0.22f : 0.12f)), col[0], col[1], col[2], a);
+                    Glow.ring(c, ps, size, f.width > 0 ? f.width : Math.max(0.08f, size * (f.type == Type.GROUND ? 0.22f : 0.12f)), col[0], col[1], col[2], a);
                 }
                 case LENS -> {
                     Vector3f toCam = new Vector3f((float) (cam.x - f.pos.x), (float) (cam.y - f.pos.y), (float) (cam.z - f.pos.z));

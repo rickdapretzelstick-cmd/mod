@@ -16,7 +16,7 @@ import dev.rick.jjk.core.combat.melee.MeleeMoveset;
 public final class GojoCharacter extends JJKCharacter {
     public static final String ID = "gojo";
     public final InfinityAbility infinity = new InfinityAbility();
-    private final MeleeMoveset melee = new MeleeMoveset("", "", 1.0f, 1.0f, 1.0f);
+    private final MeleeMoveset melee = new MeleeMoveset("gojo_", "", 1.0f, 1.0f, 1.0f, "gojo");
 
     public GojoCharacter() {
         super(ID);
@@ -110,6 +110,11 @@ public final class GojoCharacter extends JJKCharacter {
     @Override
     public float regenPerSecond() {
         return JJKConfig.get().resources.gojoRegenPerSecond;
+    }
+
+    @Override
+    public String domainOpeningClip() {
+        return "gojo_domain_release";
     }
 
     @Override

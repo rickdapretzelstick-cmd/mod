@@ -1,133 +1,15 @@
 {
-  "name": "ryu_invited_lunge",
-  "duration": 300,
-  "blendIn": 40,
-  "blendOut": 160,
-  "priority": "SPECIAL",
-  "hold": true,
-  "keys": [
-    {
-      "t": 0,
-      "bones": {
-        "head": {
-          "rot": [
-            6,
-            20,
-            0
-          ]
-        },
-        "chest": {
-          "rot": [
-            4,
-            46,
-            0
-          ]
-        },
-        "rightArm": {
-          "rot": [
-            40,
-            30,
-            40
-          ]
-        },
-        "leftArm": {
-          "rot": [
-            -85,
-            30,
-            -12
-          ]
-        },
-        "rightThigh": {
-          "rot": [
-            26,
-            0,
-            6
-          ]
-        },
-        "leftThigh": {
-          "rot": [
-            -30,
-            0,
-            -6
-          ]
-        },
-        "hips": {
-          "rot": [
-            8,
-            34,
-            0
-          ]
-        },
-        "root": {
-          "pos": [
-            0,
-            -3,
-            -1.5
-          ]
-        }
-      }
-    },
-    {
-      "t": 300,
-      "bones": {
-        "head": {
-          "rot": [
-            6,
-            20,
-            0
-          ]
-        },
-        "chest": {
-          "rot": [
-            16,
-            50,
-            0
-          ]
-        },
-        "rightArm": {
-          "rot": [
-            40,
-            30,
-            40
-          ]
-        },
-        "leftArm": {
-          "rot": [
-            -85,
-            30,
-            -12
-          ]
-        },
-        "rightThigh": {
-          "rot": [
-            26,
-            0,
-            6
-          ]
-        },
-        "leftThigh": {
-          "rot": [
-            -30,
-            0,
-            -6
-          ]
-        },
-        "hips": {
-          "rot": [
-            8,
-            34,
-            0
-          ]
-        },
-        "root": {
-          "pos": [
-            0,
-            -3,
-            6
-          ]
-        }
-      },
-      "ease": "EASE_OUT"
-    }
-  ]
+ "name": "ryu_invited_lunge",
+ "duration": 300,
+ "hold": true,
+ "blendIn": 40,
+ "blendOut": 160,
+ "priority": "SPECIAL",
+ "authored": "tools/anim_ryu.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [1.6, -4.0, -2.4], "rot": [0.0, 40.0, 0.0]}, "hips": [10.0, 30.0, -4.0], "chest": [6.0, 26.0, -6.0], "head": [0.0, -50.0, 0.0], "rightArm": [158.9, -7.0, -33.5], "rightForearm": [-90.4, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-57.0, 18.3, -18.3], "leftForearm": [-55.8, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-31.9, 18.4, 33.5], "rightShin": [94.1, 0.0, 0.0], "rightFoot": [-63.1, -30.4, -11.0], "leftThigh": [-60.8, -18.1, -13.3], "leftShin": [96.2, 0.0, 0.0], "leftFoot": [-39.1, 2.0, 23.8]}},
+  {"t": 280, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.8, -3.2, 5.0], "rot": [0.0, 30.0, 0.0]}, "hips": [30.0, 26.0, -4.0], "rightThigh": [30.0, 0.0, 6.0], "rightShin": [36.0, 0.0, 0.0], "rightFoot": [40.0, 0.0, 0.0], "leftThigh": [-56.0, 0.0, -4.0], "leftShin": [80.0, 0.0, 0.0], "leftFoot": [20.0, 0.0, 0.0]}},
+  {"t": 290, "ease": "EASE_OUT", "bones": {"chest": [10.0, 24.0, -6.0]}},
+  {"t": 300, "ease": "EASE_OUT", "marker": "lunge", "bones": {"head": [-14.0, -40.0, 0.0], "rightArm": [160.0, -5.5, -36.9], "rightForearm": [-90.4, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-60.0, 0.0, -20.0], "leftForearm": [-40.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0]}}
+ ]
 }

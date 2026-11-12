@@ -188,7 +188,7 @@ public final class CrushingBlowAbility extends Ability {
                 Statuses.remove(victim, CombatStatus.GRABBED);
                 Anim.play(user, "crushing_blow_release");
                 HakariCombat.hit(YujiCombat.strike(user, ID, 0, true).knockback(Knockback.set(new Vec3(0, cfg.crushingLaunch, 0)))
-                        .hitstun(36).status(CombatStatus.LAUNCHED, 40).fx("hit_launch", 1.3f).build(), victim);
+                        .hitstun(36).status(CombatStatus.LAUNCHED, 40).fx("hit_launch", 1.3f).wave("yuji.crushing_release").build(), victim);
                 victim = null;
                 endAt = age + 8;
             }
@@ -196,7 +196,7 @@ public final class CrushingBlowAbility extends Ability {
 
         private void slam(JJKConfig.Yuji cfg, Vec3 at) {
             HakariCombat.hit(YujiCombat.strike(user, ID, cfg.crushingSlamDamage, true).knockback(Knockback.set(new Vec3(0, -0.6, 0))).hitstun(30)
-                    .fx("crushing_slam", 1.2f).noComboScaling().build(), victim);
+                    .fx("crushing_slam", 1.2f).wave("yuji.crushing_slam").noComboScaling().build(), victim);
             Fx.play(level, "crushing_impact", at, new Vec3(0, 1, 0), 1f, user.getId());
             Fx.shake(level, at, 18, 0.7f, 8);
             crater(at, 1.6);

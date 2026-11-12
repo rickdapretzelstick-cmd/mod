@@ -101,7 +101,7 @@ public final class LuckyVolleyAbility extends Ability {
                         }
                         Hit last = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.volleyFinalDamage).tag(AttackTag.MELEE, AttackTag.HEAVY, AttackTag.UNBLOCKABLE)
                                 .origin(user.getEyePosition()).knockback(Knockback.directional(f, cfg.volleyFinalKnockback, 0.4)).hitstun(24)
-                                .status(CombatStatus.LAUNCHED, 20).fx("lucky_final", 1.3f).build();
+                                .status(CombatStatus.LAUNCHED, 20).fx("lucky_final", 1.3f).wave("hakari.volley_final").build();
                         HakariCombat.hit(last, target);
                         Fx.shake(level, target.position(), 18, 0.8f, 10);
                     }

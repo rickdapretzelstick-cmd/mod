@@ -158,7 +158,7 @@ public final class BlueAbility extends Ability {
                 } else {
                     dev.rick.jjk.core.combat.Hit kick = GojoCombat.strike(user, ID, cfg.blueKickDamage, true)
                             .knockback(dev.rick.jjk.core.combat.Knockback.directional(f, cfg.blueKickKnockback, 0.45)).hitstun(22)
-                            .status(dev.rick.jjk.core.combat.CombatStatus.LAUNCHED, 18).fx("hit_launch", 1.2f).build();
+                            .status(dev.rick.jjk.core.combat.CombatStatus.LAUNCHED, 18).fx("hit_launch", 1.2f).wave("gojo.blue_kick").build();
                     dev.rick.jjk.core.combat.HitResolver.resolve(kick, target);
                 }
                 Fx.shake(level, target.position(), 14, 0.5f, 8);

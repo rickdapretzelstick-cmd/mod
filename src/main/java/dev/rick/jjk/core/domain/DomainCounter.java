@@ -116,7 +116,7 @@ public final class DomainCounter {
         float meter = ability.awakeningCost(c);
         if (meter > 0 && !c.noCost()) c.setAwakening(c.awakening() - meter);
         c.startCooldown(ability, ability.cooldown(c));
-        Anim.play(user, "domain_release");
+        Anim.play(user, c.character().domainOpeningClip());
         DomainCinematics.versus(opener, user);
         DomainInstance d = DomainManager.expand(user, def);
         return d != null;

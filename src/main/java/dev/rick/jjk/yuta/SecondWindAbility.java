@@ -180,7 +180,7 @@ public final class SecondWindAbility extends Ability {
                 YutaCombat.execute(user, victim, ID, "second_wind_finisher");
             } else {
                 HakariCombat.hit(YutaCombat.strike(user, ID, cfg.secondWindSlamDamage, true).tag(AttackTag.OTG)
-                        .knockback(Knockback.set(new Vec3(0, -0.6, 0))).hitstun(30).status(CombatStatus.KNOCKDOWN, 30).fx("yuta_impact", 1.2f).build(), victim);
+                        .knockback(Knockback.set(new Vec3(0, -0.6, 0))).hitstun(30).status(CombatStatus.KNOCKDOWN, 30).fx("yuta_impact", 1.2f).wave("yuta.second_wind_slam").build(), victim);
             }
             endAt = age + 10;
         }
@@ -206,7 +206,7 @@ public final class SecondWindAbility extends Ability {
                 // The spinning axe kick: knocked down.
                 b.knockback(Knockback.set(dir.scale(0.2).add(0, -0.7, 0))).hitstun(30).status(CombatStatus.KNOCKDOWN, 34).fx("pummel_kick", 1.2f);
             } else {
-                b.knockback(Knockback.directional(dir, 1.4, 0.45)).hitstun(26).status(CombatStatus.LAUNCHED, 22).fx("pummel_final", 1.2f);
+                b.knockback(Knockback.directional(dir, 1.4, 0.45)).hitstun(26).status(CombatStatus.LAUNCHED, 22).fx("pummel_final", 1.2f).wave("yuta.pummel_final");
             }
             HitResult r = HakariCombat.hit(b.build(), victim);
             if (last && YutaCombat.finishable(victim)) YutaCombat.execute(user, victim, ID, "second_wind_finisher");

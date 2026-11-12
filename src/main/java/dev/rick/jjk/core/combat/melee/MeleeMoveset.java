@@ -15,10 +15,11 @@ import java.util.function.Consumer;
  * @param onSwing          extra work each swing does (Shrine's slashes cut through walls), or null
  * @param chain            hits in a chain (4; True Cannon's is 3), the last of them the finisher
  * @param finisher         replaces the plain ground finisher when it returns a move (True Cannon's energy ray), or null
+ * @param waveTheme        the character's impact-wave set ({@code ImpactWaves.melee}: "gojo", "sukuna"...); "" for the neutral set
  */
 public record MeleeMoveset(String animPrefix, String fxPrefix, float damageMultiplier, float knockbackMultiplier, float speedMultiplier,
                            float rangeMultiplier, boolean launchers, boolean blockable360, @Nullable Consumer<LivingEntity> onSwing, int chain,
-                           @Nullable Finisher finisher) {
+                           @Nullable Finisher finisher, String waveTheme) {
     /** A character's own ground finisher: given the standard one, the move to use instead (or null to keep it). */
     public interface Finisher {
         @Nullable MeleeMove replace(LivingEntity user, MeleeMove standard);
@@ -28,9 +29,25 @@ public record MeleeMoveset(String animPrefix, String fxPrefix, float damageMulti
         this(animPrefix, fxPrefix, damageMultiplier, knockbackMultiplier, speedMultiplier, 1f, true, false, null);
     }
 
+    /** The same set with the character's own impact waves. */
+    public MeleeMoveset(String animPrefix, String fxPrefix, float damageMultiplier, float knockbackMultiplier, float speedMultiplier, String waveTheme) {
+        this(animPrefix, fxPrefix, damageMultiplier, knockbackMultiplier, speedMultiplier, 1f, true, false, null, 4, null, waveTheme);
+    }
+
     public MeleeMoveset(String animPrefix, String fxPrefix, float damageMultiplier, float knockbackMultiplier, float speedMultiplier,
                         float rangeMultiplier, boolean launchers, boolean blockable360, @Nullable Consumer<LivingEntity> onSwing) {
-        this(animPrefix, fxPrefix, damageMultiplier, knockbackMultiplier, speedMultiplier, rangeMultiplier, launchers, blockable360, onSwing, 4, null);
+        this(animPrefix, fxPrefix, damageMultiplier, knockbackMultiplier, speedMultiplier, rangeMultiplier, launchers, blockable360, onSwing, 4, null, "");
+    }
+
+    public MeleeMoveset(String animPrefix, String fxPrefix, float damageMultiplier, float knockbackMultiplier, float speedMultiplier,
+                        float rangeMultiplier, boolean launchers, boolean blockable360, @Nullable Consumer<LivingEntity> onSwing, int chain,
+                        @Nullable Finisher finisher) {
+        this(animPrefix, fxPrefix, damageMultiplier, knockbackMultiplier, speedMultiplier, rangeMultiplier, launchers, blockable360, onSwing, chain, finisher, "");
+    }
+
+    /** The impact wave of one of the basic attacks ("light", "finisher", "uppercut", "downslam", "sprint", "stomp", "heavy", "heavy_full", "air"). */
+    public String wave(String move) {
+        return dev.rick.jjk.core.fx.ImpactWaves.melee(waveTheme, move);
     }
 
     public String anim(String name) {

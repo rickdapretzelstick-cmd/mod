@@ -286,7 +286,7 @@ def techniques():
     # round him; he hangs there, then comes down.
     ex = G(root=(0, 1.6, -0.4), hips=(-8, 0, 0), chest=(-16, 0, 0), ra=A(-30, 0, 78, -14, -20), la=A(-30, 0, 78, -14, -20),
            rl=F(2.2, 0, -0.4, toe=40), ll=F(-2.1, 0, 0.4, toe=40), head=(-28, 0, 0))
-    c = Clip(g, 'domain_release', NOTE)
+    c = Clip(g, 'gojo_domain_release', NOTE, 1200, priority='AWAKENING', blendIn=120, blendEase='EASE_IN', blendOut=300)
     c.key(0, sign).key(120, ex, 'EASE_IN', lag=20, marker='expand')
     c.key(420, tweak(ex, rightArm=(-8, 0, 6), leftArm=(-8, 0, -6), chest=(-3, 0, 0), root_pos=(0, 0.6, 0)), 'EASE_OUT', marker='float')
     c.key(1050, G(ra=A(-4, 0, 16, -10), la=A(-4, 0, 16, -10)), 'EASE_IN_OUT', marker='settle').key(1200, REST, 'EASE_IN_OUT').write()
@@ -377,8 +377,90 @@ def rapid():
     c.key(400, lerp(deep, REST, 0.35), 'EASE_IN_OUT').key(750, REST, 'EASE_IN_OUT', marker='recovery').key(800, REST).write()
 
 
+def gif_kicks():
+    g = 'gojo'
+    # The three kicks keyed frame for frame from the JJS GIFs (RapidPunches.gif, TwofoldKick.gif). Their beats and
+    # contact times are the server's and stay exactly where they were; the bodies in between are rebuilt like the rest
+    # of his set: real knees and ankles, a planted standing foot, the head spotting the target through the turn, and the
+    # left hand in his pocket for as long as he can get away with it.
+
+    # spin_kick (Rapid Punches' opener, contact on the 11th tick = 550 ms). A full turn to the left thrown from
+    # standing: the torso tips forward as the trailing leg lifts behind him until he is folded flat over the standing
+    # leg with the heel above his own head, and the heel is dropped straight through them as he comes down low.
+    ant = G(root=(0.4, -1.6, 0), yaw=24, hips=(2, 8, 0), chest=(8, 14, 0), ra=A(-16, 0, 20, -40), head=(0, 0, 0))
+    t1 = P(root=(0, -1.0, 0), yaw=-100, hips=(14, 0, 0), chest=(8, 0, 0), ra=A(-40, 0, 50, -24), la=POCKET,
+           rl=L(34, 26, 14, 12), ll=L(-4, 30, 4, 18), head=(-4, 70, 0), follow=1.0)
+    t2 = P(root=(0, -0.4, 0.2), yaw=-210, hips=(32, 0, 0), chest=(8, 0, 0), ra=A(-30, 0, 60, -20), la=POCKET,
+           rl=L(66, 8, 18, 14), ll=L(-10, 40, 4, 22), head=(-10, 40, 0), follow=1.0)
+    t3 = P(root=(0, 0.6, 0.4), yaw=-320, hips=(56, 0, 0), chest=(6, 0, 0), ra=A(-20, 0, 72, -14), la=POCKET,
+           rl=L(96, 0, 14, 16), ll=L(-26, 44, 4, 28), head=(-30, 10, 0), follow=1.0)
+    top = P(root=(0, 2.2, 1.0), yaw=-360, hips=(72, 0, 0), chest=(4, 0, 0), ra=A(-10, 0, 82, -10), la=A(-10, 0, 82, -10),
+            rl=L(104, 0, 8, 20), ll=L(-62, 60, 4, 24), head=(-36, 0, 0), follow=1.0)
+    air = P(root=(0, 3.6, 1.6), yaw=-360, hips=(80, 0, 0), chest=(2, 0, 0), ra=A(-6, 0, 86, -8), la=A(-6, 0, 86, -8),
+            rl=L(112, 0, 4, 24), ll=L(-70, 70, 4, 30), head=(-40, 0, 0), follow=1.0)
+    drop = P(root=(0, -1.2, 2.0), yaw=-360, hips=(30, 0, 0), chest=(26, 0, 0), ra=A(-30, 0, 30, -20), la=A(-20, 0, 36, -24),
+             rl=L(-56, 6, 8, 30), ll=F(-2.2, 0, -0.8, rel=True), head=(-6, 0, 0), follow=0.6)
+    crouch = G(root=(0, -4.0, 2.4), hips=(26, 0, 0), chest=(20, 0, 0), ra=A(-20, 0, 24, -30), la=A(-14, 0, 28, -34),
+               rl=F(2.4, 0, 4.6, toe=10), ll=F(-2.2, 0, -0.4), head=(-4, 0, 0))
+    c = Clip(g, 'spin_kick', NOTE, 700).spins()
+    c.key(0, REST).key(80, ant, 'EASE_OUT', marker='anticipation').key(170, t1, 'LINEAR', marker='spin')
+    c.key(260, t2, 'LINEAR').key(340, t3, 'LINEAR').key(420, top, 'EASE_OUT', marker='heel over his head').key(480, air, 'LINEAR', marker='airborne')
+    c.key(540, drop, 'EASE_IN', marker='impact')
+    c.key(560, {'root': {'rot': [0.0, 0.0, 0.0], 'pos': [0.0, -1.2, 2.0]}}, 'STEP')
+    c.key(620, crouch, 'EASE_OUT', marker='land').key(700, REST, 'EASE_IN_OUT', marker='recovery').write()
+
+    # twofold_1 (Twofold Kick: the first kick lands on the 8th tick = 400 ms; the clip ends at 1100 ms, on the frame the
+    # second kick lands and twofold_2 cuts in). A spinning back kick out of a quarter turn, the hand still in the
+    # pocket, the heel thrust up into them over his own hip while he looks back at them over his shoulder; the turn
+    # carries on round and he lands wide, sits, and throws a back-flip, the kicking leg leading over the top.
+    ant = G(root=(0.4, -1.6, -0.4), yaw=24, hips=(4, 8, 0), chest=(8, 14, 0), ra=A(-20, 0, 24, -40), head=(0, 0, 0))
+    cham = P(root=(0, -0.6, 0), yaw=-90, hips=(12, 0, 0), chest=(4, -10, 0), ra=A(-50, 0, 30, -60), la=POCKET,
+             rl=L(-84, 104, 12, 10), ll=L(-2, 24, 4, 14), head=(-2, 80, 0), follow=1.0)
+    kick = P(root=(0, 0.4, 0.6), yaw=-165, hips=(36, 0, 4), chest=(8, -6, 0), ra=A(-40, 0, 44, -24), la=POCKET,
+             rl=L(72, 2, 16, 24), ll=L(-30, 36, 4, 26), head=(-14, 84, 0), follow=1.0)
+    through = P(root=(0, 0.6, 0.6), yaw=-200, hips=(40, 0, 4), chest=(8, -6, 0), ra=A(-44, 0, 48, -22), la=POCKET,
+                rl=L(80, 4, 18, 26), ll=L(-32, 38, 4, 28), head=(-14, 84, 0), follow=1.0)
+    recoil = P(root=(0, -0.8, 0.4), yaw=-250, hips=(18, 0, 0), chest=(6, 0, 0), ra=A(-30, 0, 40, -30), la=POCKET,
+               rl=L(24, 70, 10, 10), ll=F(-2.6, 0, 0.8, rel=True), head=(-6, 50, 0), follow=1.0)
+    land = P(root=(0, -2.4, 0.4), yaw=-335, hips=(8, 0, 0), chest=(14, 0, 0), ra=A(-30, 0, 50, -30), la=A(-20, 0, 40, -40),
+             rl=F(3.0, 2.4, -1.0, rel=True), ll=F(-3.0, 2.4, 1.2, rel=True), head=(-6, 20, 0), follow=1.0)
+    land2 = P(root=(0, -2.6, 0.4), yaw=-360, hips=(10, 0, 0), chest=(16, 0, 0), ra=A(-26, 0, 46, -30), la=A(-18, 0, 38, -40),
+              rl=F(3.0, 2.6, -1.0, rel=True), ll=F(-3.0, 2.6, 1.2, rel=True), head=(-8, 4, 0), follow=1.0)
+    sit = P(root=(0, -4.2, 0), hips=(18, 0, 0), chest=(30, 0, 0), ra=A(44, 0, 20, -10), la=A(44, 0, 20, -10),
+            rl=F(2.8, 0, -1.0), ll=F(-2.8, 0, 1.2), head=(-20, 0, 0), follow=0.5)
+    off = P(root=(0, 2.0, 0.6), hips=(-10, 0, 0), chest=(-10, 0, 0), ra=A(-120, 0, 30, -20), la=A(-120, 0, 30, -20),
+            rl=L(-20, 20, 4, 30), ll=L(-16, 24, 4, 30), head=(-24, 0, 0), follow=1.0)
+    flip = P(root=(0, 9.0, 0.6), hips=(-120, 0, 0), chest=(-10, 0, 0), ra=A(-150, 0, 30, -20), la=A(-150, 0, 30, -20),
+             rl=L(-110, 40, 5, 10), ll=L(-60, 100, 5, 10), head=(-10, 0, 0), follow=1.0)
+    over = P(root=(0, 10.4, 0.8), hips=(-220, 0, 0), chest=(-6, 0, 0), ra=A(-140, 0, 44, -14), la=A(-140, 0, 44, -14),
+             rl=L(-140, 10, 4, 20), ll=L(-40, 96, 4, 10), head=(-8, 0, 0), follow=1.0)
+    top = P(root=(0, 10.0, 1.0), hips=(-330, 0, 0), chest=(-4, 0, 0), ra=A(-120, 0, 60, -10), la=A(-120, 0, 60, -10),
+            rl=L(-160, 0, 4, 24), ll=L(-30, 90, 4, 10), head=(-6, 0, 0), follow=1.0)
+    c = Clip(g, 'twofold_1', NOTE, 1100).spins()
+    c.key(0, REST).key(120, ant, 'EASE_OUT', marker='anticipation').key(280, cham, 'LINEAR', marker='chamber')
+    c.key(400, kick, 'EASE_IN', marker='impact').key(460, through, 'EASE_OUT', marker='follow-through').key(560, recoil, 'LINEAR', marker='recoil')
+    c.key(660, land, 'EASE_OUT', marker='land').key(730, land2, 'LINEAR')
+    c.key(740, {'root': {'rot': [0.0, 0.0, 0.0], 'pos': [0.0, -2.6, 0.4]}}, 'STEP')
+    c.key(840, sit, 'EASE_OUT', marker='anticipation: jump').key(900, off, 'EASE_IN', marker='take-off')
+    c.key(960, flip, 'LINEAR', marker='flip').key(1030, over, 'LINEAR').key(1100, top, 'LINEAR', marker='leg over the top').write()
+
+    # twofold_2: cut onto the second kick as it lands (the server's hit is on this clip's first frame). He has come
+    # almost all the way round; the leading heel is driven up through them, the flip finishes over it, and he drops
+    # to a crouched landing and stands up out of it.
+    hit = P(root=(0, 7.0, 1.0), hips=(-24, 0, 0), chest=(-8, 0, 0), ra=A(-140, 0, 44, -16), la=A(-140, 0, 44, -16),
+            rl=L(-118, 0, 4, 24), ll=L(16, 72, 4, 10), head=(8, 0, 0), follow=1.0)
+    thr = P(root=(0, 3.6, 1.0), hips=(8, 0, 0), chest=(2, 0, 0), ra=A(-100, 0, 60, -20), la=A(-100, 0, 60, -20),
+            rl=L(-60, 30, 5, 20), ll=L(-10, 60, 5, 20), head=(6, 0, 0), follow=1.0)
+    crouch = G(root=(0, -3.2, 1.0), hips=(22, 0, 0), chest=(16, 0, 0), ra=A(-30, 0, 40, -40), la=A(-30, 0, 40, -40),
+               rl=F(2.6, 0, 1.6, toe=10), ll=F(-2.6, 0, 0.2), head=(2, 0, 0))
+    c = Clip(g, 'twofold_2', NOTE, 600)
+    c.key(0, hit, marker='impact').key(120, thr, 'EASE_OUT', marker='follow-through').key(260, crouch, 'EASE_IN', marker='land')
+    c.key(340, tweak(crouch, root_pos=(0, 0.6, 0)), 'EASE_OUT').key(520, lerp(crouch, REST, 0.8), 'EASE_IN_OUT', marker='recovery').key(600, REST).write()
+
+
 if __name__ == '__main__':
     melee()
     techniques()
     rapid()
+    gif_kicks()
     print('wrote', len(WRITTEN), 'clips:', ' '.join(WRITTEN))

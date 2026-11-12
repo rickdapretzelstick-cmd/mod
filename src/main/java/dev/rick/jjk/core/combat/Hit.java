@@ -30,6 +30,8 @@ public final class Hit {
     public final int guardDamage;
     public final String impactFx;
     public final float impactScale;
+    /** The impact-wave profile this blow shocks the world with ({@code core/fx/ImpactWave}), or null. */
+    @Nullable public final String wave;
     public final boolean comboScaling;
     @Nullable public final Consumer<HitResult> onResolved;
 
@@ -49,6 +51,7 @@ public final class Hit {
         this.guardDamage = b.guardDamage;
         this.impactFx = b.impactFx;
         this.impactScale = b.impactScale;
+        this.wave = b.wave;
         this.comboScaling = b.comboScaling;
         this.onResolved = b.onResolved;
     }
@@ -74,6 +77,7 @@ public final class Hit {
         b.guardDamage = guardDamage;
         b.impactFx = impactFx;
         b.impactScale = impactScale;
+        b.wave = wave;
         b.comboScaling = comboScaling;
         b.onResolved = onResolved;
         return b;
@@ -93,6 +97,7 @@ public final class Hit {
         private int guardDamage = 1;
         private String impactFx = "hit_light";
         private float impactScale = 1f;
+        private String wave;
         private boolean comboScaling = true;
         private Consumer<HitResult> onResolved;
 
@@ -111,6 +116,8 @@ public final class Hit {
         public Builder origin(Vec3 o) { this.origin = o; return this; }
         public Builder guardDamage(int g) { this.guardDamage = g; return this; }
         public Builder fx(String fx, float scale) { this.impactFx = fx; this.impactScale = scale; return this; }
+        /** The impact wave the blow fires where it lands (a profile from {@code ImpactWaves}); the stopped version if guarded. */
+        public Builder wave(@Nullable String profile) { this.wave = profile; return this; }
         public Builder noComboScaling() { this.comboScaling = false; return this; }
         public Builder onResolved(Consumer<HitResult> c) { this.onResolved = c; return this; }
 

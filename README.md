@@ -570,6 +570,18 @@ shot by shot, for comparing them.
 
 ![Base vs Max](docs/screenshots/base_vs_max.png)
 
+### Impact waves
+
+Every blow that shocks the world has an **impact-wave profile** (`core/fx/ImpactWaves`, about 110 of them), named
+`<character>.<move>`: its tier (light, medium, heavy, special, ultimate), the colours of its character, the way its
+pressure travels (out, along the blow, into the ground, up, or across as a cut), whether the floor answers, the energy
+motif it carries (speed lines, cursed-energy arcs, a blade's crescent, Limitless's shell of displaced space, Hakari's
+flares, Rika's smoke, Ryu's discharge, Sukuna's cuts), its radii, speeds, dust, debris and the camera's share. A hit
+names its profile (`Hit.Builder.wave`) and the server fires it once, at the resolved contact, along the way the target
+was sent, only when the blow really lands (a guarded blow shows the stopped version); every client draws it from the
+same profile (`client/fx/ImpactWaveFx`). The basic attacks resolve through each character's own set. Nothing in it
+changes a block.
+
 Effects fade when the camera is inside them, spawn fewer particles past 48 blocks, and small ones are sound-only past
 96 blocks. `particleQuality` (0–3) in the client config scales every particle count.
 

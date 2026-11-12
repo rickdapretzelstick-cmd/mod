@@ -274,6 +274,7 @@ public class JJKClient implements ClientModInitializer {
 
     private static void tick(Minecraft mc) {
         ScreenEffects.tick();
+        dev.rick.jjk.client.fx.ImpactWaveFx.tick(mc);
         if (mc.level == null || mc.player == null) return;
         ClientState.tick();
         dev.rick.jjk.client.rifle.RifleClient.tick(mc);

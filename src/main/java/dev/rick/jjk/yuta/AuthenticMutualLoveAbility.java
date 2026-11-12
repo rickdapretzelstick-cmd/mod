@@ -114,7 +114,7 @@ public final class AuthenticMutualLoveAbility extends Ability implements dev.ric
                 Motion.set(user, new Vec3(0, Math.min(0, user.getDeltaMovement().y) * 0.3, 0));
                 if (age >= YutaCombat.cfg().domainStartup) {
                     expanded = DomainManager.expand(user, AuthenticMutualLove.INSTANCE) != null;
-                    Anim.play(user, "domain_release");
+                    Anim.play(user, "yuta_domain_release");
                     finish();
                 }
             }

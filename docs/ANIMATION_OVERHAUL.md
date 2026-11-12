@@ -7,13 +7,18 @@ Branch: `claude/jjk-minecraft-animation-overhaul-0eod07`. Not merged into the sh
 
 ## State at this save point
 
-- `./gradlew build` on JDK 25 is green: compiles, **all 225 server gametests pass**.
-- `python3 tools/anim_preview.py --check`: 359 clips, 0 errors.
+- `./gradlew build` on JDK 25 is green: compiles, **all 227 server gametests pass** (two new: `ImpactWaveTests`).
+- `python3 tools/anim_preview.py --check`: 372 clips, 0 errors.
+- Done since the first save point: Ryu's whole set (`tools/anim_ryu.py`, 48 clips including his own M1 set), Gojo's three
+  GIF kicks rebuilt on animkit, the Java wiring below, and the impact-wave VFX system (`core/fx/ImpactWave`,
+  `core/fx/ImpactWaves`, `client/fx/ImpactWaveFx`; see the README's "Impact waves").
 - **Nothing has been looked at in the game.** Every pose was checked only in the offline previewer (box figure, same
   maths as `Rig.solve`). The client gametests (`PoseGalleryClientTest` etc.) have not been run. Treat in-game look,
   blending between clips and first-person as unverified.
-- **No Java has been changed.** So the new per-character clips listed under "Wiring" below exist as files but are
-  not played by anything yet. Nothing is broken by that: every clip name the code plays still exists.
+- The Java wiring is done: Gojo, Hakari and Ryu play their own M1 sets (`MeleeMoveset` anim prefixes), Face Grater
+  plays `face_grater_drag` / `face_grater_throw`, each character's domain opens with its own clip
+  (`JJKCharacter.domainOpeningClip`; `common/domain_release` is the neutral one for characters without their own),
+  and `Anim.HELD` knows the new held charges.
 
 ## How the work is done
 
@@ -29,7 +34,7 @@ Clips are no longer hand-edited JSON. Each character has a Python script that wr
 | `tools/anim_yuji.py` | `yuji/` (Yuji and Sukuna) — 72 clips | done |
 | `tools/anim_yuta.py` | `yuta/` — 65 clips | done |
 | `tools/anim_rika.py` | adds neck/tail follow-through to `rika/` (15 clips), keeps her hand-keyed motion | done |
-| `tools/gen_ryu_anims.py` | `ryu/` — 35 clips | **old, not started** |
+| `tools/anim_ryu.py` | `ryu/` — 48 clips (the 35 moves and his own M1 set) | done |
 | `tools/gen_tool_kit_anims.py`, `gen_cursed_blade_assets.py`, `gen_contest_anims.py` | `tool/` (56 clips), grapple clips | **old, not started** |
 
 Run a script from `tools/` (`cd tools && python3 anim_gojo.py`); it rewrites its clips. Never edit the JSON by hand.
@@ -77,7 +82,8 @@ line on a clip with a `STEP` reset is expected.
 
 ## What is left, in order
 
-1. **Ryu (35 clips + his M1 set).** Rewrite `tools/gen_ryu_anims.py` on animkit (or add `tools/anim_ryu.py` and
+0. **In-game QA has still not been done** (step 5 below): nothing new has been looked at in a running client.
+1. ~~**Ryu (35 clips + his M1 set).**~~ Done: `tools/anim_ryu.py`. Rewrite `tools/gen_ryu_anims.py` on animkit (or add `tools/anim_ryu.py` and
    retire the old script's clip writing). Its comments give every move's ticks; keep those times. He needs
    `ryu_light_1`, `ryu_light_2`, `ryu_light_3`, `ryu_light_4`, `ryu_air_1..3`, `ryu_uppercut`, `ryu_downslam`,
    `ryu_sprint`, `ryu_stomp`, `ryu_heavy_charge`, `ryu_heavy` (his chain is 3 long and ends in `ryu_m1_ray`, but

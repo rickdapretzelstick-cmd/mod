@@ -118,7 +118,7 @@ public final class FeverBreakerAbility extends Ability {
             victim = HakariCombat.firstInFront(user, 3.2, 1.8, 2.2);
             Hit kick = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.feverKickDamage)
                     .tag(AttackTag.MELEE, AttackTag.TECHNIQUE).origin(user.getEyePosition())
-                    .knockback(Knockback.HOLD).hitstun(cfg.feverSuspendTicks + 12).guardDamage(2).fx("fever_kick", 1f).build();
+                    .knockback(Knockback.HOLD).hitstun(cfg.feverSuspendTicks + 12).guardDamage(2).fx("fever_kick", 1f).wave("hakari.fever_kick").build();
             if (victim == null || !HakariCombat.hit(kick, victim).connected()) {
                 victim = null;
                 endAt = age + 8;
@@ -147,7 +147,7 @@ public final class FeverBreakerAbility extends Ability {
             Hit breaker = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.feverFinishDamage)
                     .tag(AttackTag.MELEE, AttackTag.TECHNIQUE, AttackTag.HEAVY, AttackTag.OTG).origin(user.getEyePosition())
                     .knockback(Knockback.set(look.normalize().scale(cfg.feverFinishKnockback).add(0, 0.25, 0))).hitstun(30)
-                    .status(CombatStatus.LAUNCHED, 24).guardDamage(4).fx("fever_impact", 1.4f).build();
+                    .status(CombatStatus.LAUNCHED, 24).guardDamage(4).fx("fever_impact", 1.4f).wave("hakari.fever_break").build();
             if (user.distanceTo(victim) < 4.5 && HakariCombat.hit(breaker, victim).connected()) HakariCombat.visual(user, 1);
             Fx.play(level, "fever_break", victim.getBoundingBox().getCenter(), look, 1f, user.getId());
             Fx.shake(level, victim.position(), 22, 0.9f, 12);
@@ -179,7 +179,7 @@ public final class FeverBreakerAbility extends Ability {
                 Hit axe = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(dmg)
                         .tag(AttackTag.MELEE, AttackTag.TECHNIQUE, AttackTag.HEAVY, AttackTag.UNBLOCKABLE, AttackTag.OTG).origin(user.getEyePosition())
                         .knockback(ragdoll ? Knockback.set(new Vec3(0, 0.7, 0)) : Knockback.set(new Vec3(0, -0.6, 0))).hitstun(26)
-                        .status(ragdoll ? CombatStatus.LAUNCHED : CombatStatus.KNOCKDOWN, 20).guardDamage(4).fx("fever_impact", ragdoll ? 1.6f : 1.3f).build();
+                        .status(ragdoll ? CombatStatus.LAUNCHED : CombatStatus.KNOCKDOWN, 20).guardDamage(4).fx("fever_impact", ragdoll ? 1.6f : 1.3f).wave("hakari.fever_axe").build();
                 if (doors != null) Statuses.remove(t, CombatStatus.GRABBED);
                 HakariCombat.hit(axe, t);
                 Fx.play(level, "fever_crush", t.position(), Vec3.ZERO, ragdoll ? 1.4f : 1f, user.getId());

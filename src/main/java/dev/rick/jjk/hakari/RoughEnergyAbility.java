@@ -90,7 +90,7 @@ public final class RoughEnergyAbility extends Ability {
                     Hit hit = Hit.builder(user, ID).type(ModDamageTypes.TECHNIQUE).damage(cfg.roughDamage)
                             .tag(AttackTag.TECHNIQUE, AttackTag.MELEE, AttackTag.HEAVY, AttackTag.UNBLOCKABLE)
                             .origin(user.getEyePosition()).knockback(Knockback.directional(f, cfg.roughKnockback, 0.4))
-                            .hitstun(cfg.roughHitstun).status(CombatStatus.LAUNCHED, 18).guardDamage(4).fx("rough_hit", 1.2f).build();
+                            .hitstun(cfg.roughHitstun).status(CombatStatus.LAUNCHED, 18).guardDamage(4).fx("rough_hit", 1.2f).wave("hakari.rough").build();
                     boolean landed = HakariCombat.landed(HakariCombat.hitAll(hit, HakariCombat.front(user, cfg.roughReach, 2.2, 2.4)));
                     Fx.play(level, "rough_impact", at, f, landed ? 1.2f : 0.9f, user.getId());
                     Fx.shake(level, at, 20, landed ? 0.8f : 0.45f, 10);
@@ -153,7 +153,7 @@ public final class RoughEnergyAbility extends Ability {
                                 .damage(strong ? cfg.roughStompDamage * 2 : cfg.roughStompDamage)
                                 .tag(AttackTag.TECHNIQUE, AttackTag.MELEE, AttackTag.HEAVY).origin(at)
                                 .knockback(Knockback.set(new Vec3(0, strong ? 1.0 : 0.8, 0))).hitstun(20)
-                                .status(CombatStatus.LAUNCHED, 20).guardDamage(3).fx("rough_hit", strong ? 1.4f : 1f);
+                                .status(CombatStatus.LAUNCHED, 20).guardDamage(3).fx("rough_hit", strong ? 1.4f : 1f).wave("hakari.rough_stomp");
                         if (strong) b.tag(AttackTag.UNBLOCKABLE);
                         HakariCombat.hitAll(b.build(), HitboxQuery.targets(user, HitShape.sphere(at.add(0, 0.6, 0), cfg.roughStompRadius), 0.3, false));
                         Fx.play(level, "rough_stomp", at.add(0, 0.1, 0), Vec3.ZERO, strong ? 1.5f : 1f, user.getId());

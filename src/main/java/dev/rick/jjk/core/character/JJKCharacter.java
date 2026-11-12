@@ -89,6 +89,11 @@ public abstract class JJKCharacter {
 
     public abstract MeleeMoveset melee();
 
+    /** The clip played as this character's domain opens (the neutral {@code domain_release} unless the character has its own). */
+    public String domainOpeningClip() {
+        return "domain_release";
+    }
+
     /** The melee this caster fights with right now (a character whose basic attacks change while awakened overrides it). */
     public MeleeMoveset melee(AbilityCaster caster) {
         return melee();

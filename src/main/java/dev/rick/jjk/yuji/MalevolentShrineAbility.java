@@ -68,7 +68,7 @@ public final class MalevolentShrineAbility extends Ability implements dev.rick.j
                 Motion.set(user, new Vec3(0, Math.min(0, user.getDeltaMovement().y) * 0.3, 0));
                 if (age >= YujiCombat.cfg().shrineStartup) {
                     expanded = DomainManager.expand(user, MalevolentShrine.INSTANCE) != null;
-                    Anim.play(user, "domain_release");
+                    Anim.play(user, "shrine_domain_release");
                     finish();
                 }
             }
