@@ -1,23 +1,15 @@
 {
-  "name": "yuta_steel_jab",
-  "reference": "MetalArm.gif (JJS Steel Arm M1s)",
-  "duration": 260,
-  "layer": "UPPER_BODY",
-  "blendIn": 20,
-  "blendOut": 90,
-  "priority": "ATTACK",
-  "keys": [
-    {"t": 0, "bones": {
-        "chest": {"rot": [4, 20, 0]},
-        "rightArm": {"rot": [-60, -20, 16]},
-        "rightForearm": {"rot": [-90, 0, 0]}}},
-    {"t": 60, "ease": "EASE_IN", "marker": "impact", "bones": {
-        "chest": {"rot": [6, -14, 0]},
-        "rightArm": {"rot": [-94, 2, 2]},
-        "rightForearm": {"rot": [-3, 0, 0]}}},
-    {"t": 260, "ease": "EASE_OUT", "bones": {
-        "chest": {"rot": [4, 16, 0]},
-        "rightArm": {"rot": [-56, -18, 14]},
-        "rightForearm": {"rot": [-78, 0, 0]}}}
-  ]
+ "name": "yuta_steel_jab",
+ "duration": 260,
+ "blendIn": 20,
+ "blendOut": 90,
+ "priority": "ATTACK",
+ "layer": "UPPER_BODY",
+ "authored": "tools/anim_yuta.py",
+ "keys": [
+  {"t": 0, "bones": {"chest": [6.0, 20.0, 0.0], "rightArm": [50.7, -25.6, -0.4], "rightForearm": [-119.3, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0]}},
+  {"t": 60, "ease": "EASE_IN", "marker": "impact", "bones": {"chest": [8.0, -20.0, 0.0], "rightArm": [-68.2, -9.1, -58.6], "rightForearm": [0.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0]}},
+  {"t": 110, "ease": "EASE_OUT", "bones": {"chest": [8.0, -24.0, 0.0], "rightArm": [-67.5, -14.0, -49.6], "rightForearm": [-2.4, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0]}},
+  {"t": 260, "ease": "EASE_IN_OUT", "bones": {"chest": [6.0, 12.0, 0.0], "rightArm": [-3.2, -31.5, 5.4], "rightForearm": [-102.7, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0]}}
+ ]
 }

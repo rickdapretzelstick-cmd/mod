@@ -1,9 +1,9 @@
 {
  "name": "hakari_air_3",
  "duration": 500,
- "priority": "ATTACK",
  "blendIn": 50,
  "blendOut": 150,
+ "priority": "ATTACK",
  "authored": "tools/anim_hakari.py",
  "keys": [
   {"t": 0, "bones": {"root": {"pos": [0.0, 0.6, 0.0]}, "hips": [8.0, 12.0, 0.0], "chest": [8.0, 8.0, 0.0], "head": [-14.7, -14.6, 3.5], "rightArm": [3.6, -25.3, 2.1], "rightForearm": [-73.3, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-15.1, 23.6, -6.5], "leftForearm": [-68.5, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-24.0, 0.0, 8.0], "rightShin": [60.0, 0.0, 0.0], "rightFoot": [24.0, 0.0, 0.0], "leftThigh": [-50.0, 0.0, -8.0], "leftShin": [80.0, 0.0, 0.0], "leftFoot": [24.0, 0.0, 0.0]}},

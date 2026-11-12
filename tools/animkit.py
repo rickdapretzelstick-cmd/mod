@@ -163,7 +163,7 @@ def _ik(parent, bones, target, pole, arm):
 
 
 def P(root=(0, 0, 0), yaw=0.0, hips=(0, 0, 0), chest=(0, 0, 0), head=(0, 0, 0), follow=0.25,
-      ra=None, la=None, rl=None, ll=None, tilt=(0, 0), neck=None):
+      ra=None, la=None, rl=None, ll=None, tilt=(0, 0), neck=None, blade=None):
     """
     A whole-body pose. root: (right, up, forward) px. yaw: the whole body turned (root y; tilt = root x, z for flips).
     hips / chest: (lean, twist, roll), chest relative to the hips. head: (pitch, yaw, roll) of the gaze in the ground
@@ -212,6 +212,12 @@ def P(root=(0, 0, 0), yaw=0.0, hips=(0, 0, 0), chest=(0, 0, 0), head=(0, 0, 0), 
             out[b[1]] = {'rot': [bend, 0, 0]}
             out[b[2]] = {'rot': [wrist, 0, roll * s]}
             ik.add(b[0])
+    if blade is not None and 'rightArm' in out:
+        # A held blade points out of the fist along the hand's forward: aim it (degrees up, degrees to his right, roll).
+        fw = w['chest'] @ _T(_local('rightArm')) @ _rot(out['rightArm']['rot']) @ _T(_local('rightForearm')) @ _rot(out['rightForearm']['rot'])
+        want_b = _rot([-blade[0], blade[1], blade[2] if len(blade) > 2 else 0.0])[:3, :3]
+        out['rightHand'] = {'rot': _euler(fw[:3, :3].T @ want_b)}
+        ik.add('rightHand')
     for side, spec in (('right', rl), ('left', ll)):
         s = 1 if side == 'right' else -1
         b = LEG[side]
@@ -372,7 +378,7 @@ class Clip:
             for c, v in ch.items():
                 if c == 'rot':
                     v = list(v)
-                    if b in pose.get('_ik', ()) and b in self.last:
+                    if b in self.last and (b in pose.get('_ik', ()) or b not in ('root', 'hips')):
                         v = _near(v, self.last[b])
                     self.last[b] = v
                     d['rot'] = [round(x, 1) + 0.0 for x in v]

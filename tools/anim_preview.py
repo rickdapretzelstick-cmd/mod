@@ -362,8 +362,11 @@ def draw(draw_ctx, world, ox, oy, yaw_deg, scale=5.0, pitch_deg=10):
     view = rot_zyx(0, a, 0)
     tilt = rot_zyx(0, 0, -pch)
     polys = []
-    for b, (lo, hi, col) in BOX.items():
-        m = tilt @ view @ world[b]
+    boxes = dict(BOX)
+    if os.environ.get('BLADE'):
+        boxes['blade'] = ((-0.4, 1.2, -15), (0.4, 2.0, -1.5), (225, 225, 235))
+    for b, (lo, hi, col) in boxes.items():
+        m = tilt @ view @ world['rightHand' if b == 'blade' else b]
         corners = []
         for i in range(8):
             p = np.array([hi[0] if i & 4 else lo[0], hi[1] if i & 2 else lo[1], hi[2] if i & 1 else lo[2], 1.0])

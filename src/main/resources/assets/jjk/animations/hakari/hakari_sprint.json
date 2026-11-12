@@ -1,9 +1,9 @@
 {
  "name": "hakari_sprint",
  "duration": 800,
- "priority": "MOVEMENT",
  "blendIn": 50,
  "blendOut": 200,
+ "priority": "MOVEMENT",
  "authored": "tools/anim_hakari.py",
  "keys": [
   {"t": 0, "bones": {"root": {"pos": [0.0, -1.6, 0.0]}, "hips": [28.0, 8.0, 0.0], "chest": [12.0, -14.0, 0.0], "head": [-31.5, 5.7, 1.7], "rightArm": [40.0, 0.0, 10.0], "rightForearm": [-80.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-50.0, 0.0, -8.0], "leftForearm": [-84.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-52.0, 0.0, 3.0], "rightShin": [40.0, 0.0, 0.0], "rightFoot": [10.0, 0.0, 0.0], "leftThigh": [40.0, 0.0, -3.0], "leftShin": [70.0, 0.0, 0.0], "leftFoot": [20.0, 0.0, 0.0]}},

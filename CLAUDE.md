@@ -39,6 +39,10 @@ A build needs Java 25 and network access to: `maven.fabricmc.net`, `libraries.mi
 - Generated assets (icons, portraits, animation clips, sounds) come from scripts in `tools/`; change the script and
   re-run it rather than hand-editing outputs.
 
+## Work in progress
+- Animation overhaul (branch `claude/jjk-minecraft-animation-overhaul-0eod07`): read `docs/ANIMATION_OVERHAUL.md` first. Player
+  clips are written by `tools/anim_*.py` on `tools/animkit.py`; change the script and re-run it, never the JSON.
+
 ## Never commit
 `*.mp4`, `*.m4a`, `__pycache__/`, `build/`, `run/`, secrets, or a trimmed gametest `fabric.mod.json`.
 

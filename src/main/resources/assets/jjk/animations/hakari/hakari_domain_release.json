@@ -1,9 +1,9 @@
 {
  "name": "hakari_domain_release",
  "duration": 1200,
- "priority": "AWAKENING",
  "blendIn": 120,
  "blendOut": 300,
+ "priority": "AWAKENING",
  "authored": "tools/anim_hakari.py",
  "keys": [
   {"t": 0, "bones": {"root": {"pos": [0.0, -0.8, 0.0]}, "hips": [-4.0, 8.0, 0.0], "chest": [-6.0, 6.0, 0.0], "head": [-1.2, -9.5, -7.6], "rightArm": [-45.0, 20.8, 95.7], "rightForearm": [-107.9, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-10.0, 0.0, -40.0], "leftForearm": [-30.0, 0.0, 0.0], "leftHand": [-30.0, 0.0, 0.0], "rightThigh": [-1.6, 18.2, 15.7], "rightShin": [36.5, 0.0, 0.0], "rightFoot": [-15.6, -9.4, -10.6], "leftThigh": [-21.7, -17.6, -7.5], "leftShin": [37.4, 0.0, 0.0], "leftFoot": [-9.5, -2.8, 6.5]}},
