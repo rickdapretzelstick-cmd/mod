@@ -276,17 +276,21 @@ def _near(a, ref):
     return [x + 360.0 * round((r - x) / 360.0) for x, r in zip(a, ref)]
 
 
+def _canonical(v):
+    """The canonical Euler form of a limb rotation: the middle angle in [-90, 90], every angle in (-180, 180]."""
+    x, y, z = ((a + 180.0) % 360.0 - 180.0 for a in v)
+    if abs(y) > 90.0:
+        x, y, z = (x + 180.0 + 180.0) % 360.0 - 180.0, 180.0 - y, (z + 180.0 + 180.0) % 360.0 - 180.0
+        y = (y + 180.0) % 360.0 - 180.0
+    return [x, y, z]
+
+
 def _continuous(v, ref):
     """
-    v, or its twin (x+180, 180-y, z+180: the same rotation, the other Euler solution), whichever sits nearest ref once
-    each is shifted by whole turns. An IK answer that lands on the far solution would otherwise turn the joint the
-    long way round on its way to the next key (an arm spinning through its own shoulder at the end of a move).
+    A limb rotation written for the clip: canonical, and shifted by whole turns to sit nearest ref. The client blends
+    limb rotations the short way round in any case; this keeps the files readable and the previewer honest.
     """
-    a = _near(v, ref)
-    b = _near([v[0] + 180.0, 180.0 - v[1], v[2] + 180.0], ref)
-    da = max(abs(x - r) for x, r in zip(a, ref))
-    db = max(abs(x - r) for x, r in zip(b, ref))
-    return b if db + 1e-6 < da else a
+    return _near(_canonical(v), ref)
 
 
 def lerp(p, q, f):
@@ -391,8 +395,8 @@ class Clip:
             for c, v in ch.items():
                 if c == 'rot':
                     v = list(v)
-                    if b in self.last and (b in pose.get('_ik', ()) or b not in ('root', 'hips')):
-                        v = _continuous(v, self.last[b])
+                    if b not in ('root', 'hips'):
+                        v = _continuous(v, self.last[b]) if b in self.last else _canonical(v)
                     self.last[b] = v
                     d['rot'] = [round(x, 1) + 0.0 for x in v]
                 elif c == 'pos':

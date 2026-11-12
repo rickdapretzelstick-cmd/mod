@@ -40,6 +40,11 @@ public enum Bone {
 
     public static final Bone[] ALL = values();
     public static final int COUNT = ALL.length;
+    /** Root and hips carry authored spins and flips (whole turns); every other bone's rotation blends the short way round. */
+    public boolean shortestPath() {
+        return this != ROOT && this != HIPS;
+    }
+
     private static final Map<String, Bone> BY_NAME = new HashMap<>();
 
     public final String id;

@@ -9,8 +9,10 @@ Branch: `claude/jjk-minecraft-animation-overhaul-0eod07`. Not merged into the sh
 
 - `./gradlew build` on JDK 25 is green: compiles, **all 227 server gametests pass** (two new: `ImpactWaveTests`).
 - `python3 tools/anim_preview.py --check`: 372 clips, 0 errors.
-- Polish pass (second commit): animkit now picks the Euler twin nearest the previous key for every IK-solved bone, so no
-  joint turns the long way round at the end of a move (93 clips changed by it); Sukuna's Rush leap and landing rebuilt;
+- Polish pass (second and third commits): limb rotations are canonical Euler angles (middle angle in [-90, 90]) in the
+  files, and the client blends every limb rotation the short way round, between keys and between clips (root and hips
+  keep their authored spins). That was the cause of arms spinning at the start and end of moves (Divergent Fist's punch
+  on video): the IK solver's far Euler twin interpolating the long way; Sukuna's Rush leap and landing rebuilt;
   Rika's secondary motion deepened (neck whip, jaw, weight sink, tail crack-through); Appetizer's last stage is a beam
   from the cannon swept from the floor to the sky (`ryu_appetizer` keyed to it); the Black Flash is lightning-first;
   the World Cutting Slash is a seam opened in space; Red's point-blank variant shows the whole Red; multi-hit specials

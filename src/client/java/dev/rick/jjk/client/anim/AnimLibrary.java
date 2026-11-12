@@ -273,12 +273,14 @@ public final class AnimLibrary {
                 float[] times = new float[dedup.size()];
                 float[][] values = new float[dedup.size()][];
                 Easing[] eases = new Easing[dedup.size()];
+                boolean angular = c == Clip.ROT && player && Bone.byName(be.getKey()).shortestPath();
                 for (int i = 0; i < dedup.size(); i++) {
                     times[i] = dedup.get(i).time;
                     values[i] = c == Clip.ROT ? toRadians(dedup.get(i).value) : dedup.get(i).value;
+                    if (angular) values[i] = Track.canonical(values[i]);
                     eases[i] = dedup.get(i).ease;
                 }
-                dst[c] = new Track(times, values, eases);
+                dst[c] = new Track(times, values, eases, angular);
             }
         }
         float duration = o.has("endFrame") ? (o.get("endFrame").getAsFloat() - refStart) * frameMs : time(o, "duration", "frames", frameMs, last);

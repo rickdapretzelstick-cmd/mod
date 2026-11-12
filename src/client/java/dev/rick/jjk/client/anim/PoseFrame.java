@@ -102,7 +102,14 @@ public final class PoseFrame {
         }
         // lerp(lerp(base, V, W), v, a) == lerp(base, V', W') with W' = 1 - (1-W)(1-a).
         float w2 = 1 - (1 - w) * (1 - a);
-        for (int k = 0; k < 3; k++) dst[k] = (dst[k] * w * (1 - a) + v[k] * a) / w2;
+        if (channel == Clip.ROT && b.shortestPath()) {
+            // A limb's rotation crosses from one clip to the next the short way round (two clips may write the same
+            // rotation as angles a whole turn apart; the long way is an arm spinning through its own shoulder).
+            float f = a / w2;
+            for (int k = 0; k < 3; k++) dst[k] = Track.lerpAngle(dst[k], v[k], f);
+        } else {
+            for (int k = 0; k < 3; k++) dst[k] = (dst[k] * w * (1 - a) + v[k] * a) / w2;
+        }
         weight[channel][i] = w2;
     }
 }
