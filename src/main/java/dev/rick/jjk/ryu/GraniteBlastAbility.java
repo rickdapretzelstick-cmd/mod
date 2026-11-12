@@ -143,7 +143,7 @@ public final class GraniteBlastAbility extends Ability {
             } else {
                 b.knockback(Knockback.HOLD).hitstun(RyuCombat.cfg().graniteStun);
             }
-            HitResult r = HakariCombat.hit(b.build(), t);
+            HitResult r = HakariCombat.hit(b.wave(charged ? "ryu.granite_held" : "ryu.granite").build(), t);
             if (r.connected() && t.level() == level) Fx.play(level, "granite_hit", t.getBoundingBox().getCenter(), dir, charged ? 1.3f : 1f, user.getId());
         }
 

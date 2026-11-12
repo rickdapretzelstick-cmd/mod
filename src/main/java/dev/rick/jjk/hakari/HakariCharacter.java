@@ -33,7 +33,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class HakariCharacter extends JJKCharacter {
     public static final String ID = "hakari";
-    private final MeleeMoveset melee = new MeleeMoveset("", "", 1.1f, 1.0f, 1.0f);
+    private final MeleeMoveset melee = new MeleeMoveset("hakari_", "", 1.1f, 1.0f, 1.0f, "hakari");
 
     public HakariCharacter() {
         super(ID);
@@ -81,6 +81,11 @@ public final class HakariCharacter extends JJKCharacter {
     @Override
     public float regenPerSecond() {
         return JJKConfig.get().hakari.regenPerSecond;
+    }
+
+    @Override
+    public String domainOpeningClip() {
+        return "hakari_domain_release";
     }
 
     @Override

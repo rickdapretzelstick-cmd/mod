@@ -71,7 +71,7 @@ public final class EnergySurgeAbility extends Ability {
                 if (vanishAt < 0) {
                     HakariCombat.drive(user, dashDir, 1.2);
                     Hit pass = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.surgeDashDamage).tag(AttackTag.MELEE, AttackTag.TECHNIQUE, AttackTag.UNBLOCKABLE)
-                            .origin(user.getEyePosition()).knockback(Knockback.directional(new Vec3(0, 1, 0), 0.5, 0.55)).hitstun(26)
+                            .origin(user.getEyePosition()).knockback(Knockback.directional(new Vec3(0, 1, 0), 0.5, 0.55)).hitstun(26).sparing()
                             .status(CombatStatus.LAUNCHED, 20).fx("surge_hit", 1f).build();
                     for (LivingEntity t : HakariCombat.front(user, 1.6, 1.8, 2.2)) {
                         if (HakariCombat.hit(pass, t).connected() && (target == null || !target.isAlive())) target = t;

@@ -86,7 +86,7 @@ public final class IdleDeathGambleAbility extends Ability implements DomainAbili
                 if (age >= JJKConfig.get().hakari.domainStartup) {
                     expanded = DomainManager.expand(user, IdleDeathGamble.INSTANCE) != null;
                     if (expanded) user.heal(user.getMaxHealth() * JJKConfig.get().hakari.domainHealShare);
-                    Anim.play(user, "domain_release");
+                    Anim.play(user, "hakari_domain_release");
                     finish();
                 }
             }

@@ -217,7 +217,7 @@ public final class MeleeSystem {
                 (u, t) -> base(u, "light", set, cfg.lightDamage)
                         .knockback(Combat.isAirborne(t) ? Knockback.set(horizontalLook(u).scale(0.22).add(0, 0.16, 0))
                                 : Knockback.directional(u.getLookAngle(), 0.24 * set.knockbackMultiplier(), 0))
-                        .hitstun(cfg.lightHitstun).fx(set.fx("hit_light"), 1f)
+                        .hitstun(cfg.lightHitstun).fx(set.fx("hit_light"), 1f).wave(set.wave("light"))
                         .status(CombatStatus.LAUNCHED, Combat.isAirborne(t) ? 12 : 0).build(),
                 null, (u, r) -> keepClose(u, r.target()));
     }
@@ -227,7 +227,7 @@ public final class MeleeSystem {
                 u -> frontBox(u, cfg.lightRange * set.rangeMultiplier(), cfg.lightWidth + 0.3, 2.2),
                 (u, t) -> base(u, "air_light", set, cfg.lightDamage)
                         .knockback(Knockback.NONE)
-                        .hitstun(cfg.lightHitstun).status(CombatStatus.LAUNCHED, 16).fx(set.fx("hit_light"), 1f).build(),
+                        .hitstun(cfg.lightHitstun).status(CombatStatus.LAUNCHED, 16).fx(set.fx("hit_light"), 1f).wave(set.wave("air")).build(),
                 u -> Statuses.apply(u, CombatStatus.HOVER, 10),
                 (u, r) -> {
                     Statuses.apply(u, CombatStatus.HOVER, 12);
@@ -241,7 +241,7 @@ public final class MeleeSystem {
                 u -> frontBox(u, cfg.lightRange * set.rangeMultiplier() + 0.3, cfg.lightWidth + 0.2, 1.8),
                 (u, t) -> base(u, "finisher", set, cfg.lightFinisherDamage)
                         .knockback(Knockback.directional(u.getLookAngle(), cfg.finisherKnockback * set.knockbackMultiplier(), 0.38))
-                        .hitstun(cfg.lightHitstun + 8).status(CombatStatus.LAUNCHED, 14).fx(set.fx("hit_heavy"), 1.3f).build(),
+                        .hitstun(cfg.lightHitstun + 8).status(CombatStatus.LAUNCHED, 14).fx(set.fx("hit_heavy"), 1.3f).wave(set.wave("finisher")).build(),
                 null, (u, r) -> shake(u, r, 0.5f));
     }
 
@@ -250,7 +250,7 @@ public final class MeleeSystem {
                 u -> frontBox(u, cfg.lightRange * set.rangeMultiplier(), cfg.lightWidth + 0.2, 2.4),
                 (u, t) -> base(u, "uppercut", set, cfg.lightFinisherDamage)
                         .knockback(Knockback.set(horizontalLook(u).scale(0.12).add(0, cfg.uppercutLaunch * set.knockbackMultiplier(), 0)))
-                        .hitstun(cfg.lightHitstun + 14).status(CombatStatus.LAUNCHED, 34).fx(set.fx("hit_launch"), 1.3f).build(),
+                        .hitstun(cfg.lightHitstun + 14).status(CombatStatus.LAUNCHED, 34).fx(set.fx("hit_launch"), 1.3f).wave(set.wave("uppercut")).build(),
                 null, (u, r) -> shake(u, r, 0.45f));
     }
 
@@ -259,7 +259,7 @@ public final class MeleeSystem {
                 u -> frontBox(u, cfg.lightRange * set.rangeMultiplier() + 0.4, cfg.lightWidth + 0.6, 3.0),
                 (u, t) -> base(u, "downslam", set, cfg.lightFinisherDamage)
                         .knockback(Knockback.set(horizontalLook(u).scale(0.25).add(0, -cfg.downslamSpeed, 0)))
-                        .hitstun(cfg.lightHitstun + 10).status(CombatStatus.SPIKED, 40).fx(set.fx("hit_slam"), 1.4f).build(),
+                        .hitstun(cfg.lightHitstun + 10).status(CombatStatus.SPIKED, 40).fx(set.fx("hit_slam"), 1.4f).wave(set.wave("downslam")).build(),
                 u -> Statuses.apply(u, CombatStatus.HOVER, 8),
                 (u, r) -> {
                     Statuses.apply(u, CombatStatus.HOVER, 10);
@@ -275,7 +275,7 @@ public final class MeleeSystem {
                 },
                 (u, t) -> base(u, "sprint_attack", set, cfg.sprintAttackDamage)
                         .knockback(Knockback.directional(u.getLookAngle(), 0.55 * set.knockbackMultiplier(), 0.12))
-                        .hitstun(cfg.lightHitstun + 4).fx(set.fx("hit_heavy"), 1.1f).build(),
+                        .hitstun(cfg.lightHitstun + 4).fx(set.fx("hit_heavy"), 1.1f).wave(set.wave("sprint")).build(),
                 u -> Motion.set(u, horizontalLook(u).scale(cfg.sprintLunge).add(0, Math.max(0, u.getDeltaMovement().y), 0)),
                 (u, r) -> Motion.set(u, u.getDeltaMovement().multiply(0.25, 1, 0.25)));
     }
@@ -285,7 +285,7 @@ public final class MeleeSystem {
                 u -> HitShape.sphere(u.position().add(horizontalLook(u).scale(1.4)), 1.9),
                 (u, t) -> base(u, "ground_attack", set, cfg.groundAttackDamage).tag(AttackTag.OTG)
                         .knockback(Knockback.set(horizontalLook(u).scale(0.1).add(0, 0.55, 0)))
-                        .hitstun(cfg.lightHitstun + 6).status(CombatStatus.LAUNCHED, 18).fx(set.fx("hit_slam"), 1.1f).build(),
+                        .hitstun(cfg.lightHitstun + 6).status(CombatStatus.LAUNCHED, 18).fx(set.fx("hit_slam"), 1.1f).wave(set.wave("stomp")).build(),
                 null, (u, r) -> shake(u, r, 0.35f));
     }
 
@@ -295,7 +295,8 @@ public final class MeleeSystem {
                 u -> frontBox(u, cfg.lightRange * set.rangeMultiplier() + 0.6, cfg.lightWidth + 0.5, 2.0),
                 (u, t) -> base(u, "heavy", set, damage).tag(AttackTag.HEAVY, AttackTag.GUARD_BREAK).guardDamage(99)
                         .knockback(Knockback.directional(u.getLookAngle(), cfg.heavyKnockback * (0.7 + 0.3 * charge) * set.knockbackMultiplier(), 0.42))
-                        .hitstun(cfg.lightHitstun + 12).status(CombatStatus.LAUNCHED, 16).fx(set.fx("hit_heavy"), 1.4f + charge * 0.6f).build(),
+                        .hitstun(cfg.lightHitstun + 12).status(CombatStatus.LAUNCHED, 16).fx(set.fx("hit_heavy"), 1.4f + charge * 0.6f)
+                        .wave(set.wave(charge >= 1f ? "heavy_full" : "heavy")).build(),
                 u -> Motion.set(u, horizontalLook(u).scale(0.55).add(0, Math.max(0, u.getDeltaMovement().y), 0)),
                 (u, r) -> shake(u, r, 0.6f + charge * 0.4f));
     }

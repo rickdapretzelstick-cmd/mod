@@ -77,6 +77,11 @@ public final class HitResolver {
         var tc = dev.rick.jjk.core.ability.Casters.getOrNull(target);
         if (tc != null && damage > 0) damage = dev.rick.jjk.ryu.RyuCharacter.absorb(tc, damage);
 
+        if (hit.sparing && damage > 0) {
+            // An earlier hit of a multi-hit move: the kill is the final hit's. Nothing is skipped, only the last point.
+            float left = target.getHealth() + target.getAbsorptionAmount();
+            damage = Math.min(damage, Math.max(0f, left - 1f));
+        }
         float dealt = 0;
         if (damage > 0) {
             DamageSource src = ModDamageTypes.source(level, hit.damageType, hit.direct != null ? hit.direct : hit.attacker, hit.attacker);
@@ -92,6 +97,7 @@ public final class HitResolver {
             if (push != null) {
                 Motion.set(target, new Vec3(push.x * 0.25, Math.min(push.y, 0.1) * 0.25, push.z * 0.25));
             }
+            dev.rick.jjk.core.fx.ImpactWave.fromHit(level, hit, target, hitPoint, outcome);
             return finish(new HitResult(hit, target, outcome, dealt, prior));
         }
 
@@ -110,6 +116,7 @@ public final class HitResolver {
 
         Vec3 dir = hitPoint.subtract(hit.origin);
         Fx.play(level, hit.impactFx, hitPoint, dir.lengthSqr() > 1e-6 ? dir.normalize() : Vec3.ZERO, hit.impactScale, target.getId());
+        dev.rick.jjk.core.fx.ImpactWave.fromHit(level, hit, target, hitPoint, outcome);
 
         if (hit.attacker instanceof ServerPlayer sp) {
             ServerPlayNetworking.send(sp, new ComboPayload(target.getId(), count, state.comboDamage(), outcome.ordinal()));

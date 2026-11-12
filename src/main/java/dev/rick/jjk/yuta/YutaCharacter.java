@@ -43,9 +43,9 @@ public final class YutaCharacter extends JJKCharacter {
     private static final Identifier HEALTH_ID = JJK.id("cursed_partners_health");
     private static boolean hooked;
 
-    private final MeleeMoveset katana = new MeleeMoveset("yuta_", "yuta_", 1.0f, 1.0f, 1.0f, 1.0f, true, false, YutaCombat::katanaSwing);
+    private final MeleeMoveset katana = new MeleeMoveset("yuta_", "yuta_", 1.0f, 1.0f, 1.0f, 1.0f, true, false, YutaCombat::katanaSwing, 4, null, "yuta");
     /** Steel Arm: the extra jabs don't change the string's total damage. */
-    private final MeleeMoveset steel = new MeleeMoveset("yuta_steel_", "yuta_steel_", 0.89f, 1.0f, 1.0f, 1.0f, true, false, YutaCombat::steelSwing);
+    private final MeleeMoveset steel = new MeleeMoveset("yuta_steel_", "yuta_steel_", 0.89f, 1.0f, 1.0f, 1.0f, true, false, YutaCombat::steelSwing, 4, null, "steel");
 
     public YutaCharacter() {
         super(ID);
@@ -126,6 +126,11 @@ public final class YutaCharacter extends JJKCharacter {
     @Override
     public float regenPerSecond() {
         return JJKConfig.get().yuta.regenPerSecond;
+    }
+
+    @Override
+    public String domainOpeningClip() {
+        return "yuta_domain_release";
     }
 
     @Override

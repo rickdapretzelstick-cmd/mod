@@ -121,7 +121,7 @@ public final class CursedStrikesAbility extends Ability {
             if (!met.isEmpty()) {
                 LivingEntity t = met.getFirst();
                 HitResult r = HakariCombat.hit(YujiCombat.strike(user, ID, cfg.strikesGrabDamage, false).tag(AttackTag.BLOCKABLE_360)
-                        .knockback(Knockback.HOLD).hitstun(40).fx("hit_light", 1f).build(), t);
+                        .knockback(Knockback.HOLD).hitstun(40).fx("hit_light", 1f).sparing().build(), t);
                 if (r.connected()) {
                     victim = t;
                     grabbedAt = age;
@@ -158,7 +158,7 @@ public final class CursedStrikesAbility extends Ability {
             Statuses.apply(victim, CombatStatus.HITSTUN, 8);
             if (t < punches) {
                 if (t > 0 && t % cfg.strikesPunchInterval == 0) {
-                    HakariCombat.hit(YujiCombat.strike(user, ID, cfg.strikesPunchDamage, true).knockback(Knockback.HOLD).hitstun(12)
+                    HakariCombat.hit(YujiCombat.strike(user, ID, cfg.strikesPunchDamage, true).knockback(Knockback.HOLD).hitstun(12).sparing()
                             .fx("cursed_strikes_punch", 1f).build(), victim);
                 }
                 return;

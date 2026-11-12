@@ -103,6 +103,11 @@ public final class ClientFx {
             BladeFx.play(p, mc, level, pos, dir, s, mine, now);
             return;
         }
+        // Impact waves: a blow's shock, drawn from its profile (core/fx/ImpactWaves).
+        if (p.id().startsWith(dev.rick.jjk.core.fx.ImpactWave.PREFIX)) {
+            ImpactWaveFx.play(p, mc, level, pos, dir, s, mine, now);
+            return;
+        }
         // The impact kit: impact frames, slowed time, ground cracks, dust rings and shoves.
         if (p.id().startsWith("impact_")) {
             ImpactFx.play(p, mc, level, pos, dir, s, mine, now);

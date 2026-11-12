@@ -75,7 +75,7 @@ public final class TwofoldKickAbility extends Ability {
                     }
                     HitResult r = HitResolver.resolve(GojoCombat.strike(user, ID, cfg.twofoldFirstDamage, false)
                             .knockback(Knockback.set(new Vec3(0, 0.75, 0))).hitstun(cfg.twofoldAnchorTicks + 14)
-                            .status(CombatStatus.LAUNCHED, 20).fx("hit_launch", 1f).build(), t);
+                            .status(CombatStatus.LAUNCHED, 20).fx("hit_launch", 1f).wave("gojo.twofold_1").sparing().build(), t);
                     if (!r.connected() || r.outcome() == HitResult.Outcome.BLOCKED) {
                         endAt = age + 12; // blocked: no second kick
                         return;
@@ -104,7 +104,7 @@ public final class TwofoldKickAbility extends Ability {
                     Fx.play(level, "sfx:twofold_hit2", victim.getBoundingBox().getCenter(), Vec3.ZERO, 1f, user.getId());
                     HitResolver.resolve(GojoCombat.strike(user, ID, cfg.twofoldSecondDamage, true)
                             .knockback(Knockback.set(new Vec3(0, 1.15, 0).add(HakariCombat.flat(user).scale(0.2)))).hitstun(30)
-                            .status(CombatStatus.LAUNCHED, 30).fx("hit_launch", 1.2f).build(), victim);
+                            .status(CombatStatus.LAUNCHED, 30).fx("hit_launch", 1.2f).wave("gojo.twofold_2").build(), victim);
                     Fx.shake(level, victim.position(), 16, 0.5f, 8);
                     if (GojoCombat.finishable(victim)) {
                         // The finisher: held up there, and a point-blank Red.

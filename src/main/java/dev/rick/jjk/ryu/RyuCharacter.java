@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class RyuCharacter extends JJKCharacter {
     public static final String ID = "ryu";
-    private final MeleeMoveset melee = new MeleeMoveset("", "", 1.0f, 1.05f, 1.0f, 1.0f, true, false, null, 3, RyuCharacter::rayFinisher);
+    private final MeleeMoveset melee = new MeleeMoveset("ryu_", "", 1.0f, 1.05f, 1.0f, 1.0f, true, false, null, 3, RyuCharacter::rayFinisher, "ryu");
 
     public RyuCharacter() {
         super(ID);
@@ -121,7 +121,7 @@ public final class RyuCharacter extends JJKCharacter {
                 u -> HitShape.orientedBox(RyuCombat.cannon(u).subtract(u.getLookAngle().scale(0.6)), u.getLookAngle(), cfg.m1RayRange + 0.6, 1.1, 1.1),
                 (u, t) -> RyuCombat.blast(u, "ryu_m1_ray", cfg.m1RayDamage, RyuCombat.cannon(u))
                         .knockback(Knockback.directional(u.getLookAngle(), 0.95, 0.35)).hitstun(20).status(CombatStatus.LAUNCHED, 14)
-                        .fx("ryu_ray_hit", 1f).build(),
+                        .fx("ryu_ray_hit", 1f).wave("ryu.ray").build(),
                 u -> {
                     RyuCombat.addHeat(u, cfg.heatM1);
                     if (u.level() instanceof ServerLevel level) {

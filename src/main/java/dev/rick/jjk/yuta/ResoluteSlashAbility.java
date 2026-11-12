@@ -183,7 +183,7 @@ public final class ResoluteSlashAbility extends Ability {
             }
             YutaCombat.setTarget(user, t);
             HakariCombat.hit(YutaCombat.strike(user, ID, cfg.resoluteDamage, true)
-                    .knockback(Knockback.directional(HakariCombat.flat(user), 0.6, 0.25)).hitstun(22).fx("resolute_hit", 1.1f).build(), t);
+                    .knockback(Knockback.directional(HakariCombat.flat(user), 0.6, 0.25)).hitstun(22).fx("resolute_hit", 1.1f).wave("yuta.resolute").build(), t);
         }
 
         private void flash(JJKConfig.Yuta cfg) {

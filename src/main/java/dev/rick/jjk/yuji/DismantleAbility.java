@@ -178,9 +178,11 @@ public final class DismantleAbility extends Ability {
                     return;
                 }
                 float per = (guarding ? cfg.dismantleBlockedDamage / Math.max(0.05f, JJKConfig.get().guard.blockedTechniqueDamageScale) : cfg.dismantleDamage) / cfg.dismantleSlashes;
-                HakariCombat.hit(YujiCombat.slash(user, ID, per).tag(AttackTag.BLOCKABLE_360)
+                var slashHit = YujiCombat.slash(user, ID, per).tag(AttackTag.BLOCKABLE_360)
                         .knockback(last ? Knockback.directional(HakariCombat.flat(user), 0.7, 0.25) : Knockback.HOLD)
-                        .hitstun(last ? 22 : 10).fx("dismantle_hit", 1f).build(), target);
+                        .hitstun(last ? 22 : 10).fx("dismantle_hit", 1f);
+                if (!last) slashHit.sparing();
+                HakariCombat.hit(slashHit.build(), target);
                 Fx.play(level, "dismantle_slash", at, HakariCombat.flat(user), slashes, user.getId());
             }
             if (slashes >= cfg.dismantleSlashes) endAt = age + 6;

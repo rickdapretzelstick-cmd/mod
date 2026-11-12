@@ -1,16 +1,17 @@
 {
-  "name": "open_draw",
-  "duration": 500,
-  "hold": true,
-  "blendIn": 25, "blendOut": 100,
-  "priority": "SPECIAL",
-  "keys": [
-    {"t": 500, "bones": {
-        "head": {"rot": [0, -40, 0]},
-        "chest": {"rot": [0, 40, 0]},
-        "rightArm": {"rot": [-92, 70, 10]},
-        "leftArm": {"rot": [-92, 5, 0]},
-        "rightThigh": {"rot": [20, 0, 10]},
-        "leftThigh": {"rot": [-25, 0, -10]}}}
-  ]
+ "name": "open_draw",
+ "duration": 500,
+ "hold": true,
+ "blendIn": 25,
+ "blendOut": 100,
+ "priority": "SPECIAL",
+ "tremble": 0.5,
+ "authored": "tools/anim_yuji.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.0, -0.8, 0.0]}, "hips": [-5.0, 0.0, 0.0], "chest": [4.0, 0.0, 0.0], "head": [8.8, 0.0, 0.0], "rightArm": [-64.3, -33.3, -18.4], "rightForearm": [0.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-91.7, 45.2, -50.9], "leftForearm": [-15.6, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-8.9, 17.6, 7.2], "rightShin": [45.8, 0.0, 0.0], "rightFoot": [-29.8, -4.5, -3.5], "leftThigh": [-16.7, -17.3, -4.7], "leftShin": [45.8, 0.0, 0.0], "leftFoot": [-22.8, 2.7, 2.1]}},
+  {"t": 180, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.16, -1.2, -0.32]}, "hips": [-3.8, 22.4, 0.0], "chest": [0.8, 9.6, 0.0], "head": [13.6, -23.6, -8.8], "rightArm": [-113.0, -8.1, -24.8], "rightForearm": [-54.4, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-41.7, -16.7, -79.2], "leftForearm": [-9.4, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-17.3, 17.7, 8.8], "rightShin": [54.0, 0.0, 0.0], "rightFoot": [-31.7, -13.1, -0.1], "leftThigh": [-17.6, -17.8, -11.3], "leftShin": [51.5, 0.0, 0.0], "leftFoot": [-26.7, -6.6, 15.3]}},
+  {"t": 460, "ease": "EASE_IN_OUT", "bones": {"root": {"pos": [0.4, -1.8, -0.8]}, "hips": [-2.0, 56.0, 0.0], "rightThigh": [-29.8, 17.9, 11.2], "rightShin": [66.3, 0.0, 0.0], "rightFoot": [-34.4, -26.0, 5.0], "leftThigh": [-18.9, -18.5, -21.1], "leftShin": [60.1, 0.0, 0.0], "leftFoot": [-32.4, -20.5, 35.0]}},
+  {"t": 480, "ease": "EASE_IN_OUT", "bones": {"chest": [-4.0, 24.0, 0.0]}},
+  {"t": 500, "ease": "EASE_IN_OUT", "marker": "full draw", "bones": {"head": [21.0, -58.9, -22.0], "rightArm": [-186.1, 29.8, -34.5], "rightForearm": [-136.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-146.6, -70.4, 58.3], "leftForearm": [0.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0]}}
+ ]
 }

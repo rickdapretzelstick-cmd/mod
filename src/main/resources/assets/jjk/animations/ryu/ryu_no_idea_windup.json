@@ -1,133 +1,17 @@
 {
-  "name": "ryu_no_idea_windup",
-  "duration": 800,
-  "blendIn": 40,
-  "blendOut": 160,
-  "priority": "SPECIAL",
-  "hold": true,
-  "keys": [
-    {
-      "t": 0,
-      "bones": {
-        "head": {
-          "rot": [
-            4,
-            0,
-            0
-          ]
-        },
-        "chest": {
-          "rot": [
-            6,
-            10,
-            0
-          ]
-        },
-        "rightArm": {
-          "rot": [
-            -55,
-            -15,
-            14
-          ]
-        },
-        "leftArm": {
-          "rot": [
-            -70,
-            25,
-            -12
-          ]
-        },
-        "rightThigh": {
-          "rot": [
-            12,
-            0,
-            6
-          ]
-        },
-        "leftThigh": {
-          "rot": [
-            -14,
-            0,
-            -6
-          ]
-        },
-        "hips": {
-          "rot": [
-            4,
-            10,
-            0
-          ]
-        },
-        "root": {
-          "pos": [
-            0,
-            -1,
-            0
-          ]
-        }
-      }
-    },
-    {
-      "t": 800,
-      "bones": {
-        "head": {
-          "rot": [
-            6,
-            20,
-            0
-          ]
-        },
-        "chest": {
-          "rot": [
-            4,
-            46,
-            0
-          ]
-        },
-        "rightArm": {
-          "rot": [
-            40,
-            30,
-            40
-          ]
-        },
-        "leftArm": {
-          "rot": [
-            -85,
-            30,
-            -12
-          ]
-        },
-        "rightThigh": {
-          "rot": [
-            26,
-            0,
-            6
-          ]
-        },
-        "leftThigh": {
-          "rot": [
-            -30,
-            0,
-            -6
-          ]
-        },
-        "hips": {
-          "rot": [
-            8,
-            34,
-            0
-          ]
-        },
-        "root": {
-          "pos": [
-            0,
-            -4,
-            -2
-          ]
-        }
-      },
-      "ease": "EASE_OUT"
-    }
-  ]
+ "name": "ryu_no_idea_windup",
+ "duration": 800,
+ "hold": true,
+ "blendIn": 40,
+ "blendOut": 160,
+ "priority": "SPECIAL",
+ "tremble": 0.9,
+ "authored": "tools/anim_ryu.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.0, -0.8, 0.0]}, "hips": [3.0, 12.0, 0.0], "chest": [4.0, 8.0, 0.0], "head": [-8.6, -14.9, 1.6], "rightArm": [6.6, -17.9, 6.6], "rightForearm": [-61.9, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-8.3, 20.2, -5.9], "leftForearm": [-61.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-8.7, 18.1, 13.7], "rightShin": [36.2, 0.0, 0.0], "rightFoot": [-17.9, -13.2, -9.2], "leftThigh": [-27.7, -17.5, -6.7], "leftShin": [38.2, 0.0, 0.0], "leftFoot": [-11.3, -3.2, 8.0]}},
+  {"t": 270, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.98, -3.18, -1.96]}, "hips": [9.3, 37.2, 0.0], "rightThigh": [-46.0, 17.2, 4.3], "rightShin": [86.8, 0.0, 0.0], "rightFoot": [-35.9, -17.5, 15.9], "leftThigh": [-36.4, -17.6, -33.5], "leftShin": [51.3, 0.0, 0.0], "leftFoot": [-11.7, -17.0, 30.4]}},
+  {"t": 285, "ease": "EASE_OUT", "bones": {"chest": [9.6, 24.8, 2.8]}},
+  {"t": 300, "ease": "EASE_OUT", "bones": {"head": [-35.1, -40.6, 28.5], "rightArm": [107.8, -36.3, -64.5], "rightForearm": [-70.1, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [115.2, -15.5, 74.4], "leftForearm": [-18.3, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0]}},
+  {"t": 800, "ease": "EASE_IN_OUT", "marker": "wound", "bones": {"root": {"pos": [1.4, -4.2, -2.8]}, "hips": [12.0, 48.0, 0.0], "chest": [12.0, 32.0, 4.0], "head": [-46.5, -51.6, 40.0], "rightArm": [151.1, -44.2, -95.0], "rightForearm": [-73.7, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [168.2, -30.8, 108.9], "leftForearm": [0.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-62.0, 16.7, 0.3], "rightShin": [108.5, 0.0, 0.0], "rightFoot": [-43.6, -19.3, 26.7], "leftThigh": [-40.0, -17.7, -44.9], "leftShin": [56.9, 0.0, 0.0], "leftFoot": [-11.9, -22.9, 40.0]}}
+ ]
 }

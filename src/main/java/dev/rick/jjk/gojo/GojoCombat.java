@@ -51,7 +51,16 @@ public final class GojoCombat {
     public static void pointBlankRed(LivingEntity user, LivingEntity target, float damage, boolean kill) {
         if (!(user.level() instanceof net.minecraft.server.level.ServerLevel level)) return;
         Vec3 at = target.getBoundingBox().getCenter();
-        dev.rick.jjk.core.fx.Fx.play(level, "red_pointblank", at, user.getLookAngle(), 1.2f, user.getId());
+        // The Red itself, in full: it compresses at the fingertip, is loosed the short way into them, and bursts on
+        // them with Red's own blast (not a flash hidden inside their body). The finger is wherever he is: behind them,
+        // upside down, or over them.
+        Vec3 tip = user.getEyePosition().add(user.getLookAngle().scale(0.7));
+        Vec3 toward = at.subtract(tip);
+        toward = toward.lengthSqr() < 1e-4 ? user.getLookAngle() : toward.normalize();
+        dev.rick.jjk.core.fx.Fx.play(level, "red_full", tip, toward, 1f, user.getId());
+        dev.rick.jjk.core.fx.Fx.play(level, "red_fire", tip, toward, 1.4f, user.getId());
+        dev.rick.jjk.core.fx.Fx.play(level, "red_explosion", at, toward, 0.7f, user.getId());
+        dev.rick.jjk.core.fx.ImpactWave.play(level, "gojo.red_pointblank", at, toward, 1f, target.getId());
         if (kill) {
             execute(user, target, RedAbility.ID, "red_explosion");
             return;

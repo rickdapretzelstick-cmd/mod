@@ -67,7 +67,7 @@ public final class RikaHaymakerAbility extends RikaMove {
                     }
                     Knockback far = Knockback.directional(dir, 2.4, 0.55);
                     HitResult r = HakariCombat.hit(YutaCombat.rika(user, rika, ID, cfg.rikaHaymakerDamage, true).tag(AttackTag.OTG)
-                            .knockback(far).hitstun(30).status(CombatStatus.LAUNCHED, 34).noComboScaling().fx("yuta_impact", 1.6f).build(), v);
+                            .knockback(far).hitstun(30).status(CombatStatus.LAUNCHED, 34).noComboScaling().fx("yuta_impact", 1.6f).wave("rika.haymaker").build(), v);
                     if (r.outcome() == HitResult.Outcome.BLOCKED) {
                         // Blocked: no ragdoll, the same knockback, and half again the damage.
                         r = HakariCombat.hit(YutaCombat.rika(user, rika, ID, cfg.rikaHaymakerBlockedDamage, true).tag(AttackTag.UNBLOCKABLE)

@@ -1,16 +1,13 @@
 {
-  "name": "cleave_whiff",
-  "duration": 500,
-  "blendIn": 15, "blendOut": 200,
-  "priority": "SPECIAL",
-  "keys": [
-    {"t": 0, "bones": {
-        "chest": {"rot": [0, -25, 0]},
-        "rightArm": {"rot": [-95, -5, 0]},
-        "hips": {"rot": [15, 0, 0]}}},
-    {"t": 500, "bones": {
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [-20, 0, 8]},
-        "hips": {"rot": [0, 0, 0]}}}
-  ]
+ "name": "cleave_whiff",
+ "duration": 500,
+ "blendIn": 15,
+ "blendOut": 200,
+ "priority": "SPECIAL",
+ "authored": "tools/anim_yuji.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.0, -1.2, 3.0]}, "hips": [6.0, -22.0, 0.0], "chest": [4.0, -24.0, 0.0], "head": [-14.2, 34.1, -5.5], "rightArm": [-126.2, 3.1, -49.0], "rightForearm": [0.0, 0.0, 0.0], "rightHand": [-40.0, 0.0, 0.0], "leftArm": [-6.0, 0.0, -22.0], "leftForearm": [-22.0, 0.0, 0.0], "leftHand": [-20.0, 0.0, 0.0], "rightThigh": [21.2, 17.1, 2.8], "rightShin": [7.4, 0.0, 0.0], "rightFoot": [5.2, 15.2, -15.7], "leftThigh": [-37.9, -16.3, 2.9], "leftShin": [54.5, 0.0, 0.0], "leftFoot": [-24.8, 20.2, -10.2]}},
+  {"t": 140, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.0, -1.2, 3.0]}, "hips": [6.0, -22.0, 0.0], "chest": [4.0, -24.0, 0.0], "head": [-14.2, 34.1, -5.5], "rightArm": [-116.2, 3.1, -43.0], "rightForearm": [0.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-6.0, 0.0, -22.0], "leftForearm": [-22.0, 0.0, 0.0], "leftHand": [-20.0, 0.0, 0.0], "rightThigh": [21.2, 17.1, 2.8], "rightShin": [7.4, 0.0, 0.0], "rightFoot": [5.2, 15.2, -15.7], "leftThigh": [-37.9, -16.3, 2.9], "leftShin": [54.5, 0.0, 0.0], "leftFoot": [-24.8, 20.2, -10.2]}},
+  {"t": 500, "ease": "EASE_IN_OUT", "bones": {"root": {"pos": [0.0, -0.3, -0.2]}, "hips": [-5.0, 0.0, 0.0], "chest": [-6.0, 0.0, 0.0], "head": [0.2, 0.0, 0.0], "rightArm": [-6.0, 0.0, 22.0], "rightForearm": [-22.0, 0.0, 0.0], "rightHand": [-20.0, 0.0, 0.0], "leftArm": [-6.0, 0.0, -22.0], "leftForearm": [-22.0, 0.0, 0.0], "leftHand": [-20.0, 0.0, 0.0], "rightThigh": [-3.1, 17.5, 6.5], "rightShin": [27.1, 0.0, 0.0], "rightFoot": [-17.2, -3.3, -3.8], "leftThigh": [-10.0, -17.2, -4.2], "leftShin": [25.8, 0.0, 0.0], "leftFoot": [-9.8, 2.0, 2.2]}}
+ ]
 }

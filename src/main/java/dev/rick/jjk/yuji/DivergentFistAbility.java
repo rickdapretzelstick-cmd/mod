@@ -127,7 +127,7 @@ public final class DivergentFistAbility extends Ability {
             LivingEntity t = HakariCombat.firstInFront(user, cfg.divergentReach, 1.6, 2.2);
             if (t != null && !YujiCombat.ragdolled(t)) {
                 HitResult r = HakariCombat.hit(YujiCombat.strike(user, ID, cfg.divergentPunchDamage, false).knockback(Knockback.HOLD)
-                        .hitstun(cfg.divergentImpactDelay + 6).fx("divergent_punch", 1f).build(), t);
+                        .hitstun(cfg.divergentImpactDelay + 6).fx("divergent_punch", 1f).wave("yuji.divergent").sparing().build(), t);
                 if (r.outcome().contacted()) punched = t;
             }
             impactAt = age + cfg.divergentImpactDelay;
@@ -150,7 +150,7 @@ public final class DivergentFistAbility extends Ability {
                 return;
             }
             boolean interrupted = YujiCombat.acting(t) && !Combat.isGuarding(t);
-            var b = YujiCombat.strike(user, ID, cfg.divergentImpactDamage, true).fx("divergent_hit", 1.2f);
+            var b = YujiCombat.strike(user, ID, cfg.divergentImpactDamage, true).fx("divergent_hit", 1.2f).wave("yuji.divergent_lag");
             if (interrupted) b.knockback(Knockback.directional(HakariCombat.flat(user), 0.25, 0)).hitstun(cfg.divergentInterruptStun);
             else b.knockback(Knockback.directional(HakariCombat.flat(user), 1.6, 0.45)).hitstun(24).status(CombatStatus.LAUNCHED, 22);
             HakariCombat.hit(b.build(), t);

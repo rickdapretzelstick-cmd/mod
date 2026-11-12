@@ -1,17 +1,20 @@
 {
-  "name": "domain_sign",
-  "reference": "InfiniteVoid.gif cut-in (frames 6-30): the right hand comes up in front of the face with the fingers crossed, head bowed a little, the other arm loose; held through the domain's startup.",
-  "duration": 800,
-  "hold": true,
-  "blendIn": 100, "blendOut": 200,
-  "priority": "AWAKENING",
-  "keys": [
-    {"t": 0, "bones": {"rightArm": [-5, 0, 6], "rightForearm": [-8, 0, 0], "head": [0, 0, 0]}},
-    {"t": 150, "marker": "anticipation", "ease": "EASE_OUT", "bones": {"rightArm": [-40, -10, 10], "rightForearm": [-40, 0, 0], "head": [8, 0, 0]}},
-    {"t": 400, "marker": "sign", "ease": "OVERSHOOT", "bones": {
-        "rightArm": [-105, -42, 4], "rightForearm": [-105, 0, 0], "rightHand": [-15, 0, 0],
-        "chest": [3, -8, 0], "head": [12, -4, 0], "leftArm": [4, 0, -10], "leftForearm": [-10, 0, 0],
-        "hips": [0, -6, 0], "root": {"pos": [0, -0.4, 0]}}},
-    {"t": 800, "ease": "EASE_IN_OUT", "bones": {"rightArm": [-108, -44, 4], "rightForearm": [-108, 0, 0], "head": [14, -4, 0]}}
-  ]
+ "name": "domain_sign",
+ "duration": 2800,
+ "hold": true,
+ "loop": true,
+ "loopStart": 800,
+ "loopEnd": 2800,
+ "blendIn": 100,
+ "blendOut": 200,
+ "priority": "AWAKENING",
+ "authored": "tools/anim_gojo.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.0, -0.2, 0.0]}, "hips": [-3.0, 6.0, 0.0], "chest": [-3.0, 4.0, 0.0], "head": [0.6, -7.5, -0.6], "rightArm": [4.0, 0.0, 6.0], "rightForearm": [-12.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [16.0, 0.0, -5.0], "leftForearm": [-38.0, 0.0, 0.0], "leftHand": [10.0, 0.0, 0.0], "rightThigh": [-2.2, 17.2, 4.1], "rightShin": [22.0, 0.0, 0.0], "rightFoot": [-16.0, -9.9, -0.4], "leftThigh": [-9.2, -16.9, -1.5], "leftShin": [22.2, 0.0, 0.0], "leftFoot": [-9.8, 10.9, -1.3]}},
+  {"t": 150, "ease": "EASE_OUT", "marker": "anticipation", "bones": {"root": {"pos": [0.0, -0.2, 0.0]}, "hips": [-3.0, 6.0, 0.0], "chest": [-3.0, 4.0, 0.0], "head": [8.6, -7.5, -0.6], "rightArm": [10.0, 0.0, 14.0], "rightForearm": [-70.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [16.0, 0.0, -5.0], "leftForearm": [-38.0, 0.0, 0.0], "leftHand": [10.0, 0.0, 0.0], "rightThigh": [-2.2, 17.2, 4.1], "rightShin": [22.0, 0.0, 0.0], "rightFoot": [-16.0, -9.9, -0.4], "leftThigh": [-9.2, -16.9, -1.5], "leftShin": [22.2, 0.0, 0.0], "leftFoot": [-9.8, 10.9, -1.3]}},
+  {"t": 400, "ease": "OVERSHOOT", "marker": "sign", "bones": {"root": {"pos": [0.0, -0.2, 0.0]}, "hips": [-2.0, 0.0, 0.0], "chest": [2.0, -4.0, 0.0], "head": [12.0, 3.0, -0.1], "rightArm": [-84.1, 25.4, 121.2], "rightForearm": [-65.4, 0.0, 0.0], "rightHand": [-20.0, 0.0, 0.0], "leftArm": [16.0, 0.0, -5.0], "leftForearm": [-38.0, 0.0, 0.0], "leftHand": [10.0, 0.0, 0.0], "rightThigh": [-4.5, 17.1, 3.1], "rightShin": [22.7, 0.0, 0.0], "rightFoot": [-16.1, -17.2, 2.4], "leftThigh": [-9.5, -16.8, -1.1], "leftShin": [22.8, 0.0, 0.0], "leftFoot": [-11.6, 16.6, -2.9]}},
+  {"t": 800, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.0, -0.2, 0.0]}, "hips": [-2.0, 0.0, 0.0], "chest": [2.0, -4.0, 0.0], "head": [12.0, 3.0, -0.1], "rightArm": [-84.1, 25.4, 121.2], "rightForearm": [-65.4, 0.0, 0.0], "rightHand": [-20.0, 0.0, 0.0], "leftArm": [16.0, 0.0, -5.0], "leftForearm": [-38.0, 0.0, 0.0], "leftHand": [10.0, 0.0, 0.0], "rightThigh": [-4.5, 17.1, 3.1], "rightShin": [22.7, 0.0, 0.0], "rightFoot": [-16.1, -17.2, 2.4], "leftThigh": [-9.5, -16.8, -1.1], "leftShin": [22.8, 0.0, 0.0], "leftFoot": [-11.6, 16.6, -2.9]}},
+  {"t": 1800, "ease": "EASE_IN_OUT", "bones": {"chest": [2.6, -4.0, 0.0], "head": [11.5, 3.0, -0.1], "rightArm": [-83.4, 25.4, 121.7], "rightForearm": [-66.2, 0.0, 0.0], "rightHand": [-20.0, 0.0, 0.0], "leftArm": [16.7, 0.0, -5.5], "leftForearm": [-38.8, 0.0, 0.0], "leftHand": [10.0, 0.0, 0.0]}},
+  {"t": 2800, "ease": "EASE_IN_OUT", "bones": {"chest": [2.0, -4.0, 0.0], "head": [12.0, 3.0, -0.1], "rightArm": [-84.1, 25.4, 121.2], "rightForearm": [-65.4, 0.0, 0.0], "rightHand": [-20.0, 0.0, 0.0], "leftArm": [16.0, 0.0, -5.0], "leftForearm": [-38.0, 0.0, 0.0], "leftHand": [10.0, 0.0, 0.0]}}
+ ]
 }

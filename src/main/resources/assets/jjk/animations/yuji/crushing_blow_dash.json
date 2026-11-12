@@ -1,17 +1,15 @@
 {
-  "name": "crushing_blow_dash",
-  "duration": 200,
-  "hold": true,
-  "blendIn": 25, "blendOut": 100,
-  "priority": "SPECIAL",
-  "keys": [
-    {"t": 200, "ease": "OVERSHOOT", "bones": {
-        "head": {"rot": [-25, 0, 0]},
-        "chest": {"rot": [0, -25, 0]},
-        "rightArm": {"rot": [-100, -10, 0]},
-        "leftArm": {"rot": [45, 0, -30]},
-        "rightThigh": {"rot": [35, 0, 0]},
-        "leftThigh": {"rot": [-55, 0, 0]},
-        "hips": {"rot": [34, -14, 0]}}}
-  ]
+ "name": "crushing_blow_dash",
+ "duration": 200,
+ "hold": true,
+ "blendIn": 25,
+ "blendOut": 100,
+ "priority": "SPECIAL",
+ "authored": "tools/anim_yuji.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.0, 0.8, 0.0]}, "hips": [-6.0, 30.0, 0.0], "chest": [16.0, 20.0, 4.0], "head": [-2.5, -37.3, 6.8], "rightArm": [23.7, -76.9, 14.9], "rightForearm": [-49.0, 0.0, 0.0], "rightHand": [-30.0, 0.0, 0.0], "leftArm": [-43.7, -47.7, 86.1], "leftForearm": [0.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-34.0, 0.0, 5.0], "rightShin": [74.0, 0.0, 0.0], "rightFoot": [20.0, 0.0, 0.0], "leftThigh": [-58.0, 0.0, -4.0], "leftShin": [96.0, 0.0, 0.0], "leftFoot": [24.0, 0.0, 0.0]}},
+  {"t": 180, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.0, 0.6, 2.6]}, "hips": [40.0, 20.0, 0.0], "rightThigh": [40.0, 0.0, 4.0], "rightShin": [40.0, 0.0, 0.0], "rightFoot": [40.0, 0.0, 0.0], "leftThigh": [-50.0, 0.0, -4.0], "leftShin": [100.0, 0.0, 0.0], "leftFoot": [20.0, 0.0, 0.0]}},
+  {"t": 190, "ease": "EASE_OUT", "bones": {"chest": [10.0, 20.0, 0.0]}},
+  {"t": 200, "ease": "EASE_OUT", "bones": {"head": [-77.9, -23.5, 16.2], "rightArm": [60.0, 0.0, 24.0], "rightForearm": [-30.0, 0.0, 0.0], "rightHand": [-20.0, 0.0, 0.0], "leftArm": [-7.7, -44.2, -77.0], "leftForearm": [-104.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0]}}
+ ]
 }

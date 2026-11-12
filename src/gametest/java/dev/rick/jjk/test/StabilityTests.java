@@ -120,13 +120,16 @@ public class StabilityTests {
 
     @GameTest(maxTicks = 60, environment = ENV)
     public void unsatisfiedEndsWhenItsFirstBlowKills(GameTestHelper h) {
+        // A target with one point of health: the three blows and the back clash spare it (a multi-hit move keeps
+        // its kill for its final hit), the toss kills it, and the move ends cleanly after.
         floor(h, 8);
         TrainingDummy target = dummy(h, 3.5, 3.8);
         target.setHealth(1f);
         TrainingDummy r = ryuFacing(h, target);
         h.assertTrue(Casters.get(r).input(AbilitySlot.SKILL_2, true, 0, 0, null), "Unsatisfied");
-        h.runAfterDelay(30, () -> {
-            h.assertTrue(!target.isAlive(), "the first blow killed them");
+        h.runAfterDelay(22, () -> h.assertTrue(target.isAlive(), "the earlier blows don't kill: the toss does"));
+        h.runAfterDelay(40, () -> {
+            h.assertTrue(!target.isAlive(), "the toss killed them");
             free(h, r, "after a kill");
             h.succeed();
         });

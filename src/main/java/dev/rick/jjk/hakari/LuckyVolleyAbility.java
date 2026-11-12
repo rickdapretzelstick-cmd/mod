@@ -62,7 +62,7 @@ public final class LuckyVolleyAbility extends Ability {
                 if (age == OPEN) {
                     target = HakariCombat.firstInFront(user, 2.8, 1.8, 2.2);
                     Hit open = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.volleyOpenerDamage).tag(AttackTag.MELEE)
-                            .origin(user.getEyePosition()).knockback(Knockback.HOLD).hitstun(20).fx("lucky_hit", 1f).build();
+                            .origin(user.getEyePosition()).knockback(Knockback.HOLD).hitstun(20).fx("lucky_hit", 1f).sparing().build();
                     Fx.play(level, "swing", user.getEyePosition().add(f.scale(0.9)), f, 1.3f, user.getId());
                     if (target == null || !HakariCombat.hit(open, target).connected()) {
                         target = null;
@@ -81,7 +81,7 @@ public final class LuckyVolleyAbility extends Ability {
                     HakariCombat.carry(user, target, 1.5);
                     if ((age - FLURRY_START) % FLURRY_EVERY == 0) {
                         Hit jab = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.volleyFlurryDamage).tag(AttackTag.MELEE)
-                                .origin(user.getEyePosition()).knockback(Knockback.HOLD).hitstun(8).noComboScaling().fx("lucky_flurry", 0.8f).build();
+                                .origin(user.getEyePosition()).knockback(Knockback.HOLD).hitstun(8).noComboScaling().fx("lucky_flurry", 0.8f).sparing().build();
                         HakariCombat.hit(jab, target);
                         flurry++;
                         if (flurry == cfg.volleyFlurryHits) finalAt = age + 3;
@@ -101,7 +101,7 @@ public final class LuckyVolleyAbility extends Ability {
                         }
                         Hit last = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.volleyFinalDamage).tag(AttackTag.MELEE, AttackTag.HEAVY, AttackTag.UNBLOCKABLE)
                                 .origin(user.getEyePosition()).knockback(Knockback.directional(f, cfg.volleyFinalKnockback, 0.4)).hitstun(24)
-                                .status(CombatStatus.LAUNCHED, 20).fx("lucky_final", 1.3f).build();
+                                .status(CombatStatus.LAUNCHED, 20).fx("lucky_final", 1.3f).wave("hakari.volley_final").build();
                         HakariCombat.hit(last, target);
                         Fx.shake(level, target.position(), 18, 0.8f, 10);
                     }

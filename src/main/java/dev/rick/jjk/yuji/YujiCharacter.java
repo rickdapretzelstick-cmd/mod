@@ -31,9 +31,9 @@ import org.jetbrains.annotations.Nullable;
 public final class YujiCharacter extends JJKCharacter {
     public static final String ID = "yuji";
     private static final Identifier HEALTH_ID = JJK.id("vessel_health");
-    private final MeleeMoveset melee = new MeleeMoveset("", "", 1.0f, 1.0f, 1.05f);
+    private final MeleeMoveset melee = new MeleeMoveset("", "", 1.0f, 1.0f, 1.05f, "yuji");
     private final MeleeMoveset shrine = new MeleeMoveset("shrine_", "shrine_", 1.0f, 0.8f, 1.0f,
-            JJKConfig.get().yuji.shrineRangeMultiplier, false, true, YujiCombat::shrineSwing);
+            JJKConfig.get().yuji.shrineRangeMultiplier, false, true, YujiCombat::shrineSwing, 4, null, "sukuna");
 
     public YujiCharacter() {
         super(ID);
@@ -81,6 +81,11 @@ public final class YujiCharacter extends JJKCharacter {
     @Override
     public float regenPerSecond() {
         return JJKConfig.get().yuji.regenPerSecond;
+    }
+
+    @Override
+    public String domainOpeningClip() {
+        return "shrine_domain_release";
     }
 
     @Override

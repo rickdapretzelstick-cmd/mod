@@ -129,7 +129,7 @@ public final class NotInvitedAbility extends Ability {
                 Vec3 left = new Vec3(flat.z, 0, -flat.x);
                 HakariCombat.hit(RyuCombat.strike(user, ID, dmg, true).tag(AttackTag.EXPLOSION)
                         .knockback(Knockback.set(left.scale(full ? 2.4 : 1.8).add(flat.scale(0.3)).add(0, 0.45, 0))).hitstun(40)
-                        .status(CombatStatus.LAUNCHED, 40).fx("ryu_invited_hit", full ? 1.8f : 1.4f).build(), t);
+                        .status(CombatStatus.LAUNCHED, 40).fx("ryu_invited_hit", full ? 1.8f : 1.4f).wave("ryu.invited").build(), t);
                 Fx.shake(level, t.position(), 40, full ? 1.4f : 1f, 14);
             }
 

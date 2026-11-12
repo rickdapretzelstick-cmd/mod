@@ -84,10 +84,12 @@ public class FxGalleryClientTest implements FabricClientGameTest {
             java.nio.file.Path list = java.nio.file.Path.of("../../fxgallery.txt");
             if (java.nio.file.Files.exists(list)) for (String l : java.nio.file.Files.readAllLines(list)) {
                 if (l.isBlank()) continue;
-                String[] kv = l.trim().split(":");
-                only.add(kv[0]);
-                if (kv.length > 1) scales.put(kv[0], Float.parseFloat(kv[1]));
-                if (kv.length > 2 && kv[2].equals("far")) farIds.add(kv[0]);
+                // Impact waves are "wave:<profile>": their own colon is part of the id.
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("^(wave:[^:]+|[^:]+)(?::([0-9.]+))?(?::(far))?$").matcher(l.trim());
+                if (!m.matches()) continue;
+                only.add(m.group(1));
+                if (m.group(2) != null) scales.put(m.group(1), Float.parseFloat(m.group(2)));
+                if (m.group(3) != null) farIds.add(m.group(1));
             }
         } catch (java.io.IOException e) {
             throw new RuntimeException(e);

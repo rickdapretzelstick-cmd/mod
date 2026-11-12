@@ -100,6 +100,49 @@ final class RyuFx {
                     burst(level, pos, q(10), 0.2, Sprite.SMOKE, STEAM, 0.5f, 14);
                 }
             }
+            case "appetizer_beam" -> {
+                // Appetizer's beam: from the cannon of his pompadour, aimed at the floor in front of him and swept up to
+                // the sky over ten ticks (the server's AppetizerAbility.sweepDir), a white-hot core in his blue, scorching
+                // the ground where it starts, the whole thing arching over him as it climbs. Red-hot and thinner when he
+                // is overheated.
+                boolean cut = s >= 0.5f;
+                sound("ryu_granite_fire_hard", pos, 1.6f, cut ? 1.25f : 0.8f);
+                sound("ryu_ult_fire", pos, 0.9f, 1.35f);
+                float[] col = cut ? new float[] {1f, 0.5f, 0.3f} : RYU, hot = cut ? new float[] {1f, 0.85f, 0.7f} : RYU_LIGHT;
+                double len = dir.length();
+                Vec3 flat = new Vec3(dir.x, 0, dir.z).normalize();
+                Flashes.flash(pos, 0.4f, 2.0f, hot, 1f, 6, now);
+                Flashes.ripple(pos, flat, 0.3f, 2.2f, WHITE, 0.8f, 6, now);
+                int ticks = dev.rick.jjk.ryu.AppetizerAbility.SWEEP_TICKS;
+                for (int k = 0; k < ticks; k++) {
+                    Vec3 bd = dev.rick.jjk.ryu.AppetizerAbility.sweepDir(flat, k);
+                    Vec3 end = pos.add(bd.scale(len));
+                    long at = now + k;
+                    float w = cut ? 0.45f : 0.8f;
+                    Flashes.beam(pos, end, w * 1.9f, col, 0.5f, 5, at);
+                    Flashes.beam(pos, end, w, hot, 0.95f, 4, at);
+                    Flashes.beam(pos, end, w * 0.35f, WHITE, 1f, 3, at);
+                    Flashes.flash(pos, 0.9f, 1.4f, hot, 0.9f, 2, at);
+                    if (drawn) {
+                        for (int i = 0; i < 3; i++) {
+                            Vec3 a = pos.add(bd.scale(2 + RNG.nextDouble() * (len - 2)));
+                            Flashes.bolt(a, a.add(randomUnit().scale(1.2 + RNG.nextDouble())), 0.05f, col, 0.9f, 3, at);
+                        }
+                        if (k < 3) {
+                            // Where it meets the floor before it lifts: a scorch and the ground answering.
+                            Vec3 g = groundBelow(level, pos.add(bd.scale(Math.min(len, 6 + k * 4))).add(0, 1.5, 0));
+                            Flashes.ground(g.add(0, 0.05, 0), 0.4f, 2.6f, col, 0.8f, 9, at, 0.3f);
+                            debris(level, g, q(8), 0.5);
+                            burst(level, g.add(0, 0.3, 0), q(6), 0.15, Sprite.SMOKE, STEAM, 0.6f, 16);
+                        }
+                        sparks(level, pos, bd, q(4), 0.5, hot, 0.07f, 6);
+                    }
+                }
+                // The recoil off it: steam rolling off the cannon after.
+                if (drawn) burst(level, pos, q(10), 0.08, Sprite.SMOKE, STEAM, 0.5f, 18);
+                distanceShake(pos, 32, 0.6f);
+                if (mine) ScreenEffects.fovPunch(0.03f);
+            }
             case "appetizer_ray" -> {
                 // A sheet of discharge rising out of the ground along the line in front of him (pushes away when he is
                 // overheated: then it's thin and red-hot).

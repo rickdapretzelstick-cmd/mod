@@ -1,14 +1,19 @@
 {
-  "name": "reaction_knockdown",
-  "hold": true,
-  "priority": "RAGDOLL",
-  "interruptible": false,
-  "blendIn": 250, "blendOut": 300,
-  "keys": [
-    {"t": 0, "bones": {
-        "root": {"rot": [-90, 0, 0], "pos": [0, 2, 0]},
-        "head": [10, 0, 0],
-        "rightArm": [-10, 0, 40], "rightForearm": [-15, 0, 0], "leftArm": [-10, 0, -40], "leftForearm": [-15, 0, 0],
-        "rightThigh": [-6, 0, 6], "rightShin": [10, 0, 0], "leftThigh": [-4, 0, -4], "leftShin": [16, 0, 0]}}
-  ]
+ "name": "reaction_knockdown",
+ "duration": 2300,
+ "hold": true,
+ "loop": true,
+ "loopStart": 300,
+ "loopEnd": 2300,
+ "blendIn": 250,
+ "blendOut": 300,
+ "priority": "RAGDOLL",
+ "interruptible": false,
+ "authored": "tools/anim_author.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.0, -9.6, -6.0]}, "hips": [-84.0, 0.0, 0.0], "chest": [-4.0, 6.0, 0.0], "head": [-6.0, 20.0, 0.0], "rightArm": [-20.0, 0.0, 70.0], "rightForearm": [-30.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [10.0, 0.0, -40.0], "leftForearm": [-60.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-50.0, 0.0, 10.0], "rightShin": [80.0, 0.0, 0.0], "rightFoot": [30.0, 0.0, 0.0], "leftThigh": [-6.0, 0.0, -12.0], "leftShin": [10.0, 0.0, 0.0], "leftFoot": [30.0, 0.0, 0.0]}},
+  {"t": 300, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.0, -9.6, -6.0]}, "hips": [-84.0, 0.0, 0.0], "chest": [-4.0, 6.0, 0.0], "head": [-6.0, 20.0, 0.0], "rightArm": [-20.0, 0.0, 70.0], "rightForearm": [-30.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [10.0, 0.0, -40.0], "leftForearm": [-60.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-50.0, 0.0, 10.0], "rightShin": [80.0, 0.0, 0.0], "rightFoot": [30.0, 0.0, 0.0], "leftThigh": [-6.0, 0.0, -12.0], "leftShin": [10.0, 0.0, 0.0], "leftFoot": [30.0, 0.0, 0.0]}},
+  {"t": 1300, "ease": "EASE_IN_OUT", "bones": {"chest": [-2.1, 6.0, 0.0], "head": [-7.4, 20.0, 0.0], "rightArm": [-17.8, 0.0, 71.4], "rightForearm": [-32.4, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [12.2, 0.0, -41.4], "leftForearm": [-62.4, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0]}},
+  {"t": 2300, "ease": "EASE_IN_OUT", "bones": {"chest": [-4.0, 6.0, 0.0], "head": [-6.0, 20.0, 0.0], "rightArm": [-20.0, 0.0, 70.0], "rightForearm": [-30.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [10.0, 0.0, -40.0], "leftForearm": [-60.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0]}}
+ ]
 }

@@ -112,7 +112,7 @@ public final class BlueAbility extends Ability {
                         .damage(cfg.bluePullDamage).tag(dev.rick.jjk.core.combat.AttackTag.TECHNIQUE, dev.rick.jjk.core.combat.AttackTag.LIMITLESS,
                                 dev.rick.jjk.core.combat.AttackTag.PROJECTILE)
                         .origin(user.getEyePosition()).knockback(dev.rick.jjk.core.combat.Knockback.HOLD)
-                        .hitstun(cfg.bluePullTicks + cfg.blueSuspendTicks + 12).fx("blue_hit", 1f).build();
+                        .hitstun(cfg.bluePullTicks + cfg.blueSuspendTicks + 12).fx("blue_hit", 1f).sparing().build();
                 if (!dev.rick.jjk.core.combat.HitResolver.resolve(pull, target).connected()) {
                     target = null;
                     endAt = age + 12;
@@ -158,7 +158,7 @@ public final class BlueAbility extends Ability {
                 } else {
                     dev.rick.jjk.core.combat.Hit kick = GojoCombat.strike(user, ID, cfg.blueKickDamage, true)
                             .knockback(dev.rick.jjk.core.combat.Knockback.directional(f, cfg.blueKickKnockback, 0.45)).hitstun(22)
-                            .status(dev.rick.jjk.core.combat.CombatStatus.LAUNCHED, 18).fx("hit_launch", 1.2f).build();
+                            .status(dev.rick.jjk.core.combat.CombatStatus.LAUNCHED, 18).fx("hit_launch", 1.2f).wave("gojo.blue_kick").build();
                     dev.rick.jjk.core.combat.HitResolver.resolve(kick, target);
                 }
                 Fx.shake(level, target.position(), 14, 0.5f, 8);

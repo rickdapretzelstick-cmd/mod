@@ -63,7 +63,7 @@ final class ZeroTwoDomain {
         phase2Start = phase1End + GAP;
         phase2End = phase2Start + cfg.zeroTwoPhase2Hits * 5;
         finalAt = phase2End + GAP + 6;
-        Anim.play(user, "domain_release");
+        Anim.play(user, "gojo_domain_release");
     }
 
     private void aliveOnly() {
@@ -77,12 +77,13 @@ final class ZeroTwoDomain {
         LivingEntity t = targets.get(n % targets.size());
         Vec3 spot = TeleportAbility.aroundFront(user, t, (n * 97) % 360);
         if (spot != null) TeleportAbility.arrive(level, user, spot, t);
-        Anim.play(user, n % 2 == 0 ? "light_1" : "light_2");
+        Anim.play(user, n % 2 == 0 ? "gojo_light_1" : "gojo_light_2");
         Fx.play(level, "sfx:zero_two_hit", t.getBoundingBox().getCenter(), Vec3.ZERO, 1.5f, user.getId());
         Hit hit = Hit.builder(user, "zero_two_domain").type(ModDamageTypes.MELEE).damage(damage)
                 .tag(AttackTag.MELEE, AttackTag.UNBLOCKABLE, AttackTag.OTG, AttackTag.ULTIMATE).origin(user.getEyePosition())
                 .knockback(last ? Knockback.directional(HakariCombat.flat(user), 2.2, 0.8) : Knockback.HOLD).hitstun(last ? 30 : 12)
                 .noComboScaling().fx(last ? "finisher" : "hit_heavy", last ? 1f : 0.8f).build();
+        if (!last) hit = hit.toBuilder().sparing().build();
         if (last) hit = hit.toBuilder().status(CombatStatus.LAUNCHED, 30).build();
         HitResolver.resolve(hit, t);
     }

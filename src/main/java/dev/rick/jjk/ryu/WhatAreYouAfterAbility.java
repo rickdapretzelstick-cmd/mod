@@ -93,7 +93,7 @@ public final class WhatAreYouAfterAbility extends Ability {
                 for (LivingEntity t : level.getEntitiesOfClass(LivingEntity.class, user.getBoundingBox().inflate(3.2, 1, 3.2),
                         e -> Targeting.canTarget(user, e))) {
                     HakariCombat.hit(RyuCombat.strike(user, ID, cfg.afterSlam, true).tag(AttackTag.OTG)
-                            .knockback(Knockback.set(new Vec3(0, 1.0, 0))).hitstun(26).status(CombatStatus.LAUNCHED, 26).fx(RyuCombat.hitFx("ryu_after_first_hit", true), 1f).build(), t);
+                            .knockback(Knockback.set(new Vec3(0, 1.0, 0))).hitstun(26).status(CombatStatus.LAUNCHED, 26).fx(RyuCombat.hitFx("ryu_after_first_hit", true), 1f).wave("ryu.floor_slam").build(), t);
                 }
             }
             if (age == leapAt && !air) {
@@ -111,7 +111,7 @@ public final class WhatAreYouAfterAbility extends Ability {
                     victim = t;
                     connectAt = age;
                     Anim.play(user, "ryu_after_trade");
-                    HakariCombat.hit(RyuCombat.strike(user, ID, cfg.afterPunch, true).knockback(Knockback.HOLD).hitstun(18).fx(RyuCombat.hitFx("ryu_after_hit", true), 1.3f).build(), t);
+                    HakariCombat.hit(RyuCombat.strike(user, ID, cfg.afterPunch, true).knockback(Knockback.HOLD).hitstun(18).fx(RyuCombat.hitFx("ryu_after_hit", true), 1.3f).wave("ryu.after_hit").sparing().build(), t);
                     Fx.play(level, "ryu_trade", t.getBoundingBox().getCenter(), user.getLookAngle(), 1f, user.getId());
                 } else if (age > lungeAt + 14 || !Combat.isAirborne(user) && age > lungeAt + 2) {
                     Anim.play(user, "ryu_after_miss");
@@ -130,7 +130,7 @@ public final class WhatAreYouAfterAbility extends Ability {
                     } else {
                         HakariCombat.hit(RyuCombat.strike(user, ID, cfg.afterLaunch, true)
                                 .knockback(Knockback.set(away.scale(1.8).add(0, 0.4, 0))).hitstun(30).status(CombatStatus.LAUNCHED, 30)
-                                .fx(RyuCombat.hitFx("ryu_after_dismember", true), 1.5f).build(), victim);
+                                .fx(RyuCombat.hitFx("ryu_after_dismember", true), 1.5f).wave("ryu.after_launch").build(), victim);
                     }
                     RyuCombat.selfDamage(user, cfg.afterSelf);
                     Fx.shake(level, user.position(), 28, 1.1f, 12);

@@ -97,7 +97,7 @@ public final class UnsatisfiedAbility extends Ability {
                         Combat.state(t).remove(CombatStatus.LAUNCHED);
                     }
                     HitResult r = HakariCombat.hit(RyuCombat.strike(user, ID, cfg.unsatisfiedHit, false).knockback(Knockback.HOLD).hitstun(14)
-                            .fx(RyuCombat.hitFx("ryu_hit_" + (i + 1), false), 0.8f).build(), t);
+                            .fx(RyuCombat.hitFx("ryu_hit_" + (i + 1), false), 0.8f).sparing().build(), t);
                     if (r.connected()) {
                         victim = t;
                         refund(cfg.unsatisfiedRestyleRefund);
@@ -114,7 +114,7 @@ public final class UnsatisfiedAbility extends Ability {
                     // The Tetsuzanko: he turns his back into them, all his output behind it.
                     Fx.play(level, "ryu_tetsuzanko", victim.getBoundingBox().getCenter(), HakariCombat.flat(user), 1f, user.getId());
                     HakariCombat.hit(RyuCombat.strike(user, ID, cfg.unsatisfiedClash, false).knockback(Knockback.HOLD).hitstun(16)
-                            .fx(RyuCombat.hitFx("ryu_final_hit_1", true), 1.1f).build(), victim);
+                            .fx(RyuCombat.hitFx("ryu_final_hit_1", true), 1.1f).wave("ryu.tetsuzanko").sparing().build(), victim);
                     Fx.shake(level, victim.position(), 16, 0.5f, 8);
                 }
                 if (age == TOSS) {
@@ -125,7 +125,7 @@ public final class UnsatisfiedAbility extends Ability {
                         // Semi-ragdoll: tossed up and in toward him.
                         HakariCombat.hit(RyuCombat.strike(user, ID, cfg.unsatisfiedToss, false)
                                 .knockback(Knockback.set(new Vec3(toward.x * 0.25, 0.75, toward.z * 0.25))).hitstun(22)
-                                .status(CombatStatus.LAUNCHED, 20).fx(RyuCombat.hitFx("ryu_final_hit_2", true), 1.3f).build(), victim);
+                                .status(CombatStatus.LAUNCHED, 20).fx(RyuCombat.hitFx("ryu_final_hit_2", true), 1.3f).wave("ryu.toss").build(), victim);
                     }
                     victim = null;
                     endAt = Math.min(endAt, age + 10);
