@@ -1,17 +1,19 @@
 {
-  "name": "sukuna_faint",
-  "duration": 400,
-  "hold": true,
-  "blendIn": 50, "blendOut": 100,
-  "priority": "AWAKENING",
-  "keys": [
-    {"t": 400, "bones": {
-        "head": {"rot": [40, 0, 10]},
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [10, 0, 10]},
-        "leftArm": {"rot": [10, 0, -10]},
-        "rightThigh": {"rot": [-15, 0, 0]},
-        "leftThigh": {"rot": [10, 0, 0]},
-        "hips": {"rot": [25, 0, 0]}}}
-  ]
+ "name": "sukuna_faint",
+ "duration": 2800,
+ "hold": true,
+ "loop": true,
+ "loopStart": 400,
+ "loopEnd": 2800,
+ "blendIn": 50,
+ "blendOut": 100,
+ "priority": "AWAKENING",
+ "authored": "tools/anim_yuji.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.0, -1.2, 0.0]}, "hips": [4.0, 14.0, 0.0], "chest": [5.0, 10.0, 0.0], "head": [-3.3, -17.8, 2.5], "rightArm": [-27.6, -31.6, 14.5], "rightForearm": [-105.4, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-64.5, 24.3, -16.7], "leftForearm": [-57.3, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-10.6, 17.9, 10.4], "rightShin": [47.8, 0.0, 0.0], "rightFoot": [-26.5, -30.9, 12.8], "leftThigh": [-39.0, -16.9, -1.7], "leftShin": [46.1, 0.0, 0.0], "leftFoot": [-10.5, 3.2, 2.2]}},
+  {"t": 400, "ease": "EASE_IN", "bones": {"root": {"pos": [0.0, -2.4, -0.4]}, "hips": [10.0, 0.0, 0.0], "chest": [22.0, 0.0, 3.0], "head": [40.0, 0.0, 6.0], "rightArm": [8.0, 0.0, 4.0], "rightForearm": [-6.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [10.0, 0.0, -4.0], "leftForearm": [-8.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-40.3, 16.7, -0.3], "rightShin": [83.0, 0.0, 0.0], "rightFoot": [-53.9, -12.0, 11.7], "leftThigh": [-49.3, -16.3, 2.9], "leftShin": [81.8, 0.0, 0.0], "leftFoot": [-44.1, 12.0, -11.4]}},
+  {"t": 400, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.0, -2.4, -0.4]}, "hips": [10.0, 0.0, 0.0], "chest": [22.0, 0.0, 3.0], "head": [40.0, 0.0, 6.0], "rightArm": [8.0, 0.0, 4.0], "rightForearm": [-6.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [10.0, 0.0, -4.0], "leftForearm": [-8.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-40.3, 16.7, -0.3], "rightShin": [83.0, 0.0, 0.0], "rightFoot": [-53.9, -12.0, 11.7], "leftThigh": [-49.3, -16.3, 2.9], "leftShin": [81.8, 0.0, 0.0], "leftFoot": [-44.1, 12.0, -11.4]}},
+  {"t": 1600, "ease": "EASE_IN_OUT", "bones": {"chest": [23.6, 3.0, 3.0], "head": [38.8, -1.8, 6.0], "rightArm": [9.8, 0.0, 5.2], "rightForearm": [-8.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [11.8, 0.0, -5.2], "leftForearm": [-10.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0]}},
+  {"t": 2800, "ease": "EASE_IN_OUT", "bones": {"chest": [22.0, 0.0, 3.0], "head": [40.0, 0.0, 6.0], "rightArm": [8.0, 0.0, 4.0], "rightForearm": [-6.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [10.0, 0.0, -4.0], "leftForearm": [-8.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0]}}
+ ]
 }

@@ -1,15 +1,12 @@
 {
-  "name": "overwhelm_ready",
-  "duration": 250,
-  "blendIn": 50, "blendOut": 100,
-  "priority": "SPECIAL",
-  "keys": [
-    {"t": 250, "ease": "OVERSHOOT", "bones": {
-        "rightArm": {"rot": [-70, -22, 12]},
-        "leftArm": {"rot": [-82, 22, -10]},
-        "rightThigh": {"rot": [18, 0, 6]},
-        "leftThigh": {"rot": [-18, 0, -6]},
-        "hips": {"rot": [10, 0, 0]},
-        "root": {"pos": [0, -2, 0]}}}
-  ]
+ "name": "overwhelm_ready",
+ "duration": 250,
+ "blendIn": 50,
+ "blendOut": 100,
+ "priority": "SPECIAL",
+ "authored": "tools/anim_hakari.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.0, -1.8, 0.0]}, "hips": [8.0, 12.0, 0.0], "chest": [8.0, 8.0, 0.0], "head": [-14.7, -14.6, 3.5], "rightArm": [3.6, -25.3, 2.1], "rightForearm": [-73.3, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-15.1, 23.6, -6.5], "leftForearm": [-68.5, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-25.4, 18.1, 13.1], "rightShin": [64.3, 0.0, 0.0], "rightFoot": [-32.4, -13.5, -7.9], "leftThigh": [-44.0, -17.5, -6.2], "leftShin": [65.0, 0.0, 0.0], "leftFoot": [-26.6, -4.7, 11.6]}},
+  {"t": 250, "ease": "OVERSHOOT", "bones": {"root": {"pos": [0.0, -3.4, 1.4]}, "hips": [22.0, 20.0, 0.0], "chest": [12.0, 14.0, 0.0], "head": [-37.4, -22.3, 11.9], "rightArm": [55.4, -24.7, -0.8], "rightForearm": [-135.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-38.0, 26.0, -12.7], "leftForearm": [-73.9, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-33.4, 18.4, 18.8], "rightShin": [80.8, 0.0, 0.0], "rightFoot": [-47.1, -32.4, 21.9], "leftThigh": [-55.5, -17.5, -6.4], "leftShin": [97.7, 0.0, 0.0], "leftFoot": [-59.4, 0.8, 23.2]}}
+ ]
 }

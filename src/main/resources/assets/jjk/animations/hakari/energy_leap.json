@@ -1,19 +1,13 @@
 {
-  "name": "energy_leap",
-  "duration": 350,
-  "blendIn": 25, "blendOut": 100,
-  "priority": "MOVEMENT",
-  "keys": [
-    {"t": 150, "ease": "OVERSHOOT", "bones": {
-        "head": {"rot": [-10, 0, 0]},
-        "chest": {"rot": [0, 30, 0]},
-        "rightArm": {"rot": [50, 20, 30]},
-        "leftArm": {"rot": [-100, 25, -20]},
-        "rightThigh": {"rot": [-60, 0, 4]},
-        "leftThigh": {"rot": [30, 0, -4]},
-        "hips": {"rot": [20, 20, 0]}}},
-    {"t": 350, "bones": {
-        "rightArm": {"rot": [55, 22, 32]},
-        "hips": {"rot": [18, 26, 0]}}}
-  ]
+ "name": "energy_leap",
+ "duration": 350,
+ "blendIn": 25,
+ "blendOut": 100,
+ "priority": "MOVEMENT",
+ "authored": "tools/anim_hakari.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.0, -4.0, 0.0]}, "hips": [20.0, 0.0, 0.0], "chest": [10.0, 0.0, 0.0], "head": [-24.5, 0.0, 0.0], "rightArm": [3.6, -25.3, 2.1], "rightForearm": [-73.3, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-15.1, 23.6, -6.5], "leftForearm": [-68.5, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-39.6, 18.1, 13.7], "rightShin": [101.3, 0.0, 0.0], "rightFoot": [-63.5, -15.3, -15.2], "leftThigh": [-78.2, -16.8, -0.7], "leftShin": [101.4, 0.0, 0.0], "leftFoot": [-42.1, 5.4, 3.6]}},
+  {"t": 150, "ease": "OVERSHOOT", "marker": "leap", "bones": {"root": {"pos": [0.0, 2.6, 0.0]}, "hips": [-10.0, 0.0, 0.0], "chest": [-6.0, 0.0, 0.0], "head": [-12.0, 0.0, 0.0], "rightArm": [-160.0, 0.0, 16.0], "rightForearm": [-30.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [20.0, 0.0, -24.0], "leftForearm": [-30.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-70.0, 0.0, 6.0], "rightShin": [110.0, 0.0, 0.0], "rightFoot": [30.0, 0.0, 0.0], "leftThigh": [-20.0, 0.0, -6.0], "leftShin": [60.0, 0.0, 0.0], "leftFoot": [40.0, 0.0, 0.0]}},
+  {"t": 350, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.0, 2.6, 0.0]}, "hips": [-10.0, 0.0, 0.0], "chest": [-6.0, 0.0, 0.0], "head": [-12.0, 0.0, 0.0], "rightArm": [-160.0, 0.0, 16.0], "rightForearm": [-30.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [20.0, 0.0, -24.0], "leftForearm": [-30.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-50.0, 0.0, 6.0], "rightShin": [70.0, 0.0, 0.0], "rightFoot": [30.0, 0.0, 0.0], "leftThigh": [-20.0, 0.0, -6.0], "leftShin": [60.0, 0.0, 0.0], "leftFoot": [40.0, 0.0, 0.0]}}
+ ]
 }

@@ -1,16 +1,19 @@
 {
-  "name": "open_aim",
-  "duration": 400,
-  "hold": true,
-  "blendIn": 25, "blendOut": 100,
-  "priority": "SPECIAL",
-  "keys": [
-    {"t": 400, "bones": {
-        "head": {"rot": [0, -45, 0]},
-        "chest": {"rot": [0, 45, 0]},
-        "rightArm": {"rot": [-92, 85, 20]},
-        "leftArm": {"rot": [-92, 5, 0]},
-        "rightThigh": {"rot": [20, 0, 10]},
-        "leftThigh": {"rot": [-25, 0, -10]}}}
-  ]
+ "name": "open_aim",
+ "duration": 1600,
+ "hold": true,
+ "loop": true,
+ "loopStart": 400,
+ "loopEnd": 1600,
+ "blendIn": 25,
+ "blendOut": 100,
+ "priority": "SPECIAL",
+ "tremble": 0.5,
+ "authored": "tools/anim_yuji.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.4, -1.8, -0.8]}, "hips": [-2.0, 56.0, 0.0], "chest": [-4.0, 24.0, 0.0], "head": [21.0, -58.9, -22.0], "rightArm": [173.9, 29.8, -34.5], "rightForearm": [-136.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [33.4, -109.6, -121.7], "leftForearm": [0.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-29.8, 17.9, 11.2], "rightShin": [66.3, 0.0, 0.0], "rightFoot": [-34.4, -26.0, 5.0], "leftThigh": [-18.9, -18.5, -21.1], "leftShin": [60.1, 0.0, 0.0], "leftFoot": [-32.4, -20.5, 35.0]}},
+  {"t": 400, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.4, -1.8, -0.8]}, "hips": [-2.0, 56.0, 0.0], "chest": [-5.0, 26.0, 0.0], "head": [21.0, -58.9, -22.0], "rightArm": [173.9, 29.8, -34.5], "rightForearm": [-136.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [33.4, -109.6, -121.7], "leftForearm": [0.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0], "rightThigh": [-29.8, 17.9, 11.2], "rightShin": [66.3, 0.0, 0.0], "rightFoot": [-34.4, -26.0, 5.0], "leftThigh": [-18.9, -18.5, -21.1], "leftShin": [60.1, 0.0, 0.0], "leftFoot": [-32.4, -20.5, 35.0]}},
+  {"t": 1000, "ease": "EASE_IN_OUT", "bones": {"chest": [-4.2, 26.0, 0.0], "head": [20.4, -58.9, -22.0], "rightArm": [174.8, 29.8, -33.9], "rightForearm": [-137.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [34.3, -109.6, -122.3], "leftForearm": [-1.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0]}},
+  {"t": 1600, "ease": "EASE_IN_OUT", "bones": {"chest": [-5.0, 26.0, 0.0], "head": [21.0, -58.9, -22.0], "rightArm": [173.9, 29.8, -34.5], "rightForearm": [-136.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [33.4, -109.6, -121.7], "leftForearm": [0.0, 0.0, 0.0], "leftHand": [0.0, 0.0, 0.0]}}
+ ]
 }

@@ -1,321 +1,272 @@
 #!/usr/bin/env python3
 """
-Authors the hand-reworked player clips (assets/jjk/animations) from a small pose vocabulary, against the JJS wiki's
-reference GIFs: real elbow and knee bends, anticipation before every hit, a snapped contact pose held a beat, overshoot
-and settle. Durations, holds and priorities stay as the moves' server timing expects.
+Authors the shared melee clips (assets/jjk/animations/common: the default M1 set, dashes, the guard) and the hit
+reactions (animations/reactions) with tools/animkit.py.
 
-    python3 tools/anim_author.py            # rewrites the clips listed in CLIPS
+    python3 tools/anim_author.py
 
-Conventions (the mod's rig): rotations in degrees [x, y, z]; arm x < 0 raises it forward, arm z > 0 swings the right
-arm out (mirrored for the left); forearm x < 0 folds the elbow; thigh x < 0 swings the leg forward; shin x > 0 bends the
-knee; chest / hips y < 0 turn the right shoulder forward; hips x > 0 lean forward; root pos is (right, up, forward) px.
+The default M1 set is a boxer-brawler's (Yuji fights with it; a cursed tool without cuts of its own falls back to it).
+Gojo, Hakari and Ryu have sets of their own (tools/anim_gojo.py, anim_hakari.py, anim_ryu.py).
+
+Timing is the server's (core/combat/melee/MeleeSystem): a light's hitbox opens 100 ms in, the finisher / uppercut /
+downslam / sprint / stomp 150 ms in, the heavy 200 ms in. Each clip's contact pose lands just inside that window.
 """
-import json
-import os
+from animkit import *
 
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'main', 'resources', 'assets', 'jjk', 'animations')
+NOTE = 'tools/anim_author.py'
 
-
-def arm(side, raise_, swing=0.0, out=0.0, elbow=0.0, wrist=0.0):
-    s = 1 if side == 'right' else -1
-    return {f'{side}Arm': {'rot': [raise_, swing * s, out * s]}, f'{side}Forearm': {'rot': [elbow, 0, 0]},
-            f'{side}Hand': {'rot': [wrist, 0, 0]}}
+# --- The boxer's guard: left foot and left hand lead, chin tucked, weight on the balls of the feet ---
+FL, FR = F(-2.4, 0, 3.2), F(2.6, 0, -3.2, toe=18)
+GR, GL = HC(3.6, -3.2, 4.6), HC(-3.0, -2.2, 6.8)
 
 
-def leg(side, swing, knee=0.0, out=0.0, foot=0.0):
-    s = 1 if side == 'right' else -1
-    return {f'{side}Thigh': {'rot': [swing, 0, out * s]}, f'{side}Shin': {'rot': [knee, 0, 0]}, f'{side}Foot': {'rot': [foot, 0, 0]}}
+def Y(root=(0, -1.2, 0), hips=(4, 14, 0), chest=(5, 10, 0), ra=GR, la=GL, rl=FR, ll=FL, head=(4, 0, 0), **kw):
+    return P(root=root, hips=hips, chest=chest, ra=ra, la=la, rl=rl, ll=ll, head=head, **kw)
 
 
-def body(twist=0.0, lean=0.0, hip_twist=None, head_down=0.0, head_turn=0.0, crouch=0.0, fwd=0.0, side=0.0, roll=0.0):
-    ht = twist * 0.55 if hip_twist is None else hip_twist
-    return {'chest': {'rot': [lean * 0.5, twist, roll]}, 'hips': {'rot': [lean, ht, 0]},
-            'head': {'rot': [head_down, -twist * 0.6 + head_turn, 0]}, 'root': {'pos': [side, -crouch, fwd]}}
+STANCE = Y()
+AIR_L = dict(rl=L(-34, 74, 5, 20), ll=L(-58, 96, 4, 24))  # knees tucked under a jump
 
 
-def pose(*parts):
-    out = {}
-    for p in parts:
-        out.update(p)
-    return out
+def common():
+    g = 'common'
+    # light_1: the jab. A flick off the lead shoulder: barely any wind-up, the hip snaps a few degrees, the fist is back
+    # at the chin before the cross leaves.
+    w = Y(root=(0.2, -1.5, -0.5), hips=(4, 20, 0), chest=(6, 14, 0), la=HC(-3.4, -3.0, 5.0))
+    h = Y(root=(-0.3, -1.5, 2.2), hips=(6, 2, 0), chest=(7, 30, 0), la=H(-1.0, 19.4, 15.6), ra=HC(3.4, -2.6, 4.2), rl=F(2.6, 0, -3.2, toe=30))
+    c = Clip(g, 'light_1', NOTE)
+    c.key(0, STANCE).key(50, w, 'EASE_OUT')
+    c.hit(110, w, h, lag=16, k=0.08, carry=45, settle=lerp(h, STANCE, 0.55), settle_at=230)
+    c.key(450, STANCE, 'EASE_IN_OUT').write()
+
+    # light_2: the cross. The rear heel turns out, the hips and shoulders unwind through the centre line and the right
+    # hand goes straight down the pipe; the jab hand snaps back to the cheek.
+    w = Y(root=(0.5, -1.8, -0.8), hips=(4, 30, 0), chest=(7, 20, 0), ra=HC(4.6, -4.2, 2.4), la=HC(-2.6, -2.0, 7.4))
+    h = Y(root=(-0.8, -1.9, 3.4), hips=(10, -26, 0), chest=(9, -30, -3), ra=H(-0.4, 19.0, 17.2), la=HC(-3.6, -2.2, 3.6),
+          rl=F(2.6, 0, -3.0, toe=44, yaw=-30))
+    c = Clip(g, 'light_2', NOTE)
+    c.key(0, STANCE).key(55, w, 'EASE_OUT')
+    c.hit(115, w, h, lag=28, k=0.10, carry=55, settle=lerp(h, STANCE, 0.5), settle_at=250)
+    c.key(450, STANCE, 'EASE_IN_OUT').write()
+
+    # light_3: the lead hook. He dips left to load the front leg, then the whole torso turns as one piece with the elbow
+    # up and the forearm parallel to the floor; the front foot pivots, the head stays behind the shoulder.
+    w = Y(root=(-1.4, -2.6, 0.4), hips=(8, -24, 4), chest=(10, -22, 6), la=HC(-6.4, -4.4, 1.6, pole=(-1, 0.2, -0.4)), ra=HC(3.2, -2.4, 4.6),
+          head=(8, -12, 0))
+    h = Y(root=(0.8, -1.7, 1.6), hips=(6, 34, -2), chest=(6, 44, -4), la=HC(0.6, -2.6, 7.4, pole=(-1, 0.5, 0.2)), ra=HC(3.8, -2.6, 3.2),
+          ll=F(-2.4, 0, 3.2, toe=22, yaw=-38), head=(4, 10, 0))
+    c = Clip(g, 'light_3', NOTE)
+    c.key(0, STANCE).key(60, w, 'EASE_OUT')
+    c.hit(125, w, h, lag=30, k=0.14, carry=60, settle=lerp(h, STANCE, 0.45), settle_at=280)
+    c.key(500, STANCE, 'EASE_IN_OUT').write()
+
+    # light_4, the finisher: an overhand right thrown with a full step. He sinks and coils on the back leg, then the back
+    # foot leaves the floor as everything he has goes through the target; he lands deep on the front leg and has to
+    # catch himself.
+    w = Y(root=(1.0, -3.4, -2.0), hips=(12, 40, 0), chest=(12, 26, 4), ra=HC(6.0, -1.0, -1.5, pole=(1, 0.2, -1)), la=HC(-2.0, -1.0, 8.6),
+          head=(8, 0, 0))
+    h = Y(root=(-1.0, -3.0, 6.2), hips=(22, -34, 0), chest=(16, -34, -6), ra=H(-1.6, 16.6, 19.6), la=HC(-5.6, -5.0, -1.0, pole=(-1, 0, -1)),
+          rl=F(3.2, 2.2, -1.4, toe=62), ll=F(-2.4, 0, 6.4), head=(2, 0, 0))
+    land = Y(root=(-0.8, -3.4, 5.4), hips=(20, -24, 0), chest=(14, -22, -3), ra=H(-1.0, 14.0, 15.0), la=HC(-5.0, -4.6, 0.6),
+             rl=F(3.0, 0, 1.2, toe=30), ll=F(-2.4, 0, 6.4))
+    c = Clip(g, 'light_4', NOTE)
+    c.key(0, STANCE).key(95, w, 'EASE_OUT', marker='anticipation')
+    c.hit(165, w, h, lag=34, k=0.10, carry=70)
+    c.key(360, land, 'EASE_OUT', marker='recovery').key(700, STANCE, 'EASE_IN_OUT').write()
+
+    # Air lights: the same hands with nothing to push off, so the legs do the counter-work: knees tucked, the opposite
+    # knee driving up as each punch goes out.
+    w = Y(root=(0, 0.8, -0.4), hips=(-4, 18, 0), chest=(4, 14, 0), la=HC(-3.4, -3.0, 5.0), **AIR_L)
+    h = Y(root=(0, 1.4, 1.2), hips=(8, 0, 0), chest=(8, 30, 0), la=HC(-0.8, -2.6, 13.6), ra=HC(3.6, -2.4, 3.6), rl=L(8, 60, 5, 30), ll=L(-70, 104, 4, 24))
+    a0 = Y(root=(0, 0.6, 0), **AIR_L)
+    c = Clip(g, 'air_1', NOTE)
+    c.key(0, a0).key(50, w, 'EASE_OUT')
+    c.hit(110, w, h, lag=14, k=0.08, carry=45, settle=lerp(h, a0, 0.6), settle_at=240)
+    c.key(450, a0, 'EASE_IN_OUT').write()
+
+    w = Y(root=(0, 0.8, -0.6), hips=(-6, 28, 0), chest=(6, 20, 0), ra=HC(4.6, -4.2, 2.4), la=HC(-2.6, -2.0, 7.4), **AIR_L)
+    h = Y(root=(0, 1.4, 1.6), hips=(12, -22, 0), chest=(10, -30, -3), ra=HC(-0.6, -3.0, 13.8), la=HC(-3.6, -2.2, 3.6), rl=L(-76, 110, 5, 24), ll=L(10, 56, 4, 30))
+    c = Clip(g, 'air_2', NOTE)
+    c.key(0, a0).key(55, w, 'EASE_OUT')
+    c.hit(115, w, h, lag=24, k=0.10, carry=55, settle=lerp(h, a0, 0.6), settle_at=250)
+    c.key(450, a0, 'EASE_IN_OUT').write()
+
+    # air_3: a spinning back-fist with the hips thrown round under him.
+    w = Y(root=(0, 0.8, 0), hips=(0, -34, 6), chest=(8, -26, 6), la=HC(-6.4, -3.6, 1.6, pole=(-1, 0.2, -0.4)), head=(4, -14, 0), **AIR_L)
+    h = Y(root=(0, 1.6, 0.8), hips=(-6, 40, -4), chest=(4, 48, -6), la=HC(0.8, -2.4, 7.6, pole=(-1, 0.5, 0.2)), ra=HC(4.4, -3.2, 2.2),
+          rl=L(-20, 40, 14, 20), ll=L(-64, 84, 10, 24), head=(2, 12, 0))
+    c = Clip(g, 'air_3', NOTE)
+    c.key(0, a0).key(60, w, 'EASE_OUT')
+    c.hit(125, w, h, lag=28, k=0.14, carry=60, settle=lerp(h, a0, 0.5), settle_at=290)
+    c.key(500, a0, 'EASE_IN_OUT').write()
+
+    # uppercut: dropped right down onto bent knees with the fist by the hip, then both legs fire and the fist is carried
+    # past his own chin; he comes off the floor with it and lands back in his guard.
+    w = Y(root=(0.6, -4.6, -0.6), hips=(18, 30, 0), chest=(16, 18, 4), ra=HC(5.4, -10.5, 2.0, pole=(1, 0, -1)), la=HC(-3.0, -2.4, 6.0),
+          head=(10, 0, 0))
+    h = Y(root=(-0.4, 2.2, 2.0), hips=(-10, -22, 0), chest=(-10, -22, -4), ra=H(1.4, 30.0, 6.4, pole=(0.4, -0.2, 1)), la=HC(-4.6, -6.0, 1.0),
+          rl=L(10, 14, 4, 34), ll=L(-28, 44, 4, 20), head=(-16, 0, 0))
+    hang = Y(root=(-0.3, 1.4, 1.8), hips=(-6, -16, 0), chest=(-6, -16, -3), ra=H(1.6, 28.4, 5.0, pole=(0.4, -0.2, 1)), la=HC(-4.4, -5.6, 1.4),
+             rl=L(6, 22, 4, 30), ll=L(-22, 40, 4, 20), head=(-10, 0, 0))
+    c = Clip(g, 'uppercut', NOTE)
+    c.key(0, STANCE).key(95, w, 'EASE_OUT', marker='anticipation')
+    c.key(165, h, 'EASE_IN', lag=30, marker='impact').key(300, hang, 'EASE_OUT')
+    c.key(480, Y(root=(0, -2.6, 0.6), hips=(10, 8, 0), chest=(10, 6, 0)), 'EASE_IN', marker='land').key(650, STANCE, 'EASE_OUT').write()
+
+    # downslam: both hands clasped over his head, body arched like a bow; then he folds in half and the hammer comes
+    # down between his knees.
+    w = Y(root=(0, 1.6, -0.6), hips=(-18, 0, 0), chest=(-16, 0, 0), ra=HC(1.2, 6.5, -1.5, pole=(1, 0.2, 0.6)), la=HC(-1.2, 6.5, -1.5, pole=(-1, 0.2, 0.6)),
+          rl=L(26, 70, 5, 30), ll=L(18, 60, 5, 30), head=(-18, 0, 0))
+    h = Y(root=(0, 0.2, 1.6), hips=(22, 0, 0), chest=(22, 0, 0), ra=HC(1.2, -11.0, 6.0), la=HC(-1.2, -11.0, 6.0),
+          rl=L(-60, 84, 6, 20), ll=L(-48, 70, 6, 20), head=(8, 0, 0))
+    c = Clip(g, 'downslam', NOTE)
+    c.key(0, a0).key(100, w, 'EASE_OUT', marker='anticipation')
+    c.hit(170, w, h, lag=26, k=0.08, carry=70)
+    c.key(420, Y(root=(0, -3.2, 0.8), hips=(22, 0, 0), chest=(16, 0, 0), ra=HC(3.0, -8.0, 5.0), la=HC(-3.0, -8.0, 5.0), rl=F(2.8, 0, -2.0), ll=F(-2.8, 0, 2.4)),
+          'EASE_IN', marker='land')
+    c.key(650, STANCE, 'EASE_IN_OUT').write()
+
+    # stomp: the knee comes up to the chest, the arms fly out for balance, and the heel is driven straight down with his
+    # weight dropped onto it.
+    w = Y(root=(-0.8, -0.2, 0), hips=(-8, 6, 4), chest=(4, 4, 0), ra=HC(7.0, -3.5, 2.0), la=HC(-7.0, -4.0, 2.5),
+          rl=L(-98, 112, 4, 10), ll=F(-2.2, 0, 0.6), head=(26, 0, 0))
+    h = Y(root=(0.6, -3.6, 1.0), hips=(14, 4, -3), chest=(10, 2, 0), ra=HC(6.4, -8.0, -1.0), la=HC(-6.0, -8.0, 0.0),
+          rl=F(2.2, 0, 3.6), ll=F(-2.6, 0, -0.6, toe=20), head=(18, 0, 0))
+    c = Clip(g, 'stomp', NOTE)
+    c.key(0, STANCE).key(90, w, 'EASE_OUT', marker='anticipation')
+    c.hit(165, w, h, lag=0, k=0.06, carry=60)
+    c.key(330, tweak(h, root_pos=(0, 0.8, 0)), 'EASE_OUT').key(650, STANCE, 'EASE_IN_OUT').write()
+
+    # sprint: the superman punch. One long running stride, he leaves the ground off the left foot with the right arm
+    # cocked, hangs flat in the air, and the fist arrives with all of the run behind it.
+    run = Y(root=(0, -1.4, 0), hips=(26, 10, 0), chest=(14, -18, 0), ra=A(40, 0, 10, -80), la=A(-50, 0, 8, -84), rl=L(-52, 40, 3, 10), ll=L(40, 70, 3, 20),
+            head=(-4, 0, 0))
+    w = Y(root=(0, 1.2, 1.0), hips=(18, 36, 0), chest=(10, 24, 4), ra=HC(6.2, -1.0, -2.0, pole=(1, 0.2, -1)), la=HC(-2.0, -1.4, 9.0),
+          rl=L(34, 96, 4, 30), ll=L(-40, 60, 4, 20))
+    h = Y(root=(0, 1.8, 5.6), hips=(38, -30, 0), chest=(16, -34, -6), ra=H(-1.2, 19.4, 20.5), la=HC(-5.6, -5.0, -1.5, pole=(-1, 0, -1)),
+          rl=L(44, 26, 4, 40), ll=L(10, 84, 4, 30), head=(-18, 0, 0))
+    land = Y(root=(-0.6, -3.2, 5.0), hips=(20, -18, 0), chest=(12, -16, -2), ra=H(-0.8, 14.5, 14.5), la=HC(-4.6, -4.4, 1.0),
+             rl=F(3.0, 0, 0.4, toe=30), ll=F(-2.4, 0, 6.0))
+    c = Clip(g, 'sprint', NOTE)
+    c.key(0, run).key(100, w, 'EASE_OUT', marker='anticipation')
+    c.hit(170, w, h, lag=30, k=0.08, carry=80)
+    c.key(430, land, 'EASE_IN', marker='land').key(800, STANCE, 'EASE_IN_OUT').write()
+
+    # heavy_charge: he sits down into a long stance and draws the right fist back past his ribs, the left hand out in
+    # front measuring the distance; held, breathing, until it is let go.
+    hc = Y(root=(1.2, -4.0, -2.4), hips=(12, 44, 0), chest=(12, 28, 4), ra=HC(6.6, -7.0, -2.5, pole=(1, 0.2, -1)), la=H(-1.6, 18.0, 11.5),
+           rl=F(3.0, 0, -4.2, toe=24, yaw=-30), ll=F(-2.6, 0, 4.2), head=(6, 0, 0))
+    c = Clip(g, 'heavy_charge', NOTE, tremble=0.5)
+    c.key(0, STANCE).key(220, lerp(STANCE, hc, 0.8), 'EASE_OUT').breathe(350, hc, period=1400, amp=0.8)
+    c.write()
+
+    # heavy: released. A hair deeper first, then the back leg straightens like a piston and the fist goes through the
+    # guard with the shoulder behind it; the follow-through drags his back foot forward.
+    deep = Y(root=(1.5, -4.6, -3.0), hips=(14, 50, 0), chest=(14, 32, 5), ra=HC(7.0, -7.4, -3.5, pole=(1, 0.2, -1)), la=H(-1.6, 17.0, 12.0),
+             rl=F(3.0, 0, -4.2, toe=30, yaw=-30), ll=F(-2.6, 0, 4.2), head=(8, 0, 0))
+    h = Y(root=(-1.2, -3.6, 6.4), hips=(24, -40, 0), chest=(16, -36, -6), ra=H(-1.4, 16.2, 20.4), la=HC(-6.0, -4.8, -2.0, pole=(-1, 0, -1)),
+          rl=F(3.2, 0.8, -3.0, toe=64), ll=F(-2.6, 0, 5.4), head=(2, 0, 0))
+    rec = Y(root=(-0.8, -3.0, 5.0), hips=(18, -22, 0), chest=(12, -18, -2), ra=H(-0.6, 14.0, 14.0), la=HC(-4.8, -4.4, 0.6),
+            rl=F(3.0, 0, 0.6, toe=26), ll=F(-2.6, 0, 5.4))
+    c = Clip(g, 'heavy', NOTE)
+    c.key(0, hc).key(120, deep, 'EASE_OUT', marker='anticipation')
+    c.hit(205, deep, h, lag=40, k=0.10, carry=85)
+    c.key(470, rec, 'EASE_OUT', marker='recovery').key(800, STANCE, 'EASE_IN_OUT').write()
+
+    # guard: forearms up in front of the face, elbows in, chin down behind them, knees soft.
+    gd = Y(root=(0, -2.0, -0.4), hips=(8, 8, 0), chest=(12, 6, 0), ra=HC(2.6, -1.4, 5.2, pole=(0.5, 1, 0.2)), la=HC(-2.4, -1.0, 5.8, pole=(-0.5, 1, 0.2)),
+           head=(10, 0, 0))
+    c = Clip(g, 'guard', NOTE)
+    c.key(0, lerp(STANCE, gd, 0.5)).breathe(150, gd, period=1600, amp=0.5)
+    c.write()
+
+    # Dashes: a burst off the far leg, the body thrown flat along the direction of travel, then the lead foot bites and
+    # he is back over his feet.
+    def dash(name, push, fly, catch):
+        c = Clip(g, name, NOTE)
+        c.key(0, push, 'EASE_OUT').key(70, push, 'EASE_OUT').key(170, fly, 'EASE_OUT').key(300, fly, 'LINEAR')
+        c.key(380, catch, 'EASE_OUT').key(450, STANCE, 'EASE_IN_OUT').write()
+
+    dash('dash_forward',
+         Y(root=(0, -3.4, -1.0), hips=(26, 6, 0), chest=(16, 0, 0), ra=A(30, 0, 10, -70), la=A(-40, 0, 8, -90), head=(-10, 0, 0)),
+         Y(root=(0, -2.6, 2.4), hips=(44, 0, 0), chest=(14, 0, 0), ra=A(62, 0, 16, -30), la=A(56, 0, 16, -34), rl=L(30, 30, 4, 40), ll=L(-66, 80, 4, 10),
+           head=(-34, 0, 0)),
+         Y(root=(0, -3.0, 1.6), hips=(20, 6, 0), chest=(12, 4, 0), rl=F(2.8, 0, -3.6, toe=30), ll=F(-2.4, 0, 4.6)))
+    dash('dash_back',
+         Y(root=(0, -3.2, 1.0), hips=(4, 10, 0), chest=(14, 6, 0), head=(6, 0, 0)),
+         Y(root=(0, -2.0, -2.4), hips=(-14, 10, 0), chest=(16, 6, 0), ra=A(-70, 0, 14, -40), la=A(-76, 0, 14, -44), rl=L(-20, 50, 4, 10), ll=L(-60, 30, 4, -10),
+           head=(8, 0, 0)),
+         Y(root=(0, -3.2, -1.2), hips=(14, 12, 0), chest=(12, 8, 0), rl=F(2.8, 0, -4.8, toe=10), ll=F(-2.4, 0, 2.6)))
+    side = (Y(root=(-1.2, -3.2, 0), hips=(8, 10, -8), chest=(8, 6, -6), head=(4, 14, 0)),
+            Y(root=(2.6, -2.4, 0), hips=(6, 4, 22), chest=(4, 0, 12), ra=A(-20, 0, 50, -50), la=A(-30, 0, -6, -100), rl=L(-30, 60, 16, 10), ll=L(8, 20, -36, 20),
+              head=(2, 8, -10)),
+            Y(root=(1.4, -3.2, 0), hips=(8, 10, 8), chest=(8, 8, 4), rl=F(4.6, 0, -2.6), ll=F(-1.6, 0, 3.0, toe=20)))
+    dash('dash_right', *side)
+    dash('dash_left', *[mirror(p) for p in side])
+    # The mirrored dash still ends in the (unmirrored) guard: dash() keys STANCE last.
 
 
-def mirror(p):
-    """The same pose, left for right."""
-    out = {}
-    for k, v in p.items():
-        n = k.replace('right', '\0').replace('left', 'right').replace('\0', 'left')
-        if 'rot' in v:
-            r = v['rot']
-            flip = k in ('chest', 'hips', 'head') or 'Arm' in k or 'Thigh' in k
-            v = {'rot': [r[0], -r[1] if flip else r[1], -r[2] if flip else r[2]]}
-        elif 'pos' in v:
-            v = {'pos': [-v['pos'][0], v['pos'][1], v['pos'][2]]}
-        out[n] = v
-    return out
+def reactions():
+    g = 'reactions'
+    # hitstun: the head snaps away first, the chest caves round the blow and the weight is knocked onto the back foot;
+    # a short stagger, then he is fighting to get his guard back up.
+    hit = P(root=(0.4, -1.6, -2.2), hips=(-8, 10, 2), chest=(-16, 16, 4), head=(-24, 14, 6), follow=1.0,
+            ra=A(-30, 0, 34, -70, 20), la=A(-44, 0, 30, -84, 10), rl=F(2.8, 0, -5.0), ll=F(-2.4, 0, 1.4, toe=16))
+    fold = P(root=(0.2, -2.6, -1.4), hips=(10, 6, 0), chest=(20, 8, -2), head=(16, -6, 0), follow=1.0,
+             ra=A(-48, 0, 14, -96), la=A(-56, 0, 12, -100), rl=F(2.8, 0, -4.6), ll=F(-2.4, 0, 1.6))
+    c = Clip(g, 'reaction_hitstun', NOTE)
+    c.key(0, lerp(STANCE, hit, 0.4)).key(70, hit, 'EASE_OUT', eases={'head': 'OVERSHOOT'}, marker='impact')
+    c.key(260, fold, 'EASE_IN_OUT').key(520, lerp(fold, STANCE, 0.5), 'EASE_IN_OUT')
+    c.write()
 
+    # launched: lifted off his feet and folded round the blow, limbs trailing behind the body; then they whip through
+    # as he tumbles.
+    a = P(root=(0, 1.0, -1.0), hips=(-30, 0, 0), chest=(34, 0, 0), head=(30, 0, 0), follow=1.0,
+          ra=A(-70, 0, 30, -20), la=A(-80, 0, 34, -24), rl=L(-64, 30, 8, 30), ll=L(-76, 40, 8, 30))
+    b = P(root=(0, 1.6, -1.6), hips=(-52, 8, 0), chest=(-10, 6, 4), head=(-28, 0, 0), follow=1.0,
+          ra=A(-150, 0, 40, -30), la=A(-136, 0, 44, -36), rl=L(-20, 50, 12, 40), ll=L(-40, 70, 10, 40))
+    c = Clip(g, 'reaction_hit_launched', NOTE)
+    c.key(0, lerp(STANCE, a, 0.5)).key(80, a, 'EASE_OUT', marker='impact').key(380, b, 'EASE_IN_OUT').key(700, lerp(b, a, 0.35), 'EASE_IN_OUT')
+    c.d.update(loop=True, loopStart=380, loopEnd=1020)
+    c.key(1020, b, 'EASE_IN_OUT')
+    c.duration = 1020
+    c.write()
 
-# --- Poses (right-handed fighter) ---
+    # knockdown: flat on his back, one knee up, an arm thrown out; the chest still heaving.
+    down = P(root=(0, -9.6, -6.0), hips=(-84, 0, 0), chest=(-4, 6, 0), head=(-6, 20, 0), follow=1.0,
+             ra=A(-20, 0, 70, -30), la=A(10, 0, 40, -60), rl=L(-50, 80, 10, 30), ll=L(-6, 10, 12, 30))
+    c = Clip(g, 'reaction_knockdown', NOTE)
+    c.key(0, down).breathe(300, down, period=2000, amp=1.2)
+    c.write()
 
-STANCE = pose(body(twist=14, lean=6, crouch=1.6, head_down=4), arm('right', -55, 8, 14, -105, 10), arm('left', -78, -6, 8, -98, 6),
-              leg('right', 14, 22, 3, -6), leg('left', -16, 20, 3, 6))
+    # guard broken: the arms are blown open and he reels back on his heels, chest and throat wide open, before he can
+    # gather himself.
+    open_ = P(root=(0, -1.0, -3.0), hips=(-14, 0, 0), chest=(-20, -8, 0), head=(-26, 6, 0), follow=1.0,
+              ra=A(-96, 0, 74, -40, 30), la=A(-70, 0, 84, -30, 30), rl=F(2.8, 0, -5.6), ll=F(-2.6, 0, 0.6, toe=30))
+    sag = P(root=(0, -2.6, -2.2), hips=(6, 0, 0), chest=(14, -4, 0), head=(18, 0, 0), follow=1.0,
+            ra=A(-10, 0, 30, -30), la=A(-4, 0, 34, -24), rl=F(2.8, 0, -5.0), ll=F(-2.6, 0, 1.0))
+    c = Clip(g, 'reaction_guard_broken', NOTE, tremble=0.8)
+    c.key(0, lerp(STANCE, open_, 0.5)).key(90, open_, 'EASE_OUT', eases={'rightArm': 'OVERSHOOT', 'leftArm': 'OVERSHOOT'}, marker='impact')
+    c.key(520, sag, 'EASE_IN_OUT').breathe(700, sag, period=1500, amp=1.4)
+    c.write()
 
+    # pulled: dragged forward by the chest with his heels dug in, leaning back against it, arms trailing.
+    pull = P(root=(0, -1.4, 2.0), hips=(-20, 0, 0), chest=(16, 0, 0), head=(-10, 0, 0), follow=1.0,
+             ra=A(-76, 0, 20, -20), la=A(-84, 0, 24, -16), rl=F(2.4, 0, 4.4, toe=-24), ll=F(-2.4, 0, 6.0, toe=-28))
+    c = Clip(g, 'reaction_pulled', NOTE, tremble=1.0)
+    c.key(0, pull).breathe(200, pull, period=900, amp=1.5)
+    c.write()
 
-def jab_wind(side='right'):
-    p = pose(body(twist=24, lean=4, crouch=2.2, fwd=-1), arm('right', -42, 18, 22, -118, 14), arm('left', -80, -8, 8, -96, 6),
-             leg('right', 18, 26, 3, -8), leg('left', -18, 24, 3, 8))
-    return p if side == 'right' else mirror(p)
-
-
-def jab_hit(side='right', reach=1.0):
-    p = pose(body(twist=-30 * reach, lean=12, crouch=1.8, fwd=4.5 * reach), arm('right', -96, 4, 2, -4, -6), arm('left', -72, -14, 10, -110, 8),
-             leg('right', 30, 14, 3, -10), leg('left', -30, 28, 3, 10))
-    return p if side == 'right' else mirror(p)
-
-
-def jab_settle(side='right'):
-    p = pose(body(twist=-24, lean=10, crouch=1.8, fwd=3.8), arm('right', -91, 2, 4, -10, -4), arm('left', -74, -12, 10, -106, 8),
-             leg('right', 27, 16, 3, -9), leg('left', -27, 27, 3, 9))
-    return p if side == 'right' else mirror(p)
-
-
-HOOK_WIND = pose(body(twist=38, lean=8, crouch=2.6, fwd=-0.5, roll=-4), arm('right', -60, 30, 62, -96, 10), arm('left', -82, -10, 8, -100, 6),
-                 leg('right', 16, 30, 6, -8), leg('left', -20, 26, 4, 8))
-HOOK_HIT = pose(body(twist=-46, lean=12, crouch=2.0, fwd=3.5, roll=4), arm('right', -88, -34, 54, -78, 0), arm('left', -64, -16, 14, -112, 8),
-                leg('right', 26, 18, 6, -10), leg('left', -26, 30, 4, 10))
-HOOK_SETTLE = pose(body(twist=-40, lean=10, crouch=2.0, fwd=3.0, roll=3), arm('right', -84, -28, 50, -84, 0), arm('left', -66, -14, 14, -108, 8),
-                   leg('right', 24, 20, 6, -10), leg('left', -24, 29, 4, 10))
-
-FIN_WIND = pose(body(twist=42, lean=14, crouch=4.0, fwd=-1.5), arm('right', -24, 30, 30, -125, 18), arm('left', -88, -20, 10, -60, 0),
-                leg('right', 26, 46, 6, -14), leg('left', -26, 40, 4, 14))
-FIN_HIT = pose(body(twist=-44, lean=22, crouch=2.6, fwd=7.5), arm('right', -100, 2, 0, 0, -10), arm('left', 28, 18, 14, -40, 0),
-               leg('right', 44, 6, 3, -16), leg('left', -42, 46, 3, 14))
-FIN_SETTLE = pose(body(twist=-38, lean=18, crouch=2.8, fwd=6.5), arm('right', -95, 0, 2, -6, -6), arm('left', 20, 16, 14, -48, 0),
-                  leg('right', 40, 10, 3, -14), leg('left', -38, 44, 3, 13))
-
-# Divergent Fist (JJS Vessel wiki GIF): deep coiled crouch, fist cocked low at the hip, guard arm out front;
-# then the full lunge, the arm thrown straight through, the back leg driving.
-DF_COIL = pose(body(twist=48, lean=20, crouch=5.0, fwd=-1.5, head_down=8), arm('right', 18, 30, 26, -110, 20), arm('left', -88, -26, 14, -40, 0),
-               leg('right', 30, 52, 8, -16), leg('left', -30, 48, 6, 16))
-DF_COIL_DEEP = pose(body(twist=56, lean=24, crouch=5.8, fwd=-2.2, head_down=10), arm('right', 26, 34, 28, -118, 24), arm('left', -92, -30, 14, -34, 0),
-                    leg('right', 34, 58, 8, -18), leg('left', -34, 52, 6, 18))
-DF_HIT = pose(body(twist=-52, lean=26, crouch=3.0, fwd=9.0, head_down=-2), arm('right', -104, 0, -2, 0, -12), arm('left', 34, 22, 18, -36, 0),
-              leg('right', 50, 4, 4, -18), leg('left', -46, 52, 4, 16))
-DF_FOLLOW = pose(body(twist=-46, lean=22, crouch=3.0, fwd=8.0), arm('right', -98, -4, 0, -8, -8), arm('left', 26, 18, 16, -44, 0),
-                 leg('right', 46, 8, 4, -16), leg('left', -42, 48, 4, 15))
-
-# Cursed Strikes (JJS GIF): low ready, the slide in, an alternating flurry, the spin, the high kick.
-CS_READY = pose(body(twist=20, lean=22, crouch=4.4, head_down=10), arm('right', -30, 20, 24, -112, 10), arm('left', -64, -12, 12, -104, 8),
-                leg('right', 22, 50, 8, -12), leg('left', -26, 46, 6, 12))
-CS_SLIDE = pose(body(twist=10, lean=34, crouch=6.0, fwd=2.0, head_down=-4), arm('right', 34, 20, 30, -30, 0), arm('left', -60, -10, 20, -90, 0),
-                leg('right', 40, 70, 10, -10), leg('left', -50, 30, 8, 18))
-# Cursed Strikes against the Roblox reference video: he reaches out with the right first, then drops into the low ready;
-# the dash is pitched far forward with the right fist leading and the left arm and leg trailing.
-CS_REACH = pose(body(twist=18, lean=6, crouch=1.4, head_down=-2), arm('right', -88, 4, 6, -12, -4), arm('left', -40, -10, 18, -90, 6),
-                leg('right', 12, 20, 3, -6), leg('left', -12, 20, 3, 6))
-CS_DASH = pose(body(twist=-14, lean=40, crouch=5.0, fwd=3.0, head_down=-30), arm('right', -124, 6, 8, -10, -6), arm('left', 42, -14, 20, -40, 0),
-               leg('right', -36, 40, 6, 10), leg('left', 56, 30, 4, -12))
-KICK_WIND = pose(body(twist=30, lean=-6, crouch=2.0, roll=-10), arm('right', -40, 20, 40, -90, 0), arm('left', -60, -20, 30, -80, 0),
-                 leg('right', -60, 100, 20, 20), leg('left', -6, 24, 4, 6))
-KICK_HIT = pose(body(twist=-20, lean=-22, crouch=0.6, fwd=2.0, roll=-22), arm('right', 20, 30, 60, -40, 0), arm('left', -40, -10, 50, -70, 0),
-                leg('right', -98, 4, 34, 30), leg('left', 6, 18, 4, 4))
-KICK_SETTLE = pose(body(twist=-16, lean=-14, crouch=1.2, fwd=2.0, roll=-14), arm('right', 10, 26, 54, -50, 0), arm('left', -46, -10, 44, -76, 0),
-                   leg('right', -84, 16, 30, 26), leg('left', 4, 20, 4, 4))
-
-
-def key(t, p, ease=None):
-    k = {'t': t, 'bones': p}
-    if ease:
-        k['ease'] = ease
-    return k
-
-
-def clip(group, name, duration, keys, priority, blend_in, blend_out, hold=False):
-    d = {'name': name, 'duration': duration}
-    if hold:
-        d['hold'] = True
-    d.update({'blendIn': blend_in, 'blendOut': blend_out, 'priority': priority,
-              'authored': 'tools/anim_author.py (reference: JJS wiki GIFs)', 'keys': keys})
-    with open(os.path.join(OUT, group, name + '.json'), 'w') as f:
-        json.dump(d, f, indent=1)
-
-
-def strike(group, name, duration, wind, hit, settle, rest, t_wind, t_hit, priority='ATTACK', blend_in=40, blend_out=150):
-    """Wind-up (eased in), a hard snap to contact, held a beat (the hit-stop pose), settled, then back to guard."""
-    clip(group, name, duration, [key(0, STANCE), key(t_wind, wind, 'EASE_OUT'), key(t_hit, hit, 'EASE_IN'),
-                                 key(t_hit + 70, settle, 'EASE_OUT'), key(duration, rest, 'EASE_IN_OUT')], priority, blend_in, blend_out)
-
-
-def main():
-    # The M1 chain: jab, cross, hook, and the knockback finisher.
-    strike('common', 'light_1', 450, jab_wind('right'), jab_hit('right'), jab_settle('right'), STANCE, 70, 130)
-    strike('common', 'light_2', 450, jab_wind('left'), jab_hit('left', 1.1), jab_settle('left'), STANCE, 70, 130)
-    strike('common', 'light_3', 500, HOOK_WIND, HOOK_HIT, HOOK_SETTLE, STANCE, 110, 190)
-    clip('common', 'light_4', 700, [key(0, STANCE), key(140, FIN_WIND, 'EASE_OUT'), key(200, FIN_HIT, 'EASE_IN'), key(330, FIN_SETTLE, 'EASE_OUT'),
-                                    key(700, STANCE, 'EASE_IN_OUT')], 'ATTACK', 25, 200)
-    # Divergent Fist: the coil (held while it charges), then the punch.
-    clip('yuji', 'divergent_windup', 450, [key(0, STANCE), key(220, DF_COIL, 'EASE_OUT'), key(450, DF_COIL_DEEP, 'EASE_IN_OUT')], 'SPECIAL', 50, 100, hold=True)
-    clip('yuji', 'divergent_punch', 700, [key(0, DF_COIL_DEEP), key(60, DF_HIT, 'EASE_IN'), key(220, DF_FOLLOW, 'EASE_OUT'),
-                                          key(700, STANCE, 'EASE_IN_OUT')], 'SPECIAL', 15, 250)
-    # Cursed Strikes.
-    # The windup (strikesWindup 9 ticks): the reach, then down into the ready; the dash snaps in fast.
-    clip('yuji', 'cursed_strikes_ready', 450, [key(0, STANCE), key(200, CS_REACH, 'EASE_OUT'), key(420, CS_READY, 'EASE_IN')], 'SPECIAL', 50, 100, hold=True)
-    clip('yuji', 'cursed_strikes_slide', 120, [key(0, CS_READY), key(120, CS_DASH, 'EASE_OUT')], 'MOVEMENT', 25, 100, hold=True)
-    flurry = [key(0, CS_READY)]
-    t, side = 50, 'right'
-    while t + 200 <= 1500:
-        flurry += [key(t, jab_wind(side), 'EASE_OUT'), key(t + 60, jab_hit(side, 1.05), 'EASE_IN'), key(t + 120, jab_settle(side), 'EASE_OUT')]
-        t += 180
-        side = 'left' if side == 'right' else 'right'
-    flurry.append(key(1500, STANCE, 'EASE_IN_OUT'))
-    clip('yuji', 'cursed_strikes_flurry', 1500, flurry, 'SPECIAL', 25, 150)
-    # The last punch of the rush (strikesFinalAt 4 ticks = 200 ms to contact): wound back, driven through, held, back to guard.
-    clip('yuji', 'cursed_strikes_final', 650, [key(0, STANCE), key(120, FIN_WIND, 'EASE_OUT'), key(200, FIN_HIT, 'EASE_IN'), key(380, FIN_SETTLE, 'EASE_OUT'),
-                                               key(650, STANCE, 'EASE_IN_OUT')], 'SPECIAL', 30, 200)
-    clip('yuji', 'cursed_strikes_kick', 600, [key(0, STANCE), key(110, KICK_WIND, 'EASE_OUT'), key(170, KICK_HIT, 'EASE_IN'),
-                                              key(300, KICK_SETTLE, 'EASE_OUT'), key(600, STANCE, 'EASE_IN_OUT')], 'SPECIAL', 15, 200)
-    print('wrote the M1 chain, Divergent Fist and Cursed Strikes clips')
-
-
-# --- Variants (pass 2): everything else in the M1, Divergent Fist, Cursed Strikes and Manji Kick families ---
-
-def tucked(p, lift=1.5):
-    """The same upper body in the air: legs tucked under, no crouch, a little lift."""
-    q = dict(p)
-    q.update(leg('right', -40, 78, 6, 10))
-    q.update(leg('left', -18, 62, 6, 8))
-    r = q['root']['pos']
-    q['root'] = {'pos': [r[0], lift, r[2]]}
-    return q
-
-
-UPPER_WIND = pose(body(twist=30, lean=18, crouch=5.0, head_down=6), arm('right', 24, 20, 20, -120, 16), arm('left', -80, -14, 12, -100, 6),
-                  leg('right', 28, 56, 6, -14), leg('left', -26, 50, 6, 14))
-UPPER_HIT = pose(body(twist=-24, lean=-14, crouch=-1.5, fwd=2.5, head_down=-14), arm('right', -168, 6, 8, -26, -10), arm('left', -30, -10, 20, -110, 6),
-                 leg('right', 22, 8, 4, -16), leg('left', -14, 12, 4, 10))
-UPPER_SETTLE = pose(body(twist=-20, lean=-10, crouch=-1.0, fwd=2.0, head_down=-10), arm('right', -160, 4, 8, -34, -8), arm('left', -34, -10, 20, -106, 6),
-                    leg('right', 20, 12, 4, -14), leg('left', -14, 14, 4, 10))
-SLAM_WIND = pose(body(twist=0, lean=-14, crouch=-1.0, head_down=-10), arm('right', -172, 0, 10, -70, 10), arm('left', -172, 0, 10, -70, 10),
-                 leg('right', -40, 80, 6, 10), leg('left', -20, 64, 6, 8))
-SLAM_HIT = pose(body(twist=0, lean=42, crouch=3.5, fwd=2.0, head_down=14), arm('right', -40, 0, 6, -12, -10), arm('left', -40, 0, 6, -12, -10),
-                leg('right', -30, 70, 6, 10), leg('left', -10, 50, 6, 8))
-STOMP_WIND = pose(body(twist=8, lean=-6, crouch=0.5, head_down=12), arm('right', -40, 10, 40, -60, 0), arm('left', -50, -10, 36, -70, 0),
-                  leg('right', -95, 100, 6, 18), leg('left', 4, 14, 4, 4))
-STOMP_HIT = pose(body(twist=4, lean=18, crouch=3.0, head_down=26), arm('right', -20, 10, 46, -40, 0), arm('left', -26, -10, 44, -46, 0),
-                 leg('right', -10, 14, 6, -6), leg('left', 14, 40, 4, 8))
-RUN_WIND = pose(body(twist=26, lean=28, crouch=2.0, fwd=1.0), arm('right', 40, 20, 18, -70, 10), arm('left', -70, -10, 10, -90, 6),
-                leg('right', 40, 60, 4, -10), leg('left', -50, 40, 4, 12))
-DROPKICK = pose(body(twist=-10, lean=-58, crouch=-2.0, fwd=4.0, head_down=30), arm('right', 40, 10, 50, -20, 0), arm('left', 30, -10, 50, -20, 0),
-                leg('right', -92, 0, 4, 20), leg('left', -80, 14, 4, 20))
-DIVE = pose(body(twist=-6, lean=-36, crouch=-1.0, fwd=3.0, head_down=24), arm('right', 20, 10, 40, -40, 0), arm('left', -60, -10, 40, -60, 0),
-            leg('right', -72, 6, 6, 20), leg('left', -30, 70, 6, 10))
-HOP = pose(body(twist=10, lean=10, crouch=-2.0, head_down=-6), arm('right', -120, 10, 30, -60, 0), arm('left', -110, -10, 30, -60, 0),
-           leg('right', -60, 96, 6, 16), leg('left', -40, 90, 6, 14))
-LAND = pose(body(twist=12, lean=34, crouch=6.0, fwd=1.0, head_down=8), arm('right', -24, 16, 24, -6, -10), arm('left', -70, -20, 30, -60, 0),
-            leg('right', 30, 76, 10, -18), leg('left', -42, 64, 8, 16))
-FLOOR_WIND = pose(body(twist=30, lean=40, crouch=5.0, head_down=24), arm('right', -150, 20, 20, -80, 0), arm('left', -60, -10, 30, -60, 0),
-                  leg('right', 30, 80, 10, -16), leg('left', -40, 70, 8, 14))
-FLOOR_HIT = pose(body(twist=-20, lean=58, crouch=6.5, fwd=2.0, head_down=34), arm('right', -40, 6, 8, 0, -10), arm('left', -30, -20, 40, -40, 0),
-                 leg('right', 34, 90, 10, -20), leg('left', -44, 76, 8, 14))
-RECOIL = pose(body(twist=26, lean=-16, crouch=2.0, fwd=-3.0, head_down=-12), arm('right', -40, 30, 40, -60, 10), arm('left', -30, -20, 40, -60, 10),
-              leg('right', 30, 26, 6, -8), leg('left', -10, 20, 4, 4))
-SPIN_WIND = pose(body(twist=70, lean=10, crouch=3.0, roll=-6), arm('right', -60, 30, -20, -130, 0), arm('left', -70, -20, 30, -90, 0),
-                 leg('right', 24, 40, 6, -10), leg('left', -24, 36, 6, 10))
-SPIN_HIT = pose(body(twist=-90, lean=6, crouch=2.0, fwd=2.0, roll=6), arm('right', -92, -10, 86, -10, 0), arm('left', -60, -20, 30, -100, 0),
-                leg('right', 20, 30, 6, -8), leg('left', -26, 34, 6, 10))
-# Manji Kick (JJS GIF): the low counter guard, the duck under the blow, then the spinning rising kick with the body thrown
-# sideways and the kicking leg straight up (the manji), the arms flung out for balance.
-MANJI_STANCE = pose(body(twist=10, lean=14, crouch=3.4, head_down=6), arm('right', -84, -20, -16, -118, 10), arm('left', -78, -24, -18, -112, 10),
-                    leg('right', 18, 40, 14, -10), leg('left', -20, 36, 12, 10))
-MANJI_DUCK = pose(body(twist=40, lean=30, crouch=6.4, side=-2.0, roll=22, head_down=14), arm('right', -40, 20, 40, -100, 0), arm('left', -70, -10, 20, -110, 0),
-                  leg('right', 30, 80, 14, -14), leg('left', -36, 70, 12, 14))
-MANJI_CHAMBER = pose(body(twist=70, lean=-10, crouch=2.0, roll=-30, head_down=-6), arm('right', -30, 20, 70, -40, 0), arm('left', -20, -20, 80, -30, 0),
-                     leg('right', -84, 110, 24, 20), leg('left', 0, 26, 4, 4))
-MANJI_HIT = pose(body(twist=-30, lean=-30, crouch=-0.5, fwd=1.5, roll=-52, head_down=-10), arm('right', 10, 30, 84, -10, 0), arm('left', -10, -20, 96, -14, 0),
-                 leg('right', -158, 0, 36, 30), leg('left', 8, 16, 6, 4))
-MANJI_HOLD = pose(body(twist=-26, lean=-26, crouch=0.0, fwd=1.5, roll=-46, head_down=-8), arm('right', 6, 28, 80, -16, 0), arm('left', -12, -20, 90, -18, 0),
-                  leg('right', -146, 10, 34, 28), leg('left', 6, 18, 6, 4))
-FACE_KICK = pose(body(twist=-12, lean=-24, crouch=-0.5, fwd=2.0, roll=-8, head_down=-12), arm('right', 20, 20, 70, -20, 0), arm('left', -10, -20, 70, -20, 0),
-                 leg('right', -170, 0, 6, 34), leg('left', 10, 14, 4, 4))
-SWOOP = pose(body(twist=-20, lean=44, crouch=5.0, fwd=3.0, roll=10, head_down=-10), arm('right', 50, 20, 30, -20, 0), arm('left', 46, -20, 30, -20, 0),
-             leg('right', 44, 70, 8, -14), leg('left', -54, 50, 8, 18))
-GRAB = pose(body(twist=-10, lean=16, crouch=2.0, fwd=3.0), arm('right', -96, -16, -10, -36, 0), arm('left', -96, 16, -10, -36, 0),
-            leg('right', 24, 26, 6, -8), leg('left', -24, 30, 6, 8))
-GRAB_SPIN = pose(body(twist=80, lean=6, crouch=2.6, fwd=1.0, roll=-10), arm('right', -86, 40, 30, -50, 0), arm('left', -100, 10, 0, -40, 0),
-                 leg('right', 10, 30, 14, -6), leg('left', -30, 40, 14, 10))
-THROW_UP = pose(body(twist=10, lean=-22, crouch=-1.0, head_down=-24), arm('right', -170, 0, 16, -40, 0), arm('left', -170, 0, 16, -40, 0),
-                leg('right', 16, 10, 6, -8), leg('left', -16, 12, 6, 8))
-THROW_DOWN = pose(body(twist=0, lean=50, crouch=5.0, fwd=3.0, head_down=30), arm('right', -30, 0, 10, -6, -10), arm('left', -30, 0, 10, -6, -10),
-                  leg('right', 40, 60, 8, -16), leg('left', -40, 70, 8, 14))
-
-
-def meta(group, name):
-    return json.load(open(os.path.join(OUT, group, name + '.json')))
-
-
-def rework(group, name, keys):
-    """Rewrites a clip's keys, keeping its length, hold, blends and priority exactly (the move's timing is the server's)."""
-    m = meta(group, name)
-    d = m['duration']
-    keys = [dict(k, t=min(d, max(0, int(round(k['t'] * d if isinstance(k['t'], float) and k['t'] <= 1.0 else k['t']))))) for k in keys]
-    clip(group, name, d, keys, m['priority'], m.get('blendIn', 40), m.get('blendOut', 150), hold=m.get('hold', False))
-
-
-def f(x):
-    """A key time as a share of the clip's length."""
-    return float(x)
-
-
-def variants():
-    a = 'common'
-    # Air M1s: the same strikes, legs tucked.
-    rework(a, 'air_1', [key(0, tucked(STANCE)), key(70, tucked(jab_wind('right')), 'EASE_OUT'), key(130, tucked(jab_hit('right')), 'EASE_IN'),
-                        key(200, tucked(jab_settle('right')), 'EASE_OUT'), key(f(1.0), tucked(STANCE), 'EASE_IN_OUT')])
-    rework(a, 'air_2', [key(0, tucked(STANCE)), key(70, tucked(jab_wind('left')), 'EASE_OUT'), key(130, tucked(jab_hit('left', 1.1)), 'EASE_IN'),
-                        key(200, tucked(jab_settle('left')), 'EASE_OUT'), key(f(1.0), tucked(STANCE), 'EASE_IN_OUT')])
-    rework(a, 'air_3', [key(0, tucked(STANCE)), key(110, tucked(HOOK_WIND), 'EASE_OUT'), key(190, tucked(HOOK_HIT), 'EASE_IN'),
-                        key(260, tucked(HOOK_SETTLE), 'EASE_OUT'), key(f(1.0), tucked(STANCE), 'EASE_IN_OUT')])
-    rework(a, 'uppercut', [key(0, STANCE), key(110, UPPER_WIND, 'EASE_OUT'), key(170, UPPER_HIT, 'EASE_IN'), key(280, UPPER_SETTLE, 'EASE_OUT'),
-                           key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    rework(a, 'downslam', [key(0, tucked(STANCE)), key(120, SLAM_WIND, 'EASE_OUT'), key(190, SLAM_HIT, 'EASE_IN'), key(330, SLAM_HIT, 'EASE_OUT'),
-                           key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    rework(a, 'stomp', [key(0, STANCE), key(90, STOMP_WIND, 'EASE_OUT'), key(150, STOMP_HIT, 'EASE_IN'), key(260, STOMP_HIT, 'EASE_OUT'),
-                        key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    rework(a, 'sprint', [key(0, RUN_WIND), key(150, FIN_WIND, 'EASE_OUT'), key(220, FIN_HIT, 'EASE_IN'), key(420, FIN_SETTLE, 'EASE_OUT'),
-                         key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    rework(a, 'heavy_charge', [key(0, STANCE), key(f(1.0), FIN_WIND, 'EASE_OUT')])
-    rework(a, 'heavy', [key(0, FIN_WIND), key(90, DF_COIL_DEEP, 'EASE_OUT'), key(150, FIN_HIT, 'EASE_IN'), key(330, FIN_SETTLE, 'EASE_OUT'),
-                        key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    y = 'yuji'
-    # Black Flash strikes (Divergent Fist's timed press, and its chain off the back).
-    rework(y, 'black_flash_punch', [key(0, DF_COIL_DEEP), key(55, DF_HIT, 'EASE_IN'), key(260, DF_FOLLOW, 'EASE_OUT'), key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    rework(y, 'black_flash', [key(0, STANCE), key(200, DF_COIL_DEEP, 'EASE_OUT'), key(260, DF_HIT, 'EASE_IN'), key(480, DF_FOLLOW, 'EASE_OUT'),
-                              key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    rework(y, 'black_flash_uppercut', [key(0, UPPER_WIND), key(80, UPPER_HIT, 'EASE_IN'), key(300, UPPER_SETTLE, 'EASE_OUT'), key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    rework(y, 'black_flash_dropkick', [key(0, STANCE), key(110, HOP, 'EASE_OUT'), key(170, DROPKICK, 'EASE_IN'), key(420, DROPKICK, 'EASE_OUT'),
-                                       key(f(1.0), LAND, 'EASE_IN_OUT')])
-    # Cursed Strikes' other beats.
-    rework(y, 'cursed_strikes_hop', [key(0, CS_READY), key(f(1.0), HOP, 'EASE_OUT')])
-    rework(y, 'cursed_strikes_dropkick', [key(0, HOP), key(f(1.0), DIVE, 'EASE_OUT')])
-    rework(y, 'cursed_strikes_land', [key(0, DIVE), key(90, LAND, 'EASE_IN'), key(260, LAND, 'EASE_OUT'), key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    rework(y, 'cursed_strikes_floor', [key(0, STANCE), key(140, FLOOR_WIND, 'EASE_OUT'), key(210, FLOOR_HIT, 'EASE_IN'), key(330, FLOOR_HIT, 'EASE_OUT'),
-                                       key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    rework(y, 'cursed_strikes_blocked', [key(0, jab_hit('right')), key(110, RECOIL, 'EASE_OUT'), key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    rework(y, 'cursed_strikes_spin', [key(0, STANCE), key(150, SPIN_WIND, 'EASE_OUT'), key(220, SPIN_HIT, 'EASE_IN'), key(380, SPIN_HIT, 'EASE_OUT'),
-                                      key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    # Manji Kick and its variants.
-    rework(y, 'manji_stance', [key(0, STANCE), key(f(1.0), MANJI_STANCE, 'EASE_OUT')])
-    rework(y, 'manji_dodge', [key(0, MANJI_STANCE), key(110, MANJI_DUCK, 'EASE_OUT'), key(f(1.0), MANJI_DUCK, 'EASE_IN_OUT')])
-    rework(y, 'manji_kick', [key(0, MANJI_DUCK), key(140, MANJI_CHAMBER, 'EASE_OUT'), key(210, MANJI_HIT, 'EASE_IN'), key(400, MANJI_HOLD, 'EASE_OUT'),
-                             key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    rework(y, 'manji_face_kick', [key(0, MANJI_DUCK), key(100, MANJI_CHAMBER, 'EASE_OUT'), key(160, FACE_KICK, 'EASE_IN'), key(f(1.0), FACE_KICK, 'EASE_OUT')])
-    rework(y, 'manji_recover', [key(0, MANJI_HOLD), key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    rework(y, 'manji_swoop', [key(0, MANJI_STANCE), key(180, SWOOP, 'EASE_OUT'), key(f(1.0), SWOOP, 'EASE_IN_OUT')])
-    rework(y, 'manji_grapple_spin', [key(0, SWOOP), key(150, GRAB, 'EASE_OUT'), key(400, GRAB_SPIN, 'EASE_IN_OUT'), key(f(1.0), THROW_UP, 'EASE_OUT')])
-    rework(y, 'manji_slam', [key(0, THROW_UP), key(140, THROW_DOWN, 'EASE_IN'), key(300, THROW_DOWN, 'EASE_OUT'), key(f(1.0), STANCE, 'EASE_IN_OUT')])
-    print('wrote the variants: air M1s, uppercut, downslam, stomp, sprint, heavy, Black Flash strikes, Cursed Strikes, Manji Kick')
+    # overload (Infinite Void): everything arriving at once. Head thrown back, hands half raised and useless, knees
+    # going.
+    ov = P(root=(0, -2.2, -0.6), hips=(-6, 0, 0), chest=(-14, 0, 0), head=(-38, 0, 8), follow=1.0,
+           ra=A(-34, 0, 26, -60, 30), la=A(-24, 0, 30, -70, 30), rl=F(2.2, 0, -0.6), ll=F(-2.4, 0, 0.8))
+    c = Clip(g, 'reaction_overload', NOTE)
+    c.key(0, ov).breathe(300, ov, period=2600, amp=1.8, sway=5)
+    c.write()
 
 
 if __name__ == '__main__':
-    main()
-    variants()
+    common()
+    reactions()
+    print('wrote', len(WRITTEN), 'clips:', ' '.join(WRITTEN))

@@ -1,17 +1,23 @@
 {
-  "name": "red_charge",
-  "reference": "ReversalRed.gif frames 0-30: the right arm swings low and back, then rises high in front, hand above the head where Red gathers; held until it fires.",
-  "duration": 600,
-  "hold": true,
-  "blendIn": 60, "blendOut": 200,
-  "priority": "SPECIAL",
-  "look": 0.4,
-  "keys": [
-    {"t": 0, "bones": {"rightArm": [-5, 0, 6], "chest": [0, 0, 0], "root": {"pos": [0, 0, 0]}}},
-    {"t": 120, "marker": "anticipation", "ease": "EASE_OUT", "bones": {"rightArm": [15, 0, 15], "rightForearm": [-15, 0, 0], "chest": [0, 10, 0], "root": {"pos": [0, -0.6, 0]}}},
-    {"t": 350, "marker": "raise", "ease": "EASE_OUT", "bones": {
-        "rightArm": [-150, -12, 12], "rightForearm": [-50, 0, 0], "rightHand": [-20, 0, 0],
-        "chest": [-6, -8, 0], "head": [-12, -5, 0], "leftArm": [-10, 0, -18], "root": {"pos": [0, 0.3, 0]}}},
-    {"t": 600, "marker": "hold", "ease": "EASE_IN_OUT", "bones": {"rightArm": [-158, -12, 10], "rightForearm": [-55, 0, 0], "rightHand": [-25, 0, 0], "chest": [-8, -10, 0]}}
-  ]
+ "name": "red_charge",
+ "duration": 2100,
+ "hold": true,
+ "loop": true,
+ "loopStart": 600,
+ "loopEnd": 2100,
+ "blendIn": 60,
+ "blendOut": 200,
+ "priority": "SPECIAL",
+ "look": 0.4,
+ "authored": "tools/anim_gojo.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.0, -0.2, 0.0]}, "hips": [-3.0, 6.0, 0.0], "chest": [-3.0, 4.0, 0.0], "head": [0.6, -7.5, -0.6], "rightArm": [4.0, 0.0, 6.0], "rightForearm": [-12.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [16.0, 0.0, -5.0], "leftForearm": [-38.0, 0.0, 0.0], "leftHand": [10.0, 0.0, 0.0], "rightThigh": [-2.2, 17.2, 4.1], "rightShin": [22.0, 0.0, 0.0], "rightFoot": [-16.0, -9.9, -0.4], "leftThigh": [-9.2, -16.9, -1.5], "leftShin": [22.2, 0.0, 0.0], "leftFoot": [-9.8, 10.9, -1.3]}},
+  {"t": 120, "ease": "EASE_OUT", "marker": "anticipation", "bones": {"root": {"pos": [0.0, -0.2, 0.0]}, "hips": [-2.0, 22.0, 0.0], "chest": [4.0, 20.0, 0.0], "head": [-2.1, -31.4, 1.9], "rightArm": [42.0, 0.0, 16.0], "rightForearm": [-16.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [16.0, 0.0, -5.0], "leftForearm": [-38.0, 0.0, 0.0], "leftHand": [10.0, 0.0, 0.0], "rightThigh": [-7.5, 17.1, 3.0], "rightShin": [22.8, 0.0, 0.0], "rightFoot": [-13.8, -25.1, 3.6], "leftThigh": [-6.8, -17.1, -2.7], "leftShin": [23.1, 0.0, 0.0], "leftFoot": [-13.6, -4.2, 3.1]}},
+  {"t": 320, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.0, 0.0, -0.4]}, "hips": [-6.0, -8.0, 0.0], "rightThigh": [12.4, 17.5, 6.5], "rightShin": [7.4, 0.0, 0.0], "rightFoot": [-12.2, 8.7, -6.4], "leftThigh": [-5.5, -16.6, 0.7], "leftShin": [7.4, 0.0, 0.0], "leftFoot": [4.0, 24.6, -0.7]}},
+  {"t": 335, "ease": "EASE_OUT", "bones": {"chest": [-8.0, -14.0, 0.0]}},
+  {"t": 350, "ease": "EASE_OUT", "marker": "raise", "bones": {"head": [-4.8, 16.2, 3.1], "rightArm": [-166.0, -10.0, -6.0], "rightForearm": [-22.0, 0.0, 0.0], "rightHand": [-20.0, 0.0, 0.0], "leftArm": [16.0, 0.0, -5.0], "leftForearm": [-38.0, 0.0, 0.0], "leftHand": [10.0, 0.0, 0.0]}},
+  {"t": 600, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.0, 0.0, -0.4]}, "hips": [-6.0, -8.0, 0.0], "chest": [-8.0, -14.0, 0.0], "head": [-4.8, 16.2, 3.1], "rightArm": [-170.0, -10.0, -6.0], "rightForearm": [-22.0, 0.0, 0.0], "rightHand": [-20.0, 0.0, 0.0], "leftArm": [16.0, 0.0, -5.0], "leftForearm": [-38.0, 0.0, 0.0], "leftHand": [10.0, 0.0, 0.0], "rightThigh": [12.4, 17.5, 6.5], "rightShin": [7.4, 0.0, 0.0], "rightFoot": [-12.2, 8.7, -6.4], "leftThigh": [-5.5, -16.6, 0.7], "leftShin": [7.4, 0.0, 0.0], "leftFoot": [4.0, 24.6, -0.7]}},
+  {"t": 1350, "ease": "EASE_IN_OUT", "bones": {"chest": [-7.0, -14.0, 0.0], "head": [-5.6, 16.2, 3.1], "rightArm": [-168.9, -10.0, -5.3], "rightForearm": [-23.2, 0.0, 0.0], "rightHand": [-20.0, 0.0, 0.0], "leftArm": [17.1, 0.0, -5.7], "leftForearm": [-39.2, 0.0, 0.0], "leftHand": [10.0, 0.0, 0.0]}},
+  {"t": 2100, "ease": "EASE_IN_OUT", "bones": {"chest": [-8.0, -14.0, 0.0], "head": [-4.8, 16.2, 3.1], "rightArm": [-170.0, -10.0, -6.0], "rightForearm": [-22.0, 0.0, 0.0], "rightHand": [-20.0, 0.0, 0.0], "leftArm": [16.0, 0.0, -5.0], "leftForearm": [-38.0, 0.0, 0.0], "leftHand": [10.0, 0.0, 0.0]}}
+ ]
 }

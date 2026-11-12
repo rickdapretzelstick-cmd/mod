@@ -1,15 +1,20 @@
 {
-  "name": "purple_red",
-  "reference": "HollowPurple.gif frames 16-40: both arms out wide, Red forming in the right hand, feet set apart; the head comes back to the front.",
-  "duration": 700,
-  "hold": true,
-  "blendIn": 220, "blendEase": "EASE_OUT", "blendOut": 200,
-  "priority": "SPECIAL",
-  "keys": [
-    {"t": 220, "marker": "reach", "ease": "EASE_OUT", "bones": {
-        "rightArm": [-20, 0, 95], "rightForearm": [-15, 0, 0], "leftArm": [-22, 0, -98], "leftForearm": [-18, 0, 0],
-        "chest": [-4, 0, 0], "head": [0, 25, 0], "root": {"pos": [0, -0.3, 0]},
-        "rightThigh": [0, 0, 8], "leftThigh": [0, 0, -8]}},
-    {"t": 700, "ease": "EASE_IN_OUT", "bones": {"head": [0, 0, 0], "rightArm": [-22, 0, 98], "rightForearm": [-18, 0, 0]}}
-  ]
+ "name": "purple_red",
+ "duration": 2300,
+ "hold": true,
+ "loop": true,
+ "loopStart": 700,
+ "loopEnd": 2300,
+ "blendIn": 220,
+ "blendEase": "EASE_OUT",
+ "blendOut": 200,
+ "priority": "SPECIAL",
+ "authored": "tools/anim_gojo.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.0, -0.6, 0.0]}, "hips": [-2.0, 0.0, 0.0], "chest": [-2.0, 8.0, 0.0], "head": [9.6, -55.8, -4.5], "rightArm": [4.0, 0.0, 6.0], "rightForearm": [-12.0, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-20.0, 0.0, -82.0], "leftForearm": [-16.0, 0.0, 0.0], "leftHand": [-30.0, 0.0, 0.0], "rightThigh": [-9.4, 17.6, 7.3], "rightShin": [38.6, 0.0, 0.0], "rightFoot": [-25.0, -4.4, -4.9], "leftThigh": [-17.1, -17.2, -4.3], "leftShin": [38.9, 0.0, 0.0], "leftFoot": [-18.5, 2.5, 2.9]}},
+  {"t": 220, "ease": "EASE_OUT", "marker": "reach", "bones": {"root": {"pos": [0.0, -1.0, 0.0]}, "hips": [-2.0, 0.0, 0.0], "chest": [-4.0, 0.0, 0.0], "head": [2.5, 0.0, 0.0], "rightArm": [-22.0, 0.0, 84.0], "rightForearm": [-14.0, 0.0, 0.0], "rightHand": [-30.0, 0.0, 0.0], "leftArm": [-22.0, 0.0, -84.0], "leftForearm": [-14.0, 0.0, 0.0], "leftHand": [-30.0, 0.0, 0.0], "rightThigh": [-13.5, 17.8, 10.1], "rightShin": [49.7, 0.0, 0.0], "rightFoot": [-30.8, -3.3, -8.5], "leftThigh": [-21.6, -17.5, -7.0], "leftShin": [50.1, 0.0, 0.0], "leftFoot": [-24.3, 0.6, 6.4]}},
+  {"t": 700, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.0, -1.0, 0.0]}, "hips": [-2.0, 0.0, 0.0], "chest": [-4.0, 0.0, 0.0], "head": [2.5, 0.0, 0.0], "rightArm": [-22.0, 0.0, 84.0], "rightForearm": [-14.0, 0.0, 0.0], "rightHand": [-30.0, 0.0, 0.0], "leftArm": [-22.0, 0.0, -84.0], "leftForearm": [-14.0, 0.0, 0.0], "leftHand": [-30.0, 0.0, 0.0], "rightThigh": [-13.5, 17.8, 10.1], "rightShin": [49.7, 0.0, 0.0], "rightFoot": [-30.8, -3.3, -8.5], "leftThigh": [-21.6, -17.5, -7.0], "leftShin": [50.1, 0.0, 0.0], "leftFoot": [-24.3, 0.6, 6.4]}},
+  {"t": 1500, "ease": "EASE_IN_OUT", "bones": {"chest": [-3.2, 0.0, 0.0], "head": [1.9, 0.0, 0.0], "rightArm": [-21.1, 0.0, 84.6], "rightForearm": [-15.0, 0.0, 0.0], "rightHand": [-30.0, 0.0, 0.0], "leftArm": [-21.1, 0.0, -84.6], "leftForearm": [-15.0, 0.0, 0.0], "leftHand": [-30.0, 0.0, 0.0]}},
+  {"t": 2300, "ease": "EASE_IN_OUT", "bones": {"chest": [-4.0, 0.0, 0.0], "head": [2.5, 0.0, 0.0], "rightArm": [-22.0, 0.0, 84.0], "rightForearm": [-14.0, 0.0, 0.0], "rightHand": [-30.0, 0.0, 0.0], "leftArm": [-22.0, 0.0, -84.0], "leftForearm": [-14.0, 0.0, 0.0], "leftHand": [-30.0, 0.0, 0.0]}}
+ ]
 }

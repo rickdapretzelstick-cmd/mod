@@ -1,13 +1,19 @@
 {
-  "name": "wcs_chant_2",
-  "duration": 200,
-  "hold": true,
-  "blendIn": 50, "blendOut": 100,
-  "priority": "SPECIAL",
-  "keys": [
-    {"t": 200, "bones": {
-        "chest": {"rot": [-5, 10, 0]},
-        "rightArm": {"rot": [-140, 10, 30]},
-        "leftArm": {"rot": [-95, 20, -20]}}}
-  ]
+ "name": "wcs_chant_2",
+ "duration": 1500,
+ "hold": true,
+ "loop": true,
+ "loopStart": 200,
+ "loopEnd": 1500,
+ "blendIn": 50,
+ "blendOut": 100,
+ "priority": "SPECIAL",
+ "tremble": 0.5,
+ "authored": "tools/anim_yuji.py",
+ "keys": [
+  {"t": 0, "bones": {"root": {"pos": [0.0, -0.9, -0.18]}, "hips": [-4.1, 9.0, 0.0], "chest": [2.2, 7.2, 0.0], "head": [11.8, -12.1, -1.0], "rightArm": [-77.9, 11.5, 60.4], "rightForearm": [-123.5, 0.0, 0.0], "rightHand": [-21.0, 0.0, 0.0], "leftArm": [-40.6, -7.4, 3.8], "leftForearm": [-15.4, 0.0, 0.0], "leftHand": [-8.0, 0.0, 0.0], "rightThigh": [-10.7, 17.7, 8.4], "rightShin": [46.6, 0.0, 0.0], "rightFoot": [-30.2, -9.2, -1.5], "leftThigh": [-19.0, -17.5, -6.3], "leftShin": [45.6, 0.0, 0.0], "leftFoot": [-20.9, -3.0, 6.8]}},
+  {"t": 200, "ease": "EASE_OUT", "bones": {"root": {"pos": [0.0, -1.6, -0.6]}, "hips": [-2.0, 30.0, 0.0], "chest": [-2.0, 24.0, 0.0], "head": [4.9, -40.4, -3.3], "rightArm": [-157.1, 12.7, -55.5], "rightForearm": [-145.2, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-121.3, -24.5, 64.2], "leftForearm": [0.0, 0.0, 0.0], "leftHand": [20.0, 0.0, 0.0], "rightThigh": [-20.5, 18.0, 11.7], "rightShin": [64.1, 0.0, 0.0], "rightFoot": [-40.4, -21.0, 3.8], "leftThigh": [-30.5, -17.8, -10.2], "leftShin": [60.4, 0.0, 0.0], "leftFoot": [-25.5, -15.8, 17.4]}},
+  {"t": 850, "ease": "EASE_IN_OUT", "bones": {"chest": [-0.9, 24.0, 0.0], "head": [4.0, -40.4, -3.3], "rightArm": [-155.9, 12.7, -54.7], "rightForearm": [-146.6, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-120.0, -24.5, 63.3], "leftForearm": [-1.4, 0.0, 0.0], "leftHand": [20.0, 0.0, 0.0]}},
+  {"t": 1500, "ease": "EASE_IN_OUT", "bones": {"chest": [-2.0, 24.0, 0.0], "head": [4.9, -40.4, -3.3], "rightArm": [-157.1, 12.7, -55.5], "rightForearm": [-145.2, 0.0, 0.0], "rightHand": [0.0, 0.0, 0.0], "leftArm": [-121.3, -24.5, 64.2], "leftForearm": [0.0, 0.0, 0.0], "leftHand": [20.0, 0.0, 0.0]}}
+ ]
 }
