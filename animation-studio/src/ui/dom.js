@@ -65,12 +65,35 @@ export function pickFiles(accept, multiple = true) {
   });
 }
 
-export function download(name, data, type = 'application/octet-stream') {
+// Saves a file. Inside a claude.ai artifact the page can't trigger downloads itself, so it asks
+// the viewer through the `downloads` capability; everywhere else it uses a normal download link.
+let dlCap;
+async function downloadsCapability() {
+  if (dlCap !== undefined) return dlCap;
+  try { dlCap = window.claude?.use ? await window.claude.use('downloads') : null; } catch { dlCap = null; }
+  return dlCap;
+}
+export async function download(name, data, type = 'application/octet-stream') {
   const blob = data instanceof Blob ? data : new Blob([typeof data === 'string' || data instanceof Uint8Array ? data : JSON.stringify(data, null, 2)], { type });
+  const cap = await downloadsCapability();
+  if (cap) {
+    // the viewer's save prompt only accepts common extensions; .bbmodel travels as .bbmodel.json
+    const safe = name.endsWith('.bbmodel') ? `${name}.json` : name;
+    try {
+      await cap.save({ filename: safe, data: blob });
+      if (safe !== name) toast('Saved – rename the file to end in .bbmodel before opening it in Blockbench.', 'info', 5000);
+      return true;
+    } catch (e) {
+      if (e?.code === 'declined') return false;
+      toast(`Couldn't save the file (${e?.code || 'unavailable'}).`, 'error');
+      return false;
+    }
+  }
   const url = URL.createObjectURL(blob);
   const a = h('a', { href: url, download: name, style: { display: 'none' } });
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return true;
 }
 
 export const readText = (file) => file.text();

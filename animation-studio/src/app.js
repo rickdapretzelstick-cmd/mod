@@ -446,6 +446,6 @@ export const app = new App();
 window.__app = app; // handy for debugging and automated tests
 app.init().catch((e) => { console.error(e); document.getElementById('app').append(h('pre', { class: 'fatal' }, `Failed to start: ${e.message}`)); });
 
-if ('serviceWorker' in navigator && location.protocol !== 'file:' && !location.search.includes('nosw')) {
+if ('serviceWorker' in navigator && !window.claude && location.protocol !== 'file:' && !location.search.includes('nosw')) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }

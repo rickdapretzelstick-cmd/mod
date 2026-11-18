@@ -323,7 +323,7 @@ function exportPanel(app, el) {
         check('bbmodel', 'Blockbench project (.bbmodel)'), check('java', 'Java snippet with animation constants + controller'), check('readme', 'README with install steps')),
       h('div', { class: 'row wrap' },
         h('button', { class: 'btn', onclick: validate }, '✔ Validate'),
-        h('button', { class: 'btn primary', onclick: () => { const r = validate(); if (!r.ok) return toast('Fix the problems first.', 'error'); const p = build(); download(`${cleanId(st.modId)}_${cleanId(st.entity)}_${st.target}.zip`, p.zip(), 'application/zip'); toast('Mod asset package downloaded'); } }, '⬇ Download mod package (.zip)')),
+        h('button', { class: 'btn primary', onclick: () => { const r = validate(); if (!r.ok) return toast('Fix the problems first.', 'error'); const p = build(); download(`${cleanId(st.modId)}_${cleanId(st.entity)}_${st.target}.zip`, p.zip(), 'application/zip').then((saved) => { if (saved) toast('Mod asset package saved'); }); } }, '⬇ Download mod package (.zip)')),
       report),
     section('Single files',
       h('div', { class: 'row wrap' },
