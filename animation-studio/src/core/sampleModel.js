@@ -15,7 +15,7 @@ export function createSampleModel() {
       makeCube({ name: 'blade', from: [5.5, 12, -13], to: [6.5, 13, -1], boxUv: [0, 36] }),
       makeCube({ name: 'guard', from: [4.5, 12, -1], to: [7.5, 13, 0], boxUv: [0, 50] }),
       makeCube({ name: 'grip', from: [5.5, 12, 0], to: [6.5, 13, 3], boxUv: [8, 50] }),
-    ]),
+    ], { hidden: true }), // shown automatically for weapon moves
     bone('left_arm', 'body', [-5, 22, 0], [makeCube({ name: 'upper_arm', from: [-8, 18, -2], to: [-4, 24, 2], boxUv: [32, 32] })]),
     bone('left_forearm', 'left_arm', [-6, 18, 0], [makeCube({ name: 'forearm', from: [-8, 12, -2], to: [-4, 18, 2], boxUv: [32, 42] })]),
     bone('right_leg', 'root', [2, 12, 0], [makeCube({ name: 'thigh', from: [0, 6, -2], to: [4, 12, 2], boxUv: [0, 16] })]),
