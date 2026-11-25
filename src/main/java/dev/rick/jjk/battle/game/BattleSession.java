@@ -54,6 +54,8 @@ public final class BattleSession {
     private final Vec3[] pos = new Vec3[2], goal = new Vec3[2];
     private final double[] rate = {0.3, 0.3}, lift = new double[2], liftGoal = new double[2];
     boolean closed;
+    /** Tests: the AI waits for {@link #forcePickForTest}. */
+    public boolean holdAiForTest;
 
     BattleSession(ServerLevel level, LivingEntity a, LivingEntity b, BattleKit ka, BattleKit kb, boolean aiA, boolean aiB) {
         this.level = level;
@@ -106,7 +108,7 @@ public final class BattleSession {
             case BattlePayloads.CHOOSING -> {
                 timer--;
                 for (int i = 0; i < 2; i++) {
-                    if (ai[i] && picks[i] == null && timer <= CHOOSE_TICKS - AI_THINK_TICKS)
+                    if (ai[i] && picks[i] == null && timer <= CHOOSE_TICKS - AI_THINK_TICKS && !holdAiForTest)
                         picks[i] = BattleAI.choose(state, i, 2.5, level.getRandom().nextLong());
                 }
                 if ((picks[0] != null && picks[1] != null) || timer <= 0) resolveTurn();
@@ -166,9 +168,16 @@ public final class BattleSession {
                 return;
             }
             scene = BattleScenes.build(this, b);
+            // Inside a control sequence the next hit starts on this one's follow-through: no return to neutral between
+            // blows, the fighters stay where the last hit left them.
+            Beat next = queue.peek();
+            if (b.control() && next != null && next.control() && next.actor() == b.actor()
+                    && (next.link() > 0 || next.kind() == Beat.Kind.FINISHER)) {
+                scene = new BattleScenes.Scene(Math.min(scene.length(), scene.contact() + 5), scene.contact(), scene.cues());
+            }
             sceneTick = 0;
             BattlePayloads.BeatStart p = new BattlePayloads.BeatStart(id, beatIndex++, beatCount, b.actor(), b.move(), b.kind().ordinal(),
-                    b.damage(), b.link(), b.blackFlash(), b.note(), b.hp0(), b.hp1(), scene.length(), scene.contact());
+                    b.damage(), b.link(), b.blackFlash(), b.note(), b.hp0(), b.hp1(), scene.length(), scene.contact(), b.control());
             for (ServerPlayer p2 : viewers()) ServerPlayNetworking.send(p2, p);
         }
         for (BattleScenes.Cue c : scene.cues()) if (c.tick() == sceneTick) c.run().run();
@@ -219,8 +228,9 @@ public final class BattleSession {
         rate[side] = 0.6;
     }
 
+    /** Launches {@code side} to {@code height} (0 lets it fall); hit again while up, it juggles higher. */
     void lift(int side, double height) {
-        liftGoal[side] = height;
+        liftGoal[side] = height <= 0 ? 0 : Math.min(3.5, Math.max(height, lift[side] + 0.7));
     }
 
     void anim(int side, String clip, float speed) {
@@ -264,6 +274,24 @@ public final class BattleSession {
         for (ServerPlayer p : viewers()) Fx.camera(p, CameraPayload.FLASH, 0.8f, 6, argb);
     }
 
+    // ------------------------------------------------------------------------------------------------ tests
+
+    /** Tests: the engine state, to set up a situation (call {@link #restageForTest} after changing the range). */
+    public BattleState stateForTest() {
+        return state;
+    }
+
+    /** Tests: lock in a plan for a side (the AI's too). */
+    public void forcePickForTest(int side, Plan plan) {
+        picks[side] = plan;
+    }
+
+    /** Tests: put the fighters on the marks for the current range at once and tell the clients. */
+    public void restageForTest() {
+        for (int i = 0; i < 2; i++) pos[i] = goal[i] = mark(i, state.range);
+        sync();
+    }
+
     // ------------------------------------------------------------------------------------------------ sync and end
 
     /** The players in the fight plus anyone close enough to watch. */
@@ -277,7 +305,7 @@ public final class BattleSession {
     void sync() {
         List<Integer> stats = new ArrayList<>();
         for (Fighter f : state.f) {
-            stats.add(Math.max(0, f.hp)); stats.add(Math.max(0, f.ce)); stats.add(f.meter); stats.add(f.momentum);
+            stats.add(Math.max(0, f.hp)); stats.add(Math.max(0, f.ce)); stats.add(f.meter); stats.add(f.control);
             stats.add(f.stance.ordinal()); stats.add(f.slowTurns); stats.add(f.burnTurns); stats.add(f.zoneTurns); stats.add(f.domainTurns);
         }
         for (ServerPlayer p : viewers()) {

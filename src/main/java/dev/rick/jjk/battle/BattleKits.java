@@ -32,7 +32,7 @@ public final class BattleKits {
             BattleMove.of("divergent_fist", "Divergent Fist", Category.TECHNIQUE).weight(Weight.LIGHT).power(10).hits(2)
                     .from(Range.CLOSE).inflicts(Stance.STAGGERED).blackFlash()
                     .line("A punch with a delayed cursed-energy impact: goes through guards. Staggers.").build(),
-            BattleMove.of("manji_kick", "Manji Kick", Category.STRIKE).weight(Weight.LIGHT).power(9).cost(5)
+            BattleMove.of("manji_kick", "Manji Kick", Category.STRIKE).weight(Weight.LIGHT).power(10).cost(5)
                     .from(Range.CLOSE).needs(Stance.STAGGERED).inflicts(Stance.AIRBORNE).blackFlash()
                     .line("Follow-up: kick a staggered foe into the air.").build(),
             BattleMove.of("cursed_strikes", "Cursed Strikes", Category.STRIKE).weight(Weight.MEDIUM).power(13).cost(15).hits(6)
@@ -46,6 +46,9 @@ public final class BattleKits {
             3, 12, 1f,
             BattleMove.of("domain", "Malevolent Shrine", Category.DOMAIN).power(10).pierce()
                     .line("Domain: slashes burn the foe for 3 turns; your strikes come out faster.").build(),
+            BattleMove.of("finisher", "Black Flash", Category.STRIKE).weight(Weight.HEAVY).power(16)
+                    .linkFrom(Stance.STAGGERED, Stance.AIRBORNE, Stance.DOWN, Stance.GROUNDED).inflicts(Stance.DOWN).rangeAfter(Range.MID)
+                    .blackFlash().line("Finisher: a cursed-energy spark at the end of a full combo.").build(),
             List.of(new BattleKit.NamedCombo("Divergent Black Flash", List.of("divergent_fist", "manji_kick", "crushing_blow")),
                     new BattleKit.NamedCombo("Vessel Rush", List.of("divergent_fist", "cursed_strikes")))));
 
@@ -53,7 +56,7 @@ public final class BattleKits {
             BattleMove.of("blue", "Lapse: Blue", Category.TECHNIQUE).weight(Weight.LIGHT).power(8).cost(10)
                     .inflicts(Stance.STAGGERED).rangeAfter(Range.CLOSE)
                     .line("Pull the foe in from any range. Staggers.").build(),
-            BattleMove.of("twofold_kick", "Twofold Kick", Category.STRIKE).weight(Weight.LIGHT).power(10).cost(5)
+            BattleMove.of("twofold_kick", "Twofold Kick", Category.STRIKE).weight(Weight.MEDIUM).power(13).cost(5)
                     .from(Range.CLOSE).linkFrom(Stance.STAGGERED).inflicts(Stance.AIRBORNE).blackFlash()
                     .line("Two kicks that launch.").build(),
             BattleMove.of("red", "Reversal: Red", Category.TECHNIQUE).weight(Weight.HEAVY).power(22).cost(25)
@@ -67,6 +70,9 @@ public final class BattleKits {
             2, 8, 0.5f,
             BattleMove.of("domain", "Unlimited Void", Category.DOMAIN).power(0).pierce()
                     .line("Domain: cancels the foe's move and slows them for 3 turns.").build(),
+            BattleMove.of("finisher", "Limitless Barrage", Category.TECHNIQUE).weight(Weight.HEAVY).power(20)
+                    .linkFrom(Stance.STAGGERED, Stance.AIRBORNE, Stance.DOWN, Stance.GROUNDED).inflicts(Stance.DOWN).rangeAfter(Range.FAR)
+                    .line("Finisher: a blur of blows, then a point-blank Red.").build(),
             List.of(new BattleKit.NamedCombo("Lapse to Reversal", List.of("blue", "twofold_kick", "red")))));
 
     private static BattleKit register(BattleKit k) {

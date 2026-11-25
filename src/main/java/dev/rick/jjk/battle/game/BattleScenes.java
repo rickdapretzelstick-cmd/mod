@@ -58,17 +58,70 @@ public final class BattleScenes {
             "hollow_purple", move(-1, new int[] {38}, "purple_blue", "purple_fire", "",
                     0, "purple_blue", 10, "purple_red", 20, "purple_fusion", 32, "purple_release"));
 
+    /** Each character's finisher (the move id "finisher" is shared, so these are by character). */
+    private static final Map<String, MoveScene> FINISHERS = Map.of(
+            "yuji", move(4, new int[] {11}, "black_flash_ready", "black_flash_kokusen", "divergent_flash",
+                    0, "divergent_windup", 6, "black_flash_punch"),
+            "gojo", move(0, new int[] {5, 8, 11, 14, 22}, "", "swing", "red_fire",
+                    0, "rapid_barrage", 16, "rapid_final"));
+
     /** The scene for {@code b}, played by {@code s}. */
     public static Scene build(BattleSession s, Beat b) {
         List<Cue> cues = new ArrayList<>();
         int me = b.actor(), foe = 1 - me;
         BattleMove move = s.kit(me).move(b.move());
         switch (b.kind()) {
-            case HIT, PIERCE, TRADE, CLASH, BLOCK, PARRY, WHIFF -> {
-                MoveScene ms = MOVES.get(b.move());
+            case HIT, PIERCE, TRADE, CLASH, BLOCK, PARRY, WHIFF, FINISHER -> {
+                boolean finisher = b.kind() == Beat.Kind.FINISHER;
+                MoveScene ms = finisher ? FINISHERS.get(s.kit(me).character) : MOVES.get(b.move());
                 if (ms == null) return simple(cues, 10);
-                // Links come out quicker: the windup is the previous hit's follow-through.
-                float speed = b.link() > 0 ? 1.35f : 1f;
+                // Links come out quicker (the windup is the previous hit's follow-through), and a control sequence
+                // speeds up as it goes; the finisher takes its time.
+                float speed = finisher ? 1f : b.link() > 0 ? 1.35f * (float) Math.pow(b.control() ? 1.1 : 1, b.link() - 1) : 1f;
+                if (finisher) {
+                    // A beat of stillness before the last blow.
+                    int pause = 6;
+                    cues.add(new Cue(0, () -> {
+                        s.flash(0xFFFFFFFF);
+                        s.shake(0.3f, 4);
+                    }));
+                    Scene inner = build(s, new Beat(b.actor(), b.move(), Beat.Kind.HIT, b.damage(), 0, b.blackFlash(), b.note(), b.range(),
+                            b.targetStance(), b.hp0(), b.hp1(), b.control()), ms, 1f, move, me, foe, true);
+                    for (Cue c : inner.cues()) cues.add(new Cue(c.tick() + pause, c.run()));
+                    return new Scene(inner.length() + pause + 10, inner.contact() + pause, cues);
+                }
+                return build(s, b, ms, speed, move, me, foe, false);
+            }
+            case REVERSAL -> {
+                // The defender (actor) reads the next link, slips it and counters.
+                cues.add(new Cue(0, () -> {
+                    s.anim(me, s.kit(me).character.equals("yuji") ? "manji_dodge" : "teleport", 1.3f);
+                    s.sound(me, SoundEvents.PLAYER_ATTACK_SWEEP, 1f, 1.6f);
+                }));
+                cues.add(new Cue(4, () -> {
+                    s.anim(me, "light_1", 1.3f);
+                    s.lunge(me, false);
+                }));
+                cues.add(new Cue(7, () -> {
+                    s.anim(foe, "reaction_guard_broken", 1f);
+                    s.fxAt(foe, "divergent_impact", true);
+                    s.flash(0xFFFFFFFF);
+                    s.shake(0.8f, 10);
+                    s.sound(foe, SoundEvents.PLAYER_ATTACK_CRIT, 1f, 0.8f);
+                    s.lift(foe, 0);
+                }));
+                cues.add(new Cue(14, s::settle));
+                return new Scene(22, 7, cues);
+            }
+            default -> {
+                return other(s, b, cues, me, foe, move);
+            }
+        }
+    }
+
+    /** An attack's scene at {@code speed}. */
+    private static Scene build(BattleSession s, Beat b, MoveScene ms, float speed, BattleMove move, int me, int foe, boolean finisher) {
+        List<Cue> cues = new ArrayList<>();
                 int contact = Math.round(ms.contact() / speed);
                 for (Clip c : ms.clips()) cues.add(new Cue(Math.round(c.tick() / speed), () -> s.anim(me, c.name(), speed)));
                 if (!ms.windupFx().isEmpty() && b.link() == 0) cues.add(new Cue(0, () -> s.fxAt(me, ms.windupFx(), false)));
@@ -80,15 +133,18 @@ public final class BattleScenes {
                 for (int k = 0; k < ms.contacts().length; k++) {
                     int t = Math.round(ms.contacts()[k] / speed);
                     boolean last = k == ms.contacts().length - 1;
-                    cues.add(new Cue(t, () -> contact(s, b, move, me, foe, ms, last, multi)));
+                    cues.add(new Cue(t, () -> contact(s, b, move, me, foe, ms, last, multi, finisher)));
                 }
                 if (!ms.lateFx().isEmpty() && landed(b)) cues.add(new Cue(contact + 4, () -> {
                     s.fxAt(foe, ms.lateFx(), true);
                     s.shake(0.5f, 6);
                 }));
                 cues.add(new Cue(contact + 6, s::settle));
-                return new Scene(contact + (b.blackFlash() ? 22 : 14), contact, cues);
-            }
+                return new Scene(contact + (b.blackFlash() || finisher ? 22 : 14), contact, cues);
+    }
+
+    private static Scene other(BattleSession s, Beat b, List<Cue> cues, int me, int foe, BattleMove move) {
+        switch (b.kind()) {
             case INTERRUPTED -> {
                 return simple(cues, 6);
             }
@@ -160,7 +216,7 @@ public final class BattleScenes {
         };
     }
 
-    private static void contact(BattleSession s, Beat b, BattleMove move, int me, int foe, MoveScene ms, boolean last, boolean multi) {
+    private static void contact(BattleSession s, Beat b, BattleMove move, int me, int foe, MoveScene ms, boolean last, boolean multi, boolean finisher) {
         switch (b.kind()) {
             case WHIFF -> {
                 if (!last) return;
@@ -194,7 +250,7 @@ public final class BattleScenes {
                     s.shake(0.2f, 3);
                     return;
                 }
-                if (b.blackFlash()) {
+                if (b.blackFlash() || finisher) {
                     s.fxAt(foe, "black_flash_kokusen", true);
                     s.flash(0xFF100010);
                     s.shake(1.2f, 14);

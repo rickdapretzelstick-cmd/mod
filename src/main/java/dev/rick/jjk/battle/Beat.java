@@ -14,9 +14,10 @@ import dev.rick.jjk.battle.BattleMove.Stance;
  * @param link     0 for an opener, 1.. for combo links
  * @param blackFlash whether this hit was a Black Flash
  * @param note     a title card to show (a named combo), or ""
+ * @param control  part of a control sequence: the side that took control this turn, its whole combo played as one take
  */
 public record Beat(int actor, String move, Kind kind, int damage, int link, boolean blackFlash, String note,
-                   Range range, Stance targetStance, int hp0, int hp1) {
+                   Range range, Stance targetStance, int hp0, int hp1, boolean control) {
     public enum Kind {
         /** A domain opens. */
         DOMAIN,
@@ -48,6 +49,10 @@ public record Beat(int actor, String move, Kind kind, int damage, int link, bool
         STUNNED,
         /** End-of-turn burn damage. */
         BURN,
+        /** The defender read the combo and stole control back (damage: the counter). */
+        REVERSAL,
+        /** The finisher at the end of a sequence at full control. */
+        FINISHER,
         /** The actor won. */
         KO
     }

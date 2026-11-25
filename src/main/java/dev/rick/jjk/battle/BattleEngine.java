@@ -12,7 +12,7 @@ import java.util.List;
  * The turn-based rules. Both sides lock in a {@link Plan} in secret; {@link #resolve} plays the turn out and returns the
  * beats in order.
  *
- * <p><b>Initiative</b> = the move's speed (light 3, medium 2, heavy 1) + momentum (0-1) + cursed energy boost (0-3).
+ * <p><b>Initiative</b> = the move's speed (light 3, medium 2, heavy 1) + 1 while holding control + cursed energy boost (0-3).
  * The faster attack lands first and cuts the slower one off, unless the slower one's category beats the faster one's
  * (Strike beats Technique, Technique beats Guard, Guard beats Strike): then it lands too (a trade). Equal initiative is
  * a clash. Guard is instant: it blocks strikes and parries heavy ones, but techniques pierce it, and after a piercing
@@ -25,6 +25,14 @@ public final class BattleEngine {
     public static final double BLACK_FLASH = 0.08, BLACK_FLASH_ZONE = 0.25, BLACK_FLASH_MULT = 2.5;
     public static final double LINK_DECAY = 0.85, CLASH_WIN = 0.75, CLASH_CHIP = 0.3, BLOCK_CHIP = 0.2, FOCUS_TAKEN = 1.25;
     public static final double METER_DEALT = 0.6, METER_TAKEN = 0.8;
+    /** A reversal costs the defender this much cursed energy; its chance grows with each link of the combo. */
+    public static final int REVERSAL_COST = 25;
+    public static final double REVERSAL_CHANCE = 0.10, REVERSAL_STEP = 0.05;
+
+    /** How many moves a combo may have: two, or three while holding control. */
+    public static int maxChain(Fighter f) {
+        return f.control >= 1 ? MAX_CHAIN : MAX_CHAIN - 1;
+    }
 
     private BattleEngine() {}
 
@@ -69,7 +77,8 @@ public final class BattleEngine {
     /** Why the plan isn't allowed, or null if it is. */
     public static String validate(BattleState s, int side, Plan p) {
         Fighter me = s.f[side];
-        if (p.chain().isEmpty() || p.chain().size() > MAX_CHAIN) return "Pick one to three moves";
+        if (p.chain().isEmpty()) return "Pick a move";
+        if (p.chain().size() > maxChain(me)) return "Combos are " + maxChain(me) + " moves long (take control for longer)";
         if (p.boost() < 0 || p.boost() > MAX_BOOST) return "Boost is 0 to " + MAX_BOOST;
         BattleMove first = me.kit.move(p.opener());
         if (first == null) return "Unknown move " + p.opener();
@@ -106,7 +115,9 @@ public final class BattleEngine {
         final Plan[] plan;
         final BattleMove[] op = new BattleMove[2];
         final boolean[] hit = new boolean[2], guarding = new boolean[2], focusing = new boolean[2];
-        final int[] dealt = new int[2];
+        final int[] dealt = new int[2], startControl = new int[2];
+        /** Who took control this turn (-1: nobody). */
+        int controller = -1;
         final List<List<String>> executed = List.of(new ArrayList<>(), new ArrayList<>());
         final List<Beat> beats = new ArrayList<>();
 
@@ -117,6 +128,8 @@ public final class BattleEngine {
 
         List<Beat> run() {
             if (s.over()) return beats;
+            startControl[0] = s.f[0].control;
+            startControl[1] = s.f[1].control;
             for (int i = 0; i < 2; i++) {
                 Fighter f = s.f[i];
                 if (plan[i] == null || validate(s, i, plan[i]) != null) plan[i] = Plan.of(f.kit.guard.id);
@@ -223,6 +236,7 @@ public final class BattleEngine {
                         land(slow, op[slow], 0, Kind.TRADE, 1);
                     } else if (!s.over()) {
                         beat(slow, op[slow].id, Kind.INTERRUPTED, 0, 0, false, "");
+                        takeControl(fast);
                         chain(fast);
                     }
                 }
@@ -277,12 +291,13 @@ public final class BattleEngine {
                 int d = def.kit.parryDamage;
                 hurt(1 - i, d);
                 att.stance = Stance.STAGGERED;
+                controller = 1 - i;
                 beat(i, m.id, Kind.PARRY, d, 0, false, "");
                 checkKo(1 - i);
             } else {
                 int d = (int) Math.round(m.power * BLOCK_CHIP);
                 hurt(i, d);
-                att.momentum = 0;
+                att.control = 0;
                 // Bounced off the guard: left open for the defender's follow-ups next turn.
                 att.stance = Stance.STAGGERED;
                 hit[i] = true;
@@ -294,6 +309,7 @@ public final class BattleEngine {
         /** The opener then, if it landed cleanly, the links. Returns whether the opener landed. */
         boolean attack(int i) {
             if (!land(i, op[i], 0, guarding[1 - i] ? Kind.PIERCE : Kind.HIT, 1)) return false;
+            takeControl(i);
             chain(i);
             return true;
         }
@@ -301,29 +317,80 @@ public final class BattleEngine {
         void chain(int i) {
             Fighter me = s.f[i], foe = s.f[1 - i];
             Plan p = plan[i];
-            for (int k = 1; k < p.chain().size() && !s.over(); k++) {
+            boolean complete = true;
+            int k = 1;
+            for (; k < p.chain().size() && !s.over(); k++) {
                 BattleMove m = me.kit.move(p.chain().get(k));
                 if (!m.linkFrom.contains(foe.stance)) {
                     me.ce -= m.cost;
                     beat(i, m.id, Kind.WHIFF, 0, k, false, "");
+                    complete = false;
                     break;
                 }
                 if (guarding[1 - i] && m.category == Category.STRIKE && !m.pierce
                         && m.weight.speed + p.boost() <= foe.kit.counterSpeed) {
                     me.ce -= m.cost;
                     caught(i, m);
+                    complete = false;
                     break;
                 }
-                if (!land(i, m, k, guarding[1 - i] ? Kind.PIERCE : Kind.HIT, 1)) break;
+                if (reversal(i, k)) {
+                    complete = false;
+                    break;
+                }
+                if (!land(i, m, k, guarding[1 - i] ? Kind.PIERCE : Kind.HIT, 1)) {
+                    complete = false;
+                    break;
+                }
+            }
+            // A full combo at max control ends in the finisher.
+            if (complete && !s.over() && p.chain().size() >= 2 && startControl[i] >= Fighter.MAX_CONTROL && controller == i) {
+                land(i, me.kit.finisher, k, Kind.FINISHER, 1);
             }
             nameCombo(i);
+        }
+
+        /** {@code i} took control: its opener (the last beat) and everything it chains are one sequence. */
+        void takeControl(int i) {
+            controller = i;
+            for (int k = beats.size() - 1; k >= 0; k--) {
+                Beat b = beats.get(k);
+                if (b.actor() == i && b.kind() != Kind.KO) {
+                    beats.set(k, new Beat(b.actor(), b.move(), b.kind(), b.damage(), b.link(), b.blackFlash(), b.note(),
+                            b.range(), b.targetStance(), b.hp0(), b.hp1(), true));
+                    break;
+                }
+            }
+        }
+
+        /**
+         * Before link {@code k} of {@code i}'s combo: the defender may read it and reverse (it costs cursed energy and
+         * gets likelier the longer the combo runs). Returns whether it did: control changes hands.
+         */
+        boolean reversal(int i, int k) {
+            Fighter foe = s.f[1 - i];
+            if (guarding[1 - i] || foe.ce < REVERSAL_COST) return false;
+            if (s.roll() >= REVERSAL_CHANCE + REVERSAL_STEP * k) return false;
+            foe.ce -= REVERSAL_COST;
+            int d = foe.kit.parryDamage;
+            hurt(1 - i, d);
+            s.f[i].stance = Stance.STAGGERED;
+            hit[i] = true;
+            foe.stance = Stance.GROUNDED; // read it and broke out
+            controller = 1 - i;
+            beat(1 - i, foe.kit.guard.id, Kind.REVERSAL, d, k, false, "");
+            checkKo(1 - i);
+            return true;
         }
 
         void clash() {
             BattleMove a = op[0], b = op[1];
             if (a.category.beats(b.category) || b.category.beats(a.category)) {
                 int w = a.category.beats(b.category) ? 0 : 1;
-                if (land(w, op[w], 0, Kind.CLASH, CLASH_WIN) && !s.over()) beat(1 - w, op[1 - w].id, Kind.INTERRUPTED, 0, 0, false, "");
+                if (land(w, op[w], 0, Kind.CLASH, CLASH_WIN) && !s.over()) {
+                    controller = w;
+                    beat(1 - w, op[1 - w].id, Kind.INTERRUPTED, 0, 0, false, "");
+                }
                 return;
             }
             s.f[0].ce -= a.cost;
@@ -352,14 +419,15 @@ public final class BattleEngine {
                 beat(i, m.id, Kind.WHIFF, 0, link, false, "");
                 return false;
             }
-            double d = m.power * mult * Math.pow(LINK_DECAY, link);
+            // Each link hits a little softer; the finisher lands whole.
+            double d = m.power * mult * (kind == Kind.FINISHER ? 1 : Math.pow(LINK_DECAY, link));
             if (foe.stance == Stance.AIRBORNE) d *= m.vsAirborne;
             if (focusing[1 - i]) d *= FOCUS_TAKEN;
             if (guarding[1 - i] && m.category == Category.TECHNIQUE && !m.pierce) d *= foe.kit.guardTechniqueMult;
             boolean bf = m.blackFlash && s.roll() < (me.zoneTurns > 0 ? BLACK_FLASH_ZONE : BLACK_FLASH);
             if (bf) {
                 d *= BLACK_FLASH_MULT;
-                me.momentum = Fighter.MAX_MOMENTUM;
+                me.control = Math.max(me.control, 1);
                 me.zoneTurns = ZONE_TURNS;
             }
             foe.stance = m.inflicts;
@@ -376,13 +444,15 @@ public final class BattleEngine {
             List<String> done = executed.get(i);
             if (done.size() < 2 || beats.isEmpty()) return;
             for (BattleKit.NamedCombo c : s.f[i].kit.combos) {
-                if (!done.equals(c.sequence())) continue;
+                List<String> seq = done.size() > c.sequence().size() && done.getLast().equals(s.f[i].kit.finisher.id)
+                        ? done.subList(0, done.size() - 1) : done;
+                if (!seq.equals(c.sequence())) continue;
                 // Put the title card on the combo's last hit.
                 for (int k = beats.size() - 1; k >= 0; k--) {
                     Beat b = beats.get(k);
-                    if (b.actor() == i && b.move().equals(done.getLast()) && b.damage() > 0) {
+                    if (b.actor() == i && b.move().equals(c.sequence().getLast()) && b.damage() > 0) {
                         beats.set(k, new Beat(b.actor(), b.move(), b.kind(), b.damage(), b.link(), b.blackFlash(), c.name(),
-                                b.range(), b.targetStance(), b.hp0(), b.hp1()));
+                                b.range(), b.targetStance(), b.hp0(), b.hp1(), b.control()));
                         break;
                     }
                 }
@@ -400,7 +470,7 @@ public final class BattleEngine {
                 default -> m.weight.speed;
             };
             if (m.category.attack() || m.category == Category.MOVE) {
-                base += plan[i].boost() + f.momentum;
+                base += plan[i].boost() + Math.min(1, f.control);
                 if (f.slowTurns > 0) base -= 2;
                 if (f.stance == Stance.DOWN) base -= 1;
                 if (f.strikeBoostTurns > 0 && m.category == Category.STRIKE) base += 1;
@@ -447,10 +517,9 @@ public final class BattleEngine {
                 if (!hit[i]) f.stance = Stance.GROUNDED;
                 f.ce = Math.min(Fighter.MAX_CE, Math.max(0, f.ce) + REGEN);
             }
-            if (dealt[0] != dealt[1]) {
-                int w = dealt[0] > dealt[1] ? 0 : 1;
-                s.f[w].momentum = Math.min(Fighter.MAX_MOMENTUM, s.f[w].momentum + 1);
-                s.f[1 - w].momentum = 0;
+            if (controller >= 0) {
+                s.f[controller].control = Math.min(Fighter.MAX_CONTROL, startControl[controller] + 1);
+                s.f[1 - controller].control = 0;
             }
             s.turn++;
             if (!s.over() && s.turn > BattleState.TURN_LIMIT) {
@@ -460,7 +529,8 @@ public final class BattleEngine {
         }
 
         void beat(int actor, String move, Kind kind, int damage, int link, boolean bf, String note) {
-            beats.add(new Beat(actor, move, kind, damage, link, bf, note, s.range, s.f[1 - actor].stance, s.f[0].hp, s.f[1].hp));
+            boolean control = controller == actor && (link > 0 || kind == Kind.FINISHER || kind == Kind.REVERSAL);
+            beats.add(new Beat(actor, move, kind, damage, link, bf, note, s.range, s.f[1 - actor].stance, s.f[0].hp, s.f[1].hp, control));
         }
     }
 }

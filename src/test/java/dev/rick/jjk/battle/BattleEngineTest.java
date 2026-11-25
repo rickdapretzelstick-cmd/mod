@@ -105,6 +105,8 @@ class BattleEngineTest {
     @Test
     void fullComboLandsOnAFocusingFoeAndEarnsItsName() {
         BattleState s = close(BattleKits.YUJI, BattleKits.GOJO);
+        s.f[0].control = 1; // three-move combos need control
+        s.f[1].ce = 0;      // and no cursed energy for a reversal
         List<Beat> beats = BattleEngine.resolve(s, Plan.of("divergent_fist", "manji_kick", "crushing_blow"), Plan.of("focus"));
         assertEquals(List.of(0, 1, 2), beats.stream().filter(b -> b.actor() == 0 && b.kind() == Kind.HIT).map(Beat::link).toList());
         assertEquals("Divergent Black Flash", beats.stream().filter(b -> b.move().equals("crushing_blow")).findFirst().orElseThrow().note());
@@ -150,9 +152,57 @@ class BattleEngineTest {
         BattleState s = close(BattleKits.YUJI, BattleKits.GOJO);
         assertNotNull(BattleEngine.validate(s, 0, Plan.of("divergent_fist", "crushing_blow")));
         assertNotNull(BattleEngine.validate(s, 0, Plan.of("manji_kick")));
+        assertNotNull(BattleEngine.validate(s, 0, Plan.of("divergent_fist", "manji_kick", "crushing_blow")), "three moves need control");
+        s.f[0].control = 1;
         assertNull(BattleEngine.validate(s, 0, Plan.of("divergent_fist", "manji_kick", "crushing_blow")));
+        s.f[0].control = 0;
         List<Beat> beats = BattleEngine.resolve(s, Plan.of("manji_kick"), Plan.of("twofold_kick"));
         find(beats, 1, Kind.BLOCK);
+    }
+
+    @Test
+    void aCleanWinTakesControlAndTheFoeLosesIt() {
+        BattleState s = close(BattleKits.YUJI, BattleKits.GOJO);
+        s.f[1].control = 2;
+        List<Beat> beats = BattleEngine.resolve(s, Plan.of("divergent_fist"), Plan.of("red"));
+        assertTrue(beats.stream().anyMatch(b -> b.actor() == 0 && b.control()), "the winning opener is part of the sequence");
+        assertEquals(1, s.f[0].control);
+        assertEquals(0, s.f[1].control);
+        // A trade gives nobody control.
+        BattleState t = close(BattleKits.YUJI, BattleKits.GOJO);
+        BattleEngine.resolve(t, Plan.of("crushing_blow"), Plan.of("blue"));
+        assertEquals(0, t.f[0].control);
+        assertEquals(0, t.f[1].control);
+    }
+
+    @Test
+    void fullControlEndsAFullComboInTheFinisher() {
+        BattleState s = close(BattleKits.YUJI, BattleKits.GOJO);
+        s.f[0].control = Fighter.MAX_CONTROL;
+        s.f[1].ce = 0;
+        List<Beat> beats = BattleEngine.resolve(s, Plan.of("divergent_fist", "manji_kick", "crushing_blow"), Plan.of("focus"));
+        Beat fin = find(beats, 0, Kind.FINISHER);
+        assertEquals(3, fin.link());
+        assertTrue(fin.control());
+        assertEquals("Divergent Black Flash", beats.stream().filter(b -> b.move().equals("crushing_blow")).findFirst().orElseThrow().note());
+    }
+
+    @Test
+    void theDefenderCanReverseAndStealControl() {
+        int reversals = 0;
+        for (long seed = 0; seed < 200; seed++) {
+            BattleState s = new BattleState(BattleKits.YUJI, BattleKits.GOJO, seed);
+            s.range = Range.CLOSE;
+            s.f[0].control = 1;
+            s.f[1].ce = 100;
+            List<Beat> beats = BattleEngine.resolve(s, Plan.of("divergent_fist", "manji_kick", "crushing_blow"), Plan.of("focus"));
+            if (beats.stream().anyMatch(b -> b.kind() == Kind.REVERSAL)) {
+                reversals++;
+                assertEquals(1, s.f[1].control, "the reverser takes control");
+                assertEquals(0, s.f[0].control);
+            }
+        }
+        assertTrue(reversals > 10 && reversals < 120, "reversals should happen sometimes, not always: " + reversals);
     }
 
     @Test

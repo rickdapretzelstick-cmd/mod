@@ -5,7 +5,6 @@ import dev.rick.jjk.battle.BattleKit;
 import dev.rick.jjk.battle.BattleKits;
 import dev.rick.jjk.battle.BattleMove;
 import dev.rick.jjk.battle.BattleMove.Category;
-import dev.rick.jjk.battle.BattleMove.Range;
 import dev.rick.jjk.battle.BattleState;
 import dev.rick.jjk.battle.Fighter;
 import dev.rick.jjk.battle.Plan;
@@ -23,50 +22,44 @@ import net.minecraft.util.Mth;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 /**
- * The battle menu: one panel along the bottom of the screen, the fight still visible above it.
+ * The battle menu, laid out like a classic monster-battle menu: a text box on the left ("What will Yuji do?") and four
+ * options on the right. Each option opens its own section of up to four choices, so it stays sectioned and small:
  *
  * <ul>
- *   <li>Four big move cards (keys 1-4): category, speed, damage, cost, one line, and why not when greyed out.</li>
- *   <li>Picking a card starts a combo strip; the cards then light up the moves that can follow (LINK). Backspace
- *       takes the last one off.</li>
- *   <li>One row of small buttons for the shared choices: guard (Q), Focus (F), Close In (W), Back Off (S), Domain (R).</li>
- *   <li>Boost (- / +) with a live initiative preview, the timer, and Lock in (Enter).</li>
+ *   <li><b>FIGHT</b>: the four moves. A move that can chain opens <b>COMBO</b> (the follow-ups, or FINISH).</li>
+ *   <li><b>DEFEND</b>: the character's guard, Focus.</li>
+ *   <li><b>MOVE</b>: Close In, Back Off.</li>
+ *   <li><b>CURSED</b>: Domain Expansion (when the meter is full), Boost, Forfeit.</li>
  * </ul>
- * Hovering a move previews its wind-up on your own fighter (only on your screen) and moves the camera over your shoulder.
+ * Keys 1-4 pick (top left, top right, bottom left, bottom right), Esc or Backspace goes back (Esc on the main page hides
+ * the menu; B brings it back). Hovering a move previews its wind-up on your own fighter and moves the camera over your
+ * shoulder (on your screen only).
  */
 public class BattleScreen extends Screen {
     // GLFW key codes.
-    private static final int K_ESCAPE = 256;
-    private static final int K_1 = 49;
-    private static final int K_4 = 52;
-    private static final int K_Q = 81;
-    private static final int K_F = 70;
-    private static final int K_W = 87;
-    private static final int K_S = 83;
-    private static final int K_R = 82;
-    private static final int K_MINUS = 45;
-    private static final int K_KP_SUBTRACT = 333;
-    private static final int K_EQUAL = 61;
-    private static final int K_KP_ADD = 334;
-    private static final int K_BACKSPACE = 259;
-    private static final int K_ENTER = 257;
-    private static final int K_KP_ENTER = 335;
-    private static final int K_SPACE = 32;
-    private static final int K_B = 66;
+    private static final int K_ESCAPE = 256, K_1 = 49, K_4 = 52, K_BACKSPACE = 259, K_ENTER = 257, K_KP_ENTER = 335, K_SPACE = 32;
+    private static final float TS = 0.72f;
+
+    private enum Page { ROOT, FIGHT, COMBO, DEFEND, MOVE, CURSED }
+
+    /** One of the four slots on a page. */
+    private record Option(String label, boolean enabled, int accent, int dots, String tip, Runnable action, @Nullable String move) {}
+
+    private Page page = Page.ROOT;
     private final List<String> chain = new ArrayList<>();
     private int boost;
-    private boolean sent;
-    @Nullable private String hover, previewing;
-    private final List<Hit> hits = new ArrayList<>();
+    private boolean sent, confirmForfeit;
+    @Nullable private String previewing;
+    private int hoveredSlot = -1;
     private long openedAt;
+    private final int[][] slotBox = new int[4][];
 
-    private record Hit(int x0, int y0, int x1, int y1, Runnable click, @Nullable String move) {}
-
-    /** Your own fighter's wind-up for each move, played locally while the card is hovered. */
+    /** Your own fighter's wind-up for each move, played locally while it is hovered. */
     private static final Map<String, String> PREVIEW = Map.ofEntries(
             Map.entry("divergent_fist", "divergent_windup"), Map.entry("manji_kick", "manji_stance"),
             Map.entry("cursed_strikes", "cursed_strikes_ready"), Map.entry("crushing_blow", "crushing_blow_charge"),
@@ -101,37 +94,134 @@ public class BattleScreen extends Screen {
         return s.f[side()].kit;
     }
 
-    // ------------------------------------------------------------------------------------------------ choosing
+    // ------------------------------------------------------------------------------------------------ pages
 
-    private void pickCard(BattleState s, BattleMove m) {
-        if (!chain.isEmpty() && canLink(s, m)) {
-            chain.add(m.id);
-            return;
+    private Option[] options(BattleState s) {
+        BattleKit k = kit(s);
+        CharacterTheme theme = CharacterTheme.of(k.character);
+        Option[] o = new Option[4];
+        switch (page) {
+            case ROOT -> {
+                boolean canMove = BattleEngine.whyNot(s, side(), BattleKits.CLOSE_IN) == null || BattleEngine.whyNot(s, side(), BattleKits.BACK_OFF) == null;
+                boolean domain = BattleEngine.whyNot(s, side(), k.domain) == null;
+                o[0] = new Option("FIGHT", true, 0xFFFF7050, 0, "Attack with one of your four moves.", () -> go(Page.FIGHT), null);
+                o[1] = new Option("DEFEND", true, 0xFF60C0FF, 0, "Guard against strikes, or Focus to gather cursed energy.", () -> go(Page.DEFEND), null);
+                o[2] = new Option("MOVE", canMove, 0xFF70E090, 0, "Close the distance or back off.", () -> go(Page.MOVE), null);
+                o[3] = new Option(domain ? "CURSED ★" : "CURSED", true, domain ? theme.accent() : 0xFFC080FF, 0,
+                        domain ? "Your Domain Expansion is ready!" : "Boost your next attack, or forfeit.", () -> go(Page.CURSED), null);
+            }
+            case FIGHT -> {
+                for (int i = 0; i < 4 && i < k.moves.size(); i++) {
+                    BattleMove m = k.moves.get(i);
+                    String why = BattleEngine.whyNot(s, side(), m);
+                    o[i] = moveOption(m, why == null, why, () -> pickMove(s, m));
+                }
+            }
+            case COMBO -> {
+                int i = 0;
+                for (BattleMove m : k.moves) {
+                    if (i >= 3) break;
+                    if (canLink(s, m)) o[i++] = moveOption(m, true, null, () -> addLink(s, m));
+                }
+                o[3] = new Option("FINISH", true, 0xFFFFD040, 0, "Lock in the combo as it is.", this::lockIn, null);
+            }
+            case DEFEND -> {
+                o[0] = shared(s, k.guard, 0xFF60C0FF);
+                o[1] = shared(s, BattleKits.FOCUS, 0xFF80D0FF);
+                o[3] = back();
+            }
+            case MOVE -> {
+                o[0] = shared(s, BattleKits.CLOSE_IN, 0xFF70E090);
+                o[1] = shared(s, BattleKits.BACK_OFF, 0xFF70E090);
+                o[3] = back();
+            }
+            case CURSED -> {
+                String why = BattleEngine.whyNot(s, side(), k.domain);
+                o[0] = new Option(why == null ? "DOMAIN" : "Domain", why == null, theme.accent(), 0,
+                        k.domain.name + (why != null ? "  ·  " + why : "") + "\n" + k.domain.line, () -> lockShared(s, k.domain), k.domain.id);
+                StringBuilder flames = new StringBuilder("Boost ");
+                for (int i = 0; i < BattleEngine.MAX_BOOST; i++) flames.append(i < boost ? "◆" : "◇");
+                o[1] = new Option(flames.toString(), true, 0xFFFF8030, 0,
+                        "Boost your next attack\n+1 speed per level, " + BattleEngine.BOOST_COST + " CE each. Pick to change.",
+                        () -> boost = boost >= BattleEngine.MAX_BOOST ? 0 : boost + 1, null);
+                o[2] = new Option(confirmForfeit ? "Sure?" : "Forfeit", true, 0xFFE05050, 0,
+                        confirmForfeit ? "Pick again to give up the battle." : "Give up the battle.", this::forfeitStep, null);
+                o[3] = back();
+            }
         }
-        if (BattleEngine.whyNot(s, side(), m) == null) {
-            chain.clear();
-            chain.add(m.id);
-            if (BattleEngine.validate(s, side(), plan()) != null) boost = 0;
+        return o;
+    }
+
+    private Option moveOption(BattleMove m, boolean enabled, @Nullable String why, Runnable action) {
+        int accent = m.category == Category.STRIKE ? 0xFFFF9050 : 0xFF70B0FF;
+        String tip = m.name + "  ·  " + (m.category == Category.STRIKE ? "Strike" : "Technique") + "  ·  " + m.power + " dmg  ·  "
+                + m.cost + " CE" + (m.pierce ? "  ·  unblockable" : "") + (why != null ? "  ·  " + why : "") + "\n" + m.line;
+        return new Option(m.name, enabled, accent, m.weight.speed, tip, action, m.id);
+    }
+
+    private Option shared(BattleState s, BattleMove m, int accent) {
+        String why = BattleEngine.whyNot(s, side(), m);
+        return new Option(m.name, why == null, accent, 0, m.name + (why != null ? "  ·  " + why : "") + "\n" + m.line, () -> lockShared(s, m), m.id);
+    }
+
+    private Option back() {
+        return new Option("BACK", true, 0xFF9090A0, 0, "Back to the main options.", () -> go(Page.ROOT), null);
+    }
+
+    private void go(Page p) {
+        page = p;
+        confirmForfeit = false;
+        if (p == Page.ROOT || p == Page.FIGHT) chain.clear();
+    }
+
+    private void goBack() {
+        switch (page) {
+            case ROOT -> {
+                BattleClient.hidden = true;
+                onClose();
+            }
+            case COMBO -> {
+                if (!chain.isEmpty()) chain.removeLast();
+                if (chain.isEmpty()) go(Page.FIGHT);
+            }
+            default -> go(Page.ROOT);
         }
     }
 
-    private void pickShared(BattleState s, BattleMove m) {
+    // ------------------------------------------------------------------------------------------------ choosing
+
+    private void pickMove(BattleState s, BattleMove m) {
         if (BattleEngine.whyNot(s, side(), m) != null) return;
         chain.clear();
         chain.add(m.id);
-        boost = 0;
+        if (hasLinks(s)) page = Page.COMBO;
+        else lockIn();
     }
 
-    /** Whether {@code m} can go on the end of the combo strip right now. */
+    private void addLink(BattleState s, BattleMove m) {
+        if (!canLink(s, m)) return;
+        chain.add(m.id);
+        if (!hasLinks(s)) lockIn();
+    }
+
+    private boolean hasLinks(BattleState s) {
+        for (BattleMove m : kit(s).moves) if (canLink(s, m)) return true;
+        return false;
+    }
+
+    /** Whether {@code m} can go on the end of the combo right now (affordable with no boost). */
     private boolean canLink(BattleState s, BattleMove m) {
-        if (chain.isEmpty() || chain.size() >= BattleEngine.MAX_CHAIN) return false;
+        if (chain.isEmpty() || chain.size() >= BattleEngine.maxChain(s.f[side()])) return false;
         List<String> next = new ArrayList<>(chain);
         next.add(m.id);
-        return BattleEngine.validate(s, side(), new Plan(next, boost)) == null;
+        return BattleEngine.validate(s, side(), new Plan(next, 0)) == null;
     }
 
-    private Plan plan() {
-        return new Plan(chain, boost);
+    private void lockShared(BattleState s, BattleMove m) {
+        if (BattleEngine.whyNot(s, side(), m) != null) return;
+        chain.clear();
+        chain.add(m.id);
+        lockIn();
     }
 
     private void lockIn() {
@@ -139,43 +229,36 @@ public class BattleScreen extends Screen {
         BattlePayloads.State p = BattleClient.state();
         if (s == null || p == null || sent) return;
         if (chain.isEmpty()) chain.add(kit(s).guard.id);
-        if (BattleEngine.validate(s, side(), plan()) != null) return;
-        ClientPlayNetworking.send(new BattlePayloads.Choice(p.session(), List.copyOf(chain), boost, false));
+        BattleMove first = kit(s).move(chain.getFirst());
+        int b = first != null && first.category.attack() ? boost : 0;
+        // Drop boost levels the plan can't afford rather than refuse it.
+        while (b > 0 && BattleEngine.validate(s, side(), new Plan(chain, b)) != null) b--;
+        if (BattleEngine.validate(s, side(), new Plan(chain, b)) != null) return;
+        ClientPlayNetworking.send(new BattlePayloads.Choice(p.session(), List.copyOf(chain), b, false));
         sent = true;
         onClose();
     }
 
-    private void forfeit() {
+    private void forfeitStep() {
+        if (!confirmForfeit) {
+            confirmForfeit = true;
+            return;
+        }
         BattlePayloads.State p = BattleClient.state();
         if (p != null) ClientPlayNetworking.send(new BattlePayloads.Choice(p.session(), List.of(), 0, true));
         sent = true;
         onClose();
     }
 
-    private void setBoost(BattleState s, int b) {
-        int old = boost;
-        boost = Mth.clamp(b, 0, BattleEngine.MAX_BOOST);
-        if (!chain.isEmpty() && BattleEngine.validate(s, side(), plan()) != null) boost = old;
-        if (chain.isEmpty() && boost * BattleEngine.BOOST_COST > s.f[side()].ce) boost = old;
-    }
-
-    /** The initiative this plan's opener would come out at, with the reasons. */
+    /** The initiative the current pick would come out at, with the reasons. */
     private String initiativeText(BattleState s) {
         if (chain.isEmpty()) return "";
         BattleMove m = kit(s).move(chain.getFirst());
-        if (m == null || !m.category.attack() && m.category != Category.MOVE) {
-            return m == null ? "" : switch (m.category) {
-                case GUARD -> "Instant";
-                case FOCUS -> "Goes last";
-                case DOMAIN -> "Opens first";
-                default -> "";
-            };
-        }
+        if (m == null || !m.category.attack()) return "";
         Fighter f = s.f[side()];
-        int speed = m.category == Category.MOVE ? 3 : m.weight.speed;
-        StringBuilder b = new StringBuilder("Speed " + speed);
-        int total = speed;
-        if (f.momentum > 0) { b.append(" +").append(f.momentum).append(" momentum"); total += f.momentum; }
+        int total = m.weight.speed;
+        StringBuilder b = new StringBuilder("Speed " + m.weight.speed);
+        if (f.control > 0) { b.append(" +1 control"); total += 1; }
         if (boost > 0) { b.append(" +").append(boost).append(" boost"); total += boost; }
         if (f.slowTurns > 0) { b.append(" -2 slowed"); total -= 2; }
         if (f.stance == BattleMove.Stance.DOWN) { b.append(" -1 down"); total -= 1; }
@@ -189,38 +272,37 @@ public class BattleScreen extends Screen {
     public boolean keyPressed(KeyEvent event) {
         BattleState s = st();
         int key = event.key();
-        if (key == K_ESCAPE) {
-            BattleClient.hidden = true;
-            onClose();
-            return true;
-        }
         if (s == null) return super.keyPressed(event);
-        BattleKit k = kit(s);
-        if (key >= K_1 && key <= K_4 && key - K_1 < k.moves.size()) {
-            pickCard(s, k.moves.get(key - K_1));
+        if (key == K_ESCAPE || key == K_BACKSPACE) {
+            goBack();
             return true;
         }
-        switch (key) {
-            case K_Q -> pickShared(s, k.guard);
-            case K_F -> pickShared(s, BattleKits.FOCUS);
-            case K_W -> pickShared(s, BattleKits.CLOSE_IN);
-            case K_S -> pickShared(s, BattleKits.BACK_OFF);
-            case K_R -> pickShared(s, k.domain);
-            case K_MINUS, K_KP_SUBTRACT -> setBoost(s, boost - 1);
-            case K_EQUAL, K_KP_ADD -> setBoost(s, boost + 1);
-            case K_BACKSPACE -> { if (!chain.isEmpty()) chain.removeLast(); }
-            case K_ENTER, K_KP_ENTER, K_SPACE -> lockIn();
-            default -> { return super.keyPressed(event); }
+        if (key >= K_1 && key <= K_4) {
+            choose(s, key - K_1);
+            return true;
         }
-        return true;
+        if ((key == K_ENTER || key == K_KP_ENTER || key == K_SPACE) && page == Page.COMBO) {
+            lockIn();
+            return true;
+        }
+        return super.keyPressed(event);
+    }
+
+    private void choose(BattleState s, int slot) {
+        Option o = options(s)[slot];
+        if (o != null && o.enabled) o.action.run();
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        for (Hit h : hits) {
-            if (event.x() >= h.x0 && event.x() < h.x1 && event.y() >= h.y0 && event.y() < h.y1) {
-                h.click.run();
-                return true;
+        BattleState s = st();
+        if (s != null) {
+            for (int i = 0; i < 4; i++) {
+                int[] b = slotBox[i];
+                if (b != null && event.x() >= b[0] && event.x() < b[2] && event.y() >= b[1] && event.y() < b[3]) {
+                    choose(s, i);
+                    return true;
+                }
             }
         }
         return super.mouseClicked(event, doubleClick);
@@ -245,134 +327,90 @@ public class BattleScreen extends Screen {
 
     // ------------------------------------------------------------------------------------------------ drawing
 
-    /** One clickable chip of the bar. */
-    private record Chip(String label, @Nullable BattleMove move, Runnable click, boolean enabled, boolean lit, int accent, int dots, String tip) {}
-
-    private static final float TS = 0.7f;
-    private static final int BAR_H = 16;
-
     @Override
     public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
-        hits.clear();
+        Arrays.fill(slotBox, null);
         BattleState s = st();
         BattlePayloads.State p = BattleClient.state();
         if (s == null || p == null) return;
         BattleKit k = kit(s);
         CharacterTheme theme = CharacterTheme.of(k.character);
+        Option[] opts = options(s);
+
         float in = Mth.clamp((System.currentTimeMillis() - openedAt) / 160f, 0, 1);
-        int y = height - BAR_H - 4 + Math.round((1 - in) * 20);
+        int boxH = 30, y = height - boxH - 3 + Math.round((1 - in) * 24);
+        int split = Math.round(width * 0.5f);
+        int lx0 = 4, lx1 = split - 2, rx0 = split + 2, rx1 = width - 4;
 
-        // The chips: four moves, the shared keys, boost, timer, lock in.
-        List<Chip> chips = new ArrayList<>();
-        for (int i = 0; i < k.moves.size(); i++) {
-            BattleMove m = k.moves.get(i);
-            String why = BattleEngine.whyNot(s, side(), m);
-            boolean link = canLink(s, m);
-            int accent = m.category == Category.STRIKE ? 0xFFFF9050 : 0xFF70B0FF;
-            String tip = m.name + " · " + (m.category == Category.STRIKE ? "Strike" : "Technique") + " · " + m.power + " dmg · " + m.cost + " CE"
-                    + (link ? " · LINK" : why != null ? " · " + why : "") + " — " + m.line;
-            chips.add(new Chip((i + 1) + " " + m.name, m, () -> pickCard(s, m), why == null || link, link || chain.contains(m.id), accent, m.weight.speed, tip));
-        }
-        record Key(String key, String shortName, BattleMove m) {}
-        for (Key key : List.of(new Key("Q", "Guard", k.guard), new Key("F", "Focus", BattleKits.FOCUS), new Key("W", "In", BattleKits.CLOSE_IN),
-                new Key("S", "Back", BattleKits.BACK_OFF), new Key("R", "Domain", k.domain))) {
-            String why = BattleEngine.whyNot(s, side(), key.m);
-            boolean picked = chain.size() == 1 && chain.getFirst().equals(key.m.id);
-            boolean domainReady = key.m.category == Category.DOMAIN && why == null;
-            if (key.m.category == Category.DOMAIN && !domainReady) continue; // only shows when the meter is full
-            chips.add(new Chip(key.key + " " + key.shortName, key.m, () -> pickShared(s, key.m), why == null, picked || domainReady,
-                    domainReady ? theme.accent() : 0xFF9090A0, 0, key.m.name + (why != null ? " · " + why : "") + " — " + key.m.line));
+        // Options (right): a 2x2 grid.
+        hoveredSlot = -1;
+        int cellW = (rx1 - rx0 - 3) / 2, cellH = (boxH - 3) / 2;
+        frame(g, rx0, y, rx1, y + boxH, theme.accent());
+        for (int i = 0; i < 4; i++) {
+            int cx = rx0 + 1 + (i % 2) * (cellW + 1), cy = y + 1 + (i / 2) * (cellH + 1);
+            Option o = opts[i];
+            if (o == null) continue;
+            boolean over = mouseX >= cx && mouseX < cx + cellW && mouseY >= cy && mouseY < cy + cellH;
+            if (over) hoveredSlot = i;
+            slotBox[i] = new int[] {cx, cy, cx + cellW, cy + cellH};
+            g.fill(cx, cy, cx + cellW, cy + cellH, over && o.enabled ? (theme.ceBottom() & 0xFFFFFF) | 0xD0000000 : 0xC0101018);
+            g.fill(cx, cy + cellH - 1, cx + cellW, cy + cellH, o.enabled ? o.accent : 0x30FFFFFF);
+            String label = (over && o.enabled ? "▶ " : "") + o.label;
+            text(g, String.valueOf(i + 1), cx + 3, cy + 4, 0.55f, 0xFF7070A0);
+            text(g, label, cx + 10, cy + 3, TS, o.enabled ? 0xFFFFFFFF : 0xFF55555F);
+            for (int d = 0; d < o.dots; d++) g.fill(cx + cellW - 4 - d * 3, cy + 3, cx + cellW - 2 - d * 3, cy + 5, o.enabled ? 0xFFFFE070 : 0xFF45454D);
         }
 
-        // Layout: measure, then centre the row.
-        int gap = 3, pad = 5;
-        int[] w = new int[chips.size()];
-        int total = 0;
-        for (int i = 0; i < chips.size(); i++) total += (w[i] = Math.round(font.width(chips.get(i).label) * TS) + pad * 2) + gap;
-        int tail = 96; // boost, timer, lock in
-        if (total + tail > width - 8) {
-            // Narrow screen: first words only, single letters for the shared keys.
-            total = 0;
-            for (int i = 0; i < chips.size(); i++) {
-                Chip c = chips.get(i);
-                String l = c.label;
-                if (c.move != null && k.moves.contains(c.move)) l = l.split(" ")[0] + " " + c.move.name.replace("Lapse: ", "").replace("Reversal: ", "").split(" ")[0];
-                else l = l.split(" ")[0];
-                chips.set(i, new Chip(l, c.move, c.click, c.enabled, c.lit, c.accent, c.dots, c.tip));
-                total += (w[i] = Math.round(font.width(l) * TS) + pad * 2) + gap;
-            }
-        }
-        int x = Math.max(4, width / 2 - (total + tail) / 2);
-        String tip = null;
-        for (int i = 0; i < chips.size(); i++) {
-            Chip c = chips.get(i);
-            boolean over = mouseX >= x && mouseX < x + w[i] && mouseY >= y && mouseY < y + BAR_H;
-            if (over) {
-                tip = c.tip;
-                BattleClient.hovering = c.move == null ? null : c.move.id;
-            }
-            int bg = c.lit ? (theme.ceBottom() & 0xFFFFFF) | 0xD0000000 : over ? 0xD0303040 : 0xB0101018;
-            g.fill(x, y, x + w[i], y + BAR_H, bg);
-            g.fill(x, y + BAR_H - 1, x + w[i], y + BAR_H, c.enabled ? c.accent : 0x40FFFFFF);
-            if (c.lit && c.move != null && canLink(s, c.move)) g.fill(x, y, x + w[i], y + 1, System.currentTimeMillis() / 300 % 2 == 0 ? 0xFFFFD040 : 0xFFFFFFFF);
-            text(g, c.label, x + pad, y + 5, TS, c.enabled ? 0xFFFFFFFF : 0xFF5A5A66);
-            for (int d = 0; d < c.dots; d++) g.fill(x + w[i] - 3 - d * 3, y + 2, x + w[i] - 2 - d * 3, y + 3, c.enabled ? 0xFFFFE070 : 0xFF505058);
-            hits.add(new Hit(x, y, x + w[i], y + BAR_H, c.click, c.move == null ? null : c.move.id));
-            x += w[i] + gap;
-        }
-        if (tip == null) BattleClient.hovering = null;
-
-        // Boost (◆ per level), the timer, lock in.
-        x += 4;
-        int bx = x;
-        g.fill(bx, y, bx + 30, y + BAR_H, 0xB0101018);
-        StringBuilder flames = new StringBuilder();
-        for (int i = 0; i < BattleEngine.MAX_BOOST; i++) flames.append(i < boost ? "◆" : "◇");
-        text(g, flames.toString(), bx + 4, y + 5, TS, boost > 0 ? 0xFFFF8030 : 0xFF606070);
-        hits.add(new Hit(bx, y, bx + 30, y + BAR_H, () -> setBoost(s, boost >= BattleEngine.MAX_BOOST ? 0 : boost + 1), null));
-        boolean overBoost = mouseX >= bx && mouseX < bx + 30 && mouseY >= y && mouseY < y + BAR_H;
-        if (overBoost) tip = "Boost: +1 speed per level, " + BattleEngine.BOOST_COST + " CE each (click or -/+)";
-        x = bx + 33;
+        // Text box (left): the prompt, or what's under the mouse.
+        frame(g, lx0, y, lx1, y + boxH, 0xFF505060);
         int secs = (p.timer() + 19) / 20;
-        boolean ok = chain.isEmpty() || BattleEngine.validate(s, side(), plan()) == null;
-        int lw = 58;
-        boolean overLock = mouseX >= x && mouseX < x + lw && mouseY >= y && mouseY < y + BAR_H;
-        g.fill(x, y, x + lw, y + BAR_H, overLock ? (theme.ceBottom() & 0xFFFFFF) | 0xE0000000 : 0xC0181820);
-        g.fill(x, y + BAR_H - 1, x + lw, y + BAR_H, ok ? theme.accent() : 0x40FFFFFF);
-        text(g, (ok ? "GO ⏎ " : "— ") + secs + "s", x + 6, y + 5, TS, secs <= 5 ? 0xFFFF6060 : 0xFFFFFFFF);
-        hits.add(new Hit(x, y, x + lw, y + BAR_H, this::lockIn, null));
-
-        // One line above: the combo and its speed, or what's under the mouse.
-        String line;
-        if (tip != null) line = tip;
-        else if (chain.isEmpty()) line = "";
-        else {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < chain.size(); i++) {
-                BattleMove m = k.move(chain.get(i));
-                if (i > 0) sb.append(" → ");
-                sb.append(m == null ? chain.get(i) : m.name);
-            }
-            boolean more = false;
-            if (chain.size() < BattleEngine.MAX_CHAIN) for (BattleMove m : k.moves) more |= canLink(s, m);
-            if (more) sb.append(" → +");
+        CinematicPanels.label(g, font, secs + "s", lx1 - 3, y + 3, 0.65f, secs <= 5 ? 0xFFFF6060 : 0xFFB0B0C0, 1f, true);
+        String head, sub;
+        Option hov = hoveredSlot >= 0 ? opts[hoveredSlot] : null;
+        if (hov != null) {
+            String[] parts = hov.tip.split("\n", 2);
+            head = parts[0];
+            sub = parts.length > 1 ? parts[1] : "";
+        } else {
+            head = switch (page) {
+                case ROOT -> "What will " + k.name + " do?";
+                case FIGHT -> "Which move?";
+                case COMBO -> comboText(k) + "  →  ?";
+                case DEFEND -> "Defend how?";
+                case MOVE -> "Move where?";
+                case CURSED -> "Cursed energy: " + s.f[side()].ce;
+            };
             String ini = initiativeText(s);
-            line = sb + (ini.isEmpty() ? "" : "   ·   " + ini);
+            Fighter me = s.f[side()];
+            String limit = me.control >= Fighter.MAX_CONTROL ? "Full control: a full combo ends in your finisher!"
+                    : me.control >= 1 ? "Control: combos up to 3 moves." : "Take control (win cleanly) for longer combos.";
+            sub = page == Page.COMBO ? limit + (ini.isEmpty() ? "" : "   " + ini)
+                    : page == Page.ROOT ? (boost > 0 ? "Boost set for your next attack.  " : "") + "Esc: hide menu"
+                    : page == Page.FIGHT && Arrays.stream(opts).noneMatch(o -> o != null && o.enabled)
+                    ? "Nothing reaches from here — use MOVE to close in.  Esc: back"
+                    : "Esc: back";
         }
-        if (!line.isEmpty()) {
-            int lw2 = Math.min(width - 8, Math.round(font.width(line) * 0.62f) + 10);
-            g.fill(width / 2 - lw2 / 2, y - 12, width / 2 + lw2 / 2, y - 2, 0x90000000);
-            var lines = font.split(Component.literal(line), Math.round((width - 18) / 0.62f));
-            if (!lines.isEmpty()) {
-                var pose = g.pose();
-                pose.pushMatrix();
-                pose.translate(width / 2f - Math.min(width - 18, font.width(lines.getFirst()) * 0.62f) / 2, y - 10);
-                pose.scale(0.62f, 0.62f);
-                g.text(font, lines.getFirst(), 0, 0, tip != null ? 0xFFD0D0E0 : 0xFFFFE070, false);
-                pose.popMatrix();
-            }
+        wrap(g, head, lx0 + 5, y + 4, lx1 - lx0 - 30, 0.68f, 0xFFFFFFFF, 1);
+        wrap(g, sub, lx0 + 5, y + 15, lx1 - lx0 - 10, 0.55f, 0xFFB8B8C8, 2);
+
+        String hoveredMove = hov != null && hov.move != null ? hov.move : null;
+        setPreview(hoveredMove);
+        BattleClient.hovering = hoveredMove;
+    }
+
+    private String comboText(BattleKit k) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < chain.size(); i++) {
+            BattleMove m = k.move(chain.get(i));
+            if (i > 0) sb.append(" → ");
+            sb.append(m == null ? chain.get(i) : m.name);
         }
-        setPreview(BattleClient.hovering);
+        return sb.toString();
+    }
+
+    private static void frame(GuiGraphicsExtractor g, int x0, int y0, int x1, int y1, int color) {
+        g.fill(x0 - 1, y0 - 1, x1 + 1, y1 + 1, (color & 0xFFFFFF) | 0xB0000000);
+        g.fill(x0, y0, x1, y1, 0xD8080810);
     }
 
     private void text(GuiGraphicsExtractor g, String s, int x, int y, float scale, int color) {
@@ -382,6 +420,20 @@ public class BattleScreen extends Screen {
         pose.scale(scale, scale);
         g.text(font, Component.literal(s), 0, 0, color, false);
         pose.popMatrix();
+    }
+
+    /** Text wrapped to {@code width} (GUI pixels), at most {@code maxLines} lines. */
+    private void wrap(GuiGraphicsExtractor g, String s, int x, int y, int width, float scale, int color, int maxLines) {
+        if (s.isEmpty()) return;
+        var lines = font.split(Component.literal(s), Math.max(10, Math.round(width / scale)));
+        for (int i = 0; i < Math.min(maxLines, lines.size()); i++) {
+            var pose = g.pose();
+            pose.pushMatrix();
+            pose.translate(x, y + i * Math.round(9 * scale + 1));
+            pose.scale(scale, scale);
+            g.text(font, lines.get(i), 0, 0, color, false);
+            pose.popMatrix();
+        }
     }
 
     /** Plays (or lets go of) the hovered move's wind-up on your own fighter, on your screen only. */

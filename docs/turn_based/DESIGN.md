@@ -103,6 +103,41 @@ The whole menu is one panel at the bottom of the screen. It fades out while the 
 - **While the turn plays:** no menu, just letterbox bars, the move-name title card, damage numbers and the combo
   counter. A "fast" toggle trims repeated scenes.
 
+## Control (implemented)
+
+- **Taking control:** a clean win of the exchange takes **control**. That means the opener landed and the foe's move
+  was cut off, or a parry, or winning a clash. Control is +1 per turn (max 2), and you lose it when the foe takes it. A
+  trade or block gives nobody control.
+- **What it does:**
+  - Holding control gives +1 initiative.
+  - Combos can be **3 moves** (otherwise 2).
+  - At **full control** a complete combo ends in the character's **finisher**: Yuji's Black Flash, Gojo's Limitless
+    Barrage.
+- **Reversal:** before each link, a defender with 25+ cursed energy may **reverse**: they read the combo, slip it,
+  counter and steal control. The chance grows with each link (10% + 5% per link), and guarding defenders can't reverse.
+- **On screen:** the controller's combo plays as **one take**.
+  - Each hit starts on the last one's follow-through, and the fighters stay where the hits leave them.
+  - Juggles go higher, and links speed up.
+  - The finisher gets a beat of stillness before it.
+  - One continuous camera orbits on the controller's side, pushing in on each contact; a reversal flips it.
+  - The letterbox bars close in.
+
+## Menu (implemented)
+
+The menu is laid out like Pokémon: a text box on the left and four options on the right, each a section of up to
+four choices.
+
+- FIGHT (four moves, then COMBO: the follow-ups or FINISH)
+- DEFEND (guard, Focus)
+- MOVE (Close In, Back Off)
+- CURSED (Domain when ready, Boost, Forfeit)
+
+Keys 1–4 pick, and Esc goes back. Text during the fight is kept quiet:
+
+- The move name, small in the letterbox.
+- A small damage number.
+- A title card only for Black Flash, named combos, domains and the result.
+
 ## Build order
 
 1. ✅ Engine, kits, AI, rule tests and a balance simulator (JUnit, `BattleEngineTest`, `BattleSimulationTest`).

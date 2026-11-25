@@ -41,7 +41,7 @@ public final class BattleAI {
 
     private static void routes(BattleKit kit, BattleMove prev, Range r, List<String> sofar, List<List<String>> out) {
         out.add(List.copyOf(sofar));
-        if (sofar.size() >= BattleEngine.MAX_CHAIN) return;
+        if (sofar.size() >= BattleEngine.MAX_CHAIN) return; // validate() trims to the fighter's own limit
         for (BattleMove m : BattleEngine.links(kit, prev, r)) {
             sofar.add(m.id);
             routes(kit, m, BattleEngine.rangeAfter(m, r), sofar, out);
@@ -97,7 +97,7 @@ public final class BattleAI {
     public static double evaluate(BattleState s, int side) {
         if (s.over()) return s.winner == side ? 1000 : s.winner == 2 ? 0 : -1000;
         Fighter me = s.f[side], foe = s.f[1 - side];
-        double v = (me.hp - foe.hp) + 0.15 * (me.ce - foe.ce) + 0.08 * (me.meter - foe.meter) + 3 * (me.momentum - foe.momentum);
+        double v = (me.hp - foe.hp) + 0.15 * (me.ce - foe.ce) + 0.08 * (me.meter - foe.meter) + 5 * (me.control - foe.control);
         if (foe.stance == Stance.STAGGERED || foe.stance == Stance.AIRBORNE) v += 3;
         if (me.stance == Stance.STAGGERED || me.stance == Stance.AIRBORNE) v -= 3;
         return v;

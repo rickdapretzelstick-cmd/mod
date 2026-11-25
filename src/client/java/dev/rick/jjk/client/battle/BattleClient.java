@@ -46,9 +46,21 @@ public final class BattleClient {
     /** HP as the fight has shown it so far (the state jumps ahead to the end of the turn as soon as it resolves). */
     static final int[] shownHp = {Fighter.MAX_HP, Fighter.MAX_HP};
     static final float[] drainHp = {Fighter.MAX_HP, Fighter.MAX_HP};
-    static int comboHits, comboActor = -1, lastTurn = -1;
+    static int lastTurn = -1;
+    /** The control sequence playing: who has control, when it started, and which side of the line the camera is on. */
+    static int seqActor = -1, seqStart, seqSide = 1;
     /** A move the menu is hovering (the camera and your own fighter preview it), or null. */
     @Nullable static String hovering;
+
+    /** The move playing, written small in the bottom letterbox bar (no shouting). */
+    static String captionText = "";
+    static int captionColor = 0xFFFFFFFF, captionAt;
+
+    private static void caption(String text, int color) {
+        captionText = text;
+        captionColor = color;
+        captionAt = ticks;
+    }
 
     private record Popup(String text, int color, float scale, int born, int life, float x, float y, float rise) {}
 
@@ -96,7 +108,7 @@ public final class BattleClient {
         b.turn = s.turn();
         for (int i = 0; i < 2; i++) {
             Fighter f = b.f[i];
-            f.hp = s.stat(i, 0); f.ce = s.stat(i, 1); f.meter = s.stat(i, 2); f.momentum = s.stat(i, 3);
+            f.hp = s.stat(i, 0); f.ce = s.stat(i, 1); f.meter = s.stat(i, 2); f.control = s.stat(i, 3);
             f.stance = Stance.values()[Mth.clamp(s.stat(i, 4), 0, Stance.values().length - 1)];
             f.slowTurns = s.stat(i, 5); f.burnTurns = s.stat(i, 6); f.zoneTurns = s.stat(i, 7); f.domainTurns = s.stat(i, 8);
             if (i < 2 && f.domainTurns > 0 && k(i).character.equals("yuji")) f.strikeBoostTurns = f.domainTurns;
@@ -131,17 +143,14 @@ public final class BattleClient {
             for (int i = 0; i < 2; i++) shownHp[i] = p.stat(i, 0);
             drainHp[0] = shownHp[0];
             drainHp[1] = shownHp[1];
-            popup(k(0).name.toUpperCase() + "  VS  " + k(1).name.toUpperCase(), 0xFFFFFFFF, 2.2f, 50, 0.5f, 0.42f, 0);
+            popup(k(0).name.toUpperCase() + "  ·  " + k(1).name.toUpperCase(), 0xFFFFFFFF, 1.6f, 50, 0.5f, 0.42f, 0);
         }
         if (p.phase() == BattlePayloads.CHOOSING) {
             beat = null;
             for (int i = 0; i < 2; i++) shownHp[i] = p.stat(i, 0);
             if (p.turn() != lastTurn) {
                 hidden = false;
-                comboHits = 0;
-                comboActor = -1;
                 lastTurn = p.turn();
-                popup("TURN " + p.turn(), 0xFFFFE070, 1.4f, 26, 0.5f, 0.30f, 0);
             }
         } else if (p.phase() == BattlePayloads.DONE) {
             endAt = ticks;
@@ -157,57 +166,40 @@ public final class BattleClient {
         beat = b;
         beatAt = ticks;
         Beat.Kind kind = Beat.Kind.values()[Mth.clamp(b.kind(), 0, Beat.Kind.values().length - 1)];
-        BattleMove m = k(b.actor()).move(b.move());
-        boolean attack = m != null && m.category.attack();
-        if (attack && b.link() == 0) {
-            comboHits = 0;
-            comboActor = b.actor();
+        // A fighter taking control turns everything they do into one take (the camera follows from here).
+        if (b.control() && seqActor != b.actor()) {
+            seqActor = b.actor();
+            seqStart = ticks;
+            seqSide = b.actor() == mySide() ? 1 : -1;
+        } else if (!b.control()) {
+            seqActor = -1;
         }
-        String name = m != null ? m.name : "";
-        switch (kind) {
-            case DOMAIN, DOMAIN_CLASH -> popup(("DOMAIN EXPANSION"), 0xFFFFFFFF, 1.2f, 50, 0.5f, 0.30f, 0);
-            case STUNNED -> popup("TRAPPED", 0xFFB0B0FF, 1.6f, 16, 0.5f, 0.45f, 0);
-            case INTERRUPTED -> popup("INTERRUPTED", 0xFFFF9050, 1.4f, 14, b.actor() == mySide() ? 0.3f : 0.7f, 0.5f, 0);
-            case FOCUS -> popup("+CE", 0xFF80D0FF, 1.4f, 16, b.actor() == mySide() ? 0.3f : 0.7f, 0.5f, 0.02f);
-            case MOVE -> popup(name.toUpperCase(), 0xFFFFFFFF, 1.2f, 14, 0.5f, 0.72f, 0);
-            default -> {
-                if (attack && b.link() == 0) popup(name.toUpperCase(), CharacterTheme.of(k(b.actor()).character).accent(), 1.8f, 24, 0.5f, 0.70f, 0);
-                else if (attack) popup(name.toUpperCase(), 0xFFFFFFFF, 1.2f, 16, 0.5f, 0.72f, 0);
-            }
-        }
-        if (kind == Beat.Kind.DOMAIN || kind == Beat.Kind.DOMAIN_CLASH) {
-            BattleMove d = k(b.actor()).domain;
-            popup(d.name.toUpperCase(), CharacterTheme.of(k(b.actor()).character).accent(), 2.4f, 50, 0.5f, 0.36f, 0);
-        }
+        if (kind == Beat.Kind.REVERSAL) seqSide = -seqSide;
+        int accent = CharacterTheme.of(k(b.actor()).character).accent();
+        BattleMove m = kind == Beat.Kind.FINISHER ? k(b.actor()).finisher : k(b.actor()).move(b.move());
+        // The move's name, small in the letterbox: the picture does the talking.
+        if (m != null && (m.category.attack() || kind == Beat.Kind.FINISHER)) caption(m.name, accent);
+        if (kind == Beat.Kind.DOMAIN || kind == Beat.Kind.DOMAIN_CLASH) popup(k(b.actor()).domain.name.toUpperCase(), accent, 2.4f, 50, 0.5f, 0.36f, 0);
     }
 
-    /** At the moment of contact: the damage number, the hit counter, a Black Flash or combo title card. */
+    /** At the moment of contact: a small damage number, and a title card only for the big moments. */
     private static void onContact(BattlePayloads.BeatStart b) {
         Beat.Kind kind = Beat.Kind.values()[Mth.clamp(b.kind(), 0, Beat.Kind.values().length - 1)];
         shownHp[0] = b.hp0();
         shownHp[1] = b.hp1();
         int target = kind == Beat.Kind.PARRY ? b.actor() : 1 - b.actor();
         float x = target == mySide() ? 0.36f : 0.64f;
-        switch (kind) {
-            case WHIFF -> popup("MISS", 0xFFC0C0C0, 1.6f, 18, x, 0.46f, 0.03f);
-            case BLOCK -> popup("BLOCKED  -" + b.damage(), 0xFFB0D0FF, 1.4f, 18, x, 0.46f, 0.03f);
-            case PARRY -> popup("PARRY!  -" + b.damage(), 0xFFFFE070, 1.8f, 22, x, 0.46f, 0.03f);
-            case KO -> {}
-            default -> {
-                if (b.damage() > 0) popup("-" + b.damage(), b.blackFlash() ? 0xFFFF3040 : 0xFFFFFFFF, b.blackFlash() ? 2.6f : 1.9f, 22, x, 0.46f, 0.04f);
-            }
+        if (b.damage() > 0 && kind != Beat.Kind.KO) {
+            int color = b.blackFlash() ? 0xFFFF3040 : kind == Beat.Kind.BLOCK ? 0xFF8090A8 : kind == Beat.Kind.PARRY ? 0xFFFFE070 : 0xFFFFFFFF;
+            popup(String.valueOf(b.damage()), color, b.blackFlash() ? 1.5f : 1.0f, 20, x, 0.46f, 0.04f);
         }
-        if (kind == Beat.Kind.HIT || kind == Beat.Kind.PIERCE) {
-            if (comboActor == b.actor()) comboHits++;
-            if (comboHits >= 2) popup(comboHits + " HIT COMBO", 0xFFFFD040, 1.3f, 26, b.actor() == mySide() ? 0.16f : 0.84f, 0.58f, 0);
-        }
-        if (kind == Beat.Kind.CLASH) popup("CLASH!", 0xFFFFFFFF, 2.4f, 18, 0.5f, 0.40f, 0);
-        if (kind == Beat.Kind.TRADE) popup("TRADE", 0xFFFFB060, 1.6f, 16, 0.5f, 0.40f, 0);
-        if (b.blackFlash()) popup("BLACK FLASH", 0xFFFF2030, 3.0f, 36, 0.5f, 0.33f, 0);
-        if (!b.note().isEmpty() && kind != Beat.Kind.DOMAIN) popup(b.note().toUpperCase(), 0xFFFFD040, 2.2f, 40, 0.5f, 0.24f, 0);
+        if (b.blackFlash()) popup("BLACK FLASH", 0xFFFF2030, 2.6f, 36, 0.5f, 0.33f, 0);
+        else if (!b.note().isEmpty() && kind != Beat.Kind.DOMAIN) popup(b.note().toUpperCase(), 0xFFFFD040, 2.2f, 40, 0.5f, 0.30f, 0);
     }
 
     private static void popup(String text, int color, float scale, int life, float x, float y, float rise) {
+        // One big title card at a time, and never the same words twice on screen.
+        POPUPS.removeIf(p -> p.text.equals(text) || scale >= 2f && p.scale >= 2f && Math.abs(p.y - y) < 0.14f);
         POPUPS.add(new Popup(text, color, scale, ticks, life, x, y, rise));
     }
 
@@ -267,7 +259,26 @@ public final class BattleClient {
             float bt = t - beatAt;
             BattleMove m = k(b.actor()).move(b.move());
             boolean big = b.blackFlash() || !b.note().isEmpty() || (m != null && m.weight == BattleMove.Weight.HEAVY && m.category.attack());
-            switch (kind) {
+            if (b.control() && kind != Beat.Kind.KO) {
+                // One take for the whole sequence: orbit with the action (on the controller's side of the line), rise
+                // with juggles, push in on every contact; one hard cut to a low hero shot for the finisher's impact.
+                float st = t - seqStart, local = bt - b.contact();
+                Vec3 mid = pa.lerp(pt, 0.5);
+                if (kind == Beat.Kind.FINISHER && local > 0) {
+                    shot = 5000 + b.index();
+                    // Low and side-on to the impact, drifting back as the target crashes.
+                    Frame two = Shots.twoShot(att.position().add(0, 0.6, 0), tgt.position().add(0, 0.4, 0), side * seqSide, -0.4 + local * 0.04, -0.2);
+                    f = two;
+                } else {
+                    shot = 4000 + seqStart + (seqSide > 0 ? 0 : 1);
+                    double push = Math.max(0, 1 - Math.abs(local) / 5.0) * 0.9;
+                    double radius = Math.max(3.0, att.position().distanceTo(tgt.position()) * 0.6 + 3.2) - push;
+                    Vec3 n = Shots.perpendicular(Shots.flatDir(p0, p1), side * seqSide);
+                    Vec3 dir = Shots.rotate(n, (st * 0.03) * seqSide - 0.35 * seqSide);
+                    double rise = Math.max(0, tgt.position().y - att.position().y) * 0.6;
+                    f = Shots.place(mid.add(0, rise * 0.5, 0), mid.add(dir.scale(radius)).add(0, 0.6 + rise + st * 0.01, 0));
+                }
+            } else switch (kind) {
                 case HIT, PIERCE, TRADE, CLASH, BLOCK, PARRY, WHIFF -> {
                     if (bt < b.contact() * 0.6f && b.link() == 0) {
                         shot = b.index() * 10;
@@ -338,15 +349,22 @@ public final class BattleClient {
         Font font = mc.font;
         int w = g.guiWidth(), h = g.guiHeight();
         boolean playing = s.phase() != BattlePayloads.CHOOSING;
-        int bar = playing ? Math.max(12, h / 14) : 0;
+        BattlePayloads.BeatStart cb = beat;
+        // The bars close in while someone has control of the fight.
+        int bar = !playing ? 0 : cb != null && cb.control() && s.phase() == BattlePayloads.PLAYING ? Math.max(18, h / 9) : Math.max(12, h / 14);
         if (playing) {
             g.fill(0, 0, w, bar, 0xF0000000);
             g.fill(0, h - bar, w, h, 0xF0000000);
+            float age = ticks - captionAt;
+            if (!captionText.isEmpty() && age < 40) {
+                float alpha = Mth.clamp(age / 4f, 0, 1) * Mth.clamp((40 - age) / 8f, 0, 1);
+                CinematicPanels.labelCentered(g, font, captionText, w / 2f, h - bar / 2f - 3, 0.75f, captionColor, alpha);
+            }
         }
         int me = mySide();
         panel(g, font, me, 6, 3, false, w);
         panel(g, font, 1 - me, w - 6, 3, true, w);
-        rangeMeter(g, font, s, w / 2f, 3);
+        if (!playing) rangeMeter(g, font, s, w / 2f, 3);
         if (s.phase() == BattlePayloads.CHOOSING && s.side() >= 0 && !(mc.gui.screen() instanceof BattleScreen)) {
             String msg = s.picked() ? "Locked in — waiting for the opponent…" : "B: battle menu";
             CinematicPanels.labelCentered(g, font, msg, w / 2f, h - 12, 0.6f, 0xFFFFFFFF, 0.6f + 0.4f * (float) Math.sin(ticks * 0.2));
@@ -382,14 +400,17 @@ public final class BattleClient {
         bar(g, x0, y + 14, pw / 2, 1, 0, 0, s.stat(side, 2) / (float) Fighter.MAX_METER,
                 full ? (ticks / 4 % 2 == 0 ? 0xFFFFFFFF : 0xFFFFD040) : 0xFFB070FF, right);
         StringBuilder tags = new StringBuilder();
-        if (s.stat(side, 3) > 0) tags.append("▲ ");
+        // While a turn plays, the state already shows how it ends: keep stances and statuses until it has.
+        boolean showTags = s.phase() != BattlePayloads.PLAYING;
+        int control = s.stat(side, 3);
+        if (control > 0) tags.append("CONTROL ").append("●".repeat(control)).append("○".repeat(Fighter.MAX_CONTROL - control)).append(' ');
         int stance = s.stat(side, 4);
         if (stance > 0) tags.append(Stance.values()[Math.min(stance, 3)].name()).append(' ');
         if (s.stat(side, 5) > 0) tags.append("SLOW ");
         if (s.stat(side, 6) > 0) tags.append("BURN ");
         if (s.stat(side, 7) > 0) tags.append("ZONE ");
         if (full) tags.append("DOMAIN READY");
-        if (!tags.isEmpty()) CinematicPanels.label(g, font, tags.toString().trim(), right ? x0 + pw : x0, y + 17, 0.5f, 0xFFFFE070, 1f, right);
+        if (!tags.isEmpty() && showTags) CinematicPanels.label(g, font, tags.toString().trim(), right ? x0 + pw : x0, y + 17, 0.5f, 0xFFFFE070, 1f, right);
     }
 
     private static void bar(GuiGraphicsExtractor g, int x, int y, int w, int h, float back, int backColor, float k, int color, boolean right) {

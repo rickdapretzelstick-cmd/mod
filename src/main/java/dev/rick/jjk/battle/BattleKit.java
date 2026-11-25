@@ -14,6 +14,8 @@ public final class BattleKit {
     public final String character, name, title;
     public final List<BattleMove> moves;
     public final BattleMove guard, domain;
+    /** Lands at the end of a full combo while at max control (not picked from the menu). */
+    public final BattleMove finisher;
     /** Strike links at or below this speed are caught by this fighter's guard after a technique pierced it. */
     public final int counterSpeed;
     /** Damage the guard's counter deals when it parries a heavy strike. */
@@ -23,10 +25,10 @@ public final class BattleKit {
     public final List<NamedCombo> combos;
 
     public BattleKit(String character, String name, String title, List<BattleMove> moves, BattleMove guard, int counterSpeed,
-                     int parryDamage, float guardTechniqueMult, BattleMove domain, List<NamedCombo> combos) {
+                     int parryDamage, float guardTechniqueMult, BattleMove domain, BattleMove finisher, List<NamedCombo> combos) {
         this.character = character; this.name = name; this.title = title; this.moves = List.copyOf(moves); this.guard = guard;
         this.counterSpeed = counterSpeed; this.parryDamage = parryDamage; this.guardTechniqueMult = guardTechniqueMult;
-        this.domain = domain; this.combos = List.copyOf(combos);
+        this.domain = domain; this.finisher = finisher; this.combos = List.copyOf(combos);
     }
 
     /** Every move this fighter can pick: the four, guard, domain, and the shared ones. */
@@ -40,6 +42,6 @@ public final class BattleKit {
 
     public BattleMove move(String id) {
         for (BattleMove m : all()) if (m.id.equals(id)) return m;
-        return null;
+        return finisher.id.equals(id) ? finisher : null;
     }
 }

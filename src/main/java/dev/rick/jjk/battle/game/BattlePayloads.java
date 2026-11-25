@@ -15,7 +15,7 @@ public final class BattlePayloads {
     private BattlePayloads() {}
 
     public static final int CHOOSING = 0, PLAYING = 1, DONE = 2, CLOSED = 3;
-    /** Per-side numbers in {@link State#stats}: hp, ce, meter, momentum, stance, slow, burn, zone, domain. */
+    /** Per-side numbers in {@link State#stats}: hp, ce, meter, control, stance, slow, burn, zone, domain. */
     public static final int STATS = 9;
 
     /**
@@ -61,16 +61,16 @@ public final class BattlePayloads {
      * the hit lands (the client's camera and title cards key off them).
      */
     public record BeatStart(int session, int index, int count, int actor, String move, int kind, int damage, int link,
-                            boolean blackFlash, String note, int hp0, int hp1, int length, int contact) implements CustomPacketPayload {
+                            boolean blackFlash, String note, int hp0, int hp1, int length, int contact, boolean control) implements CustomPacketPayload {
         public static final Type<BeatStart> TYPE = new Type<>(JJK.id("battle_beat"));
         public static final StreamCodec<RegistryFriendlyByteBuf, BeatStart> CODEC = StreamCodec.of((buf, p) -> {
             buf.writeVarInt(p.session); buf.writeVarInt(p.index); buf.writeVarInt(p.count); buf.writeVarInt(p.actor);
             buf.writeUtf(p.move, 64); buf.writeVarInt(p.kind); buf.writeVarInt(p.damage); buf.writeVarInt(p.link);
             buf.writeBoolean(p.blackFlash); buf.writeUtf(p.note, 64); buf.writeVarInt(p.hp0); buf.writeVarInt(p.hp1);
-            buf.writeVarInt(p.length); buf.writeVarInt(p.contact);
+            buf.writeVarInt(p.length); buf.writeVarInt(p.contact); buf.writeBoolean(p.control);
         }, buf -> new BeatStart(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readUtf(64),
                 buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readBoolean(), buf.readUtf(64), buf.readVarInt(),
-                buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readBoolean()));
 
         @Override
         public Type<? extends CustomPacketPayload> type() {
