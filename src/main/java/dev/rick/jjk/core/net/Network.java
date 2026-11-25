@@ -57,6 +57,8 @@ public final class Network {
             ServerPlayer player = ctx.player();
             // (TAP was the survival system's bind tap: archived, nothing answers it.)
             if (p.kind() == MeleeInputPayload.TAP) return;
+            // In a turn-based battle the fighting happens through the battle menu.
+            if (dev.rick.jjk.battle.game.BattleManager.inBattle(player)) return;
             AbilityCaster caster = Casters.armed(player);
             if (caster == null) return;
             MeleeSystem.handleInput(player, caster, p.kind(), p.flags(), p.targetHint());
@@ -65,6 +67,7 @@ public final class Network {
             ServerPlayer player = ctx.player();
             AbilityCaster caster = Casters.armed(player);
             AbilitySlot slot = AbilitySlot.byIndex(p.slot());
+            if (dev.rick.jjk.battle.game.BattleManager.inBattle(player)) return;
             if (caster == null || slot == null) return;
             Entity hint = p.targetHint() >= 0 ? player.level().getEntity(p.targetHint()) : null;
             if (hint != null && hint.distanceToSqr(player) > 64 * 64) hint = null;

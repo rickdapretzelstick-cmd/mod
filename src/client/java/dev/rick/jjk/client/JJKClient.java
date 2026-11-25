@@ -72,6 +72,7 @@ public class JJKClient implements ClientModInitializer {
             if (!dev.rick.jjk.client.rifle.RifleHud.hidesCrosshair()) vanilla.extractRenderState(g, delta);
         });
         registerCameras();
+        dev.rick.jjk.client.battle.BattleClient.init();
         for (var id : java.util.List.of(net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HOTBAR,
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HEALTH_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.FOOD_BAR,
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.ARMOR_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.AIR_BAR,
@@ -80,10 +81,13 @@ public class JJKClient implements ClientModInitializer {
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.MOB_EFFECTS, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.OVERLAY_MESSAGE,
                 // The chat would sit over the gauges (it comes back, unread lines and all, when the check is over).
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CHAT)) {
-            HudElementRegistry.replaceElement(id, vanilla -> (g, delta) -> vanilla.extractRenderState(g, delta));
+            // A turn-based battle has its own HUD: the hotbar, chat and bars stand down while it runs.
+            HudElementRegistry.replaceElement(id, vanilla -> (g, delta) -> {
+                if (!dev.rick.jjk.client.battle.BattleClient.active()) vanilla.extractRenderState(g, delta);
+            });
         }
         HudElementRegistry.addLast(JJK.id("combat_hud"), (g, delta) -> {
-            if (dev.rick.jjk.client.CombatMode.enabled()) CombatHud.render(g, delta);
+            if (dev.rick.jjk.client.CombatMode.enabled() && !dev.rick.jjk.client.battle.BattleClient.active()) CombatHud.render(g, delta);
         });
         HudElementRegistry.addLast(JJK.id("gamble_hud"), (g, delta) -> {
             if (dev.rick.jjk.client.CombatMode.enabled()) dev.rick.jjk.client.hud.GambleHud.render(g);

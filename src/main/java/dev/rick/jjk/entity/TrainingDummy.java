@@ -97,7 +97,18 @@ public class TrainingDummy extends PathfinderMob {
         if (level().isClientSide()) return;
         sinceHit++;
         if (autoHeal && sinceHit > 60 && getHealth() < getMaxHealth()) setHealth(getMaxHealth());
-        if (tickCount % 5 == 0) updateLabel();
+        if (labelled && tickCount % 5 == 0) updateLabel();
+    }
+
+    private boolean labelled = true;
+
+    /** Turns the overhead combo readout on or off (a turn-based battle names its fighters in its own HUD). */
+    public void setLabelled(boolean on) {
+        labelled = on;
+        if (!on) {
+            setCustomName(null);
+            setCustomNameVisible(false);
+        }
     }
 
     private void updateLabel() {
