@@ -86,6 +86,24 @@ public final class AnimPlayer {
         return true;
     }
 
+    /** A marker for "the clips started from now on" ({@link #finishSince}). */
+    public long mark() {
+        return seq;
+    }
+
+    /**
+     * Fades out the one-shot clips started since {@code mark} that are still playing: the move they belong to has ended,
+     * so its pose shouldn't hang on after it. A clip within {@code maxFade} of its own end is left to finish.
+     */
+    public void finishSince(long mark, float maxFade) {
+        for (Instance i : instances) {
+            if (i.seq < mark || i.stopping || i.clip.endless()) continue;
+            float fade = Math.min(i.clip.blendOut, maxFade);
+            if (i.clip.duration - i.time <= fade) continue;
+            i.stop(fade);
+        }
+    }
+
     /** Lets held and looping clips go (blending out). */
     public void release() {
         for (Instance i : instances) if (i.clip.endless()) i.stop(i.clip.blendOut);

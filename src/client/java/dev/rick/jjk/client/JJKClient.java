@@ -72,6 +72,14 @@ public class JJKClient implements ClientModInitializer {
             if (!dev.rick.jjk.client.rifle.RifleHud.hidesCrosshair()) vanilla.extractRenderState(g, delta);
         });
         registerCameras();
+        // While casting, the body faces where the caster aims. Vanilla lets a standing body lag ~50 degrees behind the head,
+        // but every aimed move fires along the look and its clip is posed relative to the body (Ryu's cannon, Red, beams).
+        net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+            if (mc.level == null) return;
+            for (int id : ClientState.CASTS.keySet()) {
+                if (mc.level.getEntity(id) instanceof LivingEntity le && le.isAlive()) le.yBodyRot = le.getYHeadRot();
+            }
+        });
         for (var id : java.util.List.of(net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HOTBAR,
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.HEALTH_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.FOOD_BAR,
                 net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.ARMOR_BAR, net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.AIR_BAR,
@@ -177,7 +185,13 @@ public class JJKClient implements ClientModInitializer {
             Minecraft mc = Minecraft.getInstance();
             if (mc.level == null) return;
             long now = mc.level.getGameTime();
+            if (p.phase() == CastPayload.BEGIN) {
+                // A cast is about to start: the clips it plays from here are its own (they finish when it ends).
+                dev.rick.jjk.client.anim.ClientAnimations.castStarted(p.entityId(), now);
+                return;
+            }
             if (p.ability().isEmpty()) {
+                dev.rick.jjk.client.anim.ClientAnimations.castEnded(p.entityId(), now);
                 ClientState.CASTS.remove(p.entityId());
                 if (mc.player != null && p.entityId() == mc.player.getId()) ScreenEffects.fovHold(0);
                 return;

@@ -616,6 +616,7 @@ public final class AbilityCaster {
             // A non-exclusive cast still running (e.g. steering Blue) keeps going in the background.
             if (cast != null && !cast.isFinished()) overlays.add(cast);
             cast = inst;
+            announceBegin(inst);
         }
         inst.start();
         if (inst.isFinished()) removeInstance(inst);
@@ -634,6 +635,7 @@ public final class AbilityCaster {
         melee.cancel();
         cast = inst;
         dirty = true;
+        announceBegin(inst);
         inst.start();
         if (inst.isFinished()) removeInstance(inst);
     }
@@ -687,14 +689,23 @@ public final class AbilityCaster {
         applySlow(1f);
     }
 
+    /**
+     * Tells clients a cast is about to start, before its first clip: they then know which clips belong to it, and
+     * finish those when the cast ends ({@link CastPayload#BEGIN}).
+     */
+    private void announceBegin(AbilityInstance inst) {
+        Fx.toTrackers(owner, new CastPayload(owner.getId(), inst.ability.id, CastPayload.BEGIN, 0), true);
+    }
+
     private void removeInstance(AbilityInstance inst) {
         inst.finish();
+        // Clients hear the cast ended before its end() runs: a recovery clip end() plays is the move's next pose, not one
+        // of the clips that end with the cast.
+        boolean wasCast = inst == cast;
+        if (wasCast) Fx.toTrackers(owner, new CastPayload(owner.getId(), "", 0, 0), true);
         inst.end();
         if (inst.exclusive()) dev.rick.jjk.core.anim.Anim.releaseHeld(owner);
-        if (inst == cast) {
-            cast = null;
-            Fx.toTrackers(owner, new CastPayload(owner.getId(), "", 0, 0), true);
-        }
+        if (wasCast && inst == cast) cast = null;
         if (inst.ability.cooldownOnEnd()) {
             startCooldown(inst.ability, inst.ability.cooldown(this));
         }

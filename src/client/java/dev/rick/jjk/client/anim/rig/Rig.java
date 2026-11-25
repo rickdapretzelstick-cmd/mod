@@ -192,21 +192,27 @@ public final class Rig {
 
         float[] rot = new float[3], pos = new float[3];
         float[][] scale = new float[Bone.COUNT][3];
-        Quaternionf tmpQ = new Quaternionf();
+        Quaternionf tmpQ = new Quaternionf(), boneQ = new Quaternionf(), clipQ = new Quaternionf();
         for (Bone b : Bone.ALL) {
             int i = b.ordinal();
             System.arraycopy(base[i], 0, rot, 0, 3);
             Matrix4f parent = b.parent == null ? new Matrix4f() : world[b.parent.ordinal()];
+            // Rotations blend as quaternions (shortest path): blending angle by angle swings a bone that is posed far
+            // from rest on several axes through other orientations on its way (arms rolling as a move fades out).
+            boneQ.rotationZYX(rot[2], rot[1], rot[0]);
             if (b == Bone.HEAD && f.look > 0) {
                 // Keep looking where the player looks, whatever the body is doing (only under the clip's own keys).
-                Quaternionf parentRot = parent.getUnnormalizedRotation(tmpQ).invert();
-                float[] look = new float[3];
-                euler(parentRot.mul(headWorld), look);
-                for (int k = 0; k < 3; k++) rot[k] += (look[k] - rot[k]) * f.look;
+                Quaternionf look = parent.getUnnormalizedRotation(tmpQ).invert().mul(headWorld).normalize();
+                boneQ.slerp(look, Math.min(1, f.look));
             }
             float wr = f.weight[Clip.ROT][i], wp = f.weight[Clip.POS][i], ws = f.weight[Clip.SCALE][i];
+            if (wr > 0) {
+                float[] v = f.value[Clip.ROT][i];
+                clipQ.rotationZYX(v[2], v[1], v[0]);
+                if (wr >= 1) boneQ.set(clipQ);
+                else boneQ.slerp(clipQ, wr);
+            }
             for (int k = 0; k < 3; k++) {
-                rot[k] += (f.value[Clip.ROT][i][k] - rot[k]) * wr;
                 pos[k] = f.value[Clip.POS][i][k] * wp;
                 scale[i][k] = 1 + (f.value[Clip.SCALE][i][k] - 1) * ws;
             }
@@ -215,7 +221,7 @@ public final class Rig {
             // Authored offsets are (right, up, forward); model space has right at -x, up at -y and forward at -z.
             Matrix4f m = world[i] == null ? (world[i] = new Matrix4f()) : world[i];
             m.set(parent).translate(r.x - pr.x - pos[0], r.y - pr.y - pos[1], r.z - pr.z - pos[2])
-                    .rotate(tmpQ.rotationZYX(rot[2], rot[1], rot[0]));
+                    .rotate(boneQ);
         }
 
         // Each part: its bone's transform, relative to the part it hangs off.

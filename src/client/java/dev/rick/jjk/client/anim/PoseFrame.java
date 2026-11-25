@@ -1,6 +1,9 @@
 package dev.rick.jjk.client.anim;
 
 import dev.rick.jjk.client.anim.rig.Bone;
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 /**
  * What the playing clips want from each bone for one rendered frame, as a value and how strongly it replaces the
@@ -100,9 +103,26 @@ public final class PoseFrame {
             weight[channel][i] = a;
             return;
         }
-        // lerp(lerp(base, V, W), v, a) == lerp(base, V', W') with W' = 1 - (1-W)(1-a).
+        // lerp(lerp(base, V, W), v, a) == lerp(base, V', W') with W' = 1 - (1-W)(1-a), V' = lerp(V, v, a / W').
         float w2 = 1 - (1 - w) * (1 - a);
-        for (int k = 0; k < 3; k++) dst[k] = (dst[k] * w * (1 - a) + v[k] * a) / w2;
+        if (channel == Clip.ROT) {
+            // Rotations cross-fade as quaternions (the shortest way round), like the rig's own blend.
+            float k = a / w2;
+            if (k >= 1) {
+                dst[0] = v[0];
+                dst[1] = v[1];
+                dst[2] = v[2];
+            } else {
+                Quaternionf from = new Quaternionf().rotationZYX(dst[2], dst[1], dst[0]);
+                from.slerp(new Quaternionf().rotationZYX(v[2], v[1], v[0]), k);
+                Vector3f e = new Matrix4f().rotation(from).getEulerAnglesZYX(new Vector3f());
+                dst[0] = e.x;
+                dst[1] = e.y;
+                dst[2] = e.z;
+            }
+        } else {
+            for (int k = 0; k < 3; k++) dst[k] = (dst[k] * w * (1 - a) + v[k] * a) / w2;
+        }
         weight[channel][i] = w2;
     }
 }

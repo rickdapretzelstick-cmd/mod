@@ -53,11 +53,37 @@ public final class ClientAnimations {
         p.play(clip, speed <= 0 ? 1f : speed);
     }
 
+    /** Each entity's current cast: where its clips start ({@link AnimPlayer#mark}) and when it began (ticks). */
+    private record CastMark(long seq, float since) {}
+
+    private static final Map<Integer, CastMark> CAST_MARKS = new HashMap<>();
+    /** How quickly a move's clips fade once the move has ended (ms). */
+    public static final float CAST_END_FADE = 160;
+
+    /** A cast is about to start on {@code entityId}: the clips from here on are its own. */
+    public static void castStarted(int entityId, float now) {
+        AnimPlayer p = PLAYERS.computeIfAbsent(entityId, k -> new AnimPlayer());
+        CAST_MARKS.put(entityId, new CastMark(p.mark(), now));
+    }
+
+    /**
+     * The cast on {@code entityId} ended: its one-shot clips end with it (held ones the server releases itself). A cast
+     * over within a tick or two (an instant move) keeps its clip: the clip is all there is of it.
+     */
+    public static void castEnded(int entityId, float now) {
+        CastMark m = CAST_MARKS.remove(entityId);
+        AnimPlayer p = PLAYERS.get(entityId);
+        if (m == null || p == null || now - m.since < 2) return;
+        advance(entityId, p, now);
+        p.finishSince(m.seq, CAST_END_FADE);
+    }
+
     public static void clear() {
         PLAYERS.clear();
         LAST_HITSTUN.clear();
         OWNERS.clear();
         STALE_SINCE.clear();
+        CAST_MARKS.clear();
     }
 
     public static void forget(int entityId) {
@@ -65,6 +91,7 @@ public final class ClientAnimations {
         LAST_HITSTUN.remove(entityId);
         OWNERS.remove(entityId);
         STALE_SINCE.remove(entityId);
+        CAST_MARKS.remove(entityId);
     }
 
     /**
