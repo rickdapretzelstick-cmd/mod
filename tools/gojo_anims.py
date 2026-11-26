@@ -52,6 +52,13 @@ def refine(name, contact=None, wind=None, hold=60, over=None, core=None, alive=N
 
 
 def main():
+    # The refinements stack: run only on the original choreography, never on clips this script already wrote.
+    import glob, json as _json
+    done = [f for f in glob.glob(os.path.join(os.path.dirname(__file__), '..', 'src/main/resources/assets/jjk/animations/gojo/*.json'))
+            if 'Gojo animation pass' in _json.load(open(f)).get('authored', '')]
+    if done:
+        raise SystemExit(f'{len(done)} Gojo clips are already refined. Restore the originals first (from the commit before the '
+                         'Gojo animation pass), e.g. git checkout <commit> -- src/main/resources/assets/jjk/animations/gojo')
     # Blue: the point at 320 ms (Blue grabs at 550), held while it pulls; the kick lands at 400 ms (the server's hit).
     refine('blue_cast', contact=320, wind=(140, 0.6), hold=80, over=70, body=(150, 320, 550, dict(twist=20, lean=8)))
     refine('blue_kick', contact=400, hold=0, over=60, body=(250, 400, 500, dict(twist=-12, lean=-8, crouch=0.4)))

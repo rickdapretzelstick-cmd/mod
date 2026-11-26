@@ -467,7 +467,13 @@ def _lead_in(cd, ms, start_pose):
             # (The way into the first key accelerates into the contact.)
             chans[ch] = [(t + ms, v, 'EASE_IN' if i == 0 else e) for i, (t, v, e) in enumerate(tr)]
             if bone in start_pose and ch in start_pose[bone]:
-                chans[ch].insert(0, (0.0, start_pose[bone][ch], 'EASE_IN_OUT'))
+                start = list(start_pose[bone][ch])
+                if ch == 'rot' and tr:
+                    # The same orientation, taken the short way to the first key: a back-flip that ended at -280 carries
+                    # on through 80 -> -10 instead of unwinding 270 degrees back (the clips blend as quaternions, so the
+                    # hand-over itself does not move).
+                    start = [x + 360.0 * round((target - x) / 360.0) for x, target in zip(start, tr[0][1])]
+                chans[ch].insert(0, (0.0, start, 'EASE_IN_OUT'))
     cd.markers = [(t + ms, m) for t, m in cd.markers]
     cd.duration += ms
     cd.meta['blendIn'] = max(cd.meta.get('blendIn', 0), 60)
