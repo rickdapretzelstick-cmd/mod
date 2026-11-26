@@ -110,6 +110,7 @@ public abstract class AbilityInstance {
         this.phaseStart = age;
         this.phaseExpected = Math.max(0, expectedDuration);
         Fx.toTrackers(user, new CastPayload(user.getId(), ability.id, phase, expectedDuration), true);
+        dev.rick.jjk.core.debug.Trace.event(user, "cast_phase", ability.id + " " + phase + " expect=" + expectedDuration + " age=" + age);
     }
 
     final void tickInternal() {

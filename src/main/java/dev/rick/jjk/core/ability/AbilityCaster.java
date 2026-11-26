@@ -666,6 +666,7 @@ public final class AbilityCaster {
         boolean stun = !reason.equals("death") && !reason.equals("disconnect") && !reason.equals("feint") && !reason.equals("removed");
         if (stun && cast != null && !cast.isFinished() && cast.uninterruptible()) return;
         if (cast != null && !cast.isFinished()) {
+            dev.rick.jjk.core.debug.Trace.event(owner, "cast_interrupt", cast.ability.id + " " + reason + " age=" + cast.age());
             cast.interrupt(reason);
             cast.finish();
         }
@@ -695,6 +696,7 @@ public final class AbilityCaster {
      */
     private void announceBegin(AbilityInstance inst) {
         Fx.toTrackers(owner, new CastPayload(owner.getId(), inst.ability.id, CastPayload.BEGIN, 0), true);
+        dev.rick.jjk.core.debug.Trace.event(owner, "cast_begin", inst.ability.id);
     }
 
     private void removeInstance(AbilityInstance inst) {
@@ -702,7 +704,10 @@ public final class AbilityCaster {
         // Clients hear the cast ended before its end() runs: a recovery clip end() plays is the move's next pose, not one
         // of the clips that end with the cast.
         boolean wasCast = inst == cast;
-        if (wasCast) Fx.toTrackers(owner, new CastPayload(owner.getId(), "", 0, 0), true);
+        if (wasCast) {
+            Fx.toTrackers(owner, new CastPayload(owner.getId(), "", 0, 0), true);
+            dev.rick.jjk.core.debug.Trace.event(owner, "cast_end", inst.ability.id + " age=" + inst.age() + " phase=" + inst.phase());
+        }
         inst.end();
         if (inst.exclusive()) dev.rick.jjk.core.anim.Anim.releaseHeld(owner);
         if (wasCast && inst == cast) cast = null;

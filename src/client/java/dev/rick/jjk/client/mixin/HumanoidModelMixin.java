@@ -41,13 +41,15 @@ public abstract class HumanoidModelMixin {
         } else if (f != null) {
             Rig.solve(parts, f, jjk$bones);
             solved = true;
-        } else if (dev.rick.jjk.client.anim.AnimDebug.wantsSkeleton(state.getDataOrDefault(PoseKeys.ENTITY, Integer.MIN_VALUE))) {
+        } else if (dev.rick.jjk.client.anim.AnimDebug.wantsSkeleton(state.getDataOrDefault(PoseKeys.ENTITY, Integer.MIN_VALUE))
+                || dev.rick.jjk.client.debug.AnimTrace.tracing(state.getDataOrDefault(PoseKeys.ENTITY, Integer.MIN_VALUE))) {
             // The debugger's skeleton needs the bones even with nothing playing; solving an empty frame is vanilla.
             Rig.solve(parts, new PoseFrame(), jjk$bones);
             solved = true;
         }
         Integer id = state.getData(PoseKeys.ENTITY);
         if (id != null) HandPos.record(id, rightArm, leftArm, solved ? jjk$bones : null);
+        if (id != null) dev.rick.jjk.client.debug.AnimTrace.frame(id, solved ? jjk$bones : null);
     }
 
     /** Items held in a hand follow the forearm and wrist, not just the upper arm. */

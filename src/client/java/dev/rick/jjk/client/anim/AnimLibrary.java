@@ -298,7 +298,7 @@ public final class AnimLibrary {
         keyTimes.sort(null);
         for (int i = 0; i < kt.length; i++) kt[i] = keyTimes.get(i);
         Clip clip = new Clip(name, group, duration, fps, bool(o, "hold", false), bool(o, "loop", false), loopStart, loopEnd,
-                num(o, "blendIn", 75), num(o, "blendOut", 150), blendEase(o),
+                blendIn(o), num(o, "blendOut", 150), blendEase(o),
                 enumOf(Priority.class, str(o, "priority", "SPECIAL")), enumOf(Layer.class, str(o, "layer", "BASE")),
                 bool(o, "interruptible", true), iFrom, iTo, num(o, "speed", 1), num(o, "look", 0), num(o, "tremble", 0),
                 kt, List.copyOf(markers), tracks);
@@ -436,5 +436,17 @@ public final class AnimLibrary {
 
     private static boolean bool(JsonObject o, String k, boolean def) {
         return o.has(k) ? o.get(k).getAsBoolean() : def;
+    }
+    /**
+     * The shortest blend-in a clip gets: anything quicker is under a frame at 30-60 fps, and the bones snap into the new
+     * pose (the animation trace flagged guards turning 100+ degrees in one frame, and "hard cuts" of 0 spinning hips 139
+     * degrees between two frames). Only a STEP ease keeps its own (it is meant to jump).
+     */
+    public static final float MIN_BLEND_IN = 90;
+
+    private static float blendIn(JsonObject o) {
+        float b = num(o, "blendIn", 75);
+        if ("STEP".equalsIgnoreCase(str(o, "blendEase", ""))) return b;
+        return Math.max(MIN_BLEND_IN, b);
     }
 }

@@ -240,11 +240,15 @@ public class AnimFrameworkClientTest implements FabricClientGameTest {
         check(!wp.play(jab, 1), "outside the window the special holds");
         wp.advance(100);
         check(wp.play(jab, 1), "inside the window an attack cuts in");
-        // Hard transition: blendIn 0 replaces the previous clip on the same frame.
-        Clip hard = AnimLibrary.parse("t_hard", "test", """
+        // Hard transition: a STEP blend with blendIn 0 replaces the previous clip on the same frame. A plain blendIn 0 gets
+        // the minimum blend instead (a snap of the whole body between two frames reads as a glitch, not a hard cut).
+        Clip soft = AnimLibrary.parse("t_soft", "test", """
                 {"priority": "ATTACK", "blendIn": 0, "keys": [{"t": 0, "bones": {"head": [0,0,0]}}]}""");
+        check(soft.blendIn == AnimLibrary.MIN_BLEND_IN, "a plain blendIn 0 gets the minimum blend");
+        Clip hard = AnimLibrary.parse("t_hard", "test", """
+                {"priority": "ATTACK", "blendIn": 0, "blendEase": "STEP", "keys": [{"t": 0, "bones": {"head": [0,0,0]}}]}""");
         wp.play(hard, 1);
-        check(wp.ordered().size() == 1 && wp.top().clip == hard && wp.top().weight() == 1, "blendIn 0 is a hard cut");
+        check(wp.ordered().size() == 1 && wp.top().clip == hard && wp.top().weight() == 1, "a STEP blendIn 0 is a hard cut");
     }
 
     // ---------------------------------------------------------------- debugger

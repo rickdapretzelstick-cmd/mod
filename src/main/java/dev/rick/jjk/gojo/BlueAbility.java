@@ -87,6 +87,9 @@ public final class BlueAbility extends Ability {
             if (dev.rick.jjk.core.combat.Combat.isAirborne(user)) dev.rick.jjk.core.combat.Statuses.apply(user, dev.rick.jjk.core.combat.CombatStatus.HOVER, cfg().blueWindup + 4);
         }
 
+        /** When the kick connects in blue_kick (its 400 ms key). */
+        private static final int KICK_CONTACT_TICKS = 8;
+
         private Vec3 holdPoint() {
             return user.position().add(dev.rick.jjk.hakari.HakariCombat.flat(user).scale(1.7)).add(0, 0.2, 0);
         }
@@ -140,11 +143,12 @@ public final class BlueAbility extends Ability {
                     setPhase(2, cfg.blueSuspendTicks);
                     // Caught: Gojo can't be touched by melee while he lines up the kick.
                     dev.rick.jjk.core.combat.Statuses.apply(user, dev.rick.jjk.core.combat.CombatStatus.MELEE_ARMOR, cfg.blueSuspendTicks + 8);
-                    Anim.play(user, "blue_kick");
                 }
                 return;
             }
             if (state == SUSPEND) {
+                // The kick's clip starts so its contact frame lands with the hit (the cast pose holds until then).
+                if (stateAge == Math.max(1, cfg.blueSuspendTicks - KICK_CONTACT_TICKS)) Anim.play(user, "blue_kick");
                 Motion.set(target, hold.subtract(target.position()).scale(0.5));
                 dev.rick.jjk.core.combat.Statuses.apply(target, dev.rick.jjk.core.combat.CombatStatus.GRABBED, 3);
                 if (stateAge < cfg.blueSuspendTicks) return;

@@ -57,8 +57,10 @@ public final class ClientAnimations {
     private record CastMark(long seq, float since) {}
 
     private static final Map<Integer, CastMark> CAST_MARKS = new HashMap<>();
-    /** How quickly a move's clips fade once the move has ended (ms). */
-    public static final float CAST_END_FADE = 160;
+    /** How quickly a finished move's follow-through fades once the fighter moves off (ms). */
+    public static final float FOLLOW_THROUGH_CUT = 140;
+    /** Horizontal speed (blocks per tick) that counts as moving off. */
+    static final double MOVING = 0.06;
 
     /** A cast is about to start on {@code entityId}: the clips from here on are its own. */
     public static void castStarted(int entityId, float now) {
@@ -67,15 +69,15 @@ public final class ClientAnimations {
     }
 
     /**
-     * The cast on {@code entityId} ended: its one-shot clips end with it (held ones the server releases itself). A cast
-     * over within a tick or two (an instant move) keeps its clip: the clip is all there is of it.
+     * The cast on {@code entityId} ended: its clips still playing become follow-through (they finish unless the fighter
+     * moves off; held ones the server releases itself).
      */
     public static void castEnded(int entityId, float now) {
         CastMark m = CAST_MARKS.remove(entityId);
         AnimPlayer p = PLAYERS.get(entityId);
-        if (m == null || p == null || now - m.since < 2) return;
+        if (m == null || p == null) return;
         advance(entityId, p, now);
-        p.finishSince(m.seq, CAST_END_FADE);
+        p.markFollowThrough(m.seq);
     }
 
     public static void clear() {
@@ -173,6 +175,10 @@ public final class ClientAnimations {
         LAST_HITSTUN.put(id, hitstun);
         advance(id, p, now);
         recover(e, p, now);
+        if (p.hasFollowThrough()) {
+            double dx = e.getX() - e.xo, dz = e.getZ() - e.zo;
+            if (dx * dx + dz * dz > MOVING * MOVING) p.cutFollowThrough(FOLLOW_THROUGH_CUT);
+        }
         p.setReaction(reaction, newHit && reaction != null && reaction.startsWith("reaction_hit"));
         if (p.idle()) {
             PLAYERS.remove(id);

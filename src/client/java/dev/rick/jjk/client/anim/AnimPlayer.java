@@ -19,6 +19,9 @@ public final class AnimPlayer {
         public final float speed;
         final long seq;
         public boolean stopping;
+        /** Its move has ended: it plays on as follow-through until {@link #followUntil} (clip time), or the fighter moves off. */
+        public boolean followThrough;
+        float followUntil;
         float fadeFrom, fadeMs, fadeTime;
         /** The clip that took over this one's layer: this stays under it, unfaded, until it shows fully. */
         @Nullable Instance replacedBy;
@@ -92,16 +95,36 @@ public final class AnimPlayer {
     }
 
     /**
-     * Fades out the one-shot clips started since {@code mark} that are still playing: the move they belong to has ended,
-     * so its pose shouldn't hang on after it. A clip within {@code maxFade} of its own end is left to finish.
+     * The move that started the clips since {@code mark} has ended: those still playing become follow-through. They play
+     * out (a release or a recovery is the move's last beat) unless the fighter moves off ({@link #cutFollowThrough}).
+     * Held ones are the server's to release.
      */
-    public void finishSince(long mark, float maxFade) {
+    public void markFollowThrough(long mark) {
         for (Instance i : instances) {
             if (i.seq < mark || i.stopping || i.clip.endless()) continue;
+            i.followThrough = true;
+            i.followUntil = i.time + FOLLOW_THROUGH_MS * i.speed;
+        }
+    }
+
+    /** How long a finished move's clips may play on once the fighter has control back (ms). */
+    public static final float FOLLOW_THROUGH_MS = 300;
+    /** How quickly follow-through fades when it is cut (ms). */
+    public static final float FOLLOW_THROUGH_FADE = 160;
+
+    /** Fades out follow-through clips (the fighter is moving: a leftover attack pose would slide along with them). */
+    public void cutFollowThrough(float maxFade) {
+        for (Instance i : instances) {
+            if (!i.followThrough || i.stopping) continue;
             float fade = Math.min(i.clip.blendOut, maxFade);
             if (i.clip.duration - i.time <= fade) continue;
             i.stop(fade);
         }
+    }
+
+    boolean hasFollowThrough() {
+        for (Instance i : instances) if (i.followThrough && !i.stopping) return true;
+        return false;
     }
 
     /** Lets held and looping clips go (blending out). */
@@ -146,6 +169,7 @@ public final class AnimPlayer {
         i.time += dt * i.speed;
         if (!i.stopping && !i.clip.endless() && i.time >= i.clip.duration) i.stop(i.clip.blendOut);
         if (!i.stopping && i.clip.stopAfter > 0 && i.time >= i.clip.stopAfter) i.stop(i.clip.blendOut);
+        if (!i.stopping && i.followThrough && i.time >= i.followUntil) i.stop(Math.min(i.clip.blendOut, FOLLOW_THROUGH_FADE));
     }
 
     /** Moves the clips' clocks by {@code dt} without fading anything (the debugger scrubbing a paused clip). */
