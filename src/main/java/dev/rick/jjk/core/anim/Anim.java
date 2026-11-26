@@ -27,7 +27,7 @@ public final class Anim {
             // The Cursed Rifle braced to guard (its stance draws the pose)
             "rf_guard",
             // Gojo's barrage, Hakari's rhythm and volley, Yuta's blade run
-            "rapid_barrage", "rhythm_dance", "volley_flurry", "yuta_blade_run",
+            "rapid_barrage", "rhythm_dance", "volley_flurry", "yuta_blade_run", "overwhelm_left", "overwhelm_right",
             // Ryu
             "ryu_after_leap", "ryu_after_lunge", "ryu_after_slam", "ryu_dessert_run", "ryu_eld_charge", "ryu_eld_fire", "ryu_eld_point",
             "ryu_granite_aim", "ryu_invited_lunge", "ryu_invited_windup", "ryu_no_idea_punch", "ryu_no_idea_windup", "ryu_second_helping",

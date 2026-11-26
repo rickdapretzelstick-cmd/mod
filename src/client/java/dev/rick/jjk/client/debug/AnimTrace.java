@@ -202,7 +202,22 @@ public final class AnimTrace {
                 }
                 float speed = parts.length > 1 ? Float.parseFloat(parts[1]) : 1f;
                 Clip c = AnimLibrary.get(clipName);
-                clips.add(clipName + "@" + (e.tick - b.tick));
+                String contact = "";
+                if (c != null) {
+                    // A clip's marked contact frame against the server's nearest hit: how far the blow and the hit are apart.
+                    for (Clip.Marker mk : c.markers) {
+                        if (!mk.label().equals("contact")) continue;
+                        double ct = e.tick + mk.time() / (speed * c.speed) / 50.0;
+                        Event near = null;
+                        for (Event h : events) {
+                            if (!h.kind.equals("hit") || h.entity != b.entity || Math.abs(h.tick - ct) > 6) continue;
+                            if (near == null || Math.abs(h.tick - ct) < Math.abs(near.tick - ct)) near = h;
+                        }
+                        contact = near == null ? " contact, no hit near" : String.format(Locale.ROOT, " contact %+.0fms from the hit", (ct - near.tick) * 50);
+                        break;
+                    }
+                }
+                clips.add(clipName + "@" + (e.tick - b.tick) + contact);
                 if (c == null) continue;
                 held = c.endless();
                 // A one-shot clip runs its duration at its speed; a held one lasts until released.

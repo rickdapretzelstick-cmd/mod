@@ -2,7 +2,7 @@
   "name": "domain_release",
   "reference": "InfiniteVoid.gif frames 30-120: the sign breaks and the arms fly open, chest and head thrown back, lifting onto the toes and floating a moment as the void opens, then settling.",
   "duration": 1200,
-  "blendIn": 120, "blendEase": "EASE_IN", "blendOut": 300,
+  "blendIn": 120, "blendEase": "EASE_IN_OUT", "blendOut": 300,
   "priority": "AWAKENING",
   "keys": [
     {"t": 120, "marker": "expand", "ease": "EASE_IN", "bones": {
