@@ -1,21 +1,523 @@
 {
-  "name": "blue_cast",
-  "reference": "LapseBlue.gif frames 0-40: a short pull back, then the right arm thrown out to point at the target (frame ~16), held steady while Blue forms at the fingertips and pulls.",
-  "duration": 1200,
-  "blendIn": 60, "blendOut": 300,
-  "priority": "SPECIAL",
-  "look": 0.5,
-  "keys": [
-    {"t": 0, "bones": {"chest": [0, 0, 0], "rightArm": [-5, 0, 6], "rightForearm": [-8, 0, 0], "root": {"pos": [0, 0, 0]}}},
-    {"t": 150, "marker": "anticipation", "ease": "EASE_OUT", "bones": {
-        "chest": [4, 12, 0], "rightArm": [-35, 25, 25], "rightForearm": [-50, 0, 0], "root": {"pos": [0, -0.4, 0]}}},
-    {"t": 320, "marker": "point", "ease": "OVERSHOOT", "bones": {
-        "chest": [2, -18, 0], "hips": [0, -6, 0], "head": [-4, -8, 0],
-        "rightArm": [-88, -4, 6], "rightForearm": [-22, 0, 0], "rightHand": [-15, 0, 0],
-        "leftArm": [8, 0, -12], "leftForearm": [-15, 0, 0],
-        "rightThigh": [-10, 0, 4], "rightShin": [12, 0, 0], "leftThigh": [6, 0, -4], "leftShin": [8, 0, 0],
-        "root": {"pos": [0, 0, 0.6]}}},
-    {"t": 550, "marker": "blue formed", "ease": "EASE_IN_OUT", "bones": {"rightArm": [-90, -2, 4], "rightForearm": [-18, 0, 0], "rightHand": [-25, 0, 0]}},
-    {"t": 1200, "bones": {"rightArm": [-88, -2, 4], "rightForearm": [-20, 0, 0]}}
-  ]
+ "name": "blue_cast",
+ "reference": "LapseBlue.gif frames 0-40: a short pull back, then the right arm thrown out to point at the target (frame ~16), held steady while Blue forms at the fingertips and pulls.",
+ "duration": 1200,
+ "blendIn": 60,
+ "blendOut": 300,
+ "priority": "SPECIAL",
+ "look": 0.5,
+ "authored": "tools/gojo_anims.py (Gojo animation pass: the reference choreography refined)",
+ "keys": [
+  {
+   "t": 0,
+   "bones": {
+    "chest": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "rightArm": {
+     "rot": [
+      -5,
+      0,
+      6
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "rightForearm": {
+     "rot": [
+      -8,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "root": {
+     "pos": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 110,
+   "bones": {
+    "root": {
+     "pos": [
+      0.0,
+      -0.8,
+      -0.26
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 134,
+   "bones": {
+    "chest": {
+     "rot": [
+      2.4,
+      32.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 150,
+   "marker": "anticipation",
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -35,
+      25,
+      25
+     ],
+     "ease": "EASE_OUT"
+    },
+    "hips": {
+     "rot": [
+      -3.2,
+      5.0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "head": {
+     "rot": [
+      -4.0,
+      -18.0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 164,
+   "bones": {
+    "chest": {
+     "rot": [
+      0.24,
+      74.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 168,
+   "bones": {
+    "rightForearm": {
+     "rot": [
+      -50,
+      0,
+      0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 170,
+   "bones": {
+    "hips": {
+     "rot": [
+      -9.92,
+      18.2,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 180,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      44.8,
+      2.4,
+      6.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 280,
+   "bones": {
+    "root": {
+     "pos": [
+      0.0,
+      -0.8,
+      1.24
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 288,
+   "bones": {
+    "hips": {
+     "rot": [
+      8,
+      -17.0,
+      0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 304,
+   "bones": {
+    "chest": {
+     "rot": [
+      6.0,
+      -38.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 320,
+   "marker": "contact",
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -88,
+      -4,
+      6
+     ],
+     "ease": "OVERSHOOT"
+    },
+    "rightHand": {
+     "rot": [
+      -15,
+      0,
+      0
+     ],
+     "ease": "OVERSHOOT"
+    },
+    "leftArm": {
+     "rot": [
+      8,
+      0,
+      -12
+     ],
+     "ease": "OVERSHOOT"
+    },
+    "leftForearm": {
+     "rot": [
+      -15,
+      0,
+      0
+     ],
+     "ease": "OVERSHOOT"
+    },
+    "rightThigh": {
+     "rot": [
+      -10,
+      0,
+      4
+     ],
+     "ease": "OVERSHOOT"
+    },
+    "rightShin": {
+     "rot": [
+      12,
+      0,
+      0
+     ],
+     "ease": "OVERSHOOT"
+    },
+    "leftThigh": {
+     "rot": [
+      6,
+      0,
+      -4
+     ],
+     "ease": "OVERSHOOT"
+    },
+    "leftShin": {
+     "rot": [
+      8,
+      0,
+      0
+     ],
+     "ease": "OVERSHOOT"
+    }
+   }
+  },
+  {
+   "t": 338,
+   "bones": {
+    "rightForearm": {
+     "rot": [
+      -22,
+      0,
+      0
+     ],
+     "ease": "OVERSHOOT"
+    }
+   }
+  },
+  {
+   "t": 342,
+   "bones": {
+    "head": {
+     "rot": [
+      -4.0,
+      2.0,
+      0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 360,
+   "bones": {
+    "root": {
+     "pos": [
+      0.0,
+      -0.8,
+      1.24
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 368,
+   "bones": {
+    "hips": {
+     "rot": [
+      8.0,
+      -17.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 384,
+   "bones": {
+    "chest": {
+     "rot": [
+      6.6,
+      -38.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 400,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -88.0,
+      -4.0,
+      6.0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 418,
+   "bones": {
+    "rightForearm": {
+     "rot": [
+      -22.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 422,
+   "bones": {
+    "head": {
+     "rot": [
+      -4.0,
+      2.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 430,
+   "bones": {
+    "rightHand": {
+     "rot": [
+      -15,
+      0,
+      0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 438,
+   "bones": {
+    "hips": {
+     "rot": [
+      9.13,
+      -20.27,
+      0.0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 454,
+   "bones": {
+    "chest": {
+     "rot": [
+      6.4,
+      -51.75,
+      0.0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 470,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -86.16,
+      -3.06,
+      5.19
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 492,
+   "bones": {
+    "head": {
+     "rot": [
+      -4.0,
+      2.68,
+      0.0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 550,
+   "marker": "blue formed",
+   "bones": {
+    "chest": {
+     "rot": [
+      3.8,
+      -27.0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "rightArm": {
+     "rot": [
+      -90,
+      -2,
+      4
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "root": {
+     "pos": [
+      0,
+      -0.32,
+      0.89
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "hips": {
+     "rot": [
+      3.6,
+      -10.95,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "head": {
+     "rot": [
+      -4.0,
+      -3.5,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "rightHand": {
+     "rot": [
+      -25,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 568,
+   "bones": {
+    "rightForearm": {
+     "rot": [
+      -18,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1200,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -88,
+      -2,
+      4
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "rightForearm": {
+     "rot": [
+      -20,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  }
+ ]
 }

@@ -24,7 +24,8 @@ import java.util.stream.Stream;
 
 /**
  * Every Hakari clip stepped frame by frame (the world frozen, one tick per step) from the side, then tiled into contact
- * sheets: one row per clip, the contact frame outlined. Opt-in; sheets anim-sheets/hakari_*.png.
+ * sheets: one row per clip, the contact frame outlined. Opt-in; sheets anim-sheets/hakari_*.png. Another character's clips:
+ * {@code JJK_PASS=gojo} (sheets anim-sheets/gojo_*.png; the clips are every file in animations/gojo).
  */
 public class HakariPassClientTest implements FabricClientGameTest {
     private static final String[] CLIPS = {"reserve_balls", "shutter_sign", "rough_charge", "rough_strike", "fever_kick", "fever_finish",
@@ -54,7 +55,9 @@ public class HakariPassClientTest implements FabricClientGameTest {
             server.runCommand("tick freeze");
             ctx.waitTicks(5);
             List<BufferedImage> rows = new ArrayList<>();
-            for (String name : CLIPS) {
+            String pass = System.getenv().getOrDefault("JJK_PASS", "hakari");
+            String[] clips = pass.equals("hakari") ? CLIPS : listClips(pass);
+            for (String name : clips) {
                 Clip clip = ctx.computeOnClient(mc -> AnimLibrary.get(name));
                 if (clip == null) continue;
                 float span = clip.endless() ? Math.max(clip.duration, 600) : clip.duration + 100;
@@ -91,11 +94,25 @@ public class HakariPassClientTest implements FabricClientGameTest {
                     Graphics2D g = sheet.createGraphics();
                     for (int r = 0; r < part.size(); r++) g.drawImage(part.get(r), 0, r * (TH + 18), null);
                     g.dispose();
-                    ImageIO.write(sheet, "png", dir.resolve("hakari_" + s + ".png").toFile());
+                    ImageIO.write(sheet, "png", dir.resolve(pass + "_" + s + ".png").toFile());
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    /** Every clip file of a character, from the mod's resources. */
+    private static String[] listClips(String group) {
+        try {
+            java.net.URL url = HakariPassClientTest.class.getClassLoader().getResource("assets/jjk/animations/" + group);
+            if (url == null) throw new AssertionError("no animations for " + group);
+            try (java.nio.file.FileSystem fs = url.getProtocol().equals("jar") ? java.nio.file.FileSystems.newFileSystem(url.toURI(), java.util.Map.of()) : null;
+                 Stream<Path> files = Files.list(fs == null ? Path.of(url.toURI()) : fs.getPath("assets/jjk/animations/" + group))) {
+                return files.map(f -> f.getFileName().toString()).filter(n -> n.endsWith(".json")).map(n -> n.substring(0, n.length() - 5)).sorted().toArray(String[]::new);
+            }
+        } catch (IOException | java.net.URISyntaxException e) {
+            throw new RuntimeException(e);
         }
     }
 

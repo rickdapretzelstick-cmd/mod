@@ -8,7 +8,8 @@ pass can be measured instead of eyeballed:
   settle         after the contact there is follow-through before the return to guard (not one straight ease home)
   overlap        the body leads and the limb follows: hips peak before the chest, the chest before the striking arm,
                  the arm before the forearm (successive breaking of joints), spread over 20+ ms, not on the same frame
-  whole body     the hips, chest and legs carry a real share of the motion, not just the arms
+  whole body     the hips, chest and legs carry a real share of the motion, not just the arms (35%; 20% for a clip
+                 tagged "style": "effortless", a deliberately calm gesture like Gojo's one-handed techniques)
   alive          a held or looping pose keeps moving a little (breath, weight shift) instead of freezing
 
 Usage:
@@ -66,34 +67,28 @@ def angle(a, b):
 
 
 class Clip:
+    """A clip read through tools/anim_kit.ClipData (frames or ms, named and mirrored poses, markers): its rotations."""
+
     def __init__(self, path):
-        d = json.load(open(path))
-        self.path, self.name = path, d.get('name', os.path.basename(path)[:-5])
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import anim_kit
+        group, name = os.path.basename(os.path.dirname(path)), os.path.basename(path)[:-5]
+        cd = anim_kit.ClipData(group, name)
+        d = cd.meta
+        self.path, self.name = path, d.get('name', name)
         self.hold, self.loop = bool(d.get('hold')), bool(d.get('loop'))
         # A clip tagged "motion": "transition" moves between poses (a step, a bounce, a leap): no blow to judge.
         self.transition = d.get('motion') == 'transition'
         # A blow that lands the tick its clip starts has no room to wind up: "windup" names the clip that winds it.
         self.windup = d.get('windup')
-        fps = d.get('fps')
-        frame_ms = 1000.0 / fps if fps else None
-        self.tracks = {}   # bone -> [(t, [x, y, z], ease)]
-        self.contact = None
-        last = 0
-        for k in d.get('keys', []):
-            t = k['t'] if 't' in k else (k['f'] * frame_ms if frame_ms and 'f' in k else 0)
-            last = max(last, t)
-            if k.get('marker') == 'contact':
-                self.contact = t
-            for bone, v in (k.get('bones') or {}).items():
-                if isinstance(v, list):
-                    rot, e = v, k.get('ease')
-                elif 'rot' in v:
-                    rot, e = v['rot'], v.get('ease', k.get('ease'))
-                else:
-                    continue
-                self.tracks.setdefault(bone, []).append((t, rot, e))
+        # "style": "effortless" (Gojo's one-handed techniques): a deliberate, calm gesture; the body may stay quiet.
+        self.effortless = d.get('style') == 'effortless'
+        self.tracks = {b: ch['rot'] for b, ch in cd.tracks.items() if 'rot' in ch}
+        self.contact = next((t for t, m in cd.markers if m == 'contact'), None)
+        if self.contact is None:
+            self.contact = next((t for t, m in cd.markers if m in ('impact', 'hit')), None)
         self.keys = len(d.get('keys', []))
-        self.duration = d.get('duration', last) or last
+        self.duration = cd.duration
         self.loop_start = d.get('loopStart', 0)
         self.loop_end = d.get('loopEnd', self.duration)
 
@@ -153,8 +148,14 @@ def score(c):
         return res
     # The striking limb: the one that moves fastest; the contact: its marker, or that limb's peak.
     peak = {b: max(c.speeds(b), key=lambda p: p[1]) for b in moving}
-    strike = max(peak, key=lambda b: peak[b][1])
-    contact = c.contact if c.contact is not None else peak[strike][0]
+    if c.contact is not None:
+        # The striking limb is the one moving fastest into the contact (not an arm flailing elsewhere in a kick).
+        near = {b: max([s for t, s in c.speeds(b) if c.contact - 100 <= t <= c.contact + 20] or [0]) for b in moving}
+        strike = max(near, key=near.get)
+        contact = c.contact
+    else:
+        strike = max(peak, key=lambda b: peak[b][1])
+        contact = peak[strike][0]
     hit_pose = c.rot(strike, contact)
     # Anticipation: the limb gets farther from its contact pose for a while before closing in.
     dist = [(t, angle(c.rot(strike, t), hit_pose)) for t in range(0, int(contact) + 1, 10)]
@@ -186,15 +187,20 @@ def score(c):
     res['settle'] = (len(after) >= 1, f'{len(after)} key(s) between contact and the end')
     # Overlap: hips -> chest -> arm -> forearm peak in that order, spread over 30+ ms.
     # (A bone that hardly moves has no peak worth ordering: it's left out.)
-    chain = [b for b in ('hips', 'chest', strike, CHILD.get(strike)) if b and b in c.tracks and c.travel([b], 0, contact + 60) > 10]
+    # (A bone that hardly moves has no peak worth ordering: it's left out.)
+    top = max([s for t, s in c.speeds(strike) if t <= contact + 60] or [1])
+    chain = [b for b in ('hips', 'chest', strike, CHILD.get(strike)) if b and b in c.tracks and c.travel([b], 0, contact + 60) > 10
+             and max([s for t, s in c.speeds(b) if t <= contact + 60] or [0]) >= 0.3 * top]
     times = [max([p for p in c.speeds(b) if p[0] <= contact + 60] or [(0, 0)], key=lambda p: p[1])[0] for b in chain]
     # 20+ ms from first to last: a frame or more of lead at 50-60 fps.
     ordered = all(a <= b for a, b in zip(times, times[1:])) and (times[-1] - times[0] >= 20 if len(times) > 1 else False)
-    res['overlap'] = (ordered, ' > '.join(f'{b}@{t}' for b, t in zip(chain, times)))
+    if len(chain) > 1:  # (one bone moving alone has no chain to order: not applicable)
+        res['overlap'] = (ordered, ' > '.join(f'{b}@{t}' for b, t in zip(chain, times)))
     # Whole body: the core and legs carry a fair share.
     core, legs, arms = c.travel(CORE), c.travel(LEGS), c.travel(ARMS)
     share = (core + legs) / max(1e-6, core + legs + arms)
-    res['whole body'] = (share >= 0.35, f'{share:.0%} of the motion in hips/chest/head/legs')
+    need = 0.20 if c.effortless else 0.35
+    res['whole body'] = (share >= need, f'{share:.0%} of the motion in hips/chest/head/legs (needs {need:.0%})')
     return res
 
 

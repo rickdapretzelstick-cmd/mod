@@ -16,151 +16,16 @@ What every clip gets:
 
 Durations, priorities and blends stay as the server's timing expects (read from the current files).
 """
-import json
-import math
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from anim_author import arm, body, leg, mirror, pose  # noqa: E402
+import anim_kit  # noqa: E402
+from anim_kit import Seq, arm, blend, body, breathe, leg, mirror, pose, run_cycle, shifted, strike  # noqa: E402
 
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'main', 'resources', 'assets', 'jjk', 'animations', 'hakari')
-
-# How much earlier (-) or later (+) than the anchor each bone reaches a pose, in ms: the body leads, the limb follows.
-OFFSET = {'root': -40, 'hips': -32, 'chest': -16, 'head': 22, 'rightArm': 0, 'leftArm': 0, 'rightForearm': 18, 'leftForearm': 18,
-          'rightHand': 30, 'leftHand': 30, 'rightThigh': -8, 'leftThigh': -8, 'rightShin': 12, 'leftShin': 12, 'rightFoot': 22,
-          'leftFoot': 22}
-
-
-class Seq:
-    """A clip's keys, built pose by pose, with overlap applied per bone."""
-
-    def __init__(self, duration):
-        self.duration = duration
-        self.tracks = {}  # bone -> [(t, value, channel, ease)]
-        self.markers = []
-        self.last = 0
-
-    def add(self, t, p, ease='EASE_IN_OUT', marker=None, overlap=True):
-        # The lead and lag shrink to fit the room around the pose: a body leading by 32 ms can't lead a key 20 ms after
-        # the last one (it would land on or before it: a snap).
-        room = max(0.0, t - self.last)
-        lead_scale = min(1.0, room / 70.0)
-        lag_scale = min(1.0, max(0.0, self.duration - t) / 40.0)
-        for bone, v in p.items():
-            ch = 'rot' if 'rot' in v else 'pos'
-            o = OFFSET.get(bone, 0) if overlap else 0
-            o *= lead_scale if o < 0 else lag_scale
-            bt = min(self.duration, max(0, t + o))
-            tr = self.tracks.setdefault(bone, [])
-            if tr and bt < tr[-1][0] + 8:
-                bt = min(self.duration, max(tr[-1][0] + 8, t))
-                if bt <= tr[-1][0]:
-                    continue
-            tr.append((bt, v[ch], ch, ease))
-        self.last = t
-        if marker:
-            self.markers.append((t, marker))
-        return self
-
-    def keys(self):
-        by_t = {}
-        for bone, tr in self.tracks.items():
-            for t, val, ch, e in tr:
-                by_t.setdefault(int(round(t)), {})[bone] = {ch: [round(x, 2) for x in val], 'ease': e}
-        out = []
-        for t in sorted(by_t):
-            k = {'t': t, 'bones': by_t[t]}
-            for mt, m in self.markers:
-                if int(round(mt)) == t:
-                    k['marker'] = m
-            out.append(k)
-        # A marker on a time with no key of its own gets one (an anchor bone always keys there, so this is rare).
-        for mt, m in self.markers:
-            if not any(k.get('marker') == m for k in out):
-                near = min(out, key=lambda k: abs(k['t'] - mt))
-                near['marker'] = m
-        return out
-
-
-def write(name, seq, loop=None, **extra):
-    """Writes a clip, keeping the current file's priority and blends unless given."""
-    path = os.path.join(OUT, name + '.json')
-    old = json.load(open(path)) if os.path.exists(path) else {}
-    d = {'name': name, 'duration': seq.duration}
-    if loop:
-        d.update({'loop': True, 'loopStart': loop[0], 'loopEnd': loop[1]})
-    d['blendIn'] = extra.pop('blendIn', old.get('blendIn', 60))
-    d['blendOut'] = extra.pop('blendOut', old.get('blendOut', 150))
-    d['priority'] = extra.pop('priority', old.get('priority', 'SPECIAL'))
-    for k in ('look', 'layer', 'interruptible', 'interruptWindow'):
-        if k in old:
-            d[k] = old[k]
-    d.update(extra)
-    d['authored'] = 'tools/hakari_anims.py (Hakari animation pass)'
-    d['keys'] = seq.keys()
-    with open(path, 'w') as f:
-        json.dump(d, f, indent=1)
-
-
-def blend(a, b, k):
-    """A pose between two poses (same bones)."""
-    out = {}
-    for bone in a:
-        ch = 'rot' if 'rot' in a[bone] else 'pos'
-        if bone in b:
-            out[bone] = {ch: [x + (y - x) * k for x, y in zip(a[bone][ch], b[bone][ch])]}
-        else:
-            out[bone] = a[bone]
-    return out
-
-
-def shifted(p, **delta):
-    """A pose nudged: delta in degrees per bone axis, e.g. chest=(2, 0, 0), root=(0, -0.4, 0)."""
-    q = {b: dict(v) for b, v in p.items()}
-    for bone, d in delta.items():
-        ch = 'rot' if 'rot' in q[bone] else 'pos'
-        q[bone] = {ch: [x + y for x, y in zip(q[bone][ch], d)]}
-    return q
-
-
-def breathe(seq, base, start, period, cycles, amp=1.0, tremble=0.0):
-    """A living hold: breath through the chest and shoulders, a weight shift through the hips, each bone a little out of
-    phase so it never moves as one block. Ends exactly where it starts, so it loops."""
-    steps = 8
-    for c in range(cycles):
-        for s in range(steps + (1 if c == cycles - 1 else 0)):
-            ph = 2 * math.pi * s / steps
-            t = start + c * period + period * s / steps
-            w = lambda lag: math.sin(ph - lag)  # noqa: E731
-            q = shifted(base, chest=(2.2 * amp * w(0), 1.2 * amp * w(1.2), 0), hips=(0.8 * amp * w(0.4), 1.6 * amp * w(1.6), 0),
-                        head=(1.6 * amp * w(0.8), 0, 0), root=(0, -0.35 * amp * (1 - math.cos(ph)) / 2, 0),
-                        rightArm=(2.5 * amp * w(0.5) + tremble * math.sin(ph * 3), 0, 1.2 * amp * w(0.9)),
-                        leftArm=(2.5 * amp * w(0.7) + tremble * math.sin(ph * 3 + 1), 0, 1.2 * amp * w(1.1)),
-                        rightForearm=(1.8 * amp * w(1.0), 0, 0), leftForearm=(1.8 * amp * w(1.2), 0, 0))
-            seq.add(t, q, 'EASE_IN_OUT', overlap=False)
-
-
-def run_cycle(seq, start, period, cycles, lean=24.0, crouch=1.6, twist=0.0, right_arm=None, left_arm=None, stride=1.0):
-    """A run: legs scissoring with knee lift, arms pumping against them, the body bobbing twice per cycle. A fixed arm
-    pose (a grip, a guard) replaces that arm's pump. Ends where it starts, so it loops."""
-    steps = 8
-    for c in range(cycles):
-        for s in range(steps + (1 if c == cycles - 1 else 0)):
-            ph = 2 * math.pi * s / steps
-            t = start + c * period + period * s / steps
-            sw = math.sin(ph)
-            # Thigh: forward (-) when the knee drives; shin bends most as the leg swings through.
-            rt, lt = -38 * sw * stride + 8, 38 * sw * stride + 8
-            rk = 25 + 55 * max(0.0, math.sin(ph + 0.9))
-            lk = 25 + 55 * max(0.0, math.sin(ph + 0.9 + math.pi))
-            bob = 0.7 * (1 - math.cos(2 * ph)) / 2
-            p = pose(body(twist=twist + 6 * sw, lean=lean, crouch=crouch + bob, head_down=-8, fwd=0.5),
-                     leg('right', rt, rk, 3, -10 * sw), leg('left', lt, lk, 3, 10 * sw),
-                     right_arm if right_arm else arm('right', 30 * sw - 30, 6, 12, -95 + 15 * sw, 0),
-                     left_arm if left_arm else arm('left', -30 * sw - 30, -6, 12, -95 - 15 * sw, 0))
-            seq.add(t, p, 'LINEAR' if 0 < s < steps else 'EASE_IN_OUT', overlap=False)
-
+anim_kit.OUT = os.path.join(anim_kit.ANIMS, 'hakari')
+anim_kit.AUTHORED = 'tools/hakari_anims.py (Hakari animation pass)'
+write = anim_kit.write
 
 # --- Hakari's poses (right-handed; the left side is mirror()) ---
 
@@ -250,9 +115,9 @@ IDG_SIGN = pose(body(twist=0, lean=4, crouch=1.0, head_down=8), arm('right', -72
                 leg('right', 8, 14, 6, -4), leg('left', -8, 14, 6, 4))
 
 # Jackpot.
-JP_CROUCH = pose(body(twist=10, lean=24, crouch=4.5, head_down=14), arm('right', -20, 20, 30, -110, 0), arm('left', -20, -20, 30, -110, 0),
+JP_CROUCH = pose(body(twist=10, lean=30, crouch=5.0, head_down=16), arm('right', -20, 20, 30, -110, 0), arm('left', -20, -20, 30, -110, 0),
                  leg('right', 24, 60, 8, -14), leg('left', -24, 56, 8, 14))
-JP_BURST = pose(body(twist=0, lean=-20, crouch=-1.4, head_down=-28), arm('right', -170, 0, 30, -20, 0), arm('left', -170, 0, 30, -20, 0),
+JP_BURST = pose(body(twist=0, lean=-30, crouch=-1.8, head_down=-34), arm('right', -170, 0, 30, -20, 0), arm('left', -170, 0, 30, -20, 0),
                 leg('right', 2, 4, 12, -10), leg('left', -2, 4, 12, 10))
 
 # Volleys and Overwhelming Luck.
@@ -291,22 +156,6 @@ SURGE_HIT = pose(body(twist=-20, lean=-20, crouch=-2.0, fwd=3.0, roll=-10), arm(
 SURGE_OVER = shifted(SURGE_HIT, rightThigh=(-6, 0, 0), chest=(-2, -3, 0))
 SURGE_LAND = pose(body(twist=10, lean=30, crouch=4.4, fwd=2.0, head_down=8), arm('right', -30, 16, 30, -70, 0), arm('left', -60, -16, 30, -80, 0),
                   leg('right', 30, 70, 8, -16), leg('left', -36, 60, 8, 14))
-
-
-def strike(seq, wind, hit, over, settle, rest, t_wind, t_hit, t_rest=None, cock=None, start=None, hold_ms=60):
-    """Wind away, a sharp approach, the contact held a beat (marked), an overshoot, a settle, back to rest."""
-    if start is not None:
-        seq.add(0, start, 'EASE_IN_OUT', overlap=False)
-    if cock is not None:
-        seq.add(max(10, t_hit - 50), cock, 'EASE_IN_OUT')
-    elif t_wind is not None:
-        seq.add(t_wind, wind, 'EASE_OUT')
-    seq.add(t_hit, hit, 'EASE_IN', marker='contact')
-    seq.add(t_hit + hold_ms, shifted(hit, chest=(0.6, 0, 0)), 'LINEAR')
-    seq.add(t_hit + hold_ms + 70, over, 'EASE_OUT')
-    t_settle = t_hit + hold_ms + 70 + max(90, int((seq.duration - t_hit) * 0.25))
-    seq.add(min(t_settle, seq.duration - 60), settle, 'EASE_IN_OUT')
-    seq.add(seq.duration if t_rest is None else t_rest, rest, 'EASE_IN_OUT', overlap=False)
 
 
 def main():
