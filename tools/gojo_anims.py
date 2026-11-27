@@ -58,7 +58,7 @@ def main():
             if 'Gojo animation pass' in _json.load(open(f)).get('authored', '')]
     if done:
         raise SystemExit(f'{len(done)} Gojo clips are already refined. Restore the originals first (from the commit before the '
-                         'Gojo animation pass), e.g. git checkout <commit> -- src/main/resources/assets/jjk/animations/gojo')
+                         'Gojo animation pass), into the working tree only: git restore --source=<commit> --worktree -- src/main/resources/assets/jjk/animations/gojo (git checkout <commit> -- <path> also stages them, and the next commit would revert the pass)')
     # Blue: the point at 320 ms (Blue grabs at 550), held while it pulls; the kick lands at 400 ms (the server's hit).
     refine('blue_cast', contact=320, wind=(140, 0.6), hold=80, over=70, body=(150, 320, 550, dict(twist=20, lean=8)))
     refine('blue_kick', contact=400, hold=0, over=60, body=(250, 400, 500, dict(twist=-12, lean=-8, crouch=0.4)))

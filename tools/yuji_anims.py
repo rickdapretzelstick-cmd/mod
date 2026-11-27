@@ -92,7 +92,7 @@ def main():
     done = [f for f in glob.glob(os.path.join(DIR, '*.json')) if 'Yuji animation pass' in json.load(open(f)).get('authored', '')]
     if done:
         raise SystemExit(f'{len(done)} Yuji clips are already refined. Restore the originals first (from the commit before the '
-                         'Yuji animation pass), e.g. git checkout <commit> -- src/main/resources/assets/jjk/animations/yuji')
+                         'Yuji animation pass), into the working tree only: git restore --source=<commit> --worktree -- src/main/resources/assets/jjk/animations/yuji (git checkout <commit> -- <path> also stages them, and the next commit would revert the pass)')
 
     # Held poses first (the blows after them start from their last pose).
     for name in ('cleave_reach', 'cleave_hold', 'crushing_blow_charge', 'crushing_blow_air', 'crushing_blow_dash', 'cursed_strikes_ready',
