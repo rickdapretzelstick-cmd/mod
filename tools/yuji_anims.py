@@ -153,7 +153,9 @@ def main():
     refine('wcs_swing', hit=0, prev='wcs_chant_3')
     refine('cleave_release', hit=0, prev='cleave_hold', body=(20, 80, 300, dict(twist=28, lean=14, crouch=1.2)))
     refine('cleave_whiff', hit=220, old=500, extend=300, body=(140, 220, 420, dict(twist=20, lean=10, crouch=0.8)))  # (one sweep to the end: it lands at 220 and settles)
-    refine('open_release', hit=0, prev='open_aim')
+    # (the arrow leaves at the 100 ms key, not the last; a release, not a blow: the body recoils with the shot)
+    refine('open_release', hit=0, old=100, prev='open_aim', motion='transition',
+           body=(20, 80, 320, dict(twist=-14, lean=-12, crouch=0.6, head=-8)))
     refine('rush_knee', hit=0, prev='rush_chase')
     refine('rush_slam', hit=0, prev='rush_leap')
     refine('sukuna_takeover', motion='transition', body=(300, 700, 1300, dict(twist=14, lean=-24, crouch=-1.6, head=-26)), core=1.3)  # (a transformation)
