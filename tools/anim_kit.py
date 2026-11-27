@@ -522,3 +522,71 @@ ClipData.core = lambda self, scale=1.35, bones=('hips', 'chest', 'head', 'root')
 ClipData.body = _body
 ClipData.start_from = _start_from
 ClipData.lead_in = _lead_in
+
+
+def _retime(cd, old, new):
+    """Moves the blow at {old} ms to {new} ms (the server's hit): the way into it is stretched or squeezed to fit, and
+    everything after it slides along."""
+    if abs(old - new) < 1:
+        return
+    f = new / max(1e-6, old)
+    move = lambda t: t * f if t <= old else t + (new - old)
+    for chans in cd.tracks.values():
+        for ch, tr in chans.items():
+            chans[ch] = [(move(t), v, e) for t, v, e in tr]
+    cd.markers = [(move(t), m) for t, m in cd.markers]
+    cd.duration += new - old
+
+
+def _trim(cd, t0):
+    """Drops the first {t0} ms: the clip now starts on the pose it had at {t0}."""
+    if t0 <= 0:
+        return
+    for bone, chans in cd.tracks.items():
+        for ch, tr in list(chans.items()):
+            v0 = cd.value(bone, ch, t0)
+            chans[ch] = [(0.0, v0, tr[0][2])] + [(t - t0, v, e) for t, v, e in tr if t > t0 + 0.5]
+    cd.markers = [(t - t0, m) for t, m in cd.markers if t >= t0]
+    cd.duration -= t0
+
+
+def _cut(cd, old, lead, prev):
+    """A blow the server lands the tick its clip starts: the clip's own wind-up (everything before the blow at {old})
+    goes, and the clip travels {lead} ms into the blow from {prev}'s last pose (that clip holds the wind-up)."""
+    _trim(cd, old)
+    _lead_in(cd, lead, end_pose(cd.group, prev))
+
+
+ClipData.retime = _retime
+ClipData.trim = _trim
+ClipData.cut = _cut
+
+
+def _remap(cd, pairs):
+    """Re-times the clip piecewise: each (old ms, new ms) anchor moves to its new time and the keys between anchors
+    stretch to fit (a flurry's punches onto the server's hits). Anchors run from (0, 0) to the end."""
+    pairs = sorted(pairs)
+
+    def move(t):
+        for (a0, b0), (a1, b1) in zip(pairs, pairs[1:]):
+            if t <= a1:
+                return b0 + (t - a0) * (b1 - b0) / max(1e-6, a1 - a0)
+        return pairs[-1][1] + (t - pairs[-1][0])
+
+    for chans in cd.tracks.values():
+        for ch, tr in chans.items():
+            chans[ch] = [(move(t), v, e) for t, v, e in tr]
+    cd.markers = [(move(t), m) for t, m in cd.markers]
+    cd.duration = move(cd.duration)
+
+
+def _extend(cd, ms):
+    """{ms} more at the end, on the last pose (room for a blow drawn onto the clip's last key to settle)."""
+    for chans in cd.tracks.values():
+        for ch, tr in chans.items():
+            tr.append((cd.duration + ms, list(tr[-1][1]), 'EASE_IN_OUT'))
+    cd.duration += ms
+
+
+ClipData.remap = _remap
+ClipData.extend = _extend

@@ -176,8 +176,9 @@ public final class ManjiKickAbility extends Ability {
                 Anim.play(user, "manji_face_kick");
                 return;
             }
-            // The upward roundhouse: knocked off to the side.
-            Anim.play(user, "manji_kick");
+            // The upward roundhouse: knocked off to the side. (A melee counter started the kick 2 ticks ago, timed to land
+            // now: only a kick that swooped in on a shooter starts it here.)
+            if (bullet) Anim.play(user, "manji_kick");
             Vec3 f = HakariCombat.flat(user);
             Vec3 side = new Vec3(-f.z, 0, f.x);
             HakariCombat.faceTowards(user, attacker.getBoundingBox().getCenter());

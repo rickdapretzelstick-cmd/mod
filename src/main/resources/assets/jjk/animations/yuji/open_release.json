@@ -1,20 +1,133 @@
 {
-  "name": "open_release",
-  "duration": 700,
-  "blendIn": 10, "blendOut": 250,
-  "priority": "SPECIAL",
-  "keys": [
-    {"t": 0, "bones": {
-        "head": {"rot": [0, -45, 0]},
-        "chest": {"rot": [0, 45, 0]},
-        "rightArm": {"rot": [-92, 85, 20]},
-        "leftArm": {"rot": [-92, 5, 0]}}},
-    {"t": 100, "bones": {
-        "rightArm": {"rot": [-40, 90, 60]}}},
-    {"t": 700, "bones": {
-        "head": {"rot": [0, 0, 0]},
-        "chest": {"rot": [0, 0, 0]},
-        "rightArm": {"rot": [-20, 0, 8]},
-        "leftArm": {"rot": [-30, 0, -8]}}}
-  ]
+ "name": "open_release",
+ "duration": 80,
+ "blendIn": 60,
+ "blendOut": 250,
+ "priority": "SPECIAL",
+ "windup": "open_aim",
+ "authored": "tools/yuji_anims.py (Yuji animation pass: the reference poses refined, timed to the server)",
+ "keys": [
+  {
+   "t": 0,
+   "bones": {
+    "head": {
+     "rot": [
+      -0.92,
+      -45.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "chest": {
+     "rot": [
+      0.0,
+      44.11,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "rightArm": {
+     "rot": [
+      -92.96,
+      85.0,
+      19.25
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -93.29,
+      5.0,
+      -0.86
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 64,
+   "bones": {
+    "chest": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 80,
+   "marker": "contact",
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -20.0,
+      0.0,
+      8.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftArm": {
+     "rot": [
+      -30.0,
+      0.0,
+      -8.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 102,
+   "bones": {
+    "head": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 140,
+   "bones": {
+    "head": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    },
+    "chest": {
+     "rot": [
+      0.6,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    },
+    "rightArm": {
+     "rot": [
+      -20.0,
+      0.0,
+      8.0
+     ],
+     "ease": "LINEAR"
+    },
+    "leftArm": {
+     "rot": [
+      -30.0,
+      0.0,
+      -8.0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  }
+ ]
 }
