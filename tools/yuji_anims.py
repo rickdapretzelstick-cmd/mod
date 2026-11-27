@@ -111,8 +111,8 @@ def main():
 
     # Cursed Strikes: the flurry (a punch every 250 ms), the last punch at 200 ms, the finisher's three blows.
     # (drawn as seven punches 180 ms apart; the server's six land 250 ms apart from the first frame)
-    refine('cursed_strikes_flurry', hit=500, old=500, hold=40, over=None, wind=False,
-           remap=[(0, 0), (110, 60), (290, 250), (470, 500), (650, 750), (830, 1000), (1010, 1250), (1190, 1380), (1250, 1430), (1500, 1650)])
+    refine('cursed_strikes_flurry', hit=750, old=750, hold=40, over=None, wind=False,
+           remap=[(0, 0), (110, 100), (290, 250), (470, 500), (650, 750), (830, 1000), (1010, 1250), (1190, 1380), (1250, 1430), (1500, 1650)])
     refine('cursed_strikes_final', hit=200)
     refine('cursed_strikes_kick', hit=0, prev='cursed_strikes_flurry')
     refine('cursed_strikes_floor', hit=0, prev='cursed_strikes_kick')
