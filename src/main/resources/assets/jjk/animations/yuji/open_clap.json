@@ -1,15 +1,391 @@
 {
-  "name": "open_clap",
-  "duration": 250,
-  "hold": true,
-  "blendIn": 15, "blendOut": 100,
-  "priority": "SPECIAL",
-  "keys": [
-    {"t": 0, "bones": {
-        "rightArm": {"rot": [-150, 0, 40]},
-        "leftArm": {"rot": [-150, 0, -40]}}},
-    {"t": 250, "bones": {
-        "rightArm": {"rot": [-95, -40, 0]},
-        "leftArm": {"rot": [-95, 40, 0]}}}
-  ]
+ "name": "open_clap",
+ "duration": 1250,
+ "blendIn": 15,
+ "blendOut": 100,
+ "priority": "SPECIAL",
+ "loop": true,
+ "loopStart": 250,
+ "loopEnd": 1250,
+ "authored": "tools/yuji_anims.py (Yuji animation pass: the reference poses refined, timed to the server)",
+ "keys": [
+  {
+   "t": 0,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -150,
+      0,
+      40
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -150,
+      0,
+      -40
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 250,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -95,
+      -40,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -95,
+      40,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 312,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -94.44,
+      -40.0,
+      -0.11
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -94.83,
+      40.0,
+      -0.3
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 375,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -93.24,
+      -40.0,
+      0.6
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -93.47,
+      40.0,
+      0.44
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 438,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -93.08,
+      -40.0,
+      0.95
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -93.01,
+      40.0,
+      0.91
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 500,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -94.04,
+      -40.0,
+      0.75
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -93.71,
+      40.0,
+      0.86
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 562,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -95.56,
+      -40.0,
+      0.11
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -95.17,
+      40.0,
+      0.3
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 625,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -96.76,
+      -40.0,
+      -0.6
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -96.53,
+      40.0,
+      -0.44
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 688,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -96.92,
+      -40.0,
+      -0.95
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -96.99,
+      40.0,
+      -0.91
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 750,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -95.96,
+      -40.0,
+      -0.75
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -96.29,
+      40.0,
+      -0.86
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 812,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -94.44,
+      -40.0,
+      -0.11
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -94.83,
+      40.0,
+      -0.3
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 875,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -93.24,
+      -40.0,
+      0.6
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -93.47,
+      40.0,
+      0.44
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 938,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -93.08,
+      -40.0,
+      0.95
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -93.01,
+      40.0,
+      0.91
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1000,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -94.04,
+      -40.0,
+      0.75
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -93.71,
+      40.0,
+      0.86
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1062,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -95.56,
+      -40.0,
+      0.11
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -95.17,
+      40.0,
+      0.3
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1125,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -96.76,
+      -40.0,
+      -0.6
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -96.53,
+      40.0,
+      -0.44
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1188,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -96.92,
+      -40.0,
+      -0.95
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -96.99,
+      40.0,
+      -0.91
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1250,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -95.96,
+      -40.0,
+      -0.75
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "leftArm": {
+     "rot": [
+      -96.29,
+      40.0,
+      -0.86
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  }
+ ]
 }

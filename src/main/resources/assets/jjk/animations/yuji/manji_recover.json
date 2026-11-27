@@ -4,7 +4,8 @@
  "blendIn": 25,
  "blendOut": 200,
  "priority": "SPECIAL",
- "authored": "tools/anim_author.py (reference: JJS wiki GIFs)",
+ "motion": "transition",
+ "authored": "tools/yuji_anims.py (Yuji animation pass: the reference poses refined, timed to the server)",
  "keys": [
   {
    "t": 0,
@@ -14,112 +15,128 @@
       -13.0,
       -26,
       -46
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "hips": {
      "rot": [
       -26,
       -14.3,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "head": {
      "rot": [
       -8,
       15.6,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "root": {
      "pos": [
       0.0,
       -0.0,
       1.5
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "rightArm": {
      "rot": [
       6,
       28,
       80
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "rightForearm": {
      "rot": [
       -16,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "rightHand": {
      "rot": [
       0,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "leftArm": {
      "rot": [
       -12,
       20,
       -90
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "leftForearm": {
      "rot": [
       -18,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "leftHand": {
      "rot": [
       0,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "rightThigh": {
      "rot": [
       -146,
       0,
       34
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "rightShin": {
      "rot": [
       10,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "rightFoot": {
      "rot": [
       28,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "leftThigh": {
      "rot": [
       6,
       0,
       -6
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "leftShin": {
      "rot": [
       18,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "leftFoot": {
      "rot": [
       4,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     }
    }
   },
@@ -131,115 +148,130 @@
       3.0,
       14,
       0.0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "hips": {
      "rot": [
       6,
-      7.700000000000001,
+      7.7,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "head": {
      "rot": [
       4,
       -8.4,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "root": {
      "pos": [
       0.0,
       -1.6,
       0.0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "rightArm": {
      "rot": [
       -55,
       8,
       14
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "rightForearm": {
      "rot": [
       -105,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "rightHand": {
      "rot": [
       10,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "leftArm": {
      "rot": [
       -78,
       6,
       -8
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "leftForearm": {
      "rot": [
       -98,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "leftHand": {
      "rot": [
       6,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "rightThigh": {
      "rot": [
       14,
       0,
       3
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "rightShin": {
      "rot": [
       22,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "rightFoot": {
      "rot": [
       -6,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "leftThigh": {
      "rot": [
       -16,
       0,
       -3
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "leftShin": {
      "rot": [
       20,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     },
     "leftFoot": {
      "rot": [
       6,
       0,
       0
-     ]
+     ],
+     "ease": "EASE_IN_OUT"
     }
-   },
-   "ease": "EASE_IN_OUT"
+   }
   }
  ]
 }
