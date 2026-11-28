@@ -47,6 +47,11 @@ public final class ClientFx {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         if (level == null) return;
+        // A hit's direction and weight, for the victim's flinch (nothing to draw).
+        if (p.id().equals("react")) {
+            dev.rick.jjk.client.anim.ClientAnimations.struck(p.entityId(), p.dir(), p.scale());
+            return;
+        }
         Vec3 pos = p.pos();
         Vec3 dir = p.dir();
         float s = p.scale();

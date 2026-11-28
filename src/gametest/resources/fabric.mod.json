@@ -34,7 +34,8 @@
       "dev.rick.jjk.test.YutaClientGameTest",
       "dev.rick.jjk.test.BeamClashCameraClientTest",
       "dev.rick.jjk.test.RikaViewClientTest",
-      "dev.rick.jjk.test.NoKitClientTest"
+      "dev.rick.jjk.test.NoKitClientTest",
+      "dev.rick.jjk.test.ReactionClientTest"
     ]
   },
   "depends": {

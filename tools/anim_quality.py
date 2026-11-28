@@ -79,6 +79,8 @@ class Clip:
         self.hold, self.loop = bool(d.get('hold')), bool(d.get('loop'))
         # A clip tagged "motion": "transition" moves between poses (a step, a bounce, a leap): no blow to judge.
         self.transition = d.get('motion') == 'transition'
+        # "motion": "reaction" (tools/reaction_anims.py): a body taking a blow, judged as one (score_reaction).
+        self.reaction = d.get('motion') == 'reaction'
         # A blow that lands the tick its clip starts has no room to wind up: "windup" names the clip that winds it.
         self.windup = d.get('windup')
         # "style": "effortless" (Gojo's one-handed techniques): a deliberate, calm gesture; the body may stay quiet.
@@ -127,7 +129,53 @@ class Clip:
         return total
 
 
+def score_reaction(c):
+    """A body taking a blow: no wind-up and no hold on the impact (it's thrown, not striking), but
+      impact      the impact pose reached within 120 ms of the blow (the clip's contact marker)
+      recoil      a pose between the impact and the stunned hold (an overshoot, a stagger)
+      overlap     the core thrown first, the limbs flung after it (hips, chest, then the fastest limb, its child)
+      whole body  the hips, chest, head and legs carry 35%+ of the motion
+      alive       the stunned hold breathes"""
+    res = {}
+    hold = c.loop_start if c.loop else c.duration
+    if c.contact is None:
+        res['impact'] = (False, 'no impact marked')
+        return res
+    # (A blow's flinch snaps; the floor's impact in a knockdown, or a mind giving out in Unlimited Void, come later.)
+    quick = c.name.startswith('reaction_hit') or c.name in ('reaction_spiked', 'reaction_guard_broken')
+    res['impact'] = (c.contact <= 120 or not quick, f'impact at {c.contact:.0f} ms')
+    keys = sorted({t for tr in c.tracks.values() for t, _, _ in tr if c.contact + 20 < t < hold - 10})
+    res['recoil'] = (len(keys) >= 1, f'{len(keys)} key(s) between the impact and the hold')
+    moving = [b for b in LIMBS if b in c.tracks]
+    lo, hi = 0, c.contact + 150
+    win = lambda b: [p for p in c.speeds(b) if lo <= p[0] <= hi]
+    if moving:
+        strike = max(moving, key=lambda b: max([s for _, s in win(b)] or [0]))
+        top = max([s for _, s in win(strike)] or [1])
+        chain = [b for b in ('hips', 'chest', strike, CHILD.get(strike)) if b and b in c.tracks and c.travel([b], lo, hi) > 10
+                 and max([s for _, s in win(b)] or [0]) >= 0.3 * top]
+
+        def peak_time(b):
+            sp = win(b) or [(0, 0)]
+            m = max(s for _, s in sp)
+            near = [t for t, s in sp if s >= 0.95 * m]
+            return int(round(sum(near) / len(near) / 10.0)) * 10
+        times = [peak_time(b) for b in chain]
+        if len(chain) > 1:
+            ordered = all(x <= y for x, y in zip(times, times[1:])) and times[-1] - times[0] >= 20
+            res['overlap'] = (ordered, ' > '.join(f'{b}@{t}' for b, t in zip(chain, times)))
+    core, legs, arms = c.travel(CORE, 0, hold), c.travel(LEGS, 0, hold), c.travel(ARMS, 0, hold)
+    share = (core + legs) / max(1e-6, core + legs + arms)
+    res['whole body'] = (share >= 0.35, f'{share:.0%} of the motion in hips/chest/head/legs')
+    if c.loop:
+        amp = c.travel(list(c.tracks), c.loop_start, c.loop_end)
+        res['alive'] = (amp > 6, f'{amp:.0f}° of motion per loop')
+    return res
+
+
 def score(c):
+    if c.reaction:
+        return score_reaction(c)
     """{principle: (passed, note)}; principles that don't apply to the clip are left out."""
     res = {}
     moving = [b for b in LIMBS if b in c.tracks]

@@ -29,7 +29,7 @@ class Seq:
 
     def __init__(self, duration):
         self.duration = duration
-        self.tracks = {}  # bone -> [(t, value, channel, ease)]
+        self.tracks = {}  # (bone, channel) -> [(t, value, channel, ease)]
         self.markers = []
         self.last = 0
 
@@ -40,16 +40,16 @@ class Seq:
         lead_scale = min(1.0, room / 70.0)
         lag_scale = min(1.0, max(0.0, self.duration - t) / 40.0)
         for bone, v in p.items():
-            ch = 'rot' if 'rot' in v else 'pos'
-            o = OFFSET.get(bone, 0) if overlap else 0
-            o *= lead_scale if o < 0 else lag_scale
-            bt = min(self.duration, max(0, t + o))
-            tr = self.tracks.setdefault(bone, [])
-            if tr and bt < tr[-1][0] + 8:
-                bt = min(self.duration, max(tr[-1][0] + 8, t))
-                if bt <= tr[-1][0]:
-                    continue
-            tr.append((bt, v[ch], ch, ease))
+            for ch in [c for c in ('rot', 'pos') if c in v]:  # (a bone can turn and move in one pose: the root falling)
+                o = OFFSET.get(bone, 0) if overlap else 0
+                o *= lead_scale if o < 0 else lag_scale
+                bt = min(self.duration, max(0, t + o))
+                tr = self.tracks.setdefault((bone, ch), [])
+                if tr and bt < tr[-1][0] + 8:
+                    bt = min(self.duration, max(tr[-1][0] + 8, t))
+                    if bt <= tr[-1][0]:
+                        continue
+                tr.append((bt, v[ch], ch, ease))
         self.last = t
         if marker:
             self.markers.append((t, marker))
@@ -57,9 +57,12 @@ class Seq:
 
     def keys(self):
         by_t = {}
-        for bone, tr in self.tracks.items():
+        for (bone, _), tr in self.tracks.items():
             for t, val, ch, e in tr:
-                by_t.setdefault(int(round(t)), {})[bone] = {ch: [round(x, 2) for x in val], 'ease': e}
+                k = by_t.setdefault(int(round(t)), {}).setdefault(bone, {})
+                k.pop('ease', None)
+                k[ch] = [round(x, 2) for x in val]
+                k['ease'] = e
         out = []
         for t in sorted(by_t):
             k = {'t': t, 'bones': by_t[t]}
@@ -113,8 +116,9 @@ def shifted(p, **delta):
     for bone, d in delta.items():
         if bone not in q:
             continue  # (a clip that never keys that bone: nothing to nudge)
-        ch = 'rot' if 'rot' in q[bone] else 'pos'
-        q[bone] = {ch: [x + y for x, y in zip(q[bone][ch], d)]}
+        # (The root's nudge is a move: its position, even when it also tips, as a body lying on the floor.)
+        ch = 'pos' if bone == 'root' and 'pos' in q[bone] else 'rot' if 'rot' in q[bone] else 'pos'
+        q[bone] = {**q[bone], ch: [x + y for x, y in zip(q[bone][ch], d)]}
     return q
 
 

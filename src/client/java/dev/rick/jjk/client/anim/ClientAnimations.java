@@ -21,6 +21,14 @@ import java.util.Set;
 public final class ClientAnimations {
     private static final Map<Integer, AnimPlayer> PLAYERS = new HashMap<>();
     private static final Map<Integer, Integer> LAST_HITSTUN = new HashMap<>();
+    /** A hit just taken: the way it pushed them (world, horizontal) and its hitstun in ticks. */
+    private record Struck(net.minecraft.world.phys.Vec3 dir, float stun) {}
+    private static final Map<Integer, Struck> STRUCK = new HashMap<>();
+    /** The flinch each entity is in (kept for the whole hitstun), and how many it has taken (the front flinch alternates). */
+    private static final Map<Integer, String> FLINCH = new HashMap<>();
+    private static final Map<Integer, Integer> FLINCHES = new HashMap<>();
+    /** Hitstun this long or more is a heavy blow: the bigger flinch. */
+    private static final float HEAVY_STUN = 18;
     /** The entity each player of clips belongs to (an id reused by a respawned or reloaded entity starts clean). */
     private static final Map<Integer, java.lang.ref.WeakReference<net.minecraft.world.entity.Entity>> OWNERS = new HashMap<>();
     /** Since when (ticks) a player's held pose has shown with nothing on the server behind it. */
@@ -83,6 +91,9 @@ public final class ClientAnimations {
     public static void clear() {
         PLAYERS.clear();
         LAST_HITSTUN.clear();
+        STRUCK.clear();
+        FLINCH.clear();
+        FLINCHES.clear();
         OWNERS.clear();
         STALE_SINCE.clear();
         CAST_MARKS.clear();
@@ -91,6 +102,9 @@ public final class ClientAnimations {
     public static void forget(int entityId) {
         PLAYERS.remove(entityId);
         LAST_HITSTUN.remove(entityId);
+        STRUCK.remove(entityId);
+        FLINCH.remove(entityId);
+        FLINCHES.remove(entityId);
         OWNERS.remove(entityId);
         STALE_SINCE.remove(entityId);
         CAST_MARKS.remove(entityId);
@@ -149,6 +163,13 @@ public final class ClientAnimations {
         return -1;
     }
 
+    /** The hit reaction entity {@code entityId} is in (null for none). */
+    @Nullable
+    public static String reactionOf(int entityId) {
+        AnimPlayer p = PLAYERS.get(entityId);
+        return p == null ? null : p.reactionName;
+    }
+
     @Nullable
     public static String current(int entityId) {
         AnimPlayer p = PLAYERS.get(entityId);
@@ -160,6 +181,12 @@ public final class ClientAnimations {
     @Nullable
     public static PoseFrame compute(LivingEntity e, float now) {
         int id = e.getId();
+        // A hit just landed (its signal, or the hitstun going up): pick the flinch for it.
+        Struck struck = STRUCK.remove(id);
+        CombatState cs = Combat.stateOrNull(e);
+        int stunNow = cs == null ? 0 : cs.get(CombatStatus.HITSTUN);
+        boolean struckNow = struck != null || stunNow > LAST_HITSTUN.getOrDefault(id, 0);
+        if (struckNow) FLINCH.put(id, flinch(e, struck));
         String reaction = reaction(e);
         AnimPlayer p = PLAYERS.get(id);
         PoseFrame stance = stance(e, now);
@@ -168,18 +195,16 @@ public final class ClientAnimations {
             p = new AnimPlayer();
             PLAYERS.put(id, p);
         }
-        CombatState s = Combat.stateOrNull(e);
-        int hitstun = s == null ? 0 : s.get(CombatStatus.HITSTUN);
         // A fresh hit restarts the flinch.
-        boolean newHit = hitstun > LAST_HITSTUN.getOrDefault(id, 0);
-        LAST_HITSTUN.put(id, hitstun);
+        boolean newHit = struckNow;
+        LAST_HITSTUN.put(id, stunNow);
         advance(id, p, now);
         recover(e, p, now);
         if (p.hasFollowThrough()) {
             double dx = e.getX() - e.xo, dz = e.getZ() - e.zo;
             if (dx * dx + dz * dz > MOVING * MOVING) p.cutFollowThrough(FOLLOW_THROUGH_CUT);
         }
-        p.setReaction(reaction, newHit && reaction != null && reaction.startsWith("reaction_hit"));
+        p.setReaction(reaction, newHit && reaction != null && reaction.startsWith("reaction_hit") && !reaction.equals("reaction_hit_launched"));
         if (p.idle()) {
             PLAYERS.remove(id);
             STALE_SINCE.remove(id);
@@ -275,15 +300,43 @@ public final class ClientAnimations {
         if (dt > 0) p.advance(dt);
     }
 
+    /** A hit's signal: which way it pushed entity {@code id} (world) and its hitstun in ticks. */
+    public static void struck(int id, net.minecraft.world.phys.Vec3 dir, float stun) {
+        STRUCK.put(id, new Struck(new net.minecraft.world.phys.Vec3(dir.x, 0, dir.z), stun));
+    }
+
+    /**
+     * The flinch for a hit: from where it came, against the way they face (pushed back: struck in front; pushed on:
+     * from behind; pushed sideways: on that side), and how hard (a heavy blow, the bigger flinch). Light hits in front
+     * alternate between two flinches so a flurry doesn't repeat one pose.
+     */
+    private static String flinch(LivingEntity e, @Nullable Struck s) {
+        int n = FLINCHES.merge(e.getId(), 1, Integer::sum);
+        boolean heavy = s != null && s.stun() >= HEAVY_STUN;
+        if (s == null || s.dir().lengthSqr() < 1e-4) return heavy ? "reaction_hit_front_heavy" : n % 2 == 0 ? "reaction_hit_front_b" : "reaction_hit_front";
+        float yaw = e.yBodyRot * net.minecraft.util.Mth.DEG_TO_RAD;
+        double fx = -net.minecraft.util.Mth.sin(yaw), fz = net.minecraft.util.Mth.cos(yaw);
+        net.minecraft.world.phys.Vec3 d = s.dir().normalize();
+        double ahead = d.x * fx + d.z * fz, right = d.x * -fz + d.z * fx;
+        if (Math.abs(right) > Math.abs(ahead) * 1.2) return right > 0 ? "reaction_hit_left" : "reaction_hit_right";
+        if (ahead > 0) return heavy ? "reaction_hit_back_heavy" : "reaction_hit_back";
+        return heavy ? "reaction_hit_front_heavy" : n % 2 == 0 ? "reaction_hit_front_b" : "reaction_hit_front";
+    }
+
     @Nullable
     private static String reaction(LivingEntity e) {
         CombatState s = Combat.stateOrNull(e);
         if (s == null) return null;
         if (s.isDowned()) return "reaction_knockdown";
+        // Getting up off the floor.
+        if (s.has(CombatStatus.WAKEUP)) return "reaction_getup";
         if (s.has(CombatStatus.OVERLOAD)) return "reaction_overload";
         if (s.has(CombatStatus.GUARD_BROKEN)) return "reaction_guard_broken";
         if (s.has(CombatStatus.PULLED)) return "reaction_pulled";
-        if (s.has(CombatStatus.HITSTUN)) return s.has(CombatStatus.LAUNCHED) ? "reaction_hit_launched" : "reaction_hitstun";
+        if (s.has(CombatStatus.SPIKED)) return "reaction_spiked";
+        // Airborne until they land, even once the hitstun has run out.
+        if (s.has(CombatStatus.LAUNCHED)) return "reaction_hit_launched";
+        if (s.has(CombatStatus.HITSTUN)) return FLINCH.getOrDefault(e.getId(), "reaction_hit_front");
         return null;
     }
 }

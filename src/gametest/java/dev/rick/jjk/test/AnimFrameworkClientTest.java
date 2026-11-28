@@ -82,7 +82,10 @@ public class AnimFrameworkClientTest implements FabricClientGameTest {
         }
         List<String> missing = new ArrayList<>();
         for (String n : used) if (AnimLibrary.get(n) == null) missing.add(n);
-        for (String n : List.of("reaction_hitstun", "reaction_hit_launched", "reaction_knockdown", "reaction_overload", "reaction_guard_broken", "reaction_pulled")) {
+        // The hit reactions ClientAnimations picks from (by state, and for a flinch by the blow's direction and weight).
+        for (String n : List.of("reaction_hit_front", "reaction_hit_front_b", "reaction_hit_front_heavy", "reaction_hit_back",
+                "reaction_hit_back_heavy", "reaction_hit_left", "reaction_hit_right", "reaction_hit_launched", "reaction_spiked",
+                "reaction_knockdown", "reaction_getup", "reaction_overload", "reaction_guard_broken", "reaction_pulled")) {
             if (AnimLibrary.get(n) == null) missing.add(n);
         }
         check(missing.isEmpty(), "clips missing for " + missing);
@@ -245,6 +248,10 @@ public class AnimFrameworkClientTest implements FabricClientGameTest {
         Clip soft = AnimLibrary.parse("t_soft", "test", """
                 {"priority": "ATTACK", "blendIn": 0, "keys": [{"t": 0, "bones": {"head": [0,0,0]}}]}""");
         check(soft.blendIn == AnimLibrary.MIN_BLEND_IN, "a plain blendIn 0 gets the minimum blend");
+        // A hit reaction shows within two frames of the blow: its own, lower floor.
+        Clip flinch = AnimLibrary.parse("t_flinch", "test", """
+                {"priority": "RAGDOLL", "blendIn": 0, "keys": [{"t": 0, "bones": {"head": [0,0,0]}}]}""");
+        check(flinch.blendIn == AnimLibrary.MIN_REACTION_BLEND_IN, "a hit reaction gets the reaction floor");
         Clip hard = AnimLibrary.parse("t_hard", "test", """
                 {"priority": "ATTACK", "blendIn": 0, "blendEase": "STEP", "keys": [{"t": 0, "bones": {"head": [0,0,0]}}]}""");
         wp.play(hard, 1);

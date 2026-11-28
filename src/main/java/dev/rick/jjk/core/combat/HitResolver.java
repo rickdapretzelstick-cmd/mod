@@ -110,6 +110,8 @@ public final class HitResolver {
 
         Vec3 dir = hitPoint.subtract(hit.origin);
         Fx.play(level, hit.impactFx, hitPoint, dir.lengthSqr() > 1e-6 ? dir.normalize() : Vec3.ZERO, hit.impactScale, target.getId());
+        // Which way they were struck and how hard (the hitstun): their flinch is picked from it (front, back, sides, heavy).
+        Fx.play(level, "react", hitPoint, dir.lengthSqr() > 1e-6 ? dir.normalize() : Vec3.ZERO, hitstun, target.getId());
 
         if (hit.attacker instanceof ServerPlayer sp) {
             ServerPlayNetworking.send(sp, new ComboPayload(target.getId(), count, state.comboDamage(), outcome.ordinal()));

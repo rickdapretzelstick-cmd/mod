@@ -444,9 +444,13 @@ public final class AnimLibrary {
      */
     public static final float MIN_BLEND_IN = 90;
 
+    /** A hit reaction (priority RAGDOLL) shows within two frames of the blow: its floor. */
+    public static final float MIN_REACTION_BLEND_IN = 40;
+
     private static float blendIn(JsonObject o) {
         float b = num(o, "blendIn", 75);
         if ("STEP".equalsIgnoreCase(str(o, "blendEase", ""))) return b;
+        if ("RAGDOLL".equalsIgnoreCase(str(o, "priority", ""))) return Math.max(MIN_REACTION_BLEND_IN, b);
         return Math.max(MIN_BLEND_IN, b);
     }
 }

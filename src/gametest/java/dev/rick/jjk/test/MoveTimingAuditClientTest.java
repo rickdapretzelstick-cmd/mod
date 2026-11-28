@@ -101,7 +101,13 @@ public class MoveTimingAuditClientTest implements FabricClientGameTest {
             });
             ctx.waitTicks(40); // let the transformation play out
         }
-        AnimTrace.start(charId + "_" + label + "_" + abilityId, playerId);
+        // The dummy too: its hit reactions (a pop or a stuck pose in how it takes the blows is listed as "dummy").
+        int dummyId = server.computeOnServer(srv -> {
+            ServerPlayer p = srv.getPlayerList().getPlayers().getFirst();
+            return p.level().getEntities(p, new AABB(p.blockPosition()).inflate(8), e -> e.getType() == dev.rick.jjk.registry.ModEntities.TRAINING_DUMMY)
+                    .stream().findFirst().map(Entity::getId).orElse(-1);
+        });
+        AnimTrace.start(charId + "_" + label + "_" + abilityId, playerId, dummyId);
         server.runOnServer(srv -> {
             ServerPlayer p = srv.getPlayerList().getPlayers().getFirst();
             AbilityCaster c = Casters.get(p);
@@ -122,7 +128,8 @@ public class MoveTimingAuditClientTest implements FabricClientGameTest {
         AnimTrace.Report r = AnimTrace.stop();
         AnimTrace.CastSummary cs = r.casts().stream().filter(c -> c.ability().equals(abilityId)).findFirst().orElse(null);
         StringBuilder notes = new StringBuilder();
-        for (AnimTrace.Anomaly an : r.anomalies()) notes.append(an.kind()).append(": ").append(an.detail()).append("; ");
+        for (AnimTrace.Anomaly an : r.anomalies())
+            notes.append(an.entity() == playerId ? "" : "dummy ").append(an.kind()).append(": ").append(an.detail()).append("; ");
         String slotLabel = label.length() > 9 ? label.substring(0, 9) : label;
         if (cs == null) {
             audit.append(String.format(Locale.ROOT, "%-7s %-9s %-26s %6s %8s %7s %6s  %s%n", charId, slotLabel, abilityId, "-", "-", "-", "-",
