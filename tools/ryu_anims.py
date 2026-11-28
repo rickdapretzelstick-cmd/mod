@@ -57,7 +57,7 @@ def main():
     # (the move runs 300 ms past the push at 1600: the exchange settles on its last pose for it)
     r('ryu_no_idea_exchange', hit=200, old=200, extend=300)
     # Not Invited: the punch as it starts, out of the lunge.
-    r('ryu_invited_punch', hit=0, old=70, prev='ryu_invited_lunge')
+    r('ryu_invited_punch', hit=0, old=70, prev='ryu_invited_lunge', travel=80)  # (on reaching them: not cued ahead)
     # Second Helping: the slam and the air punch land 100 ms in; they began far from the leap's pose (a 148-degree arm
     # snap at the hand-over), so they travel in from it first: the slam from where the leap is when it takes over
     # (230 ms in), landing 80 ms after the hit like the other blows that start on it. The whiff.
@@ -67,13 +67,15 @@ def main():
     r('ryu_second_helping_whiff', hit=150, old=150)
     # What Are You After: the slam at 300 ms (a held clip), the traded punch as it starts, the miss.
     r('ryu_after_slam', hit=300, old=300)
-    r('ryu_after_trade', hit=0, old=100, prev='ryu_after_lunge')
+    r('ryu_after_trade', hit=0, old=100, prev='ryu_after_lunge', travel=80)  # (on reaching them: not cued ahead)
     r('ryu_after_miss', hit=150, old=150)
     # Granite Blast: the shot as it starts (tapped or charged): a discharge from the cannon of his pompadour, not a blow
     # of the arms, so the body takes the recoil; the dash's shoulder at 250 ms.
-    r('ryu_granite_fire', hit=0, old=60, prev='ryu_granite_aim', motion='transition',
+    r('ryu_granite_fire', hit=0, old=60, prev='ryu_granite_aim', travel=80,  # (on the key's release: not cued ahead)
+      motion='transition',
       body=(20, 80, 300, dict(twist=6, lean=-14, crouch=0.8, head=-16)))
-    r('ryu_granite_fire_held', hit=0, old=60, prev='ryu_granite_aim', motion='transition',
+    r('ryu_granite_fire_held', hit=0, old=60, prev='ryu_granite_aim', travel=80,
+      motion='transition',
       body=(20, 80, 400, dict(twist=8, lean=-18, crouch=1.0, head=-20)))
     r('ryu_granite_dash', hit=250, old=250)
     # Every Last Drop: the beam looses as the fire clip starts (held while it pours out).

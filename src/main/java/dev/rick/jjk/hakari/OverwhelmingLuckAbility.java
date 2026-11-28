@@ -60,10 +60,10 @@ public final class OverwhelmingLuckAbility extends Ability {
             public void tick() {
                 JJKConfig.Hakari cfg = JJKConfig.get().hakari;
                 Vec3 f = HakariCombat.flat(user);
+                Anim.cue(user, "overwhelm_left", age, START, 0);
                 if (age < START) return;
                 if (age == START) {
                     // The forward rush and the devastating strike that tosses them away.
-                    Anim.play(user, "overwhelm_left");
                     Motion.set(user, f.scale(0.9).add(0, Math.min(0, user.getDeltaMovement().y), 0));
                     Hit open = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.overwhelmOpenerDamage)
                             .tag(AttackTag.MELEE, AttackTag.HEAVY, AttackTag.UNBLOCKABLE).origin(user.getEyePosition())
@@ -93,8 +93,12 @@ public final class OverwhelmingLuckAbility extends Ability {
                         HakariCombat.carry(user, t, 1.4 + k * 0.4);
                     }
                     Motion.set(user, f.scale(0.12).add(0, Math.min(0, user.getDeltaMovement().y), 0));
-                    if ((age - grabAt) % cfg.overwhelmInterval == 0) {
+                    // The punches after the first come on the beat: each one's clip LEAD ticks ahead of it.
+                    boolean ahead = cfg.overwhelmInterval > Anim.LEAD;
+                    if (ahead && punches > 0 && (age + Anim.LEAD - grabAt) % cfg.overwhelmInterval == 0)
                         Anim.play(user, punches % 2 == 0 ? "overwhelm_right" : "overwhelm_left");
+                    if ((age - grabAt) % cfg.overwhelmInterval == 0) {
+                        if (punches == 0 || !ahead) Anim.play(user, punches % 2 == 0 ? "overwhelm_right" : "overwhelm_left");
                         float esc = 1f + punches * 0.1f;
                         Hit punch = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.overwhelmPunchDamage).tag(AttackTag.MELEE, AttackTag.UNBLOCKABLE)
                                 .origin(user.getEyePosition()).knockback(Knockback.HOLD).hitstun(cfg.overwhelmInterval + 8)
@@ -105,8 +109,8 @@ public final class OverwhelmingLuckAbility extends Ability {
                         if (punches == cfg.overwhelmPunches) finalAt = age + cfg.overwhelmInterval + 2;
                     }
                 }
+                if (finalAt >= 0) Anim.cue(user, "overwhelm_final", age, finalAt, finalAt - cfg.overwhelmInterval - 2);
                 if (age == finalAt) {
-                    Anim.play(user, "overwhelm_final");
                     setPhase(2, 10);
                     for (var t : caught) Statuses.remove(t, CombatStatus.GRABBED);
                     Motion.set(user, f.scale(0.6));

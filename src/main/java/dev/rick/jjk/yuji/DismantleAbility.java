@@ -124,6 +124,7 @@ public final class DismantleAbility extends Ability {
             if (chant > 0) {
                 Motion.set(user, new Vec3(0, air ? 0 : Math.min(0, user.getDeltaMovement().y), 0));
                 if (slashAt >= 0) {
+                    Anim.cue(user, "wcs_swing", age, slashAt, chantAt);
                     if (age == slashAt) worldSlash(cfg);
                     return;
                 }
@@ -137,6 +138,11 @@ public final class DismantleAbility extends Ability {
             if (barrageAt >= 0) {
                 barrage(cfg);
                 return;
+            }
+            // The air slash lands as the wind-up ends: its clip ahead of it.
+            if (air && age == windup() - Anim.LEAD && age > 0) {
+                Anim.play(user, "dismantle_air_swing");
+                airCued = true;
             }
             if (age < windup()) {
                 if (!air) Motion.set(user, new Vec3(0, Math.min(0, user.getDeltaMovement().y), 0));
@@ -187,8 +193,10 @@ public final class DismantleAbility extends Ability {
         }
 
         /** Airborne: one long slash down the line. */
+        private boolean airCued;
+
         private void airSlash(JJKConfig.Yuji cfg) {
-            Anim.play(user, "dismantle_air_swing");
+            if (!airCued) Anim.play(user, "dismantle_air_swing");
             Vec3 dir = user.getLookAngle();
             if (dir.y > -0.25) dir = new Vec3(dir.x, -0.35, dir.z).normalize();
             Vec3 from = user.getEyePosition(), to = from.add(dir.scale(cfg.dismantleAirLength));
@@ -209,7 +217,6 @@ public final class DismantleAbility extends Ability {
         }
 
         private void worldSlash(JJKConfig.Yuji cfg) {
-            Anim.play(user, "wcs_swing");
             Statuses.apply(user, CombatStatus.EVADING, 14);
             Vec3 look = user.getLookAngle();
             Vec3 f = air ? look : HakariCombat.flat(user);

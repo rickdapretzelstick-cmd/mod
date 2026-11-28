@@ -52,7 +52,7 @@ def main():
     refine('cursed_strikes_kick', hit=0, prev='cursed_strikes_flurry')
     refine('cursed_strikes_floor', hit=0, prev='cursed_strikes_kick')
     refine('cursed_strikes_spin', hit=0, prev='cursed_strikes_floor')
-    refine('cursed_strikes_land', hit=0, prev='cursed_strikes_dropkick')
+    refine('cursed_strikes_land', hit=0, prev='cursed_strikes_dropkick', travel=80)  # (on landing: not cued ahead)
     refine('cursed_strikes_blocked', motion='transition')  # (the punch knocked back: a recoil, no blow)
 
     # Crushing Blow: grabbed on contact, slammed at 150 (and 650) ms; the release launch, the suplex, the whiff's shockwave.
@@ -91,8 +91,8 @@ def main():
     # (the arrow leaves at the 100 ms key, not the last; a release, not a blow: the body recoils with the shot)
     refine('open_release', hit=0, old=100, prev='open_aim', motion='transition',
            body=(20, 80, 320, dict(twist=-14, lean=-12, crouch=0.6, head=-8)))
-    refine('rush_knee', hit=0, prev='rush_chase')
-    refine('rush_slam', hit=0, prev='rush_leap')
+    refine('rush_knee', hit=0, prev='rush_chase', travel=80)  # (on reaching them: not cued ahead)
+    refine('rush_slam', hit=0, prev='rush_leap', travel=80)
     refine('sukuna_takeover', motion='transition', body=(300, 700, 1300, dict(twist=14, lean=-24, crouch=-1.6, head=-26)), core=1.3)  # (a transformation)
     print("refined Yuji's clips")
 

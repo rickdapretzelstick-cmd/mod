@@ -79,14 +79,15 @@ def main():
     refine('purple_release', contact=80, hold=70, over=60, start_from='purple_fusion', windup='purple_fusion',
            body=(30, 80, 300, dict(twist=0, lean=16, crouch=1.4, head=6)))
     # Rapid Punches: the spin kick connects at 540 ms; the barrage loops as it is; the heavy blows at 200/450/700 ms; the
-    # hammer cut straight onto its hit, so it now travels 80 ms into it from the heavy blows' overhead wind-up.
+    # hammer cut straight onto its hit, so it now travels 100 ms into it from the heavy blows' overhead wind-up (the
+    # server cues it 2 ticks ahead of the hit, Anim.LEAD).
     refine('spin_kick', contact=540, hold=0, over=60)
     refine('rapid_heavy', contact=200, hold=0, core=1.15)
-    refine('rapid_final', contact=0, hold=60, over=60, lead_in=(80, 'rapid_heavy'), windup='rapid_heavy')
-    # Twofold Kick: the side kick at 400 ms; the second kick (the server's hit as twofold_2 starts) now travels 80 ms
+    refine('rapid_final', contact=0, hold=60, over=60, lead_in=(100, 'rapid_heavy'), windup='rapid_heavy')
+    # Twofold Kick: the side kick at 400 ms; the second kick (cued 2 ticks before the server's hit) travels 100 ms
     # into its contact from the flip.
     refine('twofold_1', contact=400, wind=(100, 0.2), hold=0, over=60)
-    refine('twofold_2', contact=0, hold=60, over=60, lead_in=(80, 'twofold_1'), windup='twofold_1')
+    refine('twofold_2', contact=0, hold=60, over=60, lead_in=(100, 'twofold_1'), windup='twofold_1')
     # Teleport: the raise before the blink, the vanish, the strike out of it.
     refine('limitless_raise', contact=250, wind=(130, 0.5), hold=60, over=60, body=(120, 250, 450, dict(twist=18, lean=-8, crouch=-0.8)),
            style='effortless')

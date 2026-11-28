@@ -87,9 +87,9 @@ public final class LuckyVolleyAbility extends Ability {
                         if (flurry == cfg.volleyFlurryHits) finalAt = age + 3;
                     }
                 }
+                if (finalAt >= 0 && target != null && target.isAlive()) Anim.cue(user, "volley_final", age, finalAt, finalAt - 3);
                 if (age == finalAt) {
                     if (target != null && target.isAlive()) {
-                        Anim.play(user, "volley_final");
                         setPhase(2, 8);
                         Statuses.remove(target, CombatStatus.GRABBED);
                         if (HakariCombat.finishable(target)) {

@@ -107,6 +107,11 @@ public final class CrushingBlowAbility extends Ability {
                 slams(cfg);
                 return;
             }
+            // Nobody in reach as the blow comes: the floor takes it, its clip ahead of it (someone stepping in still gets grabbed).
+            if (!air && age == cfg.crushingWindup - Anim.LEAD && age > 0 && HakariCombat.firstInFront(user, cfg.crushingReach, 1.6, 2.2) == null) {
+                Anim.play(user, "crushing_blow_whiff");
+                whiffCued = true;
+            }
             if (age < cfg.crushingWindup) {
                 if (!air) Motion.set(user, new Vec3(0, Math.min(0, user.getDeltaMovement().y), 0));
                 else Statuses.apply(user, CombatStatus.HOVER, 2);
@@ -173,9 +178,10 @@ public final class CrushingBlowAbility extends Ability {
             Statuses.apply(victim, CombatStatus.GRABBED, 4);
             boolean slam = finisher ? t == 3 : t == 3 || t == 13;
             if (slam) slam(cfg, at);
+            if (finisher) Anim.cue(user, "crushing_blow_suplex_throw", t, 20, 0);
+            else Anim.cue(user, "crushing_blow_release", t, 22, 13);
             if (finisher && t == 20) {
                 // The German suplex.
-                Anim.play(user, "crushing_blow_suplex_throw");
                 Statuses.remove(victim, CombatStatus.GRABBED);
                 Fx.play(level, "crushing_suplex", user.position().subtract(HakariCombat.flat(user).scale(1.2)), new Vec3(0, -1, 0), 1.3f, user.getId());
                 YujiCombat.execute(user, victim, ID, "crushing_finisher");
@@ -186,7 +192,6 @@ public final class CrushingBlowAbility extends Ability {
             if (!finisher && t == 22) {
                 // Let go: flung into the sky.
                 Statuses.remove(victim, CombatStatus.GRABBED);
-                Anim.play(user, "crushing_blow_release");
                 HakariCombat.hit(YujiCombat.strike(user, ID, 0, true).knockback(Knockback.set(new Vec3(0, cfg.crushingLaunch, 0)))
                         .hitstun(36).status(CombatStatus.LAUNCHED, 40).fx("hit_launch", 1.3f).build(), victim);
                 victim = null;
@@ -202,8 +207,10 @@ public final class CrushingBlowAbility extends Ability {
             crater(at, 1.6);
         }
 
+        private boolean whiffCued;
+
         private void shockwave(JJKConfig.Yuji cfg) {
-            Anim.play(user, "crushing_blow_whiff");
+            if (!whiffCued) Anim.play(user, "crushing_blow_whiff");
             Vec3 at = user.position().add(HakariCombat.flat(user).scale(1.3));
             Fx.play(level, "crushing_impact", at, new Vec3(0, 1, 0), 1.2f, user.getId());
             Fx.shake(level, at, 18, 0.6f, 8);

@@ -192,9 +192,10 @@ public final class ResoluteSlashAbility extends Ability {
                 return;
             }
             Motion.set(user, new Vec3(0, Math.min(0, user.getDeltaMovement().y) * 0.3, 0));
+            // (Its clip starts while he's still vanished: he reappears on the blow.)
+            Anim.cue(user, "yuta_resolute_flash", age, flashAt, flashFrom);
             if (age < flashAt) return;
             appear();
-            Anim.play(user, "yuta_resolute_flash");
             LivingEntity t = target != null && target.isAlive() && target.distanceTo(user) < 3.4 ? target : HakariCombat.firstInFront(user, 2.6, 2.0, 2.4);
             Fx.play(level, "resolute_black_flash", user.position().add(0, 1.2, 0).add(HakariCombat.flat(user).scale(1.2)), HakariCombat.flat(user), 1f, user.getId());
             Fx.shake(level, user.position(), 24, 0.9f, 10);

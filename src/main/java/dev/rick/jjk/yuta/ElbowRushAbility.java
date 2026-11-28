@@ -167,9 +167,9 @@ public final class ElbowRushAbility extends Ability {
                 HitResult r = HakariCombat.hit(b.build(), victim);
                 if (rika != null && flurryHits == 1) YutaCombat.copyFrom(user, r.target());
             }
+            Anim.cue(user, "yuta_elbow_final", t, 27, 23);
             if (t == 27) {
                 Statuses.remove(victim, CombatStatus.GRABBED);
-                Anim.play(user, "yuta_elbow_final");
                 Vec3 ahead = HakariCombat.flat(user);
                 if (YutaCombat.finishable(victim)) {
                     YutaCombat.execute(user, victim, ID, "elbow_final");

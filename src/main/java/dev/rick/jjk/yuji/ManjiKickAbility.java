@@ -158,8 +158,8 @@ public final class ManjiKickAbility extends Ability {
                 Motion.set(attacker, at.subtract(attacker.position()).scale(0.6));
                 if (t == 8) Anim.play(user, "manji_grapple_spin");
             }
+            Anim.cue(user, "manji_slam", t, 20, 8);
             if (t == 20) {
-                Anim.play(user, "manji_slam");
                 Statuses.remove(attacker, CombatStatus.GRABBED);
                 Fx.play(level, "manji_crush", attacker.position(), new Vec3(0, -1, 0), 1.4f, user.getId());
                 YujiCombat.execute(user, attacker, ID, "manji_crush");

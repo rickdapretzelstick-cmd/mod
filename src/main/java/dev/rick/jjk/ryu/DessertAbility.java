@@ -51,7 +51,7 @@ public final class DessertAbility extends Ability {
 
     static final class Instance extends AbilityInstance implements Feintable {
         @Nullable private LivingEntity victim;
-        private int kickAt = -1, swingAt = -1, scene = -1, endAt = -1, blows;
+        private int kickAt = -1, swingAt = -1, scene = -1, endAt = -1, blows, kickCuedAt = -1;
         private float meter;
 
         Instance(Ability a, AbilityContext ctx) {
@@ -84,9 +84,18 @@ public final class DessertAbility extends Ability {
                 Statuses.apply(user, CombatStatus.BULLET_ARMOR, 2);
                 HakariCombat.drive(user, HakariCombat.flat(user), 0.62);
                 LivingEntity t = age >= 3 ? HakariCombat.firstInFront(user, 1.8, 1.5, 2.2) : null;
+                // The kick's clip starts as someone comes within LEAD ticks' run, so it lands as he reaches them; nobody
+                // reached by then, and he's back to running.
+                if (t == null && kickCuedAt < 0 && age >= 3 - Anim.LEAD && HakariCombat.firstInFront(user, 1.8 + 0.62 * Anim.LEAD, 1.5, 2.2) != null) {
+                    kickCuedAt = age;
+                    Anim.play(user, "ryu_dessert_kick");
+                } else if (t == null && kickCuedAt >= 0 && age > kickCuedAt + Anim.LEAD) {
+                    kickCuedAt = -1;
+                    Anim.play(user, "ryu_dessert_run");
+                }
                 if (t != null) {
                     kickAt = age;
-                    Anim.play(user, "ryu_dessert_kick");
+                    if (kickCuedAt < 0) Anim.play(user, "ryu_dessert_kick");
                     boolean acting = dev.rick.jjk.gojo.GojoCombat.acting(t);
                     HitResult r = HakariCombat.hit(RyuCombat.strike(user, ID, cfg.dessertKick, false)
                             .knockback(Knockback.directional(HakariCombat.flat(user), 0.55, 0)).hitstun(acting ? 22 : 14).fx(RyuCombat.hitFx("ryu_dessert_hit", true), 1f).build(), t);
@@ -99,9 +108,9 @@ public final class DessertAbility extends Ability {
                 return;
             }
             if (swingAt < 0) {
+                Anim.cue(user, "ryu_dessert_swing", age, kickAt + 6, kickAt);
                 if (age < kickAt + 6) return;
                 swingAt = age;
-                Anim.play(user, "ryu_dessert_swing");
                 LivingEntity t = victim != null ? victim : HakariCombat.firstInFront(user, 2.6, 1.8, 2.2);
                 if (t == null) {
                     endAt = age + 12;

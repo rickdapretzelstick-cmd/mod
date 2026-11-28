@@ -92,20 +92,30 @@ public final class BladeRun extends AbilityInstance {
                 Vec3 flat = new Vec3(to.x, 0, to.z);
                 if (flat.lengthSqr() > 1e-4) dir = flat.normalize();
                 HakariCombat.faceTowards(user, target.getBoundingBox().getCenter());
+                // The swing's clip starts as he comes within LEAD ticks' run of them, so it lands as he reaches them.
+                if (!swingCued && flat.length() < 2.0 + cfg.bladeRun / cfg.bladeRunTicks * Anim.LEAD) cueSwing();
                 if (flat.length() < 2.0) {
                     swing(cfg);
                     return;
                 }
             }
             HakariCombat.drive(user, dir, cfg.bladeRun / cfg.bladeRunTicks);
+            if (!swingCued && age == cfg.bladeRunTicks - Anim.LEAD) cueSwing();
             if (age >= cfg.bladeRunTicks) swing(cfg);
         }
+    }
+
+    private boolean swingCued;
+
+    private void cueSwing() {
+        swingCued = true;
+        Anim.play(user, "yuta_blade_swing");
     }
 
     private void swing(JJKConfig.Yuta cfg) {
         swingAt = age;
         Motion.set(user, dir.scale(0.2));
-        Anim.play(user, "yuta_blade_swing");
+        if (!swingCued) Anim.play(user, "yuta_blade_swing");
         Fx.play(level, "blade_swing", user.position().add(0, 1.1, 0), dir, technique.ordinal(), user.getId());
         LivingEntity hit = HakariCombat.firstInFront(user, 2.8, 2.4, 2.4);
         boolean landed = false;

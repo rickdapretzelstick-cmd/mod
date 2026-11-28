@@ -81,9 +81,9 @@ public final class RoughEnergyAbility extends Ability {
             @Override
             public void tick() {
                 JJKConfig.Hakari cfg = JJKConfig.get().hakari;
+                Anim.cue(user, "rough_strike", age, cfg.roughWindup, 0);
                 if (age == cfg.roughWindup) {
                     setPhase(1, 14);
-                    Anim.play(user, "rough_strike");
                     Vec3 f = HakariCombat.flat(user);
                     Motion.set(user, f.scale(0.55).add(0, Math.min(0, user.getDeltaMovement().y), 0));
                     Vec3 at = user.position().add(0, 1.1, 0).add(f.scale(1.6));

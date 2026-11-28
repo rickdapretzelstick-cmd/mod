@@ -151,6 +151,11 @@ public final class EveryLastDropAbility extends Ability {
                 }
                 if ((fireAt - age) % 4 == 0) Fx.play(level, "eld_gather", origin, dir, 1f - (fireAt - age) / (float) Math.max(1, fireAt), user.getId());
             }
+            // The beam's clip ahead of it (a counter fires at once: no room).
+            if (fireAt - Anim.LEAD > 0 && age == fireAt - Anim.LEAD) {
+                Anim.play(user, "ryu_eld_fire");
+                fireCued = true;
+            }
             if (age == fireAt) fire();
             if (clash != null) {
                 hold = Math.max(hold, age - fireAt + 2);
@@ -164,10 +169,12 @@ public final class EveryLastDropAbility extends Ability {
             }
         }
 
+        private boolean fireCued;
+
         private void fire() {
             drawn = true;
             setPhase(1, hold);
-            Anim.play(user, "ryu_eld_fire");
+            if (!fireCued) Anim.play(user, "ryu_eld_fire");
             Fx.play(level, "eld_shape", origin, new Vec3(radius, grow, collapse), hold, user.getId());
             Fx.play(level, "eld_fire", origin, dir.scale(range), hold, user.getId());
             Fx.shake(level, origin, 80, 1.5f, 30);

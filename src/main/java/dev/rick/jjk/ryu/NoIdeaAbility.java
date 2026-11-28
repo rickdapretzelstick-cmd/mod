@@ -52,6 +52,7 @@ public final class NoIdeaAbility extends Ability {
 
     static final class Instance extends AbilityInstance implements Feintable {
         private int windup;
+        private boolean punchCued;
         private float lastHealth;
         @Nullable private LivingEntity victim;
         private int grabAt = -1, endAt = -1, punches;
@@ -85,12 +86,21 @@ public final class NoIdeaAbility extends Ability {
                 // Armored: a blow lengthens the wind-up rather than ending it.
                 if (user.getHealth() < lastHealth - 0.01f && windup < cfg.noIdeaWindup + 30) {
                     windup += 6;
+                    // (the punch's clip had started for the old end of the wind-up: back to the wind-up)
+                    if (punchCued) {
+                        punchCued = false;
+                        Anim.play(user, "ryu_no_idea_windup");
+                    }
                     Combat.state(user).remove(CombatStatus.HITSTUN);
                     Fx.play(level, "ryu_armor", user.position().add(0, 1, 0), Vec3.ZERO, 1f, user.getId());
                 }
                 lastHealth = user.getHealth();
+                if (!punchCued && age == windup - Anim.LEAD && age > 0) {
+                    punchCued = true;
+                    Anim.play(user, "ryu_no_idea_punch");
+                }
                 if (age < windup) return;
-                Anim.play(user, "ryu_no_idea_punch");
+                if (!punchCued) Anim.play(user, "ryu_no_idea_punch");
                 LivingEntity t = HakariCombat.firstInFront(user, 3.0, 1.6, 2.2);
                 if (t == null) {
                     endAt = age + 12;

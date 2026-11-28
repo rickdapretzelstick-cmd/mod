@@ -98,8 +98,8 @@ public final class TwofoldKickAbility extends Ability {
                     Statuses.apply(victim, CombatStatus.HOVER, 3);
                     dev.rick.jjk.util.Motion.set(victim, victim.getDeltaMovement().multiply(0.4, 0.2, 0.4));
                 }
+                Anim.cue(user, "twofold_2", since, cfg.twofoldAnchorTicks, 0);
                 if (since == cfg.twofoldAnchorTicks) {
-                    Anim.play(user, "twofold_2");
                     Fx.play(level, "sfx:twofold_swing2", user.position().add(0, 1, 0), Vec3.ZERO, 1f, user.getId());
                     Fx.play(level, "sfx:twofold_hit2", victim.getBoundingBox().getCenter(), Vec3.ZERO, 1f, user.getId());
                     HitResolver.resolve(GojoCombat.strike(user, ID, cfg.twofoldSecondDamage, true)

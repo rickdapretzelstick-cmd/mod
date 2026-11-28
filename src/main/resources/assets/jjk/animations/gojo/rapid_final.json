@@ -1,7 +1,7 @@
 {
  "name": "rapid_final",
  "reference": "RapidPunches.gif frames 188-200: the two-handed hammer comes down on the hit frame (hard cut from the wind-up), follow-through into a deep crouch, then recovery.",
- "duration": 880,
+ "duration": 900,
  "blendIn": 60,
  "blendOut": 250,
  "priority": "SPECIAL",
@@ -126,7 +126,7 @@
    }
   },
   {
-   "t": 45,
+   "t": 60,
    "bones": {
     "root": {
      "pos": [
@@ -139,7 +139,7 @@
    }
   },
   {
-   "t": 48,
+   "t": 68,
    "bones": {
     "hips": {
      "rot": [
@@ -152,7 +152,7 @@
    }
   },
   {
-   "t": 64,
+   "t": 84,
    "bones": {
     "chest": {
      "rot": [
@@ -165,7 +165,7 @@
    }
   },
   {
-   "t": 72,
+   "t": 92,
    "bones": {
     "rightThigh": {
      "rot": [
@@ -186,7 +186,7 @@
    }
   },
   {
-   "t": 80,
+   "t": 100,
    "marker": "contact",
    "bones": {
     "rightArm": {
@@ -208,7 +208,7 @@
    }
   },
   {
-   "t": 92,
+   "t": 112,
    "bones": {
     "rightShin": {
      "rot": [
@@ -229,7 +229,7 @@
    }
   },
   {
-   "t": 98,
+   "t": 118,
    "bones": {
     "rightForearm": {
      "rot": [
@@ -250,7 +250,7 @@
    }
   },
   {
-   "t": 100,
+   "t": 120,
    "bones": {
     "root": {
      "pos": [
@@ -263,7 +263,7 @@
    }
   },
   {
-   "t": 102,
+   "t": 122,
    "bones": {
     "head": {
      "rot": [
@@ -292,7 +292,7 @@
    }
   },
   {
-   "t": 108,
+   "t": 128,
    "bones": {
     "hips": {
      "rot": [
@@ -305,7 +305,7 @@
    }
   },
   {
-   "t": 124,
+   "t": 144,
    "bones": {
     "chest": {
      "rot": [
@@ -318,7 +318,7 @@
    }
   },
   {
-   "t": 132,
+   "t": 152,
    "bones": {
     "rightThigh": {
      "rot": [
@@ -339,7 +339,7 @@
    }
   },
   {
-   "t": 140,
+   "t": 160,
    "bones": {
     "rightArm": {
      "rot": [
@@ -360,7 +360,7 @@
    }
   },
   {
-   "t": 145,
+   "t": 165,
    "bones": {
     "root": {
      "pos": [
@@ -373,7 +373,7 @@
    }
   },
   {
-   "t": 152,
+   "t": 172,
    "bones": {
     "rightShin": {
      "rot": [
@@ -394,7 +394,7 @@
    }
   },
   {
-   "t": 155,
+   "t": 175,
    "bones": {
     "rightForearm": {
      "rot": [
@@ -415,7 +415,7 @@
    }
   },
   {
-   "t": 162,
+   "t": 182,
    "bones": {
     "head": {
      "rot": [
@@ -444,7 +444,7 @@
    }
   },
   {
-   "t": 164,
+   "t": 184,
    "bones": {
     "chest": {
      "rot": [
@@ -457,11 +457,11 @@
    }
   },
   {
-   "t": 168,
+   "t": 188,
    "bones": {
     "hips": {
      "rot": [
-      25.25,
+      24.99,
       0.0,
       0.0
      ],
@@ -470,7 +470,7 @@
    }
   },
   {
-   "t": 180,
+   "t": 200,
    "marker": "follow-through",
    "bones": {
     "rightArm": {
@@ -492,28 +492,28 @@
    }
   },
   {
-   "t": 192,
+   "t": 212,
    "bones": {
     "rightThigh": {
      "rot": [
-      -85.02,
+      -84.37,
       0.0,
-      15.16
+      15.1
      ],
      "ease": "EASE_OUT"
     },
     "leftThigh": {
      "rot": [
-      -80.25,
+      -79.64,
       0.0,
-      -15.16
+      -15.1
      ],
      "ease": "EASE_OUT"
     }
    }
   },
   {
-   "t": 198,
+   "t": 218,
    "bones": {
     "rightForearm": {
      "rot": [
@@ -534,11 +534,11 @@
    }
   },
   {
-   "t": 212,
+   "t": 232,
    "bones": {
     "rightShin": {
      "rot": [
-      129.83,
+      128.84,
       0.0,
       0.0
      ],
@@ -546,7 +546,7 @@
     },
     "leftShin": {
      "rot": [
-      127.44,
+      126.47,
       0.0,
       0.0
      ],
@@ -555,11 +555,11 @@
    }
   },
   {
-   "t": 222,
+   "t": 242,
    "bones": {
     "rightFoot": {
      "rot": [
-      -48.35,
+      -47.84,
       0.0,
       0.0
      ],
@@ -567,7 +567,7 @@
     },
     "leftFoot": {
      "rot": [
-      -48.35,
+      -47.84,
       0.0,
       0.0
      ],
@@ -576,7 +576,7 @@
    }
   },
   {
-   "t": 440,
+   "t": 460,
    "bones": {
     "root": {
      "pos": [
@@ -589,7 +589,7 @@
    }
   },
   {
-   "t": 464,
+   "t": 484,
    "bones": {
     "chest": {
      "rot": [
@@ -602,7 +602,7 @@
    }
   },
   {
-   "t": 830,
+   "t": 850,
    "marker": "recovery",
    "bones": {
     "root": {

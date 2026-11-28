@@ -12,6 +12,22 @@ public final class Anim {
         play(entity, anim, 1f);
     }
 
+    /**
+     * Ticks before a blow lands that its clip is started: a blow the server lands at a known tick plays its clip LEAD
+     * ticks early, so the clip's 100 ms travel into the contact (from the pose the clip before it held) ends on the hit.
+     * Started on the hit itself, the contact showed 80-100 ms late.
+     */
+    public static final int LEAD = 2;
+
+    /**
+     * The clip of a blow landing at tick {@code hit}: call it every tick with the current {@code t} (same count). It plays
+     * the clip LEAD ticks ahead, or on the hit itself when that would cut into the clip started at {@code from} (the held
+     * pose before it) or before.
+     */
+    public static void cue(LivingEntity entity, String anim, int t, int hit, int from) {
+        if (t == (hit - LEAD > from ? hit - LEAD : hit)) play(entity, anim);
+    }
+
     /** Animations that hold their last pose until replaced (mirrors the client's held defs). */
     private static final java.util.Set<String> HELD = java.util.Set.of("heavy_charge", "guard", "guard_gojo", "fever_raise", "red_charge", "max_blue_cast", "purple_blue", "purple_red",
             "purple_fusion", "max_red_charge", "domain_sign", "rough_charge", "fever_rush", "door_guard", "idg_sign", "rushdown_run",

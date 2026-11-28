@@ -146,6 +146,7 @@ public final class RedAbility extends Ability {
             Statuses.apply(user, CombatStatus.HOVER, windup + 6);
             Fx.play(level, "teleport_in", dest.add(0, 1, 0), dest.subtract(from), 1f, user.getId());
             Anim.play(user, air ? "limitless_air_kick" : "red_upside_down");
+            teleported = true;
             if (air) {
                 // The air kick keeps its properties, but the Red that follows overrides its ragdoll.
                 HitResolver.resolve(GojoCombat.strike(user, TeleportAbility.ID, g.redAirKickDamage, true).knockback(Knockback.NONE).hitstun(windup + 8)
@@ -158,14 +159,21 @@ public final class RedAbility extends Ability {
         @Override
         public void tick() {
             if (max && Combat.isAirborne(user)) Statuses.apply(user, CombatStatus.HOVER, 3);
+            // The release's clip ahead of the shot (after a teleport, its own clip carries Gojo into it instead).
+            if (!fired && !teleported && age == windup - Anim.LEAD && age > 0) {
+                Anim.play(user, "red_release");
+                releaseCued = true;
+            }
             if (age >= windup) fire();
         }
+
+        private boolean teleported, releaseCued;
 
         private void fire() {
             if (fired) return;
             fired = true;
             Vec3 look = user.getLookAngle();
-            Anim.play(user, "red_release");
+            if (!releaseCued) Anim.play(user, "red_release");
             if (max) {
                 Fx.play(level, "max_red_fire", fingertip(), look, 2f, user.getId());
                 RedEntity.fireMax(level, user, fingertip(), look, rebound);

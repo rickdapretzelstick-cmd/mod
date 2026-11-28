@@ -127,9 +127,9 @@ public final class RapidPunchesAbility extends Ability {
                     }
                     return;
                 }
+                Anim.cue(user, "rapid_final", age, heavyEnd() + 6, heavyEnd());
                 if (age == heavyEnd() + 6) {
                     Statuses.remove(victim, CombatStatus.GRABBED);
-                    Anim.play(user, "rapid_final");
                     GojoState gs = GojoState.of(user);
                     if (GojoCombat.finishable(victim)) {
                         // The finisher: the final punch lands as a Black Flash.

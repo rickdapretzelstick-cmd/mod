@@ -158,6 +158,9 @@ SURGE_LAND = pose(body(twist=10, lean=30, crouch=4.4, fwd=2.0, head_down=8), arm
                   leg('right', 30, 70, 8, -16), leg('left', -36, 60, 8, 14))
 
 
+# A blow the server lands at a known tick starts its clip Anim.LEAD (2) ticks ahead: its contact frame is 100 ms in.
+CUED = 100
+
 def main():
     # Base kit.
     s = Seq(800)  # Reserve Balls: released at 260 ms; the balls land at 400 ms (the server's hit, 3 blocks out).
@@ -173,8 +176,8 @@ def main():
     breathe(s, ROUGH_CHARGE, 250, 400, 2, amp=1.2, tremble=1.5)
     write('rough_charge', s, loop=(250, 1050))
 
-    s = Seq(700)  # Rough Energy's strike: the hit lands the tick it starts, so a last cock and the contact at 80 ms.
-    strike(s, None, ROUGH_HIT, ROUGH_OVER, ROUGH_SETTLE, STANCE, None, 80, start=ROUGH_CHARGE)
+    s = Seq(700)  # Rough Energy's strike: its clip starts 2 ticks before the hit (Anim.LEAD), so a last cock and the contact at 100 ms.
+    strike(s, None, ROUGH_HIT, ROUGH_OVER, ROUGH_SETTLE, STANCE, None, CUED, start=ROUGH_CHARGE)
     write('rough_strike', s, windup='rough_charge')
 
     s = Seq(900)  # Fever Breaker's kick: contact at 250 ms (+5 ticks); re-chambered into the spin by 850 (the finish starts).
@@ -183,8 +186,8 @@ def main():
     s.add(900, KICK_RETRACT, 'EASE_IN_OUT', overlap=False)
     write('fever_kick', s)
 
-    s = Seq(800)  # Fever Breaker's finish: from the re-chambered leg, a high roundhouse that lands the tick it starts (80 ms).
-    strike(s, None, HIGH_HIT, HIGH_OVER, HIGH_SETTLE, STANCE, None, 80, start=KICK_RETRACT)
+    s = Seq(800)  # Fever Breaker's finish: from the re-chambered leg, a high roundhouse, cued 2 ticks before it lands (contact at 100 ms).
+    strike(s, None, HIGH_HIT, HIGH_OVER, HIGH_SETTLE, STANCE, None, CUED, start=KICK_RETRACT)
     write('fever_finish', s, blendIn=60, windup='fever_kick')
 
     s = Seq(300)  # The door combo's command (the doors rise), stepping toward the leg raise.
@@ -196,8 +199,8 @@ def main():
     breathe(s, RAISE, 200, 400, 2, amp=1.6)
     write('fever_raise', s, loop=(200, 1000))
 
-    s = Seq(600)  # The axe kick: lands the tick it starts (contact at 80 ms), the whole body dropping into it.
-    strike(s, None, AXE_HIT, AXE_OVER, AXE_SETTLE, STANCE, None, 80, start=RAISE)
+    s = Seq(600)  # The axe kick: cued 2 ticks before it lands (contact at 100 ms), the whole body dropping into it.
+    strike(s, None, AXE_HIT, AXE_OVER, AXE_SETTLE, STANCE, None, CUED, start=RAISE)
     write('fever_axe', s, windup='fever_raise')
 
     s = Seq(1000)  # Door Guard: arms up behind the doors, braced.
@@ -228,8 +231,8 @@ def main():
         s.add(t, p, 'EASE_IN' if t % 100 == 0 else 'EASE_OUT', marker='contact' if t in (0, 100) else None, overlap=False)
     write('volley_flurry', s, loop=(0, 200))
 
-    s = Seq(700)  # The volley's last blow: an uppercut that lands the tick it starts (contact at 80 ms).
-    strike(s, None, UPPER_HIT, UPPER_OVER, UPPER_SETTLE, STANCE, None, 80, start=shifted(WIND_R, rightArm=(20, 0, 0), root=(0, -0.6, 0)))
+    s = Seq(700)  # The volley's last blow: an uppercut cued 2 ticks before it lands (contact at 100 ms).
+    strike(s, None, UPPER_HIT, UPPER_OVER, UPPER_SETTLE, STANCE, None, CUED, start=shifted(WIND_R, rightArm=(20, 0, 0), root=(0, -0.6, 0)))
     write('volley_final', s, blendIn=60, windup='volley_flurry')
 
     s = Seq(720)  # Lucky Rushdown's run at the target.
@@ -240,8 +243,8 @@ def main():
     run_cycle(s, 0, 360, 2, lean=16, crouch=1.8, twist=-8, right_arm=GRIP)
     write('rushdown_drag', s, loop=(0, 720))
 
-    s = Seq(700)  # The hurl: lands the tick it starts (release at 80 ms).
-    strike(s, None, HURL, HURL_OVER, SETTLE_R, STANCE, None, 80, start=HURL_COCK)
+    s = Seq(700)  # The hurl: cued 2 ticks before the release (at 100 ms).
+    strike(s, None, HURL, HURL_OVER, SETTLE_R, STANCE, None, CUED, start=HURL_COCK)
     write('rushdown_throw', s, windup='rushdown_drag')
 
     s = Seq(350)  # The leap after the hurled target: down, up, tucked (the punch follows in the air).
@@ -253,16 +256,16 @@ def main():
     write('overwhelm_ready', s, motion='transition')
 
     for side, wind, hit, over, nxt in (('left', WIND_L, HIT_L, OVER_L, WIND_R), ('right', WIND_R, HIT_R, OVER_R, WIND_L)):
-        s = Seq(200)  # Each blow lands the tick it starts (contact at 70 ms) and winds the other hand for the next.
+        s = Seq(230)  # Each blow is cued 2 ticks ahead (contact at 100 ms) and winds the other hand for the next.
         s.add(0, wind, overlap=False)
-        s.add(70, hit, 'EASE_IN', marker='contact').add(110, shifted(hit, chest=(0.6, 0, 0)), 'LINEAR').add(140, over, 'EASE_OUT')
-        s.add(200, nxt, 'EASE_IN_OUT', overlap=False)
+        s.add(CUED, hit, 'EASE_IN', marker='contact').add(CUED + 40, shifted(hit, chest=(0.6, 0, 0)), 'LINEAR').add(CUED + 70, over, 'EASE_OUT')
+        s.add(230, nxt, 'EASE_IN_OUT', overlap=False)
         # Held on the next wind until the next blow replaces it (the gaps between blows run 200-350 ms): no dropping the
         # arms between punches. The server releases it when the move ends.
         write('overwhelm_' + side, s, windup='overwhelm_' + ('right' if side == 'left' else 'left'), hold=True)
 
-    s = Seq(800)  # The last blow: a hook that lands the tick it starts (contact at 80 ms).
-    strike(s, None, HOOK_HIT, HOOK_OVER, HOOK_SETTLE, STANCE, None, 80, start=HOOK_WIND)
+    s = Seq(800)  # The last blow: a hook cued 2 ticks before it lands (contact at 100 ms).
+    strike(s, None, HOOK_HIT, HOOK_OVER, HOOK_SETTLE, STANCE, None, CUED, start=HOOK_WIND)
     write('overwhelm_final', s, windup='overwhelm_left')
 
     s = Seq(720)  # Fever's rush (not played by any move today): a charging run, both fists cocked.

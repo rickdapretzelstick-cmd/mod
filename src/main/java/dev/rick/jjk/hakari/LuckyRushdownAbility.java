@@ -113,10 +113,10 @@ public final class LuckyRushdownAbility extends Ability {
                         Destruction.destroy(level, under.above(), 2f, user, "jjk:lucky_rushdown");
                     }
                 }
+                Anim.cue(user, "rushdown_throw", age - grabbedAt, finisher ? cfg.rushdownFinisherDragTicks : cfg.rushdownDragTicks, 0);
                 if (finisher && age - grabbedAt >= cfg.rushdownFinisherDragTicks) {
                     // The finisher: hurled into the air, and Hakari goes up after them.
                     Statuses.remove(victim, CombatStatus.GRABBED);
-                    Anim.play(user, "rushdown_throw");
                     setPhase(2, 16);
                     Motion.set(victim, f.scale(0.2).add(0, 1.45, 0));
                     Statuses.apply(victim, CombatStatus.LAUNCHED, 30);
@@ -126,7 +126,6 @@ public final class LuckyRushdownAbility extends Ability {
                 }
                 if (!finisher && age - grabbedAt >= cfg.rushdownDragTicks) {
                     Statuses.remove(victim, CombatStatus.GRABBED);
-                    Anim.play(user, "rushdown_throw");
                     setPhase(2, 10);
                     Hit toss = Hit.builder(user, ID).type(ModDamageTypes.MELEE).damage(cfg.rushdownThrowDamage).tag(AttackTag.MELEE, AttackTag.HEAVY)
                             .origin(user.getEyePosition()).knockback(Knockback.directional(f, cfg.rushdownThrowKnockback, 0.7)).hitstun(30)
@@ -150,9 +149,9 @@ public final class LuckyRushdownAbility extends Ability {
                     Vec3 to = victim.position().subtract(user.position());
                     Motion.set(user, new Vec3(to.x * 0.18, Math.max(0.9, to.y * 0.22 + 0.5), to.z * 0.18));
                 }
+                Anim.cue(user, "volley_final", age, punchAt, punchAt - 7);
                 if (age == punchAt) {
                     HakariCombat.faceTowards(user, victim.getBoundingBox().getCenter());
-                    Anim.play(user, "volley_final");
                     if (user.distanceTo(victim) < 5) HakariCombat.execute(user, victim, ID, "rushdown_finisher");
                     Fx.shake(level, victim.position(), 26, 1.2f, 14);
                     victim = null;

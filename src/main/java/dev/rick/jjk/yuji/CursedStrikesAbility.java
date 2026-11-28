@@ -161,6 +161,8 @@ public final class CursedStrikesAbility extends Ability {
                     HakariCombat.hit(YujiCombat.strike(user, ID, cfg.strikesPunchDamage, true).knockback(Knockback.HOLD).hitstun(12)
                             .fx("cursed_strikes_punch", 1f).build(), victim);
                 }
+                // (The finisher's kick lands as the punches end: its clip starts ahead of it, after the last punch.)
+                if (finisher) Anim.cue(user, "cursed_strikes_kick", t, punches, punches - cfg.strikesPunchInterval);
                 return;
             }
             if (!finisher) {
@@ -176,17 +178,17 @@ public final class CursedStrikesAbility extends Ability {
                 return;
             }
             // The finisher: another kick, the floor struck to launch them, and the spin kick that sends them flying.
+            Anim.cue(user, "cursed_strikes_kick", t, punches, punches - cfg.strikesPunchInterval); // (no room ahead: on the hit)
+            Anim.cue(user, "cursed_strikes_floor", t, punches + 10, punches);
+            Anim.cue(user, "cursed_strikes_spin", t, punches + 22, punches + 10);
             if (t == punches) {
-                Anim.play(user, "cursed_strikes_kick");
                 HakariCombat.hit(YujiCombat.strike(user, ID, cfg.strikesFinisherKickDamage, true).knockback(Knockback.NONE).hitstun(30)
                         .fx("cursed_strikes_kick", 1f).build(), victim);
             } else if (t == punches + 10) {
-                Anim.play(user, "cursed_strikes_floor");
                 Fx.play(level, "cursed_strikes_floor", user.position().add(HakariCombat.flat(user).scale(1.2)), new Vec3(0, 1, 0), 1f, user.getId());
                 HakariCombat.hit(YujiCombat.strike(user, ID, cfg.strikesFinisherLaunchDamage, true).knockback(Knockback.set(new Vec3(0, 1.0, 0)))
                         .hitstun(40).status(CombatStatus.LAUNCHED, 40).fx("hit_launch", 1.2f).build(), victim);
             } else if (t == punches + 22) {
-                Anim.play(user, "cursed_strikes_spin");
                 HakariCombat.faceTowards(user, victim.getBoundingBox().getCenter());
                 YujiCombat.execute(user, victim, ID, "cursed_strikes_finisher");
                 Fx.shake(level, victim.position(), 24, 0.9f, 12);

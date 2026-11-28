@@ -102,7 +102,8 @@ def main():
     y('yuta_rika_launch', hit=250, motion='transition', body=(120, 240, 500, dict(twist=8, lean=-12, crouch=-1.0, head=-10)))
     y('yuta_rika_launch_air', hit=250, motion='transition')
     y('yuta_rika_throw', hit=900)
-    y('yuta_rika_throw_hit', hit=0, prev='yuta_rika_throw', body=(0, 50, 300, dict(twist=20, lean=14, crouch=1.2)))
+    y('yuta_rika_throw_hit', hit=0, prev='yuta_rika_throw', travel=80,  # (on landing: not cued ahead)
+      body=(0, 50, 300, dict(twist=20, lean=14, crouch=1.2)))
     # Authentic Mutual Love: the blade run's swing as it starts; the beams; True Love's cinematic.
     y('yuta_blade_run', alive=None)
     y('yuta_blade_swing', hit=0, prev='yuta_blade_run')

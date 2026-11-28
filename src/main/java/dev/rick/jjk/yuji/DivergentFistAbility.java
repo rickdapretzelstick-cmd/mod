@@ -86,6 +86,7 @@ public final class DivergentFistAbility extends Ability {
             if (age >= cfg.divergentWindup || blackFlash || missedTiming) return false;
             if (age >= cfg.blackFlashWindowStart && age <= cfg.blackFlashWindowEnd) {
                 blackFlash = true;
+                if (cued) cueBlow(); // (pressed after the punch's clip started: the flash's instead)
                 Fx.play(level, "black_flash_ready", user.getEyePosition(), user.getLookAngle(), 1f, user.getId());
             } else {
                 missedTiming = true;
@@ -107,6 +108,8 @@ public final class DivergentFistAbility extends Ability {
                 finish();
                 return;
             }
+            // The blow's clip LEAD ticks before it lands (a Black Flash pressed after that switches to its clip at once).
+            if (age == cfg.divergentWindup - Anim.LEAD) cueBlow();
             if (age < cfg.divergentWindup) {
                 Motion.set(user, new Vec3(user.getDeltaMovement().x * 0.5, Math.min(0, user.getDeltaMovement().y), user.getDeltaMovement().z * 0.5));
                 // The moment to press again: his body flashes white.
@@ -121,8 +124,22 @@ public final class DivergentFistAbility extends Ability {
             if (age == impactAt) impact(cfg);
         }
 
+        private boolean cued;
+        private int cuedStyle = -1;
+
+        /** Starts the punch's clip (or the Black Flash's, if it was pressed) ahead of the blow. */
+        private void cueBlow() {
+            cued = true;
+            if (blackFlash) {
+                cuedStyle = chainLink(YujiCombat.cfg()) > 0 ? level.getRandom().nextInt(CHAIN_ANIMS.length) : 0;
+                Anim.play(user, CHAIN_ANIMS[cuedStyle]);
+            } else {
+                Anim.play(user, "divergent_punch");
+            }
+        }
+
         private void punch(JJKConfig.Yuji cfg) {
-            Anim.play(user, "divergent_punch");
+            if (!cued) Anim.play(user, "divergent_punch");
             Motion.set(user, HakariCombat.flat(user).scale(0.4));
             LivingEntity t = HakariCombat.firstInFront(user, cfg.divergentReach, 1.6, 2.2);
             if (t != null && !YujiCombat.ragdolled(t)) {
@@ -157,19 +174,32 @@ public final class DivergentFistAbility extends Ability {
             Fx.shake(level, t.position(), 16, 0.6f, 8);
         }
 
+        /** The flash's target: whoever's in reach in front of him. */
+        private @Nullable LivingEntity flashTarget(JJKConfig.Yuji cfg) {
+            LivingEntity t = HakariCombat.firstInFront(user, cfg.divergentReach + 0.4, 1.8, 2.4);
+            return t != null && YujiCombat.ragdolled(t) ? null : t;
+        }
+
+        /** Which link of the chain a flash now would be (0: a lone flash, not off someone's back). */
+        private int chainLink(JJKConfig.Yuji cfg) {
+            LivingEntity t = flashTarget(cfg);
+            YujiState ys = YujiState.of(user);
+            // The chain off someone's back is a Mastery variant (divergent_fist.chain): without it, every one is a lone flash.
+            boolean behind = t != null && YujiCombat.behind(user, t) && dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "divergent_fist.chain");
+            boolean chaining = t != null && ys.chaining(t, level.getGameTime());
+            return behind ? (chaining ? ys.chain + 1 : 1) : 0;
+        }
+
         private void blackFlashPunch(JJKConfig.Yuji cfg) {
             YujiState ys = YujiState.of(user);
             long now = level.getGameTime();
-            LivingEntity t = HakariCombat.firstInFront(user, cfg.divergentReach + 0.4, 1.8, 2.4);
-            if (t != null && YujiCombat.ragdolled(t)) t = null;
-            // The chain off someone's back is a Mastery variant (divergent_fist.chain): without it, every one is a lone flash.
-            boolean behind = t != null && YujiCombat.behind(user, t) && dev.rick.jjk.progression.mastery.Mastery.unlocked(user, "divergent_fist.chain");
-            boolean chaining = t != null && ys.chaining(t, now);
-            int link = behind ? (chaining ? ys.chain + 1 : 1) : 0;
+            LivingEntity t = flashTarget(cfg);
+            int link = chainLink(cfg);
             boolean fourth = link >= cfg.blackFlashChainMax;
             // From behind it's one of three strikes at random (punch, uppercut, dropkick); the launch follows the strike.
-            int style = link > 0 ? level.getRandom().nextInt(CHAIN_ANIMS.length) : 0;
-            Anim.play(user, CHAIN_ANIMS[style]);
+            // (A strike already cued ahead keeps its style; a lone flash is the punch.)
+            int style = link > 0 ? (cuedStyle >= 0 ? cuedStyle : level.getRandom().nextInt(CHAIN_ANIMS.length)) : 0;
+            if (style != cuedStyle) Anim.play(user, CHAIN_ANIMS[style]);
             Motion.set(user, HakariCombat.flat(user).scale(0.5));
             endAt = age + (fourth ? 30 : 12);
             if (t == null) {

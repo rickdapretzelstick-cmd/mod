@@ -21,7 +21,9 @@ from anim_kit import ClipData, end_pose, pose_at  # noqa: E402
 import anim_quality  # noqa: E402
 
 ANIMS = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src/main/resources/assets/jjk/animations')
-LEAD = 80  # ms of travel into a blow the server lands as its clip starts
+# ms of travel into a blow the server lands at a known tick: it starts the clip Anim.LEAD (2) ticks ahead, so the contact
+# frame is on the hit. A blow it can't see coming (a button press, a contact) starts its clip on the hit: travel=80.
+LEAD = 100
 BREATHE = dict(period=500, cycles=2, amp=0.8)
 
 
@@ -50,10 +52,11 @@ class Pass:
         return next((t for t, _, _ in c.tracks[strike] if t >= t_peak - 10), t_peak)
 
     def refine(self, name, hit=None, prev=None, old=None, wind=None, hold=60, over=60, body=None, core=None, alive=None,
-               overlap=True, remap=None, extend=None, lag=None, lead=None, edit=None, **extra):
+               overlap=True, remap=None, extend=None, lag=None, lead=None, edit=None, travel=LEAD, **extra):
         """
         hit      when the server lands the blow, ms from the clip's start: 0 with {prev} = as the clip starts, wound up in
-                 {prev} (the clip's own wind-up goes; it travels LEAD ms into the blow from {prev}'s last pose); otherwise
+                 {prev} (the clip's own wind-up goes; it travels {travel} ms, default LEAD, into the blow from {prev}'s last
+                 pose); otherwise
                  the blow at {old} (default: where it was drawn) is retimed onto it. 'auto': no server hit, the blow
                  stays where it was drawn
         wind     (lead ms, k): a pull-back before the blow (default for retimed blows; False: none)
@@ -84,8 +87,8 @@ class Pass:
         if hit is not None:
             old = (self.arrival(name) if old is None else old) + (lead[0] if lead else 0)
             if hit == 0 and prev:
-                c.cut(old, LEAD, prev)
-                contact = LEAD
+                c.cut(old, travel, prev)
+                contact = travel
                 extra.setdefault('windup', prev)
             else:
                 c.retime(old, hit)

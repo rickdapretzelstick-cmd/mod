@@ -89,10 +89,10 @@ public final class CleaveAbility extends Ability {
                 Motion.set(user, Vec3.ZERO);
                 Vec3 hold = user.position().add(HakariCombat.flat(user).scale(1.1));
                 Motion.set(victim, hold.subtract(victim.position()).scale(0.5));
+                Anim.cue(user, "cleave_release", age - grabbedAt, cfg.cleavePause, 0);
                 if (age - grabbedAt < cfg.cleavePause) return;
                 // The second blade.
                 Statuses.remove(victim, CombatStatus.GRABBED);
-                Anim.play(user, "cleave_release");
                 Vec3 at = victim.getBoundingBox().getCenter();
                 if (YujiCombat.finishable(victim)) {
                     Fx.play(level, "cleave_finisher", at, HakariCombat.flat(user), 1.5f, user.getId());

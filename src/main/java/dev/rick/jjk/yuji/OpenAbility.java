@@ -82,9 +82,9 @@ public final class OpenAbility extends Ability {
                     Anim.play(user, "open_aim");
                 }
                 if (age >= AIM) Statuses.apply(user, CombatStatus.EVADING, 3);
+                if (!fired) Anim.cue(user, "open_release", age, cfg.openWindup, AIM);
                 if (age == cfg.openWindup && !fired) {
                     fired = true;
-                    Anim.play(user, "open_release");
                     Vec3 dir = user.getLookAngle();
                     FireArrowEntity.fire(level, user, user.getEyePosition().add(dir.scale(1.2)).add(0, -0.2, 0), dir);
                     Fx.play(level, "open_fire", user.getEyePosition(), dir, 1f, user.getId());

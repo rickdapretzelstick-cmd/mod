@@ -102,6 +102,8 @@ public final class FeverBreakerAbility extends Ability {
                 else kick(cfg);
                 return;
             }
+            if (stompAt >= 0) Anim.cue(user, "fever_axe", age, stompAt, stompAt - 12);
+            if (dropkickAt >= 0) Anim.cue(user, "fever_finish", age, dropkickAt, dropkickAt - cfg.feverSuspendTicks);
             if (age == stompAt) stomp(cfg);
             if (dropkickAt >= 0 && age >= dropkickAt - 4 && age < dropkickAt && victim != null) {
                 // Closing in for the dropkick.
@@ -134,7 +136,7 @@ public final class FeverBreakerAbility extends Ability {
 
         private void dropkick(JJKConfig.Hakari cfg) {
             setPhase(2, 12);
-            Anim.play(user, "fever_finish");
+            if (cfg.feverSuspendTicks <= Anim.LEAD) Anim.play(user, "fever_finish"); // (otherwise cued ahead)
             if (victim == null || !victim.isAlive()) {
                 endAt = age + 8;
                 return;
@@ -170,7 +172,7 @@ public final class FeverBreakerAbility extends Ability {
 
         private void stomp(JJKConfig.Hakari cfg) {
             setPhase(2, 12);
-            Anim.play(user, "fever_axe");
+            if (12 <= Anim.LEAD) Anim.play(user, "fever_axe"); // (otherwise cued ahead)
             HakariCombat.visual(user, 1);
             boolean held = doors != null && doors.caught();
             LivingEntity t = victim;
