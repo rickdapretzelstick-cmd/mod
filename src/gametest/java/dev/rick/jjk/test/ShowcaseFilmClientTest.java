@@ -44,6 +44,7 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
     private static final float[] SIDE = {62, 5.6f, 1.3f, 2.2f};
     private static final float[] OTS = {18, 6.6f, 1.7f, 4f};
     private static final float[] FRONT_LOW = {148, 5.2f, 0.5f, 2.4f};
+    private static final float[] QUARTER = {124, 5.4f, 1.0f, 1.4f};
     private static final float[] WIDE = {80, 9f, 3f, 3.5f};
 
     @Override
@@ -53,7 +54,11 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
             server = sp.getServer();
             in = ctx.getInput();
             in.resizeWindow(1280, 720);
-            ctx.runOnClient(mc -> mc.options.fov().set(78));
+            ctx.runOnClient(mc -> {
+                mc.options.fov().set(78);
+                // No speed-driven FOV: a cast's speed boost would otherwise swing the lens wide mid-shot.
+                mc.options.fovEffectScale().set(0.0);
+            });
             cmd("time set noon");
             cmd("gamerule advance_time false");
             cmd("gamerule send_command_feedback false");
@@ -122,7 +127,8 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
     /** Clears whatever the last shot left in the air (projectiles, orbs, debris), Rika aside. */
     private void sweep() {
         cmd("execute as @a at @s run kill @e[type=!minecraft:player,type=!jjk:rika,distance=..120]");
-        ctx.waitTicks(4);
+        // Long enough for the last dummy's death animation to finish off camera.
+        ctx.waitTicks(24);
     }
 
     private void unfreeze() {
@@ -138,6 +144,20 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         clearDummies();
         cmd("execute as @a run jjk restore now");
         resetPlayer();
+        rival(null, ahead, false, 0);
+        ctx.waitTicks(6);
+    }
+
+    /** Like {@link #target}, but out on the open grass past the arena wall (no pillars for the camera to hit). */
+    private void field(double ahead) {
+        shot++;
+        unfreeze();
+        sweep();
+        clearDummies();
+        cmd("execute as @a run jjk restore now");
+        resetPlayer();
+        cmd("execute as @a at @s run tp @s ~90 ~ ~ -60 0");
+        ctx.waitTicks(10);
         rival(null, ahead, false, 0);
         ctx.waitTicks(6);
     }
@@ -244,7 +264,7 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         tap(AbilitySlot.SKILL_1);
         filmCast(90, 10);
         // Reversal Red, Limitless in the wind-up: behind them upside down.
-        target(8);
+        field(8);
         freeze();
         caption("GOJO_RED", "REVERSAL RED", "LIMITLESS", GOJO);
         cam(new float[] {72, 7.5f, 1.4f, 4f});
@@ -326,7 +346,7 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         target(2.6);
         freeze();
         caption("HAKARI_M1", "KINJI HAKARI", "THE RESTLESS GAMBLER", HAKARI);
-        cam(FRONT_LOW);
+        cam(QUARTER);
         film(10);
         for (int i = 0; i < 3; i++) {
             m1();
@@ -346,7 +366,7 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         target(3);
         freeze();
         caption("HAKARI_FEVER", "FEVER BREAKER", "", HAKARI);
-        cam(FRONT_LOW);
+        cam(QUARTER);
         film(4);
         tap(AbilitySlot.SKILL_4);
         filmCast(100, 14);
@@ -366,7 +386,7 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         target(2.2);
         freeze();
         caption("YUJI_CRUSH", "CRUSHING BLOW", "", YUJI);
-        cam(FRONT_LOW);
+        cam(QUARTER);
         film(4);
         tap(AbilitySlot.SKILL_2);
         filmCast(100, 16);
@@ -412,7 +432,7 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         target(3);
         freeze();
         caption("YUJI_CLEAVE", "CLEAVE", "", YUJI);
-        cam(FRONT_LOW);
+        cam(QUARTER);
         film(4);
         tap(AbilitySlot.SKILL_5);
         filmCast(80, 14);
@@ -506,7 +526,7 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         target(3);
         freeze();
         caption("RYU_UNSATISFIED", "UNSATISFIED", "", RYU);
-        cam(FRONT_LOW);
+        cam(QUARTER);
         film(4);
         tap(AbilitySlot.SKILL_2);
         filmCast(100, 12);
