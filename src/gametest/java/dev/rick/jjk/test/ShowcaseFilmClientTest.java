@@ -42,9 +42,9 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
 
     // Camera recipes (ShowcaseCamera: angle round the hero from behind, distance, height, look-ahead).
     private static final float[] SIDE = {62, 5.6f, 1.3f, 2.2f};
-    private static final float[] OTS = {24, 4.4f, 1.5f, 3.2f};
+    private static final float[] OTS = {18, 6.6f, 1.7f, 4f};
     private static final float[] FRONT_LOW = {148, 5.2f, 0.5f, 2.4f};
-    private static final float[] WIDE = {95, 13f, 4.5f, 3.5f};
+    private static final float[] WIDE = {80, 9f, 3f, 3.5f};
 
     @Override
     public void runTest(ClientGameTestContext context) {
@@ -119,6 +119,12 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         }
     }
 
+    /** Clears whatever the last shot left in the air (projectiles, orbs, debris), Rika aside. */
+    private void sweep() {
+        cmd("execute as @a at @s run kill @e[type=!minecraft:player,type=!jjk:rika,distance=..120]");
+        ctx.waitTicks(4);
+    }
+
     private void unfreeze() {
         cmd("tick unfreeze");
         ctx.waitTicks(2);
@@ -128,6 +134,7 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
     private void target(double ahead) {
         shot++;
         unfreeze();
+        sweep();
         clearDummies();
         cmd("execute as @a run jjk restore now");
         resetPlayer();
@@ -240,7 +247,7 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         target(8);
         freeze();
         caption("GOJO_RED", "REVERSAL RED", "LIMITLESS", GOJO);
-        cam(FRONT_LOW);
+        cam(new float[] {72, 7.5f, 1.4f, 4f});
         film(6);
         tap(AbilitySlot.SKILL_2);
         film(4);
@@ -248,16 +255,19 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         filmCast(80, 14);
         // Six Eyes.
         target(6);
+        unfreeze();
+        clearDummies();
+        ctx.waitTicks(4);
         freeze();
         caption("GOJO_SIXEYES", "SIX EYES", "AWAKENING", GOJO);
         cam(FRONT_LOW);
         film(4);
         tap(AbilitySlot.ULTIMATE);
         move(FRONT_LOW, new float[] {170, 3.2f, 0.9f, 0.2f}, 50);
-        film(10);
         // Max Blue, steered through a line of dummies.
         shot++;
         unfreeze();
+        sweep();
         clearDummies();
         resetPlayer();
         rival(null, 6, false, 0);
@@ -286,6 +296,7 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         // Hollow Purple across the open grass past the arena wall, then the terrain coming back.
         shot++;
         unfreeze();
+        sweep();
         clearDummies();
         resetPlayer();
         cmd("execute as @a at @s run tp @s ~90 ~ ~ -60 0");
@@ -299,9 +310,9 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         film(4);
         tap(AbilitySlot.SKILL_3);
         move(OTS, new float[] {70, 7f, 2f, 4f}, 50);
-        filmCast(120, 20);
+        filmCast(120, 36);
         caption("GOJO_RESTORE", "THE WORLD COMES BACK", "", GOJO);
-        cam(WIDE);
+        cam(new float[] {55, 10f, 3.5f, 6f});
         film(12);
         cmd("execute as @a run jjk restore now");
         film(20);
@@ -379,6 +390,9 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         filmCast(40, 14);
         // King of Curses.
         target(6);
+        unfreeze();
+        clearDummies();
+        ctx.waitTicks(4);
         freeze();
         caption("YUJI_SUKUNA", "KING OF CURSES", "SUKUNA", YUJI);
         cam(FRONT_LOW);
@@ -451,6 +465,9 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         film(50);
         // True Love and Copy (Cursed Speech).
         target(6);
+        unfreeze();
+        clearDummies();
+        ctx.waitTicks(4);
         freeze();
         caption("YUTA_TRUELOVE", "TRUE LOVE", "", YUTA);
         cam(FRONT_LOW);
@@ -496,6 +513,7 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         // Every Last Drop, across the open grass.
         shot++;
         unfreeze();
+        sweep();
         clearDummies();
         resetPlayer();
         cmd("execute as @a at @s run tp @s ~90 ~ ~ -60 0");
@@ -561,6 +579,7 @@ public class ShowcaseFilmClientTest extends DomainCinematicClientTest {
         // Any two-legged mob: a zombie takes a Black Flash.
         shot++;
         unfreeze();
+        sweep();
         clearDummies();
         cmd("execute as @a at @s run kill @e[type=minecraft:zombie,distance=..60]");
         stage("yuji");

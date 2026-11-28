@@ -46,15 +46,15 @@ TITLE = ('JUJUTSU', 'A JJS MOD FOR MINECRAFT')
 # Acts in the script's order: (key, music bed, bed level in LUFS). The key is the second word of a shot's section name
 # (S12_GOJO_BLUE -> GOJO); the domain showcases, the clash and the beam have their own.
 ACTS = {
-    'GOJO': ('uv_music', -24),
-    'HAKARI': ('idg_music', -24),
-    'YUJI': ('shrine_music', -24),
-    'YUTA': ('aml_music', -24),
-    'RYU': ('ryu_music', -24),
+    'GOJO': ('uv_music', -19),
+    'HAKARI': ('idg_music', -19),
+    'YUJI': ('shrine_music', -19),
+    'YUTA': ('aml_music', -19),
+    'RYU': ('ryu_music', -19),
     'DOMAINS': (None, -22),
-    'CLASH': ('clash_music', -21),
-    'FEEL': ('zero_two_music', -25),
-    'BEAM': ('entrusted_music', -21),
+    'CLASH': ('clash_music', -17),
+    'FEEL': ('zero_two_music', -20),
+    'BEAM': ('entrusted_music', -17),
 }
 DOMAIN_THEMES = {'SHOW0': 'uv_music', 'SHOW1': 'shrine_music', 'SHOW2': 'idg_music', 'SHOW3': 'aml_music'}
 HOOK_MUSIC = 'purple_music'
@@ -318,11 +318,19 @@ def main():
         if not os.path.exists(log):
             continue
         events = []
+        per_tick = {}
         for line in open(log):
             p = line.split()
-            if len(p) >= 8:
-                events.append((float(p[0]), p[1], float(p[6]), float(p[7])))
+            if len(p) < 8 or 'music' in p[1]:
+                continue    # the beds are the music; the game's own (and the menu's) would fight them
+            # A blast breaking a hundred blocks in one tick is one crunch, not a hundred stacked: three per tick.
+            key = (p[1], int(float(p[0])) // (2 if '.break' in p[1] else 1))
+            per_tick[key] = per_tick.get(key, 0) + 1
+            if per_tick[key] > (1 if '.break' in p[1] or '.step' in p[1] else 4):
+                continue
+            events.append((float(p[0]), p[1], float(p[6]), float(p[7])))
         used = used_by.setdefault(run, set())
+        last_start = {}   # id -> (game time, length in ticks) of its last play
         for s, at in offsets:
             lo, hi = s.t0 - 0.5, s.t1 + 0.5
             for ei, (t, ev, vol, pitch) in enumerate(events):
@@ -334,12 +342,19 @@ def main():
                     continue
                 y, base = got
                 y = repitch(y, pitch)
+                # A sound asked for again while it is still playing (a hum or loop re-sent every few ticks) carries on
+                # instead of stacking; quick repeats of a short one (a flurry's hits) stay, 0.12 s apart at least.
+                length = len(y) / SR * 20
+                prev = last_start.get(ev)
+                if prev and (t - prev[0] < 2.4 or (prev[1] > 30 and t - prev[0] < prev[1] * 0.9)):
+                    continue
+                last_start[ev] = (t, length)
                 # A slowed section plays its sounds where they fall on its stretched clock, at their own speed.
                 when = at + max(0.0, t - s.t0) / (20.0 * s.speed)
                 i = int(when * SR)
                 if i >= n:
                     continue
-                gain = min(1.0, vol) * base * (0.8 if ev.startswith('minecraft:') else 1.0)
+                gain = min(1.0, vol) * base * (0.22 if '.break' in ev or '.step' in ev else 0.8 if ev.startswith('minecraft:') else 1.0)
                 m = min(len(y), n - i)
                 sfx[i:i + m] += y[:m] * gain
                 played += 1
@@ -370,12 +385,15 @@ def main():
         for s, at in offsets:
             if s.name[:5] in DOMAIN_THEMES and s is offsets[0][0]:
                 dur = sum(sc.count(FPS) for sc, _ in offsets) / FPS
-                x = bed(DOMAIN_THEMES[s.name[:5]], dur, -20)
+                x = bed(DOMAIN_THEMES[s.name[:5]], dur, -16)
                 i = int(at * SR)
                 m = min(len(x), n - i)
                 mus[i:i + m] += x[:m]
-    mus *= mds.duck_gain(sfx2, depth_db=7)[:, None]
+    mus *= mds.duck_gain(sfx2, depth_db=5)[:, None]
     mix = mus + sfx2 * 10 ** (-4 / 20)
+    if os.environ.get('SHOWCASE_STEMS'):
+        for name, x in (('sfx', sfx2), ('music', mus)):
+            sf.write(os.path.join(os.environ['SHOWCASE_STEMS'], name + '.wav'), x[:int(total * SR)], SR, subtype='FLOAT')
     mastered = mds.master(mix, total)
     raw = os.path.join(work, 'mix.wav')
     lim = os.path.join(work, 'mix_lim.wav')
