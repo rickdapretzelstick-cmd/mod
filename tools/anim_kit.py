@@ -487,8 +487,8 @@ def _lead_in(cd, ms, start_pose):
     now starts from {start_pose} (the previous clip's last pose: bone -> {ch: value})."""
     for bone, chans in cd.tracks.items():
         for ch, tr in chans.items():
-            # (The way into the first key accelerates into the contact.)
-            chans[ch] = [(t + ms, v, 'EASE_IN' if i == 0 else e) for i, (t, v, e) in enumerate(tr)]
+            # (With no travel, the clip simply starts from the pose before: its first key is reached accelerating.)
+            chans[ch] = [(t + ms, v, 'EASE_IN' if i == 0 and ms == 0 else e) for i, (t, v, e) in enumerate(tr)]
             if bone in start_pose and ch in start_pose[bone]:
                 start = list(start_pose[bone][ch])
                 if ch == 'rot' and tr:
@@ -499,6 +499,15 @@ def _lead_in(cd, ms, start_pose):
                     # unwinding it would send the limb the other way.)
                     start = [x + 360.0 * round((target - x) / 360.0) if abs(target - x) > 200 else float(x)
                              for x, target in zip(start, tr[0][1])]
+                # The way in: it gathers speed over 60% of the travel (a third of the way), then drives on at that
+                # speed, 1.7 times the average, into the contact, where the hit-stop marks the impact. (The cubic ease
+                # ends at 3 * (1/3) / 0.6 = 5/3, the speed of the rest, 2/3 of the way in 0.4: no jolt between them. A
+                # single accelerating curve would cover 70% of a 180-degree swing in its last 30 ms: a snap on screen.)
+                if ms > 0 and tr:
+                    first_t, first_v, _ = chans[ch][0]
+                    mid = [a + (b - a) / 3.0 for a, b in zip(start, first_v)]
+                    chans[ch][0] = (first_t, first_v, 'LINEAR')
+                    chans[ch].insert(0, (ms * 0.6, mid, 'EASE_IN'))
                 chans[ch].insert(0, (0.0, start, 'EASE_IN_OUT'))
     cd.markers = [(t + ms, m) for t, m in cd.markers]
     cd.duration += ms

@@ -141,13 +141,55 @@
    }
   },
   {
-   "t": 45,
+   "t": 29,
    "bones": {
+    "hips": {
+     "rot": [
+      -12.83,
+      -0.85,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
     "root": {
      "pos": [
       0.0,
-      -6.0,
-      1.0
+      -1.33,
+      2.33
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 32,
+   "bones": {
+    "chest": {
+     "rot": [
+      -6.33,
+      -0.59,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 40,
+   "bones": {
+    "rightThigh": {
+     "rot": [
+      -38.0,
+      0.0,
+      7.33
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftThigh": {
+     "rot": [
+      -34.0,
+      0.0,
+      -6.67
      ],
      "ease": "EASE_IN"
     }
@@ -156,13 +198,119 @@
   {
    "t": 48,
    "bones": {
+    "rightArm": {
+     "rot": [
+      4.69,
+      12.0,
+      34.17
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftArm": {
+     "rot": [
+      -64.19,
+      13.33,
+      -37.24
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 59,
+   "bones": {
+    "head": {
+     "rot": [
+      18.05,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "rightForearm": {
+     "rot": [
+      -29.47,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "rightHand": {
+     "rot": [
+      -3.33,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftForearm": {
+     "rot": [
+      -60.89,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftHand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "rightShin": {
+     "rot": [
+      29.33,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "rightFoot": {
+     "rot": [
+      7.33,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftShin": {
+     "rot": [
+      68.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftFoot": {
+     "rot": [
+      12.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 60,
+   "bones": {
     "hips": {
      "rot": [
       34.0,
       6.6,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
+    },
+    "root": {
+     "pos": [
+      0.0,
+      -6.0,
+      1.0
+     ],
+     "ease": "LINEAR"
     }
    }
   },
@@ -175,7 +323,7 @@
       12.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -188,7 +336,7 @@
       0.0,
       10.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftThigh": {
      "rot": [
@@ -196,7 +344,7 @@
       0.0,
       -8.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -210,7 +358,7 @@
       16.0,
       24.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftArm": {
      "rot": [
@@ -218,7 +366,7 @@
       20.0,
       -30.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -231,7 +379,7 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftShin": {
      "rot": [
@@ -239,7 +387,7 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -252,26 +400,13 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftForearm": {
      "rot": [
       -60.0,
       0.0,
       0.0
-     ],
-     "ease": "EASE_IN"
-    }
-   }
-  },
-  {
-   "t": 100,
-   "bones": {
-    "root": {
-     "pos": [
-      0.0,
-      -6.0,
-      1.0
      ],
      "ease": "LINEAR"
     }
@@ -286,7 +421,7 @@
       -7.2,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "rightFoot": {
      "rot": [
@@ -294,7 +429,7 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftFoot": {
      "rot": [
@@ -302,20 +437,28 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
   {
    "t": 105,
    "bones": {
+    "root": {
+     "pos": [
+      0.0,
+      -6.0,
+      1.0
+     ],
+     "ease": "LINEAR"
+    },
     "rightHand": {
      "rot": [
       -10.0,
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftHand": {
      "rot": [
@@ -323,7 +466,7 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -484,8 +627,8 @@
    "bones": {
     "hips": {
      "rot": [
-      47.83,
-      8.8,
+      47.71,
+      8.78,
       0.0
      ],
      "ease": "EASE_OUT"
@@ -510,8 +653,8 @@
    "bones": {
     "chest": {
      "rot": [
-      23.95,
-      15.72,
+      23.89,
+      15.69,
       0.0
      ],
      "ease": "EASE_OUT"
@@ -523,15 +666,15 @@
    "bones": {
     "rightThigh": {
      "rot": [
-      50.08,
+      49.91,
       0.0,
-      10.79
+      10.78
      ],
      "ease": "EASE_OUT"
     },
     "leftThigh": {
      "rot": [
-      -44.36,
+      -44.34,
       0.0,
       -8.39
      ],
@@ -544,17 +687,17 @@
    "bones": {
     "rightArm": {
      "rot": [
-      -32.47,
-      17.18,
-      21.0
+      -32.4,
+      17.17,
+      21.02
      ],
      "ease": "EASE_OUT"
     },
     "leftArm": {
      "rot": [
-      -71.71,
-      21.97,
-      -27.86
+      -71.7,
+      21.95,
+      -27.88
      ],
      "ease": "EASE_OUT"
     }
@@ -578,7 +721,7 @@
    "bones": {
     "rightShin": {
      "rot": [
-      89.78,
+      89.66,
       0.0,
       0.0
      ],
@@ -599,7 +742,7 @@
     },
     "rightForearm": {
      "rot": [
-      0.93,
+      0.87,
       0.0,
       0.0
      ],
@@ -612,15 +755,15 @@
    "bones": {
     "head": {
      "rot": [
-      5.03,
-      -9.33,
+      5.06,
+      -9.31,
       0.0
      ],
      "ease": "EASE_OUT"
     },
     "rightHand": {
      "rot": [
-      -11.97,
+      -11.95,
       0.0,
       0.0
      ],
@@ -628,7 +771,7 @@
     },
     "rightFoot": {
      "rot": [
-      -25.48,
+      -25.42,
       0.0,
       0.0
      ],

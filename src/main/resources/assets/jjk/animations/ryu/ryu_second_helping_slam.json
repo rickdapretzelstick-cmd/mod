@@ -76,20 +76,96 @@
    }
   },
   {
-   "t": 46,
+   "t": 30,
    "bones": {
+    "hips": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
     "root": {
      "pos": [
-      0,
-      1,
-      -1
+      0.0,
+      -0.57,
+      1.67
      ],
      "ease": "EASE_IN"
     }
    }
   },
   {
-   "t": 50,
+   "t": 33,
+   "bones": {
+    "chest": {
+     "rot": [
+      10.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 41,
+   "bones": {
+    "rightThigh": {
+     "rot": [
+      9.77,
+      0.0,
+      4.67
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftThigh": {
+     "rot": [
+      -19.11,
+      0.0,
+      -4.67
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 49,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -92.33,
+      0.0,
+      12.67
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftArm": {
+     "rot": [
+      -89.0,
+      0.0,
+      -13.33
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 60,
+   "bones": {
+    "head": {
+     "rot": [
+      1.33,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 61,
    "bones": {
     "hips": {
      "rot": [
@@ -97,7 +173,15 @@
       0,
       0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
+    },
+    "root": {
+     "pos": [
+      0,
+      1,
+      -1
+     ],
+     "ease": "LINEAR"
     }
    }
   },
@@ -110,7 +194,7 @@
       0,
       0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -123,7 +207,7 @@
       0,
       6
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftThigh": {
      "rot": [
@@ -131,7 +215,7 @@
       0,
       -6
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -144,7 +228,7 @@
       0,
       10
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftArm": {
      "rot": [
@@ -152,7 +236,7 @@
       0,
       -12
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -165,7 +249,7 @@
       0,
       0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },

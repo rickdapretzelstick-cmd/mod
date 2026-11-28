@@ -77,28 +77,44 @@
    }
   },
   {
-   "t": 25,
+   "t": 17,
    "bones": {
     "chest": {
      "rot": [
-      4,
-      46,
-      0
+      4.0,
+      45.41,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "rightThigh": {
+     "rot": [
+      -38.0,
+      0.0,
+      6.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftThigh": {
+     "rot": [
+      -30.0,
+      0.0,
+      -6.0
      ],
      "ease": "EASE_IN"
     },
     "hips": {
      "rot": [
-      8,
-      34,
-      0
+      7.83,
+      33.15,
+      0.0
      ],
      "ease": "EASE_IN"
     },
     "root": {
      "pos": [
-      0,
-      -3,
+      0.0,
+      -3.0,
       -1.5
      ],
      "ease": "EASE_IN"
@@ -106,15 +122,57 @@
    }
   },
   {
-   "t": 32,
+   "t": 24,
    "bones": {
+    "rightArm": {
+     "rot": [
+      39.36,
+      30.0,
+      39.5
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftArm": {
+     "rot": [
+      -85.86,
+      30.0,
+      -12.57
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 27,
+   "bones": {
+    "head": {
+     "rot": [
+      5.39,
+      20.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 34,
+   "bones": {
+    "chest": {
+     "rot": [
+      4,
+      46,
+      0
+     ],
+     "ease": "LINEAR"
+    },
     "rightThigh": {
      "rot": [
       26,
       0,
       6
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftThigh": {
      "rot": [
@@ -122,7 +180,23 @@
       0,
       -6
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
+    },
+    "hips": {
+     "rot": [
+      8,
+      34,
+      0
+     ],
+     "ease": "LINEAR"
+    },
+    "root": {
+     "pos": [
+      0,
+      -3,
+      -1.5
+     ],
+     "ease": "LINEAR"
     }
    }
   },
@@ -135,7 +209,7 @@
       30,
       40
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftArm": {
      "rot": [
@@ -143,7 +217,7 @@
       30,
       -12
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -156,12 +230,12 @@
       20,
       0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
   {
-   "t": 68,
+   "t": 72,
    "bones": {
     "hips": {
      "rot": [
@@ -238,7 +312,7 @@
    }
   },
   {
-   "t": 120,
+   "t": 121,
    "bones": {
     "root": {
      "pos": [

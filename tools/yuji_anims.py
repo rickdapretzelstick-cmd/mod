@@ -59,7 +59,7 @@ def main():
     refine('crushing_blow_slam', hit=150, body=(60, 150, 400, dict(twist=18, lean=36, crouch=2.6, head=18)), core=1.45)
     refine('crushing_blow_suplex', hit=150, body=(20, 80, 400, dict(twist=0, lean=-34, crouch=2.2, head=-18)), core=1.2)
     refine('crushing_blow_suplex_throw', hit=0, old=200, prev='crushing_blow_suplex')
-    refine('crushing_blow_release', hit=0, prev='crushing_blow_slam', body=(20, 80, 300, dict(twist=14, lean=-14, crouch=-1.0, head=-14)))
+    refine('crushing_blow_release', hit=0, prev='crushing_blow_slam', body=(50, 90, 320, dict(twist=14, lean=-14, crouch=-1.0, head=-14)))
     refine('crushing_blow_whiff', hit=0, prev='crushing_blow_dash')
 
     # Manji Kick: the counter kick lands 100 ms in; the finisher's face kick, the spin and the slam.
@@ -84,9 +84,9 @@ def main():
     refine('shrine_heavy', hit=200)
     # Dismantle's slashes from 100 ms; the air slash, the World Slash and Cleave's dicing as their clips start.
     refine('dismantle_swing', hit=100)
-    refine('dismantle_air_swing', hit=0, prev='dismantle_air', body=(40, 80, 300, dict(twist=22, lean=14, crouch=0.8)))
+    refine('dismantle_air_swing', hit=0, prev='dismantle_air', body=(30, 70, 320, dict(twist=22, lean=14, crouch=0.8)))
     refine('wcs_swing', hit=0, prev='wcs_chant_3')
-    refine('cleave_release', hit=0, prev='cleave_hold', body=(20, 80, 300, dict(twist=28, lean=14, crouch=1.2)))
+    refine('cleave_release', hit=0, prev='cleave_hold', body=(50, 90, 320, dict(twist=28, lean=14, crouch=1.2)))
     refine('cleave_whiff', hit=220, old=500, extend=300, body=(140, 220, 420, dict(twist=20, lean=10, crouch=0.8)))  # (one sweep to the end: it lands at 220 and settles)
     # (the arrow leaves at the 100 ms key, not the last; a release, not a blow: the body recoils with the shot)
     refine('open_release', hit=0, old=100, prev='open_aim', motion='transition',

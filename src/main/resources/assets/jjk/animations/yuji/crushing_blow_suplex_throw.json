@@ -53,11 +53,71 @@
    }
   },
   {
-   "t": 68,
+   "t": 35,
+   "bones": {
+    "hips": {
+     "rot": [
+      -44.67,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 44,
+   "bones": {
+    "chest": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 60,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -163.33,
+      -26.67,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftArm": {
+     "rot": [
+      -163.33,
+      26.67,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 72,
    "bones": {
     "hips": {
      "rot": [
       -70.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 75,
+   "bones": {
+    "head": {
+     "rot": [
+      -13.33,
       0.0,
       0.0
      ],
@@ -74,7 +134,7 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -88,7 +148,7 @@
       -20.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftArm": {
      "rot": [
@@ -96,7 +156,7 @@
       20.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "rightThigh": {
      "rot": [
@@ -104,7 +164,7 @@
       0,
       0
      ],
-     "ease": "EASE_IN"
+     "ease": "EASE_IN_OUT"
     },
     "leftThigh": {
      "rot": [
@@ -112,7 +172,7 @@
       0,
       0
      ],
-     "ease": "EASE_IN"
+     "ease": "EASE_IN_OUT"
     }
    }
   },
@@ -125,7 +185,7 @@
       0,
       0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -215,7 +275,7 @@
    "bones": {
     "hips": {
      "rot": [
-      -75.57,
+      -75.31,
       0.0,
       0.0
      ],
@@ -228,16 +288,16 @@
    "bones": {
     "rightArm": {
      "rot": [
-      -193.97,
-      -17.69,
+      -193.69,
+      -17.76,
       0.18
      ],
      "ease": "EASE_OUT"
     },
     "leftArm": {
      "rot": [
-      -193.97,
-      17.69,
+      -193.69,
+      17.76,
       -0.18
      ],
      "ease": "EASE_OUT"
@@ -249,7 +309,7 @@
    "bones": {
     "head": {
      "rot": [
-      -46.61,
+      -46.33,
       0.0,
       0.0
      ],

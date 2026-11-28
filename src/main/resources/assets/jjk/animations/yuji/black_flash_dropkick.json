@@ -141,25 +141,173 @@
    }
   },
   {
-   "t": 60,
+   "t": 35,
    "bones": {
+    "hips": {
+     "rot": [
+      -15.33,
+      3.3,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
     "root": {
      "pos": [
       0.0,
-      2.0,
-      4.0
+      -0.4,
+      1.33
      ],
      "ease": "EASE_IN"
     }
    }
   },
   {
-   "t": 68,
+   "t": 44,
+   "bones": {
+    "chest": {
+     "rot": [
+      -7.67,
+      6.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 52,
+   "bones": {
+    "rightThigh": {
+     "rot": [
+      -21.33,
+      0.0,
+      3.33
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftThigh": {
+     "rot": [
+      -37.33,
+      0.0,
+      -3.33
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 60,
+   "bones": {
+    "rightArm": {
+     "rot": [
+      -23.33,
+      8.67,
+      26.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftArm": {
+     "rot": [
+      -42.0,
+      7.33,
+      -22.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 72,
    "bones": {
     "hips": {
      "rot": [
       -58.0,
       -5.5,
+      0.0
+     ],
+     "ease": "LINEAR"
+    },
+    "root": {
+     "pos": [
+      0.0,
+      2.0,
+      4.0
+     ],
+     "ease": "LINEAR"
+    },
+    "rightShin": {
+     "rot": [
+      14.67,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftShin": {
+     "rot": [
+      18.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 75,
+   "bones": {
+    "head": {
+     "rot": [
+      12.67,
+      -3.6,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "rightForearm": {
+     "rot": [
+      -76.67,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "rightHand": {
+     "rot": [
+      6.67,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftForearm": {
+     "rot": [
+      -72.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftHand": {
+     "rot": [
+      4.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "rightFoot": {
+     "rot": [
+      2.67,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    },
+    "leftFoot": {
+     "rot": [
+      10.67,
+      0.0,
       0.0
      ],
      "ease": "EASE_IN"
@@ -175,7 +323,7 @@
       -10.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -188,7 +336,7 @@
       0.0,
       4.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftThigh": {
      "rot": [
@@ -196,7 +344,7 @@
       0.0,
       -4.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -210,7 +358,7 @@
       10.0,
       50.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftArm": {
      "rot": [
@@ -218,7 +366,7 @@
       10.0,
       -50.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -231,7 +379,7 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftShin": {
      "rot": [
@@ -239,7 +387,7 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -252,7 +400,7 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftForearm": {
      "rot": [
@@ -260,12 +408,12 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
   {
-   "t": 120,
+   "t": 121,
    "bones": {
     "root": {
      "pos": [
@@ -286,7 +434,7 @@
       6.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "rightFoot": {
      "rot": [
@@ -294,7 +442,7 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftFoot": {
      "rot": [
@@ -302,7 +450,7 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -315,7 +463,7 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     },
     "leftHand": {
      "rot": [
@@ -323,7 +471,7 @@
       0.0,
       0.0
      ],
-     "ease": "EASE_IN"
+     "ease": "LINEAR"
     }
    }
   },
@@ -484,8 +632,8 @@
    "bones": {
     "hips": {
      "rot": [
-      -69.98,
-      -7.97,
+      -69.54,
+      -7.88,
       0.0
      ],
      "ease": "EASE_OUT"
@@ -510,8 +658,8 @@
    "bones": {
     "chest": {
      "rot": [
-      -34.8,
-      -14.49,
+      -34.58,
+      -14.33,
       0.0
      ],
      "ease": "EASE_OUT"
@@ -523,17 +671,17 @@
    "bones": {
     "rightThigh": {
      "rot": [
-      -111.84,
+      -111.11,
       0.0,
-      4.19
+      4.18
      ],
      "ease": "EASE_OUT"
     },
     "leftThigh": {
      "rot": [
-      -91.98,
+      -91.54,
       0.0,
-      -4.19
+      -4.18
      ],
      "ease": "EASE_OUT"
     }
@@ -544,17 +692,17 @@
    "bones": {
     "rightArm": {
      "rot": [
-      57.78,
-      10.37,
-      56.74
+      57.12,
+      10.36,
+      56.49
      ],
      "ease": "EASE_OUT"
     },
     "leftArm": {
      "rot": [
-      50.22,
-      10.75,
-      -57.86
+      49.47,
+      10.72,
+      -57.57
      ],
      "ease": "EASE_OUT"
     }
@@ -565,7 +713,7 @@
    "bones": {
     "rightShin": {
      "rot": [
-      -4.12,
+      -3.97,
       0.0,
       0.0
      ],
@@ -578,7 +726,7 @@
    "bones": {
     "rightForearm": {
      "rot": [
-      -4.09,
+      -4.68,
       0.0,
       0.0
      ],
@@ -586,7 +734,7 @@
     },
     "leftForearm": {
      "rot": [
-      -5.4,
+      -5.94,
       0.0,
       0.0
      ],
@@ -599,15 +747,15 @@
    "bones": {
     "head": {
      "rot": [
-      34.87,
-      8.7,
+      34.69,
+      8.6,
       0.0
      ],
      "ease": "EASE_OUT"
     },
     "rightFoot": {
      "rot": [
-      24.87,
+      24.69,
       0.0,
       0.0
      ],
@@ -615,7 +763,7 @@
     },
     "leftFoot": {
      "rot": [
-      22.62,
+      22.52,
       0.0,
       0.0
      ],
@@ -628,7 +776,7 @@
    "bones": {
     "rightHand": {
      "rot": [
-      -1.87,
+      -1.8,
       0.0,
       0.0
      ],

@@ -53,7 +53,7 @@ def main():
     r('ryu_dessert_swing', hit=0, old=150, prev='ryu_dessert_kick')
     r('ryu_dessert_flurry', hit=300, old=300)
     # No Idea: the grab as the punch starts (wound in the wind-up), the exchange's punches every 200 ms (drawn on them).
-    r('ryu_no_idea_punch', hit=80, old=80, windup='ryu_no_idea_windup')
+    r('ryu_no_idea_punch', hit=100, old=80, windup='ryu_no_idea_windup')  # (cued 2 ticks ahead of the grab)
     # (the move runs 300 ms past the push at 1600: the exchange settles on its last pose for it)
     r('ryu_no_idea_exchange', hit=200, old=200, extend=300)
     # Not Invited: the punch as it starts, out of the lunge.
@@ -79,7 +79,8 @@ def main():
       body=(20, 80, 400, dict(twist=8, lean=-18, crouch=1.0, head=-20)))
     r('ryu_granite_dash', hit=250, old=250)
     # Every Last Drop: the beam looses as the fire clip starts (held while it pours out).
-    r('ryu_eld_fire', hit=80, old=80, windup='ryu_eld_charge', motion='transition',
+    r('ryu_eld_fire', hit=100, old=80, windup='ryu_eld_charge',  # (cued 2 ticks ahead of the beam)
+      motion='transition',
       body=(20, 80, 400, dict(twist=6, lean=-16, crouch=1.2, head=-10)))
     # Restyle: flourishes.
     r('ryu_restyle_pose', motion='transition', body=(150, 300, 700, dict(twist=14, lean=-10, crouch=-0.8, head=-12)), core=1.4)

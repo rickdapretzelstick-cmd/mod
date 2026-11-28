@@ -103,7 +103,7 @@ def main():
     y('yuta_rika_launch_air', hit=250, motion='transition')
     y('yuta_rika_throw', hit=900)
     y('yuta_rika_throw_hit', hit=0, prev='yuta_rika_throw', travel=80,  # (on landing: not cued ahead)
-      body=(0, 50, 300, dict(twist=20, lean=14, crouch=1.2)))
+      body=(20, 55, 450, dict(twist=45, lean=16, crouch=1.4)))
     # Authentic Mutual Love: the blade run's swing as it starts; the beams; True Love's cinematic.
     y('yuta_blade_run', alive=None)
     y('yuta_blade_swing', hit=0, prev='yuta_blade_run')
@@ -122,7 +122,7 @@ def main():
     r('rika_downslam_air', hit=500, body=(300, 500, 850, dict(twist=10, lean=32, crouch=2.0, head=16)), core=1.5)
     r('rika_haymaker', hit=1100, body=(800, 1100, 1450, dict(twist=34, lean=16, crouch=1.0, head=8)), core=1.4)
     r('rika_launch', hit=250, wind=(150, 0.5), body=(100, 200, 550, dict(twist=16, lean=-30, crouch=-1.8, head=-20)), core=2.4)
-    r('rika_launch_air', hit=250, wind=(220, 0.5), body=(100, 200, 550, dict(twist=16, lean=-30, crouch=-1.8, head=-20)), core=2.6)
+    r('rika_launch_air', hit=250, wind=(220, 0.5), body=(40, 110, 500, dict(twist=16, lean=-30, crouch=-1.8, head=-20)), core=2.6)
     r('rika_throw', hit=900, body=(600, 900, 1200, dict(twist=28, lean=18, crouch=1.2, head=8)), core=1.3)
     r('rika_slam_reach', motion='transition', body=(200, 500, 800, dict(twist=8, lean=20, crouch=1.0, head=10)))
     r('rika_slam', hit=400)  # (grabbed as it starts; slammed at 400, 850, 1300, 1750 and 2200 ms)

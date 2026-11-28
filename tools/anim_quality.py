@@ -198,7 +198,14 @@ def score(c):
     child = None if c.meta_strike == 'elbow' else CHILD.get(strike)
     chain = [b for b in ('hips', 'chest', strike, child) if b and b in c.tracks and c.travel([b], lo, contact + 60) > 10
              and max([s for t, s in win(b)] or [0]) >= 0.3 * top]
-    times = [max(win(b) or [(0, 0)], key=lambda p: p[1])[0] for b in chain]
+    # (Each bone's peak is the middle of its fastest stretch: a stretch run at an even speed, like the way into a blow
+    # cued ahead, has no single fastest frame.)
+    def peak_time(b):
+        sp = win(b) or [(0, 0)]
+        top = max(s for _, s in sp)
+        near = [t for t, s in sp if s >= 0.95 * top]
+        return int(round(sum(near) / len(near) / 10.0)) * 10
+    times = [peak_time(b) for b in chain]
     # 20+ ms from first to last: a frame or more of lead at 50-60 fps.
     ordered = all(a <= b for a, b in zip(times, times[1:])) and (times[-1] - times[0] >= 20 if len(times) > 1 else False)
     if len(chain) > 1:  # (one bone moving alone has no chain to order: not applicable)
