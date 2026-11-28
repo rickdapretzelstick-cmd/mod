@@ -16,83 +16,18 @@ tools/anim_quality.py and the move traces (tools/hit_timing.py):
 It refines the files as they are, so it runs on the originals only (it refuses clips it already refined); the
 originals are in git (the commit before the Yuji pass).
 """
-import glob
-import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from anim_kit import ClipData  # noqa: E402
-import anim_quality  # noqa: E402
+from anim_pass import BREATHE, Pass  # noqa: E402
 
-AUTHORED = 'tools/yuji_anims.py (Yuji animation pass: the reference poses refined, timed to the server)'
-DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src/main/resources/assets/jjk/animations/yuji')
-LEAD = 80  # ms of travel into a blow the server lands as its clip starts
-
-
-def arrival(name):
-    """Where the clip's blow lands as authored: the key that ends the striking limb's fastest stretch."""
-    c = anim_quality.Clip(os.path.join(DIR, name + '.json'))
-    moving = [b for b in anim_quality.LIMBS if b in c.tracks]
-    peak = {b: max(c.speeds(b), key=lambda p: p[1]) for b in moving}
-    strike = max(peak, key=lambda b: peak[b][1])
-    t_peak = peak[strike][0]
-    return next((t for t, _, _ in c.tracks[strike] if t >= t_peak - 10), t_peak)
-
-
-def refine(name, hit=None, prev=None, old=None, wind=None, hold=60, over=60, body=None, core=None, alive=None, overlap=True,
-           remap=None, extend=None, **extra):
-    """{hit}: when the server lands the blow, ms from the clip's start (0: as it starts, wound up in {prev})."""
-    c = ClipData('yuji', name)
-    if extend:
-        c.extend(extend)
-    if remap:
-        c.remap(remap)
-    contact = None
-    if hit == 'auto':  # (no server hit: the blow lands where it was drawn)
-        hit = arrival(name)
-    if hit is not None:
-        old = arrival(name) if old is None else old
-        if hit == 0 and prev:
-            c.cut(old, LEAD, prev)
-            contact = LEAD
-            extra.setdefault('windup', prev)
-        else:
-            c.retime(old, hit)
-            contact = hit
-            # A wind-up inside the clip: pulled back before the blow (as long as the way in allows).
-            # (A kick that sweeps from the leg drawn back to overhead is already as wound as a leg gets: wind=False.)
-            if wind is None and hit >= 60:
-                wind = (min(110, hit * 0.7), 0.35)
-    if body == (None,):  # the body behind a blow the clip drew with the arm alone
-        body = (max(0, contact - 80), contact, contact + 220, dict(twist=18, lean=10, crouch=0.8))
-    if body:
-        c.body(*body[:3], **body[3] if len(body) > 3 else {})
-    if core:
-        c.core(core)
-    if contact is not None:
-        if wind:  # (False: none)
-            c.wind(contact, lead=wind[0], k=wind[1])
-        if hold:
-            c.hold(contact, hold)
-        if over:
-            c.overshoot(contact, contact + hold + over)
-        c.mark(contact)
-    if overlap:
-        c.overlap()
-    if alive:
-        c.alive(**alive)
-    c.save(AUTHORED, **extra)
-
-
-BREATHE = dict(period=500, cycles=2, amp=0.8)
+P = Pass('yuji', 'Yuji animation pass', 'tools/yuji_anims.py (Yuji animation pass: the reference poses refined, timed to the server)')
+refine = P.refine
 
 
 def main():
-    done = [f for f in glob.glob(os.path.join(DIR, '*.json')) if 'Yuji animation pass' in json.load(open(f)).get('authored', '')]
-    if done:
-        raise SystemExit(f'{len(done)} Yuji clips are already refined. Restore the originals first (from the commit before the '
-                         'Yuji animation pass), into the working tree only: git restore --source=<commit> --worktree -- src/main/resources/assets/jjk/animations/yuji (git checkout <commit> -- <path> also stages them, and the next commit would revert the pass)')
+    P.guard()
 
     # Held poses first (the blows after them start from their last pose).
     for name in ('cleave_reach', 'cleave_hold', 'crushing_blow_charge', 'crushing_blow_air', 'crushing_blow_dash', 'cursed_strikes_ready',
@@ -138,12 +73,12 @@ def main():
     refine('instincts_throw', hit=100)
     refine('instincts_feint', motion='transition', body=(60, 120, 320, dict(twist=14, lean=8, crouch=0.8)))  # (a flinch: no blow)
 
-    # Sukuna. M1 chain (MeleeSystem: lights and airs land 100 ms in, the sprint and stomp 150, the heavy 200).
+    # Sukuna. M1 chain (MeleeSystem: lights and airs land 100 ms in; the fourth light (the finisher), sprint and stomp 150; the heavy 200).
     for name in ('shrine_light_1', 'shrine_light_2', 'shrine_air_1', 'shrine_air_2'):
         refine(name, hit=100)
     for name in ('shrine_light_3', 'shrine_air_3'):
         refine(name, hit=100, body=(40, 100, 300, dict(twist=22, lean=12, crouch=1.0)))
-    refine('shrine_light_4', hit=100, body=(40, 100, 350, dict(twist=34, lean=20, crouch=1.6, head=8)), core=1.35)
+    refine('shrine_light_4', hit=150, body=(70, 150, 400, dict(twist=34, lean=20, crouch=1.6, head=8)), core=1.35)
     refine('shrine_sprint', hit=150, body=(60, 150, 400, dict(twist=32, lean=24, crouch=1.8)), core=1.45)
     refine('shrine_stomp', hit=150, body=(60, 150, 350, dict(twist=10, lean=24, crouch=2.4, head=12)), core=1.15)
     refine('shrine_heavy', hit=200)

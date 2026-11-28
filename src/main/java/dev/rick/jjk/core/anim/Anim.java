@@ -51,6 +51,7 @@ public final class Anim {
     /** Plays a clip on any entity (a manifestation like Rika, which animates a model of its own). */
     public static void playOn(net.minecraft.world.entity.Entity entity, String anim, float speed) {
         if (entity.level().isClientSide()) return;
+        if (dev.rick.jjk.core.debug.Trace.on()) dev.rick.jjk.core.debug.Trace.event(entity, "anim", (anim.isEmpty() ? "(release)" : anim) + (speed != 1f ? " x" + speed : ""));
         Fx.toTrackers(entity, new AnimPayload(entity.getId(), anim, speed), true);
     }
 

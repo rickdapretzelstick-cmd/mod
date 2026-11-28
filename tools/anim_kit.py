@@ -185,7 +185,17 @@ def _bone_values(v):
     if isinstance(v, list):
         return {'rot': list(v)}, None
     out = {k: list(v[k]) for k in ('rot', 'pos') if k in v}
+    if 'scale' in v:  # (one number scales all three axes, as the engine reads it)
+        out['scale'] = [float(v['scale'])] * 3 if isinstance(v['scale'], (int, float)) else list(v['scale'])
     return out, v.get('ease')
+
+
+# Other rigs' bones under the player rig's names, so the kit and the scorer treat them alike (Rika: her torso is one
+# "body" bone, no legs). Renamed on load and back on save; tracks a rig has no bone for are dropped on save.
+RIG_BONES = {
+    'rika': {'body': 'chest', 'right_upper_arm': 'rightArm', 'right_forearm': 'rightForearm', 'right_hand': 'rightHand',
+             'left_upper_arm': 'leftArm', 'left_forearm': 'leftForearm', 'left_hand': 'leftHand'},
+}
 
 
 _POSES = None
@@ -283,6 +293,11 @@ class ClipData:
         for b in self.tracks:
             for ch in self.tracks[b]:
                 self.tracks[b][ch].sort(key=lambda e: e[0])
+        self.rig = d.get('rig')
+        self.rig_bones = RIG_BONES.get(self.rig)
+        if self.rig_bones:
+            self._native = set(self.tracks)
+            self.tracks = {self.rig_bones.get(b, b): chans for b, chans in self.tracks.items()}
 
     # --- sampling (as the engine's tracks do: per-axis between keys, the later key's ease)
 
@@ -427,10 +442,18 @@ class ClipData:
         d.update(extra)
         d['authored'] = authored
         by_t = {}
+        back = {v: k for k, v in (self.rig_bones or {}).items()}
         for bone, chans in self.tracks.items():
+            if self.rig_bones:
+                if bone not in back and bone not in self._native:
+                    continue  # (a bone this rig doesn't have)
+                bone = back.get(bone, bone)
             for ch, tr in chans.items():
                 for t, val, e in tr:
-                    by_t.setdefault(int(round(t)), {}).setdefault(bone, {})[ch] = [round(x, 2) for x in val]
+                    out = [round(x, 2) for x in val]
+                    if ch == 'scale' and out[0] == out[1] == out[2]:
+                        out = out[0]
+                    by_t.setdefault(int(round(t)), {}).setdefault(bone, {})[ch] = out
                     by_t[int(round(t))][bone]['ease'] = e
         for t, _ in self.markers:
             by_t.setdefault(int(round(t)), {})

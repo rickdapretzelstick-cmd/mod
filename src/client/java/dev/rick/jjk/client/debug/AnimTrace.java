@@ -109,7 +109,8 @@ public final class AnimTrace {
         }
         Trace.sink = (tick, entity, kind, detail) -> {
             synchronized (AnimTrace.class) {
-                if (TRACED.contains(entity) || kind.equals("hit")) EVENTS.add(new Event(tick, entity, kind, detail));
+                // (Every entity's clips too: Rika's play on her while her blows are dealt in Yuta's name.)
+                if (TRACED.contains(entity) || kind.equals("hit") || kind.equals("anim")) EVENTS.add(new Event(tick, entity, kind, detail));
             }
         };
     }
