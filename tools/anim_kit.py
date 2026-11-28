@@ -495,11 +495,20 @@ def _lead_in(cd, ms, start_pose):
                     # The same orientation, taken the short way to the first key: a back-flip that ended at -280 carries
                     # on through 80 -> -10 instead of unwinding 270 degrees back (the clips blend as quaternions, so the
                     # hand-over itself does not move).
-                    start = [x + 360.0 * round((target - x) / 360.0) for x, target in zip(start, tr[0][1])]
+                    # (Only a clearly long way round, over 200 degrees: a 190-degree swing is a real swing, and
+                    # unwinding it would send the limb the other way.)
+                    start = [x + 360.0 * round((target - x) / 360.0) if abs(target - x) > 200 else float(x)
+                             for x, target in zip(start, tr[0][1])]
                 chans[ch].insert(0, (0.0, start, 'EASE_IN_OUT'))
     cd.markers = [(t + ms, m) for t, m in cd.markers]
     cd.duration += ms
     cd.meta['blendIn'] = max(cd.meta.get('blendIn', 0), 60)
+
+
+def pose_at(group, name, t):
+    """A clip's pose at {t} ms, bone -> {channel: value} (where it is when the next clip takes over early)."""
+    c = ClipData(group, name)
+    return {b: {ch: c.value(b, ch, t) for ch in chans} for b, chans in c.tracks.items()}
 
 
 def end_pose(group, name):

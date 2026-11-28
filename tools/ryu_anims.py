@@ -21,6 +21,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from anim_pass import BREATHE, Pass  # noqa: E402
 
+def both_arms(c):
+    """The leap raises both arms for the two-handed slam (it raised only the right; the left jumped 190 degrees as the
+    slam took over)."""
+    c.tracks['leftArm']['rot'] = [(t, [v[0], -v[1], -v[2]], e) for t, v, e in c.tracks['rightArm']['rot']]
+
+
 P = Pass('ryu', 'Ryu animation pass', 'tools/ryu_anims.py (Ryu animation pass: gen_ryu_anims.py refined, timed to the server)')
 r = P.refine
 
@@ -30,8 +36,9 @@ def main():
 
     # Held poses first (the blows after them start from their last pose).
     for name in ('ryu_after_leap', 'ryu_after_lunge', 'ryu_dessert_run', 'ryu_eld_charge', 'ryu_eld_point', 'ryu_granite_aim',
-                 'ryu_invited_lunge', 'ryu_invited_windup', 'ryu_no_idea_windup', 'ryu_second_helping', 'ryu_second_helping_air'):
+                 'ryu_invited_lunge', 'ryu_invited_windup', 'ryu_no_idea_windup', 'ryu_second_helping_air'):
         r(name, alive=BREATHE)
+    r('ryu_second_helping', alive=BREATHE, edit=both_arms)
 
     # M1: the cannon's ray finishes the chain 200 ms in (MeleeMove startup 4): a discharge, the body takes the recoil.
     r('ryu_m1_ray', hit=200, old=220, motion='transition', body=(120, 200, 400, dict(twist=6, lean=-12, crouch=0.8, head=-14)))
@@ -52,8 +59,9 @@ def main():
     # Not Invited: the punch as it starts, out of the lunge.
     r('ryu_invited_punch', hit=0, old=70, prev='ryu_invited_lunge')
     # Second Helping: the slam and the air punch land 100 ms in; they began far from the leap's pose (a 148-degree arm
-    # snap at the hand-over), so they travel in from it first. The whiff.
-    r('ryu_second_helping_slam', hit=100, old=120, lead=(60, 'ryu_second_helping'))
+    # snap at the hand-over), so they travel in from it first: the slam from where the leap is when it takes over
+    # (230 ms in), landing 80 ms after the hit like the other blows that start on it. The whiff.
+    r('ryu_second_helping_slam', hit=180, old=120, lead=(100, 'ryu_second_helping', 230))
     r('ryu_second_helping_punch', hit=100, old=90, lead=(60, 'ryu_second_helping_air'), wind=(60, 0.5),
       windup='ryu_second_helping_air')
     r('ryu_second_helping_whiff', hit=150, old=150)
