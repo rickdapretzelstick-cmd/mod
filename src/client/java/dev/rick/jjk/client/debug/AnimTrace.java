@@ -270,12 +270,25 @@ public final class AnimTrace {
             if (!casting(events, f.entity, f.time)) continue;
             // (The body turns in over the cast's first ticks: 30 degrees a tick, from up to vanilla's 50 of lag.)
             if (f.time - castStart(events, f.entity, f.time) < 3) continue;
+            // (Nor the tick after the server turns them: the head jumps at once, the body is eased across the tick.)
+            if (headJumped(frames, f)) continue;
             float off = Math.abs(Mth.wrapDegrees(f.body - f.head));
             if (off > 12) {
                 out.add(new Anomaly(f.time, f.entity, "facing", String.format(Locale.ROOT, "body %.0f° off the aim while casting", off)));
                 return; // once is enough to know
             }
         }
+    }
+
+    /** The entity's head turned more than 75 degrees between two frames within the tick before {@code f}. */
+    private static boolean headJumped(List<Frame> frames, Frame f) {
+        Frame prev = null;
+        for (Frame g : frames) {
+            if (g.entity != f.entity || g.time > f.time) continue;
+            if (prev != null && g.time >= f.time - 1 && Math.abs(Mth.wrapDegrees(g.head - prev.head)) > 75) return true;
+            prev = g;
+        }
+        return false;
     }
 
     /** When the cast running at {@code time} began (its cast_begin tick). */
