@@ -1,53 +1,718 @@
 {
-  "name": "rika_beam",
-  "rig": "rika",
-  "reference": "TrueLoveBeam.gif",
-  "duration": 4900,
-  "blendIn": 80,
-  "blendOut": 250,
-  "priority": "SPECIAL",
-  "tremble": 0.5,
-  "keys": [
-    {"t": 0, "bones": {
-        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0]},
-        "head": {"rot": [0, 0, 0]},
-        "jaw": {"rot": [0, 0, 0]},
-        "right_upper_arm": {"rot": [0, 0, 0]},
-        "right_forearm": {"rot": [0, 0, 0]},
-        "right_hand": {"rot": [0, 0, 0], "scale": 1},
-        "left_upper_arm": {"rot": [0, 0, 0]},
-        "left_forearm": {"rot": [0, 0, 0]},
-        "left_hand": {"rot": [0, 0, 0], "scale": 1}}},
-    {"t": 1100, "ease": "EASE_OUT", "marker": "in place", "bones": {
-        "body": {"rot": [10, 0, 0], "pos": [0, 6, 0], "scale": 1.9},
-        "head": {"rot": [16, 0, 0]},
-        "jaw": {"rot": [10, 0, 0]},
-        "right_upper_arm": {"rot": [-80, 0, 24]},
-        "right_forearm": {"rot": [-30, 0, 0]},
-        "left_upper_arm": {"rot": [-80, 0, -24]},
-        "left_forearm": {"rot": [-30, 0, 0]}}},
-    {"t": 2800, "ease": "EASE_IN", "marker": "the eye", "bones": {
-        "body": {"rot": [14, 0, 0], "pos": [0, 6, 0], "scale": 2.0},
-        "head": {"rot": [24, 0, 0]},
-        "jaw": {"rot": [40, 0, 0]},
-        "right_upper_arm": {"rot": [-86, 0, 30]},
-        "left_upper_arm": {"rot": [-86, 0, -30]}}},
-    {"t": 3000, "ease": "EASE_OUT", "marker": "fire", "bones": {
-        "body": {"rot": [-6, 0, 0], "pos": [0, 8, 4], "scale": 2.05},
-        "head": {"rot": [-4, 0, 0]},
-        "jaw": {"rot": [50, 0, 0]}}},
-    {"t": 4500, "bones": {
-        "body": {"rot": [-4, 0, 0], "pos": [0, 8, 4], "scale": 2.05},
-        "jaw": {"rot": [48, 0, 0]}}},
-    {"t": 4900, "ease": "EASE_IN_OUT", "bones": {
-        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0], "scale": 1},
-        "head": {"rot": [0, 0, 0]},
-        "jaw": {"rot": [0, 0, 0]},
-        "right_upper_arm": {"rot": [0, 0, 0]},
-        "right_forearm": {"rot": [0, 0, 0]},
-        "right_hand": {"rot": [0, 0, 0], "scale": 1},
-        "left_upper_arm": {"rot": [0, 0, 0]},
-        "left_forearm": {"rot": [0, 0, 0]},
-        "left_hand": {"rot": [0, 0, 0], "scale": 1}}}
-  ]
+ "name": "rika_beam",
+ "rig": "rika",
+ "reference": "TrueLoveBeam.gif",
+ "duration": 4900,
+ "blendIn": 80,
+ "blendOut": 250,
+ "priority": "SPECIAL",
+ "tremble": 0.5,
+ "authored": "tools/yuta_anims.py (Yuta animation pass: the reference poses refined, timed to the server)",
+ "keys": [
+  {
+   "t": 0,
+   "bones": {
+    "body": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "jaw": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_upper_arm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    },
+    "left_upper_arm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    }
+   }
+  },
+  {
+   "t": 1084,
+   "bones": {
+    "body": {
+     "rot": [
+      19.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_OUT",
+     "pos": [
+      0.0,
+      11.4,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 1100,
+   "marker": "in place",
+   "bones": {
+    "body": {
+     "scale": 1.9,
+     "ease": "EASE_OUT"
+    },
+    "jaw": {
+     "rot": [
+      10,
+      0,
+      0
+     ],
+     "ease": "EASE_OUT"
+    },
+    "left_upper_arm": {
+     "rot": [
+      -80,
+      0,
+      -24
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 1118,
+   "bones": {
+    "right_forearm": {
+     "rot": [
+      -30,
+      0,
+      0
+     ],
+     "ease": "EASE_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      -30,
+      0,
+      0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 1122,
+   "bones": {
+    "head": {
+     "rot": [
+      30.4,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 1160,
+   "bones": {
+    "right_upper_arm": {
+     "rot": [
+      -80,
+      0,
+      24
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 2434,
+   "bones": {
+    "body": {
+     "rot": [
+      31.93,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 2472,
+   "bones": {
+    "head": {
+     "rot": [
+      64.61,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 2734,
+   "bones": {
+    "body": {
+     "rot": [
+      3.15,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 2770,
+   "bones": {
+    "head": {
+     "rot": [
+      -8.9,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 2784,
+   "bones": {
+    "body": {
+     "rot": [
+      26.6,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN",
+     "pos": [
+      0.0,
+      11.4,
+      0.0
+     ],
+     "scale": 2.09
+    }
+   }
+  },
+  {
+   "t": 2800,
+   "marker": "the eye",
+   "bones": {
+    "jaw": {
+     "rot": [
+      40,
+      0,
+      0
+     ],
+     "ease": "EASE_IN"
+    },
+    "left_upper_arm": {
+     "rot": [
+      -86,
+      0,
+      -30
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 2822,
+   "bones": {
+    "head": {
+     "rot": [
+      45.6,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 2860,
+   "bones": {
+    "right_upper_arm": {
+     "rot": [
+      -86,
+      0,
+      30
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 2874,
+   "bones": {
+    "body": {
+     "rot": [
+      47.09,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 2890,
+   "bones": {
+    "left_upper_arm": {
+     "rot": [
+      30.0,
+      0.0,
+      10.46
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 2950,
+   "bones": {
+    "right_upper_arm": {
+     "rot": [
+      30.0,
+      0.0,
+      -10.46
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 2984,
+   "bones": {
+    "body": {
+     "rot": [
+      -11.4,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_OUT",
+     "pos": [
+      0.0,
+      15.2,
+      7.6
+     ],
+     "scale": 2.18
+    }
+   }
+  },
+  {
+   "t": 3000,
+   "marker": "contact",
+   "bones": {
+    "jaw": {
+     "rot": [
+      50,
+      0,
+      0
+     ],
+     "ease": "EASE_OUT"
+    },
+    "left_upper_arm": {
+     "rot": [
+      29.98,
+      0.0,
+      10.46
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 3018,
+   "bones": {
+    "right_forearm": {
+     "rot": [
+      -15.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      -15.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 3022,
+   "bones": {
+    "head": {
+     "rot": [
+      -7.6,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 3025,
+   "bones": {
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    }
+   }
+  },
+  {
+   "t": 3044,
+   "bones": {
+    "body": {
+     "rot": [
+      -10.8,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR",
+     "pos": [
+      0.0,
+      15.2,
+      7.6
+     ],
+     "scale": 2.18
+    }
+   }
+  },
+  {
+   "t": 3055,
+   "bones": {
+    "right_upper_arm": {
+     "rot": [
+      29.98,
+      0.0,
+      -10.46
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 3060,
+   "bones": {
+    "jaw": {
+     "rot": [
+      50.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    },
+    "right_upper_arm": {
+     "rot": [
+      29.98,
+      0.0,
+      -10.46
+     ],
+     "ease": "LINEAR"
+    },
+    "left_upper_arm": {
+     "rot": [
+      29.98,
+      0.0,
+      10.46
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 3078,
+   "bones": {
+    "right_forearm": {
+     "rot": [
+      -15.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    },
+    "left_forearm": {
+     "rot": [
+      -15.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 3082,
+   "bones": {
+    "head": {
+     "rot": [
+      -7.6,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 3090,
+   "bones": {
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR",
+     "scale": 1.0
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR",
+     "scale": 1.0
+    }
+   }
+  },
+  {
+   "t": 3104,
+   "bones": {
+    "body": {
+     "rot": [
+      -12.8,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 3484,
+   "bones": {
+    "body": {
+     "rot": [
+      -21.1,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 3522,
+   "bones": {
+    "head": {
+     "rot": [
+      -28.33,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 4484,
+   "bones": {
+    "body": {
+     "rot": [
+      -7.6,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT",
+     "pos": [
+      0.0,
+      15.2,
+      7.6
+     ],
+     "scale": 2.18
+    }
+   }
+  },
+  {
+   "t": 4500,
+   "bones": {
+    "jaw": {
+     "rot": [
+      48,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 4900,
+   "bones": {
+    "body": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "scale": 0.19
+    },
+    "head": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "jaw": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_upper_arm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    },
+    "left_upper_arm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    }
+   }
+  }
+ ]
 }

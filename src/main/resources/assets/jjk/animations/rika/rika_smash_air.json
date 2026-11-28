@@ -1,50 +1,625 @@
 {
-  "name": "rika_smash_air",
-  "rig": "rika",
-  "reference": "RikaSmashVariant.gif",
-  "duration": 1300,
-  "blendIn": 80,
-  "blendOut": 250,
-  "priority": "SPECIAL",
-  "keys": [
-    {"t": 0, "bones": {
-        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0]},
-        "head": {"rot": [0, 0, 0]},
-        "jaw": {"rot": [0, 0, 0]},
-        "right_upper_arm": {"rot": [0, 0, 0]},
-        "right_forearm": {"rot": [0, 0, 0]},
-        "right_hand": {"rot": [0, 0, 0], "scale": 1},
-        "left_upper_arm": {"rot": [0, 0, 0]},
-        "left_forearm": {"rot": [0, 0, 0]},
-        "left_hand": {"rot": [0, 0, 0], "scale": 1}}},
-    {"t": 500, "ease": "EASE_OUT", "marker": "raised", "bones": {
-        "body": {"rot": [-20, 0, 0], "pos": [0, 6, 4]},
-        "jaw": {"rot": [24, 0, 0]},
-        "right_upper_arm": {"rot": [-172, 0, 10]},
-        "left_upper_arm": {"rot": [-172, 0, -10]},
-        "right_forearm": {"rot": [-20, 0, 0]},
-        "left_forearm": {"rot": [-20, 0, 0]},
-        "right_hand": {"scale": 1.8},
-        "left_hand": {"scale": 1.8}}},
-    {"t": 700, "ease": "EASE_IN", "marker": "dunk", "bones": {
-        "body": {"rot": [46, 0, 0], "pos": [0, -4, -8]},
-        "head": {"rot": [24, 0, 0]},
-        "jaw": {"rot": [34, 0, 0]},
-        "right_upper_arm": {"rot": [-30, 0, 10]},
-        "left_upper_arm": {"rot": [-30, 0, -10]},
-        "right_forearm": {"rot": [0, 0, 0]},
-        "left_forearm": {"rot": [0, 0, 0]},
-        "right_hand": {"scale": 2},
-        "left_hand": {"scale": 2}}},
-    {"t": 1300, "ease": "EASE_IN_OUT", "bones": {
-        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0]},
-        "head": {"rot": [0, 0, 0]},
-        "jaw": {"rot": [0, 0, 0]},
-        "right_upper_arm": {"rot": [0, 0, 0]},
-        "right_forearm": {"rot": [0, 0, 0]},
-        "right_hand": {"rot": [0, 0, 0], "scale": 1},
-        "left_upper_arm": {"rot": [0, 0, 0]},
-        "left_forearm": {"rot": [0, 0, 0]},
-        "left_hand": {"rot": [0, 0, 0], "scale": 1}}}
-  ]
+ "name": "rika_smash_air",
+ "rig": "rika",
+ "reference": "RikaSmashVariant.gif",
+ "duration": 1300,
+ "blendIn": 80,
+ "blendOut": 250,
+ "priority": "SPECIAL",
+ "authored": "tools/yuta_anims.py (Yuta animation pass: the reference poses refined, timed to the server)",
+ "keys": [
+  {
+   "t": 0,
+   "bones": {
+    "body": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "jaw": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_upper_arm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    },
+    "left_upper_arm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    }
+   }
+  },
+  {
+   "t": 434,
+   "bones": {
+    "body": {
+     "rot": [
+      -38.97,
+      21.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 472,
+   "bones": {
+    "head": {
+     "rot": [
+      -2.44,
+      -10.5,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 484,
+   "bones": {
+    "body": {
+     "rot": [
+      -30.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_OUT",
+     "pos": [
+      0.0,
+      9.0,
+      6.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 500,
+   "marker": "raised",
+   "bones": {
+    "jaw": {
+     "rot": [
+      24,
+      0,
+      0
+     ],
+     "ease": "EASE_OUT"
+    },
+    "right_upper_arm": {
+     "rot": [
+      -172,
+      0,
+      10
+     ],
+     "ease": "EASE_OUT"
+    },
+    "left_upper_arm": {
+     "rot": [
+      -172,
+      0,
+      -10
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 518,
+   "bones": {
+    "right_forearm": {
+     "rot": [
+      -20,
+      0,
+      0
+     ],
+     "ease": "EASE_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      -20,
+      0,
+      0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 530,
+   "bones": {
+    "right_hand": {
+     "scale": 1.8,
+     "ease": "EASE_OUT"
+    },
+    "left_hand": {
+     "scale": 1.8,
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 574,
+   "bones": {
+    "body": {
+     "rot": [
+      -84.63,
+      35.7,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 590,
+   "bones": {
+    "right_upper_arm": {
+     "rot": [
+      -221.7,
+      0.0,
+      10.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_upper_arm": {
+     "rot": [
+      -221.7,
+      0.0,
+      -10.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 684,
+   "bones": {
+    "body": {
+     "rot": [
+      91.5,
+      -21.0,
+      0.0
+     ],
+     "ease": "EASE_IN",
+     "pos": [
+      0.0,
+      -6.0,
+      -12.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 700,
+   "marker": "contact",
+   "bones": {
+    "jaw": {
+     "rot": [
+      34,
+      0,
+      0
+     ],
+     "ease": "EASE_IN"
+    },
+    "right_upper_arm": {
+     "rot": [
+      -30,
+      0,
+      10
+     ],
+     "ease": "EASE_IN"
+    },
+    "left_upper_arm": {
+     "rot": [
+      -30,
+      0,
+      -10
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 718,
+   "bones": {
+    "right_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN"
+    },
+    "left_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 722,
+   "bones": {
+    "head": {
+     "rot": [
+      60.0,
+      10.5,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 725,
+   "bones": {
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN",
+     "scale": 2.0
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN",
+     "scale": 2.0
+    }
+   }
+  },
+  {
+   "t": 744,
+   "bones": {
+    "body": {
+     "rot": [
+      92.1,
+      -21.0,
+      0.0
+     ],
+     "ease": "LINEAR",
+     "pos": [
+      0.0,
+      -6.0,
+      -12.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 760,
+   "bones": {
+    "jaw": {
+     "rot": [
+      34.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    },
+    "right_upper_arm": {
+     "rot": [
+      -30.0,
+      0.0,
+      10.0
+     ],
+     "ease": "LINEAR"
+    },
+    "left_upper_arm": {
+     "rot": [
+      -30.0,
+      0.0,
+      -10.0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 778,
+   "bones": {
+    "right_forearm": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    },
+    "left_forearm": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 782,
+   "bones": {
+    "head": {
+     "rot": [
+      60.0,
+      10.5,
+      0.0
+     ],
+     "ease": "LINEAR"
+    }
+   }
+  },
+  {
+   "t": 790,
+   "bones": {
+    "right_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR",
+     "scale": 2.0
+    },
+    "left_hand": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "LINEAR",
+     "scale": 2.0
+    }
+   }
+  },
+  {
+   "t": 804,
+   "bones": {
+    "body": {
+     "rot": [
+      121.05,
+      -30.55,
+      0.0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 820,
+   "bones": {
+    "right_upper_arm": {
+     "rot": [
+      4.9,
+      0.0,
+      9.95
+     ],
+     "ease": "EASE_OUT"
+    },
+    "left_upper_arm": {
+     "rot": [
+      4.9,
+      0.0,
+      -9.95
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 838,
+   "bones": {
+    "right_forearm": {
+     "rot": [
+      2.63,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      2.63,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 842,
+   "bones": {
+    "head": {
+     "rot": [
+      64.98,
+      12.5,
+      0.0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 984,
+   "bones": {
+    "body": {
+     "rot": [
+      44.62,
+      -9.45,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1022,
+   "bones": {
+    "head": {
+     "rot": [
+      27.6,
+      4.72,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1300,
+   "bones": {
+    "body": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    "head": {
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "jaw": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_upper_arm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    },
+    "left_upper_arm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    }
+   }
+  }
+ ]
 }

@@ -6,6 +6,8 @@
  "priority": "IDLE",
  "blendIn": 200,
  "blendOut": 200,
+ "loop": true,
+ "authored": "tools/yuta_anims.py (Yuta animation pass: the reference poses refined, timed to the server)",
  "keys": [
   {
    "t": 0,
@@ -45,7 +47,7 @@
    }
   },
   {
-   "t": 2000,
+   "t": 1984,
    "bones": {
     "body": {
      "pos": [
@@ -54,15 +56,12 @@
       0.0
      ],
      "ease": "EASE_IN_OUT"
-    },
-    "head": {
-     "rot": [
-      2.0,
-      -2.0,
-      0.0
-     ],
-     "ease": "EASE_IN_OUT"
-    },
+    }
+   }
+  },
+  {
+   "t": 2000,
+   "bones": {
     "jaw": {
      "rot": [
       4.0,
@@ -70,12 +69,30 @@
       0.0
      ],
      "ease": "EASE_IN_OUT"
-    },
+    }
+   }
+  },
+  {
+   "t": 2018,
+   "bones": {
     "left_forearm": {
      "rot": [
       -3.0,
       0.0,
       2.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 2022,
+   "bones": {
+    "head": {
+     "rot": [
+      2.0,
+      -2.0,
+      0.0
      ],
      "ease": "EASE_IN_OUT"
     }
@@ -118,6 +135,5 @@
     }
    }
   }
- ],
- "loop": true
+ ]
 }

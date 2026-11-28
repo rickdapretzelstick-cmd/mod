@@ -25,7 +25,8 @@ import java.util.stream.Stream;
 /**
  * Every Hakari clip stepped frame by frame (the world frozen, one tick per step) from the side, then tiled into contact
  * sheets: one row per clip, the contact frame outlined. Opt-in; sheets anim-sheets/hakari_*.png. Another character's clips:
- * {@code JJK_PASS=gojo} (sheets anim-sheets/gojo_*.png; the clips are every file in animations/gojo).
+ * {@code JJK_PASS=gojo} (sheets anim-sheets/gojo_*.png; the clips are every file in animations/gojo). {@code JJK_PASS=rika}
+ * plays them on Rika: the player becomes Yuta and summons her, and the camera pulls back to take her in.
  */
 public class HakariPassClientTest implements FabricClientGameTest {
     private static final String[] CLIPS = {"reserve_balls", "shutter_sign", "rough_charge", "rough_strike", "fever_kick", "fever_finish",
@@ -50,12 +51,33 @@ public class HakariPassClientTest implements FabricClientGameTest {
                 if (!mc.gui.hud.isHidden()) mc.gui.hud.toggle();
                 mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
             });
-            ShowcaseCamera.set(72, 4.2f, 1.2f, 0);
+            String pass = System.getenv().getOrDefault("JJK_PASS", "hakari");
+            // Whose clips: the player's, or (Rika's) the curse Yuta summons.
+            int target = ctx.computeOnClient(mc -> mc.player.getId());
+            if (pass.equals("rika")) {
+                server.runOnServer(srv -> dev.rick.jjk.core.character.CharacterService.assign(srv.getPlayerList().getPlayers().getFirst(),
+                        dev.rick.jjk.core.character.Characters.get("yuta")));
+                ctx.waitTicks(10);
+                server.runOnServer(srv -> {
+                    var p = srv.getPlayerList().getPlayers().getFirst();
+                    dev.rick.jjk.core.ability.Casters.get(p).input(dev.rick.jjk.core.ability.AbilitySlot.SKILL_5, true, 0, 0, null);
+                    dev.rick.jjk.core.ability.Casters.get(p).input(dev.rick.jjk.core.ability.AbilitySlot.SKILL_5, false, 0, 0, null);
+                });
+                ctx.waitTicks(60); // summoned and settled
+                target = server.computeOnServer(srv -> {
+                    var r = dev.rick.jjk.yuta.YutaState.of(srv.getPlayerList().getPlayers().getFirst()).rika();
+                    if (r == null) throw new AssertionError("Rika wasn't summoned");
+                    return r.getId();
+                });
+                ShowcaseCamera.set(72, 10f, 3.2f, 0);
+            } else {
+                ShowcaseCamera.set(72, 4.2f, 1.2f, 0);
+            }
+            final int who = target;
             ShowcaseCamera.enabled = true;
             server.runCommand("tick freeze");
             ctx.waitTicks(5);
             List<BufferedImage> rows = new ArrayList<>();
-            String pass = System.getenv().getOrDefault("JJK_PASS", "hakari");
             String[] clips = pass.equals("hakari") ? CLIPS : listClips(pass);
             for (String name : clips) {
                 Clip clip = ctx.computeOnClient(mc -> AnimLibrary.get(name));
@@ -64,7 +86,7 @@ public class HakariPassClientTest implements FabricClientGameTest {
                 int stepTicks = Math.max(1, Math.round(span / 50f / FRAMES));
                 float contact = -1;
                 for (Clip.Marker m : clip.markers) if (m.label().equals("contact")) contact = m.time();
-                ctx.runOnClient(mc -> ClientAnimations.play(mc.player.getId(), name, 1f, mc.level.getGameTime()));
+                ctx.runOnClient(mc -> ClientAnimations.play(who, name, 1f, mc.level.getGameTime()));
                 List<BufferedImage> frames = new ArrayList<>();
                 List<Integer> times = new ArrayList<>();
                 for (int i = 0; i < FRAMES; i++) {
@@ -76,8 +98,8 @@ public class HakariPassClientTest implements FabricClientGameTest {
                     server.runCommand("tick step " + stepTicks);
                     ctx.waitTicks(stepTicks + 1);
                 }
-                ctx.runOnClient(mc -> ClientAnimations.play(mc.player.getId(), "", 1f, mc.level.getGameTime()));
-                ctx.runOnClient(mc -> ClientAnimations.forget(mc.player.getId()));
+                ctx.runOnClient(mc -> ClientAnimations.play(who, "", 1f, mc.level.getGameTime()));
+                ctx.runOnClient(mc -> ClientAnimations.forget(who));
                 server.runCommand("tick step 20");
                 ctx.waitTicks(22);
                 rows.add(row(name, frames, times, contact));

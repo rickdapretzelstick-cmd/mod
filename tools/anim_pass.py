@@ -50,7 +50,7 @@ class Pass:
         return next((t for t, _, _ in c.tracks[strike] if t >= t_peak - 10), t_peak)
 
     def refine(self, name, hit=None, prev=None, old=None, wind=None, hold=60, over=60, body=None, core=None, alive=None,
-               overlap=True, remap=None, extend=None, **extra):
+               overlap=True, remap=None, extend=None, lag=None, **extra):
         """
         hit      when the server lands the blow, ms from the clip's start: 0 with {prev} = as the clip starts, wound up in
                  {prev} (the clip's own wind-up goes; it travels LEAD ms into the blow from {prev}'s last pose); otherwise
@@ -62,7 +62,9 @@ class Pass:
         core     scales the body's own motion; alive: a held pose breathes (period, cycles, amp, tremble)
         remap    [(old ms, new ms)...]: a piecewise retime first (a flurry's punches onto the server's hits)
         extend   ms added on the last pose first (room to settle a blow drawn onto the clip's last key)
-        extra    written into the clip (motion='transition', style='effortless', windup=...)
+        lag      {bone: ms}: those bones' keys on the way into the blow arrive that much later (more whip than the
+                 overlap pass leaves room for)
+        extra    written into the clip (motion='transition', style='effortless', windup=..., strike='elbow')
         """
         c = ClipData(self.group, name)
         if extend:
@@ -101,6 +103,17 @@ class Pass:
             c.mark(contact)
         if overlap:
             c.overlap()
+        if lag and contact is not None:
+            for bone, ms in lag.items():
+                for ch, tr in c.tracks.get(bone, {}).items():
+                    # (the keys arriving at the blow, after the overlap pass's own lag; never past the key after)
+                    out = []
+                    for i, (t, v, e) in enumerate(tr):
+                        if 0 < t <= contact + 30:
+                            nxt = tr[i + 1][0] if i + 1 < len(tr) else t + ms + 5
+                            t = min(t + ms, nxt - 5)
+                        out.append((t, v, e))
+                    c.tracks[bone][ch] = out
         if alive:
             c.alive(**alive)
         c.save(self.authored, **extra)

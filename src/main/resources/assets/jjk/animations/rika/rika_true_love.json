@@ -1,52 +1,451 @@
 {
-  "name": "rika_true_love",
-  "rig": "rika",
-  "reference": "TrueLove.gif frames 82-200",
-  "duration": 2300,
-  "blendIn": 0,
-  "blendOut": 250,
-  "priority": "SPECIAL",
-  "keys": [
-    {"t": 0, "bones": {
-        "body": {"rot": [16, 0, 0], "pos": [0, -10, 0], "scale": 0.85},
-        "head": {"rot": [20, 0, 0]},
-        "jaw": {"rot": [0, 0, 0]},
-        "right_upper_arm": {"rot": [0, 0, 0]},
-        "right_forearm": {"rot": [0, 0, 0]},
-        "right_hand": {"rot": [0, 0, 0], "scale": 1},
-        "left_upper_arm": {"rot": [0, 0, 0]},
-        "left_forearm": {"rot": [0, 0, 0]},
-        "left_hand": {"rot": [0, 0, 0], "scale": 1}}},
-    {"t": 500, "ease": "EASE_OUT", "marker": "manifest", "bones": {
-        "body": {"rot": [-6, 0, 0], "pos": [0, 2, 0], "scale": 1.0},
-        "head": {"rot": [-10, 0, 0]},
-        "jaw": {"rot": [20, 0, 0]}}},
-    {"t": 800, "ease": "EASE_IN_OUT", "marker": "into her chest", "bones": {
-        "head": {"rot": [14, 0, 0]},
-        "jaw": {"rot": [6, 0, 0]},
-        "right_upper_arm": {"rot": [-50, 0, -30]},
-        "right_forearm": {"rot": [-90, 0, 0]},
-        "right_hand": {"rot": [0, 0, 0]}}},
-    {"t": 1100, "ease": "EASE_OUT", "marker": "the casing", "bones": {
-        "right_upper_arm": {"rot": [-90, 0, 10]},
-        "right_forearm": {"rot": [-10, 0, 0]},
-        "left_upper_arm": {"rot": [-80, 0, -10]}}},
-    {"t": 1500, "ease": "EASE_IN_OUT", "marker": "wrapping", "bones": {
-        "body": {"rot": [24, 0, 0], "pos": [0, -4, -6]},
-        "head": {"rot": [24, 0, 0]},
-        "right_upper_arm": {"rot": [-60, 0, 20]},
-        "right_forearm": {"rot": [-30, 0, 0]},
-        "left_upper_arm": {"rot": [-60, 0, -20]},
-        "left_forearm": {"rot": [-30, 0, 0]}}},
-    {"t": 2300, "ease": "EASE_IN_OUT", "bones": {
-        "body": {"rot": [0, 0, 0], "pos": [0, 0, 0], "scale": 1},
-        "head": {"rot": [0, 0, 0]},
-        "jaw": {"rot": [0, 0, 0]},
-        "right_upper_arm": {"rot": [0, 0, 0]},
-        "right_forearm": {"rot": [0, 0, 0]},
-        "right_hand": {"rot": [0, 0, 0], "scale": 1},
-        "left_upper_arm": {"rot": [0, 0, 0]},
-        "left_forearm": {"rot": [0, 0, 0]},
-        "left_hand": {"rot": [0, 0, 0], "scale": 1}}}
-  ]
+ "name": "rika_true_love",
+ "rig": "rika",
+ "reference": "TrueLove.gif frames 82-200",
+ "duration": 2300,
+ "blendIn": 0,
+ "blendOut": 250,
+ "priority": "SPECIAL",
+ "motion": "transition",
+ "authored": "tools/yuta_anims.py (Yuta animation pass: the reference poses refined, timed to the server)",
+ "keys": [
+  {
+   "t": 0,
+   "bones": {
+    "body": {
+     "rot": [
+      16.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT",
+     "pos": [
+      0.0,
+      -10.0,
+      0.0
+     ],
+     "scale": 0.85
+    },
+    "head": {
+     "rot": [
+      20.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "jaw": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_upper_arm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    },
+    "left_upper_arm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    }
+   }
+  },
+  {
+   "t": 484,
+   "bones": {
+    "body": {
+     "rot": [
+      -23.6,
+      12.0,
+      0.0
+     ],
+     "ease": "EASE_OUT",
+     "pos": [
+      0.0,
+      8.0,
+      0.0
+     ],
+     "scale": 1.07
+    }
+   }
+  },
+  {
+   "t": 500,
+   "marker": "manifest",
+   "bones": {
+    "jaw": {
+     "rot": [
+      20,
+      0,
+      0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 522,
+   "bones": {
+    "head": {
+     "rot": [
+      -38.5,
+      -6.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 800,
+   "marker": "into her chest",
+   "bones": {
+    "jaw": {
+     "rot": [
+      6,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_upper_arm": {
+     "rot": [
+      -50,
+      0,
+      -30
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 818,
+   "bones": {
+    "right_forearm": {
+     "rot": [
+      -90,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 822,
+   "bones": {
+    "head": {
+     "rot": [
+      11.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 830,
+   "bones": {
+    "right_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1084,
+   "bones": {
+    "body": {
+     "rot": [
+      32.98,
+      -12.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 1100,
+   "marker": "the casing",
+   "bones": {
+    "right_upper_arm": {
+     "rot": [
+      -90,
+      0,
+      10
+     ],
+     "ease": "EASE_OUT"
+    },
+    "left_upper_arm": {
+     "rot": [
+      -80,
+      0,
+      -10
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 1118,
+   "bones": {
+    "right_forearm": {
+     "rot": [
+      -10,
+      0,
+      0
+     ],
+     "ease": "EASE_OUT"
+    }
+   }
+  },
+  {
+   "t": 1122,
+   "bones": {
+    "head": {
+     "rot": [
+      42.72,
+      6.0,
+      0.0
+     ],
+     "ease": "EASE_IN"
+    }
+   }
+  },
+  {
+   "t": 1484,
+   "bones": {
+    "body": {
+     "rot": [
+      28.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT",
+     "pos": [
+      0.0,
+      -1.0,
+      -9.0
+     ]
+    }
+   }
+  },
+  {
+   "t": 1500,
+   "marker": "wrapping",
+   "bones": {
+    "right_upper_arm": {
+     "rot": [
+      -60,
+      0,
+      20
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_upper_arm": {
+     "rot": [
+      -60,
+      0,
+      -20
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1518,
+   "bones": {
+    "right_forearm": {
+     "rot": [
+      -30,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      -30,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1522,
+   "bones": {
+    "head": {
+     "rot": [
+      26.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1784,
+   "bones": {
+    "body": {
+     "rot": [
+      27.83,
+      -5.4,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 1822,
+   "bones": {
+    "head": {
+     "rot": [
+      29.21,
+      2.7,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    }
+   }
+  },
+  {
+   "t": 2300,
+   "bones": {
+    "body": {
+     "rot": [
+      -8.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT",
+     "pos": [
+      0.0,
+      5.0,
+      0.0
+     ],
+     "scale": 1.07
+    },
+    "head": {
+     "rot": [
+      -10.0,
+      0.0,
+      0.0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "jaw": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_upper_arm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "right_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    },
+    "left_upper_arm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_forearm": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT"
+    },
+    "left_hand": {
+     "rot": [
+      0,
+      0,
+      0
+     ],
+     "ease": "EASE_IN_OUT",
+     "scale": 1.0
+    }
+   }
+  }
+ ]
 }

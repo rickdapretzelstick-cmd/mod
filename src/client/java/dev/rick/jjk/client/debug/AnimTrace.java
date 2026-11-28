@@ -41,7 +41,7 @@ import java.util.Set;
  *   own fast motion, listed as a style note;</li>
  *   <li><b>linger</b>: a move's one-shot clips still showing well after the move ended;</li>
  *   <li><b>idle gap</b>: a move still running on the server with nothing animating it;</li>
- *   <li><b>facing</b>: the body turned away from the aim while casting;</li>
+ *   <li><b>facing</b>: the body turned away from the aim while casting (after the first 3 ticks, its turn-in);</li>
  *   <li><b>stuck</b>: a held pose still showing long after its move ended.</li>
  * </ul>
  */
@@ -268,12 +268,21 @@ public final class AnimTrace {
     private static void facing(List<Event> events, List<Frame> frames, List<Anomaly> out) {
         for (Frame f : frames) {
             if (!casting(events, f.entity, f.time)) continue;
+            // (The body turns in over the cast's first ticks: 30 degrees a tick, from up to vanilla's 50 of lag.)
+            if (f.time - castStart(events, f.entity, f.time) < 3) continue;
             float off = Math.abs(Mth.wrapDegrees(f.body - f.head));
             if (off > 12) {
                 out.add(new Anomaly(f.time, f.entity, "facing", String.format(Locale.ROOT, "body %.0f° off the aim while casting", off)));
                 return; // once is enough to know
             }
         }
+    }
+
+    /** When the cast running at {@code time} began (its cast_begin tick). */
+    private static double castStart(List<Event> events, int entity, double time) {
+        double start = time;
+        for (Event e : events) if (e.entity == entity && e.tick <= time && e.kind.equals("cast_begin")) start = e.tick;
+        return start;
     }
 
     private static boolean casting(List<Event> events, int entity, double time) {

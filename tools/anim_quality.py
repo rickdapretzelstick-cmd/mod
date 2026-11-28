@@ -6,7 +6,7 @@ pass can be measured instead of eyeballed:
   anticipation   before the contact, the striking limb first moves *away* from where it will hit (a wind-up)
   hit-stop       right after the contact the striking limb holds (a beat where the blow reads)
   settle         after the contact there is follow-through before the return to guard (not one straight ease home)
-  overlap        the body leads and the limb follows: hips peak before the chest, the chest before the striking arm,
+  overlap        the body leads and the limb follows (over the 300 ms into the contact): hips peak before the chest, the chest before the striking arm,
                  the arm before the forearm (successive breaking of joints), spread over 20+ ms, not on the same frame
   whole body     the hips, chest and legs carry a real share of the motion, not just the arms (35%; 20% for a clip
                  tagged "style": "effortless", a deliberately calm gesture like Gojo's one-handed techniques)
@@ -83,6 +83,7 @@ class Clip:
         self.windup = d.get('windup')
         # "style": "effortless" (Gojo's one-handed techniques): a deliberate, calm gesture; the body may stay quiet.
         self.effortless = d.get('style') == 'effortless'
+        self.meta_strike = d.get('strike')
         self.tracks = {b: ch['rot'] for b, ch in cd.tracks.items() if 'rot' in ch}
         self.contact = next((t for t, m in cd.markers if m == 'contact'), None)
         if self.contact is None:
@@ -188,10 +189,16 @@ def score(c):
     # Overlap: hips -> chest -> arm -> forearm peak in that order, spread over 30+ ms.
     # (A bone that hardly moves has no peak worth ordering: it's left out.)
     # (A bone that hardly moves has no peak worth ordering: it's left out.)
-    top = max([s for t, s in c.speeds(strike) if t <= contact + 60] or [1])
-    chain = [b for b in ('hips', 'chest', strike, CHILD.get(strike)) if b and b in c.tracks and c.travel([b], 0, contact + 60) > 10
-             and max([s for t, s in c.speeds(b) if t <= contact + 60] or [0]) >= 0.3 * top]
-    times = [max([p for p in c.speeds(b) if p[0] <= contact + 60] or [(0, 0)], key=lambda p: p[1])[0] for b in chain]
+    # (The approach only: the 300 ms into the contact. Earlier motion is another action: the blow before it in a
+    # multi-hit clip, or the hand-over from the clip before.)
+    lo = max(0, contact - 300)
+    win = lambda b: [p for p in c.speeds(b) if lo <= p[0] <= contact + 60]
+    top = max([s for t, s in win(strike)] or [1])
+    # (An elbow strike lands with the forearm folded: the elbow is the end of the chain, "strike": "elbow".)
+    child = None if c.meta_strike == 'elbow' else CHILD.get(strike)
+    chain = [b for b in ('hips', 'chest', strike, child) if b and b in c.tracks and c.travel([b], lo, contact + 60) > 10
+             and max([s for t, s in win(b)] or [0]) >= 0.3 * top]
+    times = [max(win(b) or [(0, 0)], key=lambda p: p[1])[0] for b in chain]
     # 20+ ms from first to last: a frame or more of lead at 50-60 fps.
     ordered = all(a <= b for a, b in zip(times, times[1:])) and (times[-1] - times[0] >= 20 if len(times) > 1 else False)
     if len(chain) > 1:  # (one bone moving alone has no chain to order: not applicable)
