@@ -76,7 +76,10 @@ def main():
     # (a spinning draw: the blade out at 70 ms as the server's swing lands, the hips carrying a full turn into the burst.
     # The burst, the blow, was drawn at 240 ms and the server's lands at 150: brought in to 200, as near as the spin can
     # be squeezed before the chest and arm whip round faster than a frame can show)
-    y('yuta_outburst_swing', hit=200, old=200, windup='yuta_outburst_grip', remap=[(0, 0), (70, 70), (240, 200), (241, 201), (900, 861)])
+    # (no overlap pass: pulling the hips 32 ms ahead crammed the spin's start into the blend, a 102-degree snap; the
+    # sword arm alone trails the spin instead)
+    y('yuta_outburst_swing', hit=200, old=200, windup='yuta_outburst_grip', remap=[(0, 0), (70, 70), (240, 200), (241, 201), (900, 861)],
+      overlap=False, lag={'rightArm': 30})
     y('yuta_outburst_parry', motion='transition', body=(30, 90, 350, dict(twist=-16, lean=-8, crouch=0.8)))  # (a deflection)
     # Second Wind: the grab at 100 ms, the slam at 350 (the grab's light hit as it starts), pummel and swords on their
     # first blow at 200 ms (a blow every 250), the blocked recoil and the whiff.
