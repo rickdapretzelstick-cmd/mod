@@ -22,6 +22,13 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from anim_pass import BREATHE, Pass  # noqa: E402
 
+def reach_legs(c):
+    """The grab's hold keyed no legs, so they fell back to the vanilla stride out of the reach's stance (both thighs
+    swung 100 degrees in a frame): it keeps the reach's stance."""
+    c.tracks['rightThigh'] = {'rot': [(c.tracks['rightArm']['rot'][0][0], [30.0, 0.0, 5.0], 'EASE_IN_OUT')]}
+    c.tracks['leftThigh'] = {'rot': [(c.tracks['rightArm']['rot'][0][0], [-32.0, 0.0, -5.0], 'EASE_IN_OUT')]}
+
+
 P = Pass('yuji', 'Yuji animation pass', 'tools/yuji_anims.py (Yuji animation pass: the reference poses refined, timed to the server)')
 refine = P.refine
 
@@ -30,7 +37,8 @@ def main():
     P.guard()
 
     # Held poses first (the blows after them start from their last pose).
-    for name in ('cleave_reach', 'cleave_hold', 'crushing_blow_charge', 'crushing_blow_air', 'crushing_blow_dash', 'cursed_strikes_ready',
+    refine('cleave_hold', alive=BREATHE, edit=reach_legs)
+    for name in ('cleave_reach', 'crushing_blow_charge', 'crushing_blow_air', 'crushing_blow_dash', 'cursed_strikes_ready',
                  'cursed_strikes_slide', 'cursed_strikes_hop', 'cursed_strikes_dropkick', 'dismantle_windup', 'dismantle_air',
                  'divergent_windup', 'manji_stance', 'manji_swoop', 'open_flames', 'open_clap', 'open_draw', 'open_aim', 'rush_run',
                  'rush_chase', 'rush_leap', 'shrine_heavy_charge', 'shrine_sign', 'sukuna_faint', 'wcs_chant_1', 'wcs_chant_2',

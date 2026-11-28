@@ -37,8 +37,8 @@ import java.util.Set;
  * {@link #stop} writes one merged timeline to {@code build/anim-trace/<name>.txt} and checks it:
  * <ul>
  *   <li><b>pop</b>: a bone turning over 150 degrees a tick in one frame, 3x faster than around it, at a transition
- *   (a clip starting, ending or fading): the engine snapped it. The same inside one clip at full weight is the clip's
- *   own fast motion, listed as a style note;</li>
+ *   (a clip starting, ending or fading): the engine snapped it. The same inside one clip at full weight, or while it
+ *   blends in when the clip on its own makes the move, is the clip's own fast motion, listed as a style note;</li>
  *   <li><b>linger</b>: a move's one-shot clips still showing well after the move ended;</li>
  *   <li><b>idle gap</b>: a move still running on the server with nothing animating it;</li>
  *   <li><b>facing</b>: the body turned away from the aim while casting (after the first 3 ticks, its turn-in);</li>
@@ -255,7 +255,7 @@ public final class AnimTrace {
                         ? angle(solved.get(k - 2).rot[bi], a.rot[bi]) / Math.max(0.05, a.time - solved.get(k - 2).time) : v2;
                 // A jump of more than 70 degrees per tick that is 3x what came before and after. Inside one clip playing at
                 // full weight it's the clip's own motion (a punch, a smear): authored, a style note, not the engine.
-                boolean authored = steady(a, m);
+                boolean authored = steady(a, m) || clipMakes(a, m, b, angle(a.rot[bi], m.rot[bi]));
                 if (v1 > 70 && v1 > 3 * Math.max(5, before) && v1 > 3 * Math.max(5, v2) && authored) {
                     FAST.merge(m.entity + " " + clipText(m.clips).replaceAll(" \\d+ms w[0-9.]+", ""), 1, Integer::sum);
                 } else if (v1 > 150 && v1 > 3 * Math.max(5, before) && v1 > 3 * Math.max(5, v2))
@@ -332,6 +332,23 @@ public final class AnimTrace {
      * The same clip on top at full weight in both frames (anything under it fading out doesn't show): nothing but that
      * clip's own keys moved the bones.
      */
+    /**
+     * The jump is the clip's own: the same clip leads both frames (the later at full weight, the earlier still blending
+     * in) and, sampled on its own, turns the bone at least 80% of the observed angle. A fast blow drawn to land just as
+     * its blend-in ends is a style note, not a blend pop.
+     */
+    private static boolean clipMakes(Frame a, Frame b, Bone bone, double observed) {
+        ClipState x = top(a), y = top(b);
+        if (x == null || y == null || !x.name.equals(y.name) || y.weight < 0.99 || y.timeMs < x.timeMs) return false;
+        Clip c = AnimLibrary.get(x.name);
+        if (c == null || c.track(bone, Clip.ROT) == null) return false;
+        float[] p = new float[3], q = new float[3];
+        c.track(bone, Clip.ROT).sample(c.localTime(x.timeMs), p);
+        c.track(bone, Clip.ROT).sample(c.localTime(y.timeMs), q);
+        double own = angle(new Quaternionf().rotationZYX(p[2], p[1], p[0]), new Quaternionf().rotationZYX(q[2], q[1], q[0]));
+        return own >= 0.8 * observed;
+    }
+
     private static boolean steady(Frame a, Frame b) {
         ClipState x = top(a), y = top(b);
         return x != null && y != null && x.name.equals(y.name) && x.weight >= 0.99 && y.weight >= 0.99 && y.timeMs >= x.timeMs;
