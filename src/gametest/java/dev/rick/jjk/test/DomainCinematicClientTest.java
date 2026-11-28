@@ -25,7 +25,7 @@ import net.minecraft.util.Mth;
  */
 public class DomainCinematicClientTest extends PresentationClientTest {
     /** Sub-tick moments drawn per game tick: 3 per tick is 60 fps at real speed, 24 is an eighth-speed slow motion at 60 fps. */
-    private int sub = 3;
+    protected int sub = 3;
 
     @Override
     public void runTest(ClientGameTestContext context) {
@@ -75,14 +75,14 @@ public class DomainCinematicClientTest extends PresentationClientTest {
         }
     }
 
-    private static boolean on(java.util.Set<String> only, String scene) {
+    protected static boolean on(java.util.Set<String> only, String scene) {
         return only.isEmpty() || only.contains(scene);
     }
 
     // --- Staging ---
 
     /** Clears the last scene (its domain and dummies), makes the player {@code id} and puts them back in the middle. */
-    private void stage(String id) {
+    protected void stage(String id) {
         cmd("tick unfreeze");
         ctx.waitTicks(3);
         cmd("execute as @a run jjk domain cancel all");
@@ -101,13 +101,13 @@ public class DomainCinematicClientTest extends PresentationClientTest {
         ctx.waitTicks(10);
     }
 
-    private void freeze() {
+    protected void freeze() {
         cmd("tick freeze");
         ctx.waitTicks(2);
     }
 
     /** A training dummy {@code ahead} blocks in front of the player, as {@code character} if given (it fights as a bot). */
-    private void rival(String character, double ahead, boolean awaken, float skill) {
+    protected void rival(String character, double ahead, boolean awaken, float skill) {
         cmd("execute as @a at @s rotated ~ 0 run summon jjk:training_dummy ^ ^ ^" + ahead);
         ctx.waitTicks(4);
         server.runOnServer(s -> {
@@ -130,7 +130,7 @@ public class DomainCinematicClientTest extends PresentationClientTest {
     }
 
     /** Opens a domain: the player's, or the bot dummy whose character is {@link #characterOf}. */
-    private void openDomain(boolean player) {
+    protected void openDomain(boolean player) {
         server.runOnServer(s -> {
             net.minecraft.world.entity.LivingEntity who = s.getPlayerList().getPlayers().getFirst();
             if (!player) {
@@ -155,10 +155,10 @@ public class DomainCinematicClientTest extends PresentationClientTest {
         });
     }
 
-    private String characterOf = "";
+    protected String characterOf = "";
 
     /** 0 nothing, 1 forming or opening, 2 sealed and live. */
-    private int domainState() {
+    protected int domainState() {
         return server.computeOnServer(s -> {
             var p = s.getPlayerList().getPlayers().getFirst();
             var d = DomainManager.ownedBy(p);
@@ -169,7 +169,7 @@ public class DomainCinematicClientTest extends PresentationClientTest {
     // --- Scenes ---
 
     /** One domain on its own: the caster's hero shot, the opening, the structure forming round a pair of dummies, then the inside. */
-    private void showcase(String id, String name, String rgb, int n) {
+    protected void showcase(String id, String name, String rgb, int n) {
         stage(id);
         rival(null, 5, false, 0);
         rival(null, 8, false, 0);
@@ -199,7 +199,7 @@ public class DomainCinematicClientTest extends PresentationClientTest {
      * A domain clash: the rival opens theirs, the player answers with the Awakening key, and the two fight it out on the
      * beat (the notes are played for the player, with the HUD, and so the lanes, hidden).
      */
-    private void clash(String me, String rivalId, boolean rivalAwakens, String title, String rgb) {
+    protected void clash(String me, String rivalId, boolean rivalAwakens, String title, String rgb) {
         stage(me);
         rival(rivalId, 12, rivalAwakens, 0.8f);
         characterOf = rivalId;
@@ -241,7 +241,7 @@ public class DomainCinematicClientTest extends PresentationClientTest {
     }
 
     /** Yuta awakened with Rika; her True Love Beam fired straight at the camera, which is set on the beam's axis. */
-    private void finale() {
+    protected void finale() {
         stage("yuta");
         // Out on the open grass, past the arena's wall, so the camera can sit 26 blocks down the beam's axis.
         cmd("execute as @a at @s run tp @s ~90 ~ ~ -60 0");
@@ -275,7 +275,7 @@ public class DomainCinematicClientTest extends PresentationClientTest {
         film(14);
     }
 
-    private void save() {
+    protected void save() {
         try {
             java.nio.file.Files.writeString(java.nio.file.Path.of("screenshots", "frames.txt"), log.toString());
         } catch (java.io.IOException e) {
@@ -283,7 +283,7 @@ public class DomainCinematicClientTest extends PresentationClientTest {
         }
     }
 
-    private static String rivalName(String id) {
+    protected static String rivalName(String id) {
         return switch (id) {
             case "yuji" -> "MALEVOLENT SHRINE";
             case "hakari" -> "IDLE DEATH GAMBLE";
@@ -291,7 +291,7 @@ public class DomainCinematicClientTest extends PresentationClientTest {
         };
     }
 
-    private static String domainName(String id) {
+    protected static String domainName(String id) {
         return switch (id) {
             case "gojo" -> "INFINITE VOID";
             case "yuta" -> "AUTHENTIC MUTUAL LOVE";
@@ -299,7 +299,7 @@ public class DomainCinematicClientTest extends PresentationClientTest {
         };
     }
 
-    private void hud(boolean on) {
+    protected void hud(boolean on) {
         ctx.runOnClient(mc -> {
             if (mc.gui.hud.isHidden() == on) mc.gui.hud.toggle();
         });
