@@ -7,7 +7,7 @@ their poses and get what they lacked, measured by tools/anim_quality.py and the 
 
   * contact frames on the server's hits. Most of Yuta's were drawn on time (the barrage, Severing Path's swings,
     Cursed Speech, Energy Ripple, Resolute Slash); the blows the server lands as their clip starts (Elbow Rush's final
-    elbow, Outburst's swing, Resolute's Black Flash, the domain's blade swing, Rika's throw landing) now start from the
+    elbow, Resolute's Black Flash, the domain's blade swing, Rika's throw landing) now start from the
     clip before and travel 80 ms into the blow; the M1 chains are retimed onto MeleeSystem's hits;
   * Rika's blows land late in long clips (her Smash at 700 ms, Downslam at 500, Haymaker at 1100, Slam's grabs from
     400): each is retimed onto its hit, with a held contact, follow-through and her body behind the arm;
@@ -73,13 +73,17 @@ def main():
     y('yuta_resolute_slash', hit=150, old=150, wind=(90, 0.5))
     y('yuta_resolute_flash', hit=0, prev='yuta_resolute_flash_windup')
     # Outburst: the swing as it starts (the burst 150 ms later), the parry's riposte.
-    y('yuta_outburst_swing', hit=0, old=70, prev='yuta_outburst_grip', body=(0, 50, 300, dict(twist=30, lean=14, crouch=0.8)))
+    # (a spinning draw: the blade out at 70 ms as the server's swing lands, the hips carrying a full turn into the burst,
+    # drawn at 240 ms and moved onto the server's at 150; the burst is the blow)
+    y('yuta_outburst_swing', hit=150, old=150, windup='yuta_outburst_grip', remap=[(0, 0), (70, 70), (240, 150), (241, 151), (900, 811)],
+      lag={'chest': 15, 'rightArm': 25})
     y('yuta_outburst_parry', motion='transition', body=(30, 90, 350, dict(twist=-16, lean=-8, crouch=0.8)))  # (a deflection)
     # Second Wind: the grab at 100 ms, the slam at 350 (the grab's light hit as it starts), pummel and swords on their
     # first blow at 200 ms (a blow every 250), the blocked recoil and the whiff.
     # (the dash: the grab lands whenever he reaches them, 100 ms in at a dummy 3 blocks off)
     y('yuta_second_wind', hit=100, old=120, motion='transition')
-    y('yuta_second_wind_slam', hit=350, old=350)
+    # (it began on a pose far from where the dash ends: the arm swung 160 degrees in a tick at the hand-over)
+    y('yuta_second_wind_slam', hit=350, old=350, lead=(100, 'yuta_second_wind'))
     y('yuta_second_wind_pummel', hit=200, old=200, strike='elbow')
     y('yuta_second_wind_swords', hit=200, old=200)
     y('yuta_second_wind_blocked', motion='transition')

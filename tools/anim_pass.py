@@ -17,7 +17,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from anim_kit import ClipData  # noqa: E402
+from anim_kit import ClipData, end_pose  # noqa: E402
 import anim_quality  # noqa: E402
 
 ANIMS = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src/main/resources/assets/jjk/animations')
@@ -50,7 +50,7 @@ class Pass:
         return next((t for t, _, _ in c.tracks[strike] if t >= t_peak - 10), t_peak)
 
     def refine(self, name, hit=None, prev=None, old=None, wind=None, hold=60, over=60, body=None, core=None, alive=None,
-               overlap=True, remap=None, extend=None, lag=None, **extra):
+               overlap=True, remap=None, extend=None, lag=None, lead=None, **extra):
         """
         hit      when the server lands the blow, ms from the clip's start: 0 with {prev} = as the clip starts, wound up in
                  {prev} (the clip's own wind-up goes; it travels LEAD ms into the blow from {prev}'s last pose); otherwise
@@ -62,6 +62,8 @@ class Pass:
         core     scales the body's own motion; alive: a held pose breathes (period, cycles, amp, tremble)
         remap    [(old ms, new ms)...]: a piecewise retime first (a flurry's punches onto the server's hits)
         extend   ms added on the last pose first (room to settle a blow drawn onto the clip's last key)
+        lead     (ms, prev): the clip first travels {ms} from {prev}'s last pose into its own first (a clip that began in
+                 a pose far from where the one before it ends); {old} counts in the clip as drawn
         lag      {bone: ms}: those bones' keys on the way into the blow arrive that much later (more whip than the
                  overlap pass leaves room for)
         extra    written into the clip (motion='transition', style='effortless', windup=..., strike='elbow')
@@ -71,11 +73,13 @@ class Pass:
             c.extend(extend)
         if remap:
             c.remap(remap)
+        if lead:
+            c.lead_in(lead[0], end_pose(self.group, lead[1]))
         contact = None
         if hit == 'auto':
             hit = self.arrival(name)
         if hit is not None:
-            old = self.arrival(name) if old is None else old
+            old = (self.arrival(name) if old is None else old) + (lead[0] if lead else 0)
             if hit == 0 and prev:
                 c.cut(old, LEAD, prev)
                 contact = LEAD

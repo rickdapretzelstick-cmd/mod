@@ -75,13 +75,14 @@ public class JJKClient implements ClientModInitializer {
         // While casting, the body faces where the caster aims. Vanilla lets a standing body lag ~50 degrees behind the head,
         // but every aimed move fires along the look and its clip is posed relative to the body (Ryu's cannon, Red, beams).
         // It turns in at up to 30 degrees a tick: a cast started with the body lagging 50 degrees squares up over two
-        // ticks instead of snapping round in one.
+        // ticks instead of snapping round in one. A bigger gap is the server turning them (to face a target): the body
+        // turns with it.
         net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(mc -> {
             if (mc.level == null) return;
             for (int id : ClientState.CASTS.keySet()) {
                 if (mc.level.getEntity(id) instanceof LivingEntity le && le.isAlive()) {
                     float off = net.minecraft.util.Mth.wrapDegrees(le.getYHeadRot() - le.yBodyRot);
-                    le.yBodyRot += net.minecraft.util.Mth.clamp(off, -30f, 30f);
+                    le.yBodyRot += Math.abs(off) > 75f ? off : net.minecraft.util.Mth.clamp(off, -30f, 30f);
                 }
             }
         });
